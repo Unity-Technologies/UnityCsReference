@@ -24,7 +24,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch);
         IPackage GetPackageByIdOrName(string idOrName);
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
-        IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false);
+        IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
         IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null);
         IEnumerable<Sample> GetSamples(IPackageVersion version);
@@ -163,14 +163,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        public IEnumerable<IPackageVersion> GetReverseDependencies(IPackageVersion version, bool directDependenciesOnly = false)
+        public IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version)
         {
-            if (version?.dependencies == null)
+            if (version == null)
                 return null;
-
-            var installedRoots = allPackages.Select(p => p.versions.installed).Where(p => p?.isDirectDependency ?? false);
-            return installedRoots.Where(p
-                => (directDependenciesOnly ? p.dependencies : p.resolvedDependencies)?.Any(r => r.name == version.name) ?? false);
+            return allPackages.Select(p => p.versions.installed).Where(p => p?.dependencies?.Any(d =>d.name == version.name) ?? false);
         }
 
         public IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version)

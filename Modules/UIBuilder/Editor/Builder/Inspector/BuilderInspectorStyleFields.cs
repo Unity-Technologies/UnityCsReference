@@ -1514,6 +1514,51 @@ namespace Unity.UI.Builder
 
                         menu.AppendSeparator();
                     }
+
+                    var matchingSelectors = BuilderSharedStyles.GetMatchingSelectorsOnElementFromLocalStyleSheet(m_Inspector.currentVisualElement);
+                    var styleProperty = GetLastStyleProperty(currentRule, fieldValueInfo.name);
+                    var hasInlineValue = styleProperty != null;
+                    var hasAnyInlineValue = currentRule.properties.Length > 0;
+
+                    var actionName = BuilderConstants.ContextMenuExtractInlineValueMessage;
+                    if (hasInlineValue)
+                        actionName += "/" + BuilderConstants.ContextMenuNewClassMessage;
+                    menu.AppendAction(actionName, _ => OpenNewSelectorWindow(styleProperty),
+                        _ => hasInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
+                        fieldElement);
+
+                    actionName = BuilderConstants.ContextMenuExtractAllInlineValuesMessage;
+                    if (hasAnyInlineValue)
+                        actionName += "/" + BuilderConstants.ContextMenuNewClassMessage;
+                    menu.AppendAction(actionName, _ => OpenNewSelectorWindow(),
+                        _ => hasAnyInlineValue ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled,
+                        fieldElement);
+
+                    if (matchingSelectors.Count > 0)
+                    {
+                        if (hasInlineValue) menu.AppendSeparator(BuilderConstants.ContextMenuExtractInlineValueMessage + "/");
+                        if (hasAnyInlineValue) menu.AppendSeparator(BuilderConstants.ContextMenuExtractAllInlineValuesMessage + "/");
+                    }
+
+                    foreach (var matchingSelector in matchingSelectors)
+                    {
+                        var selectorStr = StyleSheetToUss.ToUssSelector(matchingSelector.complexSelector);
+                        // replace space with Unicode character before # to avoid the shortcut handling in the menu system
+                        selectorStr = selectorStr.Replace(" #", "\u00A0#");
+
+                        if (hasInlineValue)
+                            menu.AppendAction(BuilderConstants.ContextMenuExtractInlineValueMessage + "/" + selectorStr,
+                                _ => PushLocalStylesToSelector(matchingSelector, styleProperty),
+                                _ => DropdownMenuAction.Status.Normal,
+                                fieldElement);
+
+                        if (hasAnyInlineValue)
+                            menu.AppendAction(BuilderConstants.ContextMenuExtractAllInlineValuesMessage + "/" + selectorStr,
+                                _ => PushLocalStylesToSelector(matchingSelector),
+                                _ => DropdownMenuAction.Status.Normal,
+                                fieldElement);
+
+                    }
                 }
 
                 if (isBoundToVariable)
@@ -1997,6 +2042,60 @@ namespace Unity.UI.Builder
             {
                 Builder.ShowWarning(BuilderConstants.CouldNotOpenSelectorMessage);
             }
+        }
+
+        void OpenNewSelectorWindow(StyleProperty styleProperty = null)
+        {
+            if (BuilderNewClassWindow.activeWindow != null)
+                BuilderNewClassWindow.activeWindow.Close();
+
+            var worldBound = GUIUtility.GUIToScreenRect(m_Inspector.document.primaryViewportWindow.viewport.worldBound);
+            var window = BuilderNewClassWindow.Open(worldBound);
+            window.OnClassCreated += (className) => ExtractLocalStylesToNewClass(styleProperty, className);
+            window.ShowModal();
+        }
+
+        void ExtractLocalStylesToNewClass(StyleProperty styleProperty, StyleComplexSelector className)
+        {
+            var classNameStr = StyleSheetToUss.ToUssSelector(className);
+            classNameStr = classNameStr.TrimStart(BuilderConstants.UssSelectorClassNameSymbol[0]);
+            // Add the new selector to the current element
+            currentVisualElement.AddToClassList(classNameStr);
+            // Update VisualTreeAsset.
+            BuilderAssetUtilities.AddStyleClassToElementInAsset(m_Inspector.document, currentVisualElement, classNameStr);
+
+            // Get Selector Match Record from the new selector
+            var selectorMatchRecord = new SelectorMatchRecord(m_Inspector.document.activeStyleSheet, 0)
+            {
+                complexSelector = className
+            };
+            PushLocalStylesToSelector(selectorMatchRecord, styleProperty);
+        }
+
+        internal void PushLocalStylesToSelector(SelectorMatchRecord matchingSelector, StyleProperty styleProperty = null)
+        {
+            // Get StyleSheet this selector belongs to.
+            var toStyleSheet = matchingSelector.sheet;
+            if (toStyleSheet == null)
+                return;
+
+            var selector = matchingSelector.complexSelector;
+
+            // Transfer property from inline styles rule to selector.
+            if (styleProperty != null)
+                toStyleSheet.TransferPropertyToSelector(selector, styleSheet, currentRule, styleProperty);
+            else
+                // Transfer all properties from inline styles rule to selector.
+                toStyleSheet.TransferRulePropertiesToSelector(selector, styleSheet, currentRule);
+
+            // Overwrite Undo Message.
+            Undo.RegisterCompleteObjectUndo(
+                new Object[] { m_Inspector.document.visualTreeAsset, toStyleSheet },
+                BuilderConstants.ContextMenuExtractInlineValueMessage);
+
+            // We actually want to get the notification back and refresh ourselves.
+            m_Inspector.selection.NotifyOfStylingChange();
+            m_Inspector.selection.NotifyOfHierarchyChange(null, m_Inspector.currentVisualElement);
         }
 
         void NotifyStyleChanges(List<string> styles = null, bool selfNotify = false, NotifyType notifyType = NotifyType.Default, bool ignoreUnsavedChanges = false)

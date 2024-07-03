@@ -782,7 +782,7 @@ namespace UnityEditor
                 prototype.noiseSeed = UnityEngine.Random.Range(1, int.MaxValue);
                 prototype.renderMode = DetailRenderMode.GrassBillboard;
                 prototype.useDensityScaling = true;
-                if (GraphicsSettings.currentRenderPipeline != null && GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader == null)
+                if (GraphicsSettings.currentRenderPipeline != null && GraphicsSettings.GetDefaultShader(DefaultShaderType.TerrainDetailGrassBillboard) == null)
                     prototype.renderMode = DetailRenderMode.Grass;
             }
             else

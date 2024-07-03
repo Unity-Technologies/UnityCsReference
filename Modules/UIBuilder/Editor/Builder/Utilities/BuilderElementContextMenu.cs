@@ -205,6 +205,7 @@ namespace Unity.UI.Builder
             var isLinkedOpenVTAActiveVTA = linkedOpenVTA == activeOpenUXML.visualTreeAsset;
             var isLinkedInstancedVTAActiveVTA = linkedInstancedVTA == activeOpenUXML.visualTreeAsset;
             var isLinkedVEADirectChild = activeOpenUXML.visualTreeAsset.templateAssets.Contains(linkedTemplateVEA);
+            var isSelector = documentElement != null && BuilderSharedStyles.IsSelectorElement(documentElement);
 
             var showOpenInBuilder = linkedInstancedVTA != null;
             var showReturnToParentAction = isLinkedOpenVTAActiveVTA && activeOpenUXML.isChildSubDocument;
@@ -314,9 +315,9 @@ namespace Unity.UI.Builder
                 {
                     m_PaneWindow.commandHandler.CreateTargetedSelector(documentElement);
                 },
-            documentElement != null
+            documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector
                 ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Disabled);
+                : DropdownMenuAction.Status.Hidden);
         }
     }
 }

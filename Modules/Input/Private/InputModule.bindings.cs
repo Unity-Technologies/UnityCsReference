@@ -57,5 +57,16 @@ namespace UnityEngineInternal.Input
         /// </summary>
         [NativeProperty("AllowInputDeviceCreationFromEvents")]
         internal static extern bool allowInputDeviceCreationFromEvents { get; set; }
+
+        /// <summary>
+        /// If this option is set to true, scrollWheel delta values will always be returned within a range of [-1, 1]
+        /// regardless of the platform.
+        /// If false, scrollWheel delta values will try to respect platform-specific values ranges.
+        /// (For instance, on the Windows platform the scrollWheel delta values range would be [-120, 120].)
+        /// </summary>
+        [NativeProperty("NormalizeScrollWheelDelta")]
+        internal static extern bool normalizeScrollWheelDelta { get; set; }
+
+        internal static extern float GetScrollWheelDeltaPerTick();
     }
 }

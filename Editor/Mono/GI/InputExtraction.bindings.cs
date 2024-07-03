@@ -70,7 +70,11 @@ namespace UnityEditor.LightBaking
 
         public static extern bool ExtractFromScene(string outputFolderPath, LightBaker.BakeInput input, LightBaker.LightmapRequests lightmapRequests, LightBaker.LightProbeRequests lightProbeRequests, SourceMap map);
 
+        [NativeMethod(IsThreadSafe = true)]
         public static extern int[] ComputeOcclusionLightIndicesFromBakeInput(LightBaker.BakeInput bakeInput, UnityEngine.Vector3[] probePositions, uint maxLightsPerProbe);
+
+        [NativeMethod(IsThreadSafe = true)]
+        public static extern int[] GetShadowmaskChannelsFromLightIndices(LightBaker.BakeInput bakeInput, int[] lightIndices);
 
         private static string LookupGameObjectName(SourceMap map, int instanceIndex)
         {

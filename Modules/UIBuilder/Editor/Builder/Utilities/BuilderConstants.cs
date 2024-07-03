@@ -67,6 +67,7 @@ namespace Unity.UI.Builder
         public static string UssPath_InspectorWindow_Themed => EditorGUIUtility.isProSkin ? UssPath_InspectorWindow_Dark : UssPath_InspectorWindow_Light;
 
         public const string UssPath_BindingWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/BindingWindow.uss";
+        public const string UssPath_NewClassWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/NewClassWindow.uss";
 
         // Global Style Class Names
         public static readonly string HiddenStyleClassName = "unity-builder-hidden";
@@ -204,6 +205,9 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuRemoveBindingMessage = "Remove binding";
         public static readonly string ContextMenuEditInlineValueMessage = "Edit inline value...";
         public static readonly string ContextMenuUnsetInlineValueMessage = "Unset inline value";
+        public static readonly string ContextMenuExtractInlineValueMessage = "Extract Inlined Style to Selector";
+        public static readonly string ContextMenuExtractAllInlineValuesMessage = "Extract All Inlined Styles to Selector";
+        public static readonly string ContextMenuNewClassMessage = "New Class...";
         public static readonly string InspectorClassPillDoubleClickToCreate = "Double-click to create new USS selector.";
         public static readonly string InspectorClassPillDoubleClickToSelect = "Double-click to select and edit USS selector.";
         public static readonly string InspectorLocalStylesSectionTitleForSelector = "Styles";

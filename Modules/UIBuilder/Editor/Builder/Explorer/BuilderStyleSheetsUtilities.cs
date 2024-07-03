@@ -20,7 +20,7 @@ namespace Unity.UI.Builder
         public static bool AddUSSToAsset(BuilderPaneWindow paneWindow, string ussPath)
         {
             bool added = BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath);
-          
+
             if (added)
                 paneWindow.OnEnableAfterAllSerialization();
 
@@ -115,6 +115,21 @@ namespace Unity.UI.Builder
             s_SaveFileDialogCallback = DisplaySaveFileDialogForUSS;
             s_OpenFileDialogCallback = DisplayOpenFileDialogForUSS;
             s_CheckForUnsavedChanges = CheckForUnsavedChanges;
+        }
+
+        public static string GetClassNameValidationError(string className)
+        {
+            if (className.Contains(" "))
+            {
+                return BuilderConstants.AddStyleClassValidationSpaces;
+            }
+
+            if (!BuilderNameUtilities.attributeRegex.IsMatch(className))
+            {
+                return BuilderConstants.ClassNameValidationSpacialCharacters;
+            }
+
+            return string.Empty;
         }
     }
 }

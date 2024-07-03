@@ -16,6 +16,7 @@ namespace UnityEngine.Rendering
         uint m_RenderingLayerMask;
         uint m_BatchLayerMask;
         int m_ExcludeMotionVectorObjects;
+        int m_ForceAllMotionVectorObjects;
         SortingLayerRange m_SortingLayerRange;
 
         public static FilteringSettings defaultValue => new FilteringSettings(RenderQueueRange.all);
@@ -27,6 +28,7 @@ namespace UnityEngine.Rendering
             m_RenderingLayerMask = renderingLayerMask;
             m_BatchLayerMask = uint.MaxValue;
             m_ExcludeMotionVectorObjects = excludeMotionVectorObjects;
+            m_ForceAllMotionVectorObjects = 0;
             m_SortingLayerRange = SortingLayerRange.all;
         }
 
@@ -59,6 +61,11 @@ namespace UnityEngine.Rendering
             get { return m_ExcludeMotionVectorObjects != 0; }
             set { m_ExcludeMotionVectorObjects = value ? 1 : 0; }
         }
+        public bool forceAllMotionVectorObjects
+        {
+            get { return m_ForceAllMotionVectorObjects != 0; }
+            set { m_ForceAllMotionVectorObjects = value ? 1 : 0; }
+        }
 
         public SortingLayerRange sortingLayerRange
         {
@@ -72,7 +79,8 @@ namespace UnityEngine.Rendering
                 && m_LayerMask == other.m_LayerMask
                 && m_RenderingLayerMask == other.m_RenderingLayerMask
                 && m_BatchLayerMask == other.m_BatchLayerMask
-                && m_ExcludeMotionVectorObjects == other.m_ExcludeMotionVectorObjects;
+                && m_ExcludeMotionVectorObjects == other.m_ExcludeMotionVectorObjects
+                && m_ForceAllMotionVectorObjects == other.m_ForceAllMotionVectorObjects;
         }
 
         public override bool Equals(object obj)
@@ -90,6 +98,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ (int)m_RenderingLayerMask;
                 hashCode = (hashCode * 397) ^ (int)m_BatchLayerMask;
                 hashCode = (hashCode * 397) ^ m_ExcludeMotionVectorObjects;
+                hashCode = (hashCode * 397) ^ m_ForceAllMotionVectorObjects;
                 return hashCode;
             }
         }

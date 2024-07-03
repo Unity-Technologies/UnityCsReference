@@ -148,7 +148,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         static void OnAddBuildProfileClicked(BuildProfileCard card)
         {
-            BuildProfileDataSource.CreateAsset(card.platformId, card.displayName);
+            BuildProfileDataSource.CreateNewAsset(card.platformId, card.displayName);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,

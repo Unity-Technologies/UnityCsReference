@@ -61,5 +61,10 @@ namespace UnityEngine.LightTransport
         {
             return UnityEditor.LightBaking.InputExtraction.ComputeOcclusionLightIndicesFromBakeInput(bakeInput.bakeInput, probePositions, maxLightsPerProbe);
         }
+
+        public static int[] GetShadowmaskChannelsFromLightIndices(BakeInput bakeInput, int[] lightIndices)
+        {
+            return UnityEditor.LightBaking.InputExtraction.GetShadowmaskChannelsFromLightIndices(bakeInput.bakeInput, lightIndices);
+        }
     }
 }

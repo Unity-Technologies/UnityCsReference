@@ -46,13 +46,11 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            var srpAsset = GraphicsSettings.currentRenderPipeline;
-
-            var defaultSpeedTree8Shader = srpAsset != null ? srpAsset.defaultSpeedTree8Shader : null;
+            var defaultSpeedTree8Shader = GraphicsSettings.GetDefaultShader(DefaultShaderType.SpeedTree8);
             if (defaultSpeedTree8Shader == null)
                 defaultSpeedTree8Shader = Shader.Find("Nature/SpeedTree8");
 
-            var defaultSpeedTree7Shader = srpAsset != null ? srpAsset.defaultSpeedTree7Shader : null;
+            var defaultSpeedTree7Shader = GraphicsSettings.GetDefaultShader(DefaultShaderType.SpeedTree7);
             if (defaultSpeedTree7Shader == null)
                 defaultSpeedTree7Shader = Shader.Find("Nature/SpeedTree");
 

@@ -12,6 +12,35 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.Rendering
 {
+    [VisibleToOtherModules]
+    internal enum DefaultMaterialType
+    {
+        Default = 0,
+        Particle = 1,
+        Line = 2,
+        Terrain = 3,
+        Sprite = 4,
+        SpriteMask = 5,
+        UGUI = 6,
+        UGUI_Overdraw = 7,
+        UGUI_ETC1Supported = 8
+    }
+    
+    [VisibleToOtherModules]
+    internal enum DefaultShaderType
+    {
+        Default = 0,
+        AutodeskInteractive = 1,
+        AutodeskInteractiveTransparent = 2,
+        AutodeskInteractiveMasked = 3,
+        TerrainDetailLit = 4,
+        TerrainDetailGrass = 5,
+        TerrainDetailGrassBillboard = 6,
+        SpeedTree7 = 7,
+        SpeedTree8 = 8,
+        SpeedTree9 = 9,
+    }
+
     [NativeHeader("Runtime/Camera/GraphicsSettings.h")]
     [StaticAccessor("GetGraphicsSettings()", StaticAccessorType.Dot)]
     public sealed partial class GraphicsSettings : Object
@@ -86,5 +115,52 @@ namespace UnityEngine.Rendering
 
         extern public static bool cameraRelativeLightCulling { get; set; }
         extern public static bool cameraRelativeShadowCulling { get; set; }
+
+        [RequiredByNativeCode]
+        [VisibleToOtherModules]
+        internal static Shader GetDefaultShader(DefaultShaderType type)
+        {
+            var rp = currentRenderPipeline;
+            if (currentRenderPipeline == null)
+                return null;
+
+            return type switch
+            {
+                DefaultShaderType.Default => rp.defaultShader,
+                DefaultShaderType.AutodeskInteractive => rp.autodeskInteractiveShader,
+                DefaultShaderType.AutodeskInteractiveTransparent => rp.autodeskInteractiveTransparentShader,
+                DefaultShaderType.AutodeskInteractiveMasked => rp.autodeskInteractiveMaskedShader,
+                DefaultShaderType.TerrainDetailLit => rp.terrainDetailLitShader,
+                DefaultShaderType.TerrainDetailGrass => rp.terrainDetailGrassShader,
+                DefaultShaderType.TerrainDetailGrassBillboard => rp.terrainDetailGrassBillboardShader,
+                DefaultShaderType.SpeedTree7 => rp.defaultSpeedTree7Shader,
+                DefaultShaderType.SpeedTree8 => rp.defaultSpeedTree8Shader,
+                DefaultShaderType.SpeedTree9 => rp.defaultSpeedTree9Shader,
+                _ => throw new NotImplementedException($"DefaultShaderType {type} not implemented")
+            };
+        }
+
+        [RequiredByNativeCode]
+        [VisibleToOtherModules]
+        internal static Material GetDefaultMaterial(DefaultMaterialType type)
+        {
+            var rp = currentRenderPipeline;
+            if (currentRenderPipeline == null)
+                return null;
+
+            return type switch
+            {
+                DefaultMaterialType.Default => rp.defaultMaterial,
+                DefaultMaterialType.Particle => rp.defaultParticleMaterial,
+                DefaultMaterialType.Line => rp.defaultLineMaterial,
+                DefaultMaterialType.Terrain => rp.defaultTerrainMaterial,
+                DefaultMaterialType.Sprite => rp.default2DMaterial,
+                DefaultMaterialType.SpriteMask => rp.default2DMaskMaterial,
+                DefaultMaterialType.UGUI => rp.defaultUIMaterial,
+                DefaultMaterialType.UGUI_Overdraw => rp.defaultUIOverdrawMaterial,
+                DefaultMaterialType.UGUI_ETC1Supported => rp.defaultUIETC1SupportedMaterial,
+                _ => throw new NotImplementedException($"DefaultMaterialType {type} not implemented")
+            };
+        }
     }
 }
