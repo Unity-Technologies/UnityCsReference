@@ -209,6 +209,7 @@ namespace Unity.UI.Builder
         {
             foreach (var property in fromRule.properties)
             {
+                toStyleSheet.RemoveProperty(toSelector.rule, property.name);
                 var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
                 foreach (var value in property.values)
                 {
@@ -230,6 +231,30 @@ namespace Unity.UI.Builder
             {
                 fromStyleSheet.RemoveProperty(fromRule, property);
             }
+        }
+
+        public static void TransferPropertyToSelector(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleSheet fromStyleSheet, StyleRule fromRule, StyleProperty property)
+        {
+            // remove the property if it exists in the destination
+            toStyleSheet.RemoveProperty(toSelector.rule, property.name);
+            var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
+            foreach (var value in property.values)
+            {
+                switch (value.valueType)
+                {
+                    case StyleValueType.Float: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetFloat(value)); break;
+                    case StyleValueType.Dimension: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetDimension(value)); break;
+                    case StyleValueType.Enum: toStyleSheet.AddValueAsEnum(newProperty, fromStyleSheet.GetEnum(value)); break;
+                    case StyleValueType.String: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetString(value)); break;
+                    case StyleValueType.Color: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetColor(value)); break;
+                    case StyleValueType.AssetReference: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
+                    case StyleValueType.ResourcePath: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
+                    case StyleValueType.Variable: toStyleSheet.AddVariable(newProperty, fromStyleSheet.GetString(value)); break;
+                    case StyleValueType.Keyword: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetKeyword(value)); break;
+                }
+            }
+
+            fromStyleSheet.RemoveProperty(fromRule, property);
         }
 
         public static bool IsSelected(this StyleSheet styleSheet)

@@ -75,7 +75,12 @@ namespace UnityEditor
                 bool isShaderValid;
                 bool.TryParse(material.GetTag("TerrainCompatible", false), out isShaderValid);
                 RenderPipelineAsset renderPipeline = GraphicsSettings.currentRenderPipeline;
-                string shaderPath = renderPipeline?.defaultTerrainMaterial?.shader.name;
+
+                string shaderPath = "";
+                var terrainDefaultMaterial = GraphicsSettings.GetDefaultMaterial(DefaultMaterialType.Terrain);
+                if (terrainDefaultMaterial != null)
+                    shaderPath = terrainDefaultMaterial.shader.name;
+
                 string pipelineShaderTag = material.GetTag("RenderPipeline", false);
                 switch (renderPipeline?.GetType().Name)
                 {
@@ -977,7 +982,7 @@ namespace UnityEditor
         static bool ShouldShowCreateMaterialButton(Material material, UnityEngine.Object target)
         {
             return (material == null
-                || GraphicsSettings.currentRenderPipeline != null && material == GraphicsSettings.currentRenderPipeline.defaultTerrainMaterial
+                || GraphicsSettings.currentRenderPipeline != null && material == GraphicsSettings.GetDefaultMaterial(DefaultMaterialType.Terrain)
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Standard.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Diffuse.mat")
                 || material == AssetDatabase.GetBuiltinExtraResource<Material>("Default-Terrain-Specular.mat"))
@@ -1385,15 +1390,6 @@ namespace UnityEditor
             {
                 Selection.activeObject = terrain;
             }
-        }
-
-        private string GetTerrainShaderName()
-        {
-            RenderPipelineAsset currentRP = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
-            string retString = "shaders in Nature/Terrain";
-            if (currentRP)
-                retString = currentRP.defaultTerrainMaterial.shader.name;
-            return retString;
         }
 
         public void ShowSettings()

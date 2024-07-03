@@ -728,8 +728,11 @@ namespace UnityEngine
         }
 
         // The default [[AudioClip]] to play
-        [NativeProperty("AudioClip")]
-        extern public AudioClip clip { get; set; }
+        public AudioClip clip
+        {
+            get => resource as AudioClip;
+            set => resource = value as AudioClip;
+        }
 
         extern public AudioResource resource { get; set; }
 

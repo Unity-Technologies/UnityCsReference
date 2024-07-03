@@ -20,7 +20,14 @@ namespace UnityEditor.Build.Profile.Handlers
 
         const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
 
-        static string GetNewProfileName(string displayName) => $"{k_AssetFolderPath}/{displayName}.asset";
+        static string GetDefaultNewProfilePath(string platformDisplayName) =>
+            $"{k_AssetFolderPath}/New {platformDisplayName} Profile.asset";
+
+        static string GetDefaultNewProfilePath(GUID platformGuid)
+        {
+            var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformGuid.ToString());
+            return GetDefaultNewProfilePath(platformDisplayName);
+        }
 
         internal BuildProfileDataSource(BuildProfileWindow window)
         {
@@ -86,14 +93,13 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Create a custom build profile asset, making sure to create the folders
-        /// if needed
+        /// Create a new custom build profile asset with the default name.
+        /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        internal static void CreateAsset(string platformId, string displayName)
+        internal static void CreateNewAsset(string platformId, string platformDisplayName)
         {
-            CheckCreateCustomBuildProfileFolders();
-
-            BuildProfile.CreateInstance(platformId, GetNewProfileName(displayName));
+            EnsureCustomBuildProfileFolderExists();
+            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName));
         }
 
         /// <summary>
@@ -105,7 +111,7 @@ namespace UnityEditor.Build.Profile.Handlers
             if (buildProfile == null)
                 return null;
 
-            string path = isClassic ? GetDuplicatedBuildProfilePathForClassic(buildProfile) : AssetDatabase.GetAssetPath(buildProfile);
+            string path = isClassic ? GetDefaultNewProfilePath(new GUID(buildProfile.platformId)) : AssetDatabase.GetAssetPath(buildProfile);
             if (string.IsNullOrEmpty(path))
                 return null;
 
@@ -116,7 +122,7 @@ namespace UnityEditor.Build.Profile.Handlers
             if (isClassic)
                 duplicatedProfile.scenes = EditorBuildSettings.GetEditorBuildSettingsSceneIgnoreProfile();
 
-            CheckCreateCustomBuildProfileFolders();
+            EnsureCustomBuildProfileFolderExists();
 
             string uniqueFilePath = AssetDatabase.GenerateUniqueAssetPath(path);
             AssetDatabase.CreateAsset(duplicatedProfile, uniqueFilePath);
@@ -301,13 +307,7 @@ namespace UnityEditor.Build.Profile.Handlers
             return Path.Combine(directory, $"{newName}{extension}");
         }
 
-        static string GetDuplicatedBuildProfilePathForClassic(BuildProfile buildProfile)
-        {
-            string name = BuildProfileModuleUtil.GetClassicPlatformDisplayName(buildProfile.platformId);
-            return Path.Combine(k_AssetFolderPath, $"{name}.asset");
-        }
-
-        static void CheckCreateCustomBuildProfileFolders()
+        static void EnsureCustomBuildProfileFolderExists()
         {
             if (!AssetDatabase.IsValidFolder("Assets/Settings"))
                 AssetDatabase.CreateFolder("Assets", "Settings");

@@ -38,7 +38,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected override void RefreshContent(IPackageVersion version)
         {
             UpdateDependencies(version?.dependencies);
-            UpdateReverseDependencies(m_PackageDatabase.GetReverseDependencies(version));
+            UpdateReverseDependencies(m_PackageDatabase.GetDirectReverseDependencies(version));
         }
 
         private void OnGeometryChanged(GeometryChangedEvent evt)

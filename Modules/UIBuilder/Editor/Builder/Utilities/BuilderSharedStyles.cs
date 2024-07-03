@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.UIElements.Debugger;
 using System;
 using UnityEditor;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -288,6 +289,33 @@ namespace Unity.UI.Builder
                 var complexSelectorString = StyleSheetToUss.ToUssSelector(complexSelector);
                 complexSelectors.Add(complexSelectorString);
             }
+
+            return complexSelectors;
+        }
+
+        public static List<SelectorMatchRecord> GetMatchingSelectorsOnElementFromLocalStyleSheet(VisualElement documentElement)
+        {
+            var matchedElementsSelector = new MatchedRulesExtractor();
+
+            // set all pseudo states to true to get all matching selectors
+            var previousPseudoStates = documentElement.pseudoStates;
+            documentElement.pseudoStates = PseudoStates.Active | PseudoStates.Disabled | PseudoStates.Focus | PseudoStates.Hover | PseudoStates.Checked;
+
+            matchedElementsSelector.FindMatchingRules(documentElement);
+
+            if (matchedElementsSelector.selectedElementRules == null || matchedElementsSelector.selectedElementRules.Count <= 0)
+                return new List<SelectorMatchRecord>();
+
+            var complexSelectors = new List<SelectorMatchRecord>();
+            foreach (var rule in matchedElementsSelector.selectedElementRules)
+            {
+                if (rule.matchRecord.sheet.IsUnityEditorStyleSheet() || rule.matchRecord.sheet.isDefaultStyleSheet)
+                    continue;
+                complexSelectors.Add(rule.matchRecord);
+            }
+
+            // return pseudo states to previous state
+            documentElement.pseudoStates = previousPseudoStates;
 
             return complexSelectors;
         }

@@ -267,17 +267,17 @@ namespace UnityEngine
         {
             if (GraphicsSettings.currentRenderPipeline != null)
             {
-                if (renderMode == DetailRenderMode.GrassBillboard && GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader == null)
+                if (renderMode == DetailRenderMode.GrassBillboard && GraphicsSettings.GetDefaultShader(DefaultShaderType.TerrainDetailGrassBillboard) == null)
                 {
                     errorMessage = "The current render pipeline does not support Billboard details. Details will not be rendered.";
                     return false;
                 }
-                else if (renderMode == DetailRenderMode.VertexLit && !useInstancing && GraphicsSettings.currentRenderPipeline.terrainDetailLitShader == null)
+                else if (renderMode == DetailRenderMode.VertexLit && !useInstancing && GraphicsSettings.GetDefaultShader(DefaultShaderType.TerrainDetailLit) == null)
                 {
                     errorMessage = "The current render pipeline does not support VertexLit details. Details will be rendered using the default shader.";
                     return false;
                 }
-                else if (renderMode == DetailRenderMode.Grass && GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader == null)
+                else if (renderMode == DetailRenderMode.Grass && GraphicsSettings.GetDefaultShader(DefaultShaderType.TerrainDetailGrass) == null)
                 {
                     errorMessage = "The current render pipeline does not support Grass details. Details will be rendered using the default shader without alpha test and animation.";
                     return false;

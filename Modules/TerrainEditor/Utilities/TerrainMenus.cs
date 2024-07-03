@@ -105,8 +105,8 @@ namespace UnityEditor
         static internal bool AddDetailTextureValidate(MenuCommand item)
         {
             return UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline == null
-                || UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.terrainDetailGrassBillboardShader != null
-                || UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.terrainDetailGrassShader != null;
+                || UnityEngine.Rendering.GraphicsSettings.GetDefaultShader(UnityEngine.Rendering.DefaultShaderType.TerrainDetailGrassBillboard) != null
+                || UnityEngine.Rendering.GraphicsSettings.GetDefaultShader(UnityEngine.Rendering.DefaultShaderType.TerrainDetailGrass) != null;
         }
 
         [MenuItem("CONTEXT/TerrainEngineDetails/Edit", secondaryPriority = 22)]

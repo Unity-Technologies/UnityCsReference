@@ -479,7 +479,7 @@ namespace UnityEditor
             {  s_platform_05, "Windows" },
             {  s_platform_09, "iOS" },
             {  s_platform_13, "Android™" },
-            {  s_platform_20, "WebGL" },
+            {  s_platform_20, "Web" },
             {  s_platform_21, "Universal Windows Platform" },
             {  s_platform_24, "Linux" },
             {  s_platform_31, "PlayStation®4" },

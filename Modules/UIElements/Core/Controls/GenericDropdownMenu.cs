@@ -20,6 +20,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// GenericDropdownMenu allows you to display contextual menus with default textual options or any <see cref="VisualElement"/>.
     /// </summary>
+    /// <remarks>
+    /// The GenericDropdownMenu is a generic implementation of a dropdown menu that you can use in both Editor UI and runtime UI.
+    /// </remarks>
+    /// <example>
+    /// The following example creates a dropdown menu with three items. It displays the menu when the user clicks the button. The example also demonstrates how to set 
+    /// the width of the dropdown menu with the @@DropDown@@ method.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/MenuExample.cs"/>
+    /// </example>
     public class GenericDropdownMenu : IGenericMenu
     {
         internal class MenuItem
@@ -508,12 +516,15 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The parent element that displays the menu:
-        /// - For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
-        /// - For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
+        /// 
+        ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
+        ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
+        /// 
+        /// The @@anchored@@ parameter determines the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
         /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
-        /// <param name="anchored">Whether or not to use the width of the position argument instead of its default width.</param>
+        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands to the container's full width.</param>
         public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
         {
             // TODO the argument should not optional. This is because IGenericMenu requires it, but this is not great.
@@ -569,13 +580,19 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The parent element that displays the menu:
-        /// - For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
-        /// - For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
+        /// 
+        ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
+        ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
+        /// 
+        /// The @@anchored@@ and @@fitContentWidthIfAnchored@@ parameters determine the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
+        /// 
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
         /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
-        /// <param name="anchored">Whether or not to use the width of the position argument instead of its default width.</param>
-        /// <param name="fitContentWidthIfAnchored">Whether or not to match the width of the menu with the width of its content. <c>anchored</c> needs to be set to true.</param>
+        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands 
+        /// to the container's full width.</param>
+        /// <param name="fitContentWidthIfAnchored">If true and the menu is anchored, the menu's width matches its content's width; 
+        /// otherwise, the menu's width matches the width of the @@position@@. If the menu is unanchored, this parameter is ignored.</param>
         public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false, bool fitContentWidthIfAnchored = false)
         {
             m_FitContentWidth = anchored && fitContentWidthIfAnchored;

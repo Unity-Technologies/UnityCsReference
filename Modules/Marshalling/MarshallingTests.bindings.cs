@@ -54,7 +54,7 @@ namespace UnityEngine
     // String tests
 
     [ExcludeFromDocs]
-    [RequiredByNativeCode(GenerateProxy = true, Name = "StructCoreStringManaged")]
+    [RequiredByNativeCode(GenerateProxy = true, Name = "StructCoreStringManaged", Optional = true)]
     [NativeClass("StructCoreString", "struct StructCoreString;")]
     [NativeHeader("Modules/Marshalling/MarshallingTests.h")]
     internal struct StructCoreString
@@ -296,7 +296,7 @@ namespace UnityEngine
 
         extern private static void Internal_CreateMarshallingTestObject([Writable] MarshallingTestObject notSelf);
 
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         private int TestField;
     }
 
@@ -943,33 +943,33 @@ namespace UnityEngine
         public static extern float TestInvokeFloat(float arg);
         public static extern double TestInvokeDouble(double arg);
 
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static bool InvokeBool(bool arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static sbyte InvokeSByte(sbyte arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static byte InvokeByte(byte arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static char InvokeChar(char arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static short InvokeShort(short arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static ushort InvokeUShort(ushort arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static int InvokeInt(int arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static uint InvokeUInt(uint arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static long InvokeLong(long arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static ulong InvokeULong(ulong arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static IntPtr InvokeIntPtr(IntPtr arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static UIntPtr InvokeUIntPtr(UIntPtr arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static float InvokeFloat(float arg) { return arg; }
-        [RequiredByNativeCode]
+        [RequiredMember, RequiredByNativeCode(Optional = true)]
         static double InvokeDouble(double arg) { return arg; }
     }
 

@@ -496,7 +496,7 @@ namespace UnityEngine.UIElements
         /// </example>
         public void AppendSeparator(string subMenuPath = null)
         {
-            if (m_MenuItems.Count > 0 && !(m_MenuItems[m_MenuItems.Count - 1] is DropdownMenuSeparator))
+            if (m_MenuItems.Count > 0 && !(m_MenuItems[^1] is DropdownMenuSeparator && ((DropdownMenuSeparator)m_MenuItems[^1]).subMenuPath == subMenuPath))
             {
                 DropdownMenuSeparator separator = new DropdownMenuSeparator(subMenuPath ?? String.Empty);
                 m_MenuItems.Add(separator);

@@ -287,13 +287,13 @@ namespace UnityEditor.SpeedTree.Importer
         static ulong ComputeDefaultShaderHash()
         {
             ulong newDefaultShaderHash = 0UL;
-            if (GraphicsSettings.currentRenderPipeline == null || GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader == null)
+            if (GraphicsSettings.GetDefaultShader(DefaultShaderType.SpeedTree9) == null)
             {
                 newDefaultShaderHash = 0;
             }
             else
             {
-                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader, out var guid,
+                if (AssetDatabase.TryGetGUIDAndLocalFileIdentifier(GraphicsSettings.GetDefaultShader(DefaultShaderType.SpeedTree9), out var guid,
                         out long fileId))
                 {
                     newDefaultShaderHash = CombineHash((ulong)guid.GetHashCode(), (ulong)fileId);
@@ -1382,12 +1382,7 @@ namespace UnityEditor.SpeedTree.Importer
 
         internal static bool TryGetShaderForCurrentRenderPipeline(out Shader shader)
         {
-            shader = null;
-            if (GraphicsSettings.currentRenderPipeline != null)
-            {
-                shader = GraphicsSettings.currentRenderPipeline.defaultSpeedTree9Shader;
-            }
-
+            shader = GraphicsSettings.GetDefaultShader(DefaultShaderType.SpeedTree9);
             if (shader == null)
             {
                 shader = Shader.Find(ImporterSettings.kLegacyShaderName);
@@ -1522,7 +1517,7 @@ namespace UnityEditor.SpeedTree.Importer
         private static void ChangeTextureImporterSettingsForSt9Files(string assetPath)
         {
             SpeedTree9Reader tree = new SpeedTree9Reader();
-            
+
             FileStatus status = tree.Initialize(assetPath);
             if (status != FileStatus.Valid)
             {
