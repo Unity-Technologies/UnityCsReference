@@ -55,7 +55,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        Toggle m_Toggle;
+        Toggle m_Toggle = new Toggle();
         VisualElement m_Container;
 
         internal Toggle toggle => m_Toggle;
@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements
         public Foldout()
         {
             AddToClassList(ussClassName);
-            m_Toggle = new Toggle();
+            delegatesFocus = true;
 
             m_Container = new VisualElement()
             {
