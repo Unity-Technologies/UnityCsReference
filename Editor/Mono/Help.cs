@@ -11,6 +11,7 @@ using UnityEditor.Audio;
 using UnityEditorInternal;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
+using UnityEditor.Presets;
 
 namespace UnityEditor
 {
@@ -358,7 +359,12 @@ namespace UnityEditor
 
             if (obj is PrefabImporter)
             {
-                return "-Prefab Asset";
+                return "Prefabs";
+            }
+
+            if (obj is Preset)
+            {
+                return "Presets";
             }
 
             if (obj is DefaultAsset)

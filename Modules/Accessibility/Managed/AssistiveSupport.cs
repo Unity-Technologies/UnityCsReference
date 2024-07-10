@@ -13,7 +13,7 @@ namespace UnityEngine.Accessibility
     /// <remarks>
     /// The currently supported platforms are:
     ///
-    ///- <see cref="RuntimePlatform.Android"/>
+    ///- <see cref="RuntimePlatform.Android"/> (requires at least API level 26)
     ///- <see cref="RuntimePlatform.IPhonePlayer"/>
     ///
     /// This class contains static methods that allow users to support assistive technologies in the operating

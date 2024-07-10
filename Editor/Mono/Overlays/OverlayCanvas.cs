@@ -966,12 +966,13 @@ namespace UnityEditor.Overlays
 
             if (attrib.defaultDockPosition == DockPosition.Top)
             {
-                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.BeforeSpacer) - (container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer) ? 1 : 0));
+
                 overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, index);
             }
             else if (attrib.defaultDockPosition == DockPosition.Bottom)
             {
-                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.AfterSpacer));
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.AfterSpacer) - (container.ContainsOverlay(overlay, OverlayContainerSection.AfterSpacer) ? 1 : 0));
                 overlay.DockAt(container, OverlayContainerSection.AfterSpacer, index);
             }
             else
@@ -1013,12 +1014,14 @@ namespace UnityEditor.Overlays
             if(container == null)
                 container = overlay is ToolbarOverlay ? defaultToolbarContainer : defaultContainer;
 
+
+
             // Overlays are sorted by their index in containers so we can directly add them to top or bottom without
             // thinking of order
             if (data.dockPosition == DockPosition.Top || container is FloatingOverlayContainer)
-                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer);
             else if (data.dockPosition == DockPosition.Bottom)
-                overlay.DockAt(container, OverlayContainerSection.AfterSpacer, container.GetSectionCount(OverlayContainerSection.AfterSpacer));
+                overlay.DockAt(container, OverlayContainerSection.AfterSpacer);
             else
                 throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
 

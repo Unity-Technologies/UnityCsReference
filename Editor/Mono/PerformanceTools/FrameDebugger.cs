@@ -14,6 +14,7 @@ using UnityEditorInternal.FrameDebuggerInternal;
 
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.Networking.PlayerConnection;
+using UnityEditor.Rendering.Analytics;
 
 namespace UnityEditor
 {
@@ -366,6 +367,8 @@ namespace UnityEditor
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_RepaintFrames = k_NeedToRepaintFrames;
+
+            GraphicsToolLifetimeAnalytic.WindowOpened<FrameDebuggerWindow>();
         }
 
         private void OnDisable()
@@ -378,6 +381,8 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             DisableFrameDebugger();
+
+            GraphicsToolLifetimeAnalytic.WindowClosed<FrameDebuggerWindow>();
         }
 
         private void EnableFrameDebugger()
@@ -410,6 +415,8 @@ namespace UnityEditor
             m_EnablingWaitCounter = 0;
             m_EventDetailsView.Reset();
             RepaintOnLimitChange();
+
+            GraphicsToolUsageAnalytic.ActionPerformed<FrameDebuggerWindow>(nameof(EnableFrameDebugger), Array.Empty<string>());
         }
 
         private void DisableFrameDebugger()
@@ -433,6 +440,8 @@ namespace UnityEditor
             FrameDebuggerStyles.OnDisable();
             m_TreeViewState = null;
             m_TreeView = null;
+
+            GraphicsToolUsageAnalytic.ActionPerformed<FrameDebuggerWindow>(nameof(DisableFrameDebugger), Array.Empty<string>());
         }
 
         internal void RepaintOnLimitChange()

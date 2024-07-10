@@ -22,6 +22,7 @@ namespace UnityEngine
             EnsureDelayedCallWiredUp();
             var awaitable = Awaitable.NewManagedAwaitable();
             _nextFrameAwaitables.Add(awaitable, Time.frameCount + 1);
+            awaitable._managedCompletionQueue = _nextFrameAwaitables;
             if (cancellationToken.CanBeCanceled)
             {
                 WireupCancellation(awaitable, cancellationToken);
@@ -53,6 +54,7 @@ namespace UnityEngine
             EnsureDelayedCallWiredUp();
             var awaitable = Awaitable.NewManagedAwaitable();
             _endOfFrameAwaitables.Add(awaitable, -1);
+            awaitable._managedCompletionQueue = _endOfFrameAwaitables;
             if (cancellationToken.CanBeCanceled)
             {
                 WireupCancellation(awaitable, cancellationToken);
@@ -133,6 +135,10 @@ namespace UnityEngine
             public void Add(Awaitable item, int frameIndex)
             {
                 _awaitables.Add(new AwaitableAndFrameIndex(item, frameIndex));
+            }
+            public void Remove(Awaitable item)
+            {
+                _awaitables.RemoveAll(x => x.Awaitable == item);
             }
             public void Clear()
             {

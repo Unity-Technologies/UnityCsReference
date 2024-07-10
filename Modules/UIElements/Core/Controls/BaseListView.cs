@@ -549,7 +549,33 @@ namespace UnityEngine.UIElements
 
         internal event Action itemsSourceSizeChanged;
 
-        BindingSourceSelectionMode m_BindingSourceSelectionMode;
+        private IVisualElementScheduledItem m_TrackedItem;
+
+        private IVisualElementScheduledItem trackItemCount
+        {
+            get
+            {
+                if (null != m_TrackedItem)
+                    return m_TrackedItem;
+
+                m_TrackedItem = schedule
+                    .Execute(trackCount)
+                    .Until(untilManualBindingSourceSelectionMode);
+                return m_TrackedItem;
+            }
+        }
+
+        private Action m_TrackCount;
+        private Action trackCount => m_TrackCount ??= () =>
+        {
+            if (itemsSource?.Count != m_PreviousRefreshedCount)
+                RefreshItems();
+        };
+
+        private Func<bool> m_WhileAutoAssign;
+        private Func<bool> untilManualBindingSourceSelectionMode => m_WhileAutoAssign ??= () => !autoAssignSource;
+
+        BindingSourceSelectionMode m_BindingSourceSelectionMode = BindingSourceSelectionMode.Manual;
 
         /// <summary>
         /// This property controls whether every element in the list will get its data source setup automatically to the
@@ -571,6 +597,9 @@ namespace UnityEngine.UIElements
                 m_BindingSourceSelectionMode = value;
                 Rebuild();
                 NotifyPropertyChanged(bindingSourceSelectionModeProperty);
+
+                if (autoAssignSource)
+                    trackItemCount.Resume();
             }
         }
 

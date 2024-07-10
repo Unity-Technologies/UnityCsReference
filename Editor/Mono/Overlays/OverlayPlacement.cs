@@ -82,9 +82,11 @@ namespace UnityEditor.Overlays
 
         internal bool DockAt(OverlayContainer container, OverlayContainerSection section)
         {
-            return DockAt(container, section, container.GetSectionCount(section));
+            return DockAt(container, section, container.ContainsOverlay(this, section) ? container.GetSectionCount(section) - 1 : container.GetSectionCount(section));
         }
 
+        // The index must be either less or equal to the section count if this overlay is not in already in the container.
+        // If the overlay is already in the container, the index must be less than the section count
         internal bool DockAt(OverlayContainer container, OverlayContainerSection section, int index)
         {
             //If the overlay is staying in the same container
@@ -93,15 +95,19 @@ namespace UnityEditor.Overlays
             {
                 if (originSection == section && originIndex == index)
                     return true;
-
-                //If the overlay was before the index, removing it will change the size of the container
-                if (originSection == section && originIndex < index)
-                    --index;
             }
 
             this.container?.RemoveOverlay(this);
 
             this.container = container;
+
+            int sectionCount = container.GetSectionCount(section);
+            if (index > sectionCount)
+            {
+                Debug.LogWarning("Trying to dock overlay at an invalid index. Docking at the end of the section instead.");
+                index = sectionCount;
+            }
+
             this.container.InsertOverlay(this, section, index);
 
             floating = container is FloatingOverlayContainer;
@@ -119,9 +125,16 @@ namespace UnityEditor.Overlays
             if (target.container == null)
                 throw new ArgumentException("Target overlay has an invalid container", nameof(target));
 
-            var container = target.container;
-            container.GetOverlayIndex(target, out var section, out var index);
-            return DockAt(container, section, index);
+            var targetContainer = target.container;
+            targetContainer.GetOverlayIndex(target, out var section, out var targetIndex);
+            if (container == targetContainer)
+            {
+                container.GetOverlayIndex(this, out var thisSection, out var thisIndex);
+                if( thisIndex < targetIndex && thisSection == section)
+                    targetIndex--;
+
+            }
+            return DockAt(targetContainer, section, targetIndex);
         }
 
         internal bool DockAfter(Overlay target)
@@ -129,9 +142,16 @@ namespace UnityEditor.Overlays
             if (target.container == null)
                 throw new ArgumentException("Target overlay has an invalid container", nameof(target));
 
-            var container = target.container;
-            container.GetOverlayIndex(target, out var section, out var index);
-            return DockAt(container, section, index + 1);
+            var targetContainer = target.container;
+            targetContainer.GetOverlayIndex(target, out var section, out var targetIndex);
+            if (container == targetContainer)
+            {
+                container.GetOverlayIndex(this, out var thisSection, out var thisIndex);
+                if( thisIndex < targetIndex && thisSection == section)
+                    targetIndex--;
+
+            }
+            return DockAt(targetContainer, section, targetIndex + 1);
         }
 
         public void Undock()
@@ -139,7 +159,7 @@ namespace UnityEditor.Overlays
             if (floating)
                 return;
 
-            DockAt(canvas.floatingContainer, OverlayContainerSection.BeforeSpacer, canvas.floatingContainer.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+            DockAt(canvas.floatingContainer, OverlayContainerSection.BeforeSpacer);
         }
 
         internal void BringToFront()
@@ -147,7 +167,7 @@ namespace UnityEditor.Overlays
             if (!(container is FloatingOverlayContainer))
                 return;
 
-            DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer));
+            DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer) -1);
         }
 
         internal void SetSnappingOffset(Vector2 snapOffset, Vector2 snapOffsetDelta)

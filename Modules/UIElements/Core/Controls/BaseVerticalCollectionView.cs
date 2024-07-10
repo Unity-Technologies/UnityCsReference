@@ -1061,6 +1061,8 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal int m_PreviousRefreshedCount;
+
         /// <summary>
         /// Rebinds all items currently visible.
         /// </summary>

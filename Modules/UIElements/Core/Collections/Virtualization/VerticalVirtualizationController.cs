@@ -103,6 +103,8 @@ namespace UnityEngine.UIElements
         {
             var hasValidBindings = m_CollectionView.HasValidDataAndBindings();
 
+            m_CollectionView.m_PreviousRefreshedCount = m_CollectionView.itemsSource?.Count ?? 0;
+
             for (var i = 0; i < m_ActiveItems.Count; i++)
             {
                 var index = firstVisibleIndex + i;

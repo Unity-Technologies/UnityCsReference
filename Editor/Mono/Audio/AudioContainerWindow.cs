@@ -20,6 +20,11 @@ namespace UnityEditor;
 
 sealed class AudioContainerWindow : EditorWindow
 {
+    /// <summary>
+    /// The cached instance of the window, if it is open.
+    /// </summary>
+    internal static AudioContainerWindow Instance { get; private set; }
+
     internal readonly AudioContainerWindowState State = new();
 
     /// <summary>
@@ -116,6 +121,11 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnEnable()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+
         m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
         m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
         SetTitle();
@@ -130,6 +140,11 @@ sealed class AudioContainerWindow : EditorWindow
         m_ContainerElementsInitialized = false;
         m_CachedElements.Clear();
         m_AddedElements.Clear();
+
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
     void OnFocus()
@@ -1358,19 +1373,16 @@ sealed class AudioContainerWindow : EditorWindow
         /// </summary>
         static string[] OnWillSaveAssets(string[] paths)
         {
-            if (HasOpenInstances<AudioContainerWindow>())
+            // NOTE: this is a global callback that is triggered by changes to ANY project assets of ANY type,
+            // even when the window is closed, so no heavy calls should be done here unless
+            // the window is actually open. To avoid affecting editor performance we use the
+            // cached instance for an early out check rather than EditorWindow.HasOpenInstances.
+            if (Instance == null)
             {
-                var window = focusedWindow as AudioContainerWindow;
-
-                if (window == null)
-                {
-                    // The window is not focused, so make sure we don't focus when getting the reference here.
-                    window = GetWindow<AudioContainerWindow>(false, null, false);
-                }
-
-                window.OnWillSaveAssets(paths);
+                return paths;
             }
 
+            Instance.OnWillSaveAssets(paths);
             return paths;
         }
     }
@@ -1384,25 +1396,23 @@ sealed class AudioContainerWindow : EditorWindow
         /// </summary>
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssets)
         {
-            if (HasOpenInstances<AudioContainerWindow>())
+            // NOTE: this is a global callback that is triggered by changes to ANY project assets of ANY type,
+            // even when the window is closed, so no heavy calls should be done here unless
+            // the window is actually open. To avoid affecting editor performance we use the
+            // cached instance for an early out check rather than EditorWindow.HasOpenInstances.
+            if (Instance == null)
             {
-                var window = focusedWindow as AudioContainerWindow;
-
-                if (window == null)
-                {
-                    // The window is not focused, so make sure we don't focus when getting the reference here.
-                    window = GetWindow<AudioContainerWindow>(false, null, false);
-                }
-
-                if (movedFromAssets.Length > 0)
-                    window.OnAssetsMoved(movedFromAssets);
-
-                if (importedAssets.Length > 0)
-                    window.OnAssetsImported(importedAssets);
-
-                if (deletedAssets.Length > 0)
-                    window.OnAssetsDeleted(deletedAssets);
+                return;
             }
+
+            if (movedFromAssets.Length > 0)
+                Instance.OnAssetsMoved(movedFromAssets);
+
+            if (importedAssets.Length > 0)
+                Instance.OnAssetsImported(importedAssets);
+
+            if (deletedAssets.Length > 0)
+                Instance.OnAssetsDeleted(deletedAssets);
         }
     }
 

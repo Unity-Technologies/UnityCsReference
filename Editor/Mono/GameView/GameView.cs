@@ -731,6 +731,8 @@ namespace UnityEditor
                     return 2;
                 case XRMirrorViewBlitMode.SideBySideOcclusionMesh:
                     return 3;
+                case XRMirrorViewBlitMode.MotionVectors:
+                    return 4;
             }
         }
 
@@ -746,6 +748,8 @@ namespace UnityEditor
                     return XRMirrorViewBlitMode.SideBySide;
                 case 3:
                     return XRMirrorViewBlitMode.SideBySideOcclusionMesh;
+                case 4:
+                    return XRMirrorViewBlitMode.MotionVectors;
             }
         }
 
@@ -764,6 +768,9 @@ namespace UnityEditor
                     break;
                 case 3:
                     UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.OcclusionMesh;
+                    break;
+                case 4:
+                    UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.MotionVectors;
                     break;
             }
 
