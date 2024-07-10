@@ -185,7 +185,7 @@ namespace UnityEditor
             };
 
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
-            public static readonly GUIContent ARM64LightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is only available on Unity for x64 processors. Use Progressive GPU Lightmapper instead.");
+            public static readonly GUIContent appleSiliconCPULightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not available on Apple Silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -938,7 +938,7 @@ namespace UnityEditor
 
             if (!isOpenRLFunctionalForArchitecture && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
             {
-                EditorGUILayout.HelpBox(Styles.ARM64LightmapperWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(Styles.appleSiliconCPULightmapperWarning.text, MessageType.Warning);
             }
             else if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {

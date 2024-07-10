@@ -62,6 +62,7 @@ namespace UnityEngine.XR
         RightEye = 2,
         BothEyes = 3,
         OcclusionMesh = 4,
+        MotionVectors = 5,
     }
 
     [NativeHeader("Modules/VR/ScriptBindings/XR.bindings.h")]

@@ -26,6 +26,8 @@ namespace UnityEngine.XR
         public const int Distort = -5;
         // *MUST* be in sync with the kUnityXRMirrorBlitNone
         public const int None = -6;
+        // *MUST* be in sync with the kUnityXRMirrorBlitMotionVectors
+        public const int MotionVectors = -7;
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]

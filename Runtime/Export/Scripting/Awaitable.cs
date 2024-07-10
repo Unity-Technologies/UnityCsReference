@@ -58,6 +58,7 @@ namespace UnityEngine
         bool _managedAwaitableDone;
         Action _continuation;
         CancellationTokenRegistration? _cancelTokenRegistration;
+        DoubleBufferedAwaitableList _managedCompletionQueue;
         private Awaitable() { }
 
         internal static Awaitable NewManagedAwaitable()
@@ -142,6 +143,7 @@ namespace UnityEngine
                 _managedAwaitableDone = true;
                 continuation = _continuation;
                 _continuation = null;
+                _managedCompletionQueue = null;
             }
             finally
             {
@@ -170,6 +172,7 @@ namespace UnityEngine
                 _handle = AwaitableHandle.NullHandle;
                 var toRethrow = _exceptionToRethrow;
                 _exceptionToRethrow = null;
+                _managedCompletionQueue = null;
                 _continuation = null;
                 if (!ptr.IsManaged && !ptr.IsNull)
                 {
@@ -192,6 +195,7 @@ namespace UnityEngine
             var handle = CheckPointerValidity();
             if (handle.IsManaged)
             {
+                _managedCompletionQueue?.Remove(this);
                 RaiseManagedCompletion(new OperationCanceledException());
             }
             else

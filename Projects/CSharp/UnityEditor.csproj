@@ -1623,6 +1623,12 @@
     <Compile Include="..\..\Editor\Mono\GradientPreviewCache.bindings.cs">
       <Link>Editor\Mono\GradientPreviewCache.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Graphics\Analytics\GraphicsToolLifetimeAnalytic.cs">
+      <Link>Editor\Mono\Graphics\Analytics\GraphicsToolLifetimeAnalytic.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Graphics\Analytics\GraphicsToolUsageAnalytic.cs">
+      <Link>Editor\Mono\Graphics\Analytics\GraphicsToolUsageAnalytic.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Graphics\EditorMaterialUtility.bindings.cs">
       <Link>Editor\Mono\Graphics\EditorMaterialUtility.bindings.cs</Link>
     </Compile>
@@ -5837,6 +5843,30 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageGroup.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageGroup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DeprecatedPackageHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DeprecatedPackageHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DeprecatedVersionHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DeprecatedVersionHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DisabledPackageHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\DisabledPackageHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\HiddenProductHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\HiddenProductHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageBaseHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageBaseHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageHelpBoxWithReadMore.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageHelpBoxWithReadMore.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\ScopedRegistryHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\ScopedRegistryHelpBox.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\VersionTagHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\VersionTagHelpBox.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageItem.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageItem.cs</Link>

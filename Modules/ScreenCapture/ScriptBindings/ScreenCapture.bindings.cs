@@ -51,6 +51,7 @@ namespace UnityEngine
             LeftEye = 1,
             RightEye = 2,
             BothEyes = 3,
+            MotionVectors = 4,
         }
     }
 }

@@ -218,6 +218,7 @@ namespace UnityEditor
             public GUIContent ImportAnimatedCustomProperties = EditorGUIUtility.TrTextContent("Import Animated Custom Properties", "Controls if animated custom properties are imported.");
             public GUIContent ImportConstraints = EditorGUIUtility.TrTextContent("Import Constraints", "Controls if the constraints are imported.");
             public GUIContent RemoveConstantScaleCurves = EditorGUIUtility.TrTextContent("Remove Constant Scale Curves", "Removes constant animation curves with values identical to the object initial scale value.");
+            public GUIContent ClipList = EditorGUIUtility.TrTextContent("Animation Clip List", "List of animation clips included in the model.");
 
             public Styles()
             {
@@ -236,6 +237,7 @@ namespace UnityEditor
             m_ClipList.onRemoveCallback = RemoveClipInList;
             m_ClipList.drawElementCallback = DrawClipElement;
             m_ClipList.drawHeaderCallback = DrawClipHeader;
+            m_ClipList.drawFooterCallback = DrawClipFooter;
             m_ClipList.elementHeight = EditorGUI.kSingleLineHeight;
         }
 
@@ -697,6 +699,7 @@ namespace UnityEditor
 
         private void DrawClipElement(Rect rect, int index, bool selected, bool focused)
         {
+            EditorGUI.BeginProperty(rect, styles.ClipList, m_ClipAnimations);
             ClipInformation info = (ClipInformation)m_ClipList.list[index];
             rect.xMax -= kFrameColumnWidth * 2;
             GUI.Label(rect, info.name, EditorStyles.label);
@@ -705,10 +708,12 @@ namespace UnityEditor
             GUI.Label(rect, info.firstFrame, styles.numberStyle);
             rect.x = rect.xMax;
             GUI.Label(rect, info.lastFrame, styles.numberStyle);
+            EditorGUI.EndProperty();
         }
 
         private void DrawClipHeader(Rect rect)
         {
+            EditorGUI.BeginProperty(rect, styles.ClipList, m_ClipAnimations);
             rect.xMax -= kFrameColumnWidth * 2;
             GUI.Label(rect, styles.Clips, EditorStyles.label);
             rect.x = rect.xMax;
@@ -716,11 +721,19 @@ namespace UnityEditor
             GUI.Label(rect, styles.Start, styles.numberStyle);
             rect.x = rect.xMax;
             GUI.Label(rect, styles.End, styles.numberStyle);
+            EditorGUI.EndProperty();
+        }
+        private void DrawClipFooter(Rect rect)
+        {
+            EditorGUI.BeginProperty(rect, styles.ClipList, m_ClipAnimations);
+            ReorderableList.defaultBehaviours.DrawFooter(rect, m_ClipList);
+            EditorGUI.EndProperty();
         }
 
         void DrawPresetClipEditor()
         {
             AnimationClipInfoProperties clip = GetSelectedClipInfo();
+            EditorGUI.BeginProperty(EditorGUILayout.GetControlRect(), styles.ClipList, m_ClipAnimations);
 
             clip.name = EditorGUILayout.TextField(styles.ClipName, clip.name);
             clip.takeName = EditorGUILayout.TextField(styles.TakeName, clip.takeName);
@@ -741,6 +754,7 @@ namespace UnityEditor
                 clip.additiveReferencePoseFrame = EditorGUILayout.FloatField(AnimationClipEditor.Styles.AdditiveReferencePoseFrame, clip.additiveReferencePoseFrame);
                 EditorGUI.indentLevel--;
             }
+            EditorGUI.EndProperty();
         }
 
         void AnimationSplitTable()

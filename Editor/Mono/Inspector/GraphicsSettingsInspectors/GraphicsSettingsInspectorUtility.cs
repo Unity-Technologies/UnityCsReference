@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Reflection;
 using System.Text;
-using UnityEditor.Build;
-using UnityEditor.Build.Reporting;
 using UnityEditor.Rendering;
 using UnityEditor.Rendering.Settings;
 using UnityEditor.UIElements;
@@ -297,14 +295,6 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         }
 
         internal static void ReloadGraphicsSettingsEditorIfNeeded()
-        {
-            if (BuildPipeline.isBuildingPlayer)
-                return;
-
-            ReloadGraphicsSettingsEditorIfOpened();
-        }
-
-        private static void ReloadGraphicsSettingsEditorIfOpened()
         {
             if (!EditorWindow.HasOpenInstances<ProjectSettingsWindow>())
                 return;
