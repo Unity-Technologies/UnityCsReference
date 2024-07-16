@@ -133,6 +133,16 @@ namespace Unity.UI.Builder
             m_LiveReloadTriggerMethod = ReflectionExtensions.GetStaticMethodByReflection(typeof(UIElementsUtility), "InMemoryAssetsHaveBeenChanged");
         }
 
+        internal VisualElement GetFirstSelectedElement()
+        {
+            foreach (var element in m_Selection)
+            {
+                return element;
+            }
+
+            return null;
+        }
+        
         public void AssignNotifiers(IEnumerable<IBuilderSelectionNotifier> notifiers)
         {
             m_Notifiers.Clear();

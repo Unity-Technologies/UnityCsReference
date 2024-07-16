@@ -463,7 +463,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Hierarchy")]
         internal static void OpenQuickSearch()
         {
-            SearchUtils.OpenWithProviders(type);
+            SearchUtils.OpenWithContextualProviders(type);
         }
 
         [SearchTemplate(description = "Find mesh object", providerId = type)] internal static string ST1() => @"t=MeshFilter vertices>=1024";

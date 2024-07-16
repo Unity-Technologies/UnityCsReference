@@ -64,7 +64,7 @@ namespace UnityEditor.AddComponent
 
         private void OnItemSelected(AdvancedDropdownItem item)
         {
-            if (item is ComponentDropdownItem cdi)
+            if (item is ComponentDropdownItem cdi && !string.IsNullOrEmpty(cdi.menuPath))
             {
                 SendUsabilityAnalyticsEvent(new AnalyticsEventData
                 {

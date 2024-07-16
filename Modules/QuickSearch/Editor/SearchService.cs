@@ -608,9 +608,9 @@ namespace UnityEditor.Search
 
         private static void RefreshProviders()
         {
-            Providers = TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
+            Providers = SearchUtils.SortProvider(TypeCache.GetMethodsWithAttribute<SearchItemProviderAttribute>()
                 .Select(LoadProvider)
-                .Where(provider => provider != null)
+                .Where(provider => provider != null))
                 .ToList();
             s_SearchServiceProvider = SearchServiceProvider.CreateProvider();
         }
@@ -709,7 +709,8 @@ namespace UnityEditor.Search
         /// <returns>Returns the QuickSearch window.</returns>
         public static ISearchView ShowContextual(params string[] providerIds)
         {
-            return SearchUtils.OpenWithProviders(null, providerIds);
+            return SearchUtils.OpenWithContextualProviders(null, providerIds,
+                contextualFlags: SearchUtils.OpenWithContextualProvidersFlags.None);
         }
 
         /// <summary>
