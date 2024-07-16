@@ -823,7 +823,7 @@ namespace UnityEditor.Search
                     return true;
                 }
             }
-            else if (evt.keyCode == KeyCode.Delete && (cursorAtBeginning || cursorAtEnd))
+            else if (evt.keyCode == KeyCode.Backspace || evt.keyCode == KeyCode.Delete)
             {
                 var cb = currentBlock;
                 if (cb != null && !cb.@readonly)

@@ -21,6 +21,9 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void SmartResetObjectToDefault([NotNull] Object target);
 
+        [FreeFunction]
+        internal static extern void FinalizeObjectAndAwake([NotNull] Object target);
+
         [FreeFunction(ThrowsException = true)]
         static extern Object CreateDefaultInstance([NotNull] Type type);
 

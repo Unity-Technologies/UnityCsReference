@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
-using UnityEngine;
+using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -37,15 +37,15 @@ namespace Unity.UI.Builder
         {
             var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
 
-            if ((!documentElement.IsPartOfCurrentDocument() || BuilderSharedStyles.IsDocumentElement(documentElement)) &&
+            if ((!documentElement.IsPartOfCurrentDocument() ||
+                 BuilderSharedStyles.IsDocumentElement(documentElement)) &&
                 !BuilderSharedStyles.IsSelectorElement(documentElement))
                 return;
 
             SetReorderingZonesEnabled(false);
-                
             FocusOnRenameTextField();
         }
-        
+
         internal void SetReorderingZonesEnabled(bool value)
         {
             m_ReorderZoneAbove.pickingMode = value ? PickingMode.Position : PickingMode.Ignore;
@@ -62,6 +62,12 @@ namespace Unity.UI.Builder
 
         void FocusOnRenameTextField()
         {
+            if (IsRenamingActive())
+            {
+                m_RenameTextField.Focus();
+                return;
+            }
+
             var nameLabel = this.Q<Label>(classes: BuilderConstants.ExplorerItemNameLabelClassName);
             var labelContainer = this.Q(classes: BuilderConstants.ExplorerItemSelectorLabelContClassName);
 
@@ -70,12 +76,40 @@ namespace Unity.UI.Builder
             nameLabel?.AddToClassList(BuilderConstants.HiddenStyleClassName);
             labelContainer?.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
-            var baseInput = m_RenameTextField.Q(TextField.textInputUssName).Q<TextElement>();
-            if (baseInput.focusController != null)
-                // Since renameTextfield isn't attached to a panel yet, we are using DoFocusChange() to bypass canGrabFocus.
-                baseInput.focusController.DoFocusChange(baseInput);
+            m_RenameTextField.RegisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
+        }
 
-            baseInput.selectingManipulator.m_SelectingUtilities.OnFocus();
+        private void OnRenameTextFieldGeometryChanged(GeometryChangedEvent evt)
+        {
+            m_RenameTextField.UnregisterCallback<GeometryChangedEvent>(OnRenameTextFieldGeometryChanged);
+            m_RenameTextField.delegatesFocus = true;
+            m_RenameTextField.Focus();
+
+            var typeLabel = this.Q<Label>(classes: BuilderConstants.ElementTypeClassName);
+            if (m_RenameTextField.text == string.Empty && typeLabel != null)
+            {
+                m_RenameTextField.text = typeLabel.text;
+            }
+        }
+
+        public void ResetRenamingField()
+        {
+            var documentElement =
+                GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+            SetRenameTextFieldValueFromDocumentElement(documentElement);
+            m_RenameTextField.textEdition.SaveValueAndText();
+        }
+
+        private void SetRenameTextFieldValueFromDocumentElement(VisualElement documentElement)
+        {
+            if (BuilderSharedStyles.IsSelectorElement(documentElement))
+            {
+                m_RenameTextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(documentElement));
+            }
+            else
+            {
+                m_RenameTextField.SetValueWithoutNotify(documentElement.name);
+            }
         }
 
         public TextField CreateRenamingTextField(VisualElement documentElement, Label nameLabel, BuilderSelection selection)
@@ -87,32 +121,25 @@ namespace Unity.UI.Builder
             };
             m_RenameTextField.AddToClassList(BuilderConstants.ExplorerItemRenameTextfieldClassName);
 
-            if (BuilderSharedStyles.IsSelectorElement(documentElement))
-            {
-                m_RenameTextField.SetValueWithoutNotify(BuilderSharedStyles.GetSelectorString(documentElement));
-            }
-            else
-            {
-                m_RenameTextField.SetValueWithoutNotify(
-                    string.IsNullOrEmpty(documentElement.name)
-                    ? documentElement.typeName
-                    : documentElement.name);
-            }
+            SetRenameTextFieldValueFromDocumentElement(documentElement);
+
             m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
 
             m_RenameTextField.RegisterCallback<KeyDownEvent>((e) =>
             {
-                if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter || e.keyCode == KeyCode.Escape)
+                if (e.character == '\n')
                 {
-                    Focus();
-                    return;
+                    // Ignoring the second keydown evt sent because it will cause the textfield
+                    // to lose focus when it just received it.
+                    e.StopPropagation();
                 }
-
-                e.StopImmediatePropagation();
-            });
+            }, TrickleDown.TrickleDown);
 
             m_RenameTextField.RegisterCallback<FocusOutEvent>(e =>
             {
+                if (!IsRenamingActive())
+                    return;
+
                 OnEditTextFinished(documentElement, nameLabel, selection);
             });
 
@@ -121,8 +148,27 @@ namespace Unity.UI.Builder
                 // Stop propagation when clicking on the text field so we don't get back focus to the TreeView
                 e.StopImmediatePropagation();
             });
-            
+
+            // When escaping to cancel rename, we don't want to refocus on parent element, we want to refocus on the TreeView.
+            m_RenameTextField.textEdition.MoveFocusToCompositeRoot = null;
+
             return m_RenameTextField;
+        }
+
+        internal bool IsRenameTextValid()
+        {
+            var documentElement = GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName) as VisualElement;
+            var value = m_RenameTextField.text ?? documentElement.name;
+
+            if (documentElement.IsSelector())
+            {
+                value = value.Trim();
+                return BuilderNameUtilities.styleSelectorRegex.IsMatch(value);
+            }
+
+            value = value.Trim();
+            value = value.TrimStart('#');
+            return BuilderNameUtilities.attributeRegex.IsMatch(value);
         }
 
         void OnEditTextFinished(VisualElement documentElement, Label nameLabel,
@@ -130,6 +176,23 @@ namespace Unity.UI.Builder
         {
             var vea = documentElement.GetVisualElementAsset();
             var value = m_RenameTextField.text ?? documentElement.name;
+
+            if (!IsRenameTextValid() && (selection.isEmpty || selection.selectionCount > 1 || selection.GetFirstSelectedElement() != documentElement))
+            {
+                // Selection changed while renaming and renaming is invalid. Cancel renaming.
+                m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
+                if (documentElement.IsSelector())
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.StyleSelectorValidationSpacialCharacters, "Name"));
+                    selection.NotifyOfStylingChange();
+                }
+                else
+                {
+                    Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
+                }
+                selection.NotifyOfHierarchyChange();
+                return;
+            }
 
             if (documentElement.IsSelector())
             {
@@ -192,6 +255,7 @@ namespace Unity.UI.Builder
                 vea.SetAttribute("name", value);
             }
 
+            m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
             selection.NotifyOfHierarchyChange();
         }
 

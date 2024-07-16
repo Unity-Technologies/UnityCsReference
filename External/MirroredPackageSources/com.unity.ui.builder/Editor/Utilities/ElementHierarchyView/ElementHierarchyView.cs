@@ -169,12 +169,14 @@ namespace Unity.UI.Builder
                 {
                     case KeyCode.Return:
                     case KeyCode.KeypadEnter:
-                        if (Application.platform == RuntimePlatform.OSXEditor)
+                        if (explorerItem.IsRenamingActive())
+                            // end renaming and return focus
+                            Focus();
+                        else if (Application.platform == RuntimePlatform.OSXEditor)
                         {
                             explorerItem.ActivateRenameElementMode();
-                            evt.PreventDefault();
+                            evt.StopPropagation();
                         }
-
                         break;
                     case KeyCode.F2:
                         if (Application.platform != RuntimePlatform.OSXEditor)
@@ -183,6 +185,17 @@ namespace Unity.UI.Builder
                             evt.PreventDefault();
                         }
                         break;
+                    case KeyCode.Escape:
+                        if (explorerItem.IsRenamingActive())
+                        {
+                            if (!explorerItem.IsRenameTextValid())
+                            {
+                                explorerItem.ResetRenamingField();
+                            }
+                            Focus();
+                        }
+                        
+                        break;                    
                 }
             }, TrickleDown.TrickleDown);
         }
@@ -255,6 +268,8 @@ namespace Unity.UI.Builder
             explorerItem.Clear();
 
             // Pre-emptive cleanup.
+            m_RenamingScheduledItem?.Pause();
+            m_RenamingScheduledItem = null;
             var row = explorerItem.parent.parent;
             row.RemoveFromClassList(BuilderConstants.ExplorerHeaderRowClassName);
             row.RemoveFromClassList(BuilderConstants.ExplorerItemHiddenClassName);

@@ -67,7 +67,7 @@ namespace UnityEditor
                     cleanPath);
                 var obj = AssetDatabase.LoadMainAssetAtPath(cleanPath);
                 var name = obj.name;
-                ObjectFactory.SmartResetObjectToDefault(obj);
+                ObjectFactory.FinalizeObjectAndAwake(obj);
                 obj.name = name;
                 AssetDatabase.SaveAssetIfDirty(obj);
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);

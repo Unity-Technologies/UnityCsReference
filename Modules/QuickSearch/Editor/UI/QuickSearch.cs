@@ -199,6 +199,11 @@ namespace UnityEditor.Search
             return context.options.HasFlag(SearchFlags.GeneralSearchWindow);
         }
 
+        internal static SearchFlags GetAdditionalGeneralSearchWindowFlags()
+        {
+            return SearchFlags.AllProvidersAvailable | SearchFlags.UseSessionSettings;
+        }
+
         internal bool HasSessionSettings()
         {
             return m_ContextHash != 0;
@@ -266,7 +271,7 @@ namespace UnityEditor.Search
 
         public static QuickSearch Create<T>(SearchContext context, string topic = "Unity", SearchFlags flags = SearchFlags.OpenDefault) where T : QuickSearch
         {
-            context = context ?? SearchService.CreateContext("");
+            context = context ?? SearchService.CreateContext("", flags);
             if (context != null)
                 context.options |= flags;
             var viewState = new SearchViewState(context) { title = topic };
@@ -323,10 +328,17 @@ namespace UnityEditor.Search
                 m_ViewState.context = newContext ?? SearchService.CreateContext(searchText, SearchFlags.None);
             }
 
+            if (IsGeneralSearchWindow())
+            {
+                context.options |= GetAdditionalGeneralSearchWindowFlags();
+            }
+
             context.searchView = this;
             context.focusedWindow = m_LastFocusedWindow;
             context.asyncItemReceived -= OnAsyncItemsReceived;
             context.asyncItemReceived += OnAsyncItemsReceived;
+
+            UpdateAvailableProviders();
 
             m_FilteredItems?.Dispose();
             m_FilteredItems = new GroupedSearchList(context);
@@ -508,7 +520,8 @@ namespace UnityEditor.Search
             evt.intPayload1 = viewState.tableConfig != null ? 1 : 0;
             SearchAnalytics.SendEvent(evt);
 
-            activeQuery = query;
+            if (!query.IsTemporaryQuery())
+                activeQuery = query;
 
             SaveItemCountToPropertyDatabase(false);
             SaveLastUsedTimeToPropertyDatabase();
@@ -630,12 +643,15 @@ namespace UnityEditor.Search
             RefreshBuilder();
 
             UpdateWindowTitle();
-            var contextProviders = context.GetProviders();
-            m_AvailableProviders = SearchUtils.SortProvider(IsGeneralSearchWindow()
-                    ? contextProviders.Concat(SearchService.Providers).Distinct()
-                    : contextProviders).ToList();
-
+            UpdateAvailableProviders();
             s_GlobalViewState = null;
+        }
+
+        void UpdateAvailableProviders()
+        {
+            var contextProviders = context.GetProviders();
+            var availableProviders = context.options.HasAny(SearchFlags.AllProvidersAvailable) ? contextProviders.Concat(SearchService.Providers).Distinct() : contextProviders;
+            m_AvailableProviders = SearchUtils.SortProvider(availableProviders).ToList();
         }
 
         private void InitializeSavedSearches()
@@ -1004,7 +1020,7 @@ namespace UnityEditor.Search
         {
             var toggledEnabled = !context.IsEnabled(providerId);
             var provider = SearchService.GetProvider(providerId);
-            if (provider != null && HasSessionSettings())
+            if (provider != null)
             {
                 SearchService.SetActive(providerId, toggledEnabled);
                 SearchSettings.Save();
@@ -2403,6 +2419,10 @@ namespace UnityEditor.Search
             {
                 m_ContextHash = generalWindowContextHash;
             }
+            else if (context.options.HasFlag(SearchFlags.UseSessionSettings) && !string.IsNullOrEmpty(viewState.sessionName))
+            {
+                m_ContextHash = viewState.sessionName.GetHashCode();
+            }
             else
             {
                 m_ContextHash = 0;
@@ -2604,16 +2624,14 @@ namespace UnityEditor.Search
         }
 
         [CommandHandler("OpenQuickSearchInContext")]
-        static void OpenQuickSearchInContextCommand(CommandExecuteContext c)
+        internal static void OpenFromContextWindowCommand(CommandExecuteContext c)
         {
+            // Called by the Jump Button in Hierarchy and Project Browser
             var query = c.GetArgument<string>(0);
             var sourceContext = c.GetArgument<string>(1);
-            var wasReused = HasOpenInstances<QuickSearch>();
-            var ignoreRestoreContext = c.GetArgument(2, false);
-            SearchUtils.OpenFromContextWindow(query, sourceContext, ignoreRestoreContext, true);
+            SearchUtils.OpenFromContextWindow(query, sourceContext);
             c.result = true;
         }
-
 
         [Shortcut("Help/Search Contextual")]
         internal static void OpenContextual()
