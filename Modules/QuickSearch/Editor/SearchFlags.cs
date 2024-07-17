@@ -66,6 +66,16 @@ namespace UnityEditor.Search
         /// Default Search Flag
         /// </summary>
         Default = Sorted,
+        
+        /// <summary>
+        /// All SearchProviders are available in the Window.
+        /// </summary>
+        AllProvidersAvailable = 1 << 22,
+
+        /// <summary>
+        /// Persist the SearchContext state in between sessions using the SearchViewState.sessionName as its data key.
+        /// </summary>
+        UseSessionSettings = 1 << 23,
 
         /// <summary>
         /// Always show query errors even when there are results available.

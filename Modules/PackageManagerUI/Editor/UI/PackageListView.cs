@@ -162,7 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             selection ??= page.GetSelection();
-            var oldSelectedVisualStates = selectedItems.Select(item => item as VisualState).ToArray();
+            var oldSelectedVisualStates = selectedItems.OfType<VisualState>().ToArray();
             if (oldSelectedVisualStates.Length == selection.Count && oldSelectedVisualStates.All(v => selection.Contains(v.packageUniqueId)))
                 return;
 

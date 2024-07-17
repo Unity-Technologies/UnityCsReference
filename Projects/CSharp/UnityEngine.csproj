@@ -2304,9 +2304,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\MouseManipulator.cs">
       <Link>Modules\UIElements\Core\MouseManipulator.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Native\ImmediateStylePainter.bindings.cs">
-      <Link>Modules\UIElements\Core\Native\ImmediateStylePainter.bindings.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs">
       <Link>Modules\UIElements\Core\Native\Renderer\MeshWriteDataInterface.bindings.cs</Link>
     </Compile>
@@ -2834,6 +2831,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TextShadow.cs">
       <Link>Modules\UIElements\Core\TextShadow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextHandle.cs">
+      <Link>Modules\UIElements\Core\Text\ATGTextHandle.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\PanelTextSettings.cs">
       <Link>Modules\UIElements\Core\Text\PanelTextSettings.cs</Link>
@@ -4016,6 +4016,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\AttachmentDescriptor.cs">
       <Link>Runtime\Export\RenderPipeline\AttachmentDescriptor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\RenderPipeline\BitOperationUtils.cs">
+      <Link>Runtime\Export\RenderPipeline\BitOperationUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\RenderPipeline\BlendState.cs">
       <Link>Runtime\Export\RenderPipeline\BlendState.cs</Link>

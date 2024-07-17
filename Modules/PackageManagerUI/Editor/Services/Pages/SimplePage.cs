@@ -68,7 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             RebuildAndReorderVisualStates();
             RefreshSupportedStatusFiltersOnEntitlementPackageChange();
             TriggerListRebuild();
-            UpdateVisualStateVisibilityWithSearchText();
+            FilterPackagesBySearchText();
         }
 
         public override void OnActivated()

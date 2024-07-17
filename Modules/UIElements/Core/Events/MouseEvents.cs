@@ -620,6 +620,14 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public class WheelEvent : MouseEventBase<WheelEvent>
     {
+        /// <summary>
+        /// The magnitude of WheelEvent.delta that corresponds to exactly one tick of the scroll wheel.
+        /// </summary>
+        /// <remarks>
+        /// UIToolkit's scroll factor is the same as IMGUI's scroll factor both in Editor and Runtime.
+        /// </remarks>
+        public const float scrollDeltaPerTick = Event.scrollWheelDeltaPerTick;
+
         static WheelEvent()
         {
             SetCreateFunction(() => new WheelEvent());

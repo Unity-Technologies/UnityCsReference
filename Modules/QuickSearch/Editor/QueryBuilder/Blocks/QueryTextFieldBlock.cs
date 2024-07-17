@@ -20,6 +20,7 @@ namespace UnityEditor.Search
             hideMenu = true;
             value = string.Empty;
             m_SearchField = searchField;
+            m_SearchField?.GetTextElement()?.RegisterCallback<PointerDownEvent>(OnPointerDownEvent, useTrickleDown: TrickleDown.TrickleDown);
         }
 
         public override string ToString() => value;

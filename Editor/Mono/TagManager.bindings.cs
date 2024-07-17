@@ -102,5 +102,14 @@ namespace UnityEditor
 
         [NativeMethod]
         internal extern string RenderingLayerToString(int index);
+
+        internal static Action onRenderingLayersChanged;
+
+        [RequiredByNativeCode]
+        internal static void OnRenderingLayersChanged()
+        {
+            onRenderingLayersChanged?.Invoke();
+        }
+
     }
 }

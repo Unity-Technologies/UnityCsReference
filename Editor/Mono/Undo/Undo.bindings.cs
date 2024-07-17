@@ -90,11 +90,11 @@ namespace UnityEditor
         }
 
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
-        private static extern void GetUndoListInternal(object undoList, out int undoCursorPos);
+        private static extern void GetUndoListInternal(object undoList, out int undoCursorPos, bool serialized);
 
-        internal static void GetUndoList(List<string> undoList, out int undoCursor)
+        internal static void GetUndoList(List<string> undoList, out int undoCursor, bool serialized = false)
         {
-            GetUndoListInternal(undoList, out undoCursor);
+            GetUndoListInternal(undoList, out undoCursor, serialized);
         }
 
         public static void RegisterCompleteObjectUndo(Object objectToUndo, string name)

@@ -86,8 +86,6 @@ namespace UnityEditor.Search
             Add(m_ScrollView);
 
             HideElements(m_ActiveElements);
-
-            Refresh();
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
@@ -97,6 +95,8 @@ namespace UnityEditor.Search
             On(SearchEvent.RefreshContent, OnRefreshed);
             On(SearchEvent.SelectionHasChanged, OnSelectionChanged);
             RegisterCallback<GeometryChangedEvent>(OnPreviewSizeChanged);
+
+            Refresh();
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)

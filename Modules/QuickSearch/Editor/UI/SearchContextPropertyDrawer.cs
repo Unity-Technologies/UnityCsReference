@@ -18,31 +18,37 @@ namespace UnityEditor.Search
 
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
+            position.height = EditorGUI.GetSinglePropertyHeight(property, label);
             var searchContextAttribute = (SearchContextAttribute)attribute;
-            var objType = fieldInfo.FieldType;
             var searchContextFlags = searchContextAttribute.flags;
-            var context = CreateContextFromAttribute(searchContextAttribute);
-            context.runtimeContext = CreateRuntimeSearchContextFromAttribute(property, objType);
-            ObjectField.DoObjectField(position, property, objType, label, context, searchContextFlags);
+            GetSearchContextDataFromProperty(property, searchContextAttribute, out var searchContext, out var objType);
+            ObjectField.DoObjectField(position, property, objType, label, searchContext, searchContextFlags);
         }
 
         public override VisualElement CreatePropertyGUI(SerializedProperty prop)
         {
             var searchContextAttribute = (SearchContextAttribute)attribute;
-            var runtimeContext = CreateRuntimeSearchContextFromAttribute(prop, fieldInfo.FieldType);
+            GetSearchContextDataFromProperty(prop, searchContextAttribute, out var searchContext, out var objectType);
             ObjectField obj = new ObjectField()
             {
                 name = kVisualElementName,
                 label = preferredLabel,
                 bindingPath = prop.propertyPath,
-                objectType = fieldInfo.FieldType,
+                objectType = objectType,
                 searchViewFlags = searchContextAttribute.flags,
-                searchContext = CreateContextFromAttribute(searchContextAttribute)
+                searchContext = searchContext
             };
-            obj.searchContext.runtimeContext = runtimeContext;
             obj.AddToClassList(ObjectField.alignedFieldUssClassName);
 
             return obj;
+        }
+
+        internal static void GetSearchContextDataFromProperty(SerializedProperty property, SearchContextAttribute searchContextAttribute, out SearchContext searchContext, out Type objectType)
+        {
+            objectType = GetPropertyType(property);
+            searchContext = CreateContextFromAttribute(searchContextAttribute);
+            var runtimeSearchContext = CreateRuntimeSearchContextFromAttribute(property, objectType);
+            searchContext.runtimeContext = runtimeSearchContext;
         }
 
         internal static RuntimeSearchContext CreateRuntimeSearchContextFromAttribute(SerializedProperty property, Type objType)
@@ -103,6 +109,12 @@ namespace UnityEditor.Search
             }
 
             return null;
+        }
+
+        static Type GetPropertyType(SerializedProperty property)
+        {
+            ScriptAttributeUtility.GetFieldInfoFromProperty(property, out var type);
+            return type;
         }
     }
 }

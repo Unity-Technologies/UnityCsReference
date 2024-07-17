@@ -13,7 +13,7 @@ namespace UnityEditor.PackageManager
         private static readonly Regex s_OrganizationNameRegEx = new Regex(@"^([a-z\d][a-z\d\-_]{0,99})$");
         private static readonly Regex s_AllowedSemverRegEx = new Regex(@"^(?<major>0|[1-9]\d*)\.(?<minor>0|[1-9]\d*)\.(?<patch>0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$");
         private static readonly Regex s_UnityMajorVersionRegEx = new Regex(@"^([1-9][0-9]{3})$");
-        private static readonly Regex s_UnityMinorVersionRegEx = new Regex(@"^([1-9])$");
+        private static readonly Regex s_UnityMinorVersionRegEx = new Regex(@"^([0-9])$");
         private static readonly Regex s_UnityReleaseVersionRegEx = new Regex(@"^(0|[1-9]\d*)([abfp])(0|[1-9]\d*)$");
 
         public static bool ValidateCompleteName(string completeName)

@@ -104,7 +104,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             base.OnActivated();
             TriggerListRebuild();
-            UpdateVisualStateVisibilityWithSearchText();
+            FilterPackagesBySearchText();
             TriggerOnSelectionChanged();
         }
 
@@ -240,7 +240,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 TriggerOnListUpdate(added: addedPackages, removed: removedPackages);
             }
 
-            UpdateVisualStateVisibilityWithSearchText();
+            FilterPackagesBySearchText();
+        }
+
+        [ExcludeFromCodeCoverage]
+        public override void FilterPackagesBySearchText()
+        {
+            // For My Assets page, the packages we received from the API is already filtered by the search algorithm on the backend side.
+            // Since we want to have the same search experience as the Asset Store website, we don't apply any local search text filtering
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)

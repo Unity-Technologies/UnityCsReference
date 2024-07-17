@@ -46,24 +46,28 @@ namespace UnityEngine.TextCore.Text
                         continue;
 
                     var glyphRect = glyph.glyphRect;
+                    var padding = settings.vertexPadding / 64.0f;
 
-                    Vector2 uv0;
-                    uv0.x = (float)glyphRect.x / fa.atlasWidth;
-                    uv0.y = (float)glyphRect.y / fa.atlasHeight;
-                    Vector2 uv1;
-                    uv1.x = uv0.x;
-                    uv1.y = (float)(glyphRect.y + glyphRect.height) / fa.atlasHeight;
-                    Vector2 uv2;
-                    uv2.x = (float)(glyphRect.x + glyphRect.width) / fa.atlasWidth;
-                    uv2.y = uv1.y;
-                    Vector2 uv3;
-                    uv3.x = uv2.x;
-                    uv3.y = uv0.y;
+                    Vector2 bottomLeftUV; // Bottom Left
+                    bottomLeftUV.x = (float)(glyphRect.x - padding) / fa.atlasWidth;
+                    bottomLeftUV.y = (float)(glyphRect.y - padding) / fa.atlasHeight;
 
-                    textElementInfos[j].bottomLeft.uv0 = uv0;
-                    textElementInfos[j].topLeft.uv0 = uv1;
-                    textElementInfos[j].topRight.uv0 = uv2;
-                    textElementInfos[j].bottomRight.uv0 = uv3;
+                    Vector2 topLeftUV; // Top Left
+                    topLeftUV.x = bottomLeftUV.x;
+                    topLeftUV.y = (float)(glyphRect.y + glyphRect.height + padding) / fa.atlasHeight;
+
+                    Vector2 topRightUV; // Top Right
+                    topRightUV.x = (float)(glyphRect.x + glyphRect.width + padding) / fa.atlasWidth;
+                    topRightUV.y = topLeftUV.y;
+
+                    Vector2 bottomRightUV; // Bottom Right
+                    bottomRightUV.x = topRightUV.x;
+                    bottomRightUV.y = bottomLeftUV.y;
+
+                    textElementInfos[j].bottomLeft.uv0 = bottomLeftUV;
+                    textElementInfos[j].topLeft.uv0 = topLeftUV;
+                    textElementInfos[j].topRight.uv0 = topRightUV;
+                    textElementInfos[j].bottomRight.uv0 = bottomRightUV;
                 }
                 previousLastGlyphIndex = textInfo.fontAssetLastGlyphIndex[i];
             }
@@ -71,8 +75,12 @@ namespace UnityEngine.TextCore.Text
             return textInfo;
         }
 
-        [NativeMethod(Name = "TextLib::GenerateText")]
+        [NativeMethod(Name = "TextLib::GenerateTextMesh")]
         private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NativeMethod(Name = "TextLib::MeasureText")]
+        internal extern Vector2 MeasureText(NativeTextGenerationSettings settings);
 
         internal static class BindingsMarshaller
         {

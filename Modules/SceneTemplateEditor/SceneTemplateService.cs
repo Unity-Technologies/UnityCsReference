@@ -417,7 +417,7 @@ namespace UnityEditor.SceneTemplate
                     var oldDependencyFolder = Path.Combine(s_CurrentInMemorySceneState.rootFolder, s_CurrentInMemorySceneState.dependencyFolderName);
                     var newDependencyFolder = Path.Combine(directory, filenameWithoutExt);
                     if (Directory.Exists(newDependencyFolder))
-                        SceneTemplateUtils.DeleteAsset(newDependencyFolder);
+                        newDependencyFolder = AssetDatabase.GenerateUniqueAssetPath(newDependencyFolder);
                     var errorMsg = AssetDatabase.MoveAsset(oldDependencyFolder, newDependencyFolder);
                     if (!string.IsNullOrEmpty(errorMsg))
                     {

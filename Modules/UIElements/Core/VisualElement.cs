@@ -66,9 +66,11 @@ namespace UnityEngine.UIElements
         StyleInitialized = 1 << 13,
         // Element is not rendered, but we keep the generated geometry in case it is shown later
         DisableRendering = 1 << 14,
+        // The DataSource tracking of the element should not ne processed when the element has not been configured properly
+        DetachedDataSource = 1 << 15,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | DetachedDataSource
     }
 
     /// <summary>
@@ -1618,7 +1620,7 @@ namespace UnityEngine.UIElements
                 // Better to do some things here before we call the user's callback as some state may be modified during the callback.
                 UnregisterRunningAnimations();
                 CreateBindingRequests();
-                TrackSource(dataSource, null);
+                DetachDataSource();
 
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
@@ -1647,7 +1649,7 @@ namespace UnityEngine.UIElements
 
                 RegisterRunningAnimations();
                 ProcessBindingRequests();
-                TrackSource(null, dataSource);
+                AttachDataSource();
 
                 // We need to reset any visual pseudo state
                 pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
@@ -2449,6 +2451,12 @@ namespace UnityEngine.UIElements
         {
             CheckUserKeyArgument(key);
             return m_PropertyBag?.ContainsKey(key) == true;
+        }
+
+        internal bool ClearProperty(PropertyName key)
+        {
+            CheckUserKeyArgument(key);
+            return m_PropertyBag?.Remove(key) ?? false;
         }
 
         static void CheckUserKeyArgument(PropertyName key)

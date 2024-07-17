@@ -911,7 +911,7 @@ namespace UnityEditor.Search.Providers
         [Shortcut("Help/Search/Assets")]
         internal static void PopQuickSearch()
         {
-            SearchUtils.OpenWithProviders(type, FindProvider.providerId);
+            SearchUtils.OpenWithContextualProviders(type, FindProvider.providerId);
         }
 
         [SearchTemplate(description = "Find all textures", providerId = type)] internal static string ST1() => @"t:texture";

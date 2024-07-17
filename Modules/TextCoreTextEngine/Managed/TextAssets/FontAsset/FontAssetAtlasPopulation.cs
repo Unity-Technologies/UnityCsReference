@@ -523,6 +523,10 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Set texture upload mode to batching texture.Apply()
+            // This will be set back to true in TryAddGlyphToTexture
+            // It makes no sense to force to apply the texture per glyph
+            // TODO: during the refactor, make it always false and remove the api
+            // once we are certain all code path call RegisterAtlasTextureForApply
             FontEngine.SetTextureUploadMode(false);
 
             if (TryAddGlyphToTexture(glyphIndex, out glyph, populateLigatures))
@@ -534,7 +538,8 @@ namespace UnityEngine.TextCore.Text
                 // Create new atlas texture
                 SetupNewAtlasTexture();
 
-                if(TryAddGlyphToTexture(glyphIndex, out glyph, populateLigatures))
+                FontEngine.SetTextureUploadMode(false);
+                if (TryAddGlyphToTexture(glyphIndex, out glyph, populateLigatures))
                     return true;
             }
 

@@ -78,8 +78,17 @@ namespace UnityEngine.UIElements
             float roundedHeight = AlignmentUtils.CeilToPixelGrid(measuredHeight, pixelsPerPoint, 0.0f);
             var roundedValues = new Vector2(roundedWidth, roundedHeight);
 
-            te.uitkTextHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);
-            te.uitkTextHandle.RoundedSizes = roundedValues;
+            if (IsAdvancedTextEnabledForElement(te))
+            {
+                te.uitkTextHandle.ATGMeasuredSizes = new Vector2(measuredWidth, measuredHeight);
+                te.uitkTextHandle.ATGRoundedSizes = roundedValues;
+
+            }
+            else
+            {
+                te.uitkTextHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);
+                te.uitkTextHandle.RoundedSizes = roundedValues;
+            }
 
             return roundedValues;
         }
@@ -127,14 +136,6 @@ namespace UnityEngine.UIElements
             return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
         }
 
-        internal static float ConvertPixelUnitsToTextCoreRelativeUnits(VisualElement ve, FontAsset fontAsset)
-        {
-            // Convert the text settings pixel units to TextCore relative units
-            float paddingPercent = 1.0f / fontAsset.atlasPadding;
-            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / ve.computedStyle.fontSize.value;
-            return paddingPercent * pointSizeRatio;
-        }
-
         internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)
         {
             var fontAsset = GetFontAsset(ve);
@@ -144,7 +145,7 @@ namespace UnityEngine.UIElements
             var resolvedStyle = ve.resolvedStyle;
             var computedStyle = ve.computedStyle;
 
-            float factor = ConvertPixelUnitsToTextCoreRelativeUnits(ve, fontAsset);
+            float factor = TextHandle.ConvertPixelUnitsToTextCoreRelativeUnits(computedStyle.fontSize.value, fontAsset);
 
             float outlineWidth = Mathf.Clamp(resolvedStyle.unityTextOutlineWidth * factor, 0.0f, 1.0f);
             float underlaySoftness = Mathf.Clamp(computedStyle.textShadow.blurRadius * factor, 0.0f, 1.0f);

@@ -29,6 +29,7 @@ namespace UnityEditor
         int[] m_SelectionMaskValues;
 
         int m_AllLayersMask = 0;
+        bool m_AutoSelectEverything = true;
 
         bool m_SingleSelection = false;
         EditorUtility.SelectMenuItemFunction m_MaskChangeCallback;
@@ -47,7 +48,7 @@ namespace UnityEditor
         {
         }
 
-        public MaskFieldDropDown(string[] optionNames, int[] flagValues, int[] optionMaskValues, int mask, EditorUtility.SelectMenuItemFunction maskChangeCallback)
+        public MaskFieldDropDown(string[] optionNames, int[] flagValues, int[] optionMaskValues, int mask, EditorUtility.SelectMenuItemFunction maskChangeCallback, bool autoSelectEverything = true)
         {
             // these are not flag values, i.e. 1, 2, 4...
             // but the mask & flagValue[0..n] for each possible flag value
@@ -91,6 +92,7 @@ namespace UnityEditor
             foreach (var val in optionMaskValues)
                 if (val != -1 && val != int.MaxValue)
                     m_AllLayersMask |= val;
+            m_AutoSelectEverything = autoSelectEverything;
         }
 
         public void UpdateMaskValues(int mask, int[] optionMaskValues)
@@ -143,7 +145,7 @@ namespace UnityEditor
                 // Check for m_AllLayerMask != 0 was added to cover a case when we have only the first defined Layer, Everything and Nothing.
                 // In this case optionMaskValues when Everything select it will contain [0, -1, 0] and m_AllLayerMask will be 0 when we populate it in the constructor.
                 // So when we click on Nothing we will get 0 but we will continue to show Everything as checked.
-                if((m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1 && m_AllLayersMask != 0)
+                if((m_SelectionMaskValues[0] == m_AllLayersMask) && i == 1 && m_AllLayersMask != 0 && m_AutoSelectEverything)
                     toggleVal = true;
 
                 var guiRect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight);
@@ -163,8 +165,8 @@ namespace UnityEditor
                     // oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing" is for case when we clicked nothing and only have the first layer defined.
                     // It will invert Nothing to Everything if we don't double-check it for Nothing separately.
                     // Check comment above to see the math why we need it separately.
-                    if (oldMaskValues[i] == (uint)m_AllLayersMask && i != 0
-                        || oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing")
+                    if ((oldMaskValues[i] == (uint)m_AllLayersMask && i != 0
+                        || oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing") && m_AutoSelectEverything)
                         oldMaskValues[i] = ~0u;
 
                     m_MaskChangeCallback.Invoke(oldMaskValues, null, i);

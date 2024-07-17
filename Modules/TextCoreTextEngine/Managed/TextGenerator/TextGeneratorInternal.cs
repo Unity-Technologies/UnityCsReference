@@ -257,27 +257,27 @@ namespace UnityEngine.TextCore.Text
             Glyph altGlyph = textInfo.textElementInfo[m_CharacterCount].alternativeGlyph;
             GlyphRect glyphRect = altGlyph == null ? m_CachedTextElement.m_Glyph.glyphRect : altGlyph.glyphRect;
 
-            Vector2 uv0;
-            uv0.x = (glyphRect.x - padding - stylePadding) / m_CurrentFontAsset.atlasWidth;
-            uv0.y = (glyphRect.y - padding - stylePadding) / m_CurrentFontAsset.atlasHeight;
+            Vector2 uVBottomLeft;
+            uVBottomLeft.x = (glyphRect.x - padding - stylePadding) / m_CurrentFontAsset.atlasWidth;
+            uVBottomLeft.y = (glyphRect.y - padding - stylePadding) / m_CurrentFontAsset.atlasHeight;
 
-            Vector2 uv1;
-            uv1.x = uv0.x;
-            uv1.y = (glyphRect.y + padding + stylePadding + glyphRect.height) / m_CurrentFontAsset.atlasHeight;
+            Vector2 uVTopLeft;
+            uVTopLeft.x = uVBottomLeft.x;
+            uVTopLeft.y = (glyphRect.y + padding + stylePadding + glyphRect.height) / m_CurrentFontAsset.atlasHeight;
 
-            Vector2 uv2;
-            uv2.x = (glyphRect.x + padding + stylePadding + glyphRect.width) / m_CurrentFontAsset.atlasWidth;
-            uv2.y = uv1.y;
+            Vector2 uVTopRight;
+            uVTopRight.x = (glyphRect.x + padding + stylePadding + glyphRect.width) / m_CurrentFontAsset.atlasWidth;
+            uVTopRight.y = uVTopLeft.y;
 
-            Vector2 uv3;
-            uv3.x = uv2.x;
-            uv3.y = uv0.y;
+            Vector2 uVBottomRight;
+            uVBottomRight.x = uVTopRight.x;
+            uVBottomRight.y = uVBottomLeft.y;
 
             // Store UV Information
-            textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.uv = uv0;
-            textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.uv = uv1;
-            textInfo.textElementInfo[m_CharacterCount].vertexTopRight.uv = uv2;
-            textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.uv = uv3;
+            textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.uv = uVBottomLeft;
+            textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.uv = uVTopLeft;
+            textInfo.textElementInfo[m_CharacterCount].vertexTopRight.uv = uVTopRight;
+            textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.uv = uVBottomRight;
             #endregion Setup UVs
         }
 

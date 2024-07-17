@@ -25,6 +25,36 @@ namespace UnityEngine
         [Obsolete("Rigidbody2D.fixedAngle is deprecated. Use Rigidbody2D.constraints instead.", true)]
         [ExcludeFromDocs]
         public bool fixedAngle { get { return false; } set { } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.bodyType instead.", false)]
+        [ExcludeFromDocs]
+        public bool isKinematic { get { return bodyType == RigidbodyType2D.Kinematic; } set { bodyType = value ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.linearDamping instead. (UnityUpgradable) -> linearDamping", false)]
+        [ExcludeFromDocs]
+        public float drag { get => linearDamping; set => linearDamping = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.angularDamping instead. (UnityUpgradable) -> angularDamping", false)]
+        [ExcludeFromDocs]
+        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.linearVelocity instead. (UnityUpgradable) -> linearVelocity", false)]
+        [ExcludeFromDocs]
+        public Vector2 velocity { get => linearVelocity; set => linearVelocity = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.linearVelocityX instead. (UnityUpgradable) -> linearVelocityX", false)]
+        [ExcludeFromDocs]
+        public float velocityX { get => linearVelocityX; set => linearVelocityX = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody2D.linearVelocityY instead. (UnityUpgradable) -> linearVelocityY", false)]
+        [ExcludeFromDocs]
+        public float velocityY { get => linearVelocityY; set => linearVelocityY = value; }
     }
 
     partial class Collider2D

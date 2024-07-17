@@ -715,6 +715,9 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(realtimeReflectionProbes);
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
 
+            if (usingSRP)
+                EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
+
             EditorGUILayout.PropertyField(vSyncCountProperty, Content.kVSyncCountLabel);
 
             if (BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out var iBuildTarget))
@@ -723,51 +726,40 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {iBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
             }
 
-            if (usingSRP)
-                EditorGUILayout.PropertyField(realtimeGICPUUsageProperty, Content.kRealtimeLGiCpuUsageLabel);
-
-            bool externalUI = false;
-            if (vSyncCountProperty.intValue > 0)
+            var externalUI = false;
+            switch (vSyncCountProperty.intValue)
             {
-                EditorGUILayout.BeginVertical();
-                using (new EditorGUI.IndentLevelScope())
+                case > 0:
                 {
-                    using (new EditorGUI.DisabledScope(vSyncCountProperty.intValue == 0))
-                    {
-                        var validPlatforms = m_ValidPlatforms.ToArray();
-                        for (int i = 0; i < validPlatforms.Length; i++)
-                        {
-                            if (validPlatforms[i].defaultTarget == EditorUserBuildSettings.activeBuildTarget)
-                            {
-                                if (m_AdaptiveVsyncSettings[i] != null)
-                                {
-                                    m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
-                                    externalUI = true;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!externalUI)
-                        {
-                            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
-                            for (int i = 0;i < gfxTypes.Length; i++)
-                            {
-                                if (adaptiveVsyncProperty != null && gfxTypes[i] == GraphicsDeviceType.Vulkan)
-                                {
-                                    EditorGUILayout.PropertyField(adaptiveVsyncProperty);
-                                    EditorGUILayout.HelpBox("If Adaptive Vsync extension is available at runtime with Vulkan it will use this, else fallback to vsync.", MessageType.Info);
-                                }
+                    using var vertical = new EditorGUILayout.VerticalScope();
+                    using var scope = new EditorGUI.IndentLevelScope();
+                    using var disabledScope = new EditorGUI.DisabledScope(vSyncCountProperty.intValue == 0);
 
-                            }
+                    var validPlatforms = m_ValidPlatforms.ToArray();
+                    for (int i = 0; i < validPlatforms.Length; i++)
+                    {
+                        if (validPlatforms[i].defaultTarget != EditorUserBuildSettings.activeBuildTarget || m_AdaptiveVsyncSettings[i] == null)
+                            continue;
+                        m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
+                        externalUI = true;
+                        break;
+                    }
+                    if (!externalUI)
+                    {
+                        var gfxTypes = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
+                        for (int i = 0;i < gfxTypes.Length; i++)
+                        {
+                            if (adaptiveVsyncProperty == null || gfxTypes[i] != GraphicsDeviceType.Vulkan)
+                                continue;
+                            EditorGUILayout.PropertyField(adaptiveVsyncProperty);
+                            EditorGUILayout.HelpBox("If Adaptive Vsync extension is available at runtime with Vulkan it will use this, else fallback to vsync.", MessageType.Info);
                         }
                     }
+                    break;
                 }
-                EditorGUILayout.EndVertical();
-            }
-
-            if (vSyncCountProperty.intValue == 0)
-            {
-                adaptiveVsyncProperty.boolValue = false;
+                case 0:
+                    adaptiveVsyncProperty.boolValue = false;
+                    break;
             }
 
             bool shadowMaskSupported = SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask);

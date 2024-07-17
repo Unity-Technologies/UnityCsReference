@@ -11,6 +11,17 @@ namespace UnityEditor.UIElements
 {
     internal class UnityEventItem : VisualElement
     {
+        public struct PropertyData
+        {
+            public SerializedProperty listener;
+            public SerializedProperty mode;
+            public SerializedProperty arguments;
+            public SerializedProperty callState;
+            public SerializedProperty listenerTarget;
+            public SerializedProperty methodName;
+            public SerializedProperty objectArgument;
+        }
+
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
@@ -28,6 +39,8 @@ namespace UnityEditor.UIElements
         internal const string kFunctionDropdownName = kUssClassName + "__function-dropdown";
         internal const string kParameterPropertyName = kUssClassName + "__parameter-property";
         internal const string kObjectParameterName = kUssClassName + "__object-parameter";
+
+        PropertyData m_PropertyData;
 
         public PropertyField callStateDropdown
         {
@@ -59,6 +72,24 @@ namespace UnityEditor.UIElements
             private set;
         }
 
+        public Func<PropertyData, GenericMenu> createMenuCallback
+        {
+            get;
+            set;
+        }
+
+        public Func<PropertyData, string> formatSelectedValueCallback
+        {
+            get;
+            set;
+        }
+
+        public Func<PropertyData, SerializedProperty> getArgumentCallback
+        {
+            get;
+            set;
+        }
+
         public UnityEventItem()
         {
             AddToClassList(kListViewItemClassName);
@@ -80,10 +111,37 @@ namespace UnityEditor.UIElements
             listenerTarget.label = "";
             listenerTarget.name = kListenerTargetName;
             leftColumn.Add(listenerTarget);
+            listenerTarget.RegisterCallback<ChangeEvent<UnityEngine.Object>>((e) =>
+            {
+                var isTargetValid = e.newValue != null;
+
+                if (!isTargetValid)
+                {
+                    functionDropdown.value = null;
+                }
+
+                functionDropdown.SetEnabled(isTargetValid);
+
+                UpdateParameterField();
+            });
 
             functionDropdown = new DropdownField();
             functionDropdown.name = kFunctionDropdownName;
             rightColumn.Add(functionDropdown);
+            functionDropdown.createMenuCallback = () =>
+            {
+                var genericMenu = createMenuCallback.Invoke(m_PropertyData);
+                var osMenu = new GenericOSMenu(genericMenu);
+                return osMenu;
+            };
+            functionDropdown.formatSelectedValueCallback = _ =>
+            {
+                return formatSelectedValueCallback?.Invoke(m_PropertyData);
+            };
+            functionDropdown.RegisterValueChangedCallback(_ =>
+            {
+                UpdateParameterField();
+            });
 
             parameterProperty = new PropertyField();
             parameterProperty.label = "";
@@ -96,51 +154,24 @@ namespace UnityEditor.UIElements
             rightColumn.Add(objectParameter);
         }
 
-        internal void BindFields(UnityEventDrawer.PropertyData propertyData, Func<GenericMenu> createMenuCallback, Func<string, string> formatSelectedValueCallback, Func<SerializedProperty> getArgumentCallback)
+        internal void BindFields(PropertyData data)
         {
-            callStateDropdown.BindProperty(propertyData.callState);
-            listenerTarget.BindProperty(propertyData.listenerTarget);
-            functionDropdown.BindProperty(propertyData.methodName);
-            objectParameter.BindProperty(propertyData.objectArgument);
+            m_PropertyData = data;
+            callStateDropdown.BindProperty(m_PropertyData.callState);
+            listenerTarget.BindProperty(m_PropertyData.listenerTarget);
+            functionDropdown.BindProperty(m_PropertyData.methodName);
+            objectParameter.BindProperty(m_PropertyData.objectArgument);
 
-            listenerTarget.RegisterCallback<ChangeEvent<UnityEngine.Object>>((e) =>
-            {
-                var isTargetValid = e.newValue != null;
-
-                if (!isTargetValid)
-                {
-                    functionDropdown.value = null;
-                }
-
-                functionDropdown.SetEnabled(isTargetValid);
-
-                UpdateParameterField(propertyData, getArgumentCallback);
-            });
-
-            functionDropdown.RegisterValueChangedCallback((e) =>
-            {
-                UpdateParameterField(propertyData, getArgumentCallback);
-            });
-
-            functionDropdown.createMenuCallback = () =>
-            {
-                var genericMenu = createMenuCallback.Invoke();
-                var osMenu = new GenericOSMenu(genericMenu);
-                return osMenu;
-            };
-
-            functionDropdown.formatSelectedValueCallback = formatSelectedValueCallback;
-
-            UpdateParameterField(propertyData, getArgumentCallback);
+            UpdateParameterField();
         }
 
-        internal void UpdateParameterField(UnityEventDrawer.PropertyData propertyData, Func<SerializedProperty> getArgumentCallback)
+        internal void UpdateParameterField()
         {
-            var modeEnum = (PersistentListenerMode)propertyData.mode.enumValueIndex;
-            var argument = getArgumentCallback.Invoke();
+            var modeEnum = (PersistentListenerMode)m_PropertyData.mode.enumValueIndex;
+            var argument = getArgumentCallback.Invoke(m_PropertyData);
 
             //only allow argument if we have a valid target / method
-            if (propertyData.listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(propertyData.methodName.stringValue))
+            if (m_PropertyData.listenerTarget.objectReferenceValue == null || string.IsNullOrEmpty(m_PropertyData.methodName.stringValue))
             {
                 modeEnum = PersistentListenerMode.Void;
             }
@@ -155,7 +186,7 @@ namespace UnityEditor.UIElements
                 parameterProperty.style.display = DisplayStyle.None;
                 objectParameter.style.display = DisplayStyle.Flex;
 
-                var desiredArgTypeName = propertyData.arguments.FindPropertyRelative(UnityEventDrawer.kObjectArgumentAssemblyTypeName).stringValue;
+                var desiredArgTypeName = m_PropertyData.arguments.FindPropertyRelative(UnityEventDrawer.kObjectArgumentAssemblyTypeName).stringValue;
                 var desiredType = typeof(UnityEngine.Object);
 
                 if (!string.IsNullOrEmpty(desiredArgTypeName))

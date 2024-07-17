@@ -22,7 +22,7 @@ namespace UnityEditor.Search
     {
         static readonly string[] s_EmptyStrings = new string[0];
         internal static readonly AssetIndexChangeSet s_Empty = new AssetIndexChangeSet(null, null);
-        
+
         public readonly string[] updated;
         public readonly string[] removed;
 
@@ -206,8 +206,11 @@ namespace UnityEditor.Search
         public static event ObjectChangeEvents.ObjectChangeEventsHandler objectChanged;
         public static event Action documentsInvalidated;
 
-        const string k_TransactionDatabasePath = "Library/Search/transactions.db";
+        internal const string k_TransactionDatabasePath = "Library/Search/transactions.db";
         static TransactionManager s_TransactionManager;
+        // Internal for testing only
+        internal static TransactionManager transactionManager => s_TransactionManager;
+
         private static PropertyDatabase propertyDatabase;
         private static PropertyDatabase propertyAliases;
 

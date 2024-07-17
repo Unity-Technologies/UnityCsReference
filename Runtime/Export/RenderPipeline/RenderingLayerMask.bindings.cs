@@ -22,6 +22,8 @@ namespace UnityEngine
         //It must match TagManager::kDefaultRenderingLayerMask.
         public static RenderingLayerMask defaultRenderingLayerMask { get; } = new() {m_Bits = 1u};
 
+        internal const int maxRenderingLayerSize = 32;
+
         public static implicit operator uint(RenderingLayerMask mask)
         {
             return mask.m_Bits;

@@ -17,12 +17,6 @@ namespace UnityEngine.UIElements.UIR
         IsTextured = 2,
         IsDynamic = 3,
         IsSvgGradients = 4, // Gradient/Texture-less SVG do NOT use this flag
-        // The only use case outside the package is for GraphView edges. In order to preserve binary compatibility,
-        // the value MUST not change, so calling it "Last" does not make sense if we cannot increase the value.
-        // For this reason, this is being deprecated.
-        [Obsolete("Enum member VertexFlags.LastType has been deprecated. Use VertexFlags.IsGraphViewEdge instead.")]
-        LastType = 10,
-        IsGraphViewEdge = 10,
     }
 
     internal struct State

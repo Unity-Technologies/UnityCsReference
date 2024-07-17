@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Internal;
-using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -17,17 +16,16 @@ namespace UnityEditor.UIElements
     /// </summary>
     public class RenderingLayerMaskField : BaseMaskField<uint>
     {
-        internal override uint MaskToValue(int newMask) => unchecked( (uint) newMask);
-        internal override int ValueToMask(uint value) => unchecked( (int) value);
-
         [ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseMaskField<uint>.UxmlSerializedData
+        public new class UxmlSerializedData : BaseField<uint>.UxmlSerializedData
         {
-            #pragma warning disable 649
+#pragma warning disable 649
             [UxmlAttribute("value")] [SerializeField]
             RenderingLayerMask layerMask;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags layerMask_UxmlAttributeFlags;
-            #pragma warning restore 649
+
+            [SerializeField, UxmlIgnore, HideInInspector]
+            UxmlAttributeFlags layerMask_UxmlAttributeFlags;
+#pragma warning restore 649
 
             public override object CreateInstance() => new RenderingLayerMaskField();
 
@@ -38,20 +36,10 @@ namespace UnityEditor.UIElements
                 if (ShouldWriteAttributeValue(layerMask_UxmlAttributeFlags))
                 {
                     var e = (RenderingLayerMaskField)obj;
-                    e.SetValueWithoutNotify(layerMask.value);
+                    e.layerMask = layerMask;
                 }
             }
         }
-
-        internal RenderingLayerMask layerMask
-        {
-            get => value;
-            set => this.value = value.value;
-        }
-
-        SerializedObject m_TagManagerSerializedObject;
-
-        HelpBox m_HelpBox;
 
         /// <summary>
         /// USS class name of elements of this type.
@@ -68,6 +56,17 @@ namespace UnityEditor.UIElements
         /// </summary>
         public new static readonly string inputUssClassName = ussClassName + "__input";
 
+        internal RenderingLayerMask layerMask
+        {
+            get => value;
+            set => this.value = value;
+        }
+
+        readonly HelpBox m_HelpBox;
+
+        readonly List<string> m_RenderingLayersChoices = new();
+        readonly List<int> m_RenderingLayersChoicesMasks = new();
+
         /// <summary>
         /// Constructor of the field.
         /// </summary>
@@ -81,11 +80,9 @@ namespace UnityEditor.UIElements
         /// Constructor of the field.
         /// </summary>
         /// <param name="label">The label to prefix the <see cref="RenderingLayerMaskField"/>.</param>
-        /// <param name="defaultMask">The default mask to use for the initial selection.</param>
-        public RenderingLayerMaskField(string label, uint defaultMask)
-            : this(label)
+        public RenderingLayerMaskField(string label)
+            : this(label, RenderingLayerMask.defaultRenderingLayerMask)
         {
-            SetValueWithoutNotify(defaultMask);
         }
 
         /// <summary>
@@ -100,75 +97,102 @@ namespace UnityEditor.UIElements
         /// Constructor of the field.
         /// </summary>
         /// <param name="label">The label to prefix the <see cref="RenderingLayerMaskField"/>.</param>
-        public RenderingLayerMaskField(string label)
+        /// <param name="defaultMask">The default mask to use for the initial selection.</param>
+        public RenderingLayerMaskField(string label, uint defaultMask)
             : base(label)
         {
+            style.flexWrap = Wrap.Wrap;
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);
             visualInput.AddToClassList(inputUssClassName);
 
-            m_HelpBox = new HelpBox("", HelpBoxMessageType.Warning)
+            m_HelpBox = new HelpBox(string.Empty, HelpBoxMessageType.Warning);
+            Add(m_HelpBox);
+
+            UpdateChoices(defaultMask);
+            SetValueWithoutNotify(defaultMask);
+
+            RegisterCallback<AttachToPanelEvent>(_ => TagManager.onRenderingLayersChanged += OnRenderingLayersChanged);
+            RegisterCallback<DetachFromPanelEvent>(_ => TagManager.onRenderingLayersChanged -= OnRenderingLayersChanged);
+            RegisterCallback<GeometryChangedEvent>(RecalculateHelpBoxSize);
+        }
+
+        internal override uint MaskToValue(int newMask) => unchecked((uint)newMask);
+
+        internal override int ValueToMask(uint value) => unchecked((int)value);
+
+        private protected override int UpdateMaskIfEverything(int currentMask)
+        {
+            var limit = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+            return RenderPipelineEditorUtility.DoesMaskContainRenderingLayersOutsideOfMaxBitCount(unchecked((uint)currentMask), limit) ? currentMask : base.UpdateMaskIfEverything(currentMask);
+        }
+
+        public override uint value
+        {
+            get => rawValue;
+            set
             {
-                style = { display = DisplayStyle.Flex }
-            };
+                if (CheckIfOnlyOneLayerWasDeselectedFromEverything(value))
+                {
+                    var diffValue = ~value;
+                    var counter = BitOperationUtils.CountBits(diffValue);
+                    if (counter == 1)
+                    {
+                        var currentMax = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+                        var definedRenderingLayerValues = RenderingLayerMask.GetDefinedRenderingLayerValues();
+                        value = BitOperationUtils.ModifyMaskByValuesArrayAndBitCount(value, definedRenderingLayerValues, currentMax);
+                    }
+                }
 
-            UpdateLayersInfo();
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            this.RegisterValueChangedCallback(evt => UpdateLayersInfo());
-        }
-
-        void OnAttachToPanel(AttachToPanelEvent evt)
-        {
-            RenderPipelineManager.activeRenderPipelineTypeChanged += OnActiveRenderPipelineTypeChanged;
-
-            var tagManager = AssetDatabase.LoadMainAssetAtPath("ProjectSettings/TagManager.asset");
-            m_TagManagerSerializedObject = new SerializedObject(tagManager);
-
-            this.TrackSerializedObjectValue(m_TagManagerSerializedObject, so =>  UpdateLayersInfo());
-
-            parent?.Add(m_HelpBox);
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            RenderPipelineManager.activeRenderPipelineTypeChanged -= OnActiveRenderPipelineTypeChanged;
-
-            m_TagManagerSerializedObject.Dispose();
-            m_TagManagerSerializedObject = null;
-
-            parent?.Remove(m_HelpBox);
-        }
-
-        void OnActiveRenderPipelineTypeChanged()
-        {
-            UpdateLayersInfo();
-        }
-
-        internal override void AddMenuItems(IGenericMenu menu)
-        {
-            // We must update the choices and the values since we don't know if they changed...
-            UpdateLayersInfo();
-
-            // Create the menu the usual way...
-            base.AddMenuItems(menu);
+                UpdateChoices(value);
+                base.value = value;
+            }
         }
 
         protected void UpdateLayersInfo()
         {
-            // Create the appropriate lists...
-            var (names, values) = RenderPipelineEditorUtility.GetRenderingLayerNamesAndValuesForMask(layerMask);
+            UpdateChoices(value);
+        }
 
-            choices = new List<string>(names);
-            choicesMasks = new List<int>(values);
+        bool CheckIfOnlyOneLayerWasDeselectedFromEverything(uint nextValue)
+        {
+            return rawValue == uint.MaxValue && nextValue != uint.MaxValue;
+        }
 
-            var currentLimit = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
-            if (currentLimit != 32 && layerMask != uint.MaxValue && layerMask >= 1u << currentLimit)
+        void UpdateChoices(uint mask)
+        {
+            // Create the appropriate choices for the mask
+            var (names, values) = RenderPipelineEditorUtility.GetRenderingLayerNamesAndValuesForMask(mask);
+
+            m_RenderingLayersChoices.Clear();
+            m_RenderingLayersChoices.AddRange(names);
+            choices = m_RenderingLayersChoices;
+
+            m_RenderingLayersChoicesMasks.Clear();
+            m_RenderingLayersChoicesMasks.AddRange(values);
+            choicesMasks = m_RenderingLayersChoicesMasks;
+
+            UpdateHelpBoxVisibility(mask);
+        }
+
+        void OnRenderingLayersChanged()
+        {
+            value = rawValue;
+        }
+
+        //We manually recalculate the HelpBox width to imitate the behavior of flex column for our mask control and HelpBox
+        void RecalculateHelpBoxSize(GeometryChangedEvent evt)
+        {
+            m_HelpBox.style.width = evt.newRect.width;
+        }
+
+        void UpdateHelpBoxVisibility(uint mask)
+        {
+            var maxBitCount = RenderPipelineEditorUtility.GetActiveMaxRenderingLayers();
+            if (RenderPipelineEditorUtility.DoesMaskContainRenderingLayersOutsideOfMaxBitCount(mask, maxBitCount))
             {
                 m_HelpBox.style.display = DisplayStyle.Flex;
-                m_HelpBox.text =
-                    $"Current mask contains layers outside of a supported range by active Render Pipeline. The active Render Pipeline only supports up to {currentLimit} layers. Rendering Layers above {currentLimit} are ignored.";
+                m_HelpBox.text = RenderPipelineEditorUtility.GetOutsideOfMaxBitCountWarningMessage(maxBitCount);
             }
             else
             {

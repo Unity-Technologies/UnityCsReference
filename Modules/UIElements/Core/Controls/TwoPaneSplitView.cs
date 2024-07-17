@@ -111,7 +111,14 @@ namespace UnityEngine.UIElements
         VisualElement m_DragLine;
         VisualElement m_DragLineAnchor;
 
+        /// <summary>
+        /// The actual drag line, which is a child of the anchor.
+        /// </summary>
+        internal VisualElement dragLine => m_DragLine;
+
         bool m_CollapseMode;
+        bool m_PendingCollapseToExecute;
+        int m_CollapsedChildIndex = -1;
 
         VisualElement m_Content;
 
@@ -238,8 +245,18 @@ namespace UnityEngine.UIElements
         /// <param name="index">Index of child to collapse.</param>
         public void CollapseChild(int index)
         {
-            if (m_LeftPane == null)
+            if (index != 0 && index != 1)
+            {
+                Debug.LogError("Invalid index. Must be 0 or 1.");
                 return;
+            }
+
+            if (m_LeftPane == null)
+            {
+                m_PendingCollapseToExecute = true;
+                m_CollapsedChildIndex = index;
+                return;
+            }
 
             m_DragLine.style.display = DisplayStyle.None;
             m_DragLineAnchor.style.display = DisplayStyle.None;
@@ -288,6 +305,9 @@ namespace UnityEngine.UIElements
             m_LeftPane.style.flexGrow = 0;
             m_RightPane.style.flexGrow = 0;
             m_CollapseMode = false;
+            // Use to see if Child was collapsed before the setup was complete.
+            m_PendingCollapseToExecute = false;
+            m_CollapsedChildIndex = -1;
 
             Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, m_Orientation);
 
@@ -351,9 +371,43 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            var postSetupWithEmptyLeftPane = m_LeftPane == null;
             PostDisplaySetup();
 
+            // If CollapseChild was called before the setup was complete, we need to call it again.
+            if (postSetupWithEmptyLeftPane && m_PendingCollapseToExecute)
+            {
+                CollapseChild(m_CollapsedChildIndex);
+                m_PendingCollapseToExecute = false;
+            }
+
             UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
+
+            // Initially, consider the size of the anchor in the placement of the second pane, no matter if fixed or not.
+            ReplacePanesBasedOnAnchor();
+        }
+
+        void ReplacePanesBasedOnAnchor()
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_RightPane.style.left = m_DragLineAnchor.worldBound.width;
+            else
+                m_RightPane.style.top = m_DragLineAnchor.worldBound.height;
+        }
+
+        void IdentifyLeftAndRightPane()
+        {
+            m_LeftPane = m_Content[0];
+            if (m_FixedPaneIndex == 0)
+                m_FixedPane = m_LeftPane;
+            else
+                m_FlexedPane = m_LeftPane;
+
+            m_RightPane = m_Content[1];
+            if (m_FixedPaneIndex == 1)
+                m_FixedPane = m_RightPane;
+            else
+                m_FlexedPane = m_RightPane;
         }
 
         void PostDisplaySetup()
@@ -369,17 +423,7 @@ namespace UnityEngine.UIElements
 
             var dimension = fixedPaneDimension;
 
-            m_LeftPane = m_Content[0];
-            if (m_FixedPaneIndex == 0)
-                m_FixedPane = m_LeftPane;
-            else
-                m_FlexedPane = m_LeftPane;
-
-            m_RightPane = m_Content[1];
-            if (m_FixedPaneIndex == 1)
-                m_FixedPane = m_RightPane;
-            else
-                m_FlexedPane = m_RightPane;
+            IdentifyLeftAndRightPane();
 
             m_FixedPane.style.flexBasis = StyleKeyword.Null;
             m_FixedPane.style.flexShrink = StyleKeyword.Null;
@@ -416,16 +460,18 @@ namespace UnityEngine.UIElements
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginLeft + m_FixedPane.resolvedStyle.marginRight;
-
-                m_DragLineAnchor.style.left = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
-                    resolvedStyle.width - dimension - fixedPaneMargins;
+                if (m_FixedPaneIndex == 0)
+                    m_DragLineAnchor.style.left = fixedPaneMargins + m_FixedPaneInitialDimension;
+                else
+                    m_DragLineAnchor.style.left = resolvedStyle.width - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.width;
             }
             else
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginTop + m_FixedPane.resolvedStyle.marginBottom;
-
-                m_DragLineAnchor.style.top = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
-                   resolvedStyle.height - dimension - fixedPaneMargins;
+                if (m_FixedPaneIndex == 0)
+                    m_DragLineAnchor.style.top = fixedPaneMargins + m_FixedPaneInitialDimension;
+                else
+                    m_DragLineAnchor.style.top = resolvedStyle.height - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.height;
             }
 
             int direction = 1;
@@ -493,12 +539,28 @@ namespace UnityEngine.UIElements
             else if (maxLength >= fixedPaneMinLength + fixedPaneMargins + flexedPaneMinLength + flexedPaneMargins)
             {
                 var newDimension = maxLength - flexedPaneMinLength - flexedPaneMargins - fixedPaneMargins;
+                var dimensionToAnchorOffset = 0f;
+                dimensionToAnchorOffset = (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                ? Math.Abs(m_DragLineAnchor.worldBound.width - (m_DragLine.resolvedStyle.width - Math.Abs(m_DragLine.resolvedStyle.left)))
+                : Math.Abs(m_DragLineAnchor.worldBound.height - (m_DragLine.resolvedStyle.height - Math.Abs(m_DragLine.resolvedStyle.top)));
+                newDimension -= dimensionToAnchorOffset;
 
-                if (updateFixedPane)
+                var fixedPaneMinLengthReached = newDimension < fixedPaneMinLength;
+                var currentFixedPaneLenghtGreaterThanMin = fixedPaneLength > fixedPaneMinLength;
+                if (updateFixedPane && !fixedPaneMinLengthReached)
                     SetFixedPaneDimension(newDimension);
+                else if (updateFixedPane && fixedPaneMinLengthReached && currentFixedPaneLenghtGreaterThanMin)
+                    SetFixedPaneDimension(fixedPaneMinLength);
 
                 if (updateDragLine)
-                    SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins: flexedPaneMinLength + flexedPaneMargins);
+                {
+                    // Recalculate drag line offset
+                    if (fixedPaneMinLengthReached)
+                        SetDragLineOffset(m_FixedPaneIndex == 0 ? fixedPaneMinLength: maxLength - fixedPaneMinLength - fixedPaneMargins);
+                    else
+                        SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins + dimensionToAnchorOffset: flexedPaneMinLength + flexedPaneMargins);
+
+                }
             }
             // Not big enough for fixed and flexed pane minimum sizes
             else
