@@ -399,7 +399,7 @@ namespace UnityEditor.UIElements
 
         // Based on the current mask, this is updating the value of the actual mask to use vs the full mask.
         // This is returning ~0 if all the values are selected...
-        int UpdateMaskIfEverything(int currentMask)
+        private protected virtual int UpdateMaskIfEverything(int currentMask)
         {
             var newMask = currentMask;
             // If the mask is full, put back the Everything flag.

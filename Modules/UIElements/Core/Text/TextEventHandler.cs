@@ -29,12 +29,12 @@ namespace UnityEngine.UIElements
         EventCallback<PointerOutEvent> m_ATagOnPointerOut;
 
 
-        private bool HasAllocatedLinkCallbacks()
+        bool HasAllocatedLinkCallbacks()
         {
             return m_LinkTagOnPointerDown != null;
         }
 
-        private void AllocateLinkCallbacks()
+        void AllocateLinkCallbacks()
         {
             if (HasAllocatedLinkCallbacks())
                 return;
@@ -45,12 +45,12 @@ namespace UnityEngine.UIElements
             m_LinkTagOnPointerOut = LinkTagOnPointerOut;
         }
 
-        private bool HasAllocatedATagCallbacks()
+        bool HasAllocatedATagCallbacks()
         {
             return m_ATagOnPointerUp != null;
         }
 
-        private void AllocateATagCallbacks()
+        void AllocateATagCallbacks()
         {
             if (HasAllocatedATagCallbacks())
                 return;

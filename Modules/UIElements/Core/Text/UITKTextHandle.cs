@@ -9,7 +9,7 @@ using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
 {
-    internal class UITKTextHandle : TextHandle
+    internal partial class UITKTextHandle : TextHandle
     {
         public UITKTextHandle(TextElement te)
         {
@@ -19,33 +19,28 @@ namespace UnityEngine.UIElements
 
         public Vector2 MeasuredSizes { get; set; }
         public Vector2 RoundedSizes { get; set; }
+        public Vector2 ATGMeasuredSizes { get; set; }
+        public Vector2 ATGRoundedSizes { get; set; }
 
         internal static Func<float, FontAsset, FontAsset> GetBlurryMapping;
         internal static Func<float, bool> CanGenerateFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
-        TextElement m_TextElement;
-        static TextLib s_TextLib;
-
-        static TextLib TextLib
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (s_TextLib == null)
-                {
-                    s_TextLib = new TextLib();
-                }
-                return s_TextLib;
-            }
-        }
+        protected TextElement m_TextElement;
 
         public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
         {
-            ConvertUssToTextGenerationSettings();
-            settings.renderedText = textToMeasure;
-            settings.screenRect = new Rect(0, 0, width, height);
-            UpdatePreferredValues(settings);
+            if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
+            {
+                ComputeNativeTextSize(textToMeasure, width, height);
+            }
+            else
+            {
+                ConvertUssToTextGenerationSettings();
+                settings.renderedText = textToMeasure;
+                settings.screenRect = new Rect(0, 0, width, height);
+                UpdatePreferredValues(settings);
+            }
             return preferredSize;
         }
 
@@ -88,21 +83,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public NativeTextInfo UpdateNative(ref bool success)
-        {
-            if (!ConvertUssToNativeTextGenerationSettings())
-            {
-                success = false;
-                return new NativeTextInfo();
-            }
-
-            if (m_PreviousNativeGenerationSettingsHash != nativeSettings.GetHashCode())
-                nativeTextInfo = TextLib.GenerateText(nativeSettings);
-
-            success = true;
-            return nativeTextInfo;
-        }
-
         public override void AddTextInfoToPermanentCache()
         {
             ConvertUssToTextGenerationSettings();
@@ -128,67 +108,6 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal bool ConvertUssToNativeTextGenerationSettings()
-        {
-            var fa = TextUtilities.GetFontAsset(m_TextElement);
-            if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
-            {
-                Debug.LogError($"Advanced text system cannot render using static font asset {fa.name}");
-                return false;
-            }
-            var style = m_TextElement.computedStyle;
-            var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
-                new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
-            nativeSettings.text = renderedText.CreateString();
-            nativeSettings.screenWidth = (int)(m_TextElement.contentRect.width * 64);
-            nativeSettings.screenHeight = (int)(m_TextElement.contentRect.height * 64);
-            nativeSettings.fontSize = style.fontSize.value > 0
-                ? style.fontSize.value
-                : fa.faceInfo.pointSize;
-            nativeSettings.wordWrap = m_TextElement.computedStyle.whiteSpace.toTextCore();
-            nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
-            nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
-
-            nativeSettings.color = m_TextElement.computedStyle.color;
-            nativeSettings.fontAsset = fa.nativeFontAsset;
-            nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
-
-            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
-            List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
-            if (textSettings != null && textSettings.fallbackFontAssets != null)
-            {
-                foreach (var fallback in textSettings.fallbackFontAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
-                    {
-                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
-                        continue;
-                    }
-                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
-                }
-            }
-
-            if (textSettings != null && textSettings.emojiFallbackTextAssets != null)
-            {
-                foreach (FontAsset fallback in textSettings.emojiFallbackTextAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
-                    {
-                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
-                        continue;
-                    }
-                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
-                }
-            }
-            nativeSettings.globalFontAssetFallbacks = globalFontAssetFallbacks.ToArray();
-            nativeSettings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
-            return true;
-        }
-
         internal virtual bool ConvertUssToTextGenerationSettings()
         {
             var style = m_TextElement.computedStyle;
@@ -203,7 +122,7 @@ namespace UnityEngine.UIElements
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
-            tgs.extraPadding = GetTextEffectPadding(tgs.fontAsset);
+            tgs.extraPadding = GetVertexPadding(tgs.fontAsset);
             tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
@@ -283,7 +202,7 @@ namespace UnityEngine.UIElements
         internal static readonly float k_MinPadding = 6.0f;
 
         // Function to determine how much extra padding is required as a result of text effect like outline thickness, shadow etc... (see UUM-9524).
-        internal float GetTextEffectPadding(FontAsset fontAsset)
+        internal float GetVertexPadding(FontAsset fontAsset)
         {
             float horizontalPadding;
             float verticalPadding;
@@ -306,7 +225,7 @@ namespace UnityEngine.UIElements
 
             var padding = Mathf.Max(horizontalPadding, verticalPadding) + k_MinPadding;
 
-            var factor = TextUtilities.ConvertPixelUnitsToTextCoreRelativeUnits(m_TextElement, fontAsset);
+            var factor = ConvertPixelUnitsToTextCoreRelativeUnits(style.fontSize.value, fontAsset);
             var gradientScale = fontAsset.atlasPadding + 1;
 
             return Mathf.Min(padding * factor * gradientScale, gradientScale);

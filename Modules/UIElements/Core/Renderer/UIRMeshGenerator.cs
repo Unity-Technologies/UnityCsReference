@@ -635,6 +635,18 @@ namespace UnityEngine.UIElements.UIR
         public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
         {
             DrawTextBase(null, textInfo, pos, true);
+
+            // Call Texture.Apply for all texture still dirty
+            // There are no other place where we are calling this to export the texture to the gpu
+            // for the ATG. This is as late as it could be right now.
+
+            // I am putting it here as this will only be call if an ATG-text has been modified
+            // and it will not be called when non-atg text only are modified
+            // Trying to keep the codepath separated for now.
+
+            // Finally, calling this once per text element is not optimal but the code underneath
+            // should simply retrun if there is nothing to apply
+            FontAsset.UpdateFontAssetsInUpdateQueue();
         }
 
         void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)

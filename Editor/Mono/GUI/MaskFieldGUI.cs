@@ -111,27 +111,27 @@ namespace UnityEditor
         }
 
         /// Make a field for a generic mask.
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, GUIStyle style)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, GUIStyle style, bool autoSelectEverything = true)
         {
             int dummyInt;
             bool dummyBool;
-            return DoMaskField(position, controlID, mask, flagNames, style, out dummyInt, out dummyBool);
+            return DoMaskField(position, controlID, mask, flagNames, style, out dummyInt, out dummyBool, autoSelectEverything);
         }
 
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, bool autoSelectEverything = true)
         {
             int dummyInt;
             bool dummyBool;
-            return DoMaskField(position, controlID, mask, flagNames, flagValues, style, out dummyInt, out dummyBool);
+            return DoMaskField(position, controlID, mask, flagNames, flagValues, style, out dummyInt, out dummyBool, autoSelectEverything: autoSelectEverything);
         }
 
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, GUIStyle style, out int changedFlags, out bool changedToValue)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, GUIStyle style, out int changedFlags, out bool changedToValue, bool autoSelectEverything = true)
         {
             var flagValues = new int[flagNames.Length];
             for (int i = 0; i < flagValues.Length; ++i)
                 flagValues[i] = (1 << i);
 
-            return DoMaskField(position, controlID, mask, flagNames, flagValues, style, out changedFlags, out changedToValue);
+            return DoMaskField(position, controlID, mask, flagNames, flagValues, style, out changedFlags, out changedToValue, autoSelectEverything: autoSelectEverything);
         }
 
         internal static void DestroyMaskCallBackInfo()
@@ -142,11 +142,11 @@ namespace UnityEditor
         /// Make a field for a generic mask.
         /// This version also gives you back which flags were changed and what they were changed to.
         /// This is useful if you want to make the same change to multiple objects.
-        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue, Type enumType = null)
+        internal static int DoMaskField(Rect position, int controlID, int mask, string[] flagNames, int[] flagValues, GUIStyle style, out int changedFlags, out bool changedToValue, Type enumType = null, bool autoSelectEverything = true)
         {
             mask = MaskCallbackInfo.GetSelectedValueForControl(controlID, mask, out changedFlags, out changedToValue);
 
-            GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out _, enumType);
+            GetMenuOptions(mask, flagNames, flagValues, out var buttonText, out var buttonTextMixed, out var optionNames, out var optionMaskValues, out _, enumType, autoSelectEverything);
 
             // This checks and update flags changes that are modified out of dropdown menu
             if (MaskCallbackInfo.m_Instance != null)
@@ -161,7 +161,7 @@ namespace UnityEditor
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
             {
                 MaskCallbackInfo.m_Instance = new MaskCallbackInfo(controlID);
-                MaskCallbackInfo.m_Instance.m_DropDown = new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate);
+                MaskCallbackInfo.m_Instance.m_DropDown = new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate, autoSelectEverything);
                 PopupWindowWithoutFocus.Show(position, MaskCallbackInfo.m_Instance.m_DropDown);
             }
 
@@ -304,7 +304,7 @@ namespace UnityEditor
         }
 
         internal static void GetMenuOptions(int mask, string[] flagNames, int[] flagValues,
-            out string buttonText, out string buttonMixedValuesText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, Type enumType = null)
+            out string buttonText, out string buttonMixedValuesText, out string[] optionNames, out int[] optionMaskValues, out int[] selectedOptions, Type enumType = null, bool autoSelectEverything = true)
         {
             const int everythingValue = ~0;
             bool hasNothingName = flagValues[0] == 0;
@@ -361,7 +361,7 @@ namespace UnityEditor
 
             if (buttonText == null)
             {
-                if (flagMask == intermediateMask)
+                if (flagMask == intermediateMask && autoSelectEverything)
                 {
                     // If all of the available flags are set then show the Everything name.
                     s_SelectedOptionsSet.Add(1);

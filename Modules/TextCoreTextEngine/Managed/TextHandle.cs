@@ -102,11 +102,8 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal NativeTextGenerationSettings nativeSettings = NativeTextGenerationSettings.Default;
 
-        internal Vector2 preferredSize {
-            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-            get;
-            private set;
-        }
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal Vector2 preferredSize { get; set; }
 
         private Rect m_ScreenRect;
         private float m_LineHeightDefault;
@@ -244,6 +241,7 @@ namespace UnityEngine.TextCore.Text
             m_PreviousGenerationSettingsHash = hashCode;
             isDirty = false;
             m_IsEllided = generator.isTextTruncated;
+
             return textInfo;
         }
 
@@ -293,6 +291,15 @@ namespace UnityEngine.TextCore.Text
             renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
 
             preferredSize = new Vector2(renderedWidth, renderedHeight);
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static float ConvertPixelUnitsToTextCoreRelativeUnits(float fontSize, FontAsset fontAsset)
+        {
+            // Convert the text settings pixel units to TextCore relative units
+            float paddingPercent = 1.0f / fontAsset.atlasPadding;
+            float pointSizeRatio = ((float)fontAsset.faceInfo.pointSize) / fontSize;
+            return paddingPercent * pointSizeRatio;
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]

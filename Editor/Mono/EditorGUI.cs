@@ -23,6 +23,7 @@ using PreviewMaterialType = UnityEditor.EditorGUIUtility.PreviewType;
 using System.Linq;
 using System.Reflection;
 using Unity.Profiling;
+using UnityEditor.Rendering;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;

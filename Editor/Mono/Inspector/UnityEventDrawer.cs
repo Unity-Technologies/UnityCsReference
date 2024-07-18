@@ -20,16 +20,6 @@ namespace UnityEditorInternal
     [CustomPropertyDrawer(typeof(UnityEventBase), true)]
     public class UnityEventDrawer : PropertyDrawer
     {
-        internal struct PropertyData
-        {
-            public SerializedProperty mode;
-            public SerializedProperty arguments;
-            public SerializedProperty callState;
-            public SerializedProperty listenerTarget;
-            public SerializedProperty methodName;
-            public SerializedProperty objectArgument;
-        }
-
         protected class State
         {
             internal ReorderableList m_ReorderableList;
@@ -165,8 +155,12 @@ namespace UnityEditorInternal
             var propertyRelative = property.FindPropertyRelative(kCallsPath);
             listView.bindingPath = propertyRelative.propertyPath;
 
-            listView.makeItem += () => new UnityEventItem();
-
+            listView.makeItem += () => new UnityEventItem
+            {
+                createMenuCallback = data => BuildPopupList(data.listenerTarget.objectReferenceValue, m_DummyEvent, data.listener),
+                formatSelectedValueCallback = data => GetFunctionDropdownText(data.listener),
+                getArgumentCallback = data => GetArgument(data.listener)
+            };
             listView.bindItem += (VisualElement element, int i) =>
             {
                 if (i >= propertyRelative.arraySize)
@@ -178,8 +172,9 @@ namespace UnityEditorInternal
                 var arguments = pListener.FindPropertyRelative(kArgumentsPath);
                 var listenerTarget = pListener.FindPropertyRelative(kInstancePath);
 
-                var propertyData = new PropertyData()
+                var propertyData = new UnityEventItem.PropertyData
                 {
+                    listener = pListener,
                     mode = pListener.FindPropertyRelative(kModePath),
                     arguments = arguments,
                     callState = pListener.FindPropertyRelative(kCallStatePath),
@@ -188,23 +183,8 @@ namespace UnityEditorInternal
                     objectArgument = arguments.FindPropertyRelative(kObjectArgument)
                 };
 
-
-                Func<GenericMenu> createMenuCallback = () =>
-                {
-                    var genericMenu = BuildPopupList(listenerTarget.objectReferenceValue, m_DummyEvent, pListener);
-                    return genericMenu;
-                };
-                Func<string, string> formatSelectedValueCallback = (value) =>
-                {
-                    return GetFunctionDropdownText(pListener);
-                };
-                Func<SerializedProperty> getArgumentCallback = () =>
-                {
-                    return GetArgument(pListener);
-                };
-
                 var eventItem = element as UnityEventItem;
-                eventItem.BindFields(propertyData, createMenuCallback, formatSelectedValueCallback, getArgumentCallback);
+                eventItem.BindFields(propertyData);
             };
 
             listView.itemsAdded += indices =>

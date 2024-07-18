@@ -576,15 +576,10 @@ namespace UnityEditor.Search
             var loadTask = new Task("Load", $"Reading {name.ToLowerInvariant()} search index", (task, data) => WaitForReadComplete(task, data, AssignNewIndexAndSetup), this);
             loadTask.RunThread(() =>
             {
-                var step = 0;
                 loadTask.Report($"Reading {bytes.Length} bytes...");
-                var newIndex = new SearchIndexer();
-                if (!newIndex.LoadBytes(bytes))
-                    Debug.LogError($"Failed to load {name} index. Please re-import it.", this);
+                var newIndex = new AssetIndexer(settings);
 
-                loadTask.Report(++step, step + 1);
-
-                Dispatcher.Enqueue(() => loadTask.Resolve(new TaskData(bytes, newIndex, true)));
+                IncrementLoadBytes(bytes, loadTask, newIndex, $"Failed to load {name} index. Please re-import it.");
             });
         }
 
@@ -599,31 +594,36 @@ namespace UnityEditor.Search
                 var fileBytes = File.ReadAllBytes(indexPath);
 
                 var newIndex = new AssetIndexer(settings);
-                if (!newIndex.LoadBytes(fileBytes))
-                    throw new Exception($"Failed to load {indexPath}.");
+                IncrementLoadBytes(fileBytes, loadTask, newIndex, $"Failed to load {indexPath}.");
+            });
+        }
 
-                var deletedAssets = new HashSet<string>();
-                foreach (var d in newIndex.GetDocuments())
+        private void IncrementLoadBytes(byte[] indexerBytes, Task loadTask, ObjectIndexer indexer, string loadFailedMessage)
+        {
+            if (!indexer.LoadBytes(indexerBytes))
+                throw new Exception(loadFailedMessage);
+
+            var deletedAssets = new HashSet<string>();
+            foreach (var d in indexer.GetDocuments())
+            {
+                if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
+                    deletedAssets.Add(d.source);
+            }
+
+            Dispatcher.Enqueue(() =>
+            {
+                if (!this)
                 {
-                    if (d.valid && (!File.Exists(d.source) && !Directory.Exists(d.source)))
-                        deletedAssets.Add(d.source);
+                    loadTask.Resolve(null, completed: true);
+                    return;
                 }
 
-                Dispatcher.Enqueue(() =>
-                {
-                    if (!this)
-                    {
-                        loadTask.Resolve(null, completed: true);
-                        return;
-                    }
+                loadTask.Report($"Checking for changes...", -1);
+                var diff = SearchMonitor.GetDiff(indexer.timestamp, deletedAssets, path => KeepChangesetPredicate(path, indexer));
+                if (!diff.empty)
+                    IncrementalUpdate(diff);
 
-                    loadTask.Report($"Checking for changes...", -1);
-                    var diff = SearchMonitor.GetDiff(newIndex.timestamp, deletedAssets, path => KeepChangesetPredicate(path, newIndex));
-                    if (!diff.empty)
-                        IncrementalUpdate(diff);
-
-                    loadTask.Resolve(new TaskData(fileBytes, newIndex, diff.empty));
-                });
+                loadTask.Resolve(new TaskData(indexerBytes, indexer, diff.empty));
             });
         }
 
@@ -1053,8 +1053,9 @@ namespace UnityEditor.Search
                 using var writeScope = new WriteLockScope(m_ImmutableLock);
                 index.Merge(changeset.removed, data.combinedIndex, baseScore,
                     (di, indexer, count) => OnDocumentMerged(indexer, indexName, di), task);
+                bytes = index.SaveBytes();
                 if (saveIndexCache)
-                    SaveIndex(savePath, index.SaveBytes(), task);
+                    SaveIndex(savePath, bytes, task);
             }, () => ResolveIncrementalUpdate(task));
         }
 

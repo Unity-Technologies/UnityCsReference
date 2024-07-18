@@ -228,7 +228,7 @@ namespace UnityEditor.Build.Profile
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
         }
-        
+
         void ValidateDataConsistency()
         {
             // TODO: Remove migration code (https://jira.unity3d.com/browse/PLAT-8909)
@@ -279,7 +279,10 @@ namespace UnityEditor.Build.Profile
                     scene.path = AssetDatabase.GUIDToAssetPath(scene.guid);
                 }
 
-                if (string.IsNullOrEmpty(scene.path))
+
+                // Asset may have been deleted.
+                // AssetDatabase may cache GUID to/from path mapping.
+                if (string.IsNullOrEmpty(scene.path) || !AssetDatabase.AssetPathExists(scene.path))
                 {
                     // Scene Object may have been deleted from disk.
                     RemoveAt(i);
@@ -288,11 +291,6 @@ namespace UnityEditor.Build.Profile
 
                 if (!isGuidValid)
                     scene.guid = AssetDatabase.GUIDFromAssetPath(scene.path);
-
-                // Asset may have been deleted. AssetDatabase may cache GUID to/from
-                // path mapping.
-                if (AssetDatabase.GetMainAssetTypeFromGUID(scene.guid) is null)
-                    RemoveAt(i);
             }
 
             if (length == m_Scenes.Length)

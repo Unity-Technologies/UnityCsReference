@@ -108,6 +108,9 @@ namespace UnityEngine
         // Is the current keypress a function key? (RO)
         public bool functionKey => (modifiers & EventModifiers.FunctionKey)  != 0;
 
+        // The magnitude of Event.delta that corresponds to exactly one tick of the scroll wheel.
+        internal const float scrollWheelDeltaPerTick = 3.0f;
+
         // The current event that's being processed right now.
         // TODO: set this to null outside the event loop.
         //

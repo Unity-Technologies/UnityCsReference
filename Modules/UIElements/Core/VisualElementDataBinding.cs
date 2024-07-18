@@ -501,7 +501,32 @@ namespace UnityEngine.UIElements
 
         void TrackSource(object previous, object current)
         {
+            var manager = elementPanel?.dataBindingManager;
+            if (null == manager)
+                return;
+
+            // If the element is part of the panel, but has yet to receive the VisualElement.WillChangePanel
+            // (this can happen when the dataSource property is set from a parent element during an AttachToPanelEvent
+            // callback), we need to skip to delay the registration of the data source. This is because when removed from
+            // the panel, we stop tracking the current data source of the element and when the element is added to a panel,
+            // we start tracking it automatically. If we are in an in-between state and the data source is changed, we risk
+            // un-tracking a data source twice.
+            if ((m_Flags & VisualElementFlags.DetachedDataSource) == VisualElementFlags.DetachedDataSource)
+                return;
+
             elementPanel?.dataBindingManager.TrackDataSource(previous, current);
+        }
+
+        void DetachDataSource()
+        {
+            TrackSource(dataSource, null);
+            m_Flags |= VisualElementFlags.DetachedDataSource;
+        }
+
+        void AttachDataSource()
+        {
+            m_Flags &= ~VisualElementFlags.DetachedDataSource;
+            TrackSource(null, dataSource);
         }
     }
 }

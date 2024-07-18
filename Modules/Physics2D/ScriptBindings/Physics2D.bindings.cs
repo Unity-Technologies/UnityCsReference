@@ -3421,13 +3421,13 @@ namespace UnityEngine
         extern private SlideResults Slide_Internal(Vector2 velocity, float deltaTime, SlideMovement slideMovement);
 
         // The linear velocity vector of the object.
-        extern public Vector2 velocity { get; set; }
+        extern public Vector2 linearVelocity { get; set; }
 
         // The linear velocity X-component vector of the object.
-        extern public float velocityX { get; set; }
+        extern public float linearVelocityX { get; set; }
 
         // The linear velocity Y-component vector of the object.
-        extern public float velocityY { get; set; }
+        extern public float linearVelocityY { get; set; }
 
         // The angular velocity vector of the object in degrees/sec.
         extern public float angularVelocity { get; set; }
@@ -3451,11 +3451,11 @@ namespace UnityEngine
         // The rotational inertia of the rigidbody about the local origin in kg-m^2 (read-only).
         extern public float inertia { get; set; }
 
-        // The (linear) drag of the object.
-        extern public float drag { get; set; }
+        // The linear damping of the object.
+        extern public float linearDamping { get; set; }
 
-        // The angular drag of the object.
-        extern public float angularDrag { get; set; }
+        // The angular damping of the object.
+        extern public float angularDamping { get; set; }
 
         // Controls the effect of gravity on the object.
         extern public float gravityScale { get; set; }
@@ -3473,11 +3473,7 @@ namespace UnityEngine
 
         // Should kinematic/kinematic and kinematic/static contacts be allowed?
         extern public bool useFullKinematicContacts { get; set; }
-
-        // This property is obsolete but will be deprecated at a later date as it's commonly used.
-        // The end-user should use bodyType instead.
-        public bool isKinematic { get { return bodyType == RigidbodyType2D.Kinematic; } set { bodyType = value ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic; } }
-        
+       
         // Controls whether physics will change the rotation of the object.
         extern public bool freezeRotation { get; set; }
 

@@ -149,7 +149,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 CheckEntitlementStatusAndTriggerEvents(addList, updateList, removeList);
 
-                UpdateVisualStateVisibilityWithSearchText();
+                FilterPackagesBySearchText();
             }
         }
 
@@ -160,7 +160,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             AmendSelection(new[] { finalPackageUniqueId }, new[] { tempPackageUniqueId });
         }
 
-        public void UpdateVisualStateVisibilityWithSearchText()
+        public virtual void FilterPackagesBySearchText()
         {
             var changedVisualStates = new List<VisualState>();
             foreach (var state in visualStates)

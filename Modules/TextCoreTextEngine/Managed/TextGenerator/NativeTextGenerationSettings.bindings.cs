@@ -19,8 +19,8 @@ namespace UnityEngine.TextCore
         public IntPtr fontAsset;
         public IntPtr[] globalFontAssetFallbacks;
         public string text; // TODO: use RenderedText instead of string here
-        public int screenWidth;
-        public int screenHeight;
+        public int screenWidth; // Encoded in Fixed Point.
+        public int screenHeight; // Encoded in Fixed Point.
         public float fontSize;
         public WhiteSpace wordWrap;
         public LanguageDirection languageDirection;
@@ -34,6 +34,7 @@ namespace UnityEngine.TextCore
         public Color32 color;
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
+        public int vertexPadding; // Encoded in Fixed Point.
 
         public static NativeTextGenerationSettings Default => new ()
         {
@@ -57,6 +58,7 @@ namespace UnityEngine.TextCore
             fontStyle = tgs.fontStyle;
             fontWeight = tgs.fontWeight;
             languageDirection = tgs.languageDirection;
+            vertexPadding = tgs.vertexPadding;
         }
 
         public override string ToString()
@@ -72,7 +74,13 @@ namespace UnityEngine.TextCore
                $"{nameof(screenHeight)}: {screenHeight}\n" +
                $"{nameof(fontSize)}: {fontSize}\n" +
                $"{nameof(wordWrap)}: {wordWrap}\n" +
-               $"{nameof(languageDirection)}: {languageDirection}\n";
+               $"{nameof(languageDirection)}: {languageDirection}\n" +
+               $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
+               $"{nameof(verticalAlignment)}: {verticalAlignment}\n" +
+               $"{nameof(color)}: {color}\n" +
+               $"{nameof(fontStyle)}: {fontStyle}\n" +
+               $"{nameof(fontWeight)}: {fontWeight}\n" +
+               $"{nameof(vertexPadding)}: {vertexPadding}";
         }
 
         public bool Equals(NativeTextGenerationSettings other)
@@ -88,7 +96,8 @@ namespace UnityEngine.TextCore
                    verticalAlignment == other.verticalAlignment &&
                    color.Equals(other.color) &&
                    fontStyle == other.fontStyle &&
-                   fontWeight == other.fontWeight;
+                   fontWeight == other.fontWeight &&
+                   vertexPadding == other.vertexPadding;
         }
 
         public override bool Equals(object obj)
@@ -111,6 +120,7 @@ namespace UnityEngine.TextCore
             hashCode.Add(color);
             hashCode.Add((int)fontStyle);
             hashCode.Add((int)fontWeight);
+            hashCode.Add(vertexPadding);
             return hashCode.ToHashCode();
         }
     }
