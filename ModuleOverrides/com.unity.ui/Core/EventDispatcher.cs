@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
@@ -134,6 +135,19 @@ namespace UnityEngine.UIElements
 
         uint m_GateCount;
 
+        # region Infinite dispatching prevention and logging
+        // m_GateDepth is meant to count the amount of times an event was scheduled during another closed gate.
+        // This is used to trigger some warning once we get too deep, before a stack overflow.
+        // m_GateCount is decremented too early/before the dispatch
+        uint m_GateDepth = 0;
+        internal const int k_MaxGateDepth = 500;
+        internal const int k_NumberOfEventsWithStackInfo = 10;
+        internal const int k_NumberOfEventsWithEventInfo = 100;
+        internal uint GateDepth { get => m_GateDepth; }//for unit test
+        int m_DispatchStackFrame=0; //To record where the stack begin to be relevent for the user when we log the stack
+        private EventBase m_CurrentEvent;
+        #endregion
+
         struct DispatchContext
         {
             public uint m_GateCount;
@@ -202,6 +216,7 @@ namespace UnityEngine.UIElements
         }
 
         bool m_Immediate = false;
+
         bool dispatchImmediately
         {
             get { return m_Immediate || m_GateCount == 0; }
@@ -228,6 +243,9 @@ namespace UnityEngine.UIElements
             }
             else
             {
+                if (HandleRecursiveState(evt))
+                    return;
+
                 evt.Acquire();
                 m_Queue.Enqueue(new EventRecord
                 {
@@ -237,6 +255,48 @@ namespace UnityEngine.UIElements
                                    p.panelDebug != null && p.panelDebug.hasAttachedDebuggers ? new StackTrace() : null
                 });
             }
+        }
+
+        /// <summary>
+        /// Log info to help diagnostic
+        /// </summary>
+        /// <returns>true if likely to cause stack overflow</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool HandleRecursiveState(EventBase evt)
+        {
+            if (m_GateDepth <= k_MaxGateDepth - k_NumberOfEventsWithEventInfo)
+                return false;
+
+            //Getting the stack trace is painfully slow, only enable this for the last 10 calls
+            if (m_DispatchStackFrame != 0)
+            {
+
+                var stack = new StackTrace(1, true); // skip this method, start with panel.SendEvent
+                System.Text.StringBuilder sb = new();
+                int frameToDisplay = stack.FrameCount - m_DispatchStackFrame;
+
+                //By default evt.ToString() will display the class name, but it allows users to implement their own ToString to provide more information
+                sb.AppendLine($"Recursively dispatching event {evt} from another event {m_CurrentEvent} (depth = {m_GateDepth})");
+                for (int i = 0; i < frameToDisplay; i++)
+                {
+                    var frame = stack.GetFrame(i);
+                    sb.Append(frame.GetMethod()).AppendFormat("({0}:{1}", frame.GetFileName(), frame.GetFileLineNumber()).AppendLine(")");
+                }
+
+                Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, sb.ToString());
+            }
+            else
+            {
+                Debug.LogFormat(LogType.Error, LogOption.NoStacktrace, null, $"Recursively dispatching event {evt} from another event {m_CurrentEvent} (depth = {m_GateDepth})");
+            }
+
+            if (m_GateDepth > k_MaxGateDepth) //Stack overflow prevention
+            {
+                Debug.LogErrorFormat("Ignoring event {0}: too many events dispatched recurively", evt);
+                return true;
+            }
+            
+            return false;
         }
 
         internal void PushDispatcherContext()
@@ -265,6 +325,7 @@ namespace UnityEngine.UIElements
         internal void CloseGate()
         {
             m_GateCount++;
+            m_GateDepth++;
         }
 
         internal void OpenGate()
@@ -276,9 +337,22 @@ namespace UnityEngine.UIElements
                 m_GateCount--;
             }
 
-            if (m_GateCount == 0)
+            try
             {
-                ProcessEventQueue();
+                if (m_GateCount == 0)
+                {
+                    ProcessEventQueue();
+                }
+            }
+            finally
+            {
+                // The static initialization of m_GateDepth is the only one so if we skip decrementing the counter because of an exception,
+                // the warning will be displayed for all subsequent events dispatched...
+                Debug.Assert(m_GateDepth > 0, "m_GateDepth > 0");
+                if (m_GateDepth > 0)
+                {
+                    m_GateDepth--;
+                }
             }
         }
 
@@ -350,48 +424,61 @@ namespace UnityEngine.UIElements
             {
                 evt.PreDispatch(panel);
 
-                if (!evt.stopDispatch && !evt.isPropagationStopped)
+                try
                 {
-                    ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
-                }
+                    m_CurrentEvent = evt;
+                    // Record the stack frame depth for later trimming the irrelevant part of the stack when logging recursive events.
+                    // 0 mean no stack trace displayed
+                    m_DispatchStackFrame = m_GateDepth > k_MaxGateDepth - k_NumberOfEventsWithStackInfo ? new StackTrace().FrameCount : 0;
 
-                // Last chance to build a path. Some dispatching strategies (e.g. PointerCaptureDispatchingStrategy)
-                // don't call PropagateEvents but still need to call ExecuteDefaultActions on composite roots.
-                var path = evt.path;
-                if (path == null && evt.bubblesOrTricklesDown && evt.leafTarget is VisualElement leafTarget)
-                {
-                    path = PropagationPaths.Build(leafTarget, evt);
-                    evt.path = path;
-                    EventDebugger.LogPropagationPaths(evt, path);
-                }
-
-                if (path != null)
-                {
-                    foreach (var element in path.targetElements)
+                    if (!evt.stopDispatch && !evt.isPropagationStopped)
                     {
-                        if (element.panel == panel)
+                        ApplyDispatchingStrategies(evt, panel, imguiEventIsInitiallyUsed);
+                    }
+
+                    // Last chance to build a path. Some dispatching strategies (e.g. PointerCaptureDispatchingStrategy)
+                    // don't call PropagateEvents but still need to call ExecuteDefaultActions on composite roots.
+                    var path = evt.path;
+                    if (path == null && evt.bubblesOrTricklesDown && evt.leafTarget is VisualElement leafTarget)
+                    {
+                        path = PropagationPaths.Build(leafTarget, evt);
+                        evt.path = path;
+                        EventDebugger.LogPropagationPaths(evt, path);
+                    }
+
+                    if (path != null)
+                    {
+                        foreach (var element in path.targetElements)
                         {
-                            evt.target = element;
+                            if (element.panel == panel)
+                            {
+                                evt.target = element;
+                                EventDispatchUtilities.ExecuteDefaultAction(evt);
+                            }
+                        }
+
+                        // Reset target to leaf target
+                        evt.target = evt.leafTarget;
+                    }
+                    else
+                    {
+                        // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
+                        if (!(evt.target is VisualElement target))
+                        {
+                            evt.target = target = panel.visualTree;
+                        }
+
+                        if (target.panel == panel)
+                        {
                             EventDispatchUtilities.ExecuteDefaultAction(evt);
                         }
                     }
-
-                    // Reset target to leaf target
-                    evt.target = evt.leafTarget;
                 }
-                else
+                finally
                 {
-                    // If no propagation path, make sure EventDispatchUtilities.ExecuteDefaultAction has a target
-                    if (!(evt.target is VisualElement target))
-                    {
-                        evt.target = target = panel.visualTree;
-                    }
-
-                    if (target.panel == panel)
-                    {
-                        EventDispatchUtilities.ExecuteDefaultAction(evt);
-                    }
+                    m_CurrentEvent = null;
                 }
+            
 
                 m_DebuggerEventDispatchingStrategy.PostDispatch(evt, panel);
 

@@ -51,7 +51,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private static readonly List<string> MinorUnityVersions = new List<string> { "1", "2", "3", "4" };
+        private static readonly List<string> MinorUnityVersions = new List<string> { "0", "1", "2", "3", "4" };
 
         [Serializable]
         class AdvancedSettings
@@ -379,7 +379,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!PackageValidation.ValidateUnityVersion(m_UnityMajor.stringValue, m_UnityMinor.stringValue,
                     m_UnityRelease.stringValue))
                 {
-                    var unityVersion = string.Join(".", new[] {m_UnityMajor.stringValue, m_UnityMinor.stringValue});
+                    var unityVersion = string.Join(".", new[] { m_UnityMajor.stringValue, m_UnityMinor.stringValue });
                     if (!string.IsNullOrWhiteSpace(m_UnityRelease.stringValue))
                         unityVersion += "." + m_UnityRelease.stringValue.Trim();
 
@@ -544,7 +544,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var splitVersions = ((string)info["unity"]).Split('.');
                         packageState.info.unity = new PackageUnityVersion
                         {
-                            isEnable = true, major = splitVersions[0], minor = splitVersions.Length > 1 ? splitVersions[1] : "", release = ""
+                            isEnable = true,
+                            major = splitVersions[0],
+                            minor = splitVersions.Length > 1 ? splitVersions[1] : "",
+                            release = ""
                         };
 
                         if (info.ContainsKey("unityRelease") && info["unityRelease"] is string)
@@ -555,7 +558,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var unityVersion = InternalEditorUtility.GetUnityVersion();
                         packageState.info.unity = new PackageUnityVersion
                         {
-                            isEnable = false, major = unityVersion.Major.ToString(), minor = unityVersion.Minor.ToString(), release = ""
+                            isEnable = false,
+                            major = unityVersion.Major.ToString(),
+                            minor = unityVersion.Minor.ToString(),
+                            release = ""
                         };
                     }
 
@@ -641,7 +647,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     !string.IsNullOrWhiteSpace(packageState.info.unity.minor))
                 {
                     json["unity"] = string.Join(".",
-                        new[] {packageState.info.unity.major.Trim(), packageState.info.unity.minor.Trim()});
+                        new[] { packageState.info.unity.major.Trim(), packageState.info.unity.minor.Trim() });
 
                     if (!string.IsNullOrWhiteSpace(packageState.info.unity.release))
                         json["unityRelease"] = packageState.info.unity.release.Trim();
