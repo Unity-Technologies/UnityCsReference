@@ -226,10 +226,10 @@ namespace UnityEngine.UIElements
                     return bestSoFar;
                 }
 
-                int n = candidate.childCount;
+                int n = candidate.hierarchy.childCount;
                 for (int i = 0; i < n; i++)
                 {
-                    var child = candidate[i];
+                    var child = candidate.hierarchy[i];
                     bestSoFar = GetBestOverall(child, bestSoFar);
                 }
 

@@ -186,13 +186,10 @@ namespace UnityEngine
             if (error != null)
                 throw new TargetInvocationException(GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")", error);
 
-            AndroidReflection.SetNativeExceptionOnProxy(GetRawProxy(),
-                new Exception("No such proxy method: " + GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")"), true);
+            var ex = new Exception("No such proxy method: " + GetType() + "." + methodName + "(" + string.Join(",", argTypeNames) + ")");
 
-
-
-            return null;
-
+            var nativeError = AndroidReflection.CreateInvocationError(ex, methodNotFound: true);
+            return nativeError == IntPtr.Zero ? null : new AndroidJavaObject(nativeError);
         }
 
         public virtual AndroidJavaObject Invoke(string methodName, AndroidJavaObject[] javaArgs)
@@ -970,7 +967,7 @@ namespace UnityEngine
         private static readonly IntPtr s_ReflectionHelperGetFieldID          = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldID", "(Ljava/lang/Class;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/reflect/Field;");
         private static readonly IntPtr s_ReflectionHelperGetFieldSignature   = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "getFieldSignature", "(Ljava/lang/reflect/Field;)Ljava/lang/String;");
         private static readonly IntPtr s_ReflectionHelperNewProxyInstance = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "newProxyInstance", "(Lcom/unity3d/player/UnityPlayer;JLjava/lang/Class;)Ljava/lang/Object;");
-        private static readonly IntPtr s_ReflectionHelperSetNativeExceptionOnProxy = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "setNativeExceptionOnProxy", "(Ljava/lang/Object;JZ)V");
+        private static readonly IntPtr s_ReflectionHelperCeateInvocationError = GetStaticMethodID(RELECTION_HELPER_CLASS_NAME, "createInvocationError", "(JZ)Ljava/lang/Object;");
         private static readonly IntPtr s_FieldGetDeclaringClass              = GetMethodID("java/lang/reflect/Field", "getDeclaringClass", "()Ljava/lang/Class;");
 
         public static IntPtr GetConstructorMember(IntPtr jclass, string signature)
@@ -1045,13 +1042,12 @@ namespace UnityEngine
             return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperNewProxyInstance, jniArgs);
         }
 
-        public static void SetNativeExceptionOnProxy(IntPtr proxy, Exception e, bool methodNotFound)
+        internal static IntPtr CreateInvocationError(Exception ex, bool methodNotFound)
         {
-            jvalue[] jniArgs = new jvalue[3];
-            jniArgs[0].l = proxy;
-            jniArgs[1].j = GCHandle.ToIntPtr(GCHandle.Alloc(e)).ToInt64();
-            jniArgs[2].z = methodNotFound;
-            AndroidJNISafe.CallStaticVoidMethod(s_ReflectionHelperClass, s_ReflectionHelperSetNativeExceptionOnProxy, jniArgs);
+            jvalue[] jniArgs = new jvalue[2];
+            jniArgs[0].j = GCHandle.ToIntPtr(GCHandle.Alloc(ex)).ToInt64();
+            jniArgs[1].z = methodNotFound;
+            return AndroidJNISafe.CallStaticObjectMethod(s_ReflectionHelperClass, s_ReflectionHelperCeateInvocationError, jniArgs);
         }
     }
 
@@ -1094,8 +1090,7 @@ namespace UnityEngine
             }
             catch (Exception e)
             {
-                AndroidReflection.SetNativeExceptionOnProxy(proxy.GetRawProxy(), e, false);
-                return IntPtr.Zero;
+                return AndroidReflection.CreateInvocationError(e, methodNotFound: false);
             }
         }
 

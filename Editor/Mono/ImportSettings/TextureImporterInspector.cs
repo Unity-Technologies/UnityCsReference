@@ -956,6 +956,12 @@ namespace UnityEditor
 
         void ReadableGUI(TextureInspectorGUIElement guiElements)
         {
+            TextureImporterShape shape = (TextureImporterShape)m_TextureShape.intValue;
+            if (shape == TextureImporterShape.Texture2DArray || shape == TextureImporterShape.Texture3D)
+            {
+                return; // The checkbox has no effect on Texture2DArray / Texture3D in 2021.3 & below (they are always imported as readable), so we hide it.
+            }
+
             ToggleFromInt(m_IsReadable, s_Styles.readWrite);
 
             if (m_IsReadable.intValue > 0 && !m_IsReadable.hasMultipleDifferentValues && ShouldShowWarningForReadWrite())

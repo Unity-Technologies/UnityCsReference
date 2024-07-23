@@ -181,6 +181,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
     [NativeHeader("Runtime/Graphics/GeneratedTextures.h")]
+    [HelpURL("Textures")] // The 2D texture is regarded as the 'default' texture, so it doesn't have a dedicated 'class-Texture2D' manual page.
     [UsedByNativeCode]
     public sealed partial class Texture2D : Texture
     {

@@ -900,6 +900,9 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::SetInstanceMultiplier", HasExplicitThis = true)]
         extern public void SetInstanceMultiplier(uint multiplier);
 
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetWireframe", HasExplicitThis = true)]
+        extern public void SetWireframe(bool enable);
+
         public void SetRenderTarget(RenderTargetIdentifier rt)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

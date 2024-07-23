@@ -46,10 +46,6 @@ namespace UnityEngine.UIElements
             get { return m_DelegatesFocus; }
             set
             {
-                if (!((VisualElement)this).isCompositeRoot)
-                {
-                    throw new InvalidOperationException("delegatesFocus should only be set on composite roots.");
-                }
                 m_DelegatesFocus = value;
             }
         }

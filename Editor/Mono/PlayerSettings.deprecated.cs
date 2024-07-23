@@ -138,6 +138,9 @@ namespace UnityEditor
             }
         }
 
+        [Obsolete("minifyWithR8 is obsolete and has no effect anymore, since Android Gradle Plugin 7.0 always uses R8", false)]
+        public static bool minifyWithR8 { get { return true; } set {} }
+
         partial class iOS
         {
             // deprecated in 5.0
