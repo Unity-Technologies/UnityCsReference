@@ -53,7 +53,10 @@ namespace UnityEngine.UIElements
             }
         }
 
-        Toggle m_Toggle;
+        Toggle m_Toggle = new Toggle
+            {
+                value = true
+            };
         VisualElement m_Container;
 
         internal Toggle toggle => m_Toggle;
@@ -191,11 +194,8 @@ namespace UnityEngine.UIElements
             m_Value = true;
 
             AddToClassList(ussClassName);
+            delegatesFocus = true;
 
-            m_Toggle = new Toggle
-            {
-                value = true
-            };
             m_Toggle.RegisterValueChangedCallback((evt) =>
             {
                 value = m_Toggle.value;

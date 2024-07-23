@@ -233,25 +233,34 @@ namespace UnityEditor.ShaderKeywordFilter
                 {
                     var enumerable = value as IEnumerable;
 
-                    bool hasDifferentChildren = (node != null) && (node.m_Children.Count > 0);
-                    foreach (var e in enumerable)
+                    // UUM-72309 - A crash occured due to a third party package throwing when accessing its enumerator.
+                    // This try/catch should prevent such issues and log an error.
+                    try
                     {
-                        var childVisited = new HashSet<object>(visited);
-                        SettingsNode newBranch = GatherFilterData(f.Name, e, childVisited, containerConstraints);
-                        if (newBranch != null)
+                        bool hasDifferentChildren = (node != null) && (node.m_Children.Count > 0);
+                        foreach (var e in enumerable)
                         {
-                            if (node == null)
-                                node = new SettingsNode(nodeName);
+                            var childVisited = new HashSet<object>(visited);
+                            SettingsNode newBranch = GatherFilterData(f.Name, e, childVisited, containerConstraints);
+                            if (newBranch != null)
+                            {
+                                if (node == null)
+                                    node = new SettingsNode(nodeName);
 
-                            if (hasDifferentChildren)
-                            {
-                                Debug.LogError("ShaderKeywordFilter attributes cannot be placed on a settings tree with multiple different branches on the same level.");
-                            }
-                            else
-                            {
-                                node.m_Children.Add(newBranch);
+                                if (hasDifferentChildren)
+                                {
+                                    Debug.LogError("ShaderKeywordFilter attributes cannot be placed on a settings tree with multiple different branches on the same level.");
+                                }
+                                else
+                                {
+                                    node.m_Children.Add(newBranch);
+                                }
                             }
                         }
+                    }
+                    catch(Exception ex)
+                    {
+                        Debug.LogError($"An error occured while processing ShaderKeywordFilter attributes; Reading node: {nodeName} and field: {f.Name}\n {ex.Message}");
                     }
                 }
                 else if (!type.IsValueType || (type.IsValueType && !type.IsPrimitive && !type.IsEnum)) // class or struct

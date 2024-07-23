@@ -428,7 +428,28 @@ namespace UnityEditor
         // Set texture importers settings from [[TextureImporterSettings]] class.
         public void SetTextureSettings(TextureImporterSettings src)
         {
+            ValidateAndCorrectTextureImporterSettings(src);
             settings = src;
+        }
+
+        private void ValidateAndCorrectTextureImporterSettings(TextureImporterSettings m_Settings)
+        {
+            switch (m_Settings.textureType)
+            {
+                case TextureImporterType.Sprite:
+                    m_Settings.npotScale = ValidateAndCorrectSetting(m_Settings.npotScale, TextureImporterNPOTScale.None, nameof(m_Settings.npotScale));
+                    break;
+            }
+        }
+
+        private T ValidateAndCorrectSetting<T>(T actual, T expected, string settingName)
+        {
+            if (!actual.Equals(expected))
+            {
+                Debug.LogWarning($"You cannot set {settingName} to {actual} for this texture type. It has been reset to {expected}.");
+                return expected;
+            }
+            return actual;
         }
 
         private extern TextureImporterSettings settings { get; set; }

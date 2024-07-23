@@ -312,19 +312,27 @@ namespace UnityEditor.Connect
 
         void LoadJsonConfiguration(string json)
         {
-            var jsonParser = new JSONParser(json);
-            var parsedJson = jsonParser.Parse();
-            var jsonConfigs = parsedJson.AsDict();
-            foreach (var key in jsonConfigs.Keys)
+            try
             {
-                if (!m_ServicesUrlsConfig.ContainsKey(key))
+                var jsonParser = new JSONParser(json);
+                var parsedJson = jsonParser.Parse();
+                var jsonConfigs = parsedJson.AsDict();
+                foreach (var key in jsonConfigs.Keys)
                 {
-                    m_ServicesUrlsConfig.Add(key, jsonConfigs[key].AsObject().ToString());
+                    if (!m_ServicesUrlsConfig.ContainsKey(key))
+                    {
+                        m_ServicesUrlsConfig.Add(key, jsonConfigs[key].AsObject().ToString());
+                    }
+                    else
+                    {
+                        m_ServicesUrlsConfig[key] = jsonConfigs[key].AsObject().ToString();
+                    }
                 }
-                else
-                {
-                    m_ServicesUrlsConfig[key] = jsonConfigs[key].AsObject().ToString();
-                }
+            }
+            catch (JSONParseException jsonParseException)
+            {
+                Debug.LogError($"Error parsing the json '{json}': {jsonParseException.Message}");
+                throw;
             }
         }
 
