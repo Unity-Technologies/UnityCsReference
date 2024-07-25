@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements.UIR
             public Rect subRect;
 
             // Rectangle which clip the resulting tessellated geometry for background repeat to correctly support rounded corners.
-            // When backgroundRepeatRect is not empty, it represent the clipped portion of the original visual element (represented by rect) 
+            // When backgroundRepeatRect is not empty, it represent the clipped portion of the original visual element (represented by rect)
             // that should be repeated.
             public Rect backgroundRepeatRect;
 
@@ -651,8 +651,7 @@ namespace UnityEngine.UIElements.UIR
 
         void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)
         {
-            int vSrc = 0;
-            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.fontAssetIds.Length : textInfo.meshInfo.Length; i < meshInfoCount; i++)
+            for (int i = 0, meshInfoCount = isNative ? nativeTextInfo.meshInfos.Length : textInfo.meshInfo.Length; i < meshInfoCount; i++)
             {
                 MeshInfo meshInfo = new();
                 FontAsset fa = null;
@@ -665,9 +664,9 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    int glyphAmount = nativeTextInfo.fontAssetLastGlyphIndex[i] - (i > 0 ? nativeTextInfo.fontAssetLastGlyphIndex[i - 1] : 0);
+                    int glyphAmount = nativeTextInfo.meshInfos[i].textElementInfos.Length;
                     remainingVertexCount = glyphAmount * 4;
-                    fa = nativeTextInfo.fontAssets[i];
+                    fa = nativeTextInfo.meshInfos[i].fontAsset;
                 }
 
                 int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
@@ -683,14 +682,14 @@ namespace UnityEngine.UIElements.UIR
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
-                    for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
+                    for (int vDst = 0, vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
                     {
                         if (isNative)
                         {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].bottomLeft, pos);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].topLeft, pos);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].topRight, pos);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(nativeTextInfo.textElementInfos[vSrc].bottomRight, pos);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos);
                         }
                         else
                         {

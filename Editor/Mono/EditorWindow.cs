@@ -1384,8 +1384,6 @@ namespace UnityEditor
             foreach (var win in editorWindows.Where(e => !!e).OrderBy(e => e.titleContent.text))
             {
                 var title = win.titleContent.text;
-                if (!String.IsNullOrEmpty(win.titleContent.tooltip) && win.titleContent.tooltip != title)
-                    title = win.titleContent.tooltip;
                 title = title.Replace("/", "\\");
                 Menu.AddMenuItem($"{k_RootMenuItemName}/{menuIndex++} {title}", "", false, menuIdx++, () => win.Focus(), null);
             }

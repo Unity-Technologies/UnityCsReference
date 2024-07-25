@@ -28,18 +28,16 @@ namespace UnityEngine.TextCore.Text
         internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings)
         {
             var textInfo = GenerateTextInternal(settings);
-            var textElementInfos = textInfo.textElementInfos;
-            textInfo.fontAssets = new FontAsset[textInfo.fontAssetIds.Length];
 
-            int previousLastGlyphIndex = 0;
-            for (int i = 0; i < textInfo.fontAssetIds.Length; i++)
+            foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
             {
-                var fa = FontAsset.GetFontAssetByID(textInfo.fontAssetIds[i]);
-                textInfo.fontAssets[i] = fa;
+                var fa = FontAsset.GetFontAssetByID(meshInfo.fontAssetId);
+                meshInfo.fontAsset = fa;
 
-                for (int j = previousLastGlyphIndex; j < textInfo.fontAssetLastGlyphIndex[i]; j++)
+                // TODO we should add glyphs in batch instead
+                foreach (ref var textElementInfo in meshInfo.textElementInfos.AsSpan())
                 {
-                    var glyphID = textElementInfos[j].glyphID;
+                    var glyphID = textElementInfo.glyphID;
 
                     bool success = fa.TryAddGlyphInternal((uint)glyphID, out var glyph);
                     if (!success)
@@ -64,14 +62,12 @@ namespace UnityEngine.TextCore.Text
                     bottomRightUV.x = topRightUV.x;
                     bottomRightUV.y = bottomLeftUV.y;
 
-                    textElementInfos[j].bottomLeft.uv0 = bottomLeftUV;
-                    textElementInfos[j].topLeft.uv0 = topLeftUV;
-                    textElementInfos[j].topRight.uv0 = topRightUV;
-                    textElementInfos[j].bottomRight.uv0 = bottomRightUV;
+                    textElementInfo.bottomLeft.uv0 = bottomLeftUV;
+                    textElementInfo.topLeft.uv0 = topLeftUV;
+                    textElementInfo.topRight.uv0 = topRightUV;
+                    textElementInfo.bottomRight.uv0 = bottomRightUV;
                 }
-                previousLastGlyphIndex = textInfo.fontAssetLastGlyphIndex[i];
             }
-
             return textInfo;
         }
 

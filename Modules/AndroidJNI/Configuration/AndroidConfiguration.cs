@@ -38,29 +38,37 @@ namespace UnityEngine.Android
         const int ColorModeHdrMask = 12;
         const int ColorModeWideColorGamutMask = 3;
 
-        private int colorMode { get; }
-        public int densityDpi { get; }
-        public float fontScale { get; }
-        public int fontWeightAdjustment { get; }
-        public AndroidKeyboard keyboard { get; }
-        public AndroidHardwareKeyboardHidden hardKeyboardHidden { get; }
-        public AndroidKeyboardHidden keyboardHidden { get; }
-        public int mobileCountryCode { get; }
-        public int mobileNetworkCode { get; }
-        public AndroidNavigation navigation { get; }
-        public AndroidNavigationHidden navigationHidden { get; }
-        public AndroidOrientation orientation { get; }
-        public int screenHeightDp { get; }
-        public int screenWidthDp { get; }
-        public int smallestScreenWidthDp { get; }
-        private int screenLayout { get; }
-        public AndroidTouchScreen touchScreen { get; }
-        private int uiMode { get; }
-        private string primaryLocaleCountry { get; }
-        private string primaryLocaleLanguage { get; }
+        private int colorMode { get; set; }
+        public int densityDpi { get; private set; }
+        public float fontScale { get; private set; }
+        public int fontWeightAdjustment { get; private set; }
+        public AndroidKeyboard keyboard { get; private set; }
+        public AndroidHardwareKeyboardHidden hardKeyboardHidden { get; private set; }
+        public AndroidKeyboardHidden keyboardHidden { get; private set; }
+        public int mobileCountryCode { get; private set; }
+        public int mobileNetworkCode { get; private set; }
+        public AndroidNavigation navigation { get; private set; }
+        public AndroidNavigationHidden navigationHidden { get; private set; }
+        public AndroidOrientation orientation { get; private set; }
+        public int screenHeightDp { get; private set; }
+        public int screenWidthDp { get; private set; }
+        public int smallestScreenWidthDp { get; private set; }
+        private int screenLayout { get; set; }
+        public AndroidTouchScreen touchScreen { get; private set; }
+        private int uiMode { get; set; }
+        private string primaryLocaleCountry { get; set; }
+        private string primaryLocaleLanguage { get; set; }
         // Having this as an array, because it seems you can have multiple locales set, but for now we can only acquire primary locale
         // In case we'll have a way to acquire multiple locales in the future, have this as an array to prevent API changes
-        public AndroidLocale[] locales => new[] { new AndroidLocale(primaryLocaleCountry, primaryLocaleLanguage) };
+        public AndroidLocale[] locales
+        {
+            get
+            {
+                if (primaryLocaleCountry == null && primaryLocaleLanguage == null)
+                    return new AndroidLocale[0];
+                return new[] { new AndroidLocale(primaryLocaleCountry, primaryLocaleLanguage) };
+            }
+        }
 
         // Below properties are not marshalled
         public AndroidColorModeHdr colorModeHdr => (AndroidColorModeHdr)(colorMode & ColorModeHdrMask);
@@ -71,6 +79,39 @@ namespace UnityEngine.Android
         public AndroidScreenLayoutSize screenLayoutSize => (AndroidScreenLayoutSize)(screenLayout & ScreenLayoutSizeMask);
         public AndroidUIModeNight uiModeNight => (AndroidUIModeNight)(uiMode & UiModeNightMask);
         public AndroidUIModeType uiModeType => (AndroidUIModeType)(uiMode & UiModeTypeMask);
+
+        public AndroidConfiguration()
+        {
+        }
+
+        public AndroidConfiguration(AndroidConfiguration otherConfiguration)
+        {
+            this.CopyFrom(otherConfiguration);
+        }
+
+        public void CopyFrom(AndroidConfiguration otherConfiguration)
+        {
+            colorMode = otherConfiguration.colorMode;
+            densityDpi = otherConfiguration.densityDpi;
+            fontScale = otherConfiguration.fontScale;
+            fontWeightAdjustment = otherConfiguration.fontWeightAdjustment;
+            keyboard = otherConfiguration.keyboard;
+            hardKeyboardHidden = otherConfiguration.hardKeyboardHidden;
+            keyboardHidden = otherConfiguration.keyboardHidden;
+            mobileCountryCode = otherConfiguration.mobileCountryCode;
+            mobileNetworkCode = otherConfiguration.mobileNetworkCode;
+            navigation = otherConfiguration.navigation;
+            navigationHidden = otherConfiguration.navigationHidden;
+            orientation = otherConfiguration.orientation;
+            screenHeightDp = otherConfiguration.screenHeightDp;
+            screenWidthDp = otherConfiguration.screenWidthDp;
+            smallestScreenWidthDp = otherConfiguration.smallestScreenWidthDp;
+            screenLayout = otherConfiguration.screenLayout;
+            touchScreen = otherConfiguration.touchScreen;
+            uiMode = otherConfiguration.uiMode;
+            primaryLocaleCountry = otherConfiguration.primaryLocaleCountry;
+            primaryLocaleLanguage = otherConfiguration.primaryLocaleLanguage;
+        }
 
         [Preserve]
         public override string ToString()
