@@ -435,6 +435,9 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void CollectUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> foundEntries)
         {
+            if (parent == null)
+                return;
+
             foreach (var e in m_UxmlObjectEntries)
             {
                 if (e.parentId == parent.id)

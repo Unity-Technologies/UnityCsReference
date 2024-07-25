@@ -147,13 +147,16 @@ namespace UnityEditor.Build.Profile
                 Application.OpenURL(k_DevOpsUrl);
             };
 
-            BuildProfileContext.instance.activeProfileChanged += OnActiveProfileChanged;
+            BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
+            BuildProfileContext.activeProfileChanged += OnActiveProfileChanged;
         }
 
         public void OnDisable()
         {
             DestroyImmediate(buildProfileEditor);
-            BuildProfileContext.instance.activeProfileChanged -= OnActiveProfileChanged;
+
+            BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
+
             if (m_BuildProfileDataSource != null)
             {
                 SendWorkflowReport();

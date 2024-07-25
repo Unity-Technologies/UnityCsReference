@@ -5,15 +5,19 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine.TextCore;
 
 namespace UnityEngine.TextCore.Text
 {
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/TextCoreTextEngine/Native/TextInfo.h")]
-    internal struct NativeTextInfo
+    [NativeHeader("Modules/TextCoreTextEngine/Native/ATGMeshInfo.h")]
+    internal struct ATGMeshInfo
     {
-        public ATGMeshInfo[] meshInfos;
+        public NativeTextElementInfo[] textElementInfos;
+        public int fontAssetId;
+        public int textElementCount;
+
+        [Ignore] // This field must be populated on the managed side
+        public FontAsset fontAsset;
     }
 }

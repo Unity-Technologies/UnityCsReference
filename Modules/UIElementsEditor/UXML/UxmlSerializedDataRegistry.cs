@@ -94,7 +94,8 @@ namespace UnityEditor.UIElements
                 var declaringType = serializedDataType.DeclaringType;
 
                 var uxmlElementAttribute = declaringType.GetCustomAttribute<UxmlElementAttribute>();
-                if (uxmlElementAttribute != null && !string.IsNullOrEmpty(uxmlElementAttribute.name))
+                if (uxmlElementAttribute != null && !string.IsNullOrEmpty(uxmlElementAttribute.name) &&
+                    uxmlElementAttribute.name != declaringType.Name) // Ignore the default name (UUM-73716)
                 {
                     var nameValidationError = UxmlUtility.ValidateUxmlName(uxmlElementAttribute.name);
                     if (nameValidationError != null)
@@ -119,7 +120,17 @@ namespace UnityEditor.UIElements
         {
             if (SerializedDataTypes.TryGetValue(typeName, out var desc))
             {
-                Debug.LogError($"A UxmlElement for the type {typeName} in the assembly {serializedDataType.Assembly.GetName().Name} was already registered from another assembly {desc.Assembly.GetName().Name}.");
+                if (serializedDataType == desc)
+                {
+                    Debug.LogWarning($"UxmlElement Registration: The UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered.");
+                    return;
+                }
+
+                if (serializedDataType.Assembly != desc.Assembly)
+                    Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered by a different assembly '{desc.Assembly.GetName().Name}.");
+                else
+                    Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' is already registered with '{desc.Name}'. It cannot be registered again with '{serializedDataType.Name}'.");
+
                 return;
             }
 

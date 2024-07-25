@@ -6,13 +6,13 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Collections;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Rendering
 {
     public static partial class RenderPipelineManager
     {
-        static List<Camera> s_Cameras = new List<Camera>();
         private static bool s_CleanUpPipeline = false;
 
         const string k_BuiltinPipelineName = "Built-in Pipeline";
@@ -145,15 +145,14 @@ namespace UnityEngine.Rendering
                 , safety
                 );
 
-            s_Cameras.Clear();
-
-            loop.GetCameras(s_Cameras);
-            if (renderRequest == null)
-                currentPipeline.InternalRender(loop, s_Cameras);
-            else
-                currentPipeline.InternalProcessRenderRequests(loop, s_Cameras[0], renderRequest);
-
-            s_Cameras.Clear();
+            using (ListPool<Camera>.Get(out var cameras))
+            {
+                loop.GetCameras(cameras);
+                if (renderRequest == null)
+                    currentPipeline.InternalRender(loop, cameras);
+                else
+                    currentPipeline.InternalProcessRenderRequests(loop, cameras[0], renderRequest);
+            }
         }
 
         internal static bool TryPrepareRenderPipeline(RenderPipelineAsset pipelineAsset)

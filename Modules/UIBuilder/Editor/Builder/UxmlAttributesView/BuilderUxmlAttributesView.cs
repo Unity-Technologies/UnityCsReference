@@ -1141,6 +1141,9 @@ namespace Unity.UI.Builder
                 var uxmlObjectField = CreateUxmlObjectAttributeRow(attribute, propertyPath);
                 uxmlObjectField.Bind(m_CurrentElementSerializedObject);
                 fieldElement.Add(uxmlObjectField);
+
+                // Disable template override support for UxmlObjects. (UUM-72789)
+                uxmlObjectField.SetEnabled(!isInTemplateInstance);
             }
             else
             {

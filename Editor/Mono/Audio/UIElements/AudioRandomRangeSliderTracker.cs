@@ -6,6 +6,7 @@ using System;
 using System.Transactions;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEditor.Audio.UIElements;
 
@@ -57,6 +58,7 @@ class AudioRandomRangeSliderTracker : VisualElement
         rangeTracker.RegisterCallback<CustomStyleResolvedEvent>(CustomStylesResolved);
         rangeTracker.m_ParentSlider.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         rangeTracker.RegisterCallback<PropertyChangedEvent>(OnPropertyChanged);
+        rangeTracker.style.overflow = Overflow.Visible;
 
         return rangeTracker;
     }
@@ -102,16 +104,27 @@ class AudioRandomRangeSliderTracker : VisualElement
         var parentSlider = sliderTracker.m_ParentSlider;
         var contentRect = context.visualElement.contentRect;
 
+        var hasPositiveRandomizationApplied = range.y > 0.0f;
+        var hasNegativeRandomizationApplied = range.x < 0.0f;
+
         // Offset the range so it is centered around the parent slider's current value.
         range.x += parentSlider.value;
         range.y += parentSlider.value;
 
         // Measured from a screenshot of the slider. The value is in pixels.
         var sliderHeadWidth = 10.0f;
+        var trackHeight = contentRect.yMax - contentRect.yMin;
 
         // Map the range from the slider value range (e.g. dB) to the horizontal span of the content-rect (px).
-        var left  = Map(range.y, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
-        var right = Map(range.x, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
+        var left  = Map(range.x, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
+        var right = Map(range.y, parentSlider.lowValue, parentSlider.highValue, contentRect.xMin + sliderHeadWidth / 2.0f, contentRect.xMax - sliderHeadWidth / 2.0f);
+
+        if (hasPositiveRandomizationApplied) { right += sliderHeadWidth / 2.0f; }
+        if (hasNegativeRandomizationApplied) { left  -= sliderHeadWidth / 2.0f; }
+
+        // Determine if the slider value is being clipped in either end.
+        var lowEndClipped = left < contentRect.xMin;
+        var highEndClipped = right > contentRect.xMax;
 
         // Clamp the mapped range so that it lies within the boundaries of the content-rect.
         left =  Mathf.Clamp(left, contentRect.xMin, contentRect.xMax);
@@ -126,5 +139,29 @@ class AudioRandomRangeSliderTracker : VisualElement
         painter2D.LineTo(new Vector2(left, contentRect.yMax));
         painter2D.ClosePath();
         painter2D.Fill();
+
+        if (sliderTracker.enabledSelf && lowEndClipped)
+        {
+            painter2D.fillColor = sliderTracker.m_TrackerEnabledColor;
+            painter2D.BeginPath();
+            painter2D.MoveTo(new Vector2(contentRect.xMin - trackHeight * 2, contentRect.yMin));
+            painter2D.LineTo(new Vector2(contentRect.xMin - trackHeight * 1, contentRect.yMin));
+            painter2D.LineTo(new Vector2(contentRect.xMin - trackHeight * 1, contentRect.yMax));
+            painter2D.LineTo(new Vector2(contentRect.xMin - trackHeight * 2, contentRect.yMax));
+            painter2D.ClosePath();
+            painter2D.Fill();
+        }
+
+        if (sliderTracker.enabledSelf && highEndClipped)
+        {
+            painter2D.fillColor = sliderTracker.m_TrackerEnabledColor;
+            painter2D.BeginPath();
+            painter2D.MoveTo(new Vector2(contentRect.xMax + trackHeight * 1, contentRect.yMin));
+            painter2D.LineTo(new Vector2(contentRect.xMax + trackHeight * 2, contentRect.yMin));
+            painter2D.LineTo(new Vector2(contentRect.xMax + trackHeight * 2, contentRect.yMax));
+            painter2D.LineTo(new Vector2(contentRect.xMax + trackHeight * 1, contentRect.yMax));
+            painter2D.ClosePath();
+            painter2D.Fill();
+        }
     }
 }

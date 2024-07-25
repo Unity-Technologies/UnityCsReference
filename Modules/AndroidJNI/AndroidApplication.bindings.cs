@@ -57,10 +57,20 @@ namespace UnityEngine.Android
         private static AndroidConfiguration m_CurrentConfiguration;
 
         [RequiredByNativeCode(GenerateProxy = true)]
-        private static void ApplyConfiguration(AndroidConfiguration config, bool notifySubscribers)
+        private static void SetCurrentConfiguration(AndroidConfiguration config)
         {
             m_CurrentConfiguration = config;
+        }
 
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static AndroidConfiguration GetCurrentConfiguration()
+        {
+            return m_CurrentConfiguration;
+        }
+
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static void DispatchConfigurationChanged(bool notifySubscribers)
+        {
             if (notifySubscribers)
                 onConfigurationChanged?.Invoke(m_CurrentConfiguration);
         }

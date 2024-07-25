@@ -299,6 +299,14 @@ namespace UnityEngine.Rendering
         public extern void ClearMaterialFilters();
         public extern int GetMaterialFilterFlags(Material material);
 
+        [FreeFunction("GPUDrivenProcessor::FindUnsupportedMaterials", IsThreadSafe = true)]
+        private static extern int FindUnsupportedMaterialsImpl(ReadOnlySpan<int> materialIDs, Span<int> unsupportedMaterialIDs);
+
+        public static int FindUnsupportedMaterialIDs(NativeArray<int> materialIDs, NativeArray<int> unsupportedMaterialIDs)
+        {
+            return FindUnsupportedMaterialsImpl(materialIDs, unsupportedMaterialIDs);
+        }
+
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(UnityEngine.Rendering.GPUDrivenProcessor obj) => obj.m_Ptr;

@@ -215,22 +215,20 @@ namespace UnityEngine.UIElements
             {
                 if (!EqualsCurrentValue(value) || showMixedValue)
                 {
+                    var previousValue = m_Value;
+                    SetValueWithoutNotify(value);
+
+                    // We set showMixedValue after setting the value or it will revert the text back to the previous value. (UUUM-73855)
                     showMixedValue = false;
+
                     if (panel != null)
                     {
-                        var previousValue = m_Value;
-                        SetValueWithoutNotify(value);
-
                         using (ChangeEvent<TValueType> evt = ChangeEvent<TValueType>.GetPooled(previousValue, m_Value))
                         {
                             evt.elementTarget = this;
                             SendEvent(evt, dispatchMode);
                         }
                         NotifyPropertyChanged(valueProperty);
-                    }
-                    else
-                    {
-                        SetValueWithoutNotify(value);
                     }
                 }
             }

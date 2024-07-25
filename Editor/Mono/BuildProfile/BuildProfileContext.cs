@@ -145,7 +145,7 @@ namespace UnityEditor.Build.Profile
         /// activeProfileChanged += (BuildProfile prev, BuildProfile cur) => {}
         /// </code>
         /// </remarks>
-        public event Action<BuildProfile, BuildProfile> activeProfileChanged;
+        public static event Action<BuildProfile, BuildProfile> activeProfileChanged;
 
         /// <summary>
         /// Stores metadata required for Build Profile window and legacy APIs
