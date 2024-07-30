@@ -30,7 +30,9 @@ namespace UnityEngine
         {
             get
             {
-                if(m_CancellationTokenSource == null)
+                if (this == null)
+                    throw new MissingReferenceException("DestroyCancellation token should be called atleast once before destroying the monobehaviour object");
+                if (m_CancellationTokenSource == null)
                 {
                     m_CancellationTokenSource = new CancellationTokenSource();
                     OnCancellationTokenCreated();

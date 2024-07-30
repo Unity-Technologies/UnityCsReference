@@ -162,8 +162,6 @@ namespace UnityEditor.AssetImporters
             }
             return handledExts;
         }
-
-        internal extern static void UnregisterScriptedImporters();
     }
 
     // Class Concept: Class attribute that describes Scriptable importers and their static characteristics.
