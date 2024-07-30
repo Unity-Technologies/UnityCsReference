@@ -1056,8 +1056,6 @@ namespace UnityEditor
             if (previewAndLabelElement != null)
                 previewAndLabelElement.Clear();
 
-            tracker.RebuildIfNecessary();
-
             Editor[] editors = tracker.activeEditors;
 
             // Fix for a swapping an `m_Script` field in debug mode followed by an undo/redo. This causes the serialized object to be reset back to it's previous type.
@@ -2325,8 +2323,6 @@ namespace UnityEditor
                     if (!(ed.target is ParticleSystemRenderer))
                     {
                         currentElement.ReinitCulled(newEditorsIndex);
-                        if (!InspectorElement.disabledThrottling)
-                            m_EditorElementUpdater.Add(currentElement);
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2343,8 +2339,6 @@ namespace UnityEditor
                 
                 editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex);
-                if (!InspectorElement.disabledThrottling)
-                    m_EditorElementUpdater.Add(currentElement);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;

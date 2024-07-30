@@ -306,6 +306,10 @@ namespace UnityEditor.Experimental
                         }
                     }
                 }
+                else
+                {
+                    s_RefreshGlobalStyleCatalog = false;
+                }
 
                 if (rebuildCatalog)
                 {
