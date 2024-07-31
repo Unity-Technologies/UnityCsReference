@@ -39,9 +39,8 @@ namespace UnityEngine
 
     [NativeHeader("Modules/SpriteMask/Public/ScriptBindings/SpriteMask.bindings.h")]
     [StaticAccessor("SpriteUtilityBindings", StaticAccessorType.DoubleColon)]
-    public static class SpriteMaskUtility
+    internal static class SpriteMaskUtility
     {
-        extern public static bool HasSpriteMaskInScene();
+        extern internal static bool HasSpriteMaskInLayerRange(short lower, short upper);
     }
-
 }

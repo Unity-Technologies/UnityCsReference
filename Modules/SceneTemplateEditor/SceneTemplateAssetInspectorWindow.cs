@@ -247,6 +247,12 @@ namespace UnityEditor.SceneTemplate
         [UsedImplicitly]
         private void OnEnable()
         {
+            // Custom editors can be call in an import process to generate previews. In that case, we don't need to
+            // do anything since RenderStaticPreview does not need to have up to date dependencies, only the preview
+            // which is stored on the asset and only changes when manually edited by the user.
+            if (AssetDatabase.IsAssetImportWorkerProcess())
+                return;
+
             m_HelpIcon = EditorGUIUtility.LoadIcon("Icons/_Help.png");
             UpdateSceneTemplateAsset();
         }

@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// Provides VisualElement extension methods that implement data binding between INotivyValueChanged fields and SerializedObjects.
+    /// Provides VisualElement extension methods that implement data binding between INotifyValueChanged fields and SerializedObjects.
     /// </summary>
     public static class BindingExtensions
     {
@@ -58,6 +58,9 @@ namespace UnityEditor.UIElements
         /// </summary>
         /// <param name="element">Root VisualElement containing IBindable fields.</param>
         /// <param name="obj">Data object.</param>
+        /// <remarks>
+        /// Don’t call @@Bind()@@ from the @@Editor.CreateInspectorGUI()@2 or @@PropertyDrawer.CreatePropertyGUI()@@ override. It is called automatically on the hierarchy that these methods return.
+        /// </remarks>
         public static void Bind(this VisualElement element, SerializedObject obj)
         {
             bindingImpl.Bind(element, obj);
@@ -99,7 +102,7 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Checks the property values for changes at regular intervals. Executes the callback when the property value changes.
+        /// Executes the callback when the property value changes. Unity checks properties for changes at regular intervals during the update loop.
         /// If no callback is specified, a SerializedPropertyChangeEvent is sent to the target element.
         /// </summary>
         /// <param name="element">VisualElement tracking a property.</param>
@@ -117,11 +120,11 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Checks the object for changes at regular intervals. Executes the callback when the object value changes.
-        /// If no callback is specified, a SerializedObjectChangeEvent is sent to the target element.
+        /// Executes the callback when the property value changes. Unity checks properties for changes at regular intervals during the update loop.
+        /// If no callback is specified, a SerializedPropertyChangeEvent is sent to the target element.
         /// </summary>
         /// <param name="element">VisualElement tracking an object.</param>
-        /// <param name="property">The SerializedObject to track.</param>
+        /// <param name="obj">The SerializedObject to track.</param>
         /// <param name="callback">Invoked when one of the tracked SerializedObject's value changes.</param>
         public static void TrackSerializedObjectValue(this VisualElement element, SerializedObject obj,
             Action<SerializedObject> callback = null)

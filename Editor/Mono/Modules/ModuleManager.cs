@@ -456,7 +456,7 @@ namespace UnityEditor.Modules
         {
             if (target == BuildTarget.NoTarget)
                 throw new ArgumentException("target must be valid");
-    
+
             return GetTargetStringFromBuildTarget(target);
         }
 
@@ -493,7 +493,7 @@ namespace UnityEditor.Modules
                 return true;
 
             BuildTargetGroup curPlatform = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
-            // In Editortests no platforms are installed and below would result in false, but we support. 
+            // In Editortests no platforms are installed and below would result in false, but we support.
             if (curPlatform == BuildTargetGroup.Standalone)
                 return true;
 

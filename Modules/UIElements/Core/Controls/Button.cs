@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
     ///
     /// To bind a Button's text value to the contents of a variable, set the <c>binding-path</c> property in the
     /// UXML file, or the <c>bindingPath</c> property in the C# code, to a string that contains the variable name.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-Button|UXML element Button]].
     /// </remarks>
     public class Button : TextElement
@@ -110,6 +110,16 @@ namespace UnityEngine.UIElements
         public static readonly string iconUssClassName = ussClassName + "--with-icon";
 
         /// <summary>
+        /// The USS class name for Button elements with an icon only, no text.
+        /// </summary>
+        /// <remarks>
+        /// Unity adds this USS class to an instance of the Button element if the instance's
+        /// <see cref="Button.iconImage"/> property contains a valid Texture and no text is set. Any styling applied to
+        /// this class affects every button with an icon located beside, or below the stylesheet in the visual tree.
+        /// </remarks>
+        public static readonly string iconOnlyUssClassName = ussClassName + "--with-icon-only";
+
+        /// <summary>
         /// The USS class name of the image element that will be used to display the icon texture.
         /// </summary>
         /// <remarks>
@@ -125,17 +135,23 @@ namespace UnityEngine.UIElements
         /// Clickable MouseManipulator for this Button.
         /// </summary>
         /// <remarks>
-        /// <example>
         /// The default <see cref="Clickable"/> object provides a list of actions that are called using
         /// one or more activation filters.
-        ///
-        /// To add or remove activation triggers, modify <see cref="Clickable.activators"/>.
+        ///\\
+        ///\\
+        /// To add or remove activation triggers, modify [[MouseManipulator.activators|clickable.activators]].
         /// An activation trigger can be any mouse button, pressed any number of times, with any modifier key.
-        /// For details, see <see cref="ManipulatorActivationFilter"/>.
-        /// <code>clickable.activators.Add(new ManipulatorActivationFilter(...))</code>
-        /// or
-        /// <code>clickable.activators.Clear()</code>
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// myButton.clickable.activators.Add(new ManipulatorActivationFilter(...))
+        /// </code>
         /// </example>
+        /// <example>
+        /// <code lang="cs">myButton.clickable.activators.Clear()</code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[ManipulatorActivationFilter]]
         /// </remarks>
         public Clickable clickable
         {
@@ -160,7 +176,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="Button.clicked"/> instead.
+        /// Obsolete. Use <see cref="clicked"/> instead.
         /// </summary>
         [Obsolete("onClick is obsolete. Use clicked instead (UnityUpgradable) -> clicked", true)]
         public event Action onClick
@@ -237,8 +253,8 @@ namespace UnityEngine.UIElements
 
                 if (value.IsEmpty())
                 {
-                    ResetButtonHierarchy();
                     m_IconImage = value;
+                    ResetButtonHierarchy();
                     NotifyPropertyChanged(iconImageProperty);
 
                     return;
@@ -258,6 +274,7 @@ namespace UnityEngine.UIElements
                     m_ImageElement.vectorImage = value.vectorImage;
 
                 m_IconImage = value;
+                EnableInClassList(iconOnlyUssClassName, string.IsNullOrEmpty(text));
                 NotifyPropertyChanged(iconImageProperty);
             }
         }
@@ -269,6 +286,8 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Text = value;
+                EnableInClassList(iconOnlyUssClassName, !m_IconImage.IsEmpty() && string.IsNullOrEmpty(text));
+
                 if (m_TextElement != null)
                 {
                     // Make sure we clear the Button's text, otherwise it will show the same string twice
@@ -296,11 +315,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Constructs a button with an <see cref="Background"/> and an Action. The image definition will be used
+        /// Constructs a button with a <see cref="Background"/> and an Action. The image definition will be used
         /// to represent an icon while the Action is triggered when the button is clicked.
         /// </summary>
         /// <param name="iconImage">The image value that will be rendered as an icon.</param>
         /// <param name="clickEvent">The action triggered when the button is clicked.</param>
+        /// <remarks>Action is the standard C# System.Action.</remarks>
         public Button(Background iconImage, Action clickEvent = null) : this(clickEvent)
         {
             this.iconImage = iconImage;
@@ -311,6 +331,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="clickEvent">The action triggered when the button is clicked.</param>
         /// <remarks>
+        /// Action is the standard C# System.Action.
         /// By default, a single left mouse click triggers the Action. To change the activator, modify <see cref="clickable"/>.
         /// </remarks>
         public Button(Action clickEvent)
@@ -368,6 +389,7 @@ namespace UnityEngine.UIElements
                 m_ImageElement.RemoveFromHierarchy();
                 m_ImageElement = null;
                 RemoveFromClassList(iconUssClassName);
+                RemoveFromClassList(iconOnlyUssClassName);
             }
 
             if (m_TextElement != null)

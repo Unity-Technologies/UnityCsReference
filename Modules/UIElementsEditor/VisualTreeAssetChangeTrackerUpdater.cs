@@ -289,7 +289,7 @@ namespace UnityEditor.UIElements
 
             // Player panel require an update here or else it will only update when Unity is focused
             if (panel.contextType == ContextType.Player)
-                Update();
+                panel.UpdateAssetTrackers();
         }
 
         private ILiveReloadAssetTracker<VisualTreeAsset> FindTracker(VisualElement ve)

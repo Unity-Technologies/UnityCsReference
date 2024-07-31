@@ -15,6 +15,7 @@ namespace UnityEditor.Search
 
         void Refresh(RefreshFlags flags = RefreshFlags.Default);
         void OnGroupChanged(string prevGroupId, string newGroupId);
+        void OnItemSourceChanged(ISearchList itemSource);
         void AddSaveQueryMenuItems(SearchContext context, GenericMenu menu);
         void Focus();
 

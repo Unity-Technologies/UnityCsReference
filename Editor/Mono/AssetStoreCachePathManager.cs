@@ -19,7 +19,7 @@ namespace UnityEditorInternal
             InvalidPath,
             ReadOnly,
             EnvironmentOverride,
-            NotFound,
+            Default,
             Failed
         };
 

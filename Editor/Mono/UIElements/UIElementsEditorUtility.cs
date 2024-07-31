@@ -21,8 +21,6 @@ namespace UnityEditor.UIElements
         static StyleSheet s_DefaultCommonDarkStyleSheet;
         static StyleSheet s_DefaultCommonLightStyleSheet;
 
-        public const string hiddenClassName = "unity-hidden";
-
         internal static string GetStyleSheetPathForFont(string sheetPath, string fontName)
         {
             return sheetPath.Replace(".uss", "_" + fontName.ToLowerInvariant() + ".uss");
@@ -166,7 +164,7 @@ namespace UnityEditor.UIElements
 
         internal static void SetVisibility(VisualElement element, bool isVisible)
         {
-            element.EnableInClassList(hiddenClassName, !isVisible);
+            element.EnableInClassList(UIElementsUtility.hiddenClassName, !isVisible);
         }
 
         internal static Action CreateDynamicVisibilityCallback(VisualElement element, Func<bool> visibilityCheck)

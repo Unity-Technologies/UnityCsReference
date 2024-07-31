@@ -18,8 +18,6 @@ namespace UnityEngine.UIElements
 
     class VisualTreeDataBindingsUpdater : BaseVisualTreeHierarchyTrackerUpdater
     {
-        public long frame { get; private set; }
-
         readonly struct VersionInfo
         {
             public readonly object source;
@@ -138,7 +136,6 @@ namespace UnityEngine.UIElements
 
         public override void Update()
         {
-            ++frame;
             base.Update();
 
             ProcessAllBindingRequests();

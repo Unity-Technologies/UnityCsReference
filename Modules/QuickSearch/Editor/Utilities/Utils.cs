@@ -11,6 +11,7 @@ using System.IO;
 using System.Reflection;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.UIElements;
@@ -1466,6 +1467,21 @@ namespace UnityEditor.Search
             }
 
             return hash1 + (hash2 * 1566083941);
+        }
+
+        public static ShortcutBinding GetShortcutBinding(string shortcutId)
+        {
+            ShortcutBinding shortcutBinding;
+            try
+            {
+                // Fetching shortcut can throw if not available
+                shortcutBinding = ShortcutManager.instance.GetShortcutBinding(shortcutId);
+            }
+            catch
+            {
+                shortcutBinding = ShortcutBinding.empty;
+            }
+            return shortcutBinding;
         }
     }
 

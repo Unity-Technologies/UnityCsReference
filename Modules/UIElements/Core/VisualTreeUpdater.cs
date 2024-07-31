@@ -22,6 +22,9 @@ namespace UnityEngine.UIElements
         void Update();
         void UpdateVisualTreePhase(VisualTreeEditorUpdatePhase phase);
         void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType);
+
+        // For UI Test Framework.
+        long[] GetUpdatersFrameCount();
     }
 
     // Update phases, the order of the enum define the updater order
@@ -38,6 +41,7 @@ namespace UnityEngine.UIElements
         Repaint,
         Count
     }
+
 
     internal sealed class VisualTreeUpdater : IDisposable
     {
@@ -61,6 +65,23 @@ namespace UnityEngine.UIElements
                 set { m_VisualTreeUpdaters[index] = value; }
                 get { return m_VisualTreeUpdaters[index]; }
             }
+
+            // For UI Test Framework.
+            public long[] GetUpdatersFrameCount()
+            {
+                long[] state = new long[m_VisualTreeUpdaters.Length];
+                for (int i = 0; i < m_VisualTreeUpdaters.Length; i++)
+                {
+                    state[i] = m_VisualTreeUpdaters[i].FrameCount;
+                }
+                return state;
+            }
+        }
+
+        // For UI Test Framework.
+        public long[] GetUpdatersFrameCount()
+        {
+            return m_UpdaterArray.GetUpdatersFrameCount();
         }
 
         private BaseVisualElementPanel m_Panel;
@@ -97,6 +118,7 @@ namespace UnityEngine.UIElements
                 using (updater.profilerMarker.Auto())
                 {
                     updater.Update();
+                    ++updater.FrameCount;
                 }
             }
         }
@@ -108,6 +130,7 @@ namespace UnityEngine.UIElements
             using (updater.profilerMarker.Auto())
             {
                 updater.Update();
+                ++updater.FrameCount;
             }
         }
 
@@ -164,6 +187,9 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IVisualTreeUpdater : IDisposable
     {
+        // For UI Test Framework.
+        long FrameCount { get; set; }
+
         BaseVisualElementPanel panel { get; set; }
 
         ProfilerMarker profilerMarker { get; }
@@ -174,6 +200,14 @@ namespace UnityEngine.UIElements
 
     internal abstract class BaseVisualTreeUpdater : IVisualTreeUpdater
     {
+        // For UI Test Framework.
+        long IVisualTreeUpdater.FrameCount
+        {
+            get { return frameCount; }
+            set { frameCount = value; }
+        }
+        private long frameCount;
+
         public event Action<BaseVisualElementPanel> panelChanged;
 
         private BaseVisualElementPanel m_Panel;

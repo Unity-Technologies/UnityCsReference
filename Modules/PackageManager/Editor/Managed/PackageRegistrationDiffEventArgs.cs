@@ -20,18 +20,7 @@ namespace UnityEditor.PackageManager
         private static extern PackageInfo[] Internal_GetChangedFromPackages(IntPtr nativeHandle);
         private static extern PackageInfo[] Internal_GetChangedToPackages(IntPtr nativeHandle);
 
-        [RequiredByNativeCode]
-        private static PackageRegistrationEventArgs InstantiateFromNative(IntPtr nativeHandle)
-        {
-            return new PackageRegistrationEventArgs(nativeHandle);
-        }
-
-        private PackageRegistrationEventArgs(IntPtr nativeHandle)
-        {
-            PopulateFromNative(nativeHandle);
-        }
-
-        private void PopulateFromNative(IntPtr nativeHandle)
+        internal PackageRegistrationEventArgs(IntPtr nativeHandle)
         {
             added = Array.AsReadOnly(Internal_GetAddedPackages(nativeHandle));
             removed = Array.AsReadOnly(Internal_GetRemovedPackages(nativeHandle));

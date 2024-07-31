@@ -89,6 +89,7 @@ namespace UnityEditor.Search
 
         List<SearchProposition> m_FilteredList = null;
         bool m_Initialized;
+        bool m_AboutToFocusWindow;
 
         SearchPropositionOptions options { get; set; }
         SortedSet<SearchProposition> propositions { get; set; }
@@ -224,6 +225,7 @@ namespace UnityEditor.Search
 
         void Show()
         {
+            m_AboutToFocusWindow = false;
             options = new SearchPropositionOptions(context, m_TextField.cursorIndex, m_TextField.text);
             propositions = SearchProposition.Fetch(context, options);
 
@@ -300,6 +302,8 @@ namespace UnityEditor.Search
             RegisterCallback<GeometryChangedEvent>(HandlePopupGeometryChanged);
             On(SearchEvent.RefreshBuilder, HandleBuilderRefreshed);
             RegisterGlobalEventHandler<KeyDownEvent>(HandleGlobalKeyDownEvent, 10);
+            m_ToolbarSearchField.RegisterCallback<BlurEvent>(HandleSearchFieldBlurEvent, TrickleDown.TrickleDown);
+            RegisterCallback<FocusInEvent>(HandleFocusInEvent);
 
             m_AttachedRoot = GetRootVisualContainer();
             if (InitializeCustomStyleValues())
@@ -309,6 +313,19 @@ namespace UnityEditor.Search
             }
             else
                 m_AttachedRoot.RegisterCallback<CustomStyleResolvedEvent>(HandleRootCustomStyleResolved);
+        }
+
+        void HandleFocusInEvent(FocusInEvent evt)
+        {
+            // This event happens when we select something in the auto complete window. The window should close afterwards.
+            // This is to prevent the window from closing during the blur event before the selection process can happen.
+            m_AboutToFocusWindow = true;
+        }
+
+        void HandleSearchFieldBlurEvent(BlurEvent evt)
+        {
+            if (!m_AboutToFocusWindow)
+                Close();
         }
 
         protected override void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -324,6 +341,8 @@ namespace UnityEditor.Search
             UnregisterGlobalEventHandler<KeyDownEvent>(HandleGlobalKeyDownEvent);
             UnregisterCallback<GeometryChangedEvent>(HandlePopupGeometryChanged);
             m_RootWindowElement?.UnregisterCallback<GeometryChangedEvent>(HandleRootElementGeometryChanged);
+            m_ToolbarSearchField?.UnregisterCallback<BlurEvent>(HandleSearchFieldBlurEvent, TrickleDown.TrickleDown);
+            UnregisterCallback<FocusInEvent>(HandleFocusInEvent);
             ClearSearchField();
         }
 

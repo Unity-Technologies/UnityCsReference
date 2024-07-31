@@ -132,6 +132,17 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
+            Initialize();
+            Undo.undoRedoEvent += OnUndoRedo;
+        }
+
+        internal override void PostSerializedObjectCreation()
+        {
+            Initialize();
+        }
+
+        void Initialize()
+        {
             // Material
             m_MaterialName = serializedObject.FindProperty("m_MaterialName");
             m_MaterialSearch = serializedObject.FindProperty("m_MaterialSearch");
@@ -155,8 +166,6 @@ namespace UnityEditor
                 BuildExternalObjectsCache();
                 EvaluateMaterialExtractionState();
             }
-
-            Undo.undoRedoEvent += OnUndoRedo;
         }
 
         internal override void OnDisable()

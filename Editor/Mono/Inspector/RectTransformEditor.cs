@@ -651,7 +651,8 @@ namespace UnityEditor
             SerializedProperty xProperty = vec2Property.FindPropertyRelative("x");
             SerializedProperty yProperty = vec2Property.FindPropertyRelative("y");
 
-            EditorGUI.PrefixLabel(position, -1, label);
+            int id = GUIUtility.GetControlID(label.GetHashCode(), FocusType.Keyboard, position);
+            EditorGUI.PrefixLabel(position, id, label);
             float t = EditorGUIUtility.labelWidth;
             int l = EditorGUI.indentLevel;
             Rect r0 = GetColumnRect(position, 0);

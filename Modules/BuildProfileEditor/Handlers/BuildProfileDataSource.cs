@@ -21,7 +21,7 @@ namespace UnityEditor.Build.Profile.Handlers
         const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
 
         static string GetDefaultNewProfilePath(string platformDisplayName) =>
-            $"{k_AssetFolderPath}/New {platformDisplayName} Profile.asset";
+            $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile.asset";
 
         static string GetDefaultNewProfilePath(GUID platformGuid)
         {
@@ -305,6 +305,17 @@ namespace UnityEditor.Build.Profile.Handlers
             string directory = Path.GetDirectoryName(originalPath);
             string extension = Path.GetExtension(originalPath);
             return Path.Combine(directory, $"{newName}{extension}");
+        }
+
+        static string SanitizeFileName(string name)
+        {
+            var invalidChars = Path.GetInvalidFileNameChars();
+            if (name.IndexOfAny(invalidChars) == -1)
+                return name;
+
+            foreach (char c in invalidChars)
+                name = name.Replace(c.ToString(), string.Empty);
+            return name;
         }
 
         static void EnsureCustomBuildProfileFolderExists()

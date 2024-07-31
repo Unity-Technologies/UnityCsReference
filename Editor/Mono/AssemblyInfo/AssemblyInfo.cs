@@ -45,6 +45,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.UWP.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
+[assembly: InternalsVisibleTo("UnityEditor.Apple.Extensions.Common")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.VisionOS.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.AppleTV.Extensions")]

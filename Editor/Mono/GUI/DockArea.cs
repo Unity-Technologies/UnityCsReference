@@ -37,6 +37,8 @@ namespace UnityEditor
             public static readonly GUIStyle background = "dockarea";
             public static readonly float tabMinWidth = tab.GetFloat(StyleCatalogKeyword.minWidth, 50.0f);
             public static readonly float tabMaxWidth = tab.GetFloat(StyleCatalogKeyword.maxWidth, 150.0f);
+            public static readonly float tabWidthPadding = tab.GetFloat(StyleCatalogKeyword.paddingRight);
+
             public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleCatalogKeyword.width, 100.0f);
 
             public static readonly GUIStyle tabScrollerPrevButton = new GUIStyle("dragtab scroller prev");
@@ -723,10 +725,9 @@ namespace UnityEditor
 
         private float GetTabWidth(GUIStyle tabStyle, EditorWindow tabWindow)
         {
-            var expectedWidth = tabStyle.CalcSize(tabWindow.titleContent).x;
-
-            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth),
-                Styles.tabMinWidth);
+            float minWidth, expectedWidth;
+            tabStyle.CalcMinMaxWidth(tabWindow.titleContent, out minWidth, out expectedWidth);
+            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
         }
 
         private float GetTabWidth(GUIStyle tabStyle, int tabIndex)

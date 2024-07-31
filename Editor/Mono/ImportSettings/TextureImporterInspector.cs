@@ -659,7 +659,11 @@ namespace UnityEditor
         public override void OnEnable()
         {
             base.OnEnable();
+            Initialize();
+        }
 
+        void Initialize()
+        {
             s_DefaultPlatformName = TextureImporter.defaultPlatformName; // Can't be called everywhere so we save it here for later use.
 
             m_ShowAdvanced = EditorPrefs.GetBool("TextureImporterShowAdvanced", m_ShowAdvanced);
@@ -1501,6 +1505,7 @@ namespace UnityEditor
             }
         }
 
+
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -1816,6 +1821,12 @@ namespace UnityEditor
             //We need to update the VT system to actually stream these tiles into VRAM and render the textures correctly.
             if (textureInspector != null && textureInspector.hasTargetUsingVTMaterial)
                 VirtualTexturing.System.Update();
+        }
+
+        internal override void PostSerializedObjectCreation()
+        {
+            base.PostSerializedObjectCreation();
+            Initialize();
         }
 
         private void RefreshPreviewChannelSelection()

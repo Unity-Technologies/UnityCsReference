@@ -2,8 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.Linq;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Search;
@@ -13,11 +12,11 @@ namespace UnityEditor.Search
 {
     class SearchToolbar : UIElements.Toolbar, ISearchElement
     {
-        private static readonly string openSaveSearchesIconTooltip = L10n.Tr("Open Saved Searches Panel (F3)");
+        private static readonly string openSaveSearchesIconTooltip = L10n.Tr("Toggle Saved Searches Panel");
 
-        public static readonly string queryBuilderIconTooltip = L10n.Tr("Toggle Query Builder Mode (F1)");
+        public static readonly string queryBuilderIconTooltip = L10n.Tr("Toggle Query Builder Mode");
 
-        public static readonly string previewInspectorButtonTooltip = L10n.Tr("Open Inspector (F4)");
+        public static readonly string previewInspectorButtonTooltip = L10n.Tr("Toggle Inspector Panel");
 
         public static readonly string saveQueryButtonTooltip = L10n.Tr("Save search query as an asset.");
 
@@ -56,14 +55,26 @@ namespace UnityEditor.Search
             // Search query panel toggle
             if (viewState.hasQueryPanel)
             {
-                m_SearchQueryToggle = SearchElement.CreateToolbarToggle("SearchQueryPanelToggle", openSaveSearchesIconTooltip, viewState.flags.HasAny(SearchViewFlags.OpenLeftSidePanel), OnToggleSearchQueryPanel, buttonClassName, savedSearchesButtonClassName);
+                m_SearchQueryToggle = SearchElement.CreateToolbarToggle(
+                    "SearchQueryPanelToggle",
+                    (evt) => UpdateToggleTooltipEvent(evt, m_SearchQueryToggle, openSaveSearchesIconTooltip, SearchWindow.toggleSavedSearchesPanelShortcutId),
+                    viewState.flags.HasAny(SearchViewFlags.OpenLeftSidePanel),
+                    OnToggleSearchQueryPanel,
+                    buttonClassName,
+                    savedSearchesButtonClassName);
                 Add(m_SearchQueryToggle);
             }
 
             // Query builder toggle
             if (viewState.hasQueryBuilderToggle)
             {
-                m_QueryBuilderToggle = SearchElement.CreateToolbarToggle("SearchQueryBuilderToggle", queryBuilderIconTooltip, viewState.queryBuilderEnabled, OnToggleQueryBuilder, buttonClassName, queryBuilderButtonClassName);
+                m_QueryBuilderToggle = SearchElement.CreateToolbarToggle(
+                    "SearchQueryBuilderToggle",
+                    (evt) => UpdateToggleTooltipEvent(evt, m_QueryBuilderToggle, queryBuilderIconTooltip, SearchWindow.toggleQueryBuilderModeShortcutId),
+                    viewState.queryBuilderEnabled,
+                    OnToggleQueryBuilder,
+                    buttonClassName,
+                    queryBuilderButtonClassName);
                 Add(m_QueryBuilderToggle);
             }
 
@@ -82,7 +93,13 @@ namespace UnityEditor.Search
             // Details view panel toggle.
             if (viewState.flags.HasNone(SearchViewFlags.DisableInspectorPreview))
             {
-                m_InspectorToggle = SearchElement.CreateToolbarToggle("SearchInspectorToggle", previewInspectorButtonTooltip, viewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview), OnToggleInspector, buttonClassName, inspectorButtonClassName);
+                m_InspectorToggle = SearchElement.CreateToolbarToggle(
+                    "SearchInspectorToggle",
+                    (evt) => UpdateToggleTooltipEvent(evt, m_InspectorToggle, previewInspectorButtonTooltip, SearchWindow.toggleInspectorPanelShortcutId),
+                    viewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview),
+                    OnToggleInspector,
+                    buttonClassName,
+                    inspectorButtonClassName);
                 Add(m_InspectorToggle);
             }
 
@@ -182,6 +199,19 @@ namespace UnityEditor.Search
             m_QueryBuilderToggle?.SetValueWithoutNotify(evt.sourceViewState.queryBuilderEnabled);
             m_SearchQueryToggle?.SetValueWithoutNotify(evt.sourceViewState.flags.HasAny(SearchViewFlags.OpenLeftSidePanel));
             m_InspectorToggle?.SetValueWithoutNotify(evt.sourceViewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview));
+        }
+
+        void UpdateToggleTooltipEvent(TooltipEvent evt, Toggle toggle, string baseTooltip, string shortcutId)
+        {
+            ShortcutBinding shortcutBinding = ShortcutBinding.empty;
+
+            if (m_ViewModel is SearchWindow sw)
+                shortcutBinding = sw.GetShortcutBinding(shortcutId);
+            else
+                shortcutBinding = Utils.GetShortcutBinding(shortcutId);
+
+            evt.tooltip = shortcutBinding.Equals(ShortcutBinding.empty) ? baseTooltip : $"{baseTooltip} ({shortcutBinding})";
+            evt.rect = toggle.worldBound;
         }
     }
 }

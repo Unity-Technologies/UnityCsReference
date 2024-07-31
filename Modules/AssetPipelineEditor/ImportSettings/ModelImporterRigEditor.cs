@@ -159,6 +159,17 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
+            Initialize();
+        }
+
+        internal override void PostSerializedObjectCreation()
+        {
+            base.PostSerializedObjectCreation();
+            Initialize();
+        }
+
+        void Initialize()
+        {
             Editor.AssignCachedProperties(this, serializedObject.GetIterator());
 
             m_ExposeTransformEditor = new ExposeTransformEditor();

@@ -29,6 +29,23 @@ namespace UnityEditor.UIElements
                 set { m_VisualTreeUpdaters[index] = value; }
                 get { return m_VisualTreeUpdaters[index]; }
             }
+
+            // For UI Test Framework.
+            public long[] GetUpdatersFrameCount()
+            {
+                long[] state = new long[m_VisualTreeUpdaters.Length];
+                for (int i = 0; i < m_VisualTreeUpdaters.Length; i++)
+                {
+                    state[i] = m_VisualTreeUpdaters[i].FrameCount;
+                }
+                return state;
+            }
+        }
+
+        // For UI Test Framework.
+        public long[] GetUpdatersFrameCount()
+        {
+            return m_UpdaterArray.GetUpdatersFrameCount();
         }
 
         private BaseVisualElementPanel m_Panel;
@@ -78,6 +95,7 @@ namespace UnityEditor.UIElements
                 using (updater.profilerMarker.Auto())
                 {
                     updater.Update();
+                    ++updater.FrameCount;
                 }
             }
         }
@@ -88,6 +106,7 @@ namespace UnityEditor.UIElements
             using (updater.profilerMarker.Auto())
             {
                 updater.Update();
+                ++updater.FrameCount;
             }
         }
 

@@ -194,7 +194,7 @@ namespace UnityEditor.Search
 
             if (!HasInPlaceEditor())
             {
-                AddLabel(container, formatValue?.ToString() ?? value);
+                AddLabel(container, GetValueLabel());
                 AddOpenEditorArrow(container);
             }
             else
@@ -205,6 +205,29 @@ namespace UnityEditor.Search
                     m_InPlaceEditorElement = CreateInPlaceEditorElement();
                 if (m_InPlaceEditorElement != null)
                     container.Add(m_InPlaceEditorElement);
+            }
+        }
+
+        internal string GetValueLabel()
+        {
+            if (formatValue == null)
+                return value;
+
+            switch (format)
+            {
+                case QueryBlockFormat.Vector2:
+                {
+                    var v4 = (Vector4)formatValue;
+                    var v2 = new Vector2(v4.x, v4.y);
+                    return v2.ToString();
+                }
+                case QueryBlockFormat.Vector3:
+                {
+                    var v4 = (Vector4)formatValue;
+                    var v3 = new Vector3(v4.x, v4.y, v4.z);
+                    return v3.ToString();
+                }
+                default: return formatValue.ToString();
             }
         }
 
@@ -417,9 +440,9 @@ namespace UnityEditor.Search
                     format = QueryBlockFormat.Vector2;
                 else if (dimension == 3)
                     format = QueryBlockFormat.Vector3;
-                else if(dimension == 4)
+                else if (dimension == 4)
                     format = QueryBlockFormat.Vector4;
-                this.value = Utils.ToString(v4);
+                this.value = Utils.ToString(v4, dimension);
                 this.formatValue = v4;
             }
             else if (Utils.TryParseObjectValue(value, out var objValue))
@@ -579,12 +602,16 @@ namespace UnityEditor.Search
             else if (value is Vector2 v2)
             {
                 format = QueryBlockFormat.Vector2;
-                this.value = Utils.ToString(new Vector4(v2.x, v2.y, float.NaN, float.NaN));
+                var v4 = new Vector4(v2.x, v2.y, float.NaN, float.NaN);
+                formatValue = v4; // The editor expects a Vector4
+                this.value = Utils.ToString(v4, 2);
             }
             else if (value is Vector3 v3)
             {
                 format = QueryBlockFormat.Vector3;
-                this.value = Utils.ToString(v3);
+                var v4 = new Vector4(v3.x, v3.y, v3.z, float.NaN);
+                formatValue = v4; // The editor expects a Vector4
+                this.value = Utils.ToString(v4, 3);
             }
             else if (value is Vector4 v4)
             {

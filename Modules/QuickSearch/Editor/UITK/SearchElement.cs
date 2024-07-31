@@ -264,6 +264,14 @@ namespace UnityEditor.Search
             return btn;
         }
 
+        internal static ToolbarToggle CreateToolbarToggle(in string name, EventCallback<TooltipEvent> onTooltipEvent, bool value, EventCallback<ChangeEvent<bool>> handler, params string[] classNames)
+        {
+            var btn = Create<ToolbarToggle, ChangeEvent<bool>>(name, handler, classNames);
+            btn.RegisterCallback(onTooltipEvent);
+            btn.SetValueWithoutNotify(value);
+            return btn;
+        }
+
         internal static Label CreateLabel(in string text, in string tooltip, PickingMode pickingMode, params string[] classNames)
         {
             var l = Create<Label>(null, classNames);

@@ -111,6 +111,13 @@ namespace UnityEditor
             Editor.AssignCachedProperties(this, serializedObject.GetIterator());
         }
 
+        internal override void PostSerializedObjectCreation()
+        {
+            base.PostSerializedObjectCreation();
+            Editor.AssignCachedProperties(this, serializedObject.GetIterator());
+        }
+
+
         protected static class Styles
         {
             public static GUIContent Scene = EditorGUIUtility.TrTextContent("Scene", "FBX Scene import settings");

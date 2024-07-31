@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             // The index field is responsible for applying validation to the value entered by users.
             // In order to ensure that users are able to enter the complete value without interruption,
-            // we need to introduce a delay before the validation is performed. 
+            // we need to introduce a delay before the validation is performed.
             [Delayed, SerializeField] int index;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags index_UxmlAttributeFlags;
             [SerializeField] List<string> choices;
@@ -87,38 +87,57 @@ namespace UnityEngine.UIElements
         internal int valueOverride { get; set; }
 
         /// <summary>
-        /// Construct a DropdownField.
+        /// Construct an empty DropdownField.
         /// </summary>
         public DropdownField()
             : this(null) {}
 
         /// <summary>
-        /// Construct a DropdownField.
+        /// Construct a DropdownField with a Label in front.
         /// </summary>
+        /// <param name="label">The label to display in front of the field.</param>
         public DropdownField(string label)
             : base(label) {}
 
         /// <summary>
         /// Construct a DropdownField.
         /// </summary>
+        /// <param name="choices">The list of choices to display in the dropdown.</param>
+        /// <param name="defaultValue">The default value selected from the dropdown.</param>
+        /// <param name="formatSelectedValueCallback">Callback to format the selected value.</param>
+        /// <param name="formatListItemCallback">Callback to format the list items displayed in the dropdown.</param>
         public DropdownField(List<string> choices, string defaultValue, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(null, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback) {}
 
         /// <summary>
         /// Construct a DropdownField.
         /// </summary>
+        /// <param name="label">The label to display in front of the field.</param>
+        /// <param name="choices">The list of choices to display in the dropdown.</param>
+        /// <param name="defaultValue">The default value selected from the dropdown.</param>
+        /// <param name="formatSelectedValueCallback">Callback to format the selected value.</param>
+        /// <param name="formatListItemCallback">Callback to format the list items displayed in the dropdown.</param>
         public DropdownField(string label, List<string> choices, string defaultValue, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : base(label, choices, defaultValue, formatSelectedValueCallback, formatListItemCallback) {}
 
         /// <summary>
         /// Construct a DropdownField.
         /// </summary>
+        /// <param name="choices">The list of choices to display in the dropdown.</param>
+        /// <param name="defaultIndex">The index of the choice selected by default.</param>
+        /// <param name="formatSelectedValueCallback">Callback to format the selected value.</param>
+        /// <param name="formatListItemCallback">Callback to format the list items displayed in the dropdown.</param>
         public DropdownField(List<string> choices, int defaultIndex, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(null, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
 
         /// <summary>
         /// Construct a DropdownField.
         /// </summary>
+        /// <param name="label">The label to display in front of the field.</param>
+        /// <param name="choices">The list of choices to display in the dropdown.</param>
+        /// <param name="defaultIndex">The index of the choice selected by default.</param>
+        /// <param name="formatSelectedValueCallback">Callback to format the selected value.</param>
+        /// <param name="formatListItemCallback">Callback to format the list items displayed in the dropdown.</param>
         public DropdownField(string label, List<string> choices, int defaultIndex, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : base(label, choices, defaultIndex, formatSelectedValueCallback, formatListItemCallback) {}
     }

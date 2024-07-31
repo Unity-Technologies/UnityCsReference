@@ -46,6 +46,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreClient m_AssetStoreClient;
         [NonSerialized]
         private IPackageManagerPrefs m_PackageManagerPrefs;
+        [ExcludeFromCodeCoverage]
         public void ResolveDependencies(IPackageDatabase packageDatabase,
                                         IPackageManagerPrefs packageManagerPrefs,
                                         IUnityConnectProxy unityConnect,
@@ -132,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else
             {
-                if (!m_VisualStateList.Contains(package.uniqueId))
+                if (!visualStates.Contains(package.uniqueId))
                 {
                     m_VisualStateList.AddExtraItem(package.uniqueId);
                     TriggerOnListUpdate(added: new[] { package });
@@ -146,16 +147,16 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void LoadExtraItems(IEnumerable<IPackage> packages)
         {
-            var addedPackages = packages.Where(p => !m_VisualStateList.Contains(p.uniqueId)).ToArray();
+            var addedPackages = packages.Where(p => !visualStates.Contains(p.uniqueId)).ToArray();
             foreach (var package in addedPackages)
                 m_VisualStateList.AddExtraItem(package.uniqueId);
             TriggerOnListUpdate(added: addedPackages);
         }
 
-        public void OnProductExtraFetched(long productId)
+        public virtual void OnProductExtraFetched(long productId)
         {
             var uniqueId = productId.ToString();
-            var isNewItem = !m_VisualStateList.Contains(uniqueId);
+            var isNewItem = !visualStates.Contains(uniqueId);
 
             if (isNewItem)
                 m_VisualStateList.AddExtraItem(productId.ToString());
@@ -191,7 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var oldPackageIds = new HashSet<string>(m_VisualStateList.Select(v => v.packageUniqueId));
+            var oldPackageIds = new HashSet<string>(visualStates.Select(v => v.packageUniqueId));
             var newPackageIds = purchases.productIds.Select(i => i.ToString()).ToList();
             if (purchases.startIndex == 0)
             {

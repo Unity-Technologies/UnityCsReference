@@ -290,9 +290,10 @@ namespace UnityEngine.UIElements
                 {
                     // Grow
                     var addCount = itemCount - m_ActiveItems.Count;
+                    var firstItem = firstVisibleIndex < 0 ? 0 : firstVisibleIndex;
                     for (var i = 0; i < addCount; i++)
                     {
-                        var index = i + firstVisibleIndex + initialItemCount;
+                        var index = i + firstItem + initialItemCount;
                         var recycledItem = GetOrMakeItemAtIndex();
 
                         if (IsIndexOutOfBounds(index))
@@ -684,7 +685,8 @@ namespace UnityEngine.UIElements
             contentHeight = expectedContentHeight;
             contentPadding = GetContentHeightForIndex(firstVisibleIndex - 1);
 
-            var scrollableHeight = Mathf.Max(0, expectedContentHeight - m_ScrollView.contentViewport.layout.height);
+            // RoundToPixelGrid to avoid imprecision (UUM-69616)
+            var scrollableHeight = Mathf.Max(0, m_ScrollView.RoundToPanelPixelSize(expectedContentHeight - m_ScrollView.contentViewport.layout.height));
             var scrollOffset = Mathf.Min(contentPadding + itemOffset, scrollableHeight);
 
             // Stick to the end of the viewport.

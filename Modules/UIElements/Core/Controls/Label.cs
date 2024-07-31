@@ -7,7 +7,7 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Provides an Element displaying text. For more information, refer to [[wiki:UIE-uxml-element-label|UXML element Label]].
+    /// Provides an Element displaying text. For more information, refer to [[wiki:UIE-uxml-element-Label|UXML element Label]].
     /// </summary>
     public class Label : TextElement
     {
