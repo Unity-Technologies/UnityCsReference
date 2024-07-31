@@ -218,7 +218,7 @@ namespace UnityEditor.UIElements
     ///* Enum
     ///* float
     ///* double
-    ///* Type(SA: [[UxmlTypeReferenceAttribute]])
+    ///* Type([[UxmlTypeReferenceAttribute]])
     ///* [[Color]]
     ///* [[Hash128]]
     ///* [[Length]]

@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine;
@@ -264,7 +264,7 @@ internal class SerializedObjectBindingContext
     private void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
     {
         // A bound Foldout (a PropertyField with child properties) is special.
-        if (element is Foldout foldout)
+        if (element is Foldout foldout && prop.hasChildren)
         {
             // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
             SerializedIsExpandedBinding.CreateBind(foldout, this, prop);
@@ -624,7 +624,7 @@ internal class SerializedObjectBindingContext
     {
         if (!wasUpdated && IsValid())
         {
-            if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != updater.frame)
+            if (element.elementPanel?.GetUpdater(VisualTreeUpdatePhase.DataBinding) is VisualTreeDataBindingsUpdater updater && m_LastFrame != (updater as IVisualTreeUpdater).FrameCount)
             {
                 using (var p = k_SerializedObjectUpdater.Auto())
                 {
@@ -633,7 +633,7 @@ internal class SerializedObjectBindingContext
 
                 ++updateCount;
                 UpdateRevision();
-                m_LastFrame = updater.frame;
+                m_LastFrame = (updater as IVisualTreeUpdater).FrameCount;
                 wasUpdated = true;
             }
         }

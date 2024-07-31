@@ -204,6 +204,7 @@ namespace UnityEditor
         }
 
         extern public static ComputeShader CreateComputeShaderAsset(AssetImportContext context, string source);
+        extern public static RayTracingShader CreateRayTracingShaderAsset(AssetImportContext context, string source);
 
         [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull] Shader shader);
 

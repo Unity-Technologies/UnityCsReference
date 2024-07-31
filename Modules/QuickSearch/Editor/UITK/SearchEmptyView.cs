@@ -677,6 +677,11 @@ namespace UnityEditor.Search
             BuildView();
         }
 
+        void IResultView.OnItemSourceChanged(ISearchList itemSource)
+        {
+            // Nothing to do
+        }
+
         void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
         {
             // Nothing to do

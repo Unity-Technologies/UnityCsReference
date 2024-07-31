@@ -135,6 +135,8 @@ namespace UnityEngine.UIElements
         // The usual height used for a control, such as a one-line text field. See --unity-metrics-single_line-height and EditorGUIUtility.singleLineHeight.
         internal static float singleLineHeight = 18;
 
+        public const string hiddenClassName = "unity-hidden";
+
         internal static bool s_EnableOSXContextualMenuEventsOnNonOSXPlatforms;
         public static bool isOSXContextualMenuPlatform
         {

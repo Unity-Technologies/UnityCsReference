@@ -79,7 +79,7 @@ namespace UnityEditor.Search
 
                 var selectedItems = m_SearchItemSelection != null ? m_SearchItemSelection.ToArray() : Array.Empty<SearchItem>();
                 var newSelectedIndices = new int[selectedItems.Length];
-                
+
                 viewState.group = value;
                 m_FilteredItems.currentGroup = value;
                 resultView?.OnGroupChanged(prevGroup, value);
@@ -160,6 +160,7 @@ namespace UnityEditor.Search
                 m_FilteredItems?.Dispose();
                 m_FilteredItems = new GroupedSearchList(context, GetDefaultSearchListComparer());
                 m_FilteredItems.currentGroup = viewState.group;
+                m_ResultView?.OnItemSourceChanged(m_FilteredItems);
             }
         }
 
@@ -596,12 +597,12 @@ namespace UnityEditor.Search
                 if (endSearch)
                     EditorApplication.delayCall -= DelayTrackSelection;
 
-                if (action.handler != null && items.Length == 1)
+                if (action?.handler != null && items.Length == 1)
                     action.handler(item);
-                else if (action.execute != null)
+                else if (action?.execute != null)
                     action.execute(items);
                 else
-                    action.handler?.Invoke(item);
+                    action?.handler?.Invoke(item);
             }
 
             var searchWindow = this.GetHostWindow() as SearchWindow;

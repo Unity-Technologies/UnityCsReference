@@ -742,6 +742,105 @@ namespace UnityEngine.UIElements
             get { return m_RootContainer; }
         }
 
+        // For UI Test Framework.
+        internal class UIFrameState
+        {
+            internal virtual long[] updatersFrameCount { get; }
+
+            internal virtual long schedulerFrameCount { get; }
+
+            internal virtual bool isPanelDirty { get; }
+
+            internal virtual ContextType panelContextType { get; }
+
+            internal virtual long[] editorUpdatersFrameCount { get; }
+            internal static int[] updaterSubsetForEditor = new int[]
+            {
+                (int)VisualTreeUpdatePhase.Bindings,
+                (int)VisualTreeUpdatePhase.DataBinding,
+                (int)VisualTreeUpdatePhase.Animation
+            };
+
+            internal UIFrameState() { }
+
+            internal UIFrameState(Panel panel)
+            {
+                isPanelDirty = panel.isDirty;
+                panelContextType = panel.contextType;
+
+                schedulerFrameCount = panel.scheduler.FrameCount;
+                updatersFrameCount = panel.visualTreeUpdater.GetUpdatersFrameCount();
+                editorUpdatersFrameCount = panel.visualTreeUpdater.visualTreeEditorUpdater.GetUpdatersFrameCount();
+            }
+
+            public static bool operator >(UIFrameState leftOperand, UIFrameState rightOperand)
+            {
+                return leftOperand.HasFullUIFrameOccurredSince(rightOperand);
+            }
+
+            public static bool operator <(UIFrameState leftOperand, UIFrameState rightOperand)
+            {
+                return rightOperand.HasFullUIFrameOccurredSince(leftOperand);
+            }
+
+            // Returns true if this UIFrameState is greater than the provided reference UIFrameState, false otherwise.
+            private bool HasFullUIFrameOccurredSince(UIFrameState reference)
+            {
+                if (this.panelContextType != reference.panelContextType)
+                {
+                    throw new NotSupportedException("Comparison is only valid for frames with the same ContextType.");
+                }
+
+                // Compare the scheduler frame.
+                if (this.schedulerFrameCount <= reference.schedulerFrameCount)
+                {
+                    return false;
+                }
+
+                // Compare the VisualTreeUpdater frames.
+                if (!this.isPanelDirty && this.panelContextType == ContextType.Editor)
+                {
+                    // If the context is Editor and the panel is currently not dirty, only check a subset of the updater frames.
+                    for (int i = 0; i < updaterSubsetForEditor.Length; i++)
+                    {
+                        if (this.updatersFrameCount[updaterSubsetForEditor[i]] <= reference.updatersFrameCount[updaterSubsetForEditor[i]])
+                        {
+                            return false;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < this.updatersFrameCount.Length; i++)
+                    {
+                        if (this.updatersFrameCount[i] <= reference.updatersFrameCount[i])
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                if (this.panelContextType == ContextType.Editor)
+                {
+                    // Compare the VisualTreeEditorUpdater frames.
+                    for (int i = 0; i < this.editorUpdatersFrameCount.Length; i++)
+                    {
+                        if (this.editorUpdatersFrameCount[i] <= reference.editorUpdatersFrameCount[i])
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+        }
+
+        // For UI Test Framework.
+        internal UIFrameState GetFrameState()
+        {
+            return new UIFrameState(this);
+        }
+
         public sealed override EventDispatcher dispatcher { get; set; }
 
         TimerEventScheduler m_Scheduler;
@@ -1139,7 +1238,7 @@ namespace UnityEngine.UIElements
 
         public override void UpdateAssetTrackers()
         {
-            liveReloadSystem.Update();
+            m_VisualTreeUpdater.visualTreeEditorUpdater.UpdateVisualTreePhase(VisualTreeEditorUpdatePhase.AssetChange);
         }
 
 

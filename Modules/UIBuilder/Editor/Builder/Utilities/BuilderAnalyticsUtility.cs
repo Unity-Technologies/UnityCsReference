@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
@@ -56,6 +55,9 @@ namespace Unity.UI.Builder
         // Used in tests
         public static BuilderSaveEventData cachedSaveEventData { get; private set; }
 
+        static HashSet<string> userAssemblies;
+        internal static Dictionary<string, Type> typeCache;
+
         /// <summary>
         /// Gets the feature usage in a uxml file
         /// </summary>
@@ -105,37 +107,37 @@ namespace Unity.UI.Builder
             {
                 features |= Features.Instances;
 
-                if (vta.templateAssets.Any(x => x.attributeOverrides.Count > 0))
+                if (vta.templateAssets.Exists(x => x.attributeOverrides.Count > 0))
                 {
                     features |= Features.AttributeOverrides;
                 }
             }
 
-            if (vta.visualElementAssets.Any(x => x.fullTypeName == typeof(ListView).FullName))
+            if (vta.visualElementAssets.Exists(x => x.fullTypeName == typeof(ListView).FullName))
             {
                 features |= Features.ListView;
             }
-            if (vta.visualElementAssets.Any(x => x.fullTypeName == typeof(TreeView).FullName))
+            if (vta.visualElementAssets.Exists(x => x.fullTypeName == typeof(TreeView).FullName))
             {
                 features |= Features.TreeView;
             }
-            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(o => o.fullTypeName == typeof(DataBinding).FullName)))
+            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(o => o.fullTypeName == typeof(DataBinding).FullName)))
             {
                 features |= Features.DataBinding;
             }
-            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(IsCustomBinding<DataBinding>)))
+            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(IsCustomBinding<DataBinding>)))
             {
                 features |= Features.UserDataBinding;
             }
-            if (vta.uxmlObjectEntries.Any(x => x.uxmlObjectAssets.Any(IsCustomBinding<CustomBinding>)))
+            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(IsCustomBinding<CustomBinding>)))
             {
                 features |= Features.CustomBinding;
             }
-            if (vta.visualElementAssets.Any(x => HasUxmlTraits(x) && IsCustomElement(x)))
+            if (vta.visualElementAssets.Exists(x => HasUxmlTraits(x) && IsCustomElement(x)))
             {
                 features |= Features.UxmlTraits;
             }
-            if (vta.visualElementAssets.Any(x => x.serializedData != null && IsCustomElement(x)))
+            if (vta.visualElementAssets.Exists(x => x.serializedData != null && IsCustomElement(x)))
             {
                 features |= Features.UxmlSerialization;
             }
@@ -165,23 +167,7 @@ namespace Unity.UI.Builder
 
         static bool IsCustomElement(VisualElementAsset vta)
         {
-            var userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var assembly in assemblies)
-            {
-                if (!userAssemblies.Contains(assembly.GetName().Name + ".dll")
-                    // Exclude core UIElements factories which are registered manually
-                    || assembly.GetName().Name == uieCoreModule)
-                    continue;
-
-                var types = assembly.GetTypes();
-                foreach (var t in types)
-                {
-                    if (t.FullName == vta.fullTypeName)
-                        return true;
-                }
-            }
-            return false;
+            return typeCache.ContainsKey(vta.fullTypeName);
         }
 
         /// <summary>
@@ -200,6 +186,26 @@ namespace Unity.UI.Builder
                 var editorExtensionMode = openUxml.fileSettings.editorExtensionMode;
                 var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
                 var elementsInfo = VisualTreeAssetUtilities.GetElementsInfo(idToChildren);
+
+                if (typeCache == null)
+                {
+                    userAssemblies = new HashSet<string>(ScriptingRuntime.GetAllUserAssemblies());
+                    typeCache = new Dictionary<string, Type>();
+
+                    var assemblies = AppDomain.CurrentDomain.GetAssemblies();
+                    foreach (var assembly in assemblies)
+                    {
+                        if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))
+                            continue;
+
+                        var types = assembly.GetTypes();
+                        foreach (var type in types)
+                        {
+                            if (type.FullName != null) typeCache[type.FullName] = type;
+                        }
+                    }
+                }
+
                 var features = GetFeatureUsage(vta);
 
                 var selectorCount = 0;

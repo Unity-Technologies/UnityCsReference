@@ -124,6 +124,12 @@ namespace UnityEditor.Search
 
         void IResultView.OnGroupChanged(string prevGroupId, string newGroupId) => OnGroupChanged(prevGroupId, newGroupId);
 
+        void IResultView.OnItemSourceChanged(ISearchList itemSource)
+        {
+            if (m_ListView != null)
+                m_ListView.itemsSource = (IList)itemSource;
+        }
+
         protected virtual void OnGroupChanged(string prevGroupId, string newGroupId)
         {
             Refresh();

@@ -61,24 +61,30 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The final computed style values on a <see cref="VisualElement"/> (RO).
+        /// The final rendered style values of a visual element, as it's rendered in the current frame.(RO)
         /// </summary>
         /// <remarks>
-        /// You can use @@resolvedStyle@@ to find the actually rendered styling like width, height, 
-        /// or color of an element. For a list of all the supported style properties, refer 
-        /// to the [[wiki:UIE-USS-Properties-Reference|USS properties reference]] manual page.
+        /// Use @@resolvedStyle@@ to find the actual rendered styling of a [[VisualElement]] in the
+        /// current frame, such as style values for width, height, and colors. You can get 
+        /// the resolved style value of an element to make layout decisions, troubleshoot styling issues, 
+        /// or ensure visual consistency across different platforms.
         /// </remarks>
         /// <remarks>
-        /// The final computed style combines applied classes, inherited styles from ancestors, and
-        /// inline styles defined in UXML or C# code. Therefore, it might be different from what you set through 
-        /// the <see cref="VisualElement.style"/> property, depending on the other styles applied to it.
+        /// The final rendered style is computed from applied classes, inherited styles from ancestors, and 
+        /// inline styles defined in UXML or C# code. Therefore, the resolved style might be different from what 
+        /// you set through the [[VisualElement.style]] property, depending on the other styles applied to the element.
         /// </remarks>
         /// <remarks>
-        /// To get the resolved style when the geometry changes, you can use the [[GeometryChangedEvent]] event.
-        /// If the element's geometry doesn't change, you can add a scheduler to periodically check the resolved 
-        /// style of the element.
-        /// For more information about how to use this property and an example of how style changes when layout 
-        /// updates, refer to the [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]] manual page.
+        /// To get the resolved style when the geometry changes, register a callback to the [[GeometryChangedEvent]] event. 
+        /// If the element's geometry remains unchanged, consider adding a [[IVisualElementScheduler|scheduler]] to periodically check the element's 
+        /// resolved style. You can also poll the value during the [[MonoBehaviour.LateUpdate]] phase at runtime if you have access to MonoBehaviours.
+        /// </remarks>
+        /// <remarks>
+        /// For a list of all the style properties supported by UI Toolkit, refer to [[wiki:UIE-USS-Properties-Reference|USS properties reference]].
+        /// </remarks>
+        /// <remarks>
+        /// For more information about how to use this property and an example of how style changes when layout updates, 
+        /// refer to [[wiki:UIE-apply-styles-with-csharp|Apply styles in C# scripts]].
         /// </remarks>
         /// <example>
         /// <code lang="cs">

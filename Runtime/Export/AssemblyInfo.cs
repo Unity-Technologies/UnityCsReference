@@ -40,6 +40,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
+[assembly: InternalsVisibleTo("UnityEditor.Apple.Extensions.Common")]
+[assembly: InternalsVisibleTo("UnityEditor.VisionOS.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
 [assembly: InternalsVisibleTo("Unity.AndroidBuildPipeline")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]

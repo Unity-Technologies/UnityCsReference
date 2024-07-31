@@ -97,6 +97,9 @@ namespace UnityEngine.UIElements
         void Schedule(ScheduledItem item);
 
         void UpdateScheduledEvents();
+
+        // For UI Test Framework.
+        long FrameCount { get; }
     }
 
 
@@ -316,8 +319,18 @@ namespace UnityEngine.UIElements
             return m_ScheduleTransactions.Remove(sItem) || RemovedScheduledItemAt(m_ScheduledItems.IndexOf(sItem));
         }
 
+        // For UI Test Framework.
+        public long FrameCount
+        {
+            get { return frameCount; }
+            set { frameCount = value; }
+        }
+        private long frameCount;
+
         public void UpdateScheduledEvents()
         {
+            bool incrementFrame = true;
+
             try
             {
                 m_TransactionMode = true;
@@ -335,7 +348,6 @@ namespace UnityEngine.UIElements
                 if (startIndex >= itemsCount)
                     startIndex = 0;
 
-
                 for (int i = 0; i < itemsCount; i++)
                 {
                     currentTime = Panel.TimeSinceStartupMs();
@@ -343,6 +355,7 @@ namespace UnityEngine.UIElements
                     if (!disableThrottling && currentTime >= maxTime)
                     {
                         //We spent too much time on this frame updating items, we break for now, we'll resume next frame
+                        incrementFrame = false;
                         break;
                     }
                     int index = startIndex + i;
@@ -401,6 +414,11 @@ namespace UnityEngine.UIElements
                     Schedule(item);
                 }
                 m_ScheduleTransactions.Clear();
+
+                if (incrementFrame)
+                {
+                    ++FrameCount;
+                }
             }
         }
     }

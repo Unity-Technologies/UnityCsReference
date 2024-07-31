@@ -262,7 +262,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (m_CurrentAssetStoreConfig.status == AssetStoreCachePathManager.ConfigStatus.ReadOnly)
                     DisplayAssetsCacheErrorBox(HelpBoxMessageType.Warning, L10n.Tr("The Assets Cache location is read only. Download or update of assets won't be possible."));
-                else if (m_CurrentAssetStoreConfig.status != AssetStoreCachePathManager.ConfigStatus.Success)
+                else if (m_CurrentAssetStoreConfig.status != AssetStoreCachePathManager.ConfigStatus.Success && m_CurrentAssetStoreConfig.status != AssetStoreCachePathManager.ConfigStatus.Default)
                     DisplayAssetsCacheErrorBox(HelpBoxMessageType.Error, L10n.Tr("The Assets Cache location is invalid or inaccessible. Change location or reset it to default location."));
             }
         }

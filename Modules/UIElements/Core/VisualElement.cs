@@ -737,7 +737,7 @@ namespace UnityEngine.UIElements
         // This will replace the Rect position
         // origin and size relative to parent
         /// <summary>
-        /// The position and size of the VisualElement relative to its parent, as computed by the layout system.
+        /// The position and size of the VisualElement relative to its parent, as computed by the layout system. (RO)
         /// </summary>
         /// <remarks>
         /// Before reading from this property, add it to a panel and wait for one frame to ensure that the element layout is computed.
@@ -815,7 +815,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The rectangle of the content area of the element, in the local space of the element.
+        /// The rectangle of the content area of the element, in the local space of the element. (RO)
         /// </summary>
         /// <remarks>
         /// In the box model used by UI Toolkit, the content area refers to the inner rectangle for displaying text and images.
@@ -1689,10 +1689,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sends an event to the event handler.
         /// </summary>
-        /// <param name="e">The event to send.</param>
         /// <remarks>
-        /// This forwards the event to the event dispatcher.
+        /// The event is forwarded to the event dispatcher for processing.
+        /// For more information, refer to [[wiki:UIE-Events-Synthesizing|Synthesize and send events]].
         /// </remarks>
+        /// <remarks>
+        /// SA: [[IEventHandler.HandleEvent]], [[EventDispatcher]], [[EventBase]]
+        /// </remarks>
+        /// <param name="e">The event to send.</param>
         public sealed override void SendEvent(EventBase e)
         {
             elementPanel?.SendEvent(e);

@@ -314,7 +314,7 @@ namespace UnityEditor.UIElements
                 if (obj == null)
                     return;
 
-                m_Editor = Editor.CreateEditor(obj.targetObject);
+                m_Editor = Editor.CreateEditor(obj.targetObjects);
                 m_OwnsEditor = true;
             }
             else
@@ -501,15 +501,15 @@ namespace UnityEditor.UIElements
         /// <returns>The found or created instance.</returns>
         Editor GetOrCreateEditor(SerializedObject serializedObject)
         {
-            Object target = null;
+            Object[] targets = null;
 
             if (serializedObject != null && serializedObject.m_NativeObjectPtr != IntPtr.Zero)
-                target = serializedObject.targetObject;
+                targets = serializedObject.targetObjects;
 
             if (m_Editor != null)
             {
                 // First try to re-use the instance we have on hand. If this matches our given object we can simply re-use it.
-                if (m_Editor.target == target || m_Editor.serializedObject == serializedObject)
+                if (m_Editor.serializedObject == serializedObject || ArrayUtility.ArrayReferenceEquals(m_Editor.targets, targets))
                     return m_Editor;
 
                 // We need to generate a new editor instance, first cleanup any owned editor resources we have.
@@ -517,7 +517,7 @@ namespace UnityEditor.UIElements
             }
 
             // Fallback to creating our own editor instance for the given object.
-            m_Editor = Editor.CreateEditor(target);
+            m_Editor = Editor.CreateEditor(targets);
             m_OwnsEditor = true;
 
             return m_Editor;

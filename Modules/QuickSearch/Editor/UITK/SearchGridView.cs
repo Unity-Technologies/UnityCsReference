@@ -375,6 +375,12 @@ namespace UnityEditor.Search
             // Do nothing
         }
 
+        void IResultView.OnItemSourceChanged(ISearchList itemSource)
+        {
+            if (m_GridView != null)
+                m_GridView.itemsSource = (IList)itemSource;
+        }
+
         private void UpdateView()
         {
             m_GridView.fixedItemHeight = m_ViewModel.itemIconSize + m_LabelHeight;

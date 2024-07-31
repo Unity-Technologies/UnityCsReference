@@ -16,6 +16,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Sends an event to the event handler.
         /// </summary>
+        /// <remarks>
+        /// The event is forwarded to the event dispatcher for processing.
+        /// For more information, refer to [[wiki:UIE-Events-Synthesizing|Synthesize and send events]].
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[IEventHandler.HandleEvent]], [[EventDispatcher]], [[EventBase]]
+        /// </remarks>
         /// <param name="e">The event to send.</param>
         void SendEvent(EventBase e);
 
@@ -23,21 +30,19 @@ namespace UnityEngine.UIElements
         /// Handles an event according to its propagation phase and current target, by executing the element's
         /// default action or callbacks associated with the event.
         /// </summary>
-        /// <param name="evt">The event to handle.</param>
         /// <remarks>
-        /// The <see cref="EventDispatcher"/> may invoke this method multiple times for the same event: once for each
+        /// The <see cref="EventDispatcher"/> might invoke this method multiple times for the same event: once for each
         /// propagation phase and each target along the event's propagation path if it has matching callbacks or
         /// overrides default actions for the event.
         ///
-        /// Do not use this method to intercept all events whose propagation path include this element. There is no
+        /// __Note:__ Do not use this method to intercept all events whose propagation path includes this element. There is no
         /// guarantee that it will or will not be invoked for a propagation phase or target along the propagation path
         /// if that target has no callbacks for the event and has no default action override that can receive the event.
-        ///
-        /// Use <see cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>,
-        /// or <see cref="CallbackEventHandler.HandleEventBubbleUp"/> for more predictable results.
         /// </remarks>
-        /// <seealso cref="CallbackEventHandler.RegisterCallback&lt;TEventType&gt;(EventCallback&lt;TEventType&gt;, TrickleDown)"/>
-        /// <seealso cref="CallbackEventHandler.HandleEventBubbleUp"/>
+        /// <remarks>
+        /// SA: [[CallbackEventHandler.RegisterCallback]], [[CallbackEventHandler.HandleEventBubbleUp]]
+        /// </remarks>
+        /// <param name="evt">The event to handle.</param>
         void HandleEvent(EventBase evt);
 
         /// <summary>
@@ -47,9 +52,9 @@ namespace UnityEngine.UIElements
         bool HasTrickleDownHandlers();
 
         /// <summary>
-        /// Returns true if event handlers for the event propagation BubbleUp phase, have been attached on this object.
+        /// Returns true if event handlers for the event propagation BubbleUp phase, have been attached to this object.
         /// </summary>
-        /// <returns>True if object has event handlers for the BubbleUp phase.</returns>
+        /// <returns>True if the object has event handlers for the BubbleUp phase.</returns>
         bool HasBubbleUpHandlers();
     }
 
@@ -68,7 +73,7 @@ namespace UnityEngine.UIElements
         /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
         /// </summary>
         /// <param name="callback">The event handler to add.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
+        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
@@ -86,7 +91,7 @@ namespace UnityEngine.UIElements
         /// The event handler is automatically unregistered after it has been invoked exactly once.
         /// </summary>
         /// <param name="callback">The event handler to add.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
+        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallbackOnce<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
@@ -112,7 +117,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="callback">The event handler to add.</param>
         /// <param name="userArgs">Data to pass to the callback.</param>
-        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
+        /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (callback == null)
@@ -184,8 +189,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Sends an event to the event handler.
+        /// Sends an event to the event handler. 
         /// </summary>
+        /// <remarks>
+        /// UI Toolkit sends events to visual elements through the panel. The event is sent to the event handler's registered callbacks. 
+        /// For more information, refer to [[wiki:UIE-Events-Synthesizing|Synthesize and send events]].
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[UIElements.IEventHandler]]
+        /// </remarks>
         /// <param name="e">The event to send.</param>
         public abstract void SendEvent(EventBase e);
 
@@ -205,23 +217,23 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if event handlers, for the event propagation TrickleDown phase, are attached to this object.
         /// </summary>
-        /// <returns>True if object has event handlers for the TrickleDown phase.</returns>
+        /// <returns>True if the object has event handlers for the TrickleDown phase.</returns>
         public bool HasTrickleDownHandlers()
         {
             return m_CallbackRegistry != null && m_CallbackRegistry.HasTrickleDownHandlers();
         }
 
         /// <summary>
-        /// Return true if event handlers for the event propagation BubbleUp phase have been attached on this object.
+        /// Return true if event handlers for the event propagation BubbleUp phase have been attached to this object.
         /// </summary>
-        /// <returns>True if object has event handlers for the BubbleUp phase.</returns>
+        /// <returns>True if the object has event handlers for the BubbleUp phase.</returns>
         public bool HasBubbleUpHandlers()
         {
             return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
         }
 
         /// <summary>
-        /// Executes logic after the callbacks registered on each element in the BubbleUp phase have executed,
+        /// Executes logic after the callbacks registered on each element in the BubbleUp phase have been executed,
         /// unless the event propagation is stopped by one of the callbacks.
         /// <see cref="EventBase{T}.PreventDefault"/>.
         /// </summary>
@@ -284,7 +296,7 @@ namespace UnityEngine.UIElements
         internal const string HandleEventTrickleDownName = nameof(HandleEventTrickleDown);
 
         /// <summary>
-        /// Executes logic after the callbacks registered on the event target have executed,
+        /// Executes logic after the callbacks registered on the event target have been executed,
         /// unless the event has been marked to prevent its default behaviour.
         /// <see cref="EventBase{T}.PreventDefault"/>.
         /// </summary>

@@ -430,9 +430,9 @@ namespace UnityEngine.UIElements
                 }
                 else if (m_SelectionType == SelectionType.Single)
                 {
-                    if (m_SelectedIndices.Count > 1)
+                    if (m_Selection.indexCount > 1)
                     {
-                        SetSelection(m_SelectedIndices.First());
+                        SetSelection(m_Selection.FirstIndex());
                     }
                 }
 
@@ -445,14 +445,27 @@ namespace UnityEngine.UIElements
         /// Returns the selected item from the data source. If multiple items are selected, returns the first selected item.
         /// </summary>
         [CreateProperty(ReadOnly = true)]
-        public object selectedItem => m_SelectedItems.Count == 0 ? null : m_SelectedItems.First();
+        public object selectedItem => m_Selection.FirstObject();
 
         /// <summary>
         /// Returns the selected items from the data source. Always returns an enumerable, even if no item is selected, or a single
         /// item is selected.
         /// </summary>
         [CreateProperty(ReadOnly = true)]
-        public IEnumerable<object> selectedItems => m_SelectedItems;
+        public IEnumerable<object> selectedItems
+        {
+            get
+            {
+                // Match the order of the selection
+                foreach (var index in m_Selection.indices)
+                {
+                    if (m_Selection.items.TryGetValue(index, out var item))
+                        yield return item;
+                    else
+                        yield return null;
+                }
+            }
+        }
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
@@ -461,7 +474,7 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public int selectedIndex
         {
-            get { return m_SelectedIndices.Count == 0 ? -1 : m_SelectedIndices.First(); }
+            get { return m_Selection.indexCount == 0 ? -1 : m_Selection.FirstIndex(); }
             set
             {
                 var previous = selectedIndex;
@@ -476,9 +489,9 @@ namespace UnityEngine.UIElements
         /// single item is selected.
         /// </summary>
         [CreateProperty(ReadOnly = true)]
-        public IEnumerable<int> selectedIndices => m_SelectedIndices;
+        public IEnumerable<int> selectedIndices => m_Selection.indices;
 
-        internal IEnumerable<int> selectedIds => m_SelectedIds;
+        internal IEnumerable<int> selectedIds => m_Selection.selectedIds;
 
         static readonly List<ReusableCollectionItem> k_EmptyItems = new();
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
@@ -715,9 +728,131 @@ namespace UnityEngine.UIElements
         // Not persisted! Just used for fast lookups of selected indices and object references.
         // This is to avoid also having a mapping from index/object ref to index for the entire
         // items source.
-        private readonly List<int> m_SelectedIndices = new List<int>();
-        private readonly List<object> m_SelectedItems = new List<object>();
+        class Selection
+        {
+            readonly HashSet<int> m_IndexLookup = new();
+            readonly HashSet<int> m_IdLookup = new();
 
+            // We cache the min/max index
+            int m_MinIndex = -1;
+            int m_MaxIndex = -1;
+
+            // Reference to m_SelectedIds
+            public List<int> selectedIds { get; set; }
+            public readonly List<int> indices = new();
+            public readonly Dictionary<int, object> items = new();
+            public int indexCount => indices.Count;
+            public int idCount => selectedIds.Count;
+
+            public int minIndex
+            {
+                get
+                {
+                    if (m_MinIndex == -1)
+                        m_MinIndex = indices.Min();
+                    return m_MinIndex;
+                }
+            }
+
+            public int maxIndex
+            {
+                get
+                {
+                    if (m_MaxIndex == -1)
+                        m_MaxIndex = indices.Max();
+                    return m_MaxIndex;
+                }
+            }
+
+            public int capacity
+            {
+                get => indices.Capacity;
+                set
+                {
+                    indices.Capacity = value;
+
+                    if (selectedIds.Capacity < value)
+                        selectedIds.Capacity = value;
+                }
+            }
+
+            public int FirstIndex() => indices.Count > 0 ? indices[0] : -1;
+            public object FirstObject() => items.TryGetValue(FirstIndex(), out var obj) ? obj : null;
+
+            public bool ContainsIndex(int index) => m_IndexLookup.Contains(index);
+            public bool ContainsId(int id) => m_IdLookup.Contains(id);
+
+            public void AddId(int id)
+            {
+                selectedIds.Add(id);
+                m_IdLookup.Add(id);
+            }
+
+            public void AddIndex(int index, object obj)
+            {
+                m_IndexLookup.Add(index);
+                indices.Add(index);
+                items[index] = obj;
+
+                if (index < m_MinIndex)
+                    m_MinIndex = index;
+                if (index > m_MaxIndex)
+                    m_MaxIndex = index;
+            }
+
+            public bool TryRemove(int index)
+            {
+                if (!m_IndexLookup.Remove(index))
+                    return false;
+
+                var i = indices.IndexOf(index);
+                if (i >= 0)
+                {
+                    indices.RemoveAt(i);
+                    items.Remove(index);
+
+                    if (index == m_MinIndex)
+                        m_MinIndex = -1;
+                    if (index == m_MaxIndex)
+                        m_MaxIndex = -1;
+                }
+                return true;
+            }
+
+            public void RemoveId(int id)
+            {
+                selectedIds.Remove(id);
+                m_IdLookup.Remove(id);
+            }
+
+            public void ClearItems()
+            {
+                items.Clear();
+            }
+
+            public void ClearIds()
+            {
+                m_IdLookup.Clear();
+                selectedIds.Clear();
+            }
+
+            public void ClearIndices()
+            {
+                m_IndexLookup.Clear();
+                indices.Clear();
+                m_MinIndex = -1;
+                m_MaxIndex = -1;
+            }
+
+            public void Clear()
+            {
+                ClearItems();
+                ClearIds();
+                ClearIndices();
+            }
+        }
+
+        readonly Selection m_Selection;
         private float m_LastHeight;
         internal float lastHeight => m_LastHeight;
 
@@ -921,6 +1056,8 @@ namespace UnityEngine.UIElements
         public BaseVerticalCollectionView()
         {
             AddToClassList(ussClassName);
+
+            m_Selection = new Selection { selectedIds = m_SelectedIds };
 
             selectionType = SelectionType.Single;
 
@@ -1136,22 +1273,22 @@ namespace UnityEngine.UIElements
         private void RefreshSelection()
         {
             var selectedIndicesChanged = false;
-            var previousSelectionCount = m_SelectedIndices.Count;
-            m_SelectedItems.Clear();
+            var previousSelectionCount = m_Selection.indexCount;
+            m_Selection.items.Clear();
 
             if (viewController?.itemsSource == null)
             {
-                m_SelectedIndices.Clear();
+                m_Selection.ClearIndices();
                 NotifyIfChanged();
                 return;
             }
 
             // O(m) where `m` is m_SelectedIds.Count now, instead of itemsSource.Count.
-            if (m_SelectedIds.Count > 0)
+            if (m_Selection.idCount > 0)
             {
                 // Add selected objects to working lists.
                 using var pool = ListPool<int>.Get(out var list);
-                foreach (var id in m_SelectedIds)
+                foreach (var id in m_Selection.selectedIds)
                 {
                     var index = viewController.GetIndexForId(id);
                     if (index < 0)
@@ -1160,7 +1297,7 @@ namespace UnityEngine.UIElements
                         continue;
                     }
 
-                    if (!m_SelectedIndices.Contains(index))
+                    if (!m_Selection.ContainsIndex(index))
                     {
                         selectedIndicesChanged = true;  // Index of a selection changed.
                     }
@@ -1169,11 +1306,10 @@ namespace UnityEngine.UIElements
                 }
 
                 // Rebuild selected indices/items lists.
-                m_SelectedIndices.Clear();
+                m_Selection.ClearIndices();
                 foreach (var index in list)
                 {
-                    m_SelectedIndices.Add(index);
-                    m_SelectedItems.Add(viewController.GetItemForIndex(index));
+                    m_Selection.AddIndex(index, viewController.GetItemForIndex(index));
                 }
             }
 
@@ -1183,7 +1319,7 @@ namespace UnityEngine.UIElements
             void NotifyIfChanged()
             {
                 // Compare selection to raise the event if it changed.
-                if (selectedIndicesChanged || m_SelectedIndices.Count != previousSelectionCount)
+                if (selectedIndicesChanged || m_Selection.indexCount != previousSelectionCount)
                 {
                     NotifyOfSelectionChange();
                 }
@@ -1306,7 +1442,7 @@ namespace UnityEngine.UIElements
                 if (index < 0 || index >= m_ViewController.itemsSource.Count)
                     return;
 
-                if (selectionType == SelectionType.Multiple && shiftKey && m_SelectedIndices.Count != 0)
+                if (selectionType == SelectionType.Multiple && shiftKey && m_Selection.indexCount != 0)
                 {
                     DoRangeSelection(index);
                 }
@@ -1327,7 +1463,7 @@ namespace UnityEngine.UIElements
                     ClearSelection();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    itemsChosen?.Invoke(m_SelectedItems);
+                    itemsChosen?.Invoke(selectedItems);
                     ScrollToItem(selectedIndex);
                     return true;
                 case KeyboardNavigationOperation.Previous:
@@ -1351,27 +1487,27 @@ namespace UnityEngine.UIElements
                     HandleSelectionAndScroll(m_ViewController.itemsSource.Count - 1);
                     return true;
                 case KeyboardNavigationOperation.PageDown:
-                    if (m_SelectedIndices.Count > 0)
+                    if (m_Selection.indexCount > 0)
                     {
-                        var selectionDown = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+                        var selectionDown = m_IsRangeSelectionDirectionUp ? m_Selection.minIndex : m_Selection.maxIndex;
                         HandleSelectionAndScroll(Mathf.Min(viewController.itemsSource.Count - 1, selectionDown + (virtualizationController.visibleItemCount - 1)));
                     }
                     return true;
                 case KeyboardNavigationOperation.PageUp:
-                    if (m_SelectedIndices.Count > 0)
+                    if (m_Selection.indexCount > 0)
                     {
-                        var selectionUp = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Min() : m_SelectedIndices.Max();
+                        var selectionUp = m_IsRangeSelectionDirectionUp ? m_Selection.minIndex : m_Selection.maxIndex;
                         HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (virtualizationController.visibleItemCount - 1)));
                     }
                     return true;
                 case KeyboardNavigationOperation.MoveRight:
-                    if (m_SelectedIndices.Count > 0)
+                    if (m_Selection.indexCount > 0)
                     {
                         return HandleItemNavigation(true, altKey);
                     }
                     break;
                 case KeyboardNavigationOperation.MoveLeft:
-                    if (m_SelectedIndices.Count > 0)
+                    if (m_Selection.indexCount > 0)
                     {
                         return HandleItemNavigation(false, altKey);
                     }
@@ -1486,8 +1622,8 @@ namespace UnityEngine.UIElements
                     && evt.button == (int)MouseButton.LeftMouse
                     && !evt.shiftKey
                     && !evt.actionKey
-                    && m_SelectedIndices.Count > 1
-                    && m_SelectedIndices.Contains(clickedIndex))
+                    && m_Selection.indexCount > 1
+                    && m_Selection.ContainsIndex(clickedIndex))
                 {
                     ProcessSingleClick(clickedIndex);
                 }
@@ -1497,7 +1633,7 @@ namespace UnityEngine.UIElements
         private void DoSelect(Vector2 localPosition, int mouseButton, int clickCount, bool actionKey, bool shiftKey)
         {
             var clickedIndex = virtualizationController.GetIndexFromPosition(localPosition);
-            var effectiveClickCount = (m_SelectedIndices.Count() > 0 && m_SelectedIndices.First() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
+            var effectiveClickCount = (m_Selection.indexCount > 0 && m_Selection.FirstIndex() != clickedIndex) ? 1 : (clickCount > 2) ? 2 : clickCount;
             if (clickedIndex > viewController.itemsSource.Count - 1)
                 return;
 
@@ -1512,14 +1648,14 @@ namespace UnityEngine.UIElements
                     if (selectionType == SelectionType.Multiple && actionKey)
                     {
                         // Add/remove single clicked element
-                        if (m_SelectedIds.Contains(clickedItemId))
+                        if (m_Selection.ContainsId(clickedItemId))
                             RemoveFromSelection(clickedIndex);
                         else
                             AddToSelection(clickedIndex);
                     }
                     else if (selectionType == SelectionType.Multiple && shiftKey)
                     {
-                        if (m_SelectedIndices.Count == 0)
+                        if (m_Selection.indexCount == 0)
                         {
                             SetSelection(clickedIndex);
                         }
@@ -1528,7 +1664,7 @@ namespace UnityEngine.UIElements
                             DoRangeSelection(clickedIndex);
                         }
                     }
-                    else if (selectionType == SelectionType.Multiple && m_SelectedIndices.Contains(clickedIndex))
+                    else if (selectionType == SelectionType.Multiple && m_Selection.ContainsIndex(clickedIndex))
                     {
                         // Do nothing, selection will be processed OnPointerUp.
                         // If drag and drop will be started ListViewDragger will capture the mouse and ListView will not receive the mouse up event.
@@ -1536,7 +1672,7 @@ namespace UnityEngine.UIElements
                     }
                     else // single
                     {
-                        if (selectionType == SelectionType.Single && m_SelectedIndices.Contains(clickedIndex))
+                        if (selectionType == SelectionType.Single && m_Selection.ContainsIndex(clickedIndex))
                         {
                             m_SelectionNotChanged?.Invoke();
                         }
@@ -1547,7 +1683,7 @@ namespace UnityEngine.UIElements
 
                         // Only choose on left mouse button
                         if (allowSingleClickChoice && mouseButton == (int)MouseButton.LeftMouse)
-                                itemsChosen?.Invoke(m_SelectedItems);
+                                itemsChosen?.Invoke(selectedItems);
                     }
 
                     break;
@@ -1572,14 +1708,14 @@ namespace UnityEngine.UIElements
                         return;
 
                     if (!allowSingleClickChoice && mouseButton == (int)MouseButton.LeftMouse)
-                        itemsChosen?.Invoke(m_SelectedItems);
+                        itemsChosen?.Invoke(selectedItems);
                     break;
             }
         }
 
         internal void DoRangeSelection(int rangeSelectionFinalIndex)
         {
-            var selectionOrigin = m_IsRangeSelectionDirectionUp ? m_SelectedIndices.Max() : m_SelectedIndices.Min();
+            var selectionOrigin = m_IsRangeSelectionDirectionUp ? m_Selection.maxIndex : m_Selection.minIndex;
 
             ClearSelectionWithoutValidation();
 
@@ -1624,11 +1760,10 @@ namespace UnityEngine.UIElements
                     if (recycledItem.id == id)
                         recycledItem.SetSelected(true);
 
-                if (!m_SelectedIds.Contains(id))
+                if (!m_Selection.ContainsId(id))
                 {
-                    m_SelectedIds.Add(id);
-                    m_SelectedIndices.Add(index);
-                    m_SelectedItems.Add(item);
+                    m_Selection.AddId(id);
+                    m_Selection.AddIndex(index, item);
                 }
             }
 
@@ -1661,7 +1796,7 @@ namespace UnityEngine.UIElements
 
         private void AddToSelectionWithoutValidation(int index)
         {
-            if (m_SelectedIndices.Contains(index))
+            if (m_Selection.ContainsIndex(index))
                 return;
 
             var id = viewController.GetIdForIndex(index);
@@ -1671,9 +1806,8 @@ namespace UnityEngine.UIElements
                 if (recycledItem.id == id)
                     recycledItem.SetSelected(true);
 
-            m_SelectedIds.Add(id);
-            m_SelectedIndices.Add(index);
-            m_SelectedItems.Add(item);
+            m_Selection.AddId(id);
+            m_Selection.AddIndex(index, item);
         }
 
         /// <summary>
@@ -1692,19 +1826,16 @@ namespace UnityEngine.UIElements
 
         private void RemoveFromSelectionWithoutValidation(int index)
         {
-            if (!m_SelectedIndices.Contains(index))
+            if (!m_Selection.TryRemove(index))
                 return;
 
             var id = viewController.GetIdForIndex(index);
-            var item = viewController.GetItemForIndex(index);
 
             foreach (var recycledItem in activeItems)
                 if (recycledItem.id == id)
                     recycledItem.SetSelected(false);
 
-            m_SelectedIds.Remove(id);
-            m_SelectedIndices.Remove(index);
-            m_SelectedItems.Remove(item);
+            m_Selection.RemoveId(id);
         }
 
         /// <summary>
@@ -1749,6 +1880,13 @@ namespace UnityEngine.UIElements
                 return;
 
             ClearSelectionWithoutValidation();
+
+            // If possible resize indices so we can better handle large selections. (UUM-74996)
+            if (indices is ICollection collection && m_Selection.capacity < collection.Count)
+            {
+                m_Selection.capacity = collection.Count;
+            }
+
             foreach (var index in indices)
                 AddToSelectionWithoutValidation(index);
 
@@ -1760,15 +1898,24 @@ namespace UnityEngine.UIElements
 
         private bool MatchesExistingSelection(IEnumerable<int> indices)
         {
-            var pooled = ListPool<int>.Get();
+            var indicesCollection = indices as IList<int>;
+            List<int> pooled = null;
             try
             {
-                pooled.AddRange(indices);
-                if (pooled.Count != m_SelectedIndices.Count)
-                    return false;
-                for (var i = 0; i < pooled.Count; ++i)
+                if (indicesCollection == null)
                 {
-                    if (pooled[i] != m_SelectedIndices[i])
+                    pooled = ListPool<int>.Get();
+                    pooled.AddRange(indices);
+                    indicesCollection = pooled;
+                }
+
+                if (indicesCollection.Count != m_Selection.indexCount)
+                    return false;
+
+                for (var i = 0; i < indicesCollection.Count; ++i)
+                {
+                    // The order of the indices is important.
+                    if (indicesCollection[i] != m_Selection.indices[i])
                         return false;
                 }
 
@@ -1776,7 +1923,8 @@ namespace UnityEngine.UIElements
             }
             finally
             {
-                ListPool<int>.Release(pooled);
+                if (pooled != null)
+                    ListPool<int>.Release(pooled);
             }
         }
 
@@ -1785,8 +1933,8 @@ namespace UnityEngine.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            selectionChanged?.Invoke(m_SelectedItems);
-            selectedIndicesChanged?.Invoke(m_SelectedIndices);
+            selectionChanged?.Invoke(selectedItems);
+            selectedIndicesChanged?.Invoke(m_Selection.indices);
         }
 
         /// <summary>
@@ -1794,7 +1942,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void ClearSelection()
         {
-            if (!HasValidDataAndBindings() || m_SelectedIds.Count == 0)
+            if (!HasValidDataAndBindings() || m_Selection.idCount == 0)
                 return;
 
             ClearSelectionWithoutValidation();
@@ -1806,9 +1954,7 @@ namespace UnityEngine.UIElements
             foreach (var recycledItem in activeItems)
                 recycledItem.SetSelected(false);
 
-            m_SelectedIds.Clear();
-            m_SelectedIndices.Clear();
-            m_SelectedItems.Clear();
+            m_Selection.Clear();
         }
 
         internal override void OnViewDataReady()
@@ -1885,6 +2031,7 @@ namespace UnityEngine.UIElements
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
+            m_Selection.selectedIds = m_SelectedIds;
             RefreshItems();
         }
     }

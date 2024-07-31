@@ -13,15 +13,17 @@ namespace UnityEditor.PackageManager
         public static event Action<PackageRegistrationEventArgs> registeredPackages;
 
         [RequiredByNativeCode]
-        internal static void InvokeRegisteringPackages(PackageRegistrationEventArgs eventArgs)
+        internal static void InvokeRegisteringPackages(IntPtr nativePackageDiffHandle)
         {
-            registeringPackages?.Invoke(eventArgs);
+            if (registeringPackages != null)
+                registeringPackages?.Invoke(new PackageRegistrationEventArgs(nativePackageDiffHandle));
         }
 
         [RequiredByNativeCode]
-        internal static void InvokeRegisteredPackages(PackageRegistrationEventArgs eventArgs)
+        internal static void InvokeRegisteredPackages(IntPtr nativePackageDiffHandle)
         {
-            registeredPackages?.Invoke(eventArgs);
+            if (registeredPackages != null)
+                registeredPackages?.Invoke(new PackageRegistrationEventArgs(nativePackageDiffHandle));
         }
     }
 }

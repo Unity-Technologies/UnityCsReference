@@ -20,6 +20,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")] // for UI Test Framework
+
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.
 

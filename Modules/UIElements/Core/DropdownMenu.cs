@@ -496,9 +496,12 @@ namespace UnityEngine.UIElements
         /// </example>
         public void AppendSeparator(string subMenuPath = null)
         {
-            if (m_MenuItems.Count > 0 && !(m_MenuItems[^1] is DropdownMenuSeparator && ((DropdownMenuSeparator)m_MenuItems[^1]).subMenuPath == subMenuPath))
+            subMenuPath ??= string.Empty;
+            // Do not allow a separator to be added as a first item in a menu or submenu
+            var isFirstItemOfMenu = m_MenuItems.FindIndex(item => item is DropdownMenuAction action && action.name.StartsWith(subMenuPath)) == -1;
+            if (m_MenuItems.Count > 0 && !(m_MenuItems[^1] is DropdownMenuSeparator && ((DropdownMenuSeparator)m_MenuItems[^1]).subMenuPath == subMenuPath) && !isFirstItemOfMenu)
             {
-                DropdownMenuSeparator separator = new DropdownMenuSeparator(subMenuPath ?? String.Empty);
+                DropdownMenuSeparator separator = new DropdownMenuSeparator(subMenuPath);
                 m_MenuItems.Add(separator);
             }
         }

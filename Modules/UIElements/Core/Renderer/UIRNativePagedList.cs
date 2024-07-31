@@ -20,35 +20,44 @@ namespace UnityEngine.UIElements.UIR
         readonly int k_PoolCapacity;
 
         List<NativeArray<T>> m_Pages = new List<NativeArray<T>>(8);
-        NativeArray<T> m_CurrentPage;
-        int m_CurrentPageCount;
+        NativeArray<T> m_LastPage;
+        int m_CountInLastPage;
+        Allocator m_FirstPageAllocator;
+        Allocator m_OtherPagesAllocator;
 
-        public NativePagedList(int poolCapacity)
+        public NativePagedList(int poolCapacity, Allocator firstPageAllocator = Allocator.Persistent, Allocator otherPagesAllocator = Allocator.Persistent)
         {
             Debug.Assert(poolCapacity > 0);
             k_PoolCapacity = Mathf.NextPowerOfTwo(poolCapacity);
+            m_FirstPageAllocator = firstPageAllocator;
+            m_OtherPagesAllocator = otherPagesAllocator;
         }
 
         public void Add(ref T data)
         {
-            // Add to the current page if there is still room
-            if (m_CurrentPageCount < m_CurrentPage.Length)
+            // Add to the last page if there is still room
+            if (m_CountInLastPage < m_LastPage.Length)
             {
-                m_CurrentPage[m_CurrentPageCount++] = data;
+                m_LastPage[m_CountInLastPage++] = data;
                 return;
             }
 
-            int newPageSize = m_Pages.Count > 0 ? m_CurrentPage.Length << 1 : k_PoolCapacity;
-            m_CurrentPage = new NativeArray<T>(newPageSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Pages.Add(m_CurrentPage);
+            int newPageSize = m_Pages.Count > 0 ? m_LastPage.Length << 1 : k_PoolCapacity;
+            Allocator allocator = m_Pages.Count == 0 ? m_FirstPageAllocator : m_OtherPagesAllocator;
+            m_LastPage = new NativeArray<T>(newPageSize, allocator, NativeArrayOptions.UninitializedMemory);
+            m_Pages.Add(m_LastPage);
 
-            m_CurrentPage[0] = data;
-            m_CurrentPageCount = 1;
+            m_LastPage[0] = data;
+            m_CountInLastPage = 1;
         }
 
         public void Add(T data) { Add(ref data); }
 
+        // TODO: Implement page enumerator instead
         List<NativeSlice<T>> m_Enumerator = new List<NativeSlice<T>>(8);
+
+        // Note: This code is not thread safe, using a page enumerator as in the TODO
+        // should solve the multi-threading issue.
         public List<NativeSlice<T>> GetPages()
         {
             m_Enumerator.Clear();
@@ -56,15 +65,24 @@ namespace UnityEngine.UIElements.UIR
             if (m_Pages.Count > 0)
             {
                 int last = m_Pages.Count - 1;
-                for(int i = 0 ; i < last ; ++i)
+                for (int i = 0; i < last; ++i)
                     m_Enumerator.Add(m_Pages[i]);
 
                 // Last page might not be full
-                if(m_CurrentPageCount > 0)
-                    m_Enumerator.Add(m_CurrentPage.Slice(0, m_CurrentPageCount));
+                if (m_CountInLastPage > 0)
+                    m_Enumerator.Add(m_LastPage.Slice(0, m_CountInLastPage));
             }
 
             return m_Enumerator;
+        }
+
+        // This return the number of element added and not the current capacity of the list
+        public int GetCount()
+        {
+            int count = m_CountInLastPage;
+            for (int i = 0; i < m_Pages.Count - 1; ++i)
+                count += m_Pages[i].Length;
+            return count;
         }
 
         public void Reset()
@@ -72,16 +90,16 @@ namespace UnityEngine.UIElements.UIR
             if (m_Pages.Count > 1)
             {
                 // Keep first page alive
-                m_CurrentPage = m_Pages[0];
+                m_LastPage = m_Pages[0];
 
                 // Trim excess
                 for (int i = 1; i < m_Pages.Count; ++i)
                     m_Pages[i].Dispose();
                 m_Pages.Clear();
-                m_Pages.Add(m_CurrentPage);
+                m_Pages.Add(m_LastPage);
             }
 
-            m_CurrentPageCount = 0;
+            m_CountInLastPage = 0;
         }
 
         #region Dispose Pattern
@@ -105,7 +123,7 @@ namespace UnityEngine.UIElements.UIR
                 for (int i = 0; i < m_Pages.Count; ++i)
                     m_Pages[i].Dispose();
                 m_Pages.Clear();
-                m_CurrentPageCount = 0;
+                m_CountInLastPage = 0;
             }
             else DisposeHelper.NotifyMissingDispose(this);
 
@@ -113,5 +131,88 @@ namespace UnityEngine.UIElements.UIR
         }
 
         #endregion // Dispose Pattern
+
+        // Note: The related NativePagedList cannot be modified while the enumerator is being used. I will not correctly update its internal state to correctly
+        // keep track of new added elements or reset list.
+        public struct Enumerator
+        {
+            NativePagedList<T> m_NativePagedList;
+            NativeArray<T> m_CurrentPage;
+
+            int m_IndexInCurrentPage = 0;
+            int m_IndexOfCurrentPage = 0;
+            int m_CountInCurrentPage = 0;
+
+            public Enumerator(NativePagedList<T> nativePagedList, int offset)
+            {
+                m_NativePagedList = nativePagedList;
+
+                // This loop does NOT process the last page
+                for (int i = 0; i < m_NativePagedList.m_Pages.Count - 1; i++)
+                {
+                    m_CountInCurrentPage = m_NativePagedList.m_Pages[i].Length;
+
+                    if (offset >= m_CountInCurrentPage)
+                    {
+                        offset -= m_CountInCurrentPage;
+                    }
+                    else
+                    {
+                        m_IndexInCurrentPage = offset;
+                        m_IndexOfCurrentPage = i;
+                        m_CurrentPage = m_NativePagedList.m_Pages[m_IndexOfCurrentPage];
+                        return;
+                    }
+                }
+
+                // Process for the last page
+                m_IndexOfCurrentPage = m_NativePagedList.m_Pages.Count - 1;
+                m_CountInCurrentPage = m_NativePagedList.m_CountInLastPage;
+                m_IndexInCurrentPage = offset;
+                m_CurrentPage = m_NativePagedList.m_LastPage;
+            }
+
+            public bool HasNext()
+            {
+                return m_IndexInCurrentPage < m_CountInCurrentPage;
+            }
+
+            public T GetNext()
+            {
+                if (!HasNext())
+                {
+                    throw new InvalidOperationException("No more elements");
+                }
+
+                T result = m_CurrentPage[m_IndexInCurrentPage];
+                ++m_IndexInCurrentPage;
+
+                // Select next
+                if (m_IndexInCurrentPage == m_CountInCurrentPage)
+                {
+                    m_IndexInCurrentPage = 0;
+                    ++m_IndexOfCurrentPage;
+                    int pageCount = m_NativePagedList.m_Pages.Count;
+
+                    if (m_IndexOfCurrentPage < pageCount)
+                    {
+                        if (m_IndexOfCurrentPage < pageCount - 1)
+                            m_CountInCurrentPage = m_NativePagedList.m_Pages[m_IndexOfCurrentPage].Length;
+                        else
+                            m_CountInCurrentPage = m_NativePagedList.m_CountInLastPage;
+                    }
+                    else
+                    {
+                        // Stay at the end of the paged list to return false on HasNext()
+                        m_IndexOfCurrentPage = pageCount - 1;
+                        m_CountInCurrentPage = m_NativePagedList.m_CountInLastPage;
+                        m_IndexInCurrentPage = m_CountInCurrentPage;
+                    }
+
+                    m_CurrentPage = m_NativePagedList.m_Pages[m_IndexOfCurrentPage];
+                }
+                return result;
+            }
+        }
     }
 }

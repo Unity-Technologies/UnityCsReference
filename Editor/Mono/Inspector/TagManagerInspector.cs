@@ -318,11 +318,19 @@ namespace UnityEditor
             listView.allowRemove = !tagManager.IsIndexReservedForDefaultRenderingLayer(renderingLayerCount - 1);
 
             var viewport = listView.Q<VisualElement>("unity-content-viewport");
-            viewport.Query<HelpBox>().Where(h => h.name == "MaximumSupportedRenderingLayers").ForEach(h => viewport.Remove(h));
+            ClearHelpBoxes(viewport);
 
             var maxRenderingLayers = RenderPipelineEditorUtility.GetMaxRenderingLayersFromSettings();
             AddInfoBoxesForMaximumValueRestriction(viewport, maxRenderingLayers);
             AddWarningMessageForUnsupportedLayers(viewport, maxRenderingLayers);
+        }
+
+        void ClearHelpBoxes(VisualElement viewport)
+        {
+            viewport
+                .Query<HelpBox>()
+                .Where(h => h.name == "MaximumSupportedRenderingLayers")
+                .ForEach(viewport.Remove);
         }
 
         void AddInfoBoxesForMaximumValueRestriction(VisualElement viewport, List<(int, string)> maxRenderingLayers)

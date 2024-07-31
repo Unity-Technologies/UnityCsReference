@@ -93,12 +93,14 @@ namespace UnityEditor.Rendering
         /// <returns>A list of tuples, each containing the maximum number of rendering layers and the name of the corresponding render pipeline type.</returns>
         internal static List<(int, string)> GetMaxRenderingLayersFromSettings()
         {
+            using var hashset = HashSetPool<Type>.Get(out var types);
+
             var result = new List<(int, string)>();
             var renderPipelineAssets = GraphicsSettings.allConfiguredRenderPipelines;
             foreach (var renderPipelineAsset in renderPipelineAssets)
             {
                 var pipelineType = GetPipelineTypeFromPipelineAssetType(renderPipelineAsset.GetType());
-                if (pipelineType == null)
+                if (pipelineType == null || types.Contains(pipelineType))
                     continue;
 
                 if (!EditorGraphicsSettings.TryGetRenderPipelineSettingsFromInterfaceForPipeline<RenderingLayersLimitSettings>(pipelineType, out var settings))
@@ -107,6 +109,7 @@ namespace UnityEditor.Rendering
                 if (settings.Length == 0)
                     continue;
 
+                types.Add(pipelineType);
                 result.Add((settings[0].maxSupportedRenderingLayers, renderPipelineAsset.pipelineType.Name));
             }
 

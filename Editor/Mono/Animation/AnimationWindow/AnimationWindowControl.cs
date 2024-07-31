@@ -129,7 +129,6 @@ namespace UnityEditorInternal
         private AnimationClipPlayable m_CandidateClipPlayable;
         private AnimationClipPlayable m_DefaultPosePlayable;
         private bool m_UsesPostProcessComponents = false;
-        HashSet<Object> m_ObjectsModifiedDuringAnimationMode = new HashSet<Object>();
 
         private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
 
@@ -717,42 +716,30 @@ namespace UnityEditorInternal
             if (componentOrGameObject == null)
                 throw new ArgumentNullException(nameof(componentOrGameObject));
 
-            GameObject inputGameObject = null;
-            if (componentOrGameObject is Component)
-            {
-                inputGameObject = ((Component)componentOrGameObject).gameObject;
-            }
-            else if (componentOrGameObject is GameObject)
-            {
-                inputGameObject = (GameObject)componentOrGameObject;
-            }
-            else
-            {
+            if (componentOrGameObject is not Component && componentOrGameObject is not GameObject)
                 return true;
-            }
 
             var rootOfAnimation = state.activeRootGameObject;
             if (rootOfAnimation == null)
                 return true;
 
-            // If the input object is a child of the current root of animation then disallow recording of prefab property overrides
-            // since the input object is currently being setup for animation recording
-            return inputGameObject.transform.IsChildOf(rootOfAnimation.transform) == false;
+            return false;
         }
 
         void OnExitingAnimationMode()
         {
             Undo.postprocessModifications -= PostprocessAnimationRecordingModifications;
             PrefabUtility.allowRecordingPrefabPropertyOverridesFor -= AllowRecordingPrefabPropertyOverridesFor;
+        }
 
-            // Ensures Prefab instance overrides are recorded for properties that was changed while in AnimationMode
-            foreach (var obj in m_ObjectsModifiedDuringAnimationMode)
+        void RecordPropertyOverridesForNonAnimatedProperties(UndoPropertyModification[] modifications)
+        {
+            PrefabUtility.allowRecordingPrefabPropertyOverridesFor -= AllowRecordingPrefabPropertyOverridesFor;
+            foreach (var mod in modifications)
             {
-                if (obj != null)
-                    EditorUtility.SetDirty(obj);
+                PrefabUtility.RecordPrefabInstancePropertyModifications(mod.currentValue.target);
             }
-
-            m_ObjectsModifiedDuringAnimationMode.Clear();
+            PrefabUtility.allowRecordingPrefabPropertyOverridesFor += AllowRecordingPrefabPropertyOverridesFor;
         }
 
         private UndoPropertyModification[] PostprocessAnimationRecordingModifications(UndoPropertyModification[] modifications)
@@ -769,16 +756,14 @@ namespace UnityEditorInternal
             else if (previewing)
                 modifications = RegisterCandidates(modifications);
 
+            // Fix for UUM-61742: Unrecorded Prefab overloads should be recorded immediately
+            RecordPropertyOverridesForNonAnimatedProperties(modifications);
+
             RefreshDisplayNamesOnArrayTopologicalChange(modifications);
 
             // Only resample when playable graph has been customized with post process nodes.
             if (m_UsesPostProcessComponents)
                 ResampleAnimation(ResampleFlags.None);
-
-            foreach (var mod in modifications)
-            {
-                m_ObjectsModifiedDuringAnimationMode.Add(mod.currentValue.target);
-            }
 
             return modifications;
         }
