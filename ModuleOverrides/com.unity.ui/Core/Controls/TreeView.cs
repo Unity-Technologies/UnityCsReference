@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// A <see cref="TreeView"/> is a <see cref="ScrollView"/> with additional logic to display a tree of vertically-arranged
     /// VisualElements. Each VisualElement in the tree is bound to a corresponding element in a data-source list. The
-    /// data-source list can contain elements of any type. <see cref="TreeViewItemData{T}"/>\\
+    /// data-source list can contain elements of any type. \\
     /// \\
     /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
     /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
     ///
     /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
     /// recycles VisualElements and re-binds them to new data items.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TreeView|UXML element TreeView]].
     /// </remarks>
     public class TreeView : BaseTreeView

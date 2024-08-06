@@ -23,5 +23,10 @@ namespace UnityEngine.UIElements
         {
             return Mathf.Floor(v * pixelsPerPoint + offset) / pixelsPerPoint;
         }
+
+        internal static float RoundToPanelPixelSize(this VisualElement ve, float v)
+        {
+            return RoundToPixelGrid(v, ve.scaledPixelsPerPoint);
+        }
     }
 }

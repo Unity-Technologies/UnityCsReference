@@ -96,7 +96,7 @@ namespace UnityEngine.UIElements
             base.SetDragGhost(dragGhost);
             if (m_DragHandle != null)
             {
-                m_DragHandle.style.display = isDragGhost ? DisplayStyle.None : DisplayStyle.Flex;
+                m_DragHandle.EnableInClassList(UIElementsUtility.hiddenClassName, isDragGhost);
             }
         }
     }

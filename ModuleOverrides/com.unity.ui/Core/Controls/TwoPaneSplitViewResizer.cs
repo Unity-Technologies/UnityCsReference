@@ -2,10 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine.UIElements
 {
     internal class TwoPaneSplitViewResizer : PointerManipulator
     {
+        // Distance between the drag line and the anchor
+        private const float k_DragLineTolerance = 1f;
         Vector3 m_Start;
         protected bool m_Active;
         TwoPaneSplitView m_SplitView;
@@ -89,13 +93,30 @@ namespace UnityEngine.UIElements
                 : fixedPane.resolvedStyle.height;
             float newDimension = oldDimension + delta;
 
-            if (newDimension < oldDimension && newDimension < fixedPaneMinDimension)
-                newDimension = fixedPaneMinDimension;
+            float adjustedfixedPaneMinDimension = fixedPaneMinDimension;
+
+            // Track the size of the anchor so that the cannot be hidden when moving it to the right.
+            if (m_SplitView.fixedPaneIndex == 1)
+                adjustedfixedPaneMinDimension += orientation == TwoPaneSplitViewOrientation.Horizontal
+                    ? target.worldBound.width + Math.Abs(m_SplitView.dragLine.resolvedStyle.left)
+                    : target.worldBound.height + Math.Abs(m_SplitView.dragLine.resolvedStyle.top);
+
+            if (newDimension < oldDimension && newDimension < adjustedfixedPaneMinDimension)
+                newDimension = adjustedfixedPaneMinDimension;
 
             float maxDimension = orientation == TwoPaneSplitViewOrientation.Horizontal
                 ? m_SplitView.resolvedStyle.width
                 : m_SplitView.resolvedStyle.height;
             maxDimension -= flexedPaneMinDimension + flexedPaneMargin + fixedPaneMargins;
+
+            // Track the size of the anchor so that the cannot be hidden when moving it to the right.
+            // Need to take into account the width of the anchor and the width of the dragline minus
+            // how far back/up the dragline is
+            if (m_SplitView.fixedPaneIndex == 0)
+                maxDimension -= orientation == TwoPaneSplitViewOrientation.Horizontal
+                    ? Math.Abs(target.worldBound.width  - (m_SplitView.dragLine.resolvedStyle.width - Math.Abs(m_SplitView.dragLine.resolvedStyle.left)))
+                    : Math.Abs(target.worldBound.height  - (m_SplitView.dragLine.resolvedStyle.height - Math.Abs(m_SplitView.dragLine.resolvedStyle.top)));
+
             if (newDimension > oldDimension && newDimension > maxDimension)
                 newDimension = maxDimension;
 
@@ -105,7 +126,13 @@ namespace UnityEngine.UIElements
                 if (m_SplitView.fixedPaneIndex == 0)
                     target.style.left = newDimension + fixedPaneMargins;
                 else
-                    target.style.left = m_SplitView.resolvedStyle.width - newDimension - fixedPaneMargins;
+                {
+                    var newLeftValue = m_SplitView.resolvedStyle.width - newDimension - fixedPaneMargins;
+                    // Ensure the dragLine respects the flexed pane's min dimension
+                    if (newLeftValue >= flexedPaneMinDimension + flexedPaneMargin)
+                        target.style.left = newLeftValue;
+                }
+
             }
             else
             {
@@ -113,7 +140,12 @@ namespace UnityEngine.UIElements
                 if (m_SplitView.fixedPaneIndex == 0)
                     target.style.top = newDimension + fixedPaneMargins;
                 else
-                    target.style.top = m_SplitView.resolvedStyle.height - newDimension - fixedPaneMargins;
+                {
+                    var newTopValue = m_SplitView.resolvedStyle.height - newDimension - fixedPaneMargins;
+                    // Ensure the dragLine respects the flexed pane's min dimension
+                    if (newTopValue >= flexedPaneMinDimension + flexedPaneMargin)
+                        target.style.top = newTopValue;
+                }
             }
             m_SplitView.fixedPaneDimension = newDimension;
         }
@@ -141,6 +173,25 @@ namespace UnityEngine.UIElements
             if (!m_Active || !target.HasPointerCapture(e.pointerId))
                 return;
 
+            // A cases where the anchor can go past the dropdown
+            var dragLineIsBeforeAnchor = orientation == TwoPaneSplitViewOrientation.Horizontal
+                ? m_SplitView.dragLine.worldBound.x < target.worldBound.x
+                : m_SplitView.dragLine.worldBound.y < target.worldBound.y;
+
+            var distanceBetweenDragLineAndAnchor = orientation == TwoPaneSplitViewOrientation.Horizontal
+                ? Math.Abs(target.worldBound.x - m_SplitView.dragLine.worldBound.x)
+                : Math.Abs(target.worldBound.y - m_SplitView.dragLine.worldBound.y);
+
+            var dragLineOffset = orientation == TwoPaneSplitViewOrientation.Horizontal
+                ? m_SplitView.dragLine.resolvedStyle.left
+                : m_SplitView.dragLine.resolvedStyle.top;
+
+            if (dragLineIsBeforeAnchor && (Math.Abs(dragLineOffset) + k_DragLineTolerance) <= distanceBetweenDragLineAndAnchor)
+            {
+                InterruptPointerMove(e);
+                return;
+            }
+
             Vector2 diff = e.localPosition - m_Start;
             var mouseDiff = diff.x;
             if (orientation == TwoPaneSplitViewOrientation.Vertical)
@@ -156,6 +207,16 @@ namespace UnityEngine.UIElements
         protected void OnPointerUp(PointerUpEvent e)
         {
             if (!m_Active || !target.HasPointerCapture(e.pointerId) || !CanStopManipulation(e))
+                return;
+
+            m_Active = false;
+            target.ReleasePointer(e.pointerId);
+            e.StopPropagation();
+        }
+
+        protected void InterruptPointerMove(PointerMoveEvent e)
+        {
+            if (!CanStopManipulation(e))
                 return;
 
             m_Active = false;

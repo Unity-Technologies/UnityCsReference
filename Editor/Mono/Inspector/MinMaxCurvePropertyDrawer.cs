@@ -236,7 +236,6 @@ namespace UnityEditorInternal
         public override VisualElement CreatePropertyGUI(SerializedProperty property)
         {
             const string StylesheetPath = "StyleSheets/ParticleSystem/ParticleSystem.uss";
-            const string HideClass = "unity-hidden";
             const string AlignClass = "unity-base-field__aligned";
             const string InputClass = "unity-base-popup-field__input";
             const string RowClass = "unity-particle-system-min-max-curve__row";
@@ -245,7 +244,7 @@ namespace UnityEditorInternal
             PropertyField PrepareProperty(SerializedProperty prop, string label, VisualElement parent)
             {
                 var propField = new PropertyField(prop, label);
-                propField.AddToClassList(HideClass);
+                propField.AddToClassList(UIElementsUtility.hiddenClassName);
                 propField.AddToClassList(GrowClass);
                 parent.Add(propField);
                 return propField;
@@ -273,7 +272,7 @@ namespace UnityEditorInternal
                 else DoMinMaxCurvesField(rect, m_Property.curveMin.GetHashCode(), m_Property.curveMax, m_Property.curveMin, m_Property.curveMultiplier, s_Styles.curveColor, s_Styles.curveBackgroundColor, xAxisLabel);
                 if (EditorGUI.EndChangeCheck()) m_Property.curveMax.serializedObject.ApplyModifiedProperties();
             });
-            region.AddToClassList(HideClass);
+            region.AddToClassList(UIElementsUtility.hiddenClassName);
             region.AddToClassList(GrowClass);
             container.Add(region);
 
@@ -286,7 +285,7 @@ namespace UnityEditorInternal
                 m_Property.mode.intValue = (int)state;
                 m_Property.mode.serializedObject.ApplyModifiedProperties();
 
-                constantMax.EnableInClassList(HideClass, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
+                constantMax.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_Scalar && state != MinMaxCurveState.k_TwoScalars);
 
                 if(constantMax.Children().Count() > 0)
                 {
@@ -305,8 +304,8 @@ namespace UnityEditorInternal
                     }
                 }
 
-                constantMin.EnableInClassList(HideClass, state != MinMaxCurveState.k_TwoScalars);
-                region.EnableInClassList(HideClass, state != MinMaxCurveState.k_Curve && state != MinMaxCurveState.k_TwoCurves);
+                constantMin.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_TwoScalars);
+                region.EnableInClassList(UIElementsUtility.hiddenClassName, state != MinMaxCurveState.k_Curve && state != MinMaxCurveState.k_TwoCurves);
                 AnimationCurvePreviewCache.ClearCache();
             };
             mode.RegisterValueChangedCallback(valueChangeAction);

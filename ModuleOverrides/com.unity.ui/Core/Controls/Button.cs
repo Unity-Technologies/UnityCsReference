@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
     ///
     /// To bind a Button's text value to the contents of a variable, set the <c>binding-path</c> property in the
     /// UXML file, or the <c>bindingPath</c> property in the C# code, to a string that contains the variable name.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-Button|UXML element Button]].
     /// </remarks>
     public class Button : TextElement
@@ -68,13 +68,21 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The default <see cref="Clickable"/> object provides a list of actions that are called using
         /// one or more activation filters.
-        ///
-        /// To add or remove activation triggers, modify <see cref="clickable.activators"/>.
+        ///\\
+        ///\\
+        /// To add or remove activation triggers, modify [[MouseManipulator.activators|clickable.activators]].
         /// An activation trigger can be any mouse button, pressed any number of times, with any modifier key.
-        /// For details, see <see cref="ManipulatorActivationFilter"/>.
-        /// <code>clickable.activators.Add(new ManipulatorActivationFilter(...))</code>
-        /// or
-        /// <code>clickable.activators.Clear()</code>
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs">
+        /// myButton.clickable.activators.Add(new ManipulatorActivationFilter(...))
+        /// </code>
+        /// </example>
+        /// <example>
+        /// <code lang="cs">myButton.clickable.activators.Clear()</code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[ManipulatorActivationFilter]]
         /// </remarks>
         public Clickable clickable
         {
@@ -99,7 +107,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="Button.clicked"/> instead.
+        /// Obsolete. Use <see cref="clicked"/> instead.
         /// </summary>
         [Obsolete("onClick is obsolete. Use clicked instead (UnityUpgradable) -> clicked", true)]
         public event Action onClick
@@ -158,6 +166,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="clickEvent">The action triggered when the button is clicked.</param>
         /// <remarks>
+        /// Action is the standard C# System.Action.
         /// By default, a single left mouse click triggers the Action. To change the activator, modify <see cref="clickable"/>.
         /// </remarks>
         public Button(Action clickEvent)
