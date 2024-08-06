@@ -31,14 +31,14 @@ namespace UnityEditorInternal
         public UnityLinkerRunInformation(string managedAssemblyFolderPath,
                                          BaseUnityLinkerPlatformProvider platformProvider, BuildTarget buildTarget,
                                          RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel,
-                                         IIl2CppPlatformProvider il2CppPlatformProvider)
+                                         BuildReport buildReport)
         {
             this.managedAssemblyFolderPath = managedAssemblyFolderPath;
             target = buildTarget;
             this.platformProvider = platformProvider;
             this.rcr = rcr;
             this.managedStrippingLevel = managedStrippingLevel;
-            this.il2CppPlatformProvider = il2CppPlatformProvider;
+            this.BuildReport = buildReport;
             pipelineData = new UnityLinkerBuildPipelineData(target, managedAssemblyFolderPath);
 
             buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
@@ -51,7 +51,7 @@ namespace UnityEditorInternal
 
         public string ModulesAssetFilePath => platformProvider.modulesAssetFile;
 
-        public BuildReport BuildReport => il2CppPlatformProvider == null ? null : il2CppPlatformProvider.buildReport;
+        public BuildReport BuildReport { get; private set; }
 
         public StrippingInfo BuildReportData => BuildReport == null ? null : StrippingInfo.GetBuildReportData(BuildReport);
 
