@@ -146,7 +146,7 @@ namespace UnityEditor.Modules
                     engineStrippingFlags.Add("EnableCrashReporting");
 
                 var linkerRunInformation = new UnityLinkerRunInformation(managedAssemblyFolderPath.MakeAbsolute().ToString(), null, args.target,
-                    rcr, strippingLevel, null);
+                    rcr, strippingLevel, args.report);
                 AssemblyStripper.WriteEditorData(linkerRunInformation);
 
                 return new LinkerConfig
@@ -174,7 +174,7 @@ namespace UnityEditor.Modules
                     // *end-nonstandard-formatting*
                     AdditionalArgs = additionalArgs.ToArray(),
                     ModulesAssetPath = $"{BuildPipeline.GetPlaybackEngineDirectory(args.target, 0)}/modules.asset",
-                    AllowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging,
+                    AllowDebugging = GetAllowDebugging(args),
                     PerformEngineStripping = PlayerSettings.stripEngineCode,
                 };
             }
@@ -232,7 +232,7 @@ namespace UnityEditor.Modules
             var namedBuildTarget = GetNamedBuildTarget(args);
             var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
             var platformHasIncrementalGC = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", args.target);
-            var allowDebugging = (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
+            var allowDebugging = GetAllowDebugging(args);
 
             NPath extraTypesFile = null;
             if (PlayerBuildInterface.ExtraTypesProvider != null)
@@ -595,5 +595,7 @@ namespace UnityEditor.Modules
 
         protected virtual bool GetUseIl2Cpp(BuildPostProcessArgs args) =>
             PlayerSettings.GetScriptingBackend(GetNamedBuildTarget(args)) == ScriptingImplementation.IL2CPP;
+
+        protected virtual bool GetAllowDebugging(BuildPostProcessArgs args) => (args.report.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
     }
 }

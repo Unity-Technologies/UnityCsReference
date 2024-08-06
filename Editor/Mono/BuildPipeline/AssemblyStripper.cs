@@ -168,7 +168,7 @@ namespace UnityEditorInternal
         internal static void StripAssemblies(string managedAssemblyFolderPath, BaseUnityLinkerPlatformProvider unityLinkerPlatformProvider, IIl2CppPlatformProvider il2cppPlatformProvider,
             RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
         {
-            var runInformation = new UnityLinkerRunInformation(IL2CPPBuilder.GetShortPathName(managedAssemblyFolderPath), unityLinkerPlatformProvider, il2cppPlatformProvider.target, rcr, managedStrippingLevel, il2cppPlatformProvider);
+            var runInformation = new UnityLinkerRunInformation(IL2CPPBuilder.GetShortPathName(managedAssemblyFolderPath), unityLinkerPlatformProvider, il2cppPlatformProvider.target, rcr, managedStrippingLevel, il2cppPlatformProvider.buildReport);
             RunAssemblyStripper(runInformation);
         }
 
