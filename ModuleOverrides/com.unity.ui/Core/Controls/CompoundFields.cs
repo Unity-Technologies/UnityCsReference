@@ -401,7 +401,7 @@ namespace UnityEngine.UIElements
 
 
     /// <summary>
-    /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxm-element-Vector2IntField|UXML element Vector2IntField]].
+    /// A <see cref="Vector2Int"/> field. For more information, refer to [[wiki:UIE-uxml-element-Vector2IntField|UXML element Vector2IntField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class Vector2IntField : BaseCompositeField<Vector2Int, IntegerField, int>

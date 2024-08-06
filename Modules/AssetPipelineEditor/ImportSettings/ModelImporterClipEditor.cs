@@ -235,6 +235,16 @@ namespace UnityEditor
 
         internal override void OnEnable()
         {
+            Initialize();
+        }
+
+        internal override void PostSerializedObjectCreation()
+        {
+            Editor.AssignCachedProperties(this, serializedObject.GetIterator());
+        }
+
+        void Initialize()
+        {
             Editor.AssignCachedProperties(this, serializedObject.GetIterator());
 
             // caching errors values now as they can't change until next re-import that will triggers a new OnEnable

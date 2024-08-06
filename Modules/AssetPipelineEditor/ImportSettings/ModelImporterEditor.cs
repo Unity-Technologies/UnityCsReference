@@ -39,6 +39,15 @@ namespace UnityEditor
             base.OnEnable();
         }
 
+        internal override void PostSerializedObjectCreation()
+        {
+            if(tabs != null)
+            {
+                foreach (var tab in tabs)
+                    tab?.PostSerializedObjectCreation();
+            }
+        }
+
         public override void OnDisable()
         {
             foreach (var tab in tabs)

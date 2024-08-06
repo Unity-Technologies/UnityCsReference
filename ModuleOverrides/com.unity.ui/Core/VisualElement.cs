@@ -501,7 +501,7 @@ namespace UnityEngine.UIElements
         // This will replace the Rect position
         // origin and size relative to parent
         /// <summary>
-        /// The position and size of the VisualElement relative to its parent, as computed by the layout system.
+        /// The position and size of the VisualElement relative to its parent, as computed by the layout system. (RO)
         /// </summary>
         /// <remarks>
         /// Before reading from this property, add it to a panel and wait for one frame to ensure that the element layout is computed.
@@ -583,7 +583,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The rectangle of the content area of the element, in the local space of the element.
+        /// The rectangle of the content area of the element, in the local space of the element. (RO)
         /// </summary>
         /// <remarks>
         /// In the box model used by UI Toolkit, the content area refers to the inner rectangle for displaying text and images.

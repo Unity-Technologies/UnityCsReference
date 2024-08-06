@@ -86,6 +86,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Custom index to ensure the fields are selected in the order they are displayed in the inspector. (UUM-32041)
+        const int k_FoldoutTabIndex = 10;
+        const int k_ArraySizeFieldTabIndex = 20;
+
         bool m_ShowBoundCollectionSize = true;
 
         /// <summary>
@@ -141,9 +145,8 @@ namespace UnityEngine.UIElements
                         return;
 
                     m_Foldout = new Foldout() {name = foldoutHeaderUssClassName, text = m_HeaderTitle};
-
-                    var foldoutToggle = m_Foldout.Q<Toggle>(className: Foldout.toggleUssClassName);
-                    foldoutToggle.m_Clickable.acceptClicksIfDisabled = true;
+                    m_Foldout.toggle.tabIndex = k_FoldoutTabIndex;
+                    m_Foldout.toggle.m_Clickable.acceptClicksIfDisabled = true;
 
                     m_Foldout.AddToClassList(foldoutHeaderUssClassName);
                     m_Foldout.tabIndex = 1;
@@ -177,7 +180,7 @@ namespace UnityEngine.UIElements
 
             if (m_ArraySizeField == null)
             {
-                m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName };
+                m_ArraySizeField = new TextField() { name = arraySizeFieldUssClassName, tabIndex = k_ArraySizeFieldTabIndex };
                 m_ArraySizeField.AddToClassList(arraySizeFieldUssClassName);
                 m_ArraySizeField.RegisterValueChangedCallback(OnArraySizeFieldChanged);
                 m_ArraySizeField.isDelayed = true;
@@ -251,11 +254,11 @@ namespace UnityEngine.UIElements
                     m_Footer = new VisualElement() { name = footerUssClassName };
                     m_Footer.AddToClassList(footerUssClassName);
 
-                    m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName, text = "-" };
-                    m_Footer.Add(m_RemoveButton);
-
                     m_AddButton = new Button(OnAddClicked) { name = footerAddButtonName, text = "+" };
                     m_Footer.Add(m_AddButton);
+
+                    m_RemoveButton = new Button(OnRemoveClicked) { name = footerRemoveButtonName, text = "-" };
+                    m_Footer.Add(m_RemoveButton);
                 }
 
                 if (m_Foldout != null)

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
@@ -72,7 +73,14 @@ namespace UnityEngine.UIElements
         VisualElement m_DragLine;
         VisualElement m_DragLineAnchor;
 
+        /// <summary>
+        /// The actual drag line, which is a child of the anchor.
+        /// </summary>
+        internal VisualElement dragLine => m_DragLine;
+
         bool m_CollapseMode;
+        bool m_CollapseChildCalledBeforeSetupComplete;
+        int m_CollapsedChildIndex = -1;
 
         VisualElement m_Content;
 
@@ -184,8 +192,15 @@ namespace UnityEngine.UIElements
         /// <param name="index">Index of child to collapse.</param>
         public void CollapseChild(int index)
         {
-            if (m_LeftPane == null)
+            if (index != 0 && index != 1)
                 return;
+
+            if (m_LeftPane == null)
+            {
+                m_CollapseChildCalledBeforeSetupComplete = true;
+                m_CollapsedChildIndex = index;
+                return;
+            }
 
             m_DragLine.style.display = DisplayStyle.None;
             m_DragLineAnchor.style.display = DisplayStyle.None;
@@ -234,6 +249,8 @@ namespace UnityEngine.UIElements
             m_LeftPane.style.flexGrow = 0;
             m_RightPane.style.flexGrow = 0;
             m_CollapseMode = false;
+            m_CollapseChildCalledBeforeSetupComplete = false;
+            m_CollapsedChildIndex = -1;
 
             Init(m_FixedPaneIndex, m_FixedPaneInitialDimension, m_Orientation);
 
@@ -287,6 +304,8 @@ namespace UnityEngine.UIElements
                 RegisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
             else
                 PostDisplaySetup();
+
+            m_DragLineAnchor.RegisterCallback<GeometryChangedEvent>(OnAnchorPostDisplaySetup);
         }
 
         void OnPostDisplaySetup(GeometryChangedEvent evt)
@@ -297,24 +316,41 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            var postSetupWithEmptyLeftPane = m_LeftPane == null;
             PostDisplaySetup();
 
-            UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
-        }
-
-        void PostDisplaySetup()
-        {
-            if (m_Content.childCount != 2)
+            // If CollapseChild was called before the setup was complete, we need to call it again.
+            if (postSetupWithEmptyLeftPane && m_CollapseChildCalledBeforeSetupComplete)
             {
-                Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
-                return;
+                CollapseChild(m_CollapsedChildIndex);
+                m_CollapseChildCalledBeforeSetupComplete = false;
             }
 
-            if (fixedPaneDimension < 0)
-                fixedPaneDimension = m_FixedPaneInitialDimension;
+            UnregisterCallback<GeometryChangedEvent>(OnPostDisplaySetup);
 
-            var dimension = fixedPaneDimension;
+            // Initially, consider the size of the anchor in the placement of the second pane, no matter if fixed or not.
+            ReplacePanesBasedOnAnchor();
+        }
 
+        void ReplacePanesBasedOnAnchor()
+        {
+            if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                m_RightPane.style.left = m_DragLineAnchor.worldBound.width;
+            else
+                m_RightPane.style.top = m_DragLineAnchor.worldBound.height;
+        }
+
+        void OnAnchorPostDisplaySetup(GeometryChangedEvent evt)
+        {
+            if (Mathf.Approximately(evt.newRect.width, evt.oldRect.width) && Mathf.Approximately(evt.newRect.height, evt.oldRect.height))
+                return;
+
+            IdentifyLeftAndRightPane();
+            ReplacePanesBasedOnAnchor();
+        }
+
+        void IdentifyLeftAndRightPane()
+        {
             m_LeftPane = m_Content[0];
             if (m_FixedPaneIndex == 0)
                 m_FixedPane = m_LeftPane;
@@ -326,6 +362,24 @@ namespace UnityEngine.UIElements
                 m_FixedPane = m_RightPane;
             else
                 m_FlexedPane = m_RightPane;
+        }
+
+        void PostDisplaySetup()
+        {
+            if (m_Content.childCount != 2)
+            {
+                Debug.LogError("TwoPaneSplitView needs exactly 2 children.");
+                return;
+            }
+
+            m_DragLineAnchor.UnregisterCallback<GeometryChangedEvent>(OnAnchorPostDisplaySetup);
+
+            if (fixedPaneDimension < 0)
+                fixedPaneDimension = m_FixedPaneInitialDimension;
+
+            var dimension = fixedPaneDimension;
+
+            IdentifyLeftAndRightPane();
 
             m_FixedPane.style.flexBasis = StyleKeyword.Null;
             m_FixedPane.style.flexShrink = StyleKeyword.Null;
@@ -362,16 +416,18 @@ namespace UnityEngine.UIElements
             if (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginLeft + m_FixedPane.resolvedStyle.marginRight;
-
-                m_DragLineAnchor.style.left = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
-                    resolvedStyle.width - dimension - fixedPaneMargins;
+                if (m_FixedPaneIndex == 0)
+                    m_DragLineAnchor.style.left = fixedPaneMargins + m_FixedPaneInitialDimension;
+                else
+                    m_DragLineAnchor.style.left = resolvedStyle.width - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.width;
             }
             else
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginTop + m_FixedPane.resolvedStyle.marginBottom;
-
-                m_DragLineAnchor.style.top = (m_FixedPaneIndex == 0) ? dimension + fixedPaneMargins :
-                   resolvedStyle.height - dimension - fixedPaneMargins;
+                if (m_FixedPaneIndex == 0)
+                    m_DragLineAnchor.style.top = fixedPaneMargins + m_FixedPaneInitialDimension;
+                else
+                    m_DragLineAnchor.style.top = resolvedStyle.height - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.height;
             }
 
             int direction = 1;
@@ -387,6 +443,7 @@ namespace UnityEngine.UIElements
             m_DragLineAnchor.AddManipulator(m_Resizer);
 
             RegisterCallback<GeometryChangedEvent>(OnSizeChange);
+            m_DragLineAnchor.RegisterCallback<GeometryChangedEvent>(OnAnchorPostDisplaySetup);
         }
 
         void OnSizeChange(GeometryChangedEvent evt)
@@ -439,12 +496,17 @@ namespace UnityEngine.UIElements
             else if (maxLength >= fixedPaneMinLength + fixedPaneMargins + flexedPaneMinLength + flexedPaneMargins)
             {
                 var newDimension = maxLength - flexedPaneMinLength - flexedPaneMargins - fixedPaneMargins;
+                var dimensionToAnchorOffset = 0f;
+                dimensionToAnchorOffset = (m_Orientation == TwoPaneSplitViewOrientation.Horizontal)
+                ? Math.Abs(m_DragLineAnchor.worldBound.width - (m_DragLine.resolvedStyle.width - Math.Abs(m_DragLine.resolvedStyle.left)))
+                : Math.Abs(m_DragLineAnchor.worldBound.height - (m_DragLine.resolvedStyle.height - Math.Abs(m_DragLine.resolvedStyle.top)));
+                newDimension -= dimensionToAnchorOffset;
 
                 if (updateFixedPane)
                     SetFixedPaneDimension(newDimension);
 
                 if (updateDragLine)
-                    SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins: flexedPaneMinLength + flexedPaneMargins);
+                    SetDragLineOffset(m_FixedPaneIndex == 0 ? newDimension + fixedPaneMargins + dimensionToAnchorOffset: flexedPaneMinLength + flexedPaneMargins);
             }
             // Not big enough for fixed and flexed pane minimum sizes
             else

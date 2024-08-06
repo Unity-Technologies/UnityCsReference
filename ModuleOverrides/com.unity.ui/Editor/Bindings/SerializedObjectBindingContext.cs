@@ -217,7 +217,7 @@ internal class SerializedObjectBindingContext
     private void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
     {
         // A bound Foldout (a PropertyField with child properties) is special.
-        if (element is Foldout foldout)
+        if (element is Foldout foldout && prop.hasChildren)
         {
             // We bind to the given propertyPath but we only bind to its 'isExpanded' state, not its value.
             SerializedIsExpandedBinding.CreateBind(foldout, this, prop);

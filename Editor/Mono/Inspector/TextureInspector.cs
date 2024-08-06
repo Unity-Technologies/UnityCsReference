@@ -166,17 +166,27 @@ namespace UnityEditor
 
         protected virtual void OnEnable()
         {
+            Initialize();
+        }
+
+        void CacheSerializedProperties()
+        {
             m_WrapU = serializedObject.FindProperty("m_TextureSettings.m_WrapU");
             m_WrapV = serializedObject.FindProperty("m_TextureSettings.m_WrapV");
             m_WrapW = serializedObject.FindProperty("m_TextureSettings.m_WrapW");
             m_FilterMode = serializedObject.FindProperty("m_TextureSettings.m_FilterMode");
             m_Aniso = serializedObject.FindProperty("m_TextureSettings.m_Aniso");
+        }
 
+        void Initialize()
+        {
+            CacheSerializedProperties();
             RecordTextureMipLevels();
-
             SetMipLevelDefaultForVT();
 
-            m_Texture3DPreview = CreateInstance<Texture3DPreview>();
+            if(m_Texture3DPreview == null)
+                m_Texture3DPreview = CreateInstance<Texture3DPreview>();
+
             if (IsTexture3D())
             {
                 m_Texture3DPreview.Texture = target as Texture;
@@ -337,6 +347,13 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck())
                 ApplySettingsToTextures();
+        }
+
+        internal override void PostSerializedObjectCreation()
+        {
+            base.PostSerializedObjectCreation();
+
+            Initialize();
         }
 
         // wrap/filter/aniso editors will change serialized object

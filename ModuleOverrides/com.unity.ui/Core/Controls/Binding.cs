@@ -29,11 +29,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         void PreUpdate();
         /// <summary>
-        /// Called at regular intervals to synchronize bound properties to their IBindable counterparts. Called before the Update() method.
+        /// Called at regular intervals to synchronize bound properties to their IBindable counterparts.
         /// </summary>
         void Update();
         /// <summary>
-        /// Disconnects the field from its bound property
+        /// Disconnects the field from its bound property.
         /// </summary>
         void Release();
     }
