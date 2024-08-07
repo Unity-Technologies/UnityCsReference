@@ -161,6 +161,11 @@ namespace UnityEditor.Modules
             return new IMGUIContainer(
                 () =>
                 {
+                    if (serializedObject == null || !serializedObject.isValid)
+                    {
+                        return;
+                    }
+
                     var oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = labelWidth;
                     serializedObject.UpdateIfRequiredOrScript();

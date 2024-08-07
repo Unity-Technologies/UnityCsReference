@@ -296,6 +296,12 @@ namespace UnityEditor
                 set;
             }
 
+            public static bool runWithoutFocus
+            {
+                set => runInBackground = value;
+                get => runInBackground;
+            }
+
             // Full screen mode. Full screen window or windowed.
             public static extern FullScreenMode fullscreenMode
             {

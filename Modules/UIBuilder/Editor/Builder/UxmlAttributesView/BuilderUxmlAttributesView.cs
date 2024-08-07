@@ -163,7 +163,7 @@ namespace Unity.UI.Builder
         /// <summary>
         /// The container of fields generated from uxml attributes.
         /// </summary>
-        public VisualElement fieldsContainer { get; set; }
+        public VisualElement attributesContainer { get; set; }
 
         /// <summary>
         /// The visual element being edited.
@@ -274,7 +274,7 @@ namespace Unity.UI.Builder
             m_IsInTemplateInstance = isInTemplate;
             SetAttributesOwner(uxmlDocument, visualElement);
 
-            fieldsContainer.Clear();
+            attributesContainer.Clear();
 
             // Special case for toggle button groups.
             // We want to sync the length of the state with the number of buttons in the hierarchy.
@@ -458,33 +458,12 @@ namespace Unity.UI.Builder
 
         public void SetBoundValue(VisualElement fieldElement, object value)
         {
-            var dataField = fieldElement as UxmlSerializedDataAttributeField ?? fieldElement.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
-            var serializedAttribute = dataField.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-            var property = m_CurrentElementSerializedObject.FindProperty($"{serializedRootPath}.{serializedAttribute.serializedField.Name}");
-
             var bindableElement = fieldElement.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
                 return;
 
-            var handler = ScriptAttributeUtility.GetHandler(property);
-            if (handler.hasPropertyDrawer)
-            {
-                var previous = property.boxedValue;
-                if (previous != value)
-                {
-                    property.boxedValue = value;
-                    property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                    var propField = fieldElement.Q<PropertyField>() ?? fieldElement.GetFirstAncestorOfType<PropertyField>();
-                    var context = SerializedObjectBindingContext.GetBindingContextFromElement(propField);
-                    context?.UpdateRevision();
-                }
-            }
-            else
-            {
-                bindingBase.SyncValueWithoutNotify(value);
-            }
+            bindingBase.SyncValueWithoutNotify(value);
         }
 
         void SetUndoEnabled(bool enableUndo)
@@ -536,7 +515,7 @@ namespace Unity.UI.Builder
         /// </summary>
         public virtual void Refresh()
         {
-            fieldsContainer.Clear();
+            attributesContainer.Clear();
 
             if (m_CurrentElement == null || attributes.Count == 0)
                 return;
@@ -569,7 +548,7 @@ namespace Unity.UI.Builder
         {
             // UxmlSerializedData
             var root = new UxmlAssetSerializedDataRoot { dataDescription = m_SerializedDataDescription, rootPath = serializedRootPath };
-            fieldsContainer.Add(root);
+            attributesContainer.Add(root);
             GenerateSerializedAttributeFields(m_SerializedDataDescription, root);
         }
 
@@ -585,7 +564,7 @@ namespace Unity.UI.Builder
             foreach (var desc in dataDescription.serializedAttributes)
             {
                 var propertyPath = $"{parent.rootPath}.{desc.serializedField.Name}";
-                fieldsContainer.AddToClassList(InspectorElement.ussClassName);
+                attributesContainer.AddToClassList(InspectorElement.ussClassName);
                 if (desc.serializedField.GetCustomAttribute<HideInInspector>() == null)
                 {
                     CreateSerializedAttributeRow(desc, propertyPath, parent);
@@ -831,8 +810,8 @@ namespace Unity.UI.Builder
         IEnumerable<VisualElement> GetAttributeFields()
         {
             if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
-                return fieldsContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build();
-            return fieldsContainer.Query<BindableElement>().Where(e => !string.IsNullOrEmpty(e.bindingPath)).Build();
+                return attributesContainer.Query<UxmlSerializedDataAttributeField>().Where(ve => ve.HasLinkedAttributeDescription()).Build();
+            return attributesContainer.Query<BindableElement>().Where(e => !string.IsNullOrEmpty(e.bindingPath)).Build();
         }
 
         /// <summary>
@@ -845,7 +824,7 @@ namespace Unity.UI.Builder
         {
             var fieldElement = CreateTraitsAttributeField(attribute);
 
-            parent ??= fieldsContainer;
+            parent ??= attributesContainer;
 
             // Create row.
             var styleRow = new BuilderStyleRow();
@@ -1133,7 +1112,7 @@ namespace Unity.UI.Builder
         /// </summary>
         protected virtual BuilderStyleRow CreateSerializedAttributeRow(UxmlSerializedAttributeDescription attribute, string propertyPath, VisualElement parent = null)
         {
-            parent ??= fieldsContainer;
+            parent ??= attributesContainer;
             var fieldElement = new UxmlSerializedDataAttributeField();
 
             if (attribute.isUxmlObject)
@@ -2243,7 +2222,7 @@ namespace Unity.UI.Builder
 
         protected VisualElement FindField(string propertyPath)
         {
-            foreach (var e in fieldsContainer.Query().Build())
+            foreach (var e in attributesContainer.Query().Build())
             {
                 if (e is PropertyField propertyField)
                 {
@@ -2673,14 +2652,14 @@ namespace Unity.UI.Builder
             {
                 // If the current value is not defined in the new enum type, we need to clear the property because
                 // it will otherwise throw an exception.
-                var valueField = fieldsContainer.Query<EnumField>().Where(f => f.label == "Value").First();
+                var valueField = attributesContainer.Query<EnumField>().Where(f => f.label == "Value").First();
                 UnsetAttributeProperty(valueField, removeBinding);
             }
             if (m_CurrentElement is EnumFlagsField)
             {
                 // If the current value is not defined in the new enum type, we need to clear the property because
                 // it will otherwise throw an exception.
-                var valueField = fieldsContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
+                var valueField = attributesContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
                 UnsetAttributeProperty(valueField, removeBinding);
             }
         }
@@ -2741,7 +2720,7 @@ namespace Unity.UI.Builder
                 {
                     // If the current value is not defined in the new enum type, we need to clear the property because
                     // it will otherwise throw an exception.
-                    var valueField = fieldsContainer.Query<EnumField>().Where(f => f.label == "Value").First();
+                    var valueField = attributesContainer.Query<EnumField>().Where(f => f.label == "Value").First();
                     UnsetAttributeProperty(valueField, true);
                     needRefresh = true;
                 }
@@ -2749,7 +2728,7 @@ namespace Unity.UI.Builder
                 {
                     // If the current value is not defined in the new enum type, we need to clear the property because
                     // it will otherwise throw an exception.
-                    var valueField = fieldsContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
+                    var valueField = attributesContainer.Query<EnumFlagsField>().Where(f => f.label == "Value").First();
                     UnsetAttributeProperty(valueField, true);
                     needRefresh = true;
                 }

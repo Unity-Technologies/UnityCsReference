@@ -30,6 +30,7 @@ namespace UnityEngine.Tilemaps
         PauseAnimation = 1 << 1,
         UpdatePhysics = 1 << 2,
         UnscaledTime = 1 << 3,
+        SyncAnimation = 1 << 4,
     }
 
     [RequireComponent(typeof(Transform))]

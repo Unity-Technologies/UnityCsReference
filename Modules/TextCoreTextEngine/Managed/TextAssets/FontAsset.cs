@@ -182,6 +182,7 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [SerializeField] internal string m_SourceFontFilePath;
 
+#nullable enable
         public AtlasPopulationMode atlasPopulationMode
         {
             get { return m_AtlasPopulationMode; }
@@ -262,7 +263,7 @@ namespace UnityEngine.TextCore.Text
         }
         [SerializeField]
         internal List<Glyph> m_GlyphTable = new List<Glyph>();
-
+#nullable restore
         /// <summary>
         /// Dictionary used to lookup glyphs contained in the font asset by their index.
         /// </summary>
@@ -606,20 +607,22 @@ namespace UnityEngine.TextCore.Text
             return fontAsset;
         }
 
-        internal static FontAsset CreateFontAssetInternal(string familyName, string styleName, int pointSize = 90)
+#nullable enable
+        internal static FontAsset? CreateFontAssetInternal(string familyName, string styleName, int pointSize = 90)
         {
             if (FontEngine.TryGetSystemFontReference(familyName, styleName, out FontReference fontRef))
                 return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
             return null;
         }
 
-        internal static FontAsset CreateFontAsset(string familyName, string styleName, float pointSize, int padding, GlyphRenderMode renderMode)
+        internal static FontAsset? CreateFontAsset(string familyName, string styleName, float pointSize, int padding, GlyphRenderMode renderMode)
         {
             if (FontEngine.TryGetSystemFontReference(familyName, styleName, out FontReference fontRef))
                 return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, padding, renderMode, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
 
             return null;
         }
+#nullable restore
 
         /// <summary>
         /// Create a List of Font Assets with a list of fallbacks defined by FamilyNames, all regular styles

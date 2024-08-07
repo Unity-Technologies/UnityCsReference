@@ -298,6 +298,7 @@ sealed class AudioContainerWindow : EditorWindow
         SubscribeToClipListCallbacksAndEvents();
         SubscribeToAutomaticTriggerCallbacksAndEvents();
         SubscribeToTooltipCallbacksAndEvents();
+        SubscribeToAudioMasterMuteCallbacksAndEvents();
         m_IsSubscribedToGUICallbacksAndEvents = true;
     }
 
@@ -314,6 +315,7 @@ sealed class AudioContainerWindow : EditorWindow
         UnsubscribeFromClipListCallbacksAndEvents();
         UnsubscribeFromAutomaticTriggerCallbacksAndEvents();
         UnsubscribeFromTooltipCallbacksAndEvents();
+        UnsubscribeFromAudioMasterMuteCallbacksAndEvents();
         m_IsSubscribedToGUICallbacksAndEvents = false;
     }
 
@@ -425,8 +427,8 @@ sealed class AudioContainerWindow : EditorWindow
     {
         var editorIsPaused = EditorApplication.isPaused;
 
-        m_PlayStopButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused);
-        m_SkipButton?.SetEnabled(State.IsPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused);
+        m_PlayStopButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused && !EditorUtility.audioMasterMute);
+        m_SkipButton?.SetEnabled(State.IsPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused && !EditorUtility.audioMasterMute);
 
         var image =
             State.IsPlayingOrPaused()
@@ -1126,9 +1128,19 @@ sealed class AudioContainerWindow : EditorWindow
         rootVisualElement.RegisterCallback<TooltipEvent>(ShowTooltip, TrickleDown.TrickleDown);
     }
 
+    void SubscribeToAudioMasterMuteCallbacksAndEvents()
+    {
+        EditorUtility.onAudioMasterMuteWasUpdated += OnAudioMasterMuteChanged;
+    }
+
     void UnsubscribeFromTooltipCallbacksAndEvents()
     {
         rootVisualElement.UnregisterCallback<TooltipEvent>(ShowTooltip);
+    }
+
+    void UnsubscribeFromAudioMasterMuteCallbacksAndEvents()
+    {
+        EditorUtility.onAudioMasterMuteWasUpdated -= OnAudioMasterMuteChanged;
     }
 
     void ShowTooltip(TooltipEvent evt)
@@ -1137,16 +1149,23 @@ sealed class AudioContainerWindow : EditorWindow
 
         if (name == "play-button" || name == "play-button-image")
         {
-            var mode = State.IsPlayingOrPaused() ? "Stop" : "Play";
-            var shortcut = ShortcutManager.instance.GetShortcutBinding("Audio/Play-stop Audio Random Container");
-
-            if (shortcut.Equals(ShortcutBinding.empty))
+            if (EditorUtility.audioMasterMute)
             {
-                evt.tooltip = mode;
+                evt.tooltip = "Previewing is disabled when the game view is muted. To enable previewing unmute the game view.";
             }
             else
             {
-                evt.tooltip = mode + " (" + shortcut + ")";
+                var mode = State.IsPlayingOrPaused() ? "Stop" : "Play";
+                var shortcut = ShortcutManager.instance.GetShortcutBinding("Audio/Play-stop Audio Random Container");
+
+                if (shortcut.Equals(ShortcutBinding.empty))
+                {
+                    evt.tooltip = mode;
+                }
+                else
+                {
+                    evt.tooltip = mode + " (" + shortcut + ")";
+                }
             }
 
             evt.rect = (evt.target as VisualElement).worldBound;
@@ -1265,6 +1284,17 @@ sealed class AudioContainerWindow : EditorWindow
         var newButtonStateString = !State.AudioContainer.loopCountRandomizationEnabled ? "Enabled" : "Disabled";
         Undo.RecordObject(State.AudioContainer, $"Modified Count Randomization {newButtonStateString} in {State.AudioContainer.name}");
         State.AudioContainer.loopCountRandomizationEnabled = !State.AudioContainer.loopCountRandomizationEnabled;
+    }
+
+    void OnAudioMasterMuteChanged(bool isMuted)
+    {
+        if (isMuted && State.IsPlayingOrPaused())
+        {
+            State.Stop();
+            ClearClipFieldProgressBars();
+        }
+
+        UpdateTransportButtonStates();
     }
 
     #endregion
@@ -1425,7 +1455,7 @@ sealed class AudioContainerWindow : EditorWindow
     {
         var audioContainerWindow = focusedWindow as AudioContainerWindow;
 
-        if (audioContainerWindow != null && audioContainerWindow.IsDisplayingTarget())
+        if (audioContainerWindow != null && audioContainerWindow.IsDisplayingTarget() && !EditorUtility.audioMasterMute)
         {
             audioContainerWindow.OnPlayStopButtonClicked();
         }

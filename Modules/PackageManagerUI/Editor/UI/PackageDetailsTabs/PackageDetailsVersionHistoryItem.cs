@@ -34,8 +34,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             IApplicationProxy applicationProxy,
             IPackageLinkFactory packageLinkFactory,
             IPackageVersion version,
-            bool multipleVersionsVisible,
-            bool isLatestVersion,
             bool expanded,
             PackageAction action)
         {
@@ -69,7 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Button = new PackageToolBarSimpleButton(action);
                 versionHistoryItemToggleRightContainer.Add(m_Button.element);
             }
-            Refresh(multipleVersionsVisible, isLatestVersion);
+            Refresh();
         }
 
         public void StopSpinner()
@@ -78,56 +76,46 @@ namespace UnityEditor.PackageManager.UI.Internal
                 versionHistoryItemToggleSpinner?.Stop();
         }
 
-        private void Refresh(bool multipleVersionsVisible, bool isLatestVersion)
+        private void Refresh()
         {
             var isVisible = m_Version != null;
             UIUtils.SetElementDisplay(this, isVisible);
             if (!isVisible)
                 return;
 
-            RefreshHeader(multipleVersionsVisible, isLatestVersion);
+            RefreshHeader();
             RefreshContent();
             m_Button?.Refresh(m_Version);
         }
 
-        private void RefreshHeader(bool multipleVersionsVisible, bool isLatestVersion)
+        private void RefreshHeader()
         {
             versionHistoryItemToggle.text = m_Version?.versionString;
             m_VersionHistoryItemTag.Refresh(m_Version);
 
-            RefreshState(multipleVersionsVisible, isLatestVersion);
+            RefreshState();
         }
 
-        private void RefreshState(bool multipleVersionsVisible, bool isLatestVersion)
+        private void RefreshState()
         {
+            versionHistoryItemState.text = string.Empty;
+            versionHistoryItemState.tooltip = string.Empty;
+
             if (m_Version == null)
-            {
-                versionHistoryItemState.text = string.Empty;
                 return;
-            }
 
             var primary = m_Version.package.versions.primary;
-            var recommended = m_Version.package.versions.recommended;
-            var versionInManifest = primary?.versionInManifest;
-            var stateText = string.Empty;
-
-            if (m_Version == primary)
+            if (m_Version == primary && m_Version.isInstalled)
+                versionHistoryItemState.text = m_Version.isDirectDependency ? L10n.Tr("Installed") : L10n.Tr("Installed as dependency");
+            else if (m_Version != primary && primary.versionInManifest == m_Version.versionString)
+                versionHistoryItemState.text = L10n.Tr("Requested");
+            else if (m_Version == m_Version.package.versions.recommended)
             {
-                if (m_Version.isInstalled)
-                    stateText = L10n.Tr(m_Version.isDirectDependency ? "Installed" : "Installed as dependency");
-                else if (m_Version == recommended && multipleVersionsVisible && m_Version.HasTag(PackageTag.Unity))
-                    stateText = L10n.Tr("Recommended");
-                else if (!m_Version.HasTag(PackageTag.Unity) && multipleVersionsVisible && isLatestVersion)
-                    stateText = L10n.Tr("Latest");
+                versionHistoryItemState.text = L10n.Tr("Recommended");
+                versionHistoryItemState.tooltip = L10n.Tr("Recommended for this Unity release");
             }
-            else if (versionInManifest == m_Version.versionString)
-                stateText = L10n.Tr("Requested");
-            else if (m_Version == recommended && m_Version.HasTag(PackageTag.Unity))
-                stateText = L10n.Tr("Recommended");
-            else if ((primary.isInstalled || !m_Version.HasTag(PackageTag.Unity)) && isLatestVersion)
-                stateText = L10n.Tr("Latest");
-
-            versionHistoryItemState.text = stateText;
+            else if (m_Version == m_Version.package.versions.latest)
+                versionHistoryItemState.text = L10n.Tr("Latest");
         }
 
         private void RefreshContent()

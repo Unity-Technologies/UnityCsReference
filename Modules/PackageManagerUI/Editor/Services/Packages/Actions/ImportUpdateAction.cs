@@ -22,7 +22,7 @@ internal class ImportUpdateAction : ImportActionBase
         var versions = version.package.versions;
         return base.IsVisible(version) &&
                versions.imported != null &&
-               versions.importAvailable.uploadId == versions.recommended?.uploadId &&
+               versions.importAvailable.uploadId == versions.suggestedUpdate?.uploadId &&
                versions.importAvailable.uploadId != versions.imported.uploadId;
     }
 

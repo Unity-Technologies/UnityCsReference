@@ -28,7 +28,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
         IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null);
         IEnumerable<Sample> GetSamples(IPackageVersion version);
-        IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
 
@@ -184,8 +183,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
             {
-                return p?.versions.isNonLifecycleVersionInstalled == true
-                && (rootDependenciesOnly == null || p.versions.installed.isDirectDependency == rootDependenciesOnly);
+                var installed = p?.versions.installed;
+                return installed != null && p.versions.recommended?.isInstalled == false
+                       && (rootDependenciesOnly == null || installed.isDirectDependency == rootDependenciesOnly);
             }).ToArray() ?? new IPackage[0];
         }
 
@@ -201,12 +201,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             var samples = Sample.FindByPackage(packageInfo, m_UpmCache, m_IOProxy, m_AssetDatabase);
             m_ParsedSamples[version.uniqueId] = samples;
             return samples;
-        }
-
-        public IPackageVersion GetLifecycleOrPrimaryVersion(string packageUniqueId)
-        {
-            var versions = GetPackage(packageUniqueId)?.versions;
-            return versions?.lifecycleVersion ?? versions?.primary;
         }
 
         public void OnAfterDeserialize()

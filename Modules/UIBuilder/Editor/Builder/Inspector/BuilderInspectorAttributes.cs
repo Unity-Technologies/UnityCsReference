@@ -13,7 +13,7 @@ namespace Unity.UI.Builder
     {
         BuilderSelection m_Selection;
 
-        public VisualElement root => fieldsContainer;
+        public VisualElement root => attributesContainer;
 
         // ReSharper disable MemberCanBePrivate.Global
         internal const string inspectorAttributeRefreshMarkerName = "BuilderInspectorAttributes.Refresh";
@@ -25,7 +25,7 @@ namespace Unity.UI.Builder
         {
             this.inspector = inspector;
             m_Selection = inspector.selection;
-            fieldsContainer = inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
+            attributesContainer = inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
         }
 
         bool m_IgnoreChangeToInlineValue = false;
@@ -50,11 +50,11 @@ namespace Unity.UI.Builder
                 var helpBox = new HelpBox();
                 helpBox.AddToClassList(BuilderConstants.InspectorClassHelpBox);
                 helpBox.text = BuilderConstants.NoNameElementAttributes;
-                fieldsContainer.Insert(0, helpBox);
+                attributesContainer.Insert(0, helpBox);
             }
 
             // Forward focus to the panel header.
-            fieldsContainer
+            attributesContainer
                 .Query()
                 .Where(e => e.focusable)
                 .ForEach((e) => inspector.AddFocusable(e));
@@ -64,31 +64,31 @@ namespace Unity.UI.Builder
         {
             base.UpdateAttributeOverrideStyle(fieldElement);
 
-            var hasAnyBoundField = fieldsContainer.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
-                                   || fieldsContainer.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName) != null;
+            var hasAnyBoundField = attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
+                                   || attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleUnresolvedBindingClassName) != null;
 
-            fieldsContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasAnyBoundField);
+            attributesContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutBindingClassName, hasAnyBoundField);
 
-            var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(fieldsContainer);
-            fieldsContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
+            var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(attributesContainer);
+            attributesContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
         }
 
         public void Enable()
         {
-            fieldsContainer.contentContainer.SetEnabled(true);
+            attributesContainer.contentContainer.SetEnabled(true);
         }
 
         public void Disable()
         {
-            fieldsContainer.contentContainer.SetEnabled(false);
+            attributesContainer.contentContainer.SetEnabled(false);
         }
 
         protected override void UpdateFieldStatus(VisualElement fieldElement)
         {
             inspector.UpdateFieldStatus(fieldElement, null);
 
-            var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(fieldsContainer);
-            fieldsContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
+            var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(attributesContainer);
+            attributesContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
         }
 
         protected override void NotifyAttributesChanged(string attributeName = null)

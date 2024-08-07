@@ -17,8 +17,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override IPackageVersion latest => m_Versions[0];
 
-        public override IPackageVersion recommended => m_Versions[0];
-
         public override IPackageVersion primary => m_Versions[0];
 
         public PlaceholderVersionList(PlaceholderPackageVersion version)

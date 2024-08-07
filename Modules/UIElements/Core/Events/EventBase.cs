@@ -78,7 +78,7 @@ namespace UnityEngine.UIElements
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
-        /// <undoc/>
+       
         [Obsolete("Override PreDispatch(IPanel panel) instead.")]
         protected virtual void PreDispatch() {}
 
@@ -93,7 +93,7 @@ namespace UnityEngine.UIElements
 #pragma warning restore 618
         }
 
-        /// <undoc/>
+        
         [Obsolete("Override PostDispatch(IPanel panel) instead.")]
         protected virtual void PostDispatch() {}
 

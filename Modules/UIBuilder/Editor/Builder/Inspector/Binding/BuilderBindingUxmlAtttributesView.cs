@@ -167,7 +167,7 @@ namespace Unity.UI.Builder
             UndoRecordDocument(BuilderConstants.ChangeAttributeValueUndoMessage);
             var builder = Builder.ActiveWindow;
 
-            var styleRows = fieldsContainer.Query<BuilderStyleRow>().ToList();
+            var styleRows = attributesContainer.Query<BuilderStyleRow>().ToList();
             foreach (var styleRow in styleRows)
             {
                 var fields = styleRow.GetLinkedFieldElements();
@@ -275,7 +275,7 @@ namespace Unity.UI.Builder
                 m_ConvertersToSourceField = row.GetLinkedFieldElements()[0];
             }
 
-            fieldsContainer.Add(root);
+            attributesContainer.Add(root);
 
             // Add any additional fields from inherited types.
             var property = m_CurrentElementSerializedObject.FindProperty(bindingSerializedPropertyRootPath);

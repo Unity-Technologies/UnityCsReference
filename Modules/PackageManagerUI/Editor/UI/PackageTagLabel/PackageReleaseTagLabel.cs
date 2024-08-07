@@ -3,13 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class PackageReleaseTagLabel : PackageBaseTagLabel
     {
-        private IPackageDatabase m_PackageDatabase;
+        private readonly IPackageDatabase m_PackageDatabase;
         public PackageReleaseTagLabel(IPackageDatabase packageDatabase)
         {
             m_PackageDatabase = packageDatabase;
@@ -22,7 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!version.HasTag(PackageTag.Release))
                 return false;
             if (version.HasTag(PackageTag.Feature))
-                return version.dependencies != null && version.dependencies.All(d => m_PackageDatabase.GetLifecycleOrPrimaryVersion(d.name)?.HasTag(PackageTag.Release) == true);
+                return version.dependencies != null && version.dependencies.All(d => m_PackageDatabase.GetPackage(d.name)?.versions.recommended?.HasTag(PackageTag.Release) == true);
             return true;
         }
 

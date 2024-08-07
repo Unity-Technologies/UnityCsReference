@@ -263,10 +263,13 @@ namespace UnityEditor
 
         static void OnNonSelectedObjectWasDestroyed(int instanceID)
         {
-            if (s_CachedChildRenderersForOutlining != null && s_CachedChildRenderersForOutlining.Contains(instanceID))
+            if ((!s_ActiveEditorsDirty) || (!s_SelectionCacheDirty))
             {
-                s_ActiveEditorsDirty = true;
-                s_SelectionCacheDirty = true;
+                if (s_CachedChildRenderersForOutliningHashSet != null && s_CachedChildRenderersForOutliningHashSet.Contains(instanceID))
+                {
+                    s_ActiveEditorsDirty = true;
+                    s_SelectionCacheDirty = true;
+                }
             }
         }
 
@@ -461,6 +464,7 @@ namespace UnityEditor
         internal bool m_WasFocused = false;
 
         static int[] s_CachedParentRenderersForOutlining, s_CachedChildRenderersForOutlining;
+        static HashSet<int> s_CachedChildRenderersForOutliningHashSet;
 
         [Serializable]
         public class SceneViewState
@@ -2278,7 +2282,7 @@ namespace UnityEditor
                 {
                     if (s_SelectionCacheDirty)
                     {
-                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining);
+                        HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
                         s_SelectionCacheDirty = false;
                     }
 
@@ -2392,7 +2396,7 @@ namespace UnityEditor
             {
                 if (s_SelectionCacheDirty)
                 {
-                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining);
+                    HandleUtility.FilterInstanceIDs(Selection.gameObjects, out s_CachedParentRenderersForOutlining, out s_CachedChildRenderersForOutlining, out s_CachedChildRenderersForOutliningHashSet);
                     s_SelectionCacheDirty = false;
                 }
 

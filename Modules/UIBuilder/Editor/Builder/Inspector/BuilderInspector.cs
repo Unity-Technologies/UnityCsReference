@@ -743,7 +743,7 @@ namespace Unity.UI.Builder
                 // we need to refresh the enabled state of the property field and its child basefield.
                 // This only happens once, when the field is first created but not yet bound.
                 var propertyField = field.Q<PropertyField>();
-                if (field.focusable == false || propertyField.enabledSelf == false)
+                if (null != propertyField && (field.focusable == false || propertyField.enabledSelf == false ))
                 {
                     propertyField.SetEnabled(true);
                     SetFieldAndParentContainerEnabledState(field, propertyField, true);
@@ -1283,7 +1283,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                m_AttributesSection.refreshScheduledItem = m_AttributesSection.fieldsContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
             }
 
             // Reset current style rule.
@@ -1325,7 +1325,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    m_AttributesSection.refreshScheduledItem = m_AttributesSection.fieldsContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                    m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
                 }
             }
         }
@@ -1531,7 +1531,7 @@ namespace Unity.UI.Builder
 
             VisualElement field;
             if (propName is "data-source" or "data-source-type" or "data-source-path")
-                field = m_HeaderSection.m_DataSourceAndPathView.fieldsContainer.Query().Where(IsFieldElement);
+                field = m_HeaderSection.m_DataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
             else
                 field = attributeSection.root.Query().Where(IsFieldElement);
 
