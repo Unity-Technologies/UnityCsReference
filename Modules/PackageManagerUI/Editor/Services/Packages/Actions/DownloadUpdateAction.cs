@@ -30,17 +30,17 @@ internal class DownloadUpdateAction : DownloadActionBase
             return L10n.Tr("The download request has been sent. Please wait for the download to start.");
 
         var result = string.Format(L10n.Tr("Click to download the recommended version of this {0}."), version.GetDescriptor());
-        if (IsAdaptedPackageUpdate(version.package.versions?.recommended, version.package.versions?.importAvailable))
+        if (IsAdaptedPackageUpdate(version.package.versions?.suggestedUpdate, version.package.versions?.importAvailable))
             result += L10n.Tr("\n*This package update has been adapted for this current version of Unity.");
         return result;
     }
 
     public override string GetText(IPackageVersion version, bool isInProgress)
     {
-        var recommended = version.package.versions.recommended;
-        if (string.IsNullOrEmpty(recommended?.versionString))
+        var suggestedUpdate = version.package.versions.suggestedUpdate;
+        if (string.IsNullOrEmpty(suggestedUpdate?.versionString))
             return L10n.Tr("Download update");
-        return string.Format(IsAdaptedPackageUpdate(recommended, version.package.versions.importAvailable) ? L10n.Tr("Download update {0}*") : L10n.Tr("Download update {0}"), recommended.versionString);
+        return string.Format(IsAdaptedPackageUpdate(suggestedUpdate, version.package.versions.importAvailable) ? L10n.Tr("Download update {0}*") : L10n.Tr("Download update {0}"), suggestedUpdate.versionString);
     }
 
     public override string GetMultiSelectText(IPackageVersion version, bool isInProgress)
@@ -55,15 +55,15 @@ internal class DownloadUpdateAction : DownloadActionBase
 
     // Adapted package update refers to the edge case where a publisher can publish different packages for different unity versions, resulting us
     // sometimes recommending user to update to a package with the same version string (or even lower version string)
-    private static bool IsAdaptedPackageUpdate(IPackageVersion recommended, IPackageVersion importAvailable)
+    private static bool IsAdaptedPackageUpdate(IPackageVersion suggestedUpdate, IPackageVersion importAvailable)
     {
-        return recommended?.versionString == importAvailable?.versionString || recommended?.uploadId < importAvailable?.uploadId;
+        return suggestedUpdate?.versionString == importAvailable?.versionString || suggestedUpdate?.uploadId < importAvailable?.uploadId;
     }
 
     private static bool IsUpdateAvailable(IPackageVersion version)
     {
         var importAvailable = version.package.versions.importAvailable;
-        var recommended = version.package.versions.recommended;
-        return importAvailable != null && recommended != null && recommended.uploadId != importAvailable.uploadId;
+        var suggestedUpdate = version.package.versions.suggestedUpdate;
+        return importAvailable != null && suggestedUpdate != null && suggestedUpdate.uploadId != importAvailable.uploadId;
     }
 }

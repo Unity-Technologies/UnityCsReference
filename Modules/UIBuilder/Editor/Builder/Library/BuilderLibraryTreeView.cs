@@ -40,6 +40,8 @@ namespace Unity.UI.Builder
 
             style.flexGrow = 1;
             m_TreeView = new TreeView { name = k_TreeViewName };
+            m_TreeView.scrollView.verticalScroller.viewDataKey = $"{k_TreeViewName}__vertical-scroller";
+            m_TreeView.scrollView.horizontalScroller.viewDataKey = $"{k_TreeViewName}__horizontal-scroller";
             m_TreeView.AddToClassList(k_TreeViewClassName);
             Add(m_TreeView);
 

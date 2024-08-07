@@ -75,7 +75,7 @@ internal class UpdateAction : PackageAction
             if (customizedDependencies.Any())
             {
                 var packageNameAndVersions = string.Join("\n\u2022 ",
-                    customizedDependencies.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
+                    customizedDependencies.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
 
                 var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
                 var message = customizedDependencies.Length == 1 ?

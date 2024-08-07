@@ -238,7 +238,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (package != null)
             {
                 packageName = string.IsNullOrEmpty(package.displayName) ? package.name : package.displayName;
-                var versionToUse = package.versions.lifecycleVersion ?? package.versions.primary;
+                var versionToUse = package.versions.recommended ?? package.versions.primary;
                 if (versionString == "default")
                     versionString = versionToUse?.versionString ?? dependency.version;
 
@@ -256,7 +256,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             rect.width = w / 3 - 4;
             EditorGUI.SelectableLabel(rect, versionString);
         }
-        
+
         private bool IsPackageEditable()
         {
             if (m_Version == null || !m_Version.HasTag(PackageTag.Custom))

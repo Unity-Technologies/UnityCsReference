@@ -37,10 +37,14 @@ namespace Unity.UI.Builder
         /// <param name="pos">The position of the window</param>
         /// <param name="windowSize">The size of the window</param>
         /// <returns></returns>
-        public static BuilderBindingWindow Open(string title, Rect pos, Vector2 windowSize)
+        public static BuilderBindingWindow Open(bool openToCreate, string property, BuilderInspector inspector, Rect pos, Vector2 windowSize)
         {
+            var title = openToCreate ? BuilderConstants.AddBindingTitle : BuilderConstants.EditBindingTitle;
+
             s_Window = GetWindow<BuilderBindingWindow>(true, title);
             s_Window.position = new Rect(pos.position, windowSize);
+
+            s_Window.view.StartCreatingOrEditingBinding(property, openToCreate, inspector);
             return s_Window;
         }
 

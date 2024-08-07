@@ -44,6 +44,7 @@ namespace UnityEditor
 
         private SavedBool m_ShowLayerOverridesFoldout;
         private SavedBool m_ShowInfoFoldout;
+        private SavedBool m_ShowContactsFoldout;
         private bool m_RequiresConstantRepaint;
 
         const int k_ToggleOffset = 30;
@@ -77,10 +78,15 @@ namespace UnityEditor
             m_ShowLayerOverrides.valueChanged.AddListener(Repaint);
             m_ShowLayerOverridesFoldout = new SavedBool($"{target.GetType() }.ShowLayerOverridesFoldout", false);
             m_ShowLayerOverrides.value = m_ShowLayerOverridesFoldout.value;
+
             m_ShowInfo.valueChanged.AddListener(Repaint);
             m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowInfoFoldout", false);
             m_ShowInfo.value = m_ShowInfoFoldout.value;
+
             m_ShowContacts.valueChanged.AddListener(Repaint);
+            m_ShowContactsFoldout = new SavedBool($"{target.GetType()}.ShowContactsFoldout", false);
+            m_ShowContacts.value = m_ShowContactsFoldout.value;
+
             m_ContactScrollPosition = Vector2.zero;
 
             m_RequiresConstantRepaint = false;
@@ -239,7 +245,7 @@ namespace UnityEditor
         void ShowContacts(Rigidbody2D body)
         {
             EditorGUI.indentLevel++;
-            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
+            m_ShowContactsFoldout.value = m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowContacts.faded))
             {
                 var contactCount = body.GetContacts(m_Contacts);

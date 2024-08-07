@@ -82,6 +82,15 @@ namespace UnityEditor.Build.Profile
             DeserializePlayerSettings();
         }
 
+        internal void UpdatePlayerSettingsObjectFromYAML()
+        {
+            if (!HasSerializedPlayerSettings())
+                return;
+
+            PlayerSettings.UpdatePlayerSettingsObjectFromYAML(playerSettings, m_PlayerSettingsYaml.GetYamlString());
+            OnPlayerSettingsUpdatedFromYAML?.Invoke();
+        }
+
         internal void CreatePlayerSettingsFromGlobal()
         {
             if (m_PlayerSettings != null || BuildProfileContext.IsClassicPlatformProfile(this))
@@ -102,6 +111,8 @@ namespace UnityEditor.Build.Profile
             if (BuildProfileContext.IsClassicPlatformProfile(this))
                 return;
 
+            UpdateGlobalManagerPlayerSettings(activeWillBeRemoved: true);
+
             if (m_PlayerSettings != null)
             {
                 DestroyImmediate(m_PlayerSettings, true);
@@ -112,7 +123,7 @@ namespace UnityEditor.Build.Profile
                     m_PlayerSettingsYaml.Clear();
             }
 
-            UpdateGlobalManagerPlayerSettings(activeWillBeRemoved: true);
+            OnPlayerSettingsUpdatedFromYAML?.Invoke();
         }
 
         internal static void CleanUpPlayerSettingsForDeletedBuildProfiles(IList<BuildProfile> currentBuildProfiles)
@@ -160,7 +171,10 @@ namespace UnityEditor.Build.Profile
             if (!HasSerializedPlayerSettings())
                 return;
 
-            m_PlayerSettings = PlayerSettings.DeserializeFromYAMLString(m_PlayerSettingsYaml.GetYamlString());
+            if (m_PlayerSettings == null)
+                m_PlayerSettings = PlayerSettings.DeserializeFromYAMLString(m_PlayerSettingsYaml.GetYamlString());
+            else
+                UpdatePlayerSettingsObjectFromYAML();
             s_LoadedPlayerSettings.Add(m_PlayerSettings);
             UpdateGlobalManagerPlayerSettings();
         }

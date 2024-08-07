@@ -185,27 +185,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshFeatureState()
         {
-            var featureState = FeatureState.None;
-            foreach (var dependency in targetVersion.dependencies)
+            if (GetFeatureState(targetVersion) == FeatureState.Customized)
             {
-                var packageVersion = m_PackageDatabase.GetLifecycleOrPrimaryVersion(dependency.name);
-                if (packageVersion == null)
-                    continue;
-
-                var installedVersion = packageVersion.package?.versions.installed;
-                if (installedVersion == null)
-                    continue;
-                // User manually decide to install a different version
-                else if ((installedVersion.isDirectDependency && package.versions.isNonLifecycleVersionInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
-                {
-                    featureState = FeatureState.Customized;
-                    break;
-                }
-            }
-
-            if (featureState == FeatureState.Customized)
-            {
-                m_CurrentFeatureState = featureState.ToString().ToLower();
+                m_CurrentFeatureState = FeatureState.Customized.ToString().ToLower();
                 m_InfoStateIcon.AddToClassList(m_CurrentFeatureState);
                 m_InfoStateIcon.tooltip = L10n.Tr("This feature has been manually customized");
             }
@@ -214,6 +196,27 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_InfoStateIcon.RemoveFromClassList(m_CurrentFeatureState);
                 m_CurrentFeatureState = null;
             }
+        }
+
+        private FeatureState GetFeatureState(IPackageVersion featureVersion)
+        {
+            if (featureVersion?.isInstalled != true)
+                return FeatureState.None;
+
+            foreach (var dependency in featureVersion.dependencies)
+            {
+                var dependencyPackage = m_PackageDatabase.GetPackage(dependency.name);
+                var installedVersion = dependencyPackage?.versions.installed;
+                if (installedVersion == null)
+                    continue;
+
+                if (installedVersion.HasTag(PackageTag.InDevelopment))
+                    return FeatureState.Customized;
+
+                if (installedVersion.isDirectDependency && dependencyPackage.versions.recommended?.isInstalled == false)
+                    return FeatureState.Customized;
+            }
+            return FeatureState.None;
         }
 
         public void RefreshSelection()

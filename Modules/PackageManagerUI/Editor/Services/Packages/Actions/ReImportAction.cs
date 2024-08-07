@@ -18,7 +18,7 @@ internal class ReImportAction : ImportActionBase
     {
         var versions = version.package.versions;
         return base.IsVisible(version) && versions.imported != null &&
-               (versions.importAvailable.uploadId != versions.recommended?.uploadId || versions.importAvailable.uploadId == versions.imported.uploadId);
+               (versions.importAvailable.uploadId != versions.suggestedUpdate?.uploadId || versions.importAvailable.uploadId == versions.imported.uploadId);
     }
 
     public override string GetTooltip(IPackageVersion version, bool isInProgress)

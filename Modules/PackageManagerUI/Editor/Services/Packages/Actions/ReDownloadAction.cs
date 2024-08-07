@@ -41,8 +41,8 @@ internal class ReDownloadAction : DownloadActionBase
 
     private static bool IsUpToDateOrNoUpdateFound(IPackageVersion version)
     {
-        var recommended = version.package.versions?.recommended;
+        var suggestedUpdate = version.package.versions?.suggestedUpdate;
         var importAvailable = version.package.versions?.importAvailable;
-        return importAvailable != null && (recommended == null || recommended.uploadId == importAvailable.uploadId);
+        return importAvailable != null && (suggestedUpdate == null || suggestedUpdate.uploadId == importAvailable.uploadId);
     }
 }

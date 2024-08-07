@@ -26,8 +26,18 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override IPackageVersion imported => m_ImportedIndex < 0 ? null : m_Versions[m_ImportedIndex];
 
         [SerializeField]
-        private int m_RecommendedIndex = -1;
-        public override IPackageVersion recommended => m_RecommendedIndex < 0 ? null : m_Versions[m_RecommendedIndex];
+        private int m_SuggestedUpdateIndex = -1;
+
+        public override IPackageVersion suggestedUpdate
+        {
+            get
+            {
+                if (m_SuggestedUpdateIndex < 0)
+                    return null;
+                var version = m_Versions[m_SuggestedUpdateIndex];
+                return version.uploadId == primary.uploadId ? null : version;
+            }
+        }
 
         public override IPackageVersion primary => imported ?? importAvailable ?? latest;
 
@@ -44,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_ImportAvailableIndex = localInfo == null ? -1 : m_Versions.FindIndex(v => v.uploadId == localInfo.uploadId);
             m_ImportedIndex = importedPackage == null ? -1 : m_Versions.FindIndex(v => v.uploadId == importedPackage.uploadId);
-            m_RecommendedIndex = updateInfo == null ? -1 : m_Versions.FindIndex(v => v.uploadId == updateInfo.recommendedUploadId);
+            m_SuggestedUpdateIndex = updateInfo == null ? -1 : m_Versions.FindIndex(v => v.uploadId == updateInfo.recommendedUploadId);
         }
 
         private void CreateAndAddToSortedVersions(AssetStoreProductInfo productInfo, AssetStoreLocalInfo localInfo, AssetStoreImportedPackage importedPackage, long? uploadId)

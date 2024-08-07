@@ -209,6 +209,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
     protected void SyncFieldValueToPropertyWithoutNotify(TValue value)
     {
+        if (EqualityComparer<TValue>.Default.Equals(value, field.value))
+            return;
         field.SetValueWithoutNotify(value);
     }
 }

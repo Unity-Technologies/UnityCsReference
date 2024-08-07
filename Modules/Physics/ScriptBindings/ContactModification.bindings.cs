@@ -7,6 +7,7 @@ using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -39,7 +40,10 @@ namespace UnityEngine
         }
     }
 
+
     [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Modules/Physics/PhysicsCollisionGeometry.h")]
+    [NativeHeader("Modules/Physics/PhysXContactModification.h")]
     public struct ModifiableContactPair
     {
         private IntPtr actor;
@@ -57,15 +61,30 @@ namespace UnityEngine
         private int numContacts;
         private IntPtr contacts;
 
-        public int colliderInstanceID => Physics.ResolveShapeToInstanceID(shape);
-        public int otherColliderInstanceID => Physics.ResolveShapeToInstanceID(otherShape);
-        public int bodyInstanceID => Physics.ResolveActorToInstanceID(actor);
-        public int otherBodyInstanceID => Physics.ResolveActorToInstanceID(otherActor);
+        [FreeFunction("Physics::PhysxCompatibility::TranslateTriangleIndex", true)]
+        extern internal static uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
 
-        public Vector3 bodyVelocity => Physics.GetActorLinearVelocity(actor);
-        public Vector3 bodyAngularVelocity => Physics.GetActorAngularVelocity(actor);
-        public Vector3 otherBodyVelocity => Physics.GetActorLinearVelocity(otherActor);
-        public Vector3 otherBodyAngularVelocity => Physics.GetActorAngularVelocity(otherActor);
+        [FreeFunction("Physics::PhysxCompatibility::ResolveShapeToInstanceID", true)]
+        extern internal static int ResolveShapeToInstanceID(IntPtr shapePtr);
+
+        [FreeFunction("Physics::PhysxCompatibility::ResolveActorToInstanceID", true)]
+        extern internal static int ResolveActorToInstanceID(IntPtr actorPtr);
+
+        [FreeFunction("Physics::PhysxCompatibility::GetActorLinearVelocity", true)]
+        extern internal static Vector3 GetActorLinearVelocity(IntPtr actorPtr);
+
+        [FreeFunction("Physics::PhysxCompatibility::GetActorAngularVelocity", true)]
+        extern internal static Vector3 GetActorAngularVelocity(IntPtr actorPtr);
+
+        public int colliderInstanceID => ResolveShapeToInstanceID(shape);
+        public int otherColliderInstanceID => ResolveShapeToInstanceID(otherShape);
+        public int bodyInstanceID => ResolveActorToInstanceID(actor);
+        public int otherBodyInstanceID => ResolveActorToInstanceID(otherActor);
+
+        public Vector3 bodyVelocity => GetActorLinearVelocity(actor);
+        public Vector3 bodyAngularVelocity => GetActorAngularVelocity(actor);
+        public Vector3 otherBodyVelocity => GetActorLinearVelocity(otherActor);
+        public Vector3 otherBodyAngularVelocity => GetActorAngularVelocity(otherActor);
 
         public int contactCount => numContacts;
 
@@ -183,7 +202,7 @@ namespace UnityEngine
                 var item = new IntPtr(contacts.ToInt64() + numContacts * sizeof(ModifiableContact) + (numContacts + i) * sizeof(int));
                 uint rawIndex = *(uint*)item;
 
-                return Physics.TranslateTriangleIndex(otherShape, rawIndex);
+                return TranslateTriangleIndex(otherShape, rawIndex);
             }
 
             return 0xffffFFFF;

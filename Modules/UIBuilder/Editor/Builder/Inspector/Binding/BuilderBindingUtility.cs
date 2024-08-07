@@ -116,18 +116,11 @@ namespace Unity.UI.Builder
 
             worldBound = GUIUtility.GUIToScreenRect(worldBound);
 
-            var message = openToCreate ? BuilderConstants.AddBindingTitle : BuilderConstants.EditBindingTitle;
-
             // Calls the active Binding window
             if (BuilderBindingWindow.activeWindow != null)
                 BuilderBindingWindow.activeWindow.Close();
 
-            var wnd = BuilderBindingWindow.Open(message, worldBound, windowSize);
-
-            if (openToCreate)
-                wnd.view.StartCreatingBinding(property, inspector);
-            else
-                wnd.view.StartEditingBinding(property, inspector);
+            BuilderBindingWindow.Open(openToCreate, property, inspector, worldBound, windowSize);
         }
 
         /// <summary>

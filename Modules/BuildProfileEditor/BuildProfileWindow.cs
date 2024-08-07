@@ -325,7 +325,8 @@ namespace UnityEditor.Build.Profile
             // We need to detect when a build profile asset that is selected in inspector
             // gets deleted. Since we want to avoid using asset post processors for performance
             // reason, we check it in update
-            if (buildProfileEditor?.buildProfile == null &&
+            if (buildProfileEditor != null &&
+                buildProfileEditor.buildProfile == null &&
                 m_BuildProfileSelection?.IsSingleSelection() == true)
             {
                 DestroyImmediate(buildProfileEditor);

@@ -285,10 +285,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
+            // If a Unity package doesn't have a recommended version (decided by versions set in the editor manifest or remote manifest override),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
             var unityVersionString = m_Application.unityVersion;
-            if (!m_Package.versions.hasLifecycleVersion && m_Version.HasTag(PackageTag.Unity) && !m_Version.HasTag(PackageTag.BuiltIn))
+            if (m_Version.HasTag(PackageTag.Unity) && !m_Version.HasTag(PackageTag.BuiltIn) && m_Package.versions.recommended == null)
             {
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
@@ -296,10 +296,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             // We want to let users know when they are using a version different than the recommended.
-            // The recommended version is the resolvedLifecycleVersion or the resolvedLifecycleNextVersion.
             // However, we don't want to show the info icon if the version currently installed
-            // is a higher patch version of the one in the editor manifest (still considered
-            // recommended).
+            // is a higher patch version of the one in the editor manifest (still considered recommended).
             var recommended = m_Package.versions.recommended;
             if (m_Version.isInstalled
                 && m_Package.state != PackageState.InstalledAsDependency

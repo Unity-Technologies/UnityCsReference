@@ -1904,12 +1904,13 @@ namespace UnityEditor
             childRendererIDs = tempChildRendererIDs.ToArray();
         }
 
-        internal static void FilterInstanceIDs(IEnumerable<GameObject> gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs)
+        internal static void FilterInstanceIDs(IEnumerable<GameObject> gameObjects, out int[] parentInstanceIDs, out int[] childInstanceIDs, out HashSet<int> childInstanceIDsHashSet)
         {
             if (gameObjects.Count() == 0)
             {
                 parentInstanceIDs = new int[0];
                 childInstanceIDs = new int[0];
+                childInstanceIDsHashSet = null;
                 return;
             }
 
@@ -1924,7 +1925,7 @@ namespace UnityEditor
                 tempParentInstanceIDs.Add(go.GetInstanceID());
             }
 
-            var tempChildInstanceIDs = new HashSet<int>();
+            childInstanceIDsHashSet = new HashSet<int>();
             foreach (var go in gameObjects)
             {
                 var childRenderers = go.GetComponentsInChildren<Renderer>();
@@ -1932,7 +1933,7 @@ namespace UnityEditor
                 {
                     var id = childRenderers[i].GetInstanceID();
                     if (!tempParentInstanceIDs.Contains(id))
-                        tempChildInstanceIDs.Add(id);
+                        childInstanceIDsHashSet.Add(id);
                 }
 
                 var childTerrains = go.GetComponentsInChildren<Terrain>();
@@ -1940,7 +1941,7 @@ namespace UnityEditor
                 {
                     var id = childTerrains[i].GetInstanceID();
                     if (!tempParentInstanceIDs.Contains(id))
-                        tempChildInstanceIDs.Add(id);
+                        childInstanceIDsHashSet.Add(id);
                 }
 
                 // Script components can issue Render commands that are rendered in the outline so we need to take that in account
@@ -1952,12 +1953,12 @@ namespace UnityEditor
                         continue;
                     var id = script.gameObject.GetInstanceID();
                     if (!tempParentInstanceIDs.Contains(id))
-                        tempChildInstanceIDs.Add(id);
+                        childInstanceIDsHashSet.Add(id);
                 }
             }
 
             parentInstanceIDs = tempParentInstanceIDs.ToArray();
-            childInstanceIDs = tempChildInstanceIDs.ToArray();
+            childInstanceIDs = childInstanceIDsHashSet.ToArray();
         }
 
         static bool HasMatchingInstanceID(int[] ids, int id, int cutoff)

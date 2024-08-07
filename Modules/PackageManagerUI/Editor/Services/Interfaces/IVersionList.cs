@@ -18,18 +18,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         IPackageVersion imported { get; }
 
-        // the recommended version to install or update to
+        // the version recommended by Unity, this should only be set for Unity packages
         IPackageVersion recommended { get; }
 
-        // the primary version is most important version that we want to show to the user
-        // it will be the default that will be displayed if no versions are selected
+        IPackageVersion suggestedUpdate { get; }
+
+        // the primary version is the most important version that we want to show to the user
+        // it is the default version that will be displayed in the list as well as in the details
         IPackageVersion primary { get; }
-
-        IPackageVersion lifecycleVersion { get; }
-
-        bool isNonLifecycleVersionInstalled { get; }
-
-        bool hasLifecycleVersion { get; }
 
         IPackageVersion GetUpdateTarget(IPackageVersion version);
 

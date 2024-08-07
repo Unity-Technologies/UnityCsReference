@@ -69,9 +69,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
-                var recommended = versions.recommended;
-                var latestKeyVersion = versions.key.LastOrDefault();
-                if (recommended != null && primary != recommended && ((primary.isInstalled && primary != latestKeyVersion) || primary.HasTag(PackageTag.LegacyFormat)) && !primary.HasTag(PackageTag.Local))
+                if (versions.suggestedUpdate != null)
                     return PackageState.UpdateAvailable;
 
                 if (primary.importedAssets?.Any() == true)

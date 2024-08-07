@@ -17,17 +17,56 @@ namespace Unity.UI.Builder
     /// </summary>
     internal class BuilderBindingView : VisualElement, IBuilderSelectionNotifier
     {
+        class BindingTypeComparer : IComparer<BindingType>
+        {
+            public int Compare(BindingType x, BindingType y)
+            {
+                // Ensure that DataBinding is the first entry.
+                if (x.type == typeof(DataBinding))
+                    return -1;
+                return y.type == typeof(DataBinding)
+                    ? 1
+                    : string.Compare(x.displayName, y.displayName, StringComparison.Ordinal);
+            }
+        }
+
+        struct BindingType
+        {
+            public Type type;
+            public string uxmlFullName;
+            public string displayName;
+        }
+
         private const string k_UssClassName = "unity-builder-binding-view";
 
-        private List<string> m_UxmlBindingTypeNames = new();
+        private static readonly BindingType[] k_UxmlBindingTypes;
+        private static readonly List<string> k_UxmlBindingTypeDisplayNames = new();
+
+        static BuilderBindingView()
+        {
+            k_UxmlBindingTypes = LoadAllAvailableBindingClasses();
+        }
+
+        static int IndexOfBindingType(string uxmlFullName)
+        {
+            for (var i = 0; i < k_UxmlBindingTypes.Length; ++i)
+            {
+                if (string.CompareOrdinal(k_UxmlBindingTypes[i].uxmlFullName, uxmlFullName) == 0)
+                    return i;
+            }
+
+            return -1;
+        }
+
+
         private BuilderInspector m_Inspector;
         private bool m_IsCreatingBinding;
 
         // Make it internal for tests
-        internal TextField m_PropertyField;
-        internal Label m_TypeLabel;
-        internal DropdownField m_BindingTypeField;
-        internal VisualElement m_FieldsContainer;
+        internal TextField m_BindingIdField;
+        internal Label m_TargetPropertyTypeName;
+        internal DropdownField m_BindingTypeDropdown;
+        internal VisualElement m_BindingAttributesContainer;
         internal BuilderBindingUxmlAttributesView m_AttributesView;
         internal Button m_OkButton;
         internal Button m_CancelButton;
@@ -78,35 +117,33 @@ namespace Unity.UI.Builder
         /// </summary>
         public BuilderBindingView()
         {
-            var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
-                BuilderConstants.UIBuilderPackagePath + "/Inspector/BindingWindow.uxml");
+            var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(BuilderConstants.UIBuilderPackagePath + "/Inspector/BindingWindow.uxml");
             template.CloneTree(this);
 
             AddToClassList(k_UssClassName);
 
-            m_PropertyField = this.Q<TextField>("propertyField");
-            m_TypeLabel = this.Q<Label>("typeLabel");
-            m_BindingTypeField = this.Q<DropdownField>("bindingTypeField");
-            m_BindingTypeField.RegisterValueChangedCallback((e) =>
+            m_BindingIdField = this.Q<TextField>("bindingId__field");
+            m_TargetPropertyTypeName = this.Q<Label>("target-property-type-name__label");
+            m_BindingTypeDropdown = this.Q<DropdownField>("binding-type__dropdown-field");
+            m_BindingTypeDropdown.RegisterValueChangedCallback((e) =>
             {
-                if (!isCreatingBinding)
-                    return;
-
                 UpdateBindingBeingCreatedFromBindingClass();
                 Refresh();
             });
-            m_FieldsContainer = this.Q("fieldsContainer");
-            m_OkButton = this.Q<Button>("okButton");
+            m_BindingAttributesContainer = this.Q("binding-attributes__container");
+            m_OkButton = this.Q<Button>("button--ok");
             m_OkButton.clicked += () =>
             {
                 OnCreateBindingAccepted();
                 closeRequested?.Invoke();
             };
-            m_CancelButton = this.Q<Button>("cancelButton");
+            m_CancelButton = this.Q<Button>("button--cancel");
             m_CancelButton.clicked += CloseView;
-            m_AttributesView = new BuilderBindingUxmlAttributesView(m_Inspector,this) {fieldsContainer = m_FieldsContainer};
+            m_AttributesView = new BuilderBindingUxmlAttributesView(m_Inspector,this) {attributesContainer = m_BindingAttributesContainer};
 
-            LoadAllAvailableBindingClasses();
+            m_BindingTypeDropdown.choices = k_UxmlBindingTypeDisplayNames;
+            m_BindingTypeDropdown.index = 0;
+
             RegisterCallback<DetachFromPanelEvent>((e) =>
             {
                 if (m_Inspector != null && m_Inspector.selection != null)
@@ -120,7 +157,7 @@ namespace Unity.UI.Builder
         /// <param name="propertyName">The name of the property to binding</param>
         /// <param name="isCreating">Indicates whether the view is used to create or edit a binding</param>
         /// <param name="inspector">The inspector of the UI Builder</param>
-        private void StartCreatingOrEditingBinding(string propertyName, bool isCreating, BuilderInspector inspector)
+        public void StartCreatingOrEditingBinding(string propertyName, bool isCreating, BuilderInspector inspector)
         {
             m_Inspector = inspector;
             m_AttributesView.inspector = inspector;
@@ -132,28 +169,9 @@ namespace Unity.UI.Builder
             UpdateControls();
         }
 
-        /// <summary>
-        /// Starts creating a binding on the specified property.
-        /// </summary>
-        /// <param name="inspector">The inspector of the UI Builder</param>
-        /// <param name="propertyName">The name of the property to bind.</param>
-        public void StartCreatingBinding(string propertyName, BuilderInspector inspector)
-        {
-            StartCreatingOrEditingBinding(propertyName,true,  inspector);
-        }
-
         void OnCreateBindingAccepted()
         {
             m_AttributesView.TransferBindingInstance($"{m_AttributesView.serializedRootPath}.bindings", m_Inspector.attributesSection, bindingPropertyName);
-        }
-
-        /// <summary>
-        /// Starts editing the binding on the specified property.
-        /// </summary>
-        /// <param name="propertyName">The name of the property bound by the binding to edit.</param>
-        public void StartEditingBinding(string propertyName, BuilderInspector inspector)
-        {
-            StartCreatingOrEditingBinding(propertyName, false, inspector);
         }
 
         /// <summary>
@@ -202,23 +220,20 @@ namespace Unity.UI.Builder
 
         private void UpdateControls()
         {
-            m_BindingTypeField.SetEnabled(isCreatingBinding);
+            m_BindingTypeDropdown.SetEnabled(isCreatingBinding);
             m_OkButton.style.display = isCreatingBinding ? DisplayStyle.Flex : DisplayStyle.None;
             m_CancelButton.text = isCreatingBinding ? "Cancel" : "Close";
 
             var propertyType = bindableProperty.DeclaredValueType();
 
-            m_PropertyField.value = bindingPropertyName;
-            m_TypeLabel.text = TypeUtility.GetTypeDisplayName(propertyType);
-            m_TypeLabel.tooltip = propertyType?.GetDisplayFullName();
+            m_BindingIdField.value = bindingPropertyName;
+            m_TargetPropertyTypeName.text = TypeUtility.GetTypeDisplayName(propertyType);
+            m_TargetPropertyTypeName.tooltip = propertyType?.GetDisplayFullName();
         }
 
-        private void LoadAllAvailableBindingClasses()
+        private static BindingType[] LoadAllAvailableBindingClasses()
         {
-            var bindingTypes = new List<string>();
-
-            m_UxmlBindingTypeNames.Clear();
-
+            var bindingTypes = new List<BindingType>();
             foreach (var t in TypeCache.GetTypesDerivedFrom<Binding>())
             {
                 if (t.IsAbstract)
@@ -240,34 +255,44 @@ namespace Unity.UI.Builder
                 // Display 'Default' for DataBinding class and place it first.
                 if (t == typeof(DataBinding))
                 {
-                    itemText = "Default";
-                    bindingTypes.Insert(0, itemText);
-                    m_UxmlBindingTypeNames.Insert(0, description.uxmlFullName);
+                    bindingTypes.Add(new BindingType
+                    {
+                        type = t,
+                        uxmlFullName = description.uxmlFullName,
+                        displayName = "Default"
+                    });
                 }
-                else if (t.IsSubclassOf(typeof(DataBinding)) ||
-                         t.IsSubclassOf(typeof(CustomBinding)))
+                else
                 {
-                    itemText = t.Name;
+                    itemText = ObjectNames.NicifyVariableName(description.uxmlName);
 
-                    if (bindingTypes.Contains(itemText))
-                        itemText = t.FullName;
+                    if (!string.IsNullOrEmpty(t.Namespace))
+                        itemText = $"{t.Namespace}/{itemText}";
 
-                    bindingTypes.Add(itemText);
-                    m_UxmlBindingTypeNames.Add(description.uxmlFullName);
+                    bindingTypes.Add(new BindingType
+                    {
+                        type = t,
+                        uxmlFullName = description.uxmlFullName,
+                        displayName = itemText
+                    });
                 }
             }
 
-            m_BindingTypeField.choices = bindingTypes;
-            m_BindingTypeField.index = 0;
+            bindingTypes.Sort(new BindingTypeComparer());
+            foreach (var bindingType in bindingTypes)
+            {
+                k_UxmlBindingTypeDisplayNames.Add(bindingType.displayName);
+            }
+            return bindingTypes.ToArray();
         }
 
         void UpdateBindingBeingCreatedFromBindingClass()
         {
-            if (m_BindingTypeField.index == -1)
+            if (m_BindingTypeDropdown.index == -1)
                 return;
 
-            var uxmlBindingTypeName = m_UxmlBindingTypeNames[m_BindingTypeField.index];
-            var description = UxmlSerializedDataRegistry.GetDescription(uxmlBindingTypeName);
+            var uxmlBindingTypeName = k_UxmlBindingTypes[m_BindingTypeDropdown.index];
+            var description = UxmlSerializedDataRegistry.GetDescription(uxmlBindingTypeName.uxmlFullName);
 
             // Create UxmlSerializedData.
             var data = (Binding.UxmlSerializedData)description.CreateDefaultSerializedData();
@@ -329,7 +354,11 @@ namespace Unity.UI.Builder
 
             // Find the binding serializedData
             bindingPropertyName = binding.property;
-            m_BindingTypeField.index = m_UxmlBindingTypeNames.IndexOf(description.uxmlFullName);
+
+            var bindingTypeIndex = IndexOfBindingType(description.uxmlFullName);
+            var choice = k_UxmlBindingTypes[bindingTypeIndex].displayName;
+            m_BindingTypeDropdown.SetValueWithoutNotify(choice);
+
             m_AttributesView.SetAttributesOwner(m_Inspector.document.visualTreeAsset, currentVisualElement);
 
             // Find the binding
@@ -388,9 +417,9 @@ namespace Unity.UI.Builder
             try
             {
                 var validBinding = m_AttributesView.m_CurrentElementSerializedObject.FindProperty(m_AttributesView.bindingSerializedPropertyRootPath)?.managedReferenceValue != null;
-                if (currentVisualElement != null && validBinding)
+                if (selectedVisualElement != null && validBinding)
                 {
-                    var currentVea = currentVisualElement.GetVisualElementAsset();
+                    var currentVea = selectedVisualElement.GetVisualElementAsset();
 
                     // Check if inspector.currentVisualElement has been recreated from its related uxml asset
                     // while the Binding window was opened.

@@ -33,7 +33,7 @@ internal class ResetAction : PackageAction
             return false;
 
         var packageNameAndVersions = string.Join("\n\u2022 ",
-            packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.lifecycleVersion.version}").ToArray());
+            packagesToUninstall.Select(package => $"{package.displayName} - {package.versions.recommended.version}").ToArray());
 
         var title = string.Format(L10n.Tr("Resetting {0}"), version.GetDescriptor());
         var message = packagesToUninstall.Length == 1 ?

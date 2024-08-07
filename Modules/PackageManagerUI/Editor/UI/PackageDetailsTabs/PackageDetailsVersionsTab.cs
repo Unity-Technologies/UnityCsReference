@@ -62,7 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_VersionsShowOthersButton = new Button { name = "versionsShowAllButton", text = L10n.Tr("See other versions") };
             m_VersionsToolbar.Add(m_VersionsShowOthersButton);
-            
+
             m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...") };
             m_Container.Add(m_LoadingLabel);
 
@@ -115,9 +115,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
-            var latestVersion = m_Version.package?.versions.latest;
             var primaryVersion = m_Version.package?.versions.primary;
-            var multipleVersionsVisible = versions.Skip(1).Any();
 
             foreach (var v in versions.Reverse())
             {
@@ -133,7 +131,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     action = new AddAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase);
 
                 var isExpanded = m_PackageManagerPrefs.IsVersionHistoryItemExpanded(v.uniqueId);
-                var isLatest = v == latestVersion;
                 var versionHistoryItem = new PackageDetailsVersionHistoryItem(m_ResourceLoader,
                     m_PackageDatabase,
                     m_OperationDispatcher,
@@ -141,8 +138,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_ApplicationProxy,
                     m_PackageLinkFactory,
                     v,
-                    multipleVersionsVisible,
-                    isLatest,
                     isExpanded,
                     action);
                 versionHistoryItem.onToggleChanged += expanded => m_PackageManagerPrefs.SetVersionHistoryItemExpanded(versionHistoryItem.version?.uniqueId, expanded);
