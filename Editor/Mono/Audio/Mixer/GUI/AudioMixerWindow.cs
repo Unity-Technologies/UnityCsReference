@@ -136,10 +136,10 @@ namespace UnityEditor
 
         void UpdateAfterAssetChange()
         {
+            m_AllControllers = FindAllAudioMixerControllers();
+
             if (m_MixersTree == null)
                 Init();
-
-            m_AllControllers = FindAllAudioMixerControllers();
 
             if (m_Controller != null)
             {

@@ -296,6 +296,11 @@ namespace UnityEngine
             get { return SupportsCubemapArrayTextures(); }
         }
 
+        public static bool supportsAnisotropicFilter
+        {
+            get { return SupportsAnisotropicFilter(); }
+        }
+
         public static Rendering.CopyTextureSupport copyTextureSupport
         {
             get { return GetCopyTextureSupport(); }
@@ -499,6 +504,11 @@ namespace UnityEngine
         public static int maxCubemapSize
         {
             get { return GetMaxCubemapSize(); }
+        }
+
+        public static int maxAnisotropyLevel
+        {
+            get { return GetMaxAnisotropyLevel(); }
         }
 
         internal static int maxRenderTextureSize
@@ -791,6 +801,9 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportsCubemapArrayTextures")]
         static extern bool SupportsCubemapArrayTextures();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportsAnisotropicFilter")]
+        static extern bool SupportsAnisotropicFilter();
+
         [FreeFunction("ScriptingGraphicsCaps::GetCopyTextureSupport")]
         static extern Rendering.CopyTextureSupport GetCopyTextureSupport();
 
@@ -889,6 +902,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetMaxCubemapSize")]
         static extern int GetMaxCubemapSize();
+
+        [FreeFunction("ScriptingGraphicsCaps::GetMaxAnisotropyLevel")]
+        static extern int GetMaxAnisotropyLevel();
 
         [FreeFunction("ScriptingGraphicsCaps::GetMaxRenderTextureSize")]
         static extern int GetMaxRenderTextureSize();
