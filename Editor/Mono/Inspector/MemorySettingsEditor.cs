@@ -82,7 +82,7 @@ namespace UnityEditor
 
             public static readonly string warningDialogTitle = L10n.Tr("Edit memory settings");
             public static readonly string warningDialogText = L10n.Tr("Changing default memory setting can have severe negative impact on performance. Are you sure you want to continue?");
-            public static readonly string okDialogButton = L10n.Tr("Ok");
+            public static readonly string okDialogButton = L10n.Tr("OK");
             public static readonly string cancelDialogButton = L10n.Tr("Cancel");
         }
 

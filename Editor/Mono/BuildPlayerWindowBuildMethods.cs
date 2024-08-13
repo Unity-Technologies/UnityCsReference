@@ -341,7 +341,7 @@ namespace UnityEditor
                     {
                         isValidPath = true;
                     }
-                    else if (!EditorUtility.DisplayDialog("Invalid build path", msg, "Ok", "Cancel"))
+                    else if (!EditorUtility.DisplayDialog("Invalid build path", msg, "OK", "Cancel"))
                     {
                         Debug.LogError($"Invalid build path: '{path}'. {msg}");
                         return false;

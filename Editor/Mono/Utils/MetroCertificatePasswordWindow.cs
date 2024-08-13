@@ -87,7 +87,7 @@ namespace UnityEditor
 
                         GUILayout.FlexibleSpace();
 
-                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("Ok"), kButtonWidth) || enter)
+                        if (GUILayout.Button(EditorGUIUtility.TrTextContent("OK"), kButtonWidth) || enter)
                         {
                             message = GUIContent.none;
 

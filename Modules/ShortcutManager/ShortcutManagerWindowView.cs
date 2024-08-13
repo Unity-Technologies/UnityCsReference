@@ -471,7 +471,7 @@ namespace UnityEditor.ShortcutManagement
             {
                 EditorUtility.DisplayDialog(L10n.Tr("No Profile"),
                     L10n.Tr($"The \"{m_ViewController.activeProfile}\" profile contains no shortcut overrides so there is nothing to export.\n\nCreate a new profile with shortcut key overrides and try again."),
-                    L10n.Tr("Ok"));
+                    L10n.Tr("OK"));
                 return;
             }
 
@@ -1569,6 +1569,7 @@ namespace UnityEditor.ShortcutManagement
 
         void Apply()
         {
+            m_KeyDown.Clear();
             value = m_WorkingValue;
             if (hasFocus)
                 focusController.SwitchFocus(null);

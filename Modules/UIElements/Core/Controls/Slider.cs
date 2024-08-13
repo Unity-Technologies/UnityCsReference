@@ -11,8 +11,21 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// The Slider control is a horizontal or vertical bar with a handle that can be moved to select a value from a range.
-    /// The range is defined by the <see cref="lowValue"/> and <see cref="highValue"/> properties. For more information, 
-    /// refer to the [[wiki:UIE-uxml-element-Slider|UXML element Slider]] manual page.
+    /// The range is defined by the @@lowValue@@ and @@highValue@@ properties. 
+    ///\\
+    ///\\
+    /// The slider manages navigation events in a customized manner. When it detects <see cref="NavigationMoveEvent"/>.
+    /// that align with the slider's direction, it adjusts the slider's value. If it detects a 
+    /// <see cref="NavigationSubmitEvent"/>, it removes the BaseSlider_1::ref::movableUssClassName
+    /// class from the dragger, causing all Navigation events to revert to their default behavior.
+    /// A second navigation submit event re-enables the movableUssClassName class on the dragger and
+    /// restores the previous customized behavior.
+    ///\\
+    ///\\
+    /// For more information and code examples, refer to the [[wiki:UIE-uxml-element-Slider|UXML element Slider]] manual page.
+    /// </remarks>
+    /// <remarks>
+    /// SA: [[MinMaxSlider]]
     /// </remarks>
     public class Slider : BaseSlider<float>
     {

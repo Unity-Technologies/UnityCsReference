@@ -163,7 +163,7 @@ namespace UnityEditor
                             {
                                 // Circular references detected
                                 string circularRefErrorMsg = string.Format("'{0}' could not be assigned as subemitter on '{1}' due to circular referencing!\nBacktrace: {2} \n\nReference will be removed.", newSubEmitter.gameObject.name, m_ParticleSystemUI.m_ParticleSystems[0].gameObject.name, errorMsg);
-                                EditorUtility.DisplayDialog("Circular References Detected", circularRefErrorMsg, "Ok");
+                                EditorUtility.DisplayDialog("Circular References Detected", circularRefErrorMsg, "OK");
                                 validSubemitter = false;
                             }
                         }
@@ -206,14 +206,14 @@ namespace UnityEditor
             if (root.gameObject.activeInHierarchy && !subEmitter.gameObject.activeInHierarchy)
             {
                 string kReparentText = "The assigned sub emitter is part of a prefab and can therefore not be assigned.";
-                EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "Ok");
+                EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "OK");
                 return false;
             }
 
             if (!root.gameObject.activeInHierarchy && subEmitter.gameObject.activeInHierarchy)
             {
                 string kReparentText = "The assigned sub emitter is part of a scene object and can therefore not be assigned to a prefab.";
-                EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "Ok");
+                EditorUtility.DisplayDialog("Invalid Sub Emitter", kReparentText, "OK");
                 return false;
             }
 

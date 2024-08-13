@@ -215,7 +215,7 @@ namespace UnityEditor
             catch (DeploymentOperationFailedException e)
             {
                 UnityEngine.Debug.LogException(e);
-                EditorUtility.DisplayDialog(e.title, e.Message, "Ok");
+                EditorUtility.DisplayDialog(e.title, e.Message, "OK");
             }
             catch (DeploymentOperationAbortedException)
             {

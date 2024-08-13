@@ -421,7 +421,6 @@ namespace UnityEditor
         SerializedProperty m_UseFlipModelSwapchain;
 
         SerializedProperty m_RunInBackground;
-        SerializedProperty m_CaptureSingleScreen;
 
         SerializedProperty m_SkinOnGPU;
         SerializedProperty m_MeshDeformation;
@@ -527,7 +526,7 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
-        bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
+        internal bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
 
         internal enum PlayerSettingsType
         {
@@ -647,7 +646,6 @@ namespace UnityEditor
 
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
-            m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
             m_CaptureStartupLogs            = FindPropertyAssert("captureStartupLogs");
 
@@ -1261,7 +1259,6 @@ namespace UnityEditor
                     if (namedBuildTarget == NamedBuildTarget.Standalone)
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
-                        EditorGUILayout.PropertyField(m_CaptureSingleScreen);
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
 

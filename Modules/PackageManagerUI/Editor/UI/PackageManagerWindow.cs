@@ -269,7 +269,7 @@ namespace UnityEditor.PackageManager.UI
             packageDatabase?.ClearSamplesCache();
 
             var applicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
-            if (applicationProxy.isBatchMode)
+            if (applicationProxy.isBatchMode || !applicationProxy.isUpmRunning)
                 return;
 
             var upmRegistryClient = ServicesContainer.instance.Resolve<IUpmRegistryClient>();

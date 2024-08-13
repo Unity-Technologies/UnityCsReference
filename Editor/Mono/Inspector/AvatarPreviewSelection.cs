@@ -30,7 +30,6 @@ namespace UnityEditor
             if (instance.m_PreviewModels[(int)type] != go)
             {
                 instance.m_PreviewModels[(int)type] = go;
-                instance.Save(false);
             }
         }
 

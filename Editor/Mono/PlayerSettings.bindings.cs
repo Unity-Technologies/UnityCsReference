@@ -575,7 +575,8 @@ namespace UnityEditor
         public static extern bool runInBackground { get; set; }
 
         // Defines if fullscreen games should darken secondary displays.
-        public static extern bool captureSingleScreen { get; set; }
+        [Obsolete("captureSingleScreen has been removed.", false)]
+        public static bool captureSingleScreen { get; set; }
 
         // Write a log file with debugging information.
         public static extern bool usePlayerLog { get; set; }

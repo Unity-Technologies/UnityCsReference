@@ -19,6 +19,7 @@ namespace UnityEditor.Build.Profile
     [StructLayout(LayoutKind.Sequential)]
     [ExcludeFromObjectFactory]
     [ExcludeFromPreset]
+    [HelpURL("build-profiles-reference")]
     public sealed partial class BuildProfile : ScriptableObject
     {
         /// <summary>

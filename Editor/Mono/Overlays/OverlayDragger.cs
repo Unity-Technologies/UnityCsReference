@@ -36,7 +36,7 @@ namespace UnityEditor.Overlays
 
             public DockingOperation(OverlayCanvas canvas, Overlay targetOverlay)
             {
-                m_InsertIndicator = new OverlayInsertIndicator();
+                m_InsertIndicator = new OverlayInsertIndicator(canvas.rootVisualElement);
                 m_OriginContainer = targetOverlay.container;
                 m_OriginContainer.GetOverlayIndex(targetOverlay, out var section, out var index);
                 m_TargetOverlay = targetOverlay;

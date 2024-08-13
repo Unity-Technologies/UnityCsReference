@@ -11,6 +11,20 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A min/max slider containing a representation of a range. For more information, refer to [[wiki:UIE-uxml-element-MinMaxSlider|UXML element MinMaxSlider]].
     /// </summary>
+    /// <remarks>
+    /// The MinMaxSlider manages navigation events in a customized manner.
+    /// The MinMaxSlider has four navigation states:
+    /// 
+    ///- Min thumb: adjusts the slider's minimum value if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
+    ///- Max thumb: adjusts the slider's maximum value if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
+    ///- Middle thumb: adjusts the slider's minimum and maximum values if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
+    ///- Default navigation: <see cref="NavigationMoveEvent"/> are ignored and handled by the default systems.
+    /// 
+    /// The MinMaxSlider cycles through the navigation states when a <see cref="NavigationSubmitEvent"/> is received.
+    /// </remarks>
+    /// <remarks>
+    /// SA: [[Slider]]
+    /// </remarks>
     public class MinMaxSlider : BaseField<Vector2>
     {
         internal static readonly BindingId minValueProperty = nameof(minValue);
@@ -106,12 +120,14 @@ namespace UnityEngine.UIElements
                 slider.value = value;
             }
         }
+
+        // The order of this enum controls the Navigation mode switching
         private enum DragState
         {
-            NoThumb,
             MinThumb,
+            MaxThumb,
             MiddleThumb,
-            MaxThumb
+            NoThumb,
         }
 
         internal VisualElement dragElement { get; private set; }
@@ -122,9 +138,6 @@ namespace UnityEngine.UIElements
         // For dragging purpose
         Vector2 m_DragElementStartPos;
         Vector2 m_ValueStartPos;
-
-        Rect m_DragMinThumbRect;
-        Rect m_DragMaxThumbRect;
         DragState m_DragState;
 
         // Minimum value of the current position of the slider
@@ -282,6 +295,15 @@ namespace UnityEngine.UIElements
         /// USS class name of the maximum thumb elements in elements of this type.
         /// </summary>
         public static readonly string maxThumbUssClassName = ussClassName + "__max-thumb";
+        /// <summary>
+        /// USS class name of the element that is currently controlled by <see cref="NavigationMoveEvent"/>.
+        /// When a <see cref="NavigationSubmitEvent"/> is received the slider cycles through the elements in the following order:
+        ///1. Minimum thumb.
+        ///2. Maximum thumb.
+        ///3. Middle bar.
+        ///4. None (Default Navigation behavior).
+        /// </summary>
+        public static readonly string movableUssClassName = ussClassName + "--movable";
 
         /// <summary>
         /// Constructor.
@@ -352,6 +374,11 @@ namespace UnityEngine.UIElements
             m_MaxLimit = maxLimit;
             rawValue = ClampValues(new Vector2(minValue, maxValue));
             UpdateDragElementPosition();
+
+            RegisterCallback<FocusInEvent>(OnFocusIn);
+            RegisterCallback<BlurEvent>(OnBlur);
+            RegisterCallback<NavigationSubmitEvent>(OnNavigationSubmit);
+            RegisterCallback<NavigationMoveEvent>(OnNavigationMove);
         }
 
         // Clamp the actual parameter inside the low / high limit
@@ -394,43 +421,20 @@ namespace UnityEngine.UIElements
             // we must skip the position calculation and wait for a layout pass
             if (panel == null)
                 return;
-            // This is the main calculation for the location of the thumbs / dragging element
-            float offsetForThumbFullWidth = -dragElement.resolvedStyle.marginLeft - dragElement.resolvedStyle.marginRight;
-            var sliceSpan = dragElement.resolvedStyle.unitySliceLeft + dragElement.resolvedStyle.unitySliceRight;
-            var newPositionLeft = Mathf.Round(SliderLerpUnclamped(dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width + offsetForThumbFullWidth) - dragElement.resolvedStyle.unitySliceRight, SliderNormalizeValue(minValue, lowLimit, highLimit)) - dragElement.resolvedStyle.unitySliceLeft);
-            var newPositionRight = Mathf.Round(SliderLerpUnclamped(dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width + offsetForThumbFullWidth) - dragElement.resolvedStyle.unitySliceRight, SliderNormalizeValue(maxValue, lowLimit, highLimit)) + dragElement.resolvedStyle.unitySliceRight);
-            dragElement.style.width = Mathf.Max(sliceSpan, newPositionRight - newPositionLeft);
+
+            // The slider border and marging are always shown
+            var sliderLeftBorder = dragElement.resolvedStyle.borderLeftWidth + dragElement.resolvedStyle.marginLeft;
+            var sliderRightBorder = dragElement.resolvedStyle.borderRightWidth + dragElement.resolvedStyle.marginRight;
+            var sliderMinWidth = sliderRightBorder + sliderLeftBorder;
+
+            var thumbFullWidth = dragMinThumb.resolvedStyle.width + dragMaxThumb.resolvedStyle.width + sliderMinWidth;
+            var newPositionLeft = Mathf.Round(SliderLerpUnclamped(dragMinThumb.resolvedStyle.width, visualInput.layout.width - dragMaxThumb.resolvedStyle.width - sliderMinWidth, SliderNormalizeValue(minValue, lowLimit, highLimit)));
+            var newPositionRight = Mathf.Round(SliderLerpUnclamped(dragMinThumb.resolvedStyle.width + sliderMinWidth, visualInput.layout.width - dragMaxThumb.resolvedStyle.width, SliderNormalizeValue(maxValue, lowLimit, highLimit)));
+
+            dragElement.style.width = newPositionRight - newPositionLeft;
             dragElement.style.left = newPositionLeft;
-
-            // Calculate the rect for the mouse selection, in the parent coordinate (MinMaxSlider world) ...
-            UpdateDragThumbsRect();
-
-            // The child elements are positioned based on the parent (drag element) coordinate...
-            // Set up the Max Thumb for the horizontal slider...
-            dragMaxThumb.style.left = dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight;
-            dragMaxThumb.style.top = 0f;
-            // The child elements are positioned based on the parent (drag element) coordinate...
-            // Same location for both Horizontal / Vertical slider
-            dragMinThumb.style.width = m_DragMinThumbRect.width;
-            dragMinThumb.style.height = m_DragMinThumbRect.height;
-            dragMinThumb.style.left = 0f;
-            dragMinThumb.style.top = 0f;
-
-            dragMaxThumb.style.width = m_DragMaxThumbRect.width;
-            dragMaxThumb.style.height = m_DragMaxThumbRect.height;
-        }
-
-        void UpdateDragThumbsRect()
-        {
-            // Calculate the rect for the mouse selection, in the parent coordinate (MinMaxSlider world) ...
-            var minThumbX = dragElement.resolvedStyle.left;
-            var maxThumbX = dragElement.resolvedStyle.left + (dragElement.resolvedStyle.width - dragElement.resolvedStyle.unitySliceRight);
-            var minThumbY = dragElement.layout.yMin + dragMinThumb.resolvedStyle.marginTop;
-            var maxThumbY = dragElement.layout.yMin + dragMaxThumb.resolvedStyle.marginTop;
-            var minThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMinThumb.resolvedStyle.height);
-            var maxThumbHeight = Mathf.Max(dragElement.resolvedStyle.height, dragMaxThumb.resolvedStyle.height);
-            m_DragMinThumbRect = new Rect(minThumbX, minThumbY,dragElement.resolvedStyle.unitySliceLeft, minThumbHeight);
-            m_DragMaxThumbRect = new Rect(maxThumbX, maxThumbY, dragElement.resolvedStyle.unitySliceRight, maxThumbHeight);
+            dragMinThumb.style.left = -dragMinThumb.resolvedStyle.width - sliderLeftBorder;
+            dragMaxThumb.style.right = -dragMaxThumb.resolvedStyle.width - sliderRightBorder;
         }
 
         internal float SliderLerpUnclamped(float a, float b, float interpolant)
@@ -445,7 +449,7 @@ namespace UnityEngine.UIElements
 
         float ComputeValueFromPosition(float positionToConvert)
         {
-            var interpolant = SliderNormalizeValue(positionToConvert, dragElement.resolvedStyle.unitySliceLeft, (visualInput.layout.width - dragElement.resolvedStyle.unitySliceRight));
+            var interpolant = SliderNormalizeValue(positionToConvert, 0, visualInput.layout.width);
             return SliderLerpUnclamped(lowLimit, highLimit, interpolant);
         }
 
@@ -462,6 +466,110 @@ namespace UnityEngine.UIElements
             if (evt.eventTypeId == GeometryChangedEvent.TypeId())
             {
                 UpdateDragElementPosition((GeometryChangedEvent)evt);
+            }
+        }
+
+        DragState GetNavigationState()
+        {
+            var minEnabled = dragMinThumb.ClassListContains(movableUssClassName);
+            var maxEnabled = dragMaxThumb.ClassListContains(movableUssClassName);
+
+            if (minEnabled)
+                return maxEnabled ? DragState.MiddleThumb : DragState.MinThumb;
+            else if (maxEnabled)
+                return DragState.MaxThumb;
+            return DragState.NoThumb;
+        }
+
+        void SetNavigationState(DragState newState)
+        {
+            dragMinThumb.EnableInClassList(movableUssClassName, newState == DragState.MinThumb || newState == DragState.MiddleThumb);
+            dragMaxThumb.EnableInClassList(movableUssClassName, newState == DragState.MaxThumb || newState == DragState.MiddleThumb);
+            dragElement.EnableInClassList(movableUssClassName, newState == DragState.MiddleThumb);
+        }
+
+        void OnFocusIn(FocusInEvent evt)
+        {
+            // Leave the navigation state unless it was no thumb.
+            // This allows for setting the state in SetSliderValueFromClick when clicking on the slider.
+            if (GetNavigationState() == DragState.NoThumb)
+                SetNavigationState(DragState.MinThumb);
+        }
+
+        void OnBlur(BlurEvent evt) => SetNavigationState(DragState.NoThumb);
+
+        void OnNavigationSubmit(NavigationSubmitEvent evt)
+        {
+            var newState = GetNavigationState() + 1;
+            if (newState > DragState.NoThumb)
+                newState = DragState.MinThumb;
+            SetNavigationState(newState);
+        }
+
+        void OnNavigationMove(NavigationMoveEvent evt)
+        {
+            var moveState = GetNavigationState();
+            if (moveState == DragState.NoThumb)
+                return;
+
+            if (evt.direction != NavigationMoveEvent.Direction.Left && evt.direction != NavigationMoveEvent.Direction.Right)
+                return;
+
+            ComputeValueFromKey(evt.direction == NavigationMoveEvent.Direction.Left, evt.shiftKey, moveState);
+            evt.StopPropagation();
+            focusController?.IgnoreEvent(evt);
+        }
+
+        void ComputeValueFromKey(bool leftDirection, bool isShift, DragState moveState)
+        {
+            // Change by approximately 1/100 of entire range, or 1/10 if holding down shift
+            // But round to nearest power of ten to get nice resulting numbers.
+            var delta = Slider.GetClosestPowerOfTen(Mathf.Abs((highLimit - lowLimit) * 0.01f));
+            if (isShift)
+                delta *= 10;
+
+            // Increment or decrement by just over half the delta.
+            // This means that e.g. if delta is 1, incrementing from 1.0 will go to 2.0,
+            // but incrementing from 0.9 is going to 1.0 rather than 2.0.
+            // This feels more right since 1.0 is the "next" one.
+            if (leftDirection)
+                delta = -delta;
+
+            // Clamp to prevent the thumb going into the other thumbs value.
+            switch (moveState)
+            {
+                case DragState.MinThumb:
+                {
+                    var thumbValue = Slider.RoundToMultipleOf(value.x + (delta * 0.5001f), Mathf.Abs(delta));
+                    thumbValue = Math.Clamp(thumbValue, lowLimit, value.y);
+                    value = new Vector2(thumbValue, value.y);
+                    break;
+                }
+                case DragState.MaxThumb:
+                {
+                    var thumbValue = Slider.RoundToMultipleOf(value.y + (delta * 0.5001f), Mathf.Abs(delta));
+                    thumbValue = Math.Clamp(thumbValue, value.x, highLimit);
+                    value = new Vector2(value.x, thumbValue);
+                    break;
+                }
+                case DragState.MiddleThumb:
+                {
+                    var range = value.y - value.x;
+                    if (delta > 0)
+                    {
+                        var thumbValue = Slider.RoundToMultipleOf(value.y + (delta * 0.5001f), Mathf.Abs(delta));
+                        thumbValue = Math.Clamp(thumbValue, value.x, highLimit);
+                        value = new Vector2(thumbValue - range, thumbValue);
+                    }
+                    else
+                    {
+                        var thumbValue = Slider.RoundToMultipleOf(value.x + (delta * 0.5001f), Mathf.Abs(delta));
+                        thumbValue = Math.Clamp(thumbValue, lowLimit, value.y);
+                        value = new Vector2(thumbValue, thumbValue + range);
+                    }
+
+                    break;
+                }
             }
         }
 
@@ -482,15 +590,14 @@ namespace UnityEngine.UIElements
             if (clampedDragger.dragDirection == ClampedDragger<float>.DragDirection.Free)
                 return;
 
-            // Refresh the thumbs rect values to get the latest updates.
-            UpdateDragThumbsRect();
+            var worldStartMousePosition = visualInput.LocalToWorld(clampedDragger.startMousePosition);
 
             // Detection of the thumb click (min or max)
-            if (m_DragMinThumbRect.Contains(clampedDragger.startMousePosition))
+            if (dragMinThumb.worldBound.Contains(worldStartMousePosition))
             {
                 m_DragState = DragState.MinThumb;
             }
-            else if (m_DragMaxThumbRect.Contains(clampedDragger.startMousePosition))
+            else if (dragMaxThumb.worldBound.Contains(worldStartMousePosition))
             {
                 m_DragState = DragState.MaxThumb;
             }
@@ -521,6 +628,8 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            SetNavigationState(m_DragState);
+
             // Start dragging
             m_ValueStartPos = value;
             clampedDragger.dragDirection = ClampedDragger<float>.DragDirection.Free;
@@ -532,6 +641,7 @@ namespace UnityEngine.UIElements
             var startPosInValue = ComputeValueFromPosition(dragElementStartPos);
             var endPosInValue = ComputeValueFromPosition(dragElementEndPos);
             var deltaInValueWorld = endPosInValue - startPosInValue;
+            SetNavigationState(m_DragState);
 
             switch (m_DragState)
             {

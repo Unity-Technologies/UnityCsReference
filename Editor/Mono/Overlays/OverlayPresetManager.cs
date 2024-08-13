@@ -312,7 +312,7 @@ namespace UnityEditor.Overlays
                         EditorUtility.DisplayDialog(
                             L10n.Tr("Load Overlay Preset From Disk"),
                             string.Format(L10n.Tr("Failed to load the chosen preset, the file may not be a .{0} or was corrupted."), k_FileExtension),
-                            L10n.Tr("Ok"));
+                            L10n.Tr("OK"));
                         failed = true;
                     }
                     else if (!preset.CanApplyToWindow(window.GetType()))
@@ -320,7 +320,7 @@ namespace UnityEditor.Overlays
                         EditorUtility.DisplayDialog(
                             L10n.Tr("Load Overlay Preset From Disk"),
                             string.Format(L10n.Tr("Trying to load an overlay preset with the name {0}. This preset targets the window type {0} which isn't valid for this window."), preset.targetWindowType),
-                            L10n.Tr("Ok"));
+                            L10n.Tr("OK"));
                         failed = true;
                     }
 

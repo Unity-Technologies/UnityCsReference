@@ -302,7 +302,6 @@ namespace UnityEngine.UIElements
     /// 
     ///- The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
     ///- If the user changes the pointer's state, a <see cref="PointerMoveEvent"/> is sent. Multiple PointerMove events are sent if multiple properties of the pointer change.
-    ///- If the user doesn't change the pointer's state for a specific amount of time, a <see cref="PointerStationaryEvent"/> is sent.
     ///- If the user cancels the loop, a <see cref="PointerCancelEvent"/> is sent.
     ///- If the user doesn't cancel the loop, and either releases the last button pressed or releases the last touch, a <see cref="PointerUpEvent"/> is sent.
     ///- If the initial <see cref="PointerDownEvent"/> and the <see cref="PointerUpEvent"/> occur on the same visual element, a <see cref="ClickEvent"/> is sent.

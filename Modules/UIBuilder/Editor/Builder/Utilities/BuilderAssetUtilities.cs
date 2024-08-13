@@ -147,7 +147,7 @@ namespace Unity.UI.Builder
 
             if (errorMessage != null)
             {
-                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "Ok");
+                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "OK");
                 Debug.LogError(errorMessage);
                 return false;
             }
@@ -179,7 +179,7 @@ namespace Unity.UI.Builder
 
             if (errorMessage != null)
             {
-                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "Ok");
+                BuilderDialogsUtility.DisplayDialog(errorTitle, errorMessage, "OK");
                 Debug.LogError(errorMessage);
                 return false;
             }
@@ -741,7 +741,7 @@ namespace Unity.UI.Builder
             if (!success)
             {
                 Debug.LogError(message);
-                BuilderDialogsUtility.DisplayDialog("Save - " + path, message, "Ok");
+                BuilderDialogsUtility.DisplayDialog("Save - " + path, message, "OK");
             }
 
             return success;

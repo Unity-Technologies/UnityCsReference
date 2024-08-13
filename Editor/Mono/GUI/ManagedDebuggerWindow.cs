@@ -108,7 +108,7 @@ namespace UnityEditor
                         EditorUtility.DisplayDialog(
                             "C# Debugger Attached",
                             "All compiler errors must be fixed before switching to debug mode.",
-                            "Ok");
+                            "OK");
                         ManagedDebugger.Disconnect();
                     }
                     else

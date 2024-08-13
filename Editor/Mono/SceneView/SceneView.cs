@@ -2249,7 +2249,9 @@ namespace UnityEditor
 
                 if (evt.type == EventType.Repaint)
                     RenderFilteredScene(groupSpaceCameraRect);
-
+              
+                DrawPingedObjectSubmeshOutlineIfNeeded();
+                
                 if (sceneRendersToRT)
                 {
                     GUIClip.Internal_PopParentClip();
@@ -2294,8 +2296,15 @@ namespace UnityEditor
                 }
 
                 DrawRenderModeOverlay(groupSpaceCameraRect);
+
+                DrawPingedObjectSubmeshOutlineIfNeeded();
             }
 
+            ShaderUtil.allowAsyncCompilation = oldAsync;
+        }
+
+        void DrawPingedObjectSubmeshOutlineIfNeeded()
+        {
             if (isPingingObject)
             {
                 var currentTime = Time.realtimeSinceStartup;
@@ -2317,8 +2326,6 @@ namespace UnityEditor
                     }
                 }
             }
-
-            ShaderUtil.allowAsyncCompilation = oldAsync;
         }
 
         void RenderFilteredScene(Rect groupSpaceCameraRect)

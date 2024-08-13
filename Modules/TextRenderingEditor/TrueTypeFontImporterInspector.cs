@@ -151,7 +151,7 @@ namespace UnityEditor
                 EditorUtility.DisplayDialog(
                     "Cannot generate editable font asset for dynamic fonts",
                     "Please reimport the font in a different mode.",
-                    "Ok");
+                    "OK");
                 return;
             }
             string basePath = Path.Combine(Path.GetDirectoryName(importer.assetPath), Path.GetFileNameWithoutExtension(importer.assetPath));

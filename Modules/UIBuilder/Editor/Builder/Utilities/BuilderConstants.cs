@@ -669,7 +669,7 @@ namespace Unity.UI.Builder
         //
 
         // Generic Dialog Messages
-        public static readonly string DialogOkOption = "Ok";
+        public static readonly string DialogOkOption = "OK";
         public static readonly string DialogCancelOption = "Cancel";
         public static readonly string DialogDiscardOption = "Discard changes and {0}";
         public static readonly string DialogAbortActionOption = "Do not {0}";
