@@ -61,7 +61,7 @@ namespace UnityEditor
         {
             if (EditorApplication.isCompiling)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Exit Safe Mode blocked"), L10n.Tr("Cannot exit Safe Mode while compiling scripts"), L10n.Tr("Ok"));
+                EditorUtility.DisplayDialog(L10n.Tr("Exit Safe Mode blocked"), L10n.Tr("Cannot exit Safe Mode while compiling scripts"), L10n.Tr("OK"));
                 return;
             }
 

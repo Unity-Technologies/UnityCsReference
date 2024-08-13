@@ -116,7 +116,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_Application.DisplayDialog("cannotRemoveAsset",
                     L10n.Tr("Cannot Remove"),
                     L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example."),
-                    L10n.Tr("Ok"));
+                    L10n.Tr("OK"));
             }
         }
 

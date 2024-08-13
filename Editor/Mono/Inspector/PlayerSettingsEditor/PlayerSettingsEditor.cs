@@ -327,6 +327,7 @@ namespace UnityEditor
         SerializedProperty m_VulkanNumSwapchainBuffers;
         SerializedProperty m_VulkanEnableLateAcquireNextImage;
         SerializedProperty m_VulkanEnableCommandBufferRecycling;
+        SerializedProperty m_VulkanEnableSetSRGBWrite;
 
         // iOS, tvOS
 #pragma warning disable 169
@@ -420,7 +421,6 @@ namespace UnityEditor
         SerializedProperty m_UseFlipModelSwapchain;
 
         SerializedProperty m_RunInBackground;
-        SerializedProperty m_CaptureSingleScreen;
 
         SerializedProperty m_SkinOnGPU;
         SerializedProperty m_MeshDeformation;
@@ -437,6 +437,12 @@ namespace UnityEditor
         SerializedProperty m_LightmapStreamingEnabled;
         SerializedProperty m_LightmapStreamingPriority;
 
+        SerializedProperty m_EnableOpenGLProfilerGPURecorders;
+
+        SerializedProperty m_EnableFrameTimingStats;
+
+        SerializedProperty m_AllowHDRDisplaySupport;
+        SerializedProperty m_UseHDRDisplay;
         SerializedProperty m_HDRBitDepth;
 
         // WebGPU
@@ -520,7 +526,7 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
-        bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
+        internal bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
 
         internal enum PlayerSettingsType
         {
@@ -640,7 +646,6 @@ namespace UnityEditor
 
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
-            m_CaptureSingleScreen           = FindPropertyAssert("captureSingleScreen");
             m_UsePlayerLog                  = FindPropertyAssert("usePlayerLog");
             m_CaptureStartupLogs            = FindPropertyAssert("captureStartupLogs");
 
@@ -655,6 +660,7 @@ namespace UnityEditor
             m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
             m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
             m_VulkanEnableCommandBufferRecycling = FindPropertyAssert("vulkanEnableCommandBufferRecycling");
+            m_VulkanEnableSetSRGBWrite         = FindPropertyAssert("vulkanEnableSetSRGBWrite");
             m_FullscreenMode                   = FindPropertyAssert("fullscreenMode");
             m_VisibleInBackground              = FindPropertyAssert("visibleInBackground");
             m_AllowFullscreenSwitch            = FindPropertyAssert("allowFullscreenSwitch");
@@ -662,6 +668,12 @@ namespace UnityEditor
             m_MeshDeformation                  = FindPropertyAssert("meshDeformation");
             m_ForceSingleInstance              = FindPropertyAssert("forceSingleInstance");
             m_UseFlipModelSwapchain            = FindPropertyAssert("useFlipModelSwapchain");
+
+            m_AllowHDRDisplaySupport = FindPropertyAssert("allowHDRDisplaySupport");
+            m_UseHDRDisplay = FindPropertyAssert("useHDRDisplay");
+            m_HDRBitDepth = FindPropertyAssert("hdrBitDepth");
+            m_EnableFrameTimingStats = FindPropertyAssert("enableFrameTimingStats");
+            m_EnableOpenGLProfilerGPURecorders = FindPropertyAssert("enableOpenGLProfilerGPURecorders");
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
@@ -930,7 +942,7 @@ namespace UnityEditor
 
         private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
         {
-            return buildTarget == NamedBuildTarget.Standalone || buildTarget == NamedBuildTarget.Android;
+            return buildTarget == NamedBuildTarget.Standalone;
         }
 
         private void OnPresetSelectorClosed()
@@ -1247,7 +1259,6 @@ namespace UnityEditor
                     if (namedBuildTarget == NamedBuildTarget.Standalone)
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
-                        EditorGUILayout.PropertyField(m_CaptureSingleScreen);
 
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
 
@@ -2047,7 +2058,7 @@ namespace UnityEditor
                 int selectedValue = m_ActiveColorSpace.enumValueIndex;
                 EditorGUILayout.PropertyField(m_ActiveColorSpace, SettingsContent.activeColorSpace);
 
-                if (EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck() && IsActivePlayerSettingsEditor())
                 {
                     if (m_ActiveColorSpace.enumValueIndex != selectedValue && EditorUtility.DisplayDialog("Changing Color Space", SettingsContent.changeColorSpaceString, $"Change to {(ColorSpace)m_ActiveColorSpace.enumValueIndex}", "Cancel"))
                     {
@@ -2468,8 +2479,8 @@ namespace UnityEditor
                 // Tickbox for Frame Timing Stats.
                 if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.WebGL || (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics()))
                 {
-                    PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
-                    if (PlayerSettings.enableFrameTimingStats)
+                    EditorGUILayout.PropertyField(m_EnableFrameTimingStats, SettingsContent.enableFrameTimingStats);
+                    if (m_EnableFrameTimingStats.boolValue)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOnGPURecordersOffInfo.text, MessageType.Info);
                     }
@@ -2478,12 +2489,12 @@ namespace UnityEditor
                 // Tickbox for OpenGL-only option to toggle Profiler GPU Recorders.
                 if (platform.namedBuildTarget == NamedBuildTarget.Standalone || platform.namedBuildTarget == NamedBuildTarget.Android || platform.namedBuildTarget == NamedBuildTarget.EmbeddedLinux  || platform.namedBuildTarget == NamedBuildTarget.QNX)
                 {
-                    PlayerSettings.enableOpenGLProfilerGPURecorders = EditorGUILayout.Toggle(SettingsContent.enableOpenGLProfilerGPURecorders, PlayerSettings.enableOpenGLProfilerGPURecorders);
+                    EditorGUILayout.PropertyField(m_EnableOpenGLProfilerGPURecorders, SettingsContent.enableOpenGLProfilerGPURecorders);
 
                     // Add different notes/warnings depending on the tickbox combinations.
                     // These concern Frame Timing Stats as well as Profiler GPU Recorders,
                     // so are listed below both to (hopefully) highlight that they're linked.
-                    if (PlayerSettings.enableOpenGLProfilerGPURecorders)
+                    if (m_EnableOpenGLProfilerGPURecorders.boolValue)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.openGLFrameTimingStatsOffGPURecordersOnInfo.text, MessageType.Info);
                     }
@@ -2492,29 +2503,29 @@ namespace UnityEditor
                 if (hdrDisplaySupported)
                 {
                     bool requestRepaint = false;
-                    bool oldAllowHDRDisplaySupport = PlayerSettings.allowHDRDisplaySupport;
-                    PlayerSettings.allowHDRDisplaySupport = EditorGUILayout.Toggle(SettingsContent.allowHDRDisplay, oldAllowHDRDisplaySupport);
-                    if (oldAllowHDRDisplaySupport != PlayerSettings.allowHDRDisplaySupport)
+                    bool oldAllowHDRDisplaySupport = m_AllowHDRDisplaySupport.boolValue;
+                    EditorGUILayout.PropertyField(m_AllowHDRDisplaySupport, SettingsContent.allowHDRDisplay);
+                    if (oldAllowHDRDisplaySupport != m_AllowHDRDisplaySupport.boolValue)
                         requestRepaint = true;
 
-                    using (new EditorGUI.DisabledScope(!PlayerSettings.allowHDRDisplaySupport))
+                    using (new EditorGUI.DisabledScope(!m_AllowHDRDisplaySupport.boolValue))
                     {
                         using (new EditorGUI.IndentLevelScope())
                         {
-                            bool oldUseHDRDisplay = PlayerSettings.useHDRDisplay;
-                            PlayerSettings.useHDRDisplay = EditorGUILayout.Toggle(SettingsContent.useHDRDisplay, oldUseHDRDisplay);
+                            bool oldUseHDRDisplay = m_UseHDRDisplay.boolValue;
+                            EditorGUILayout.PropertyField(m_UseHDRDisplay, SettingsContent.useHDRDisplay);
 
-                            if (oldUseHDRDisplay != PlayerSettings.useHDRDisplay)
+                            if (oldUseHDRDisplay != m_UseHDRDisplay.boolValue)
                                 requestRepaint = true;
 
                             if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone || platform.namedBuildTarget == NamedBuildTarget.WindowsStoreApps || platform.namedBuildTarget == NamedBuildTarget.iOS)
                             {
-                                using (new EditorGUI.DisabledScope(!PlayerSettings.useHDRDisplay))
+                                using (new EditorGUI.DisabledScope(!m_UseHDRDisplay.boolValue))
                                 {
                                     using (new EditorGUI.IndentLevelScope())
                                     {
                                         EditorGUI.BeginChangeCheck();
-                                        HDRDisplayBitDepth oldBitDepth = PlayerSettings.hdrBitDepth;
+                                        HDRDisplayBitDepth oldBitDepth = (HDRDisplayBitDepth)m_HDRBitDepth.intValue;
                                         HDRDisplayBitDepth[] bitDepthValues = { HDRDisplayBitDepth.BitDepth10, HDRDisplayBitDepth.BitDepth16 };
                                         GUIContent hdrBitDepthLabel = EditorGUIUtility.TrTextContent("Swap Chain Bit Depth", "Affects the bit depth of the final swap chain format and color space.");
                                         GUIContent[] hdrBitDepthNames = { EditorGUIUtility.TrTextContent("Bit Depth 10"), EditorGUIUtility.TrTextContent("Bit Depth 16") };
@@ -2522,7 +2533,7 @@ namespace UnityEditor
                                         HDRDisplayBitDepth bitDepth = BuildEnumPopup(hdrBitDepthLabel, oldBitDepth, bitDepthValues, hdrBitDepthNames);
                                         if (EditorGUI.EndChangeCheck())
                                         {
-                                            PlayerSettings.hdrBitDepth = bitDepth;
+                                            m_HDRBitDepth.intValue = (int)bitDepth;
                                             if (oldBitDepth != bitDepth)
                                                 requestRepaint = true;
                                         }
@@ -2532,7 +2543,7 @@ namespace UnityEditor
                         }
                     }
 
-                    if (PlayerSettings.allowHDRDisplaySupport && GraphicsSettings.currentRenderPipeline != null && !SupportedRenderingFeatures.active.supportsHDR)
+                    if (m_AllowHDRDisplaySupport.boolValue && GraphicsSettings.currentRenderPipeline != null && !SupportedRenderingFeatures.active.supportsHDR)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.hdrOutputRequireHDRRenderingWarning.text, MessageType.Info);
                     }
@@ -2725,9 +2736,14 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.vulkanSettingsTitle, EditorStyles.boldLabel);
             if (!IsPreset())
             {
-                PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
+                EditorGUILayout.PropertyField(m_VulkanEnableSetSRGBWrite, SettingsContent.vulkanEnableSetSRGBWrite);
                 EditorGUILayout.PropertyField(m_VulkanNumSwapchainBuffers, SettingsContent.vulkanNumSwapchainBuffers);
-                PlayerSettings.vulkanNumSwapchainBuffers = (UInt32)m_VulkanNumSwapchainBuffers.intValue;
+
+                // Not a No-OP, VulkanNumSwapchainBuffers has native work that should run when active setting changes.
+                if (IsActivePlayerSettingsEditor())
+                {
+                    PlayerSettings.vulkanNumSwapchainBuffers = m_VulkanNumSwapchainBuffers.uintValue;
+                }
             }
             EditorGUILayout.PropertyField(m_VulkanEnableLateAcquireNextImage, SettingsContent.vulkanEnableLateAcquireNextImage);
             EditorGUILayout.PropertyField(m_VulkanEnableCommandBufferRecycling, SettingsContent.vulkanEnableCommandBufferRecycling);

@@ -307,7 +307,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Application.DisplayDialog("assetCacheLocationChanged",
                         L10n.Tr("Assets Cache location changed"),
                         L10n.Tr("The Assets Cache location has been changed, all current downloads will be canceled."),
-                        L10n.Tr("Ok"));
+                        L10n.Tr("OK"));
 
                 AbortAllDownloads();
             }

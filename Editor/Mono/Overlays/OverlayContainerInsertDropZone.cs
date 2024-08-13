@@ -30,7 +30,7 @@ namespace UnityEditor.Overlays
             base.BeginHover();
 
             targetContainer.GetSectionElement(GetSection()).Add(insertIndicator);
-            insertIndicator.Setup(targetContainer.isHorizontal, true);
+            insertIndicator.Setup(targetContainer.isHorizontal, targetContainer is ToolbarOverlayContainer, true); //Horizontal container has vertical insert indicators
         }
 
         public override void EndHover()

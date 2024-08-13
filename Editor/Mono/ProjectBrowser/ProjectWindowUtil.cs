@@ -1051,7 +1051,7 @@ namespace UnityEditor
             bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets")) >= 0;
             if (foundAssetsFolder)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("Ok"));
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("OK"));
                 return false;
             }
 
@@ -1147,7 +1147,7 @@ namespace UnityEditor
                     L10n.Tr("Some assets could not be deleted.\nMake sure you are connected to your Version Control server or \"Work Offline\" is enabled.") :
                     L10n.Tr("Some assets could not be deleted.\nMake sure nothing is keeping a hook on them, like a loaded DLL for example.");
 
-                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), message, L10n.Tr("Ok"));
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), message, L10n.Tr("OK"));
             }
 
             PackageManager.Client.Resolve(false);

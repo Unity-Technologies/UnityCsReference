@@ -96,12 +96,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (installedVersion == null)
                 return FeatureState.None;
 
-            var isNonLifecycleVersionInstalled = package.versions.isNonLifecycleVersionInstalled;
+            var recommendedVersionExistsButNotInstalled = package.versions.recommended?.isInstalled == false;
             // User manually decide to install a different version
-            if ((installedVersion.isDirectDependency && isNonLifecycleVersionInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
+            if ((installedVersion.isDirectDependency && recommendedVersionExistsButNotInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
                 return FeatureState.Customized;
             // The installed version is changed by the SAT solver, not overridden by user
-            if (isNonLifecycleVersionInstalled)
+            if (recommendedVersionExistsButNotInstalled)
                 return FeatureState.Info;
 
             return FeatureState.None;
@@ -127,7 +127,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             dependencyList.Clear();
             foreach (var dependency in version.dependencies)
             {
-                var packageVersion = m_PackageDatabase.GetLifecycleOrPrimaryVersion(dependency.name);
+                var dependencyPackage = m_PackageDatabase.GetPackage(dependency.name);
+                var packageVersion = dependencyPackage?.versions.recommended ?? dependencyPackage?.versions.primary;
                 var featureState = GetFeatureState(packageVersion);
 
                 var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureState) : new FeatureDependencyItem(dependency.name);
@@ -149,19 +150,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshSelection(IPackageVersion version = null)
         {
-            var selectedDependencyPackageId = m_PackageManagerPrefs.selectedFeatureDependency;
+            var selectedDependencyPackageName = m_PackageManagerPrefs.selectedFeatureDependency;
             if (version == null)
             {
                 var dependencies = m_FeatureVersion?.dependencies;
                 if (dependencies?.Any() != true)
                     return;
 
-                if (string.IsNullOrEmpty(selectedDependencyPackageId) || !dependencies.Any(d => d.name == selectedDependencyPackageId))
+                if (string.IsNullOrEmpty(selectedDependencyPackageName) || !dependencies.Any(d => d.name == selectedDependencyPackageName))
                 {
-                    selectedDependencyPackageId = dependencies[0].name;
-                    m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageId;
+                    selectedDependencyPackageName = dependencies[0].name;
+                    m_PackageManagerPrefs.selectedFeatureDependency = selectedDependencyPackageName;
                 }
-                version = m_PackageDatabase.GetLifecycleOrPrimaryVersion(selectedDependencyPackageId);
+                var dependencyPackage = m_PackageDatabase.GetPackage(selectedDependencyPackageName);
+                version = dependencyPackage?.versions.recommended ?? dependencyPackage?.versions.primary;
             }
 
             // If the package is not installed and not discoverable, we have to display the package's ID name (ex: com.unity.adaptiveperformance.samsung.android)
@@ -173,9 +175,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(dependencyInfoBox, showElementsInDetailsView);
 
             foreach (var item in dependencyList.Children().OfType<FeatureDependencyItem>())
-                item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageId);
+                item.EnableInClassList(k_SelectedClassName, item.packageName == selectedDependencyPackageName);
 
-            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageId;
+            dependencyTitle.value = version?.displayName ?? selectedDependencyPackageName;
             dependencyDesc.value =  version?.description ?? L10n.Tr("This package will be automatically installed with this feature.");
 
             if (!showElementsInDetailsView)

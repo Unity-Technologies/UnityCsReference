@@ -156,7 +156,7 @@ namespace Unity.UI.Builder
         {
             var target = evt.elementTarget;
             var bindingAttribute = attributeName;
-            fieldsContainer.schedule.Execute(() =>
+            attributesContainer.schedule.Execute(() =>
             {
                 UpdateAttribute(target, bindingAttribute);
 
@@ -238,7 +238,7 @@ namespace Unity.UI.Builder
         /// <inheritdoc/>
         protected override void GenerateUxmlTraitsAttributeFields()
         {
-            GenerateDataBindingFields(fieldsContainer);
+            GenerateDataBindingFields(attributesContainer);
             UpdateControls();
         }
 
@@ -247,7 +247,7 @@ namespace Unity.UI.Builder
         {
             var path = bindingSerializedPropertyRootPath ?? serializedRootPath;
             var root = new UxmlAssetSerializedDataRoot { dataDescription = uxmlSerializedDataDescription, rootPath = path, classList = { InspectorElement.ussClassName }};
-            fieldsContainer.Add(root);
+            attributesContainer.Add(root);
             GenerateDataBindingFields(root);
         }
 
@@ -525,7 +525,7 @@ namespace Unity.UI.Builder
         {
             if (m_UpdateControlsScheduledItem == null)
             {
-                m_UpdateControlsScheduledItem = fieldsContainer.schedule.Execute(UpdateControls);
+                m_UpdateControlsScheduledItem = attributesContainer.schedule.Execute(UpdateControls);
             }
             else
             {

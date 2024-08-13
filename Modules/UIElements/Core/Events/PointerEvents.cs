@@ -290,21 +290,21 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// This is the base class for pointer events.
+    /// Base class for all pointer-related events.
     /// </summary>
     /// <remarks>
-    /// Pointer events are sent by the mouse, touchscreen, or digital pens.
+    /// Pointer events are sent when a user interacts with the mouse, touchscreen, or digital pens.
     ///
-    /// By default, pointer events trickle down the hierarchy of VisualElements, and then bubble up
+    /// By default, pointer events trickle down the hierarchy of visual elements and then bubble up
     /// back to the root.
     ///
     /// A cycle of pointer events occurs as follows:
-    ///   - The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
-    ///   - If the user changes the pointer's state, a <see cref="PointerMoveEvent"/> is sent. Many PointerMove events can be sent.
-    ///   - If the user doesn't change the pointer's state for a specific amount of time, a <see cref="PointerStationaryEvent"/> is sent.
-    ///   - If the user cancels the loop, a <see cref="PointerCancelEvent"/> is sent.
-    ///   - If the user doesn't cancel the loop, and either releases the last button pressed or releases the last touch, a <see cref="PointerUpEvent"/> is sent.
-    ///   - If the initial PointerDownEvent and the PointerUpEvent occur on the same VisualElement, a <see cref="ClickEvent"/> is sent.
+    /// 
+    ///- The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
+    ///- If the user changes the pointer's state, a <see cref="PointerMoveEvent"/> is sent. Multiple PointerMove events are sent if multiple properties of the pointer change.
+    ///- If the user cancels the loop, a <see cref="PointerCancelEvent"/> is sent.
+    ///- If the user doesn't cancel the loop, and either releases the last button pressed or releases the last touch, a <see cref="PointerUpEvent"/> is sent.
+    ///- If the initial <see cref="PointerDownEvent"/> and the <see cref="PointerUpEvent"/> occur on the same visual element, a <see cref="ClickEvent"/> is sent.
     ///
     /// </remarks>
     [EventCategory(EventCategory.Pointer)]
@@ -1199,17 +1199,83 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// This event is sent when a pointer is pressed.
+    /// Sends when a pointer is pressed inside a visual element.
     /// </summary>
     /// <remarks>
-    /// A PointerDownEvent is sent the first time a finger touches the screen or a mouse button is
-    /// pressed. Additional button presses and touches with additional fingers trigger PointerMoveEvents.
+    /// In a runtime UI, a @@PointerDownEvent@@ is sent each time a user touches the screen or presses a mouse button. 
+    /// </remarks>
+    /// <remarks>
+    /// In an Editor UI, a @@PointerDownEvent@@ is sent when a user initially touches the screen or presses a mouse button. However, 
+    /// If the user presses additional mouse buttons (right or middle) without releasing the initial one, the [[PointerMoveEvents]] is 
+    /// sent not the @@PointerDownEvent@@. Releasing all mouse buttons and pressing a mouse button again sends a new @@PointerDownEvent@@.
+    /// </remarks>
+    /// <remarks>
+    /// A @@PointerDownEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up, 
+    /// and is cancellable.
+    /// </remarks>
+    /// <remarks>
+    /// Disabled elements don't receive this event.
+    /// </remarks>
+    /// <remarks>
+    /// For information about how the @@PointerDownEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/> 
+    /// and [[wiki:UIE-Pointer-Events|Pointer events]].
+    /// </remarks>
+    /// <example>
+    /// <code lang="cs">
+    /// <![CDATA[
+    /// // This example creates a ClickDetector class to detect a click sequence.
+    /// 
+    /// namespace UnityEngine.UIElements
+    /// {
+    ///     public class ClickDetector : VisualElement
+    ///     {
+    ///         public ClickDetector()
+    ///         {
+    ///             RegisterCallback<PointerDownEvent>(ProcessEvent);
+    ///             RegisterCallback<PointerMoveEvent>(ProcessEvent);
+    ///             RegisterCallback<PointerUpEvent>(ProcessEvent);
+    ///         }
+    ///         private void ProcessEvent<TEvent>(PointerEventBase<TEvent> evt)
+    ///             where TEvent : PointerEventBase<TEvent>, new()
+    ///         {
+    ///             if (evt.eventTypeId == PointerDownEvent.TypeId() && evt.button == 0)
+    ///             {
+    ///                 StartClickTracking(evt);
+    ///             }
+    ///             else if (evt.eventTypeId == PointerMoveEvent.TypeId())
+    ///             {
+    ///                 // Button 1 was pressed while another button was already pressed.
+    ///                 if (evt.button == 0 && (evt.pressedButtons & 1) == 1)
+    ///                 {
+    ///                     StartClickTracking(evt);
+    ///                 }
+    ///                 // Button 1 is released while another button is still pressed.
+    ///                 else if (evt.button == 0 && (evt.pressedButtons & 1) == 0)
+    ///                 {
+    ///                     SendClickEvent(evt);
+    ///                 }
+    ///                 // Pointer movement detected or button state changed.
+    ///                 else
+    ///                 {
+    ///                     UpdateClickStatus(evt);
+    ///                 }
+    ///             }
+    ///             else if (evt.eventTypeId == PointerUpEvent.TypeId() && evt.button == 0)
+    ///             {
+    ///                 SendClickEvent(evt);
+    ///             }
+    ///         }
     ///
-    /// A PointerDownEvent uses the default pointer event propagation path: it trickles down, bubbles up and
-    /// can be cancelled.
-    /// Disabled elements won't receive this event by default.
-    ///
-    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerDownEvent relates to other pointer events.
+    ///         private void StartClickTracking(IPointerEvent evt) { Debug.Log("Starting click sequence"); }
+    ///         private void UpdateClickStatus(IPointerEvent evt) { Debug.Log("Tracking"); }
+    ///         private void SendClickEvent(IPointerEvent evt) { Debug.Log("Completed click"); }
+    ///     }
+    /// }
+    /// ]]>
+    /// </code>
+    /// </example>
+    /// <remarks>
+    /// SA: [[PointerMoveEvent]], [[PointerUpEvent]], [[PointerCancelEvent]]
     /// </remarks>
     [EventCategory(EventCategory.PointerDown)]
     public sealed class PointerDownEvent : PointerEventBase<PointerDownEvent>
@@ -1265,14 +1331,19 @@ namespace UnityEngine.UIElements
     /// This event is sent when a pointer changes state.
     /// </summary>
     /// <remarks>
-    /// The state of a pointer changes when one or more of its properties changes after a <see cref="PointerDownEvent"/> but before a
-    /// <see cref="PointerUpEvent"/>. For example if its position or pressure change, or a different button is pressed.
-    ///
-    /// A PointerMoveEvent uses the default pointer event propagation path: it trickles down, bubbles up and
-    /// can be cancelled.
-    /// Disabled elements receive this event by default.
-    ///
-    /// See <see cref="UIElements.PointerEventBase{T}"/> to see how PointerMoveEvent relates to other pointer events.
+    /// The state of a pointer changes when one or more of its properties change, such as the mouse button pressure changes, 
+    /// or a different mouse button is pressed.
+    /// </remarks>
+    /// <remarks>
+    /// A @@PointerMoveEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up, 
+    /// and is cancellable.
+    /// </remarks>
+    /// <remarks>
+    /// Disabled elements don't receive this event.
+    /// </remarks>
+    /// <remarks>
+    /// For information about how the @@PointerMoveEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/> 
+    /// and [[wiki:UIE-Pointer-Events|Pointer events]].
     /// </remarks>
     [EventCategory(EventCategory.PointerMove)]
     public sealed class PointerMoveEvent : PointerEventBase<PointerMoveEvent>

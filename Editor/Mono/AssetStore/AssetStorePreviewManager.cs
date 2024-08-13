@@ -107,7 +107,7 @@ namespace UnityEditor
 
         public static string StatsString()
         {
-            return string.Format("Reqs: {0}, Ok: {1}, Abort: {2}, CacheDel: {3}, Cache: {4}/{5}, CacheHit: {6}",
+            return string.Format("Reqs: {0}, OK: {1}, Abort: {2}, CacheDel: {3}, Cache: {4}/{5}, CacheHit: {6}",
                 Instance.Requested, Instance.m_Success, Instance.m_Aborted, Instance.m_CacheRemove,
                 AssetStorePreviewManager.CachedAssetStoreImages.Count,
                 Instance.m_MaxCachedAssetStoreImages,

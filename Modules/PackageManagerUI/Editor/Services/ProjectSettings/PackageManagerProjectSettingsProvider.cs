@@ -16,8 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected VisualTreeAsset m_GeneralTemplate;
 
         private static readonly string k_Message = L10n.Tr(
-            "Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. \n" +
-            "We recommend using these only for testing purposes and to give us direct feedback until then.");
+            "Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
 
         private IResourceLoader m_ResourceLoader;
         private IProjectSettingsProxy m_SettingsProxy;
@@ -96,7 +95,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         var saveIt = true;
                         if (newValue && !m_SettingsProxy.oneTimeWarningShown)
                         {
-                            if (m_Application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show pre-release packages"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
+                            if (m_Application.DisplayDialog("showPreReleasePackages", L10n.Tr("Show Pre-release Package Versions"), k_Message, L10n.Tr("I understand"), L10n.Tr("Cancel")))
                                 m_SettingsProxy.oneTimeWarningShown = true;
                             else
                                 saveIt = false;

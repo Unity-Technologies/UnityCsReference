@@ -28,8 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             else if (version.HasTag(PackageTag.PreRelease))
             {
-                text = L10n.Tr("Pre-release packages are in the process of becoming stable and will be available as production-ready by the end of this LTS release. " +
-                               "We recommend using these only for testing purposes and to give us direct feedback until then.");
+                text = L10n.Tr("Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
                 m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
                 UIUtils.SetElementDisplay(this, true);
             }

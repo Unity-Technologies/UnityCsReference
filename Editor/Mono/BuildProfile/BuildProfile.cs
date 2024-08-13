@@ -19,6 +19,7 @@ namespace UnityEditor.Build.Profile
     [StructLayout(LayoutKind.Sequential)]
     [ExcludeFromObjectFactory]
     [ExcludeFromPreset]
+    [HelpURL("build-profiles-reference")]
     public sealed partial class BuildProfile : ScriptableObject
     {
         /// <summary>
@@ -127,6 +128,9 @@ namespace UnityEditor.Build.Profile
             set { m_PlayerSettings = value; }
         }
 
+        [VisibleToOtherModules]
+        internal Action OnPlayerSettingsUpdatedFromYAML;
+
         // TODO: Return server IBuildTargets for server build profiles. (https://jira.unity3d.com/browse/PLAT-6612)
         /// <summary>
         /// Get the IBuildTarget of the build profile.
@@ -202,14 +206,10 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
-            RemovePlayerSettings();
-
-            // Active profile YAML may be read from disk during startup or
-            // Asset Database refresh, flush pending changes to disk.
-            if (BuildProfileContext.instance.activeProfile != this)
-                return;
-
-            AssetDatabase.SaveAssetIfDirty(this);
+            // OnDisable is called when entering play mode, during domain reloads, or when the object is destroyed.
+            // Avoid removing player settings for the first two cases to prevent slow syncs (e.g., color space) caused by global manager updates.
+            if (!EditorApplication.isUpdating)
+                RemovePlayerSettings();
         }
 
         [MenuItem("CONTEXT/BuildProfile/Reset", false)]

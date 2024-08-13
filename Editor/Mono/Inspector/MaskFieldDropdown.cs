@@ -24,7 +24,7 @@ namespace UnityEditor
 
         SelectionModes[] m_SelectionMatch;
         string[] m_OptionNames;
-        int[] m_flagValues;
+        int[] m_FlagValues;
         int[] m_OptionMaskValues;
         int[] m_SelectionMaskValues;
 
@@ -56,14 +56,14 @@ namespace UnityEditor
             m_OptionMaskValues = (int[])optionMaskValues.Clone();
             m_OptionNames = (string[])optionNames.Clone();
 
-            m_flagValues = new int[optionNames.Length];
-            m_flagValues[0] = 0;
-            m_flagValues[1] = -1;
+            m_FlagValues = new int[optionNames.Length];
+            m_FlagValues[0] = 0;
+            m_FlagValues[1] = -1;
 
             if (flagValues == null)
             {
-                for (int i = 2; i < m_flagValues.Length; ++i)
-                    m_flagValues[i] = (1 << i);
+                for (int i = 2; i < m_FlagValues.Length; ++i)
+                    m_FlagValues[i] = (1 << i);
             }
             else
             {
@@ -79,7 +79,7 @@ namespace UnityEditor
                 if (flagValues[flagValues.Length - 1] == ~0)
                     length--;
 
-                Array.Copy(flagValues, index, m_flagValues, 2, length);
+                Array.Copy(flagValues, index, m_FlagValues, 2, length);
             }
 
             m_SelectionMatch = new SelectionModes[] { SelectionModes.All };
@@ -103,7 +103,7 @@ namespace UnityEditor
 
         public override Vector2 GetWindowSize()
         {
-            var rowCount = m_OptionNames[0] == "Nothing" ? m_OptionNames.Length : m_OptionNames.Length + 2;
+            var rowCount = m_FlagValues == null ? m_OptionNames.Length + 2 : m_OptionNames.Length;
             return new Vector2(m_windowSize, (EditorGUI.kSingleLineHeight + 2) * rowCount);
         }
 
@@ -159,7 +159,7 @@ namespace UnityEditor
                 {
                     m_SelectionMaskValues[0] = m_OptionMaskValues[i];
                     var oldMaskValues = (uint[])m_OptionMaskValues.Clone();
-                    MaskFieldGUI.CalculateMaskValues(m_SelectionMaskValues[0], m_flagValues, ref m_OptionMaskValues);
+                    MaskFieldGUI.CalculateMaskValues(m_SelectionMaskValues[0], m_FlagValues, ref m_OptionMaskValues);
 
                     // If all flag options are selected the mask becomes everythingValue to be consistent with the "Everything" option
                     // oldMaskValues[i] == (uint)m_AllLayersMask && i == 0 && m_OptionNames[0] != "Nothing" is for case when we clicked nothing and only have the first layer defined.

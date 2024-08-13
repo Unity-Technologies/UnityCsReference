@@ -634,6 +634,26 @@ namespace UnityEditor.Build.Profile
             return string.Empty;
         }
 
+        [RequiredByNativeCode]
+        static bool HasActiveProfileWithPlayerSettings(out int instanceID)
+        {
+            var activeProfile = instance.activeProfile;
+            if (activeProfile?.playerSettings != null)
+            {
+                instanceID = activeProfile.GetInstanceID();
+                return true;
+            }
+
+            instanceID = 0;
+            return false;
+        }
+
+        [RequiredByNativeCode]
+        static void UpdateActiveProfilePlayerSettingsObjectFromYAML()
+        {
+            instance.activeProfile?.UpdatePlayerSettingsObjectFromYAML();
+        }
+
         static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget, string sharedSetting = null)
         {
             if (!string.IsNullOrEmpty(sharedSetting))

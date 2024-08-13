@@ -11,7 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     {
         public static UpmVersionList GetFilteredVersionList(UpmVersionList versionList, bool seeAllVersions, bool showPreRelease)
         {
-            // Only filter on Lifecycle tags if is a Unity package and the `seeAllVersions` option is not checked
             if (seeAllVersions || versionList.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
                 return versionList;
 
@@ -36,7 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
             if (numVersionsFilteredOut <= 0)
                 return versionList;
-            return new UpmVersionList(filteredVersions, versionList.lifecycleVersionString, versionList.lifecycleNextVersion);
+            return new UpmVersionList(filteredVersions, versionList.recommended?.versionString);
         }
 
         public static UpmVersionList UnloadVersionsIfNeeded(UpmVersionList versionList, bool loadAllVersions)
@@ -50,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var numVersionsToUnload = numTotalVersions - keyVersions.Length;
             if (numVersionsToUnload <= 0)
                 return versionList;
-            return new UpmVersionList(keyVersions, versionList.lifecycleVersionString, versionList.lifecycleNextVersion, numVersionsToUnload);
+            return new UpmVersionList(keyVersions, versionList.recommended?.versionString, numVersionsToUnload);
         }
     }
 }

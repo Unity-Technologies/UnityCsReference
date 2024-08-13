@@ -1615,7 +1615,7 @@ namespace UnityEditor
             if (SavedSearchFilters.GetRootInstanceID() == filterInstanceID)
             {
                 string title = "Cannot Delete";
-                EditorUtility.DisplayDialog(title, "Deleting the 'Filters' root is not allowed", "Ok");
+                EditorUtility.DisplayDialog(title, "Deleting the 'Filters' root is not allowed", "OK");
             }
             else
             {
@@ -1711,12 +1711,12 @@ namespace UnityEditor
                 {
                     if (ShouldDiscardCommandsEventsForImmutablePackages())
                     {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr(string.Format(k_ImmutableSelectionActionFormat, Event.current.commandName)), L10n.Tr("Ok"));
+                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr(string.Format(k_ImmutableSelectionActionFormat, Event.current.commandName)), L10n.Tr("OK"));
                         return;
                     }
                     if (ShouldDiscardCommandsEventsForRootFolders())
                     {
-                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting a root folder is not allowed."), L10n.Tr("Ok"));
+                        EditorUtility.DisplayDialog(L10n.Tr("Invalid Operation"), L10n.Tr("Deleting a root folder is not allowed."), L10n.Tr("OK"));
                         return;
                     }
                 }

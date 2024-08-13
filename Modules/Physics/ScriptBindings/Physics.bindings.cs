@@ -1067,20 +1067,6 @@ namespace UnityEngine
         internal static extern void DisconnectPhysicsSDKVisualDebugger();
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Collider ResolveShapeToCollider(IntPtr shapePtr);
-
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Component ResolveActorToComponent(IntPtr actorPtr);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern int ResolveShapeToInstanceID(IntPtr shapePtr);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern int ResolveActorToInstanceID(IntPtr actorPtr);
-
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         extern internal static Collider GetColliderByInstanceID(int instanceID);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
@@ -1088,15 +1074,7 @@ namespace UnityEngine
 
         [ThreadSafe]
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         internal static extern uint TranslateTriangleIndexFromID(int instanceID, uint faceIndex);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern bool IsShapeTrigger(IntPtr shapePtr);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         private static extern void SendOnCollisionEnter(Component component, Collision collision);
@@ -1104,13 +1082,5 @@ namespace UnityEngine
         private static extern void SendOnCollisionStay(Component component,  Collision collision);
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
         private static extern void SendOnCollisionExit(Component component,  Collision collision);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Vector3 GetActorLinearVelocity(IntPtr actorPtr);
-
-        [ThreadSafe]
-        [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Vector3 GetActorAngularVelocity(IntPtr actorPtr);
     }
 }

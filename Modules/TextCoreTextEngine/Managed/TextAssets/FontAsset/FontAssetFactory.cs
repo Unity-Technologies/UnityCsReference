@@ -3,28 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text;
+#nullable enable
 
 internal class FontAssetFactory
 {
     const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
     static readonly HashSet<FontAsset> visitedFontAssets = new();
 
-    public static FontAsset CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, float fontSize)
+    public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, float fontSize)
     {
         visitedFontAssets.Clear();
         return CloneFontAssetWithBitmapRenderingInternal(baseFontAsset, fontSize);
     }
 
-    static FontAsset CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, float fontSize)
+    static FontAsset? CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, float fontSize)
     {
         visitedFontAssets.Add(baseFontAsset);
-        FontAsset resultFontAsset = CloneFontAssetWithBitmapSettings(baseFontAsset, fontSize);
+        FontAsset? resultFontAsset = CloneFontAssetWithBitmapSettings(baseFontAsset, fontSize);
 
-        if (resultFontAsset)
+        if (resultFontAsset != null)
         {
             ProcessFontWeights(resultFontAsset, baseFontAsset, fontSize);
             ProcessFallbackFonts(resultFontAsset, baseFontAsset, fontSize);
@@ -33,28 +33,31 @@ internal class FontAssetFactory
         return resultFontAsset;
     }
 
-    static FontAsset CloneFontAssetWithBitmapSettings(FontAsset source, float size)
+    static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, float size)
     {
         bool shouldInstantiate = source.atlasRenderMode != GlyphRenderMode.SDFAA || !source.IsEditorFont || source.sourceFontFile == null;
-        FontAsset newFontAsset;
+        FontAsset? newFontAsset;
 
         if (source.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
         {
             newFontAsset = FontAsset.CreateFontAsset(source.faceInfo.familyName, source.faceInfo.styleName, size, 6, k_DefaultEditorBitmapGlyphRenderMode);
-            SetupFontAssetForBitmapSettings(newFontAsset);
+            if(newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
         }
         else if (shouldInstantiate) // Color Glyph or Empty Container
         {
             newFontAsset = Object.Instantiate(source);
-            newFontAsset.fallbackFontAssetTable = new List<FontAsset>();
-            newFontAsset.m_IsClone = true;
-            newFontAsset.IsEditorFont = true;
-            SetHideFlags(newFontAsset);
+            if (newFontAsset != null)
+            {
+                newFontAsset.fallbackFontAssetTable = new List<FontAsset>();
+                newFontAsset.m_IsClone = true;
+                newFontAsset.IsEditorFont = true;
+                SetHideFlags(newFontAsset);
+            }
         }
         else
         {
             newFontAsset = FontAsset.CreateFontAsset(source.sourceFontFile, size, 6, k_DefaultEditorBitmapGlyphRenderMode, source.atlasWidth, source.atlasHeight);
-            SetupFontAssetForBitmapSettings(newFontAsset);
+            if (newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
         }
 
         return newFontAsset;
@@ -97,70 +100,82 @@ internal class FontAssetFactory
         static readonly string k_SystemFontName =
             "Lucida Grande"
         ;
-    internal static FontAsset CreateDefaultEditorFontAsset(Font font, Shader shader)
+    internal static FontAsset? CreateDefaultEditorFontAsset(Font font, Shader shader)
     {
-        FontAsset fontAsset;
+        if(font == null)
+            return null;
+
+        FontAsset? fontAsset=null;
         if (font.name == "System Normal" || font.name == "System Small" || font.name == "System Big" || font.name == "System Warning")
         {
             fontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Regular", 90);
-            fontAsset.InternalDynamicOS = true;
-
-            var boldFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold", 90);
-            if (boldFontAsset)
+            if (fontAsset != null)
             {
-                boldFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
-                SetupFontAssetSettings(boldFontAsset, shader);
-            }
+                fontAsset.InternalDynamicOS = true;
 
-            var boldItalicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold Italic", 90);
-            if (boldItalicFontAsset)
-            {
-                boldItalicFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
-                SetupFontAssetSettings(boldItalicFontAsset, shader);
-            }
+                var boldFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold", 90);
+                if (boldFontAsset != null)
+                {
+                    boldFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
+                    SetupFontAssetSettings(boldFontAsset, shader);
+                }
 
-            var italicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Italic", 90);
-            if (italicFontAsset)
-            {
-                italicFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
-                SetupFontAssetSettings(italicFontAsset, shader);
+                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold Italic", 90);
+                if (boldItalicFontAsset != null)
+                {
+                    boldItalicFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
+                    SetupFontAssetSettings(boldItalicFontAsset, shader);
+                }
+
+                var italicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Italic", 90);
+                if (italicFontAsset != null)
+                {
+                    italicFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
+                    SetupFontAssetSettings(italicFontAsset, shader);
+                }
             }
         }
         else if (font.name == "System Normal Bold" || font.name == "System Small Bold")
         {
             fontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold", 90);
-            fontAsset.InternalDynamicOS = true;
+            if (fontAsset != null)
+            {
+                fontAsset.InternalDynamicOS = true;
+            }
         }
         else if (font.name == "Inter-Regular")
         {
             fontAsset = FontAsset.CreateFontAssetInternal("Inter", "Regular", 90);
-            fontAsset.InternalDynamicOS = true;
-
-            var boldFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold", 90);
-            if (boldFontAsset)
+            if (fontAsset != null)
             {
-                boldFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
-                SetupFontAssetSettings(boldFontAsset, shader);
-            }
+                fontAsset.InternalDynamicOS = true;
 
-            var italicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Italic", 90);
-            if (italicFontAsset)
-            {
-                italicFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
-                SetupFontAssetSettings(italicFontAsset, shader);
-            }
+                var boldFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold", 90);
+                if (boldFontAsset != null)
+                {
+                    boldFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
+                    SetupFontAssetSettings(boldFontAsset, shader);
+                }
 
-            var boldItalicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold Italic", 90);
-            if (boldItalicFontAsset)
-            {
-                boldItalicFontAsset.InternalDynamicOS = true;
-                fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
-                SetupFontAssetSettings(boldItalicFontAsset, shader);
+                var italicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Italic", 90);
+                if (italicFontAsset != null)
+                {
+                    italicFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
+                    SetupFontAssetSettings(italicFontAsset, shader);
+                }
+
+                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold Italic", 90);
+                if (boldItalicFontAsset != null)
+                {
+                    boldItalicFontAsset.InternalDynamicOS = true;
+                    fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
+                    SetupFontAssetSettings(boldItalicFontAsset, shader);
+                }
             }
         }
         else
@@ -168,7 +183,8 @@ internal class FontAssetFactory
             fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
         }
 
-        SetupFontAssetSettings(fontAsset, shader);
+        if (fontAsset != null)
+            SetupFontAssetSettings(fontAsset, shader);
 
         return fontAsset;
     }

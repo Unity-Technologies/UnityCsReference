@@ -132,7 +132,7 @@ namespace UnityEditor.Connect.Fallback
         {
             public const string Title = "{0} Installation";
             public const string Message = "You are about to install the latest {0}.\nDo you want to continue?";
-            public const string Yes = "Ok";
+            public const string Yes = "OK";
             public const string No = "Cancel";
         }
     }

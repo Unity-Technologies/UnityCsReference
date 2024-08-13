@@ -290,6 +290,88 @@ namespace UnityEditor
             }
         }
 
+        private static Rect ComputeMeshUVBounds(Mesh mesh)
+        {
+            var vertices = mesh.uv2;
+            if (vertices == null || vertices.Length == 0)
+                vertices = mesh.uv;
+            Vector2 minVert = Vector3.positiveInfinity, maxVert = Vector3.negativeInfinity;
+            foreach (Vector3 vertex in vertices)
+            {
+                if (vertex.x < minVert.x)
+                    minVert.x = vertex.x;
+                if (vertex.y < minVert.y)
+                    minVert.y = vertex.y;
+                if (vertex.x > maxVert.x)
+                    maxVert.x = vertex.x;
+                if (vertex.y > maxVert.y)
+                    maxVert.y = vertex.y;
+            }
+            Rect uvBounds = new Rect(minVert, maxVert - minVert);
+            return uvBounds;
+        }
+
+        private static void HandleUVChartClick(Rect textureRect, GameObject[] renderers)
+        {
+            Vector2 uv = (Event.current.mousePosition - textureRect.position) / textureRect.size;
+            uv.y = 1.0f - uv.y; // Texture coord Y is opposite of UI coord Y.
+
+            GameObject smallestSelectedRenderer = null;
+            float smallestSelectedRendererSize = float.MaxValue;
+
+            foreach (GameObject cachedTextureObject in renderers)
+            {
+                // Each renderer could be either a MeshRenderer or a Terrain. Get the lightmap ST regardless.
+                MeshRenderer meshRenderer = cachedTextureObject.GetComponent<MeshRenderer>();
+                Vector4 lightmapScaleOffset;
+                if (meshRenderer != null)
+                {
+                    lightmapScaleOffset = meshRenderer.lightmapScaleOffset;
+                }
+                else
+                {
+                    Terrain terrain = cachedTextureObject.GetComponent<Terrain>();
+                    if (terrain == null)
+                        continue;
+                    lightmapScaleOffset = terrain.lightmapScaleOffset;
+                }
+
+                // Check if we are in stamp/ST rectangle, which may include padding around the UV layout.
+                Rect stampRectangle = new Rect(lightmapScaleOffset.z, lightmapScaleOffset.w, lightmapScaleOffset.x, lightmapScaleOffset.y);
+                if (stampRectangle.Contains(uv))
+                {
+                    // Scale the stamp rectangle to the pixel rectangle, which tightly bounds the UV layout. (Terrains never have padding)
+                    Rect pixelRectangle = stampRectangle;
+                    if (meshRenderer != null)
+                    {
+                        Rect uvBounds = ComputeMeshUVBounds(meshRenderer.GetComponent<MeshFilter>().sharedMesh);
+                        pixelRectangle.x += uvBounds.x * pixelRectangle.width;
+                        pixelRectangle.y += uvBounds.y * pixelRectangle.height;
+                        pixelRectangle.width *= uvBounds.width;
+                        pixelRectangle.height *= uvBounds.height;
+                    }
+
+                    // If we are inside the pixel rectangle, keep track of the smallest chart with this criteria.
+                    // We don't immediately select the first hit, in order to support overlapping/hole-filling lightmap layouts.
+                    if (pixelRectangle.Contains(uv))
+                    {
+                        float chartSize = pixelRectangle.width * pixelRectangle.height;
+                        if (chartSize < smallestSelectedRendererSize)
+                        {
+                            smallestSelectedRendererSize = chartSize;
+                            smallestSelectedRenderer = cachedTextureObject;
+                        }
+                    }
+                }
+            }
+
+            if (smallestSelectedRenderer != null)
+            {
+                Selection.activeGameObject = smallestSelectedRenderer;
+                EditorGUIUtility.PingObject(smallestSelectedRenderer);
+            }
+        }
+
         private void DrawPreview(Rect r)
         {
             if (r.height <= 0)
@@ -389,8 +471,8 @@ namespace UnityEditor
                     }
                     break;
 
-                // Scale and draw texture and uv's
                 case EventType.Repaint:
+                case EventType.MouseDown:
                 {
                     Texture2D texture = m_CachedTexture.texture;
 
@@ -405,14 +487,23 @@ namespace UnityEditor
                         textureRect.width -= padding * 2;
                         textureRect.height -= padding;
 
-                        // Texture shouldn't be filtered since it will make previewing really blurry
-                        FilterMode prevMode = texture.filterMode;
-                        texture.filterMode = FilterMode.Point;
+                        // Scale and draw texture and uv's
+                        if (Event.current.type == EventType.Repaint)
+                        {
+                            // Texture shouldn't be filtered since it will make previewing really blurry
+                            FilterMode prevMode = texture.filterMode;
+                            texture.filterMode = FilterMode.Point;
 
-                        LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
-                            (m_ShowUVOverlay && IsActiveGameObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
-                            m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType, exposure, useInteractiveLightBakingData);
-                        texture.filterMode = prevMode;
+                            LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
+                                (m_ShowUVOverlay && IsActiveGameObjectInLightmap(textureType)) ? Selection.activeGameObject : null,
+                                m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] { }, drawableArea, textureRect, textureType, exposure, useInteractiveLightBakingData);
+                            texture.filterMode = prevMode;
+                        }
+                        // Handle clicking on a UV chart to select the renderer
+                        else if (Event.current.type == EventType.MouseDown && m_ShowUVOverlay)
+                        {
+                            HandleUVChartClick(textureRect, m_CachedTextureObjects);
+                        }
                     }
                 }
                 break;

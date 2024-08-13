@@ -241,11 +241,27 @@ namespace UnityEditor
         [FreeFunction("GetApplication().GetActiveNativePlatformSupportModuleName")]
         internal static extern string GetActiveNativePlatformSupportModuleName();
 
-        public static extern bool audioMasterMute
+        internal static extern bool Internal_AudioMasterMute
         {
             [FreeFunction("GetAudioManager().GetMasterGroupMute")] get;
             [FreeFunction("GetAudioManager().SetMasterGroupMute")] set;
         }
+
+        public static bool audioMasterMute
+        {
+            get { return Internal_AudioMasterMute; }
+            set
+            {
+                if (value != Internal_AudioMasterMute)
+                {
+                    Internal_AudioMasterMute = value;
+                    onAudioMasterMuteWasUpdated?.Invoke(value);
+                }
+            }
+        }
+
+        internal delegate void AudioMasterMuteWasUpdated(bool value);
+        internal static event AudioMasterMuteWasUpdated onAudioMasterMuteWasUpdated;
 
         internal static extern void LaunchBugReporter();
 

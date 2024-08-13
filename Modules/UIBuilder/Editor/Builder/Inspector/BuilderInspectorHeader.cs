@@ -88,7 +88,7 @@ namespace Unity.UI.Builder
             m_Header.Add(m_DataSourceViewContainer);
             m_DataSourceAndPathView = new BuilderDataSourceAndPathView(m_Inspector)
             {
-                fieldsContainer = m_DataSourceViewContainer,
+                attributesContainer = m_DataSourceViewContainer,
                 onNotifyAttributesChanged = () => m_Inspector.selection.NotifyOfHierarchyChange(m_Inspector)
             };
         }
@@ -170,7 +170,7 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    m_DataSourceAndPathView.refreshScheduledItem = m_DataSourceAndPathView.fieldsContainer.schedule.Execute(() => m_DataSourceAndPathView.Refresh());
+                    m_DataSourceAndPathView.refreshScheduledItem = m_DataSourceAndPathView.attributesContainer.schedule.Execute(() => m_DataSourceAndPathView.Refresh());
                 }
             }
             else

@@ -66,7 +66,9 @@ namespace UnityEditor.Overlays
                 ++index;
 
             parent.Insert(index, insertIndicator);
-            insertIndicator.Setup(m_TargetOverlay.container.isHorizontal,
+
+            //Horizontal container has vertical insert indicators
+            insertIndicator.Setup(m_TargetOverlay.container.isHorizontal, targetContainer is ToolbarOverlayContainer,
                 (dockAfter && m_TargetOverlay.container.GetLastVisible(m_TargetSection) == m_TargetOverlay)
                 || (!dockAfter && m_TargetOverlay.container.GetFirstVisible(m_TargetSection) == m_TargetOverlay));
 

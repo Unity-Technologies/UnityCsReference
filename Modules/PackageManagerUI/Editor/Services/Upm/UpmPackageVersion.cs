@@ -234,23 +234,20 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!HasTag(PackageTag.Unity) || HasTag(PackageTag.Deprecated) || isInvalidSemVerInManifest)
                 return;
 
-            var isLifecycleVersionValid = SemVersionParser.TryParse(packageInfo.unityLifecycle?.version, out var lifecycleVersionParsed);
             if (m_Version?.HasPreReleaseVersionTag() == true)
             {
                 // must match exactly to be release candidate
-                if (m_VersionString == packageInfo.unityLifecycle?.version)
+                if (m_VersionString == packageInfo.versions.recommended)
                     m_Tag |= PackageTag.ReleaseCandidate;
                 else
                     m_Tag |= PackageTag.PreRelease;
             }
-            else if ((version?.Major == 0 && string.IsNullOrEmpty(version?.Prerelease)) ||
-                        m_Version?.IsExperimental() == true ||
-                        "Preview".Equals(version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
+            else if ((m_Version?.Major == 0 && string.IsNullOrEmpty(m_Version?.Prerelease)) ||
+                     m_Version?.IsExperimental() == true ||
+                     "Preview".Equals(m_Version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
                 m_Tag |= PackageTag.Experimental;
-            else if (isLifecycleVersionValid && m_Version?.IsEqualOrPatchOf(lifecycleVersionParsed) == true)
-            {
+            else if (SemVersionParser.TryParse(packageInfo.versions.recommended, out var parsedSemVer) && m_Version?.IsEqualOrPatchOf(parsedSemVer) == true)
                 m_Tag |= PackageTag.Release;
-            }
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

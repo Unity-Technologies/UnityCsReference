@@ -22,6 +22,7 @@ namespace UnityEditor
         private readonly AnimBool m_ShowDensity = new AnimBool();
         private readonly AnimBool m_ShowLayerOverrides = new AnimBool();
         private readonly AnimBool m_ShowInfo = new AnimBool();
+        private readonly AnimBool m_ShowInfo_Material = new AnimBool();
         private readonly AnimBool m_ShowContacts = new AnimBool();
         Vector2 m_ContactScrollPosition;
 
@@ -29,6 +30,8 @@ namespace UnityEditor
 
         private SavedBool m_ShowLayerOverridesFoldout;
         private SavedBool m_ShowInfoFoldout;
+        private SavedBool m_ShowInfo_MaterialFoldout;
+        private SavedBool m_ShowContactsFoldout;
         private bool m_RequiresConstantRepaint;
 
         private SerializedProperty m_Material;
@@ -65,7 +68,15 @@ namespace UnityEditor
             m_ShowInfo.valueChanged.AddListener(Repaint);
             m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowInfoFoldout", false);
             m_ShowInfo.value = m_ShowInfoFoldout.value;
+
+            m_ShowInfo_Material.valueChanged.AddListener(Repaint);
+            m_ShowInfo_MaterialFoldout = new SavedBool($"{target.GetType()}.ShowInfo_MaterialFoldout", false);
+            m_ShowInfo_Material.value = m_ShowInfo_MaterialFoldout.value;
+
             m_ShowContacts.valueChanged.AddListener(Repaint);
+            m_ShowContactsFoldout = new SavedBool($"{target.GetType()}.ShowContactsFoldout", false);
+            m_ShowContacts.value = m_ShowContactsFoldout.value;
+
             m_ContactScrollPosition = Vector2.zero;
 
             m_Material = serializedObject.FindProperty("m_Material");
@@ -96,6 +107,7 @@ namespace UnityEditor
             m_ShowDensity.valueChanged.RemoveListener(Repaint);
             m_ShowLayerOverrides.valueChanged.RemoveListener(Repaint);
             m_ShowInfo.valueChanged.RemoveListener(Repaint);
+            m_ShowInfo_Material.valueChanged.RemoveListener(Repaint);
             m_ShowContacts.valueChanged.RemoveListener(Repaint);
             m_ShowCompositeRedundants.valueChanged.RemoveListener(Repaint);
 
@@ -198,9 +210,20 @@ namespace UnityEditor
                     var collider = targets[0] as Collider2D;
                     EditorGUI.BeginDisabledGroup(true);
                     EditorGUILayout.ObjectField("Attached Body", collider.attachedRigidbody, typeof(Rigidbody2D), false);
-                    EditorGUILayout.FloatField("Friction", collider.friction);
-                    EditorGUILayout.FloatField("Bounciness", collider.bounciness);
                     EditorGUILayout.FloatField("Shape Count", collider.shapeCount);
+
+                    EditorGUI.indentLevel++;
+                    m_ShowInfo_MaterialFoldout.value = m_ShowInfo_Material.target = EditorGUILayout.Foldout(m_ShowInfo_Material.target, "Material", true);
+                    if (EditorGUILayout.BeginFadeGroup(m_ShowInfo_Material.faded))
+                    {
+                        EditorGUILayout.FloatField("Friction", collider.friction);
+                        EditorGUILayout.FloatField("Bounciness", collider.bounciness);
+                        EditorGUILayout.EnumPopup("Friction Combine", collider.frictionCombine);
+                        EditorGUILayout.EnumPopup("Bounciness Combine", collider.bounceCombine);
+                    }
+                    EditorGUILayout.EndFadeGroup();
+                    EditorGUI.indentLevel--;
+
                     if (collider.isActiveAndEnabled)
                         EditorGUILayout.BoundsField("Bounds", collider.bounds);
                     EditorGUI.EndDisabledGroup();
@@ -230,7 +253,7 @@ namespace UnityEditor
         void ShowContacts(Collider2D collider)
         {
             EditorGUI.indentLevel++;
-            m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
+            m_ShowContactsFoldout.value = m_ShowContacts.target = EditorGUILayout.Foldout(m_ShowContacts.target, "Contacts", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowContacts.faded))
             {
                 var contactCount = collider.GetContacts(m_Contacts);
@@ -252,6 +275,8 @@ namespace UnityEditor
                         EditorGUILayout.Vector2Field("Relative Velocity", contact.relativeVelocity);
                         EditorGUILayout.FloatField("Normal Impulse", contact.normalImpulse);
                         EditorGUILayout.FloatField("Tangent Impulse", contact.tangentImpulse);
+                        EditorGUILayout.FloatField("Friction", contact.friction);
+                        EditorGUILayout.FloatField("Bounciness", contact.bounciness);
                         EditorGUILayout.ObjectField("Collider", contact.collider, typeof(Collider2D), false);
                         EditorGUILayout.ObjectField("Rigidbody", contact.rigidbody, typeof(Rigidbody2D), false);
                         EditorGUILayout.ObjectField("OtherRigidbody", contact.otherRigidbody, typeof(Rigidbody2D), false);

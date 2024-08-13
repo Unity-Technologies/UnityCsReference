@@ -161,6 +161,11 @@ namespace UnityEditor.Modules
             return new IMGUIContainer(
                 () =>
                 {
+                    if (serializedObject == null || !serializedObject.isValid)
+                    {
+                        return;
+                    }
+
                     var oldLabelWidth = EditorGUIUtility.labelWidth;
                     EditorGUIUtility.labelWidth = labelWidth;
                     serializedObject.UpdateIfRequiredOrScript();
@@ -248,7 +253,7 @@ namespace UnityEditor.Modules
                     GUILayout.Space(3);
                     if (GUILayout.Button(k_InstallInBuildFolderHelp, EditorStyles.iconButton))
                     {
-                        const string k_ViewScriptPath = "Documentation/InternalDocs/docs/BuildSystem/view";
+                        const string k_ViewScriptPath = "Documentation/InternalDocs/view";
                         const string k_WindowsEditorScriptExtension = ".cmd";
                         const string k_MacAndLinuxEditorScriptExtension = ".sh";
 

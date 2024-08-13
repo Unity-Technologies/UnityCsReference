@@ -259,7 +259,7 @@ namespace UnityEditor
         // Split Graphics Jobs.
         // Main thread starts worker threads to write Unity graphics commands.
         // Render thread reads Unity graphics commands converts them to native graphics commands.
-        // The render thread also starts worker threads to write native graphics commands. 
+        // The render thread also starts worker threads to write native graphics commands.
         SplitJobs = 6
     }
 
@@ -575,7 +575,8 @@ namespace UnityEditor
         public static extern bool runInBackground { get; set; }
 
         // Defines if fullscreen games should darken secondary displays.
-        public static extern bool captureSingleScreen { get; set; }
+        [Obsolete("captureSingleScreen has been removed.", false)]
+        public static bool captureSingleScreen { get; set; }
 
         // Write a log file with debugging information.
         public static extern bool usePlayerLog { get; set; }
@@ -1529,7 +1530,7 @@ namespace UnityEditor
         // Application bundle version for the TVOS platform
         [NativeProperty("TVOSApplicationVersion")]
         public static extern string tvOSBundleVersion { get; set; }
-        
+
         // Application bundle version shared between iOS & Android platforms
         [NativeProperty("ApplicationVersion")]
         public static extern string bundleVersion { get; set; }
@@ -1768,6 +1769,9 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
         internal static extern PlayerSettings DeserializeFromYAMLString(string yamlSettings);
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern void UpdatePlayerSettingsObjectFromYAML(PlayerSettings playerSettings, string yamlSettings);
 
         internal static extern bool platformRequiresReadableAssets { get; set; }
     }
