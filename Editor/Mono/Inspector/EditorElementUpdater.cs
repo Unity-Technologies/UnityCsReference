@@ -103,11 +103,11 @@ namespace UnityEditor
                 element.CreateInspectorElement();
 
                 // If this element contributes to the layout, re-compute it immediately to determine how much of the viewport is occupied.
-                if (null != element.editor && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target))
+                if (null != element.editor && InternalEditorUtility.GetIsInspectorExpanded(element.editor.target)&& contentContainer.childCount>0)
                 {
                     Panel?.UpdateWithoutRepaint();
 
-                    if (contentContainer.ElementAt(m_Index - 1).layout.yMax - scroll > viewport.layout.height)
+                    if (contentContainer.ElementAt(contentContainer.childCount - 1).layout.yMax - scroll > viewport.layout.height)
                         break;
                 }
             }
