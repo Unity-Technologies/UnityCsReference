@@ -836,6 +836,14 @@ namespace UnityEditor
             {
                 m_Parent.EnableVSync(false);
             }
+            else if (state == PlayModeStateChange.EnteredEditMode)
+            {
+                // UUM-76326 - Ensure CursorLock is disabled in EditMode in case a script locks it while
+                // exiting PlayMode. In this scenario, the cursor lock state is maintained and will re-engage
+                // in the next PlayMode session.
+                // NOTE: For safety the user must still click the GameView before cursor lock is allowed again.
+                AllowCursorLockAndHide(false);
+            }
         }
 
         void OnBecameVisible()
@@ -905,8 +913,10 @@ namespace UnityEditor
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
 
+            var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;
+
             // Gain mouse lock when clicking on game view content, unless game is paused
-            if (!EditorApplication.isPaused && type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
+            if (playing && type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
             {
                 AllowCursorLockAndHide(true);
             }
@@ -917,7 +927,6 @@ namespace UnityEditor
             }
 
             // We hide sliders when playing, and also when we are zoomed out beyond canvas edges
-            var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;
             var targetInContentCached = targetInContent;
             m_ZoomArea.hSlider = !playing && m_ZoomArea.shownArea.width < targetInContentCached.width;
             m_ZoomArea.vSlider = !playing && m_ZoomArea.shownArea.height < targetInContentCached.height;

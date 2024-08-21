@@ -2323,6 +2323,8 @@ namespace UnityEditor
                     if (!(ed.target is ParticleSystemRenderer))
                     {
                         currentElement.ReinitCulled(newEditorsIndex);
+                        if (!InspectorElement.disabledThrottling)
+                            m_EditorElementUpdater.Add(currentElement);
 
                         // We need to move forward as the current element is the culled one, so we're not really
                         // interested in it.
@@ -2339,6 +2341,8 @@ namespace UnityEditor
                 
                 editors[newEditorsIndex].propertyViewer = this;
                 currentElement.Reinit(newEditorsIndex);
+                if (!InspectorElement.disabledThrottling)
+                    m_EditorElementUpdater.Add(currentElement);
                 editorToElementMap[ed.target.GetInstanceID()] = currentElement;
                 ++newEditorsIndex;
                 ++previousEditorsIndex;

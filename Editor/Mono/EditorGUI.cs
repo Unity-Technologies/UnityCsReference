@@ -6376,7 +6376,7 @@ namespace UnityEditor
                     // in the Inspector has different values. Don't show it when expanded, since the difference will be visible further down.
                     if (showMixedValue && !foldout)
                     {
-                        style.Draw(drawRect, content, id, false);
+                        style.Draw(drawRect, content, id, false, false);
 
                         BeginHandleMixedValueContentColor();
                         Rect fieldPosition = origPosition;
@@ -6386,7 +6386,7 @@ namespace UnityEditor
                     }
                     else
                     {
-                        style.Draw(drawRect, content, id, foldout);
+                        style.Draw(drawRect, content, id, foldout, false);
                     }
                     break;
                 case EventType.KeyDown:
