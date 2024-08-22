@@ -166,7 +166,9 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        internal IList<BuildProfile> classicPlatformProfiles
+        // Note: this has to be a serializable type such as List<T>, so that
+        // the references to classic build profiles survive domain reloads
+        internal List<BuildProfile> classicPlatformProfiles
         {
             [VisibleToOtherModules]
             get;
@@ -352,45 +354,58 @@ namespace UnityEditor.Build.Profile
             EditorApplication.quitting -= SyncActiveProfileToFallback;
             EditorApplication.quitting += SyncActiveProfileToFallback;
 
-            classicPlatformProfiles = new List<BuildProfile>();
-
-            // Load platform build profiles from ProjectSettings folder.
-            if (!Directory.Exists(k_BuildProfilePath))
-                return;
-
-            var viewablePlatformKeys = BuildProfileModuleUtil.FindAllViewablePlatforms();
-            for (var index = 0; index < viewablePlatformKeys.Count; index++)
+            if (classicPlatformProfiles != null && classicPlatformProfiles.Count > 0)
             {
-                var key = viewablePlatformKeys[index];
-                string path = GetFilePathForBuildProfile(key);
+                // classicPlatformProfiles survived the domain reload - just readd them to the classic profile map
+                foreach (var profileObj in classicPlatformProfiles)
+                    m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformId, profileObj);
+            }
+            else
+            {
+                // first load - populate classic profiles from disk
+                classicPlatformProfiles = new List<BuildProfile>();
 
-                if (!File.Exists(path) || !BuildProfileModuleUtil.IsModuleInstalled(key))
-                    continue;
+                // Load platform build profiles from ProjectSettings folder.
+                if (!Directory.Exists(k_BuildProfilePath))
+                    return;
 
-                var profile = InternalEditorUtility.LoadSerializedFileAndForget(path);
-                if (profile == null || profile.Length == 0 || profile[0] is not BuildProfile profileObj)
+                var viewablePlatformKeys = BuildProfileModuleUtil.FindAllViewablePlatforms();
+                for (var index = 0; index < viewablePlatformKeys.Count; index++)
                 {
-                    Debug.LogWarning($"Failed to load build profile from {path}.");
-                    continue;
+                    var key = viewablePlatformKeys[index];
+                    string path = GetFilePathForBuildProfile(key);
+
+                    if (!File.Exists(path) || !BuildProfileModuleUtil.IsModuleInstalled(key))
+                        continue;
+
+                    var profile = InternalEditorUtility.LoadSerializedFileAndForget(path);
+                    if (profile == null || profile.Length == 0 || profile[0] is not BuildProfile profileObj)
+                    {
+                        Debug.LogWarning($"Failed to load build profile from {path}.");
+                        continue;
+                    }
+
+                    m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformId, profileObj);
+                    classicPlatformProfiles.Add(profileObj);
+                }
+            }
+
+            if (sharedProfile == null)
+            {
+                if (!File.Exists(k_SharedProfilePath))
+                    return;
+
+                var sharedProfileArray = InternalEditorUtility.LoadSerializedFileAndForget(k_SharedProfilePath);
+                if (sharedProfileArray == null || sharedProfileArray.Length == 0 || sharedProfileArray[0] is not BuildProfile sharedProfileObj)
+                {
+                    Debug.LogWarning($"Failed to load shared profile from {k_SharedProfilePath}.");
+                    return;
                 }
 
-                m_PlatformIdToClassicPlatformProfile.Add(profileObj.platformId, profileObj);
-                classicPlatformProfiles.Add(profileObj);
+                sharedProfile = sharedProfileObj;
             }
 
-            if (!File.Exists(k_SharedProfilePath))
-                return;
-
-            var sharedProfile = InternalEditorUtility.LoadSerializedFileAndForget(k_SharedProfilePath);
-            if (sharedProfile == null || sharedProfile.Length == 0 || sharedProfile[0] is not BuildProfile sharedProfileObj)
-            {
-                Debug.LogWarning($"Failed to load shared profile from {k_SharedProfilePath}.");
-                return;
-            }
-
-            instance.sharedProfile = sharedProfileObj;
-
-            var buildProfile = instance.activeProfile ?? GetForClassicPlatform(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
+            var buildProfile = activeProfile ?? GetForClassicPlatform(EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettings.standaloneBuildSubtarget);
 
             // profile can be null if we're in the middle of creating classic profiles
             if (buildProfile == null)
@@ -689,6 +704,7 @@ namespace UnityEditor.Build.Profile
         static void Save() => InternalEditorUtility.SaveToSerializedFileAndForget(new[] { instance },
             k_BuildProfileProviderAssetPath, true);
 
+        [VisibleToOtherModules]
         internal static bool IsSharedProfile(BuildTarget target) => target == BuildTarget.NoTarget;
     }
 }

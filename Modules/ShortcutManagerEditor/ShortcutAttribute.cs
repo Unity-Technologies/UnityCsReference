@@ -15,7 +15,6 @@ namespace UnityEditor.ShortcutManagement
         internal abstract ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo);
     }
 
-    // TODO: Find better name
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class ShortcutAttribute : ShortcutBaseAttribute
     {
@@ -25,6 +24,7 @@ namespace UnityEditor.ShortcutManagement
         internal ShortcutBinding defaultBinding { get; }
         internal int priority { get; }
         public string displayName { get; set; }
+
         Action m_NoArgumentsAction;
 
         ShortcutAttribute(string id, Type context, string tag, int priority, ShortcutBinding defaultBinding)

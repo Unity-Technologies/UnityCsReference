@@ -27,6 +27,7 @@ namespace UnityEditor.Embree
         public uint minLeafSize { get; set; }
         public uint maxLeafSize { get; set; }
         public bool allowPrimitiveSplits { get; set; }
+        public bool isTopLevel { get; set; }
     };
 
     public enum GpuBvhBuildQuality : int

@@ -13,7 +13,7 @@ namespace Unity.Properties.Internal
             return info.Name
                 .Replace(".", "_")
                 .Replace("<", "_")
-                .Replace(">", "")
+                .Replace(">", "_")
                 .Replace("+", "_");
         }
     }

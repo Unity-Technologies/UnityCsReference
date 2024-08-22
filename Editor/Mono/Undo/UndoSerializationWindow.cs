@@ -47,7 +47,7 @@ namespace UnityEditor
         const string k_StyleDark = "StyleSheets/UndoHistory/UndoHistoryDark.uss";
         const string k_StyleLight = "StyleSheets/UndoHistory/UndoHistoryLight.uss";
 
-        [MenuItem("Window/Internal/Undo Serialization", false, 2013)]
+        [MenuItem("Window/Internal/Undo Serialization", false, 2013, true)]
         static void CreateUndoSerializationWindow()
         {
             if (s_Instance == null)

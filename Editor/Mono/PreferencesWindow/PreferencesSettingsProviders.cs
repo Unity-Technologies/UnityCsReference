@@ -87,7 +87,7 @@ namespace UnityEditor
 
             public static readonly GUIContent performBumpMapCheck = EditorGUIUtility.TrTextContent("Perform Bump Map Check", "Enables Bump Map Checks upon import of Materials. This checks that textures used in a normal map material slot are actually defined as normal maps.");
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
-            public static readonly GUIContent enableHelperBar = EditorGUIUtility.TrTextContent("Enable Helper Bar", "Enables Helper Bar in the status bar at the bottom of the main Unity Editor window.");
+            public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
@@ -761,14 +761,15 @@ By default, Windows will combine these under a single taskbar item.");
 
         void DrawEnableHelperBar()
         {
-            const string helperBarKeyName = "EnableHelperBar";
-            var enableHelperBar = EditorPrefs.GetBool(helperBarKeyName, false);
+            const string shortcutHelperBarKeyName = "EnableShortcutHelperBar";
+            var enableShortcutHelperBar = EditorPrefs.GetBool(shortcutHelperBarKeyName, false);
 
             EditorGUI.BeginChangeCheck();
-            enableHelperBar = EditorGUILayout.Toggle(GeneralProperties.enableHelperBar, enableHelperBar);
+            enableShortcutHelperBar = EditorGUILayout.Toggle(GeneralProperties.enableShortcutHelperBar, enableShortcutHelperBar);
             if (EditorGUI.EndChangeCheck())
             {
-                EditorPrefs.SetBool(helperBarKeyName, enableHelperBar);
+                EditorPrefs.SetBool(shortcutHelperBarKeyName, enableShortcutHelperBar);
+                ShortcutManagement.ShortcutHelperBarUtility.RemoveAppStatusBarClient();
             }
         }
 

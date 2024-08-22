@@ -61,7 +61,7 @@ namespace UnityEditor.ShortcutManagement
             EventType.MouseDown,
             EventType.MouseUp,
             EventType.MouseDrag,
-            EventType.ScrollWheel,
+            EventType.ScrollWheel
         };
 
         Vector2 m_StartPosition;

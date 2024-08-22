@@ -6,8 +6,9 @@
 
 namespace UnityEditor
 {
-    class SceneViewPickingShortcutContext : SceneViewMotion.SceneViewContext
+    class SceneViewPickingShortcutContext : SceneViewMotion.SceneViewContext, ShortcutManagement.IHelperBarShortcutContext
     {
         public override bool active => ViewHasFocusAndViewportUnderMouse && Tools.current != Tool.View;
+        public bool helperBarActive => base.active && Tools.current != Tool.View;
     }
 }

@@ -139,7 +139,7 @@ namespace UnityEditor.ShortcutManagement
             FindShortcutEntries(combinationSequence, (Type[])null, null, outputShortcuts);
         }
 
-        public void FindPotentialShortcutEntries(IContextManager contextManager, List<ShortcutEntry> outputShortcuts)
+        public void FindPotentialShortcutEntries(IContextManager contextManager, List<ShortcutEntry> outputShortcuts, bool useActiveForHelperBar)
         {
             outputShortcuts.Clear();
             List<ShortcutEntry> entries = new List<ShortcutEntry>();
@@ -148,7 +148,7 @@ namespace UnityEditor.ShortcutManagement
             if (entries == null) return;
 
             foreach (var entry in entries)
-                if (ShortcutEntrySatisfiesContextManager(contextManager, entry)
+                if (ShortcutEntrySatisfiesContextManager(contextManager, entry, useActiveForHelperBar)
                     && (string.IsNullOrWhiteSpace(entry.tag) || contextManager.HasTag(entry.tag)))
                     outputShortcuts.Add(entry);
         }
@@ -287,9 +287,9 @@ namespace UnityEditor.ShortcutManagement
                 (shortcutEntryContext != null && shortcutEntryContext.IsAssignableFrom(context));
         }
 
-        static bool ShortcutEntrySatisfiesContextManager(IContextManager contextManager, ShortcutEntry entry)
+        static bool ShortcutEntrySatisfiesContextManager(IContextManager contextManager, ShortcutEntry entry, bool useActiveForHelperBar = false)
         {
-            return contextManager.HasActiveContextOfType(entry.context) &&
+            return contextManager.HasActiveContextOfType(entry.context, useActiveForHelperBar) &&
                 // Emulate old play mode shortcut behavior
                 // * Non-menu shortcuts do NOT apply only when the Game View is focused, the editor is playing, and is NOT paused
                 // * Menu shortcuts are always active

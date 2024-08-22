@@ -413,9 +413,10 @@ namespace UnityEditor
 
         public static void SetIcons(NamedBuildTarget buildTarget, Texture2D[] icons, IconKind kind)
         {
-            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget) &&
+                iBuildTarget.IconPlatformProperties != null)
             {
-                var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
+                var platformIconKind = iBuildTarget.IconPlatformProperties.GetPlatformIconKindFromEnumValue(kind);
                 if (platformIconKind != null)
                 {
                     PlatformIcon[] platformIcons = GetPlatformIcons(buildTarget, platformIconKind);

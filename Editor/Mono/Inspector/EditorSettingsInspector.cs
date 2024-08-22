@@ -57,7 +57,6 @@ namespace UnityEditor
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
-            public static GUIContent enableCookiesInLightmapper = EditorGUIUtility.TrTextContent("Enable baked cookies support", "Determines whether cookies should be evaluated by the Progressive Lightmapper during Global Illumination calculations. Introduced in version 2020.1. ");
 
             public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Atlas");
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max SpriteAtlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart.");
@@ -563,22 +562,6 @@ namespace UnityEditor
 
                 EditorApplication.RequestRepaintAllViews();
             }
-
-            var rect = EditorGUILayout.GetControlRect();
-            EditorGUI.BeginProperty(rect, Content.enableCookiesInLightmapper, m_DisableCookiesInLightmapper);
-            EditorGUI.BeginChangeCheck();
-            bool enableCookiesInLightmapperValue = !m_DisableCookiesInLightmapper.boolValue;
-            enableCookiesInLightmapperValue = EditorGUI.Toggle(rect, Content.enableCookiesInLightmapper, enableCookiesInLightmapperValue);
-            if (EditorGUI.EndChangeCheck())
-            {
-                m_DisableCookiesInLightmapper.boolValue = !enableCookiesInLightmapperValue;
-
-                if (m_IsGlobalSettings)
-                    EditorSettings.enableCookiesInLightmapper = enableCookiesInLightmapperValue;
-
-                EditorApplication.RequestRepaintAllViews();
-            }
-            EditorGUI.EndProperty();
 
             GUILayout.Space(10);
 

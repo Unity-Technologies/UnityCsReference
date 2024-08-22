@@ -117,7 +117,7 @@ namespace UnityEditor.Search
 
             public void Update()
             {
-                GUIContent content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType);
+                GUIContent content = EditorGUIUtility.ObjectContent(m_ObjectField.value, m_ObjectField.objectType, false);
                 m_ObjectIcon.image = content.image;
                 m_ObjectLabel.text = content.text;
             }
@@ -749,7 +749,7 @@ namespace UnityEditor.Search
                             if (property != null)
                                 temp = Utils.ObjectContent(obj, objType, property.objectReferenceInstanceIDValue);
                             else
-                                temp = EditorGUIUtility.ObjectContent(obj, objType);
+                                temp = EditorGUIUtility.ObjectContent(obj, objType, false);
                         }
 
                         if (property != null)

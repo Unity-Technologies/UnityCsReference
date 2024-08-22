@@ -15,4 +15,9 @@ namespace UnityEditor.ShortcutManagement
     {
         bool active { get; }
     }
+
+    internal interface IHelperBarShortcutContext
+    {
+        bool helperBarActive { get; }
+    }
 }

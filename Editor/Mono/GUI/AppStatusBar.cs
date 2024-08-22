@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using System.Linq;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -46,6 +47,7 @@ namespace UnityEditor
         }
 
         private static AppStatusBar s_AppStatusBar;
+        private ShortcutHelperBar m_ShortcutHelperBar;
 
         private string m_MiniMemoryOverview = "";
         private bool m_DrawExtraFeatures;
@@ -72,6 +74,8 @@ namespace UnityEditor
         {
             base.OnEnable();
             s_AppStatusBar = this;
+            m_ShortcutHelperBar = new ShortcutHelperBar(this);
+
             m_ManagedDebuggerToggle = new ManagedDebuggerToggle();
             m_CacheServerToggle = new CacheServerToggle();
             m_EventInterests.wantsLessLayoutEvents = true;
@@ -84,6 +88,7 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
+            m_ShortcutHelperBar.OnDisable();
             Progress.added -= RefreshProgressBar;
             Progress.removed -= RefreshProgressBar;
             Progress.updated -= RefreshProgressBar;
@@ -154,21 +159,24 @@ namespace UnityEditor
                 GUILayout.Space(2);
                 DrawStatusText();
 
-                if(EditorPrefs.GetBool("EnableHelperBar", false)) ShortcutManagement.HelperWindow.StatusBarShortcuts();
-                else GUILayout.FlexibleSpace();
+                if (EditorPrefs.GetBool("EnableShortcutHelperBar", false))
+                    m_ShortcutHelperBar.DrawStatusBarShortcuts();
+                else
+                    GUILayout.FlexibleSpace();
 
                 if (m_DrawExtraFeatures)
                     DrawSpecialModeLabel();
+
                 DrawProgressBar();
                 DrawDebuggerToggle();
+
                 if (m_DrawExtraFeatures)
-                {
                     DrawCacheServerToggle();
-                }
+
                 DrawRefreshStatus();
             }
-            GUILayout.EndHorizontal();
 
+            GUILayout.EndHorizontal();
             EditorGUI.ShowRepaints();
         }
 
@@ -317,7 +325,6 @@ namespace UnityEditor
             GUILayout.Space(2);
             GUILayout.BeginVertical();
             GUILayout.Space(1);
-
             GUILayout.Label(statusText, errorStyle, GetStatusTextLayoutOption((icon != null ? icon.width : 0) + 6));
 
             // Handle status bar click
@@ -408,7 +415,7 @@ namespace UnityEditor
         {
             int iconWidth = 25;
             float specialModeLabelWidth = Styles.statusLabel.CalcSize(new GUIContent(m_SpecialModeLabel)).x + k_SpaceBeforeProgress + 8;
-            float helperBarWidth = (EditorPrefs.GetBool("EnableHelperBar", false) ? ShortcutManagement.HelperWindow.kHelperBarMinWidth : 0);
+            float helperBarWidth = (EditorPrefs.GetBool("EnableShortcutHelperBar", false) ? ShortcutHelperBar.k_HelperBarMinWidth : 0);
             float statusRightReservedSpace =
                 specialModeLabelWidth +
                 helperBarWidth + // helper bar

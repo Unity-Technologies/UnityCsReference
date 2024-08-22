@@ -11,19 +11,19 @@ namespace UnityEditor
 {
     class SceneViewMotion
     {
-        const string k_TemporaryPanTool2D1 = "Scene View/Temporary Pan Tool for 2D Mode 1";
-        const string k_TemporaryPanTool2D2 = "Scene View/Temporary Pan Tool for 2D Mode 2";
-        const string k_TemporaryPanTool1 = "Scene View/Temporary Pan Tool 1";
-        const string k_TemporaryPanTool2 = "Scene View/Temporary Pan Tool 2";
-        const string k_TemporaryPanTool3 = "Scene View/Temporary Pan Tool 3";
-        const string k_TemporaryPanTool4 = "Scene View/Temporary Pan Tool 4";
-        const string k_TemporaryZoomTool1 = "Scene View/Temporary Zoom Tool 1";
-        const string k_TemporaryZoomTool2 = "Scene View/Temporary Zoom Tool 2";
-        const string k_TemporaryOrbitTool = "Scene View/Temporary Orbit Tool";
-        const string k_TemporaryFpsTool = "Scene View/Temporary FPS Tool";
-        const string k_PanFocusTool = "Scene View/Pan Focus Tool";
-        const string k_LockedPanTool = "Scene View/Locked Pan Tool";
-        const string k_LockedPanFocusTool = "Scene View/Locked Pan Focus Tool";
+        const string k_TemporaryPanTool2D1 = "Scene View/2D Pan 1";
+        const string k_TemporaryPanTool2D2 = "Scene View/2D Pan 2";
+        const string k_TemporaryPanTool1 = "Scene View/Pan 1";
+        const string k_TemporaryPanTool2 = "Scene View/Pan 2";
+        const string k_TemporaryPanTool3 = "Scene View/Pan 3";
+        const string k_TemporaryPanTool4 = "Scene View/Pan 4";
+        const string k_TemporaryZoomTool1 = "Scene View/Zoom 1";
+        const string k_TemporaryZoomTool2 = "Scene View/Zoom 2";
+        const string k_TemporaryOrbitTool = "Scene View/Orbit";
+        const string k_TemporaryFpsTool = "Scene View/FPS Look";
+        const string k_PanFocusTool = "Scene View/Focus";
+        const string k_LockedPanTool = "Scene View/Pan (Locked)";
+        const string k_LockedPanFocusTool = "Scene View/Focus (Locked)";
 
         const string k_PanFocusEventCommandName = "SceneViewPanFocusEventCommand";
         internal const string k_SetSceneViewMotionHotControlEventCommandName = "SetSceneViewMotionHotControlEventCommand"; // Also used in tests.
@@ -86,27 +86,31 @@ namespace UnityEditor
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        internal class SceneViewViewport : SceneViewContext
+        internal class SceneViewViewport : SceneViewContext, IHelperBarShortcutContext
         {
             public override bool active => ViewHasFocusAndViewportUnderMouse;
+            public bool helperBarActive => base.active;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport2D : SceneViewContext
+        class SceneViewViewport2D : SceneViewContext, IHelperBarShortcutContext
         {
             public override bool active => ViewHasFocusAndViewportUnderMouse && (window.in2DMode || window.isRotationLocked);
+            public bool helperBarActive => base.active && (window.in2DMode || window.isRotationLocked);
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewport3D : SceneViewContext
+        class SceneViewViewport3D : SceneViewContext, IHelperBarShortcutContext
         {
             public override bool active => ViewHasFocusAndViewportUnderMouse && !window.in2DMode && !window.isRotationLocked;
+            public bool helperBarActive => base.active && !window.in2DMode && !window.isRotationLocked;
         }
 
         [ReserveModifiers(ShortcutModifiers.Shift)]
-        class SceneViewViewportLockedPanTool : SceneViewContext
+        class SceneViewViewportLockedPanTool : SceneViewContext, IHelperBarShortcutContext
         {
-            public override bool active => ViewHasFocusAndViewportUnderMouse&& Tools.current == Tool.View;
+            public override bool active => ViewHasFocusAndViewportUnderMouse && Tools.current == Tool.View;
+            public bool helperBarActive => base.active && Tools.current == Tool.View;
         }
 
         [Shortcut(k_PanFocusTool, typeof(SceneViewViewport), KeyCode.Mouse2)]
@@ -287,7 +291,6 @@ namespace UnityEditor
             Tools.viewTool = ViewTool.Pan;
             Tools.s_LockedViewTool = ViewTool.None;
             GUIUtility.hotControl = 0;
-
 
             if (viewToolActiveChanged != null)
                 viewToolActiveChanged.Invoke();

@@ -274,6 +274,8 @@ namespace UnityEditor.Build.Profile.Handlers
 
         static List<BuildProfile> FindAllBuildProfiles()
         {
+            var alreadyLoadedBuildProfiles = Resources.FindObjectsOfTypeAll<BuildProfile>();
+
             const string buildProfileAssetSearchString = $"t:{nameof(BuildProfile)}";
             var assetsGuids = AssetDatabase.FindAssets(buildProfileAssetSearchString);
             var result = new List<BuildProfile>(assetsGuids.Length);
@@ -294,6 +296,22 @@ namespace UnityEditor.Build.Profile.Handlers
                 }
 
                 result.Add(profile);
+            }
+
+            foreach (var buildProfile in alreadyLoadedBuildProfiles)
+            {
+                // Asset database will not give us any build profiles that get created in memory
+                // and we need to include them in this list as we use it to detect that build profiles
+                // have been destroyed and destroy their resources like PlayerSettings afterwards.
+                // Skipping the in-memory build profiles will result in us deleting their associated
+                // player settings object while it's being used and will lead to a crash (UUM-77423)
+                if (buildProfile &&
+                    !BuildProfileContext.IsClassicPlatformProfile(buildProfile) &&
+                    !BuildProfileContext.IsSharedProfile(buildProfile.buildTarget) &&
+                    !EditorUtility.IsPersistent(buildProfile))
+                {
+                    result.Add(buildProfile);
+                }
             }
 
             result.Sort((lhs, rhs) => EditorUtility.NaturalCompare(lhs.name, rhs.name));
