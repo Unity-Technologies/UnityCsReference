@@ -191,7 +191,7 @@ namespace UnityEngine.UIElements
                     Hide();
                     return true;
                 case KeyboardNavigationOperation.Submit:
-                    var item = m_Items[selectedIndex];
+                    var item = selectedIndex != -1 ? m_Items[selectedIndex] : null;
                     if (selectedIndex >= 0 && item.element.enabledSelf)
                     {
                         item.action?.Invoke();
