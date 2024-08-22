@@ -1353,6 +1353,7 @@ namespace UnityEditor.ShortcutManagement
 
         void Apply()
         {
+            m_KeyDown.Clear();
             value = m_WorkingValue;
             if (hasFocus)
                 focusController.SwitchFocus(null);
