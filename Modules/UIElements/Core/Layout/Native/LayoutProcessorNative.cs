@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.ExceptionServices;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -48,7 +49,8 @@ unsafe class LayoutProcessorNative : ILayoutProcessor
                 Exception e = handle.Target as Exception;
                 handle.Free();
                 m_State.error = false;
-                throw e;
+                ExceptionDispatchInfo edi = ExceptionDispatchInfo.Capture(e);
+                edi.Throw();
             }
         }
     }

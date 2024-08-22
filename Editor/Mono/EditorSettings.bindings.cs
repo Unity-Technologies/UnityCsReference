@@ -242,16 +242,18 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool useLegacyProbeSampleCount { get; set; }
 
-        [Obsolete("EditorSettings.disableCookiesInLightmapper is obsolete, please use EditorSettings.enableCookiesInLightmapper instead.", false)]
-        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern bool disableCookiesInLightmapper { get; set; }
+        [Obsolete("The disableCookiesInLightmapper setting is no longer supported. Cookies are always enabled in the Progressive Lightmapper.", true)]
+        public static bool disableCookiesInLightmapper
+        {
+            get { return false; }
+            set {}
+        }
 
+        [Obsolete("The enableCookiesInLightmapper setting is no longer supported. Cookies are always enabled in the Progressive Lightmapper.")]
         public static bool enableCookiesInLightmapper
         {
-#pragma warning disable 618
-            get { return !disableCookiesInLightmapper; }
-            set { disableCookiesInLightmapper = !value; }
-#pragma warning restore 618
+            get { return true; }
+            set {}
         }
 
         [Obsolete("Bake with the Progressive Lightmapper.The backend that uses Enlighten to bake is obsolete.", true)]

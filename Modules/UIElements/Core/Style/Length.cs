@@ -239,7 +239,10 @@ namespace UnityEngine.UIElements
                 float value = defaultValue.value;
                 LengthUnit unit = defaultValue.unit;
 
-                if (float.TryParse(floatStr, out var v))
+                // Note: ideally we would not specify NumberStyle settings, but there is no API that allows
+                // it while also defining which culture to use. The value used here is the right default for float
+                // (looking at source code from Mono & CoreCLR)
+                if (float.TryParse(floatStr, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture.NumberFormat, out var v))
                     value = v;
 
                 switch (unitStr)

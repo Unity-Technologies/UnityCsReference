@@ -172,7 +172,7 @@ namespace UnityEditor
             }
             internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.GetLightingSettingsOrDefaultsFallback().bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
 
-            internal bool showShadowMaskConvertedToBakedWarning { get { return isMixed && Lightmapping.GetLightingSettingsOrDefaultsFallback().mixedBakeMode == MixedLightingMode.Shadowmask && light.bakingOutput.occlusionMaskChannel == -1; } }
+            internal bool showShadowMaskConvertedToBakedWarning { get { return isMixed && Lightmapping.GetLightingSettingsOrDefaultsFallback().mixedBakeMode == MixedLightingMode.Shadowmask && light.bakingOutput.lightmapBakeType == LightmapBakeType.Baked; } }
 
             internal bool showCookieSpotRepeatWarning
             {
@@ -184,22 +184,6 @@ namespace UnityEditor
                     return typeIsSame && light.type == LightType.Spot &&
                         !cookieProp.hasMultipleDifferentValues && cookie && cookie.wrapMode != TextureWrapMode.Clamp
                         && !usingSRP;
-                }
-            }
-
-            internal bool showCookieNotEnabledWarning
-            {
-                get
-                {
-                    return typeIsSame && isCompletelyBaked && !cookieProp.hasMultipleDifferentValues && cookie && !EditorSettings.enableCookiesInLightmapper;
-                }
-            }
-
-            internal bool showCookieNotEnabledInfo
-            {
-                get
-                {
-                    return typeIsSame && isMixed && !cookieProp.hasMultipleDifferentValues && cookie && !EditorSettings.enableCookiesInLightmapper;
                 }
             }
 
@@ -578,24 +562,6 @@ namespace UnityEditor
                     return;
 
                 DrawCookieProperty(cookieProp, Styles.CookieTexture, (LightType)lightType.intValue);
-
-                if (showCookieSpotRepeatWarning)
-                {
-                    // warn on spotlights if the cookie is set to repeat
-                    EditorGUILayout.HelpBox(Styles.CookieSpotRepeatWarning.text, MessageType.Warning);
-                }
-
-                if (showCookieNotEnabledWarning)
-                {
-                    // warn if cookie support is not enabled for baked lights
-                    EditorGUILayout.HelpBox(Styles.CookieNotEnabledWarning.text, MessageType.Warning);
-                }
-
-                if (showCookieNotEnabledInfo)
-                {
-                    // info if cookie support is not enabled for mixed lights
-                    EditorGUILayout.HelpBox(Styles.CookieNotEnabledInfo.text, MessageType.Info);
-                }
             }
 
             public void DrawCookieSize()

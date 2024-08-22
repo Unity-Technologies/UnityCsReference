@@ -7803,9 +7803,6 @@
     <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
       <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ShortcutManagerEditor\HelperWindow.cs">
-      <Link>Modules\ShortcutManagerEditor\HelperWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\IConflictResolver.cs">
       <Link>Modules\ShortcutManagerEditor\IConflictResolver.cs</Link>
     </Compile>
@@ -7844,6 +7841,12 @@
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutEntry.cs">
       <Link>Modules\ShortcutManagerEditor\ShortcutEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutHelperBar.cs">
+      <Link>Modules\ShortcutManagerEditor\ShortcutHelperBar.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutHelperBarUtility.cs">
+      <Link>Modules\ShortcutManagerEditor\ShortcutHelperBarUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutManager.cs">
       <Link>Modules\ShortcutManagerEditor\ShortcutManager.cs</Link>

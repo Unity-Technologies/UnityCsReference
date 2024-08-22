@@ -21,7 +21,7 @@ namespace UnityEditor
 
         static void ShowSelectionPiercingMenuSubtractive(SceneView view) => ShowSelectionPiercingMenu(view, true);
 
-        [Shortcut("Scene View/Show Selection Piercing Menu", typeof(SceneViewPickingShortcutContext), KeyCode.Mouse1, ShortcutModifiers.Action)]
+        [Shortcut("Scene View/List Select", typeof(SceneViewPickingShortcutContext), KeyCode.Mouse1, ShortcutModifiers.Action)]
         static void OpenSelectionPiercingMenuNormal(ShortcutArguments args)
         {
             if (!(args.context is SceneViewPickingShortcutContext ctx) || !(ctx.window is SceneView view))
@@ -29,7 +29,7 @@ namespace UnityEditor
             OpenSelectionPiercingMenu(view, SelectionType.Normal);
         }
 
-        [Shortcut("Scene View/Show Selection Piercing Menu Subtractive", typeof(SceneViewPickingShortcutContext), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
+        [Shortcut("Scene View/List Deselect", typeof(SceneViewPickingShortcutContext), KeyCode.Mouse1, ShortcutModifiers.Action | ShortcutModifiers.Shift)]
         static void OpenSelectionPiercingMenuSubtractive(ShortcutArguments args)
         {
             if (!(args.context is SceneViewPickingShortcutContext ctx) || !(ctx.window is SceneView view))

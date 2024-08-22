@@ -67,6 +67,37 @@ namespace UnityEngine
 
         [FreeFunction("Scripting::UnloadAssetFromScripting")]
         public extern static void UnloadAsset(Object assetToUnload);
+
+        // Used by Entities to register InstanceIDs as roots during AssetGC
+        internal static class EntitiesAssetGC
+        {
+            [FreeFunction("Resources_Bindings::MarkInstanceIDsAsRoot")]
+            internal extern static void MarkInstanceIDsAsRoot(IntPtr instanceIDs, int count, IntPtr state);
+
+            [FreeFunction("Resources_Bindings::EnableEntitiesAssetGCCallback")]
+            internal extern static void EnableEntitiesAssetGCCallback();
+
+            internal delegate void AdditionalRootsHandlerDelegate(IntPtr state);
+            internal static AdditionalRootsHandlerDelegate AdditionalRootsHandler;
+
+            internal static void RegisterAdditionalRootsHandler(AdditionalRootsHandlerDelegate newAdditionalRootsHandler)
+            {
+                if(AdditionalRootsHandler == null)
+                {
+                    EnableEntitiesAssetGCCallback();
+                    AdditionalRootsHandler = newAdditionalRootsHandler;
+                }
+                else
+                    UnityEngine.Debug.LogWarning("Attempting to register more than one AdditionalRootsHandlerDelegate! Only one may be registered at a time.");
+            }
+
+            [UsedByNativeCode]
+            private static void GetAdditionalRoots(IntPtr state)
+            {
+                if(AdditionalRootsHandler != null)
+                    AdditionalRootsHandler(state);
+            }
+        }
     }
 
     public class ResourcesAPI

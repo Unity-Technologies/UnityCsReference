@@ -75,11 +75,13 @@ namespace UnityEditor.ShortcutManagement
                 {
                     EditorApplication.globalEventHandler += EventHandler;
                     GUIUtility.beforeEventProcessed += BeforeEventProcessedHandler;
+                    EditorWindow.windowFocusChanged += SetFocusedWindow;
                 }
                 else
                 {
                     EditorApplication.globalEventHandler -= EventHandler;
                     GUIUtility.beforeEventProcessed -= BeforeEventProcessedHandler;
+                    EditorWindow.windowFocusChanged -= SetFocusedWindow;
                 }
 
                 s_Enabled = value;
@@ -143,7 +145,12 @@ namespace UnityEditor.ShortcutManagement
             instance.HandleKeyEvent(Event.current);
         }
 
-        static void BeforeEventProcessedHandler(EventType type, KeyCode keyCode)
+        static void SetFocusedWindow()
+        {
+            instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
+        }
+
+        static void BeforeEventProcessedHandler(EventType type, KeyCode keyCode, EventModifiers modifiers)
         {
             if (s_IgnoreWhenPlayModeFocused && EditorWindow.focusedWindow is GameView && Application.isPlaying) return;
             instance.ResetShortcutState(type, keyCode);

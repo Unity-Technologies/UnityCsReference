@@ -278,6 +278,7 @@ namespace UnityEditor
 
         // Global key up/down or mouse up/down/drag events that were not handled by anyone
         internal static CallbackFunction globalEventHandler;
+        internal static CallbackFunction shortcutHelperBarEventHandler;
 
         // Returns true when the pressed keys are defined in the Trigger
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
@@ -521,6 +522,7 @@ namespace UnityEditor
         static void Internal_CallGlobalEventHandler()
         {
             globalEventHandler?.Invoke();
+            shortcutHelperBarEventHandler?.Invoke();
 
             // Ensure this is called last in order to make sure no null current events are passed to other handlers
             WindowLayout.MaximizeGestureHandler();

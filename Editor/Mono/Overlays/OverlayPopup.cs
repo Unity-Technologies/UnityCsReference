@@ -74,6 +74,7 @@ namespace UnityEditor.Overlays
                 var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
                 popup.HandleGeometryChangedEvent(overlay.canvas, placement, overlayWorldBound);
             });
+
             return popup;
         }
 

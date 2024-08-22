@@ -754,6 +754,7 @@ namespace UnityEditor.LightBaking
             extern uint Internal_LightmapHeight(uint index);
             extern uint Internal_InstanceCount(uint lightmapIndex);
             public extern void SetLightmapResolution(Resolution resolution);
+            public extern void SetSingleLightmapResolution(uint index, Resolution resolution);
             public Resolution lightmapResolution(uint index)
             {
                 if (index >= lightmapCount)

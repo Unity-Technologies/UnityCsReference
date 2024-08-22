@@ -18,10 +18,10 @@ namespace UnityEditor.ShortcutManagement
         void DeregisterToolContext(IShortcutContext context);
         bool HasAnyPriorityContext();
         bool HasPriorityContextOfType(Type type);
-        bool HasActiveContextOfType(Type type);
+        bool HasActiveContextOfType(Type type, bool useActiveForHelperBar = false);
         bool DoContextsConflict(Type context1, Type context2);
         bool playModeContextIsActive { get; }
-        object GetContextInstanceOfType(Type type, bool filterActive);
+        object GetContextInstanceOfType(Type type, bool filterActive, bool useActiveForHelperBar = false);
         List<Type> GetActiveContexts();
         List<string> GetActiveTags();
         void RegisterTag(string tag);
@@ -159,37 +159,32 @@ namespace UnityEditor.ShortcutManagement
             return m_PriorityContexts.Count > 0;
         }
 
-        internal bool HasToolContextOfType(Type type)
-        {
-            return GetToolContextOfType(type) != null;
-        }
-
         public bool HasPriorityContextOfType(Type type)
         {
             return GetPriorityContextOfType(type) != null;
         }
 
-        public bool HasActiveContextOfType(Type type)
+        public bool HasActiveContextOfType(Type type, bool useActiveForHelperBar = false)
         {
-            return GetContextInstanceOfType(type, true) != null;
+            return GetContextInstanceOfType(type, true, useActiveForHelperBar) != null;
         }
 
-        internal object GetToolContextOfType(Type type, bool filterActive = true)
+        internal object GetToolContextOfType(Type type, bool filterActive = true, bool useActiveForHelperBar = false)
         {
             foreach (var toolContext in m_ToolContexts)
             {
-                if ((!filterActive || toolContext.active) && type.IsInstanceOfType(toolContext))
+                if (!filterActive || (useActiveForHelperBar ? (toolContext is IHelperBarShortcutContext helperBarContext ? helperBarContext.helperBarActive : toolContext.active) : toolContext.active) && type.IsInstanceOfType(toolContext))
                     return toolContext;
             }
 
             return null;
         }
 
-        internal object GetPriorityContextOfType(Type type, bool filterActive = true)
+        internal object GetPriorityContextOfType(Type type, bool filterActive = true, bool useActiveForHelperBar = false)
         {
             foreach (var priorityContext in m_PriorityContexts)
             {
-                if ((!filterActive || priorityContext.active) && type.IsInstanceOfType(priorityContext))
+                if ((!filterActive || (useActiveForHelperBar ? (priorityContext is IHelperBarShortcutContext helperBarContext ? helperBarContext.helperBarActive : priorityContext.active) : priorityContext.active)) && type.IsInstanceOfType(priorityContext))
                 {
                     return priorityContext;
                 }
@@ -198,7 +193,7 @@ namespace UnityEditor.ShortcutManagement
             return null;
         }
 
-        public object GetContextInstanceOfType(Type type, bool filterActive = true)
+        public object GetContextInstanceOfType(Type type, bool filterActive = true, bool useActiveForHelperBar = false)
         {
             if (type == null)
                 return null;
@@ -209,13 +204,13 @@ namespace UnityEditor.ShortcutManagement
             if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && type.IsInstanceOfType(m_FocusedWindow.Target))
                 return m_FocusedWindow.Target;
 
-            object priorityContextType = GetPriorityContextOfType(type, filterActive);
+            object priorityContextType = GetPriorityContextOfType(type, filterActive, useActiveForHelperBar);
             if (priorityContextType != null)
             {
                 return priorityContextType;
             }
 
-            object toolContextType = GetToolContextOfType(type, filterActive);
+            object toolContextType = GetToolContextOfType(type, filterActive, useActiveForHelperBar);
             if (toolContextType != null)
             {
                 return toolContextType;

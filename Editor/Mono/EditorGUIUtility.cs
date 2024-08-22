@@ -963,7 +963,12 @@ namespace UnityEditor
             return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID());
         }
 
-        internal static GUIContent ObjectContent(UnityObject obj, Type type, int instanceID)
+        internal static GUIContent ObjectContent(UnityObject obj, Type type, bool showNullIcon)
+        {
+            return ObjectContent(obj, type, ReferenceEquals(obj, null) ? 0 : obj.GetInstanceID(), showNullIcon);
+        }
+
+        internal static GUIContent ObjectContent(UnityObject obj, Type type, int instanceID, bool showNullIcon = true)
         {
             if (obj)
             {
@@ -973,7 +978,7 @@ namespace UnityEditor
             else if (type != null)
             {
                 s_ObjectContent.text = GetTypeNameWithInfo(type.Name, instanceID);
-                s_ObjectContent.image = null; // Do not show icon when the reference is null as the type is already included in the label (UUM-16396)
+                s_ObjectContent.image = showNullIcon ? AssetPreview.GetMiniTypeThumbnail(type) : null;
             }
             else
             {
@@ -1006,9 +1011,9 @@ namespace UnityEditor
                 // from property.objectReferenceValue is not reliable, so we have to
                 // explicitly check property.objectReferenceInstanceIDValue if a property exists.
                 if (property != null && property.isValid)
-                    temp = ObjectContent(obj, type, property.objectReferenceInstanceIDValue);
+                    temp = ObjectContent(obj, type, property.objectReferenceInstanceIDValue, false);
                 else
-                    temp = ObjectContent(obj, type);
+                    temp = ObjectContent(obj, type, false);
             }
 
             if (property != null && property.isValid)

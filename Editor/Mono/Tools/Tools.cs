@@ -82,7 +82,7 @@ namespace UnityEditor
                 var tool = EditorToolUtility.GetEditorToolWithEnum(value);
 
                 //In case the new tool is leading to an incorrect tool type, return and leave the current tool as it is.
-                if(value != Tool.None && tool is NoneTool)
+                if (value != Tool.None && tool is NoneTool)
                     return;
 
                 EditorToolManager.activeTool = tool;
@@ -109,6 +109,7 @@ namespace UnityEditor
                 viewToolChanged?.Invoke();
             }
         }
+
         internal static ViewTool s_LockedViewTool = ViewTool.None;
         internal static int s_ButtonDown = -1;
         public static bool viewToolActive => SceneViewMotion.viewToolIsActive;

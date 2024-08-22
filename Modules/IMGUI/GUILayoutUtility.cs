@@ -505,7 +505,7 @@ namespace UnityEngine
             {
                 case EventType.Layout:
                     current.topLevel.Add(new GUILayoutEntry(minWidth, maxWidth, minHeight, maxHeight, style, options));
-                    return kDummyRect;
+                    return new Rect(0, 0, maxWidth, maxHeight);
                 case EventType.Used:
                     return kDummyRect;
                 default:

@@ -28,6 +28,7 @@ using UnityEditor.UIElements;
 using UnityEngine.Serialization;
 using UnityEngine.UIElements;
 using Component = UnityEngine.Component;
+using static UnityEditor.SceneViewMotion;
 
 namespace UnityEditor
 {
@@ -138,7 +139,7 @@ namespace UnityEditor
             get
             {
                 if (s_LastActiveSceneView == null && s_SceneViews.Count > 0)
-                    s_LastActiveSceneView = s_SceneViews[0] as SceneView;
+                    lastActiveSceneView = s_SceneViews[0] as SceneView;
                 return s_LastActiveSceneView;
             }
 
@@ -2738,7 +2739,7 @@ namespace UnityEditor
                 m_StageHandling.EndOnGUI();
         }
 
-        [Shortcut("Scene View/Show Scene View Context Menu", typeof(SceneView), KeyCode.Mouse1)]
+        [Shortcut("Scene View/Menu", typeof(SceneViewViewport), KeyCode.Mouse1)]
         static void OpenActionMenu(ShortcutArguments args)
         {
             // The mouseOverWindow check is necessary for MacOS because right-clicking does not
@@ -2752,12 +2753,12 @@ namespace UnityEditor
             if (ve == null)
                 return;
 
-            var context = args.context as SceneView;
-            if (ve == context.cameraViewVisualElement)
+            var context = args.context as SceneViewViewport;
+            if (ve == context.window.cameraViewVisualElement)
             {
                 ContextMenuUtility.ShowActionMenu();
                 // UUM-61727 - Force an InputEvent in IMGUI so the ContextMenu will actually open on all platforms
-                context.SendEvent(new Event { type = EventType.Layout });
+                context.window.SendEvent(new Event { type = EventType.Layout });
             }
         }
 
