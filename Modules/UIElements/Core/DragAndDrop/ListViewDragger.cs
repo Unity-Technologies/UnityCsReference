@@ -100,9 +100,6 @@ namespace UnityEngine.UIElements
             if (!targetScrollView.contentContainer.worldBound.Contains(pointerPosition))
                 return false;
 
-            if (!enabled)
-                return false;
-
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
@@ -203,6 +200,9 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            if (IsDraggingDisabled())
+                return;
+
             if (dragAndDropController.HandleDragAndDrop(args) != DragVisualMode.Rejected)
             {
                 dragAndDropController.OnDrop(args);
@@ -238,7 +238,7 @@ namespace UnityEngine.UIElements
 
         void ApplyDragAndDropUI(DragPosition dragPosition)
         {
-            if (m_LastDragPosition.Equals(dragPosition))
+            if (m_LastDragPosition.Equals(dragPosition) || IsDraggingDisabled())
                 return;
 
             if (m_DragHoverBar == null)
@@ -631,6 +631,12 @@ namespace UnityEngine.UIElements
             }
 
             return null;
+        }
+
+        bool IsDraggingDisabled()
+        {
+            // If dragging within the same view and reordering is not enabled, otherwise allow drag and drop between views
+            return targetView == dragAndDrop.data.source && !enabled;
         }
     }
 

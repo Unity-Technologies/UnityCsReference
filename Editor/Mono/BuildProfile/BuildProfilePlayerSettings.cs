@@ -215,5 +215,10 @@ namespace UnityEditor.Build.Profile
             if (s_GlobalPlayerSettings == null)
                 s_GlobalPlayerSettings = AssetDatabase.LoadAssetAtPath<PlayerSettings>(k_ProjectSettingsAssetPath);
         }
+
+        internal static PlayerSettings GetGlobalPlayerSettings()
+        {
+            return s_GlobalPlayerSettings;
+        }
     }
 }

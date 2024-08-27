@@ -161,6 +161,9 @@ namespace UnityEditor.Overlays
 
         public override void OnWillBeDestroyed()
         {
+            if (m_ListRoot != null)
+                m_ListRoot.Query<OverlayMenuItem>().ForEach((item) => item.overlay?.SetHighlightEnabled(false));
+
             canvas.overlaysEnabledChanged -= OnOverlayEnabledChanged;
             canvas.overlayListChanged -= OnOverlayListChanged;
             displayedChanged -= OnDisplayedChanged;

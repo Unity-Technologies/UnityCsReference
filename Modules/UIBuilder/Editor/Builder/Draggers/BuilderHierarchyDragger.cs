@@ -43,8 +43,7 @@ namespace Unity.UI.Builder
 
         protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
         {
-            // Only accept destination with index if it already contains some children
-            if (pane == DestinationPane.Viewport && (!IsPickedElementValid(destination) || (index == -1 && destination.childCount > 0)))
+            if (pane == DestinationPane.Viewport && (!IsPickedElementValid(destination)))
                 return;
 
             var newDestination = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(destination) ?? destination;

@@ -1023,6 +1023,58 @@ namespace UnityEngine.TextCore.Text
                                 m_HtmlColor = Color.yellow;
                                 m_ColorStack.Add(m_HtmlColor);
                                 return true;
+                            case (int)MarkupTag.TEAL: // <color=teal>
+                                m_HtmlColor = new Color32(0, 128, 128, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.CYAN: // <color=cyan>
+                                m_HtmlColor = new Color32(0, 255, 255, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.DARKBLUE: // <color=darkblue>
+                                m_HtmlColor = new Color32(0, 0, 160, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.FUCHSIA: // <color=fuchsia>
+                                m_HtmlColor = new Color32(255, 0, 255, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.SILVER: // <color=silver>
+                                m_HtmlColor = new Color32(192, 192, 192, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.BROWN: // <color=brown>
+                                m_HtmlColor = new Color32(165, 42, 42, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.MAROON: // <color=maroon>
+                                m_HtmlColor = new Color32(128, 0, 0, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.OLIVE: // <color=olive>
+                                m_HtmlColor = new Color32(128, 128, 0, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.NAVY: // <color=navy>
+                                m_HtmlColor = new Color32(0, 0, 128, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.AQUA: // <color=aqua>
+                                m_HtmlColor = new Color32(0, 255, 255, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.MAGENTA: // <color=magenta>
+                                m_HtmlColor = new Color32(255, 0, 255, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.LIME: // <color=lime>
+                                m_HtmlColor = new Color32(0, 255, 0, 255);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
+                            case (int)MarkupTag.TRANSPARENT: // <color=transparent>
+                                m_HtmlColor = new Color32(0, 0, 0, 0);
+                                m_ColorStack.Add(m_HtmlColor);
+                                return true;
                         }
                         return false;
 

@@ -92,6 +92,10 @@ namespace PlayerBuildProgramLibrary.Data
         public string[] AdditionalCppFiles = new string[0];
         public string[] AdditionalArgs = new string[0];
         public string CompilerFlags;
+        public string[] AdditionalLibraries;
+        public string[] AdditionalDefines;
+        public string[] AdditionalIncludeDirectories;
+        public string[] AdditionalLinkDirectories;
         public string LinkerFlags;
         public string LinkerFlagsFile;
         public string ExtraTypes;

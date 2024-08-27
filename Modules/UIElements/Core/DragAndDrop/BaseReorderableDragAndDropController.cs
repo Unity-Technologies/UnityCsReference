@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
 
         public virtual bool CanStartDrag(IEnumerable<int> itemIds)
         {
-            return enableReordering;
+            return true;
         }
 
         public virtual StartDragArgs SetupDragAndDrop(IEnumerable<int> itemIds, bool skipText = false)

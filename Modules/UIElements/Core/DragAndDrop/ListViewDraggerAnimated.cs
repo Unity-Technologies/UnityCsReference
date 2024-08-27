@@ -26,6 +26,9 @@ namespace UnityEngine.UIElements
 
         protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
         {
+            if (!enabled)
+                return base.StartDrag(pointerPosition);
+
             targetView.ClearSelection();
 
             var recycledItem = GetRecycledItem(pointerPosition);
@@ -38,6 +41,7 @@ namespace UnityEngine.UIElements
 
             isDragging = true;
             m_Item = recycledItem;
+
             targetView.virtualizationController.StartDragItem(m_Item);
 
             var y = m_Item.rootElement.layout.y;
@@ -71,6 +75,12 @@ namespace UnityEngine.UIElements
 
         protected internal override void UpdateDrag(Vector3 pointerPosition)
         {
+            if (!enabled)
+            {
+                base.UpdateDrag(pointerPosition);
+                return;
+            }
+
             if (m_Item == null)
                 return;
 
@@ -151,12 +161,20 @@ namespace UnityEngine.UIElements
 
         protected internal override void OnDrop(Vector3 pointerPosition)
         {
+            if (!enabled)
+            {
+                base.OnDrop(pointerPosition);
+                return;
+            }
+
             if (m_Item == null)
                 return;
 
             // Stop dragging first, to allow the list to refresh properly dragged items.
             isDragging = false;
+
             m_Item.rootElement.ClearManualLayout();
+
             targetView.virtualizationController.EndDrag(m_CurrentIndex);
 
             if (m_OffsetItem != null)

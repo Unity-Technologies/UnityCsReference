@@ -59,7 +59,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string resetPlayerSettingsDialogTitle = L10n.Tr("Reset Player Settings to Globals");
         public static readonly string resetPlayerSettingsDialogMessage = L10n.Tr("This will reset all Player Settings overrides and restore all global Player Settings.");
         public static readonly GUIContent playerSettingsReset = EditorGUIUtility.TrTextContent("Reset to Globals");
-        public static readonly GUIContent playerSetttingsRemove = EditorGUIUtility.TrTextContent("Remove Overrides");
+        public static readonly GUIContent playerSettingsRemove = EditorGUIUtility.TrTextContent("Remove Overrides");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

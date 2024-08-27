@@ -250,7 +250,7 @@ namespace UnityEditor.Toolbars
                 Tools.viewToolChanged += UpdateViewToolContent;
                 UpdateViewToolContent();
             }
-            
+
             EditorApplication.delayCall += UpdateState;
         }
 
@@ -292,6 +292,7 @@ namespace UnityEditor.Toolbars
             switch (m_TargetTool)
             {
                 case Tool.View:
+                    tooltip = L10n.Tr("View Tool");
                     UpdateViewToolContent();
                     break;
                 case Tool.Move:
@@ -365,7 +366,7 @@ namespace UnityEditor.Toolbars
 
             if (enabledSelf != enabled)
                 enabledSelf = enabled;
-            
+
             // Break the delayCall chain if button's dettached from panel
             if (panel != null)
                 EditorApplication.delayCall += UpdateState;

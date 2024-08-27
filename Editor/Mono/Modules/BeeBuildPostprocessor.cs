@@ -273,6 +273,11 @@ namespace UnityEditor.Modules
 
         protected virtual string Il2CppCompilerFlagsFor(BuildPostProcessArgs args) => null;
 
+        protected virtual string[] Il2CppAdditionalLibrariesFor(BuildPostProcessArgs args) => Array.Empty<string>();
+        protected virtual string[] Il2CppAdditionalDefinesFor(BuildPostProcessArgs args) => Array.Empty<string>();
+        protected virtual string[] Il2CppAdditionalIncludeDirectoriesFor(BuildPostProcessArgs args) => Array.Empty<string>();
+        protected virtual string[] Il2CppAdditionalLinkDirectoriesFor(BuildPostProcessArgs args) => Array.Empty<string>();
+
         protected virtual string Il2CppLinkerFlagsFor(BuildPostProcessArgs args) => null;
 
         protected virtual string Il2CppLinkerFlagsFileFor(BuildPostProcessArgs args) => null;
@@ -296,6 +301,10 @@ namespace UnityEditor.Modules
             var sysrootPath = Il2CppSysrootPathFor(args);
             var toolchainPath = Il2CppToolchainPathFor(args);
             var compilerFlags = Il2CppCompilerFlagsFor(args);
+            var additionalLibraries = Il2CppAdditionalLibrariesFor(args);
+            var additionalDefines = Il2CppAdditionalDefinesFor(args);
+            var additionalIncludeDirectories = Il2CppAdditionalIncludeDirectoriesFor(args);
+            var additionalLinkDirectories = Il2CppAdditionalLinkDirectoriesFor(args);
             var linkerFlags = Il2CppLinkerFlagsFor(args);
             var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
@@ -345,6 +354,10 @@ namespace UnityEditor.Modules
                 AdditionalArgs = additionalArgs.ToArray(),
                 AllowDebugging = allowDebugging,
                 CompilerFlags = compilerFlags,
+                AdditionalLibraries = additionalLibraries,
+                AdditionalDefines = additionalDefines,
+                AdditionalIncludeDirectories = additionalIncludeDirectories,
+                AdditionalLinkDirectories = additionalLinkDirectories,
                 LinkerFlags = linkerFlags,
                 LinkerFlagsFile = linkerFlagsFile,
                 SysRootPath = sysrootPath,

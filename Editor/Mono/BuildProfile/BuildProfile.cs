@@ -206,6 +206,13 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
+            var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);
+            if (playerSettingsDirty)
+            {
+                BuildProfileModuleUtil.SerializePlayerSettings(this);
+                EditorUtility.SetDirty(this);
+            }
+
             // OnDisable is called when entering play mode, during domain reloads, or when the object is destroyed.
             // Avoid removing player settings for the first two cases to prevent slow syncs (e.g., color space) caused by global manager updates.
             if (!EditorApplication.isUpdating)

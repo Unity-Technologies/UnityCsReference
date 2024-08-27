@@ -461,17 +461,10 @@ namespace UnityEngine.UIElements.Internal
         void OnColumnRemoved(Column column)
         {
             // If the column was not already added then ignore it
-            if (!columnDataMap.ContainsKey(column))
+            if (!columnDataMap.TryGetValue(column, out var data))
                 return;
 
-            var data = columnDataMap[column];
-
-            data.control.UnregisterCallback<GeometryChangedEvent>(OnColumnControlGeometryChanged);
-            data.control.clickable.clickedWithEventInfo -= OnColumnClicked;
-            data.control.mover.activeChanged -= OnMoveManipulatorActivated;
-            data.control.RemoveFromHierarchy();
-            data.resizeHandle.RemoveFromHierarchy();
-
+            CleanupColumnData(data);
             columnDataMap.Remove(column);
 
             UpdateColumnControls();
@@ -862,6 +855,16 @@ namespace UnityEngine.UIElements.Internal
             SaveViewData();
         }
 
+        void CleanupColumnData(ColumnData data)
+        {
+            data.control.UnregisterCallback<GeometryChangedEvent>(OnColumnControlGeometryChanged);
+            data.control.clickable.clickedWithEventInfo -= OnColumnClicked;
+            data.control.mover.activeChanged -= OnMoveManipulatorActivated;
+            data.control.RemoveFromHierarchy();
+            data.control.Dispose();
+            data.resizeHandle.RemoveFromHierarchy();
+        }
+
         public void Dispose()
         {
             sortDescriptions.changed -= UpdateSortedColumns;
@@ -874,9 +877,10 @@ namespace UnityEngine.UIElements.Internal
 
             foreach (var data in columnDataMap.Values)
             {
-                data.control.clickable.clickedWithEventInfo -= OnColumnClicked;
-                data.control.mover.activeChanged -= OnMoveManipulatorActivated;
+                CleanupColumnData(data);
             }
+
+            columnDataMap.Clear();
         }
     }
 }

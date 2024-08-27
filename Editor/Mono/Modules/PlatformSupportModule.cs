@@ -393,6 +393,23 @@ namespace UnityEditor.Modules
             BuildProfileWorkflowState state);
 
         /// <summary>
+        /// When editing a build profile asset, this method is invoked to render the
+        /// warning help boxes for build related issues.
+        /// </summary>
+        /// <param name="serializedObject">
+        /// Target Build Profile serialized object .
+        /// </param>
+        /// <param name="rootProperty">
+        /// Property instance for <see cref="BuildProfile.platformBuildProfile"/>.
+        /// </param>
+        /// <returns>
+        /// Root visual element for the platform specific warnings.
+        /// </returns>
+        VisualElement CreatePlatformBuildWarningsGUI(
+            SerializedObject serializedObject,
+            SerializedProperty rootProperty);
+
+        /// <summary>
         /// Copy settings to the platform settings base we are passing. This is used, for example, when creating
         /// a new classic profile and we need to copy settings - that live in the managed side only - to it
         /// </summary>

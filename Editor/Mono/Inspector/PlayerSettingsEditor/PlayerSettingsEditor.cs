@@ -265,7 +265,7 @@ namespace UnityEditor
             public static readonly string undoChangedDefaultShaderChunkCountString  = L10n.Tr("Changed Shader Chunk Count Default Setting");
 
             public static readonly string globalPlayerSettingsInfo =
-            L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using it's own customized player setitngs. Edit the build profile to change them.");
+            L10n.Tr("Editing these global player settings will not affect the current state of the project, because the active build profile is using its own customized player settings. Edit the build profile to change them.");
             public static readonly string globalPlayerSettingsInfoButton = L10n.Tr("Edit Build Profile");
         }
 
@@ -2217,7 +2217,8 @@ namespace UnityEditor
                         api == GraphicsDeviceType.Direct3D11 ||
                         api == GraphicsDeviceType.Metal ||
                         api == GraphicsDeviceType.Vulkan ||
-                        api == GraphicsDeviceType.OpenGLES3)
+                        api == GraphicsDeviceType.OpenGLES3 ||
+                        api == GraphicsDeviceType.Direct3D12)
                     {
                         platformSupportsBatching = true;
                         break;
@@ -3108,6 +3109,10 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
                     if (m_GCIncremental.boolValue != oldValue)
                     {
+                        if (!IsActivePlayerSettingsEditor())
+                        {
+                            return;
+                        }
                         // Give the user a chance to change mind and revert changes.
                         if (ShouldRestartEditorToApplySetting())
                         {
@@ -3194,6 +3199,10 @@ namespace UnityEditor
 
                     if (m_ActiveInputHandler.intValue != currValue)
                     {
+                        if (!IsActivePlayerSettingsEditor())
+                        {
+                            return;
+                        }
                         // Give the user a chance to change mind and revert changes.
                         if (ShouldRestartEditorToApplySetting())
                         {

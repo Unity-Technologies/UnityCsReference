@@ -649,7 +649,7 @@ namespace UnityEngine
         public const int DefaultRaycastLayers = ~Physics2D.IgnoreRaycastLayer;
         public const int AllLayers = ~0;
 
-        // This should match Box2D "b2_maxPolygonVertices"
+        // This should match Box2D "box2d_b2_maxPolygonVertices"
         public const int MaxPolygonShapeVertices = 8;
 
         public static PhysicsScene2D defaultPhysicsScene { get { return new PhysicsScene2D(); } }
@@ -2218,7 +2218,7 @@ namespace UnityEngine
         // Capsule 2-Vertex (b2CapsuleShape)
         Capsule = 1,
 
-        // Polygon (Physics2D.MaxPolygonShapeVertices - See "b2_maxPolygonVertices") Vertex (b2PolygonShape)
+        // Polygon (Physics2D.MaxPolygonShapeVertices - See "box2d_b2_maxPolygonVertices") Vertex (b2PolygonShape)
         Polygon = 2,
 
         // Edge n-Vertex (b2Chainhape)

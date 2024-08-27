@@ -95,9 +95,6 @@ namespace UnityEngine.UIElements
 
         public override DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args)
         {
-            if (!enableReordering)
-                return DragVisualMode.Rejected;
-
             return args.dragAndDropData.source == m_TreeView ? DragVisualMode.Move : DragVisualMode.Rejected;
         }
 
