@@ -28,6 +28,7 @@ namespace UnityEditor.Build.Profile
         const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
         const string k_VirtualTextureWarningHelpBox = "virtual-texture-warning-help-box";
+        const string k_PlatformBuildWarningsRoot = "platform-build-warning-root";
         const string k_PlayerScriptingDefinesFoldout = "scripting-defines-foldout";
         const string k_BuildSettingsFoldout = "build-settings-foldout";
         BuildProfileSceneList m_SceneList;
@@ -97,6 +98,7 @@ namespace UnityEditor.Build.Profile
             var noModuleFoundHelpBox = root.Q<HelpBox>(k_PlatformWarningHelpBox);
             var platformSettingsLabel = root.Q<Label>(k_BuildSettingsLabel);
             var platformSettingsBaseRoot = root.Q<VisualElement>(k_PlatformSettingsBaseRoot);
+            var platformBuildWarningsRoot = root.Q<VisualElement>(k_PlatformBuildWarningsRoot);
             var buildDataLabel = root.Q<Label>(k_BuildDataLabel);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             var buildSettingsFoldout = root.Q<Foldout>(k_BuildSettingsFoldout);
@@ -138,7 +140,7 @@ namespace UnityEditor.Build.Profile
 
             EditorApplication.update += EditorUpdate;
 
-            ShowPlatformSettings(profile, platformSettingsBaseRoot);
+            ShowPlatformSettings(profile, platformSettingsBaseRoot, platformBuildWarningsRoot);
             root.Bind(serializedObject);
             return root;
         }
@@ -245,16 +247,25 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot)
+        void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot, VisualElement platformBuildWarningsRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
             m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.moduleName);
-            if (m_PlatformExtension != null)
+            if (m_PlatformExtension == null)
+                return;
+
+            var warningContainer = m_PlatformExtension.CreatePlatformBuildWarningsGUI(serializedObject, platformProperties);
+
+            // Build Profile Window reserves space for custom
+            // platform GUI outside of the editor scroll view.
+            if (parent != null && warningContainer != null)
             {
-                var settings = m_PlatformExtension.CreateSettingsGUI(
-                    serializedObject, platformProperties, platformSettingsState);
-                platformSettingsBaseRoot.Add(settings);
+                parent.AppendInspectorHeaderElement(warningContainer);
             }
+
+            var settings = m_PlatformExtension.CreateSettingsGUI(
+                serializedObject, platformProperties, platformSettingsState);
+            platformSettingsBaseRoot.Add(settings);
         }
 
         void AddSceneList(VisualElement root, BuildProfile profile = null)

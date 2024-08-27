@@ -1774,5 +1774,8 @@ namespace UnityEditor
         internal static extern void UpdatePlayerSettingsObjectFromYAML(PlayerSettings playerSettings, string yamlSettings);
 
         internal static extern bool platformRequiresReadableAssets { get; set; }
+
+        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
+        internal static extern string[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);
     }
 }

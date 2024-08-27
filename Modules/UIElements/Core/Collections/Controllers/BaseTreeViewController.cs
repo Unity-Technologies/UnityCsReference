@@ -339,11 +339,6 @@ namespace UnityEngine.UIElements
             var toggle = target.Q<Toggle>(BaseTreeView.itemToggleUssClassName);
             var index = ((ReusableTreeViewItem)toggle.userData).index;
 
-            if (this is MultiColumnTreeViewController multiColumnTreeViewController)
-            {
-                index = multiColumnTreeViewController.columnController.GetSortedIndex(index);
-            }
-
             if (!HasChildrenByIndex(index))
                 return;
 
@@ -400,11 +395,6 @@ namespace UnityEngine.UIElements
         {
             var toggle = evt.target as Toggle;
             var index = ((ReusableTreeViewItem)toggle.userData).index;
-
-            if (this is MultiColumnTreeViewController multiColumnTreeViewController)
-            {
-                index = multiColumnTreeViewController.columnController.GetSortedIndex(index);
-            }
 
             var isExpanded = IsExpandedByIndex(index);
             if (isExpanded)

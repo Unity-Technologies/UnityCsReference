@@ -305,6 +305,9 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RemoveElementAndDependencies(VisualElementAsset asset)
         {
+            if (asset == null)
+                return;
+
             m_VisualElementAssets.Remove(asset);
             RemoveUxmlObjectEntryDependencies(asset.id);
         }

@@ -21,7 +21,11 @@ using static UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
 
 namespace UnityEditor.SpeedTree.Importer
 {
-    [ScriptedImporter(1, "st9", AllowCaching = true)]
+    // [2024-08-07] version: 2
+    // Fixed mesh's UV2 & UV3 data usage strategy to 'always allocate' from 'conditionally allocate'
+    // to fix unwanted application of leaf-facing effect to geometries without leaf-facing data.
+
+    [ScriptedImporter(version: 2, ext: "st9", AllowCaching = true)]
     public class SpeedTree9Importer : ScriptedImporter
     {
         const int SPEEDTREE_9_WIND_VERSION = 1;
@@ -212,10 +216,10 @@ namespace UnityEditor.SpeedTree.Importer
 
             AddDependencyOnExtractedMaterials();
 
-            TriggerAllCabback();
+            TriggerAllCallbacks();
         }
 
-        private void TriggerAllCabback()
+        private void TriggerAllCallbacks()
         {
             var allMethods = AttributeHelper.GetMethodsWithAttribute<MaterialSettingsCallbackAttribute>().methodsWithAttributes;
             foreach (var method in allMethods)
@@ -259,7 +263,7 @@ namespace UnityEditor.SpeedTree.Importer
 
                 RegenerateAndPopulateExternalMaterials(this.assetPath);
 
-                TriggerAllCabback();
+                TriggerAllCallbacks();
             }
             finally
             {
@@ -346,17 +350,13 @@ namespace UnityEditor.SpeedTree.Importer
 
             mesh.SetUVs(0, sTMeshGeometry.uvs[0]);
             mesh.SetUVs(1, sTMeshGeometry.uvs[1]);
-
             if (!isBillboard)
             {
-                if (m_HasBranch2Data || m_HasFacingData) // If Branch2 is available:
-                {
-                    mesh.SetUVs(2, sTMeshGeometry.uvs[2]); // Branch2Pos, Branch2Dir, Branch2Weight, <Unused>
-                }
-                if (m_HasBranch2Data && m_HasFacingData) // If camera-facing geom is available:
-                {
-                    mesh.SetUVs(3, sTMeshGeometry.uvs[3]); // 2/3 Anchor XYZ, FacingFlag
-                }
+                // SpeedTree shader expects certain UV2 & UV3 values for leaf facing & wind.
+                // if we don't claim them here now, tree rendering may break when Unity
+                // uses UV2 & UV3 and the shader finds unexpected values.
+                mesh.SetUVs(2, sTMeshGeometry.uvs[2]); // Branch2Pos, Branch2Dir, Branch2Weight, <Unused>
+                mesh.SetUVs(3, sTMeshGeometry.uvs[3]); // 2/3 Anchor XYZ, FacingFlag
             }
 
             return mesh;
@@ -453,23 +453,23 @@ namespace UnityEditor.SpeedTree.Importer
 
                 if (!isBillboard)
                 {
-                    if (m_HasBranch2Data)
-                    {
-                        sTMeshGeometry.uvs[currentUV++][i].Set(
-                            vertex.BranchWind2.X,
-                            vertex.BranchWind2.Y,
-                            vertex.BranchWind2.Z,
-                            0.0f);
-                    }
+                    float anchorX = m_HasFacingData ? vertex.Anchor.X * m_MeshSettings.scaleFactor : 0.0f;
+                    float anchorY = m_HasFacingData ? vertex.Anchor.Y * m_MeshSettings.scaleFactor : 0.0f;
+                    float anchorZ = m_HasFacingData ? vertex.Anchor.Z * m_MeshSettings.scaleFactor : 0.0f;
+                    float leafFacingFlag = vertex.CameraFacing ? 1.0f : 0.0f;
 
-                    if (m_HasFacingData)
-                    {
-                        sTMeshGeometry.uvs[currentUV++][i].Set(
-                            vertex.Anchor.X * m_MeshSettings.scaleFactor,
-                            vertex.Anchor.Y * m_MeshSettings.scaleFactor,
-                            vertex.Anchor.Z * m_MeshSettings.scaleFactor,
-                            vertex.CameraFacing ? 1.0f : 0.0f);
-                    }
+                    sTMeshGeometry.uvs[currentUV++][i].Set(
+                        m_HasBranch2Data ? vertex.BranchWind2.X : anchorX,
+                        m_HasBranch2Data ? vertex.BranchWind2.Y : anchorY,
+                        m_HasBranch2Data ? vertex.BranchWind2.Z : anchorZ,
+                        m_HasBranch2Data ? 0.0f /*UNUSED*/      : leafFacingFlag);
+
+                    bool useUV3 = m_HasBranch2Data && m_HasFacingData;
+                    sTMeshGeometry.uvs[currentUV++][i].Set(
+                         useUV3 ? anchorX        : 0.0f,
+                         useUV3 ? anchorY        : 0.0f,
+                         useUV3 ? anchorZ        : 0.0f,
+                         useUV3 ? leafFacingFlag : 0.0f);
                 }
             }
         }
@@ -502,15 +502,7 @@ namespace UnityEditor.SpeedTree.Importer
             int numUVs = 2;
             if (!isBillboard)
             {
-                if (m_HasBranch2Data)
-                {
-                    numUVs += 1;
-                }
-
-                if (m_HasFacingData)
-                {
-                    numUVs += 1;
-                }
+                numUVs += 2; // reserve UV2 & UV3 for 3D-geometry to detect leaf facing (VS effect) correctly
             }
             return numUVs;
         }

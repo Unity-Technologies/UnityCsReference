@@ -341,7 +341,8 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsSelectorsContainerElement(element) ||
                 BuilderSharedStyles.IsDocumentElement(element) ||
                 !element.IsLinkedToAsset() ||
-                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document) && !BuilderSharedStyles.IsStyleSheetElement(element)))
+                (!BuilderSharedStyles.IsSelectorElement(element) && !element.IsPartOfActiveVisualTreeAsset(m_PaneWindow.document) && !BuilderSharedStyles.IsStyleSheetElement(element)) ||
+                BuilderSharedStyles.IsStyleSheetElement(element) && !string.IsNullOrEmpty(element?.GetProperty(BuilderConstants.ExplorerItemLinkedUXMLFileName) as string))
                 return false;
 
             if (BuilderSharedStyles.IsSelectorElement(element))

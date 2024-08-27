@@ -837,10 +837,7 @@ namespace UnityEditor.Overlays
                 if (evt.relatedTarget == null && m_PopupOverlay.containsCursor)
                     EditorApplication.delayCall += m_PopupOverlay.Focus;
                 else
-                {
                     ClosePopupOverlay();
-                    popup.overlay.OnWillBeDestroyed();
-                }
             });
 
             rootVisualElement.Add(m_PopupOverlay);
@@ -852,6 +849,7 @@ namespace UnityEditor.Overlays
             if (m_PopupOverlay == null)
                 return false;
 
+            m_PopupOverlay.overlay.OnWillBeDestroyed();
             m_PopupOverlay.RemoveFromHierarchy();
             m_PopupOverlay = null;
             return true;

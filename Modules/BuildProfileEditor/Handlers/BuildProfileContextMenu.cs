@@ -146,6 +146,15 @@ namespace UnityEditor.Build.Profile.Handlers
                     {
                         continue;
                     }
+                    // if we're deleting an active profile, we want to compare the value of its settings that require a restart
+                    // to the value of the settings for the platform we'll be activating after we delete the current platform
+                    // and show a restart editor prompt if they're different so the settings take effect
+                    var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(profile, null,
+                        profile.buildTarget, EditorUserBuildSettings.activeBuildTarget);
+                    if (!isSuccess)
+                    {
+                        continue;
+                    }
                 }
 
                 m_ProfileDataSource.DeleteAsset(profile);

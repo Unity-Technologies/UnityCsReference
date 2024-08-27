@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements.Internal
         /// <summary>
         /// The column related to this column control.
         /// </summary>
-        public Column column { get; set; }
+        public Column column { get; private set; }
 
         // For testing
         internal Label title => content?.Q<Label>(titleElementName);
@@ -168,19 +168,8 @@ namespace UnityEngine.UIElements.Internal
         public MultiColumnHeaderColumn(Column column)
         {
             this.column = column;
-            column.changed += (c, role) =>
-            {
-                if (role == ColumnDataType.HeaderTemplate)
-                {
-                    m_ScheduledHeaderTemplateUpdate?.Pause();
-                    m_ScheduledHeaderTemplateUpdate = schedule.Execute(UpdateHeaderTemplate);
-                }
-                else
-                {
-                    UpdateDataFromColumn();
-                }
-            };
-            column.resized += (c) => UpdateGeometryFromColumn();
+            this.column.changed += OnColumnChanged;
+            this.column.resized += OnColumnResized;
             AddToClassList(ussClassName);
             // Enforce to avoid override from uss.
             style.marginLeft = 0;
@@ -205,15 +194,31 @@ namespace UnityEngine.UIElements.Internal
             InitManipulators();
         }
 
+        private void OnColumnChanged(Column c, ColumnDataType role)
+        {
+            if (column != c)
+                return;
+
+            if (role == ColumnDataType.HeaderTemplate)
+            {
+                m_ScheduledHeaderTemplateUpdate?.Pause();
+                m_ScheduledHeaderTemplateUpdate = schedule.Execute(UpdateHeaderTemplate);
+            }
+            else
+            {
+                UpdateDataFromColumn();
+            }
+        }
+
+        private void OnColumnResized(Column c)
+        {
+            UpdateGeometryFromColumn();
+        }
+
         void InitManipulators()
         {
             this.AddManipulator(mover = new ColumnMover());
-            mover.movingChanged += (mv) => {
-                if (mover.moving)
-                    AddToClassList(movingUssClassName);
-                else
-                    RemoveFromClassList(movingUssClassName);
-            };
+            mover.movingChanged += OnMoverChanged;
             this.AddManipulator(clickable = new Clickable((Action)null));
             clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
 
@@ -226,8 +231,19 @@ namespace UnityEngine.UIElements.Internal
             clickable.activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = multiSortingModifier });
         }
 
+        private void OnMoverChanged(ColumnMover mv)
+        {
+            if (mover.moving)
+                AddToClassList(movingUssClassName);
+            else
+                RemoveFromClassList(movingUssClassName);
+        }
+
         void UpdateDataFromColumn()
         {
+            if (column == null)
+                return;
+
             name = column.name;
             UnbindHeaderContent();
             BindHeaderContent();
@@ -261,6 +277,10 @@ namespace UnityEngine.UIElements.Internal
             UnbindHeaderContent();
             var destroyCallback = content.GetProperty(s_DestroyCallbackVEPropertyName) as Action<VisualElement>;
 
+            content.ClearProperty(s_BindingCallbackVEPropertyName);
+            content.ClearProperty(s_UnbindingCallbackVEPropertyName);
+            content.ClearProperty(s_DestroyCallbackVEPropertyName);
+            content.ClearProperty(s_BoundVEPropertyName);
             destroyCallback?.Invoke(content);
         }
 
@@ -318,6 +338,9 @@ namespace UnityEngine.UIElements.Internal
 
         void UpdateHeaderTemplate()
         {
+            if (column == null)
+                return;
+
             Func<VisualElement> makeContentCallback = column.makeHeader;
             Action<VisualElement> bindContentCallback = column.bindHeader;
             Action<VisualElement> unbindContentCallback = column.unbindHeader;
@@ -345,6 +368,18 @@ namespace UnityEngine.UIElements.Internal
             if (float.IsNaN(column.desiredWidth))
                 return;
             style.width = column.desiredWidth;
+        }
+
+        public void Dispose()
+        {
+            mover.movingChanged -= OnMoverChanged;
+            column.changed -= OnColumnChanged;
+            column.resized -= OnColumnResized;
+            this.RemoveManipulator(mover);
+            this.RemoveManipulator(clickable);
+            mover = null;
+            column = null;
+            content = null;
         }
     }
 }

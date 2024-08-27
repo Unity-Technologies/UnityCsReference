@@ -112,6 +112,8 @@ namespace UnityEngine.UIElements
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
+            tgs.text = string.Empty;
+            tgs.isIMGUI = false;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
                 return true;
@@ -172,7 +174,6 @@ namespace UnityEngine.UIElements
             tgs.inverseYAxis = true;
             tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
-            tgs.isIMGUI = false;
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             var size = m_TextElement.contentRect.size;

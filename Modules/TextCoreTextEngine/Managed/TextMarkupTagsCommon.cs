@@ -128,6 +128,19 @@ namespace UnityEngine.TextCore.Text
         PURPLE = -1250222130,
         GREY = 2638345,
         LIGHTBLUE= 341063360,
+        TEAL = 2947772,
+        CYAN= 2504597,
+        DARKBLUE= -1960309918,
+        FUCHSIA= -1002715645,
+        SILVER= -960329321,
+        BROWN= 81017702,
+        MAROON= -1355621936,
+        OLIVE= 95492953,
+        NAVY= 2876352,
+        AQUA = 2284356,
+        MAGENTA= -1812576107,
+        TRANSPARENT= -1014785338,
+        LIME= 2656045,
 
         // Unicode Characters
         BR = 2256,                          // <br> Line Feed (LF) \u0A

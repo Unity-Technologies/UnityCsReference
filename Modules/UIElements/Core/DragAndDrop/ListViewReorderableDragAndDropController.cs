@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
 
         public override DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args)
         {
-            if (args.dragAndDropPosition == DragAndDropPosition.OverItem || !enableReordering)
+            if (args.dragAndDropPosition == DragAndDropPosition.OverItem)
                 return DragVisualMode.Rejected;
 
             return args.dragAndDropData.source == m_ListView ?

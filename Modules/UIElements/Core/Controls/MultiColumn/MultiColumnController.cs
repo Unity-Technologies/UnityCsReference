@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
 
                 var cellItem = cellContainer.GetProperty(bindableElementPropertyName) as VisualElement;
                 column.destroyCell?.Invoke(cellItem);
-                cellContainer.SetProperty(k_BoundColumnVePropertyName, null);
+                cellContainer.ClearProperty(k_BoundColumnVePropertyName);
             }
         }
 

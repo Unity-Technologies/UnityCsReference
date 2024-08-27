@@ -162,17 +162,11 @@ namespace UnityEditor
         [FreeFunction("PhysicsDebugDraw::ClearAllPools")]
         internal extern static void ClearAllPools();
 
-        [FreeFunction("PhysicsDebugDraw::UpdateFilterConditionally")]
-        internal extern static void UpdateFilterConditionally();
-
         [FreeFunction("PhysicsDebugDraw::UpdateFilter")]
         internal extern static void UpdateFilter();
 
         [FreeFunction("PhysicsDebugDraw::IsContactVisualised")]
         internal extern static bool IsColliderVisualised(Collider collider);
-
-        [FreeFunction("PhysicsDebugDraw::IsContactVisualisedThreadSafe", isThreadSafe: true)]
-        internal extern static bool IsContactVisualisedThreadSafe(IntPtr shapePtr);
 
         internal static event Action<PhysicsScene> OnBeforeSimulate;
         internal static event Action<NativeArray<Query>> OnRetrievePooledQueries;

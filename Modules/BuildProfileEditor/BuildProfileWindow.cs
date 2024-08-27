@@ -27,6 +27,7 @@ namespace UnityEditor.Build.Profile
         const string k_PlayerSettingsWindow = "Project/Player";
 
         internal const string buildProfileInspectorVisualElement = "build-profile-editor-inspector";
+        internal const string buildProfileInspectorHeaderVisualElement = "build-profile-editor-inspector-header";
 
         internal BuildProfileEditor buildProfileEditor;
         BuildProfileWorkflowState m_WindowState;
@@ -43,7 +44,7 @@ namespace UnityEditor.Build.Profile
         PlatformListView m_ProfileListViews;
         VisualElement m_WelcomeMessageElement;
 
-        VisualElement m_InspectorHeader;
+        VisualElement m_SelectionHeader;
 
         /// <summary>
         /// Build Profile inspector for the selected classic platform or profile,
@@ -51,6 +52,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         /// <see cref="OnClassicPlatformSelected"/>
         ScrollView m_BuildProfileInspectorElement;
+        VisualElement m_BuildProfileInspectorHeaderElement;
 
         VisualElement m_AdditionalActionsDropdown;
         DropdownButton m_BuildButton;
@@ -85,10 +87,11 @@ namespace UnityEditor.Build.Profile
             m_BuildButton = CreateBuildDropdownButton();
             rootVisualElement.Q<VisualElement>("build-dropdown-button").Add(m_BuildButton);
             m_BuildProfileInspectorElement = rootVisualElement.Q<ScrollView>(buildProfileInspectorVisualElement);
+            m_BuildProfileInspectorHeaderElement = rootVisualElement.Q<VisualElement>(buildProfileInspectorHeaderVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
-            m_InspectorHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
+            m_SelectionHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<Label>("platforms-label").text = TrText.platforms;
@@ -190,7 +193,7 @@ namespace UnityEditor.Build.Profile
 
             m_ActivateButton.text = TrText.activate;
             m_ProfileListViews.ClearPlatformSelection();
-            m_InspectorHeader.Show();
+            m_SelectionHeader.Show();
             m_BuildProfileSelection.SelectItems(selectedItems);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
 
@@ -221,7 +224,7 @@ namespace UnityEditor.Build.Profile
 
             m_ActivateButton.text = TrText.activatePlatform;
             m_ProfileListViews.ClearProfileSelection();
-            m_InspectorHeader.Show();
+            m_SelectionHeader.Show();
             m_BuildProfileSelection.SelectItem(profile);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
 
@@ -236,12 +239,13 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         internal void OnMissingClassicPlatformSelected(string platformId)
         {
-            m_InspectorHeader.Show();
+            m_SelectionHeader.Show();
             m_ProfileListViews.ClearProfileSelection();
             UpdateFormButtonState(null);
 
             // Render platform requirement helpbox instead of default inspector.
             m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorHeaderElement.Clear();
             var warningHelpBox = new HelpBox()
             {
                 messageType = HelpBoxMessageType.Warning
@@ -265,8 +269,9 @@ namespace UnityEditor.Build.Profile
             DestroyImmediate(buildProfileEditor);
             buildProfileEditor = ScriptableObject.CreateInstance<BuildProfileEditor>();
             m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorHeaderElement.Clear();
             m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateLegacyGUI());
-            m_InspectorHeader.Hide();
+            m_SelectionHeader.Hide();
         }
 
         /// <summary>
@@ -318,6 +323,14 @@ namespace UnityEditor.Build.Profile
             }
 
             m_ProfileListViews.Rebuild();
+        }
+
+        /// <summary>
+        /// Sticky editor visual elements above inspector window.
+        /// </summary>
+        internal void AppendInspectorHeaderElement(VisualElement element)
+        {
+            m_BuildProfileInspectorHeaderElement.Add(element);
         }
 
         void Update()
@@ -422,6 +435,26 @@ namespace UnityEditor.Build.Profile
             if (activateProfile.IsActiveBuildProfileOrPlatform())
                 return;
 
+            // before we update the BuildProfileContext's activeProfile,
+            // we want to capture the current active profile to check if an editor restart is required
+            // because certain player settings changed that will require it
+            var currentBuildProfile = BuildProfileContext.instance.activeProfile;
+
+            // we'll default to the EUBS build target in case we're dealing with an active classic platform
+            BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
+            if (currentBuildProfile != null)
+            {
+                currentBuildTarget = currentBuildProfile.buildTarget;
+            }
+
+            var nextBuildTarget = activateProfile.buildTarget;
+            // success here is handling the player settings, failure is the user cancels handling the restart.
+            var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(currentBuildProfile, activateProfile,
+                currentBuildTarget, nextBuildTarget);
+            if (!isSuccess) {
+                return;
+            }
+
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
             BuildProfileContext.instance.activeProfile = !BuildProfileContext.IsClassicPlatformProfile(activateProfile)
@@ -498,6 +531,7 @@ namespace UnityEditor.Build.Profile
             buildProfileEditor.parent = this;
 
             m_BuildProfileInspectorElement.Clear();
+            m_BuildProfileInspectorHeaderElement.Clear();
             m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateInspectorGUI());
 
             // Builds can only be made for an active BuildProfile,

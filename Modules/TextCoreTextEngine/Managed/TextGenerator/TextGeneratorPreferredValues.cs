@@ -654,8 +654,6 @@ namespace UnityEngine.TextCore.Text
 
                 #endregion
 
-                bool isJustifiedOrFlush = ((HorizontalAlignment)m_LineJustification & HorizontalAlignment.Flush) == HorizontalAlignment.Flush || ((HorizontalAlignment)m_LineJustification & HorizontalAlignment.Justified) == HorizontalAlignment.Justified;
-
                 // Setup Mesh for visible text elements. ie. not a SPACE / LINEFEED / CARRIAGE RETURN.
 
                 #region Handle Visible Characters
@@ -671,7 +669,7 @@ namespace UnityEngine.TextCore.Text
 
                     #region Current Line Horizontal Bounds Check
 
-                    if (isBaseGlyph && textWidth > widthOfTextArea * (isJustifiedOrFlush ? 1.05f : 1.0f))
+                    if (isBaseGlyph && textWidth > widthOfTextArea)
                     {
                         // Handle Line Breaking (if still possible)
                         if (textWrapMode != TextWrappingMode.NoWrap && textWrapMode != TextWrappingMode.PreserveWhitespaceNoWrap && m_CharacterCount != m_FirstCharacterOfLine)
@@ -722,7 +720,7 @@ namespace UnityEngine.TextCore.Text
                                     if (m_CharWidthAdjDelta > 0)
                                         adjustedTextWidth /= 1f - m_CharWidthAdjDelta;
 
-                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f) * (isJustifiedOrFlush ? 1.05f : 1.0f);
+                                    float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f);
                                     m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
                                     m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, generationSettings.charWidthMaxAdj / 100);
 

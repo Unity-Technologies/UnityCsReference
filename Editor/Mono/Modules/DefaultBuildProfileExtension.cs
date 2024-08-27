@@ -91,13 +91,10 @@ namespace UnityEditor.Modules
         public VisualElement CreateSettingsGUI(
             SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
         {
-            var platformWarningsGUI = CreatePlatformBuildWarningsGUI(serializedObject, rootProperty);
             var commonSettingsGUI = CreateCommonSettingsGUI(serializedObject, rootProperty, workflowState);
             var platformSettingsGUI = CreatePlatformSettingsGUI(serializedObject, rootProperty, workflowState);
 
             var settingsGUI = new VisualElement();
-            if (platformWarningsGUI != null)
-                settingsGUI.Add(platformWarningsGUI);
             settingsGUI.Add(platformSettingsGUI);
             if (BuildPlayerWindow.WillDrawMultiplayerBuildOptions())
                 settingsGUI.Add(CreateMultiplayerSettingsGUI(serializedObject.targetObject as BuildProfile));
