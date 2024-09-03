@@ -61,6 +61,8 @@ namespace UnityEngine.UIElements
             public Vector2 bottomRightRadius;
             public Vector2 bottomLeftRadius;
 
+            public Rect backgroundRepeatRect;
+
             public Vector2 contentSize;
             public Vector2 textureSize;
             public float texturePixelsPerPoint;

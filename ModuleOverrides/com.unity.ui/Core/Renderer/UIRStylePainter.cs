@@ -260,14 +260,14 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_CurrentEntry.addFlags = VertexFlags.IsDynamic;
                     uvRegion = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
                     m_CurrentEntry.texture = atlas;
-                    m_Owner.AppendTexture(currentElement, texture, atlas, true);
+                    m_Owner.InsertTexture(currentElement, texture, atlas, true);
                 }
                 else
                 {
                     TextureId id = TextureRegistry.instance.Acquire(texture);
                     m_CurrentEntry.addFlags = VertexFlags.IsTextured;
                     m_CurrentEntry.texture = id;
-                    m_Owner.AppendTexture(currentElement, texture, id, false);
+                    m_Owner.InsertTexture(currentElement, texture, id, false);
                 }
             }
 
@@ -334,7 +334,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 m_CurrentEntry.addFlags = addFlags;
                 m_CurrentEntry.texture = textureId;
-                m_Owner.AppendTexture(currentElement, texture, textureId, isAtlas);
+                m_Owner.InsertTexture(currentElement, texture, textureId, isAtlas);
             }
             Debug.Assert(m_CurrentEntry.vertices.Length == vertices.Length);
             Debug.Assert(m_CurrentEntry.indices.Length == indices.Length);
@@ -457,7 +457,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     var texture = textInfo.meshInfo[i].material.mainTexture;
                     TextureId id = TextureRegistry.instance.Acquire(texture);
                     m_CurrentEntry.texture = id;
-                    m_Owner.AppendTexture(currentElement, texture, id, false);
+                    m_Owner.InsertTexture(currentElement, texture, id, false);
 
                     MeshBuilder.MakeText(
                         textInfo.meshInfo[i],
@@ -477,7 +477,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     m_CurrentEntry.isTextEntry = true;
                     m_CurrentEntry.fontTexSDFScale = sdfScale;
                     m_CurrentEntry.texture = TextureRegistry.instance.Acquire(texture);
-                    m_Owner.AppendTexture(currentElement, texture, m_CurrentEntry.texture, false);
+                    m_Owner.InsertTexture(currentElement, texture, m_CurrentEntry.texture, false);
 
                     bool isDynamicColor = useHints && RenderEvents.NeedsColorID(currentElement);
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
@@ -654,25 +654,31 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 var rectParams = new MeshGenerationContextUtils.RectangleParams();
                 float sliceScale = visualElement.resolvedStyle.unitySliceScale;
 
+
+                ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
+                    style.backgroundPositionY,
+                    style.backgroundRepeat,
+                    style.backgroundSize,
+                    out bool validScaleMode);
+
                 if (background.texture != null)
                 {
+                    bool areSlicesPresent = (Mathf.RoundToInt(slices.x) != 0) ||
+                        (Mathf.RoundToInt(slices.y) != 0) ||
+                        (Mathf.RoundToInt(slices.z) != 0) ||
+                        (Mathf.RoundToInt(slices.w) != 0);
+
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeTextured(
                         currentElement.rect,
                         new Rect(0, 0, 1, 1),
                         background.texture,
-                        ScaleMode.ScaleToFit,
+                        areSlicesPresent ? (validScaleMode ? scaleMode : ScaleMode.StretchToFill) : ScaleMode.ScaleToFit,
                         currentElement.panel.contextType);
 
                     rectParams.rect = new Rect(0, 0, rectParams.texture.width, rectParams.texture.height);
                 }
                 else if (background.sprite != null)
                 {
-                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
-                        style.backgroundPositionY,
-                        style.backgroundRepeat,
-                        style.backgroundSize,
-                        out bool validScaleMode);
-
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeSprite(
@@ -706,12 +712,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 }
                 else if (background.vectorImage != null)
                 {
-                    ScaleMode scaleMode = BackgroundPropertyHelper.ResolveUnityBackgroundScaleMode(style.backgroundPositionX,
-                                      style.backgroundPositionY,
-                                      style.backgroundRepeat,
-                                      style.backgroundSize,
-                                      out bool validScaleMode);
-
                     bool useRepeat = !validScaleMode || (scaleMode == ScaleMode.ScaleAndCrop);
 
                     rectParams = MeshGenerationContextUtils.RectangleParams.MakeVectorTextured(
@@ -737,22 +737,37 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
 
                     rectParams.sliceScale = sliceScale;
+
+                    // Make sure we are using a valid scale mode otherwise default to StretchtoFill
+                    if (!validScaleMode)
+                    {
+                        rectParams.backgroundPositionX = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill);
+                        rectParams.backgroundPositionY = BackgroundPropertyHelper.ConvertScaleModeToBackgroundPosition(ScaleMode.StretchToFill);
+                        rectParams.backgroundRepeat = BackgroundPropertyHelper.ConvertScaleModeToBackgroundRepeat(ScaleMode.StretchToFill);
+                        rectParams.backgroundSize = BackgroundPropertyHelper.ConvertScaleModeToBackgroundSize(ScaleMode.StretchToFill);
+                    }
+                    else
+                    {
+                        rectParams.backgroundPositionX = style.backgroundPositionX;
+                        rectParams.backgroundPositionY = style.backgroundPositionY;
+                        rectParams.backgroundRepeat = style.backgroundRepeat;
+                        rectParams.backgroundSize = style.backgroundSize;
+                    }
+                }
+                else
+                {
+                    rectParams.backgroundPositionX = style.backgroundPositionX;
+                    rectParams.backgroundPositionY = style.backgroundPositionY;
+                    rectParams.backgroundRepeat = style.backgroundRepeat;
+                    rectParams.backgroundSize = style.backgroundSize;
                 }
 
                 rectParams.color = style.unityBackgroundImageTintColor;
                 rectParams.colorPage = ColorPage.Init(m_Owner, currentElement.renderChainData.tintColorID);
-                rectParams.backgroundPositionX = style.backgroundPositionX;
-                rectParams.backgroundPositionY = style.backgroundPositionY;
-                rectParams.backgroundRepeat = style.backgroundRepeat;
-                rectParams.backgroundSize = style.backgroundSize;
 
                 MeshGenerationContextUtils.AdjustBackgroundSizeForBorders(currentElement, ref rectParams);
 
-                if (rectParams.texture != null)
-                {
-                    DrawRectangleRepeat(rectParams, currentElement.rect, currentElement.scaledPixelsPerPoint);
-                }
-                else if (rectParams.vectorImage != null)
+                if (rectParams.texture != null || rectParams.vectorImage != null)
                 {
                     DrawRectangleRepeat(rectParams, currentElement.rect, currentElement.scaledPixelsPerPoint);
                 }
@@ -1216,12 +1231,12 @@ namespace UnityEngine.UIElements.UIR.Implementation
                         targetRect.width = left;
                     }
 
-                    StampRectangleWithSubRect(rectParams, targetRect, uv);
+                    StampRectangleWithSubRect(rectParams, targetRect, totalRect, uv);
                 }
             }
         }
 
-        void StampRectangleWithSubRect(MeshGenerationContextUtils.RectangleParams rectParams, Rect targetRect, Rect targetUV)
+        void StampRectangleWithSubRect(MeshGenerationContextUtils.RectangleParams rectParams, Rect targetRect, Rect totalRect, Rect targetUV)
         {
             if (targetRect.width < UIRUtility.k_Epsilon || targetRect.height < UIRUtility.k_Epsilon)
                 return;
@@ -1239,6 +1254,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             if (rectParams.HasSlices(UIRUtility.k_Epsilon))
             {
                 // Use the full target rect when working with slices. The content will stretch to the full target.
+                rectParams.backgroundRepeatRect = Rect.zero;
                 rectParams.rect = targetRect;
             }
             else
@@ -1268,7 +1284,24 @@ namespace UnityEngine.UIElements.UIR.Implementation
                     rectParams.uv.size = newUVSize;
                 }
 
-                rectParams.rect = rect;
+                if (rectParams.vectorImage != null)
+                {
+                    rectParams.backgroundRepeatRect = Rect.zero;
+                    rectParams.rect = rect;
+                }
+                else
+                {
+                    if (totalRect == rect)
+                    {
+                        rectParams.backgroundRepeatRect = Rect.zero;
+                    }
+                    else
+                    {
+                        rectParams.backgroundRepeatRect = rect;
+                    }
+
+                    rectParams.rect = totalRect;
+                }
             }
 
             DrawRectangle(rectParams);
@@ -1472,7 +1505,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // Only the settings were atlased.
                 texture = TextureRegistry.instance.Acquire(vi.atlas);
-                m_Owner.AppendTexture(currentElement, vi.atlas, texture, false);
+                m_Owner.InsertTexture(currentElement, vi.atlas, texture, false);
             }
         }
 
@@ -1498,7 +1531,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 {
                     // Only the settings were atlased.
                     svgTexture = TextureRegistry.instance.Acquire(vi.atlas);
-                    m_Owner.AppendTexture(currentElement, vi.atlas, svgTexture, false);
+                    m_Owner.InsertTexture(currentElement, vi.atlas, svgTexture, false);
                 }
             }
 

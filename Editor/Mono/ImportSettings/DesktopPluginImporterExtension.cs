@@ -296,6 +296,12 @@ namespace UnityEditor
 
             if (pluginForWindows)
             {
+                if (string.Compare(cpu, nameof(DesktopPluginCPUArchitecture.ARM64), true) == 0)
+                {
+                    // Windows on Arm64 is not supported for Standalone Windows in this version of Unity
+                    return string.Empty;
+                }
+
                 // Fix case 1185926: plugins for x86_64 are supposed to be copied to Plugins/x86_64
                 // Plugins for x86 are supposed to be copied to Plugins/x86
                 var cpuName = target == BuildTarget.StandaloneWindows ? nameof(DesktopPluginCPUArchitecture.x86) : nameof(DesktopPluginCPUArchitecture.x86_64);

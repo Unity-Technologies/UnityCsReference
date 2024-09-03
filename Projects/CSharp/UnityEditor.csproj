@@ -6937,9 +6937,6 @@
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\ProfilerWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\BackgroundPattern.cs">
-      <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\BackgroundPattern.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdown.cs">
       <Link>Modules\ProfilerEditor\ProfilerWindow\UIElements\MemoryUsageBreakdown.cs</Link>
     </Compile>
