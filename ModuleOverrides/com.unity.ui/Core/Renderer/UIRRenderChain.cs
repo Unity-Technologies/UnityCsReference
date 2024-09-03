@@ -864,13 +864,13 @@ namespace UnityEngine.UIElements.UIR
             UIEOnOpacityChanged(panel.visualTree);
         }
 
-        public void AppendTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
+        public void InsertTexture(VisualElement ve, Texture src, TextureId id, bool isAtlas)
         {
             BasicNode<TextureEntry> node = m_TexturePool.Get();
             node.data.source = src;
             node.data.actual = id;
             node.data.replaced = isAtlas;
-            node.AppendTo(ref ve.renderChainData.textures);
+            node.InsertFirst(ref ve.renderChainData.textures);
         }
 
         public void ResetTextures(VisualElement ve)

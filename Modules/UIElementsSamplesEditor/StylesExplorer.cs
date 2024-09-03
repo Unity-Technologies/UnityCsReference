@@ -190,8 +190,6 @@ namespace UnityEditor.UIElements.Samples
             if ((pseudo & PseudoStates.Disabled) == PseudoStates.Disabled)
                 element.SetEnabled(false);
 
-            IgnoreAllInputsRecursive(element);
-
             var description = pseudo.ToString();
             if (pseudo == 0)
                 description = "Normal";
@@ -218,6 +216,8 @@ namespace UnityEditor.UIElements.Samples
                 helpBox.text = description;
                 helpBox.messageType = HelpBoxMessageType.Info;
             }
+
+            IgnoreAllInputsRecursive(element);
 
             parent.Add(element);
             return element;

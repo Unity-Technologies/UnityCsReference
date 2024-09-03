@@ -316,6 +316,11 @@ namespace UnityEngine.UIElements
             // Normalized visible sub-region
             public Rect subRect;
 
+            // Rectangle which clip the resulting tessellated geometry for background repeat to correctly support rounded corners.
+            // When backgroundRepeatRect is not empty, it represent the clipped portion of the original visual element (represented by rect) 
+            // that should be repeated.
+            public Rect backgroundRepeatRect;
+
             // Allow support of background-properties
             public BackgroundPosition backgroundPositionX;
             public BackgroundPosition backgroundPositionY;
@@ -732,6 +737,7 @@ namespace UnityEngine.UIElements
                 return new MeshBuilderNative.NativeRectParams() {
                     rect = rect,
                     subRect = subRect,
+                    backgroundRepeatRect = backgroundRepeatRect,
                     uv = uv,
                     uvRegion = uvRegion,
                     color = color,
