@@ -321,6 +321,11 @@ namespace UnityEditor.Build.Profile
             return result;
         }
 
+        public static bool IsPlatformAvailableOnHostPlatform(GUID platformGuid, OperatingSystemFamily operatingSystemFamily)
+        {
+            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(platformGuid, SystemInfo.operatingSystemFamily);
+        }
+
         /// <summary>
         /// Check if the user is able to build his VT-enabled Player for a target platform
         /// </summary>

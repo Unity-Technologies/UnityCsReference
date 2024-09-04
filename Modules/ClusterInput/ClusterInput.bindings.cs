@@ -7,6 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
+    [Obsolete("This type is deprecated and will be removed in Unity 7.", false)]
     public enum ClusterInputType
     {
         Button = 0,
@@ -17,6 +18,7 @@ namespace UnityEngine
 
     [NativeHeader("Modules/ClusterInput/ClusterInput.h")]
     [NativeConditional("ENABLE_CLUSTERINPUT")]
+    [Obsolete("This type is deprecated and will be removed in Unity 7.", false)]
     public class ClusterInput
     {
         extern public static float GetAxis(string name);

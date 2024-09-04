@@ -211,6 +211,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        // Needed for testing purposes
+        internal void ResetClickCount()
+        {
+            m_ConsecutiveMouseDownCount = 0;
+        }
+
         void OnPointerMoveEvent(PointerMoveEvent evt)
         {
             if (!isClicking)

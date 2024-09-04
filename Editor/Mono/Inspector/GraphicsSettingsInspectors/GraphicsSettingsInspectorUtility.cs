@@ -309,13 +309,14 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
             provider.Reload();
         }
 
-        internal static uint ComputeRenderPipelineGlobalSettingsListHash(List<GlobalSettingsContainer> settingsContainers)
+        internal static int ComputeRenderPipelineGlobalSettingsListHash(List<GlobalSettingsContainer> settingsContainers)
         {
             bool haveSettings = settingsContainers is { Count: > 0 };
             if (!haveSettings)
-                return 0u;
+                return 0;
 
-            uint currentHash = 2166136261u;
+            var currentHash = new HashCode();
+            currentHash.Add(GraphicsSettings.currentRenderPipelineAssetType?.ToString() ?? "");
             foreach (var globalSettings in settingsContainers)
             {
                 TryGetSettingsListFromRenderPipelineGlobalSettings(
@@ -323,9 +324,9 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                     out SerializedObject _,
                     out SerializedProperty _,
                     out SerializedProperty settingsListInContainer);
-                currentHash *= 16777619u ^ settingsListInContainer.contentHash;
+                currentHash.Add(settingsListInContainer.contentHash);
             }
-            return currentHash;
+            return currentHash.ToHashCode();
         }
 
         #endregion

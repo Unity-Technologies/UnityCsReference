@@ -49,6 +49,9 @@ namespace UnityEditor
             }
         }
 
+        // Make a displayable name for a variable.
+        public static string NicifyVariableName(string name) => NameFormatter.FormatVariableName(name);
+
         private static string GetObjectTypeName([NotNull] Object o, bool multiObjectEditing = false)
         {
             if (o is GameObject)

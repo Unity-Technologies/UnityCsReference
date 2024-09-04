@@ -162,6 +162,9 @@ namespace UnityEditor.Build.Profile
             var cards = new List<BuildProfileCard>();
             foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
             {
+                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(new GUID(platformId), SystemInfo.operatingSystemFamily))
+                    continue;
+
                 cards.Add(new BuildProfileCard()
                 {
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),

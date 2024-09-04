@@ -27,6 +27,9 @@
     <Compile Include="..\..\External\baselib\baselib\CSharp\BindingsUnity\Baselib_FileIO.gen.binding.cs">
       <Link>External\baselib\baselib\CSharp\BindingsUnity\Baselib_FileIO.gen.binding.cs</Link>
     </Compile>
+    <Compile Include="..\..\External\baselib\baselib\CSharp\BindingsUnity\Baselib_HostnameLookup.gen.binding.cs">
+      <Link>External\baselib\baselib\CSharp\BindingsUnity\Baselib_HostnameLookup.gen.binding.cs</Link>
+    </Compile>
     <Compile Include="..\..\External\baselib\baselib\CSharp\BindingsUnity\Baselib_Memory.gen.binding.cs">
       <Link>External\baselib\baselib\CSharp\BindingsUnity\Baselib_Memory.gen.binding.cs</Link>
     </Compile>
@@ -1475,6 +1478,9 @@
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextHandle.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextHandle.cs</Link>
@@ -4682,6 +4688,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Jobs\ScriptBindings\Jobs.bindings.cs">
       <Link>Runtime\Jobs\ScriptBindings\Jobs.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\NameFormatter\NameFormatter.bindings.cs">
+      <Link>Runtime\NameFormatter\NameFormatter.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Profiler\ScriptBindings\FrameDebugger.bindings.cs">
       <Link>Runtime\Profiler\ScriptBindings\FrameDebugger.bindings.cs</Link>

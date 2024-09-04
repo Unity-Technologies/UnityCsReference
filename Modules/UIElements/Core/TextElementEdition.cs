@@ -546,15 +546,15 @@ namespace UnityEngine.UIElements
             {
                 if (showPlaceholderText)
                 {
-                    return new RenderedText(m_PlaceholderText, ZeroWidthSpace);
+                    return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(m_PlaceholderText) : new RenderedText(m_PlaceholderText, ZeroWidthSpace);
                 }
 
                 if (effectiveMaskChar != char.MinValue) // Password
                 {
-                    return new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
+                    return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0) : new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
                 }
 
-                if (!isReadOnly) // TextField
+                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && !isReadOnly) // TextField
                 {
                     return new RenderedText(m_RenderedText, ZeroWidthSpace);
                 }

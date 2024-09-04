@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
@@ -10,6 +11,7 @@ namespace UnityEngine
 {
     [Internal.ExcludeFromDocs]
     [NativeHeader("Modules/ClusterRenderer/ClusterSerialization.h")]
+    [Obsolete("This type is deprecated and will be removed in Unity 7.", false)]
     public static class ClusterSerialization
     {
         public static int SaveTimeManagerState(NativeArray<byte> buffer)

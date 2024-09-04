@@ -275,6 +275,20 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Selects the build profile in the custom profile list view.
+        /// </summary>
+        internal void OnBuildProfileCreated(BuildProfile profile)
+        {
+            // Clearing the selection is necessary to force repaint of the profile editor
+            // in a case when the newly created profiles' index matches the index of the old selected profile.
+            m_BuildProfileSelection.ClearListViewSelection(ListViewSelectionType.Custom);
+            var index = m_BuildProfileDataSource.customBuildProfiles.IndexOf(profile);
+            if (index < 0)
+                return;
+            m_BuildProfileSelection.visualElement.SelectBuildProfile(index);
+        }
+
+        /// <summary>
         /// Duplicates and selects the current classic platform profile.
         /// </summary>
         internal void DuplicateSelectedClassicProfile()

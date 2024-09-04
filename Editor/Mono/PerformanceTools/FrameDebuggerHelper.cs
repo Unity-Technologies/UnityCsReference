@@ -237,28 +237,59 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
         internal static string GetColorFormat(ref Texture t)
         {
+            switch (t)
+            {
+                case Texture2D texture2D:
+                    return texture2D.format.ToString();
+
+                case Cubemap cubemap:
+                    return cubemap.format.ToString();
+
+                case Texture2DArray texture2DArray:
+                    return texture2DArray.format.ToString();
+
+                case Texture3D texture3D:
+                    return texture3D.format.ToString();
+
+                case CubemapArray cubemapArray:
+                    return cubemapArray.format.ToString();
+
+                case RenderTexture renderTexture:
+                    return renderTexture.graphicsFormat.ToString();
+
+                case null:
+                default:
+                    return string.Empty;
+            }
+        }
+
+        internal static string GetSize(ref Texture t)
+        {
             if (t == null)
                 return string.Empty;
 
-            if (t is Texture2D)
-                return (t as Texture2D).format.ToString();
+            string size = $"{t.width}x{t.height}";
 
-            else if (t is Cubemap)
-                return (t as Cubemap).format.ToString();
+            switch (t)
+            {
+                case Texture2DArray texture2DArray:
+                    size += $"x{texture2DArray.depth}";
+                    break;
 
-            else if (t is Texture2DArray)
-                return (t as Texture2DArray).format.ToString();
+                case Texture3D texture3D:
+                    size += $"x{texture3D.depth}";
+                    break;
 
-            else if (t is Texture3D)
-                return (t as Texture3D).format.ToString();
+                case CubemapArray cubemapArray:
+                    size += $"x{cubemapArray.cubemapCount}";
+                    break;
 
-            else if (t is CubemapArray)
-                return (t as CubemapArray).format.ToString();
+                case RenderTexture renderTexture when renderTexture.dimension != TextureDimension.Tex2D:
+                    size += $"x{renderTexture.volumeDepth}";
+                    break;
+            }
 
-            else if (t is RenderTexture)
-                return (t as RenderTexture).graphicsFormat.ToString();
-
-            return string.Empty;
+            return size;
         }
 
         internal static string GetDepthStencilFormat(ref Texture t)

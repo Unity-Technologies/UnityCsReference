@@ -1020,7 +1020,7 @@ namespace UnityEditor
                 }
             }
 
-            m_IconsEditor.IconSectionGUI(platform.namedBuildTarget, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
+            m_IconsEditor.IconSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], selectedPlatformValue, sectionIndex++);
 
             ResolutionSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);
             m_SplashScreenEditor.SplashSectionGUI(platform, m_SettingsExtensions[selectedPlatformValue], sectionIndex++);

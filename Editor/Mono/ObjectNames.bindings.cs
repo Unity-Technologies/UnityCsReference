@@ -12,10 +12,6 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/Utility/ObjectNames.bindings.h")]
     public sealed partial class ObjectNames
     {
-        // Make a displayable name for a variable.
-        [FreeFunction("NicifyVariableName_Internal")]
-        public static extern string NicifyVariableName(string name);
-
         // Class name of an object.
         [FreeFunction("GetClassName_Internal")]
         public static extern string GetClassName([NotNull] UnityObject obj);

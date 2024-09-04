@@ -481,7 +481,10 @@ namespace UnityEditor
             if (unsafeMode)
                 return;
 
-            if (m_NativePropertyPtr == IntPtr.Zero || m_SerializedObject == null || m_SerializedObject.m_NativeObjectPtr == IntPtr.Zero)
+            if (m_NativePropertyPtr == IntPtr.Zero)
+                throw new NullReferenceException("SerializedProperty has been Disposed.");
+
+            if(m_SerializedObject == null || m_SerializedObject.m_NativeObjectPtr == IntPtr.Zero)
                 throw new NullReferenceException("SerializedObject of SerializedProperty has been Disposed.");
 
             SyncSerializedObjectVersion();

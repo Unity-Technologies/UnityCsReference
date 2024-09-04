@@ -100,7 +100,7 @@ namespace Unity.UI.Builder
         public void SetAttributesOwnerFromCopy(VisualTreeAsset asset, VisualElement visualElement)
         {
             // Work on a copy of the VisualTreeAsset so that we can discard or apply the changes later.
-            m_VisualTreeAssetCopy = asset.DeepCopy();
+            m_VisualTreeAssetCopy = asset.DeepCopy(false);
             m_VisualTreeAssetCopy.name += "(Binding Copy)";
 
             // Create a copy of the VisualElement as well.

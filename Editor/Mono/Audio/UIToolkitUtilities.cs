@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.UIElements;
@@ -26,14 +25,6 @@ static class UIToolkitUtilities
         return asset;
     }
 
-    internal static Texture2D LoadIcon(string filename)
-    {
-        var filePath = $"{Path.Combine("Icons", "Audio", filename)}@2x.png";
-        var asset = EditorGUIUtility.LoadIcon(filePath);
-        Assert.IsNotNull(asset, $"Could not load icon from editor default resources at path: {filePath}.");
-        return asset;
-    }
-
     internal static T GetChildByName<T>(VisualElement parentElement, string childName) where T : VisualElement
     {
         var childElement = parentElement.Query<VisualElement>(childName).First();
@@ -51,7 +42,6 @@ static class UIToolkitUtilities
         Assert.IsNotNull(childElementCast, $"Child element '{childClassName}' of '{parentElement.name}' is not of type {nameof(T)}");
         return childElementCast;
     }
-
 
     internal static T GetChildAtIndex<T>(VisualElement parentElement, int index) where T : VisualElement
     {

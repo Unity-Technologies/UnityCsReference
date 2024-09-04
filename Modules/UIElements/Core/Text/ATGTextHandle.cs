@@ -11,22 +11,6 @@ namespace UnityEngine.UIElements
 {
     internal partial class UITKTextHandle
     {
-        static TextLib s_TextLib;
-
-
-        static TextLib TextLib
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (s_TextLib == null)
-                {
-                    s_TextLib = new TextLib();
-                }
-                return s_TextLib;
-            }
-        }
-
         public void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
         {
             ConvertUssToNativeTextGenerationSettings();
@@ -34,7 +18,7 @@ namespace UnityEngine.UIElements
             nativeSettings.screenWidth = float.IsNaN(width) ? Int32.MaxValue : (int)(width * 64.0f);
             nativeSettings.screenHeight = float.IsNaN(height) ? Int32.MaxValue : (int)(height * 64.0f);
 
-            preferredSize = TextLib.MeasureText(nativeSettings);
+            preferredSize = TextLib.MeasureText(nativeSettings, textGenerationInfo);
         }
 
         public NativeTextInfo UpdateNative(ref bool success)
@@ -45,11 +29,8 @@ namespace UnityEngine.UIElements
                 return default;
             }
 
-            if (m_PreviousNativeGenerationSettingsHash != nativeSettings.GetHashCode())
-                nativeTextInfo = TextLib.GenerateText(nativeSettings);
-
             success = true;
-            return nativeTextInfo;
+            return TextLib.GenerateText(nativeSettings, textGenerationInfo);
         }
 
         internal bool ConvertUssToNativeTextGenerationSettings()
@@ -64,9 +45,9 @@ namespace UnityEngine.UIElements
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
-            nativeSettings.fontSize = style.fontSize.value > 0
-                ? style.fontSize.value
-                : fa.faceInfo.pointSize;
+            nativeSettings.fontSize = (int)(style.fontSize.value > 0
+                ? style.fontSize.value * 64.0f
+                : fa.faceInfo.pointSize * 64.0f);
             nativeSettings.wordWrap = m_TextElement.computedStyle.whiteSpace.toTextCore();
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);

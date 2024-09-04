@@ -189,7 +189,9 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
         {
             using (SerializedPropertyChangeEvent evt = SerializedPropertyChangeEvent.GetPooled())
             {
-                evt.changedProperty = prop;
+                // Event can be dispatched async so we need a copy of the SerializedProperty as this one
+                // will be disposed soon by the SerializedObjectChangeTracker
+                evt.changedProperty = prop.Copy();
                 evt.elementTarget = element;
                 element.SendEvent(evt);
             }
@@ -337,9 +339,7 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
                 case RequestType.TrackProperty:
                 {
                     var contextUpdater = context.AddBindingUpdater(element);
-                    contextUpdater.AddTracking(parentProperty);
-                    context.RegisterSerializedPropertyChangeCallback(element, parentProperty,
-                        callback as Action<object, SerializedProperty>);
+                    contextUpdater.AddTracking(parentProperty, callback as Action<object, SerializedProperty>);
                 }
                     break;
                 case RequestType.TrackObject:

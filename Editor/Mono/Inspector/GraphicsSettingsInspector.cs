@@ -44,7 +44,7 @@ namespace UnityEditor
         string m_CurrentText;
 
         bool m_FinishedInitialization;
-        uint m_LastListsHash;
+        int m_LastListsHash;
         int m_GeometryChangedEventCounter;
 
         // As we use multiple IMGUI container while porting everything to UITK we will call serializedObject.Update in first separate IMGUI container.

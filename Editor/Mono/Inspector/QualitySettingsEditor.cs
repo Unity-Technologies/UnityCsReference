@@ -145,6 +145,7 @@ namespace UnityEditor
         private Presets.Preset m_QualitySettingsPreset;
 
         IAdaptiveVsyncSetting[] m_AdaptiveVsyncSettings;
+        bool m_AdaptiveVSyncVisible;
 
         public void OnEnable()
         {
@@ -515,14 +516,7 @@ namespace UnityEditor
             if (PlayerSettings.mipStripping)
                 return;
 
-            EditorGUILayout.Space(-20f); // Move back towards the mipmap limit groups UI.
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                float marginRight = Presets.Preset.IsEditorTargetAPreset(target) ? 67f : 64f;
-                EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info, false);
-                EditorGUILayout.GetControlRect(false, GUILayoutUtility.GetLastRect().height, GUILayout.Width(marginRight));
-                // Limit the width of the HelpBox in order to avoid clipping into the mipmap limit groups UI.
-            }
+            EditorGUILayout.HelpBox(Content.kMipStrippingHint.text, MessageType.Info);
         }
 
         /**
@@ -687,7 +681,8 @@ namespace UnityEditor
                 nameProperty.stringValue = "Level " + selectedLevel;
 
             GUILayout.Label(EditorGUIUtility.TempContent("Current Build Target: " + Modules.ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget)), EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox("The settings below are only applicable to the current build target. To change the Build Target, go to Build Settings", MessageType.Info);
+            if (m_AdaptiveVSyncVisible)
+                EditorGUILayout.HelpBox("There are settings below that are only applicable to the current Build Target such as Adaptive Vsync. To change the Build Target, go to the Build Settings", MessageType.Info);
             GUILayout.Label(EditorGUIUtility.TempContent("Current Active Quality Level"), EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(nameProperty);
@@ -726,6 +721,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent($"VSync Count '{vSyncCountProperty.enumLocalizedDisplayNames[vSyncCountProperty.enumValueIndex]}' is ignored on {iBuildTarget.DisplayName}.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)));
             }
 
+            m_AdaptiveVSyncVisible = false;
             var externalUI = false;
             switch (vSyncCountProperty.intValue)
             {
@@ -741,6 +737,7 @@ namespace UnityEditor
                         if (validPlatforms[i].defaultTarget != EditorUserBuildSettings.activeBuildTarget || m_AdaptiveVsyncSettings[i] == null)
                             continue;
                         m_AdaptiveVsyncSettings[i].AdaptiveVsyncUI(currentSettings);
+                        m_AdaptiveVSyncVisible = true;
                         externalUI = true;
                         break;
                     }
@@ -753,6 +750,7 @@ namespace UnityEditor
                                 continue;
                             EditorGUILayout.PropertyField(adaptiveVsyncProperty);
                             EditorGUILayout.HelpBox("If Adaptive Vsync extension is available at runtime with Vulkan it will use this, else fallback to vsync.", MessageType.Info);
+                            m_AdaptiveVSyncVisible = true;
                         }
                     }
                     break;
@@ -776,12 +774,9 @@ namespace UnityEditor
             }
 
             EditorGUILayout.Space(3);
-            m_TextureMipmapLimitGroupsList.DoLayoutList();
             if (QualitySettings.IsTextureResReducedOnAnyPlatform())
-            {
                 MipStrippingHintGUI();
-            }
-
+            m_TextureMipmapLimitGroupsList.DoLayoutList();
             EditorGUILayout.PropertyField(anisotropicTexturesProperty);
 
             var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");

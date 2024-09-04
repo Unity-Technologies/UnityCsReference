@@ -15,8 +15,26 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
     private VisualElement contextUpdaterOwner;
 
     private UInt64 lastTrackedObjectRevision = 0xFFFFFFFFFFFFFFFF;
+    private bool isActivated;
 
     public event Action<object, SerializedObject> registeredCallbacks;
+
+    private struct TrackedPropertyRegistration
+    {
+        public int propertyPathHash;
+        public string propertyPath;
+        public Action<object, SerializedProperty> callback;
+
+        public TrackedPropertyRegistration(int pathHash, string path, Action<object, SerializedProperty> cb)
+        {
+            propertyPathHash = pathHash;
+            propertyPath = path;
+            callback = cb;
+        }
+
+    }
+    private List<TrackedPropertyRegistration> trackedProperties { get; }
+
 
     public static SerializedObjectBindingContextUpdater Create(VisualElement owner, SerializedObjectBindingContext context)
     {
@@ -32,16 +50,11 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
     protected override VisualElement owner => contextUpdaterOwner;
 
+
     public SerializedObjectBindingContextUpdater()
     {
-        trackedPropertiesHash = new List<int>();
-    }
-
-    private List<int> trackedPropertiesHash { get; }
-
-    public void AddTracking(SerializedProperty prop)
-    {
-        trackedPropertiesHash.Add(prop.hashCodeForPropertyPath);
+        trackedProperties = new ();
+        isActivated = false;
     }
 
     // Override the update for the context updater to propagate changes when we detect them.
@@ -87,20 +100,50 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
         if (owner != null && bindingContext != null)
         {
-            foreach (var propHash in trackedPropertiesHash)
-            {
-                bindingContext.UnregisterSerializedPropertyChangeCallback(owner, propHash);
-            }
+            UnregisterTrackedProperties();
         }
 
-        trackedPropertiesHash.Clear();
+        trackedProperties.Clear();
         contextUpdaterOwner = null;
+        isActivated = false;
 
         ResetContext();
 
         registeredCallbacks = null;
         ResetCachedValues();
         isReleased = true;
+    }
+
+    public void AddTracking(SerializedProperty prop, Action<object, SerializedProperty> callback)
+    {
+        trackedProperties.Add(new TrackedPropertyRegistration(prop.hashCodeForPropertyPath, prop.propertyPath, callback));
+
+        if(isActivated)
+            bindingContext?.RegisterSerializedPropertyChangeCallback(owner, prop, callback);
+    }
+
+    private void RegisterTrackedProperties()
+    {
+        if (bindingContext != null)
+        {
+            foreach (var trackedProp in trackedProperties)
+            {
+                SerializedProperty property = bindingContext.FindProperty(trackedProp.propertyPath);
+                if(property != null)
+                    bindingContext.RegisterSerializedPropertyChangeCallback(owner, property, trackedProp.callback);
+            }
+        }
+    }
+
+    private void UnregisterTrackedProperties()
+    {
+        if (bindingContext != null)
+        {
+            foreach (var trackedProp in trackedProperties)
+            {
+                bindingContext.UnregisterSerializedPropertyChangeCallback(owner, trackedProp.propertyPathHash);
+            }
+        }
     }
 
     protected override void ResetCachedValues()
@@ -115,12 +158,18 @@ internal sealed class SerializedObjectBindingContextUpdater : SerializedObjectBi
 
     protected internal override void OnActivated(in BindingActivationContext context)
     {
+        isActivated = true;
+        RegisterTrackedProperties();
+
         base.OnActivated(in context);
         Undo.undoRedoEvent += Reset;
     }
 
     protected internal override void OnDeactivated(in BindingActivationContext context)
     {
+        isActivated = false;
+        UnregisterTrackedProperties();
+
         base.OnDeactivated(in context);
         Undo.undoRedoEvent -= Reset;
     }
