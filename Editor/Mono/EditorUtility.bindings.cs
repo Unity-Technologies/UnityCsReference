@@ -11,6 +11,7 @@ using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Linq;
 using static UnityEditor.EditorGUI;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
 
 namespace UnityEditor
 {
@@ -206,7 +207,11 @@ namespace UnityEditor
         [RequiredByNativeCode]
         internal static void DelayedForceRebuildInspectors()
         {
-            EditorApplication.CallDelayed(ForceRebuildInspectors);
+            EditorApplication.CallDelayed(() =>
+            {
+                ForceRebuildInspectors();
+                GraphicsSettingsInspectorUtility.ReloadGraphicsSettingsEditorIfNeeded();
+            });
         }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]

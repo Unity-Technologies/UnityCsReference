@@ -124,6 +124,8 @@ namespace UnityEngine.UIElements
 
         internal static bool IsAdvancedTextEnabledForElement(TextElement te)
         {
+            if (te == null)
+                return false;
             var isAdvancedTextGeneratorEnabledOnTextElement = te.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
             var isAdvancedTextGeneratorEnabledOnProject = false;
             isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;

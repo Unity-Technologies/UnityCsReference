@@ -75,6 +75,9 @@ namespace UnityEditor.Rendering
         public static bool TryAddRenderingLayerName(string name)
             => TagManager.Internal_TryAddRenderingLayerName(name);
 
+        public static bool TryRemoveLastRenderingLayerName()
+            => TagManager.Internal_TryRemoveLastRenderingLayerName();
+
         /// <summary>
         /// Retrieves the maximum number of rendering layers supported by the currently active render pipeline.
         /// </summary>

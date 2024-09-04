@@ -470,7 +470,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         else
                             samplerType =  $"{texture.dimension}";
 
-                        size = $"{texture.width}x{texture.height}";
+                        size = FrameDebuggerHelper.GetSize(ref texture);
                         colorFormat = FrameDebuggerHelper.GetColorFormat(ref texture);
                         depthStencilFormat = FrameDebuggerHelper.GetDepthStencilFormat(ref texture);
 
@@ -1063,7 +1063,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                         {
                             m_MaxColorFormatLength = Mathf.Max(m_MaxColorFormatLength, FrameDebuggerHelper.GetColorFormat(ref texture).Length);
                             m_MaxDepthFormatLength = Mathf.Max(m_MaxDepthFormatLength, FrameDebuggerHelper.GetDepthStencilFormat(ref texture).Length);
-                            m_MaxTexSizeLength = Mathf.Max(m_MaxTexSizeLength, $"{texture.width}x{texture.height}".Length);
+                            m_MaxTexSizeLength = Mathf.Max(m_MaxTexSizeLength, FrameDebuggerHelper.GetSize(ref texture).Length);
                             m_MaxSampleTypeLength = Mathf.Max(m_MaxSampleTypeLength, $"{texture.dimension}".Length);
                         }
                     }

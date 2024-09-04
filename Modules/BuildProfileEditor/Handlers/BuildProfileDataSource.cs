@@ -37,12 +37,14 @@ namespace UnityEditor.Build.Profile.Handlers
             m_DuplicatedProfiles = new List<BuildProfile>();
 
             BuildProfile.AddOnBuildProfileEnable(OnBuildProfileCreated);
+            BuildProfile.AddOnBuildProfileCreated(m_Window.OnBuildProfileCreated);
             BuildProfileModuleUtil.CleanUpPlayerSettingsForDeletedBuildProfiles(currentBuildProfiles: customBuildProfiles);
         }
 
         public void Dispose()
         {
             BuildProfile.RemoveOnBuildProfileEnable(OnBuildProfileCreated);
+            BuildProfile.RemoveOnBuildProfileCreated(m_Window.OnBuildProfileCreated);
         }
 
         /// <summary>

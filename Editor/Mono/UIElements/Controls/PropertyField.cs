@@ -458,6 +458,15 @@ namespace UnityEditor.UIElements
                         // Decorator drawers are already handled on the uitk side
                         handler.skipDecoratorDrawers = true;
 
+                        var previousLeftMarginCoord = EditorGUIUtility.leftMarginCoord;
+
+                        if (m_InspectorElement != null && m_imguiChildField != null)
+                        {
+                            // Set a left margin offset to align the prefab override bar with the property field
+                            var extraLeftMargin = m_InspectorElement.worldBound.x;
+                            EditorGUIUtility.leftMarginCoord = -m_imguiChildField.worldBound.x + extraLeftMargin;
+                        }
+
                         if (label == null)
                         {
                             EditorGUILayout.PropertyField(serializedProperty, true);
@@ -469,6 +478,12 @@ namespace UnityEditor.UIElements
                         else
                         {
                             EditorGUILayout.PropertyField(serializedProperty, new GUIContent(label), true);
+                        }
+
+                        if (m_InspectorElement != null && m_imguiChildField != null)
+                        {
+                            // Reset the left margin to the original value
+                            EditorGUIUtility.leftMarginCoord = previousLeftMarginCoord;
                         }
                     }
 

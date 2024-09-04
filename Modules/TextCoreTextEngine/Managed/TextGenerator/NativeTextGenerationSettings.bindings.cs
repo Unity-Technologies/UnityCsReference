@@ -14,14 +14,14 @@ namespace UnityEngine.TextCore
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextGenerationSettings.h")]
     [UsedByNativeCode("TextGenerationSettings")]
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-    internal struct NativeTextGenerationSettings : IEquatable<NativeTextGenerationSettings>
+    internal struct NativeTextGenerationSettings
     {
         public IntPtr fontAsset;
         public IntPtr[] globalFontAssetFallbacks;
         public string text; // TODO: use RenderedText instead of string here
-        public int screenWidth; // Encoded in Fixed Point.
-        public int screenHeight; // Encoded in Fixed Point.
-        public float fontSize;
+        public int screenWidth;     // Encoded in Fixed Point.
+        public int screenHeight;    // Encoded in Fixed Point.
+        public int fontSize;        // Encoded in Fixed Point.
         public WhiteSpace wordWrap;
         public LanguageDirection languageDirection;
 
@@ -81,47 +81,6 @@ namespace UnityEngine.TextCore
                $"{nameof(fontStyle)}: {fontStyle}\n" +
                $"{nameof(fontWeight)}: {fontWeight}\n" +
                $"{nameof(vertexPadding)}: {vertexPadding}";
-        }
-
-        public bool Equals(NativeTextGenerationSettings other)
-        {
-            return fontAsset == other.fontAsset &&
-                   text == other.text &&
-                   screenWidth == other.screenWidth &&
-                   screenHeight == other.screenHeight &&
-                   fontSize.Equals(other.fontSize) &&
-                   wordWrap == other.wordWrap &&
-                   languageDirection == other.languageDirection &&
-                   horizontalAlignment == other.horizontalAlignment &&
-                   verticalAlignment == other.verticalAlignment &&
-                   color.Equals(other.color) &&
-                   fontStyle == other.fontStyle &&
-                   fontWeight == other.fontWeight &&
-                   vertexPadding == other.vertexPadding;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is NativeTextGenerationSettings other && Equals(other);
-        }
-
-        public override int GetHashCode()
-        {
-            var hashCode = new HashCode();
-            hashCode.Add(fontAsset);
-            hashCode.Add(text);
-            hashCode.Add(screenWidth);
-            hashCode.Add(screenHeight);
-            hashCode.Add(fontSize);
-            hashCode.Add(wordWrap);
-            hashCode.Add((int)languageDirection);
-            hashCode.Add((int)horizontalAlignment);
-            hashCode.Add((int)verticalAlignment);
-            hashCode.Add(color);
-            hashCode.Add((int)fontStyle);
-            hashCode.Add((int)fontWeight);
-            hashCode.Add(vertexPadding);
-            return hashCode.ToHashCode();
         }
     }
 

@@ -326,7 +326,7 @@ namespace UnityEngine.UIElements
         internal void PopulateDataFromType(Type enumType)
         {
             m_EnumType = enumType;
-            m_EnumData = GetCachedEnumData(m_EnumType, includeObsoleteValues ? CachedType.IncludeObsoleteExceptErrors : CachedType.ExcludeObsolete);
+            m_EnumData = GetCachedEnumData(m_EnumType, includeObsoleteValues ? CachedType.IncludeObsoleteExceptErrors : CachedType.ExcludeObsolete, NameFormatter.FormatVariableName);
         }
 
         public override void SetValueWithoutNotify(Enum newValue)

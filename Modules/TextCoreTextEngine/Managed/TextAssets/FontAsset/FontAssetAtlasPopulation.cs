@@ -652,6 +652,7 @@ namespace UnityEngine.TextCore.Text
             // Initialize new atlas texture
             TextureFormat texFormat = ((GlyphRasterModes)m_AtlasRenderMode & GlyphRasterModes.RASTER_MODE_COLOR) == GlyphRasterModes.RASTER_MODE_COLOR ? TextureFormat.RGBA32 : TextureFormat.Alpha8;
             m_AtlasTextures[m_AtlasTextureIndex] = new Texture2D(m_AtlasWidth, m_AtlasHeight, texFormat, false);
+            m_AtlasTextures[m_AtlasTextureIndex].hideFlags = m_AtlasTextures[0].hideFlags;
             FontEngine.ResetAtlasTexture(m_AtlasTextures[m_AtlasTextureIndex]);
 
             // Clear packing GlyphRects

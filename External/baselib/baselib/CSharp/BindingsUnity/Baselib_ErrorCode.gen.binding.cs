@@ -47,6 +47,9 @@ namespace Unity.Baselib.LowLevel
             /// <summary>DynamicLibrary</summary>
             FailedToOpenDynamicLibrary = 0x6000000,
             FunctionNotFound = 0x6000001,
+            /// <summary>HostnameLookup</summary>
+            NoSupportedAddressFound = 0x7000000,
+            TryAgain = 0x7000001,
             /// <summary>
             /// An error that was not anticipated by the baselib authors.
             /// Occurrence of this error is preceeded by a debug assertion.

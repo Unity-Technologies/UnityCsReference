@@ -25,9 +25,9 @@ namespace UnityEngine.TextCore.Text
         private static extern IntPtr GetInstance();
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings)
+        internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo)
         {
-            var textInfo = GenerateTextInternal(settings);
+            var textInfo = GenerateTextInternal(settings, textGenerationInfo);
 
             foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
             {
@@ -72,11 +72,11 @@ namespace UnityEngine.TextCore.Text
         }
 
         [NativeMethod(Name = "TextLib::GenerateTextMesh")]
-        private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings);
+        private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextLib::MeasureText")]
-        internal extern Vector2 MeasureText(NativeTextGenerationSettings settings);
+        internal extern Vector2 MeasureText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
         internal static class BindingsMarshaller
         {
@@ -87,7 +87,6 @@ namespace UnityEngine.TextCore.Text
         internal static Func<UnityEngine.TextAsset> GetICUAssetEditorDelegate;
         private static UnityEngine.TextAsset GetICUAsset()
         {
-
             if (GetICUAssetEditorDelegate != null)
             {
                 //Editor will load the ICU library before the scene, so we need to check in the asset database as the asset may not be loaded yet.
@@ -130,5 +129,15 @@ namespace UnityEngine.TextCore.Text
             s_ICUData = null;
             return true;
         }
+    }
+
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal static class TextGenerationInfo
+    {
+        internal static extern IntPtr Create();
+
+        [FreeFunction("TextGenerationInfo::Destroy")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern void Destroy(IntPtr ptr);
     }
 }

@@ -304,15 +304,24 @@ namespace UnityEngine.UIElements
 
             if (TextUtilities.IsFontAssigned(this))
             {
-                if (TextUtilities.IsAdvancedTextEnabledForElement(this) && isReadOnly)
+                if (TextUtilities.IsAdvancedTextEnabledForElement(this))
                 {
                     bool isSuccess = false;
                     var textInfo = uitkTextHandle.UpdateNative(ref isSuccess);
                     if (isSuccess)
+                    {
                         mgc.DrawNativeText(textInfo, contentRect.min);
+
+                        if (selection.HasSelection() && selectingManipulator.HasFocus())
+                            DrawNativeHighlighting(mgc);
+                        else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
+                            DrawCaret(mgc);
+                    }
                 }
                 else
+                {
                     mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+                }
             }
         }
 

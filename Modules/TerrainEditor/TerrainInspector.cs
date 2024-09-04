@@ -2318,6 +2318,11 @@ namespace UnityEditor
                 EditorGUILayout.Space();
                 activeTool.OnInspectorGUI(m_Terrain, onInspectorGUIEditContext);
             }
+            else
+            {
+                // Active tool is null when selecting a prefab containing a terrain from the project files.
+                EditorGUILayout.HelpBox("Terrain must be selected from the current scene to be edited.", MessageType.Warning);
+            }
         }
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)

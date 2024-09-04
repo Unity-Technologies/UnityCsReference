@@ -1208,6 +1208,7 @@ namespace UnityEngine.UIElements.UIR
 
                     d[axis] = new_size;
                     rect.size = d;
+                    targetRect = rect;
 
                     for (int i = 0; i < count; ++i)
                     {
@@ -1648,7 +1649,7 @@ namespace UnityEngine.UIElements.UIR
                 rectParams.rect = rect;
 
                 var uv = rectParams.uv;
-                if (tex != null && uv.width > UIRUtility.k_Epsilon && uv.height > UIRUtility.k_Epsilon)
+                if (!object.ReferenceEquals(null, tex) && uv.width > UIRUtility.k_Epsilon && uv.height > UIRUtility.k_Epsilon)
                 {
                     var uvScale = new Vector2(1.0f / prevRect.width, 1.0f / prevRect.height);
                     uv.x += (inset.x * uvScale.x);

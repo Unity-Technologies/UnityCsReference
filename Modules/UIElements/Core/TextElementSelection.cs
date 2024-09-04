@@ -469,6 +469,24 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private void DrawNativeHighlighting(MeshGenerationContext mgc)
+        {
+            var playmodeTintColor = mgc.visualElement?.playModeTintColor ?? Color.white;
+            var startIndex = Math.Min(selection.cursorIndex, selection.selectIndex);
+            var endIndex = Math.Max(selection.cursorIndex, selection.selectIndex);
+            var rectangles = uitkTextHandle.GetHighlightRectangles(startIndex, endIndex);
+
+            for (int i = 0; i < rectangles.Length; i++)
+            {
+                mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
+                {
+                    rect = new Rect(rectangles[i].position + contentRect.min, rectangles[i].size),
+                    color = selection.selectionColor,
+                    playmodeTintColor = playmodeTintColor
+                });
+            }
+        }
+
         // used by unit tests
         internal void DrawCaret(MeshGenerationContext mgc)
         {

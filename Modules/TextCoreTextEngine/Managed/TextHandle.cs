@@ -2,11 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System;
-using System.Text;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
-using System.Diagnostics;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
@@ -24,7 +23,9 @@ namespace UnityEngine.TextCore.Text
             RemoveTextInfoFromPermanentCache();
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextHandleTemporaryCache s_TemporaryCache = new TextHandleTemporaryCache();
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static TextHandlePermanentCache s_PermanentCache = new TextHandlePermanentCache();
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
@@ -87,9 +88,6 @@ namespace UnityEngine.TextCore.Text
                 array[i] = createInstance();
             }
         }
-
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal NativeTextInfo nativeTextInfo;
         internal static TextInfo textInfoCommon => textInfosCommon[JobsUtility.ThreadIndex];
         static TextGenerator generator => generators[JobsUtility.ThreadIndex];
 
@@ -109,29 +107,83 @@ namespace UnityEngine.TextCore.Text
         private float m_LineHeightDefault;
         private bool m_IsPlaceholder;
         private bool m_IsEllided;
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal IntPtr textGenerationInfo = IntPtr.Zero;
 
         internal LinkedListNode<TextInfo> TextInfoNode { get; set; }
         internal bool IsCachedPermanent { get; set; }
         internal bool IsCachedTemporary { get; set; }
 
+        internal bool useAdvancedText
+        {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+            get { return IsAdvancedTextEnabledForElement(); }
+        }
+
+        internal int characterCount
+        {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+            get
+            {
+                return useAdvancedText ? nativeSettings.text.Length : textInfo.characterCount;
+            }
+        }
+
+        static TextLib s_TextLib;
+
+        internal protected static TextLib TextLib
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (s_TextLib == null)
+                {
+                    s_TextLib = new TextLib();
+                }
+                return s_TextLib;
+            }
+        }
+
         public virtual void AddTextInfoToPermanentCache()
         {
-            s_PermanentCache.AddTextInfoToCache(this);
+            if (useAdvancedText)
+            {
+                if (textGenerationInfo == IntPtr.Zero)
+                    textGenerationInfo = TextGenerationInfo.Create();
+                TextLib.GenerateText(nativeSettings, textGenerationInfo);
+            }
+            else
+            {
+                s_PermanentCache.AddTextInfoToCache(this);
+            }
         }
 
         public void AddTextInfoToTemporaryCache(int hashCode)
         {
+            if (useAdvancedText)
+                return;
             s_TemporaryCache.AddTextInfoToCache(this, hashCode);
         }
 
         public void RemoveTextInfoFromTemporaryCache()
         {
+            if (useAdvancedText)
+                return;
             s_TemporaryCache.RemoveTextInfoFromCache(this);
         }
 
         public void RemoveTextInfoFromPermanentCache()
         {
-            s_PermanentCache.RemoveTextInfoFromCache(this);
+            if (useAdvancedText)
+            {
+                TextGenerationInfo.Destroy(textGenerationInfo);
+                textGenerationInfo = IntPtr.Zero;
+            }
+            else
+            {
+                s_PermanentCache.RemoveTextInfoFromCache(this);
+            }
+            
         }
 
         public static void UpdateCurrentFrame()
@@ -164,8 +216,6 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal int m_PreviousNativeGenerationSettingsHash;
 
         protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
@@ -195,7 +245,7 @@ namespace UnityEngine.TextCore.Text
             return preferredSize.y;
         }
 
-        public bool IsPlaceholder
+        public virtual bool IsPlaceholder
         {
             get => m_IsPlaceholder;
         }
@@ -314,6 +364,11 @@ namespace UnityEngine.TextCore.Text
 
         public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetCursorPositionFromStringIndexUsingCharacterHeight while using Advanced Text");
+                return Vector2.zero;
+            }
             AddTextInfoToPermanentCache();
             return textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
         }
@@ -321,39 +376,66 @@ namespace UnityEngine.TextCore.Text
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
             AddTextInfoToPermanentCache();
-            return textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
+            return useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
+        }
+
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal Rect[] GetHighlightRectangles(int cursorIndex, int selectIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetHighlightRectangles while using Standard Text");
+                return new Rect[0];
+            }
+            return TextSelectionService.GetHighlightRectangles(textGenerationInfo, cursorIndex, selectIndex);
         }
 
         //TODO add special handling for 1 character...
         // Add support for world space.
         public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
         {
-            return textInfo.GetCursorIndexFromPosition(position, m_ScreenRect, inverseYAxis);
+            return useAdvancedText ? TextSelectionService.GetCursorLogicalIndexFromPosition(textGenerationInfo, position)
+                : textInfo.GetCursorIndexFromPosition(position, m_ScreenRect, inverseYAxis);
         }
 
-        public int LineDownCharacterPosition(int originalPos)
+        public int LineDownCharacterPosition(int originalLogicalPos)
         {
-            return textInfo.LineDownCharacterPosition(originalPos);
+            return useAdvancedText ? TextSelectionService.LineDownCharacterPosition(textGenerationInfo, originalLogicalPos): textInfo.LineDownCharacterPosition(originalLogicalPos);
         }
 
-        public int LineUpCharacterPosition(int originalPos)
+        public int LineUpCharacterPosition(int originalLogicalPos)
         {
-            return textInfo.LineUpCharacterPosition(originalPos);
+            return useAdvancedText ? TextSelectionService.LineUpCharacterPosition(textGenerationInfo, originalLogicalPos) : textInfo.LineUpCharacterPosition(originalLogicalPos);
         }
 
         // This could be improved if TextElementInfo had a reference to the word index.
         public int FindWordIndex(int cursorIndex)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use FindWordIndex while using Advanced Text");
+                return 0;
+            }
             return textInfo.FindWordIndex(cursorIndex);
         }
 
         public int FindNearestLine(Vector2 position)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use FindNearestLine while using Advanced Text");
+                return 0;
+            }
             return textInfo.FindNearestLine(position);
         }
 
         public int FindNearestCharacterOnLine(Vector2 position, int line, bool visibleOnly)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use FindNearestCharacterOnLine while using Advanced Text");
+                return 0;
+            }
             return textInfo.FindNearestCharacterOnLine(position, line, visibleOnly);
         }
 
@@ -363,42 +445,55 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         public int FindIntersectingLink(Vector3 position, bool inverseYAxis = true)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use FindIntersectingLink while using Advanced Text");
+                return 0;
+            }
             return textInfo.FindIntersectingLink(position, m_ScreenRect, inverseYAxis);
         }
 
         public int GetCorrespondingStringIndex(int index)
         {
-            return textInfo.GetCorrespondingStringIndex(index);
+            // For Advanced Text we always use logicalIndex
+            return useAdvancedText ? index : textInfo.GetCorrespondingStringIndex(index);
         }
 
         public int GetCorrespondingCodePointIndex(int stringIndex)
         {
-            return textInfo.GetCorrespondingCodePointIndex(stringIndex);
+            // For Advanced Text we always use logicalIndex
+            return useAdvancedText ? stringIndex : textInfo.GetCorrespondingCodePointIndex(stringIndex);
         }
 
         public LineInfo GetLineInfoFromCharacterIndex(int index)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetLineInfoFromCharacterIndex while using Advanced Text");
+                return new LineInfo();
+            }
+                
             return textInfo.GetLineInfoFromCharacterIndex(index);
         }
 
         public int GetLineNumber(int index)
         {
-            return textInfo.GetLineNumber(index);
+            return useAdvancedText ? TextSelectionService.GetLineNumber(textGenerationInfo, index) : textInfo.GetLineNumber(index);
         }
 
         public float GetLineHeight(int lineNumber)
         {
-            return textInfo.GetLineHeight(lineNumber);
+            return useAdvancedText ? TextSelectionService.GetLineHeight(textGenerationInfo, lineNumber) : textInfo.GetLineHeight(lineNumber);
         }
 
         public float GetLineHeightFromCharacterIndex(int index)
         {
-            return textInfo.GetLineHeightFromCharacterIndex(index);
+            return useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetLineHeightFromCharacterIndex(index);
         }
 
         public float GetCharacterHeightFromIndex(int index)
         {
-            return textInfo.GetCharacterHeightFromIndex(index);
+            return useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetCharacterHeightFromIndex(index);
         }
 
 
@@ -407,7 +502,67 @@ namespace UnityEngine.TextCore.Text
         /// </summary>
         public string Substring(int startIndex, int length)
         {
-            return textInfo.Substring(startIndex, length);
+            return useAdvancedText ? TextSelectionService.Substring(textGenerationInfo, startIndex, startIndex + length) : textInfo.Substring(startIndex, length);
+        }
+
+        public int PreviousCodePointIndex(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use PreviousCodePointIndex while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.PreviousCodePointIndex(textGenerationInfo, currentIndex);
+        }
+
+        public int NextCodePointIndex(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use NextCodePointIndex while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.NextCodePointIndex(textGenerationInfo, currentIndex);
+        }
+
+        public int GetStartOfNextWord(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetStartOfNextWord while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.GetStartOfNextWord(textGenerationInfo, currentIndex);
+        }
+
+        public int GetEndOfPreviousWord(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetEndOfPreviousWord while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.GetEndOfPreviousWord(textGenerationInfo, currentIndex);
+        }
+
+        public int GetFirstCharacterIndexOnLine(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetFirstCharacterIndexOnLine while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.GetFirstCharacterIndexOnLine(textGenerationInfo, currentIndex);
+        }
+
+        public int GetLastCharacterIndexOnLine(int currentIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetLastCharacterIndexOnLine while using Standard Text");
+                return 0;
+            }
+            return TextSelectionService.GetLastCharacterIndexOnLine(textGenerationInfo, currentIndex);
         }
 
         /// <summary>
@@ -419,6 +574,11 @@ namespace UnityEngine.TextCore.Text
         /// </remarks>
         public int IndexOf(char value, int startIndex)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use IndexOf while using Advanced Text");
+                return 0;
+            }
             return textInfo.IndexOf(value, startIndex);
         }
 
@@ -431,7 +591,24 @@ namespace UnityEngine.TextCore.Text
         /// </remarks>
         public int LastIndexOf(char value, int startIndex)
         {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use LastIndexOf while using Advanced Text");
+                return 0;
+            }
             return textInfo.LastIndexOf(value, startIndex);
         }
+
+        public void SelectCurrentWord(int index, ref int cursorIndex, ref int selectIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectCurrentWord while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectCurrentWord(textGenerationInfo, index, ref cursorIndex, ref selectIndex);
+        }
+
+        internal virtual bool IsAdvancedTextEnabledForElement() { return false; }
     }
 }

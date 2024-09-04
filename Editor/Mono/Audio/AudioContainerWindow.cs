@@ -20,6 +20,15 @@ namespace UnityEditor;
 
 sealed class AudioContainerWindow : EditorWindow
 {
+    enum Icons
+    {
+        Play = 0,
+        Stop = 1,
+        Skip = 2,
+        DiceOff = 3,
+        DiceOn = 4
+    }
+
     /// <summary>
     /// The cached instance of the window, if it is open.
     /// </summary>
@@ -32,8 +41,8 @@ sealed class AudioContainerWindow : EditorWindow
     /// Only used locally in these methods, but it's a global member to avoid GC.
     /// </summary>
     readonly List<AudioContainerElement> m_AddedElements = new();
-
     readonly string k_EmptyGuidString = Guid.Empty.ToString("N");
+    readonly Texture2D[] k_IconTextureCache = new Texture2D[Enum.GetNames(typeof(Icons)).Length];
 
     VisualElement m_ContainerRootVisualElement;
     VisualElement m_Day0RootVisualElement;
@@ -91,15 +100,11 @@ sealed class AudioContainerWindow : EditorWindow
     Label m_AutomaticTriggerModeLabel;
     Label m_LoopLabel;
 
-    // Shared icon references
-    Texture2D m_DiceIconOff;
-    Texture2D m_DiceIconOn;
-
     bool m_IsVisible;
-    bool m_IsSubscribedToGUICallbacksAndEvents;
     bool m_IsInitializing;
     bool m_Day0ElementsInitialized;
     bool m_ContainerElementsInitialized;
+    bool m_IsSubscribedToGUICallbacksAndEvents;
     bool m_ClipFieldProgressBarsAreCleared = true;
 
     /// <summary>
@@ -114,6 +119,11 @@ sealed class AudioContainerWindow : EditorWindow
         window.Show();
     }
 
+    internal bool IsInitializedForTargetDisplay()
+    {
+        return m_ContainerElementsInitialized && m_IsSubscribedToGUICallbacksAndEvents;
+    }
+
     static void OnCreateButtonClicked()
     {
         ProjectWindowUtil.CreateAudioRandomContainer();
@@ -126,8 +136,6 @@ sealed class AudioContainerWindow : EditorWindow
             Instance = this;
         }
 
-        m_DiceIconOff = EditorGUIUtility.IconContent("AudioRandomContainer On Icon").image as Texture2D;
-        m_DiceIconOn = EditorGUIUtility.IconContent("AudioRandomContainer Icon").image as Texture2D;
         SetTitle();
     }
 
@@ -186,7 +194,7 @@ sealed class AudioContainerWindow : EditorWindow
 
         titleContent = new GUIContent(titleString)
         {
-            image = m_DiceIconOff
+            image = GetIconTexture(Icons.DiceOff)
         };
     }
 
@@ -378,9 +386,7 @@ sealed class AudioContainerWindow : EditorWindow
         m_PlayStopButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "play-button-image");
         m_SkipButton = UIToolkitUtilities.GetChildByName<Button>(m_ContainerRootVisualElement, "skip-button");
         m_SkipButtonImage = UIToolkitUtilities.GetChildByName<VisualElement>(m_ContainerRootVisualElement, "skip-button-image");
-
-        var skipIcon = UIToolkitUtilities.LoadIcon("Skip");
-        m_SkipButtonImage.style.backgroundImage = new StyleBackground(skipIcon);
+        m_SkipButtonImage.style.backgroundImage = GetIconTexture(Icons.Skip);
     }
 
     void SubscribeToPreviewCallbacksAndEvents()
@@ -429,13 +435,27 @@ sealed class AudioContainerWindow : EditorWindow
 
         m_PlayStopButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused && !EditorUtility.audioMasterMute);
         m_SkipButton?.SetEnabled(State.IsPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused && !EditorUtility.audioMasterMute);
+        m_PlayStopButtonImage.style.backgroundImage = State.IsPlayingOrPaused() ? GetIconTexture(Icons.Stop) : GetIconTexture(Icons.Play);
+    }
 
-        var image =
-            State.IsPlayingOrPaused()
-                ? UIToolkitUtilities.LoadIcon("Stop")
-                : UIToolkitUtilities.LoadIcon("Play");
+    Texture2D GetIconTexture(Icons icon)
+    {
+        var cacheIndex = (int)icon;
 
-        m_PlayStopButtonImage.style.backgroundImage = new StyleBackground(image);
+        var name = icon switch
+        {
+            Icons.Play or Icons.Stop or Icons.Skip => icon.ToString(),
+            Icons.DiceOff => "AudioRandomContainer On Icon",
+            Icons.DiceOn => "AudioRandomContainer Icon",
+            _ => throw new ArgumentOutOfRangeException(nameof(icon), icon, null)
+        };
+
+        if (k_IconTextureCache[cacheIndex] == null)
+        {
+            k_IconTextureCache[cacheIndex] = EditorGUIUtility.IconContent(name).image as Texture2D;
+        }
+
+        return k_IconTextureCache[cacheIndex];
     }
 
     void OnTransportStateChanged(object sender, EventArgs e)
@@ -535,14 +555,14 @@ sealed class AudioContainerWindow : EditorWindow
     {
         if (property.boolValue)
         {
-            m_VolumeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
+            m_VolumeRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOn);
             m_VolumeRandomizationRangeSlider.SetEnabled(true);
             m_VolumeRandomizationRangeField.SetEnabled(true);
             m_VolumeRandomRangeTracker.SetEnabled(true);
         }
         else
         {
-            m_VolumeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
+            m_VolumeRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOff);
             m_VolumeRandomizationRangeSlider.SetEnabled(false);
             m_VolumeRandomizationRangeField.SetEnabled(false);
             m_VolumeRandomRangeTracker.SetEnabled(false);
@@ -642,14 +662,14 @@ sealed class AudioContainerWindow : EditorWindow
     {
         if (property.boolValue)
         {
-            m_PitchRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
+            m_PitchRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOn);
             m_PitchRandomizationRangeSlider.SetEnabled(true);
             m_PitchRandomizationRangeField.SetEnabled(true);
             m_PitchRandomRangeTracker.SetEnabled(true);
         }
         else
         {
-            m_PitchRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
+            m_PitchRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOff);
             m_PitchRandomizationRangeSlider.SetEnabled(false);
             m_PitchRandomizationRangeField.SetEnabled(false);
             m_PitchRandomRangeTracker.SetEnabled(false);
@@ -1227,14 +1247,14 @@ sealed class AudioContainerWindow : EditorWindow
         if (property.boolValue
             && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic)
         {
-            m_TimeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
+            m_TimeRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOn);
             m_TimeRandomizationRangeSlider.SetEnabled(true);
             m_TimeRandomizationRangeField.SetEnabled(true);
             m_TimeRandomRangeTracker.SetEnabled(true);
         }
         else
         {
-            m_TimeRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
+            m_TimeRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOff);
             m_TimeRandomizationRangeSlider.SetEnabled(false);
             m_TimeRandomizationRangeField.SetEnabled(false);
             m_TimeRandomRangeTracker.SetEnabled(false);
@@ -1267,13 +1287,13 @@ sealed class AudioContainerWindow : EditorWindow
             && State.AudioContainer.loopMode != AudioRandomContainerLoopMode.Infinite
             && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic)
         {
-            m_CountRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOn);
+            m_CountRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOn);
             m_CountRandomizationRangeSlider.SetEnabled(true);
             m_CountRandomizationRangeField.SetEnabled(true);
         }
         else
         {
-            m_CountRandomizationButtonImage.style.backgroundImage = new StyleBackground(m_DiceIconOff);
+            m_CountRandomizationButtonImage.style.backgroundImage = GetIconTexture(Icons.DiceOff);
             m_CountRandomizationRangeSlider.SetEnabled(false);
             m_CountRandomizationRangeField.SetEnabled(false);
         }

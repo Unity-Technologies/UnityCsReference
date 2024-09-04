@@ -19,6 +19,15 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal static void RemoveOnBuildProfileEnable(Action<BuildProfile> action) => onBuildProfileEnable -= action;
 
+        // This callback is of use when a build profile is created via AssetDatabase, and we need to notify the UI
+        // and select the newly created profile in the listview.
+        [UsedImplicitly]
+        internal static event Action<BuildProfile> onBuildProfileCreated;
+        [VisibleToOtherModules]
+        internal static void AddOnBuildProfileCreated(Action<BuildProfile> action) => onBuildProfileCreated += action;
+        [VisibleToOtherModules]
+        internal static void RemoveOnBuildProfileCreated(Action<BuildProfile> action) => onBuildProfileCreated -= action;
+
         internal static BuildProfile CreateInstance(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
         {
             string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
@@ -60,6 +69,8 @@ namespace UnityEditor.Build.Profile
                 buildProfile,
                 AssetDatabase.GenerateUniqueAssetPath(assetPath));
             buildProfile.OnEnable();
+            // Notify the UI of creation so that the new build profile can be selected
+            onBuildProfileCreated?.Invoke(buildProfile);
         }
 
         void TryCreatePlatformSettings()

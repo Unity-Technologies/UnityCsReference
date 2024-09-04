@@ -82,7 +82,6 @@ namespace UnityEditor
             var renderingLayersProperty = serializedObject.FindProperty("m_RenderingLayers");
 
             Debug.Assert(layersProperty.arraySize == 32);
-            Debug.Assert(renderingLayersProperty.arraySize == 32);
 
             var tagsList = SetupTags(content, tagsProperty);
             var sortingLayers = SetupSortingLayers(content, sortingLayersProperty);

@@ -229,9 +229,6 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        private static UnityEngine.Pool.ObjectPool<TrackedIndex> s_TrackedIndexPool = new(() => new TrackedIndex(), t => t.Reset());
-        private List<TrackedIndex> m_TrackedIndex;
-
         protected SerializedObjectList m_DataList;
         protected EventCallback<DragUpdatedEvent> m_DragUpdatedCallback;
         protected EventCallback<DragPerformEvent> m_DragPerformCallback;
@@ -302,8 +299,6 @@ namespace UnityEditor.UIElements.Bindings
                 return;
 
             isReleased = true;
-
-            UntrackElements();
 
             ResetContext();
             m_DataList = null;
@@ -387,8 +382,6 @@ namespace UnityEditor.UIElements.Bindings
 
             baseListView.RefreshItems();
 
-            TrackElements();
-
             if (baseListView.arraySizeField != null && m_DataList.ArraySize != null)
                 baseListView.arraySizeField.showMixedValue = m_DataList.ArraySize.hasMultipleDifferentValues;
         }
@@ -425,8 +418,6 @@ namespace UnityEditor.UIElements.Bindings
             SetContext(context, m_DataList.ArraySize);
 
             targetList.RefreshItems();
-
-            TrackElements();
         }
 
         private void SetView(BaseListView view)
@@ -526,51 +517,6 @@ namespace UnityEditor.UIElements.Bindings
 
             ve.Unbind();
             field.bindingPath = null;
-        }
-
-        private void TrackElements()
-        {
-            if (HasDefaultBindItem())
-            {
-                return;
-            }
-
-            m_TrackedIndex ??= new List<TrackedIndex>();
-
-            for (var i = 0; i < m_DataList.Count; i++)
-            {
-                if (i < m_TrackedIndex.Count)
-                {
-                    continue;
-                }
-
-                var elementProperty = m_DataList[i] as SerializedProperty;
-                s_TrackedIndexPool.Get(out var trackedIndex);
-                trackedIndex.Index = i;
-                trackedIndex.HashCodeForPropertyPath = elementProperty.hashCodeForPropertyPath;
-                bindingContext.RegisterSerializedPropertyChangeCallback(trackedIndex, elementProperty, (cookie, _) =>
-                {
-                    baseListView.RefreshItem((cookie as TrackedIndex)?.Index ?? -1);
-                });
-
-                m_TrackedIndex.Add(trackedIndex);
-            }
-        }
-
-        private void UntrackElements()
-        {
-            if (m_TrackedIndex == null)
-            {
-                return;
-            }
-
-            foreach (var trackedIndex in m_TrackedIndex)
-            {
-                bindingContext.UnregisterSerializedPropertyChangeCallback(trackedIndex, trackedIndex.HashCodeForPropertyPath);
-                s_TrackedIndexPool.Release(trackedIndex);
-            }
-
-            m_TrackedIndex.Clear();
         }
 
         private void ClearView()

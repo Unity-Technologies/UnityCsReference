@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine.UIElements
@@ -85,7 +86,11 @@ namespace UnityEngine.UIElements
 
         public override void AddTextInfoToPermanentCache()
         {
-            ConvertUssToTextGenerationSettings();
+            if (useAdvancedText)
+                ConvertUssToNativeTextGenerationSettings();
+            else
+                ConvertUssToTextGenerationSettings();
+
             base.AddTextInfoToPermanentCache();
         }
 
@@ -232,5 +237,28 @@ namespace UnityEngine.UIElements
             return Mathf.Min(padding * factor * gradientScale, gradientScale);
         }
 
+        private bool wasAdvancedTextEnabledForElement;
+        internal override bool IsAdvancedTextEnabledForElement()
+        {
+            bool isEnabled = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
+            // We need to cleanup caches to avoid exceptions when switching between advanced and non-advanced text
+            if (wasAdvancedTextEnabledForElement && !isEnabled && textGenerationInfo != IntPtr.Zero && !JobsUtility.IsExecutingJob)
+            {
+                TextGenerationInfo.Destroy(textGenerationInfo);
+                textGenerationInfo = IntPtr.Zero;
+            }
+            else if (!wasAdvancedTextEnabledForElement && isEnabled)
+            {
+                s_PermanentCache.RemoveTextInfoFromCache(this);
+                s_TemporaryCache.RemoveTextInfoFromCache(this);
+            }
+            wasAdvancedTextEnabledForElement = isEnabled;
+            return isEnabled;
+        }
+
+        public override bool IsPlaceholder
+        {
+            get => useAdvancedText ? m_TextElement.showPlaceholderText : base.IsPlaceholder;
+        }
     }
 }

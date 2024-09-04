@@ -42,8 +42,9 @@ namespace UnityEngine
             }
         }
 
-        int m_CharacterCount => textHandle.textInfo.characterCount;
-        int characterCount => (m_CharacterCount > 0 && textHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
+        int m_CharacterCount => textHandle.characterCount;
+        // For TextCore we need to substract 1 if the last character is a zero width space
+        int characterCount => (!textHandle.useAdvancedText && m_CharacterCount > 0 && textHandle.textInfo.textElementInfo[m_CharacterCount - 1].character == 0x200B) ? m_CharacterCount - 1 : m_CharacterCount;
         TextElementInfo[] m_TextElementInfos => textHandle.textInfo.textElementInfo;
 
         int m_CursorIndex = 0;
@@ -412,15 +413,35 @@ namespace UnityEngine
         public void SelectCurrentWord()
         {
             var index = cursorIndex;
-            if (cursorIndex < selectIndex)
+            
+            if (textHandle.useAdvancedText)
             {
-                cursorIndex = FindEndOfClassification(index, Direction.Backward);
-                selectIndex = FindEndOfClassification(index, Direction.Forward);
+                int cursor = 0;
+                int select = 0;
+                textHandle.SelectCurrentWord(index, ref cursor, ref select);
+                if (cursorIndex < selectIndex)
+                {
+                    cursorIndex = cursor;
+                    selectIndex = select;
+                }
+                else
+                {
+                    cursorIndex = select;
+                    selectIndex = cursor;
+                }
             }
             else
             {
-                cursorIndex = FindEndOfClassification(index, Direction.Forward);
-                selectIndex = FindEndOfClassification(index, Direction.Backward);
+                if (cursorIndex < selectIndex)
+                {
+                    cursorIndex = FindEndOfClassification(index, Direction.Backward);
+                    selectIndex = FindEndOfClassification(index, Direction.Forward);
+                }
+                else
+                {
+                    cursorIndex = FindEndOfClassification(index, Direction.Forward);
+                    selectIndex = FindEndOfClassification(index, Direction.Backward);
+                }
             }
 
             ClearCursorPos();
@@ -588,7 +609,11 @@ namespace UnityEngine
         public void MoveWordRight()
         {
             cursorIndex = cursorIndex > selectIndex ? cursorIndex : selectIndex;
-            cursorIndex = selectIndex = FindNextSeperator(cursorIndex);
+
+            if (textHandle.useAdvancedText)
+                cursorIndex = selectIndex = FindStartOfNextWord(cursorIndex);
+            else
+                cursorIndex = selectIndex = FindNextSeperator(cursorIndex);
             ClearCursorPos();
         }
 
@@ -617,7 +642,11 @@ namespace UnityEngine
         public void MoveWordLeft()
         {
             cursorIndex = cursorIndex < selectIndex ? cursorIndex : selectIndex;
-            cursorIndex = FindPrevSeperator(cursorIndex);
+            if (textHandle.useAdvancedText)
+                cursorIndex = FindEndOfPreviousWord(cursorIndex);
+            else
+                cursorIndex = FindPrevSeperator(cursorIndex);
+
             selectIndex = cursorIndex;
         }
 
@@ -699,13 +728,29 @@ namespace UnityEngine
                 {
                     if (p <= m_DblClickInitPosStart)
                     {
-                        cursorIndex = FindEndOfClassification(p, Direction.Backward);
-                        selectIndex = FindEndOfClassification(m_DblClickInitPosEnd - 1, Direction.Forward);
+                        if (textHandle.useAdvancedText)
+                        {
+                            selectIndex = Mathf.Max(selectIndex, cursorIndex);
+                            cursorIndex = textHandle.GetEndOfPreviousWord(p);
+                        }
+                        else
+                        {
+                            cursorIndex = FindEndOfClassification(p, Direction.Backward);
+                            selectIndex = FindEndOfClassification(m_DblClickInitPosEnd - 1, Direction.Forward);
+                        }
                     }
                     else if (p >= m_DblClickInitPosEnd)
                     {
-                        cursorIndex = FindEndOfClassification(p - 1, Direction.Forward);
-                        selectIndex = FindEndOfClassification(m_DblClickInitPosStart + 1, Direction.Backward);
+                        if (textHandle.useAdvancedText)
+                        {
+                            selectIndex = Mathf.Min(selectIndex, cursorIndex);
+                            cursorIndex = textHandle.GetStartOfNextWord(p - 1);
+                        }
+                        else
+                        {
+                            cursorIndex = FindEndOfClassification(p - 1, Direction.Forward);
+                            selectIndex = FindEndOfClassification(m_DblClickInitPosStart + 1, Direction.Backward);
+                        }
                     }
                     else
                     {
@@ -773,6 +818,10 @@ namespace UnityEngine
 
         public int FindStartOfNextWord(int p)
         {
+            if (textHandle.useAdvancedText)
+            {
+                return textHandle.GetStartOfNextWord(p);
+            }
             int textLen = characterCount;
             if (p == textLen)
                 return p;
@@ -809,6 +858,10 @@ namespace UnityEngine
 
         public int FindEndOfPreviousWord(int p)
         {
+            if (textHandle.useAdvancedText)
+            {
+                return textHandle.GetEndOfPreviousWord(p);
+            }
             if (p == 0)
                 return p;
             p = PreviousCodePointIndex(p);
@@ -880,6 +933,9 @@ namespace UnityEngine
 
         public int PreviousCodePointIndex(int index)
         {
+            if (textHandle.useAdvancedText)
+                return textHandle.PreviousCodePointIndex(index);
+
             if (index > 0)
                 index--;
 
@@ -888,6 +944,11 @@ namespace UnityEngine
 
         public int NextCodePointIndex(int index)
         {
+            if (textHandle.useAdvancedText)
+            {
+                return textHandle.NextCodePointIndex(index);
+            }
+
             if (index < characterCount)
                 index++;
 
@@ -896,6 +957,10 @@ namespace UnityEngine
 
         int GetGraphicalLineStart(int p)
         {
+            if (textHandle.useAdvancedText)
+            {
+               return textHandle.GetFirstCharacterIndexOnLine(p);
+            }
             Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
             point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
             point.x = 0;
@@ -904,6 +969,10 @@ namespace UnityEngine
 
         int GetGraphicalLineEnd(int p)
         {
+            if (textHandle.useAdvancedText)
+            {
+                return textHandle.GetLastCharacterIndexOnLine(p);
+            }
             Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
             point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
             point.x += 5000;

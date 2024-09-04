@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class TextHandlePermanentCache
     {
         internal LinkedList<TextInfo> s_TextInfoPool = new LinkedList<TextInfo>();
@@ -45,6 +46,7 @@ namespace UnityEngine.TextCore.Text
             textHandle.Update();
         }
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         public void RemoveTextInfoFromCache(TextHandle textHandle)
         {
             lock (syncRoot)

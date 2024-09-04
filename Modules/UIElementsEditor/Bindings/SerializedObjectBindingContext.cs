@@ -768,6 +768,8 @@ internal class SerializedObjectBindingContext
     /// </summary>
     private TrackedValues m_ValueTracker = new TrackedValues();
 
+
+    // Ideally we'd also be able to do this with just the property path hash value instead of requiring a resolved SerializedProperty
     public bool RegisterSerializedPropertyChangeCallback(object cookie, SerializedProperty property,
         Action<object, SerializedProperty> valueChangedCallback)
     {
