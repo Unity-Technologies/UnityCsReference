@@ -154,14 +154,14 @@ namespace UnityEditor
 
         private void OnSelectionChanged()
         {
+            if (isLocked)
+                return;
+
             RebuildContentsContainers();
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
                 m_MultiEditLabel.RemoveFromHierarchy();
             }
-
-            if (isLocked)
-                return;
 
             UpdateSupportedDataModesList();
         }
