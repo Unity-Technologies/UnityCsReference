@@ -1061,7 +1061,7 @@ namespace UnityEngine.UIElements
             // This will ensure the GeometryChangedEvent is triggered no matter what.
             // We depend on it to know when all items are laid out to update the contentContainer size,
             // so we need to make sure it is going to be called when we track it.
-            item.rootElement.lastLayout = Rect.zero;
+            item.rootElement.lastLayout.size = Vector2.zero;
             item.rootElement.MarkDirtyRepaint();
         }
 

@@ -1262,6 +1262,8 @@ namespace UnityEditor
         void OnEnableINTERNAL()
         {
             activeEditorWindows.Add(this);
+
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnEscapeKeyPressed);
         }
 
         void OnDisableINTERNAL()
@@ -1269,6 +1271,22 @@ namespace UnityEditor
             m_OverlayCanvas.OnContainerWindowDisabled();
             SaveViewDataToDisk();
             activeEditorWindows.Remove(this);
+
+            rootVisualElement.UnregisterCallback<KeyDownEvent>(OnEscapeKeyPressed);
+        }
+
+        void OnEscapeKeyPressed(KeyDownEvent evt)
+        {
+            if (hasUnsavedChanges && evt.keyCode == KeyCode.Escape)
+            {
+                ContainerWindow cw = m_Parent.window;
+                if (cw.showMode == ShowMode.Utility)
+                {
+                    evt.StopPropagation();
+                    if (cw.InternalRequestClose())
+                        cw.Close();
+                }
+            }
         }
 
         internal void ReleaseViewData()

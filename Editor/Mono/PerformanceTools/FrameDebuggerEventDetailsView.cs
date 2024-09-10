@@ -247,7 +247,6 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             if (m_CachedEventData.m_IsRayTracingEvent)
                 return;
 
-            bool isBackBuffer = curEventData.m_RenderTargetIsBackBuffer;
             bool isDepthOnlyRT = GraphicsFormatUtility.IsDepthFormat((GraphicsFormat)curEventData.m_RenderTargetFormat);
             bool isClearAction = (int)curEvent.m_Type <= 7;
             bool hasShowableDepth = (curEventData.m_RenderTargetHasDepthTexture != 0);
@@ -277,7 +276,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 m_RTIndex = 0;
 
             m_RTIndex = EditorGUILayout.Popup(m_RTIndex, rtNames, FrameDebuggerStyles.EventToolbar.s_PopupLeftStyle, GUILayout.Width(70));
-            GUI.enabled = !isBackBuffer && !isDepthOnlyRT;
+            GUI.enabled = !isDepthOnlyRT;
 
             // color channels
             EditorGUILayout.Space(5f);
@@ -286,7 +285,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             int channelToDisplay = 0;
             bool forceUpdate = false;
-            bool shouldDisableChannelButtons = isDepthOnlyRT || isClearAction || isBackBuffer;
+
+            // Negative RT index: display depth or stencil buffer
+            bool isDepthOrStencilSelected = m_RTIndexLastSet < 0;
+
+            bool shouldDisableChannelButtons = isDepthOnlyRT || isClearAction || isDepthOrStencilSelected;
             UInt32 componentCount = GraphicsFormatUtility.GetComponentCount((GraphicsFormat)curEventData.m_RenderTargetFormat);
             GUILayout.BeginHorizontal();
             {
@@ -309,7 +312,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 // * Showing the back buffer
                 // * Showing Shadows/Depth/Clear
                 // * Channel index is higher then the number available channels
-                bool shouldForceAll = isBackBuffer || (m_RTSelectedChannel != 0 && (shouldDisableChannelButtons || m_RTSelectedChannel < 4 && componentCount < m_RTSelectedChannel));
+                bool shouldForceAll = (m_RTSelectedChannel != 0 && (shouldDisableChannelButtons || m_RTSelectedChannel < 4 && componentCount < m_RTSelectedChannel));
                 channelToDisplay = shouldForceAll ? 0 : m_RTSelectedChannel;
 
                 if (channelToDisplay != m_SelectedColorChannel)
@@ -322,7 +325,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             }
             GUILayout.EndHorizontal();
 
-            GUI.enabled = !isBackBuffer;
+            GUI.enabled = true;
 
             // levels
             GUILayout.BeginHorizontal(FrameDebuggerStyles.EventToolbar.s_LevelsHorizontalStyle);
@@ -470,7 +473,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 bool linearColorSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 bool textureSRGB = GraphicsFormatUtility.IsSRGBFormat(targetTextureFormat);
                 bool undoOutputSRGB = (isDebuggingEditor && (!linearColorSpace || textureSRGB)) ? false : true;
-                bool shouldYFlip = m_CachedEventData.m_RenderTargetIsBackBuffer && isDebuggingEditor;
+                bool shouldYFlip = m_CachedEventData.m_RenderTargetIsBackBuffer && isDebuggingEditor && SystemInfo.graphicsUVStartsAtTop;
                 Vector4 levels = new Vector4(m_RTBlackLevel, m_RTWhiteLevel, 0f, 0f);
 
                 // Get a temporary texture...

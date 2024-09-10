@@ -24,9 +24,6 @@ namespace UnityEditor.UIElements.Bindings
             }
         }
 
-        private static UnityEngine.Pool.ObjectPool<TrackedIndex> s_TrackedIndexPool = new(() => new TrackedIndex(), t => t.Reset());
-        private List<TrackedIndex> m_TrackedIndex;
-
         ListView listView
         {
             get => boundElement as ListView;
@@ -73,8 +70,6 @@ namespace UnityEditor.UIElements.Bindings
             SetContext(context, m_DataList.ArraySize);
 
             targetList.RefreshItems();
-
-            TrackElements();
         }
 
         private void SetListView(ListView lv)
@@ -231,51 +226,6 @@ namespace UnityEditor.UIElements.Bindings
             field.bindingPath = null;
         }
 
-        private void TrackElements()
-        {
-            if (listView.bindItem == m_DefaultBindItem)
-            {
-                return;
-            }
-
-            m_TrackedIndex ??= new List<TrackedIndex>();
-
-            for (var i = 0; i < m_DataList.Count; i++)
-            {
-                if (i < m_TrackedIndex.Count)
-                {
-                    continue;
-                }
-
-                var elementProperty = m_DataList[i] as SerializedProperty;
-                s_TrackedIndexPool.Get(out var trackedIndex);
-                trackedIndex.Index = i;
-                trackedIndex.HashCodeForPropertyPath = elementProperty.hashCodeForPropertyPath;
-                bindingContext.RegisterSerializedPropertyChangeCallback(trackedIndex, elementProperty, (cookie, _) =>
-                {
-                    listView.RefreshItem((cookie as TrackedIndex)?.Index ?? -1);
-                });
-
-                m_TrackedIndex.Add(trackedIndex);
-            }
-        }
-
-        private void UntrackElements()
-        {
-            if (m_TrackedIndex == null)
-            {
-                return;
-            }
-
-            foreach (var trackedIndex in m_TrackedIndex)
-            {
-                bindingContext.UnregisterSerializedPropertyChangeCallback(trackedIndex, trackedIndex.HashCodeForPropertyPath);
-                s_TrackedIndexPool.Release(trackedIndex);
-            }
-
-            m_TrackedIndex.Clear();
-        }
-
         void SerializedObjectBindEventCallback(SerializedObjectBindEvent evt)
         {
             // Prevents list view items to be bound to the parent's serialized object.
@@ -325,8 +275,6 @@ namespace UnityEditor.UIElements.Bindings
 
             listView.RefreshItems();
 
-            TrackElements();
-
             if (listView.arraySizeField != null && m_DataList.ArraySize != null)
                 listView.arraySizeField.showMixedValue = m_DataList.ArraySize.hasMultipleDifferentValues;
         }
@@ -334,8 +282,6 @@ namespace UnityEditor.UIElements.Bindings
         public override void Release()
         {
             isReleased = true;
-
-            UntrackElements();
 
             ResetContext();
             m_DataList = null;
