@@ -240,9 +240,13 @@ namespace UnityEngine.UIElements
         private bool wasAdvancedTextEnabledForElement;
         internal override bool IsAdvancedTextEnabledForElement()
         {
+            // When it's called on a thread it automatically means it's not ATG, so we just return false.
+            if (JobsUtility.IsExecutingJob)
+                return false;
+
             bool isEnabled = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
             // We need to cleanup caches to avoid exceptions when switching between advanced and non-advanced text
-            if (wasAdvancedTextEnabledForElement && !isEnabled && textGenerationInfo != IntPtr.Zero && !JobsUtility.IsExecutingJob)
+            if (wasAdvancedTextEnabledForElement && !isEnabled && textGenerationInfo != IntPtr.Zero)
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;
