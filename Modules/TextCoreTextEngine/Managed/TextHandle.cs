@@ -167,14 +167,12 @@ namespace UnityEngine.TextCore.Text
 
         public void RemoveTextInfoFromTemporaryCache()
         {
-            if (useAdvancedText)
-                return;
             s_TemporaryCache.RemoveTextInfoFromCache(this);
         }
 
         public void RemoveTextInfoFromPermanentCache()
         {
-            if (useAdvancedText)
+            if (textGenerationInfo != IntPtr.Zero)
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;

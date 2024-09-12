@@ -538,12 +538,16 @@ namespace UnityEditor
             }
             finally
             {
+                // We explicitly called BeginOffsetArea outside this try-catch scope,
+                // so we need to always explicitly end it as well just like all other
+                // GUI scopes are responsible for dealing with ExitGUI properly.
+                EndOffsetArea();
+
                 // We can't reset gui state after ExitGUI we just want to bail completely
                 if (!(isExitGUIException || GUIUtility.guiIsExiting))
                 {
                     CheckNotificationStatus();
 
-                    EndOffsetArea();
                     if (GUILayoutUtility.unbalancedgroupscount != 0)
                     {
                         Debug.LogError("GUI Error: Invalid GUILayout state in " + GetActualViewName() + " view. Verify that all layout Begin/End calls match");

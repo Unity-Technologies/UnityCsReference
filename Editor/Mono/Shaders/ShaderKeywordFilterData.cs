@@ -195,6 +195,14 @@ namespace UnityEditor.ShaderKeywordFilter
             if (containerObject == null)
                 return node;
 
+            // Unity objects have their own validity checking
+            if (containerObject is UnityEngine.Object)
+            {
+                var unityObject = containerObject as UnityEngine.Object;
+                if (!unityObject)
+                    return node;
+            }
+
             if (!visited.Add(containerObject))
                 return node;
 
