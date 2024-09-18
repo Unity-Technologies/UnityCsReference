@@ -286,8 +286,8 @@ namespace UnityEditor
 
         public static void EndOffsetArea()
         {
-            GUILayoutUtility.EndLayoutGroup();
             GUI.EndGroup();
+            GUILayoutUtility.EndLayoutGroup();
         }
 
         // we already have renderdoc integration done in GUIView but in cpp

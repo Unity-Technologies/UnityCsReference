@@ -1575,6 +1575,9 @@ namespace UnityEditor
                 return;
             }
 
+            if (!ContainerWindow.InternalRequestCloseAll(false))
+                return;
+
             ResetFactorySettings();
         }
 

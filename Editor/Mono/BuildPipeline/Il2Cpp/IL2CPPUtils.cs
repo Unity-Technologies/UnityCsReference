@@ -39,6 +39,14 @@ namespace UnityEditor
         public abstract string GetSysrootPath();
         public abstract string GetToolchainPath();
         public abstract string GetIl2CppCompilerFlags();
+        // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
+        public virtual string[] GetIl2CppAdditionalLibraries() => Array.Empty<string>();
+        // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
+        public virtual string[] GetIl2CppAdditionalDefines() => Array.Empty<string>();
+        // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
+        public virtual string[] GetIl2CppAdditionalIncludeDirectories() => Array.Empty<string>();
+        // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
+        public virtual string[] GetIl2CppAdditionalLinkDirectories() => Array.Empty<string>();
         public abstract string GetIl2CppLinkerFlags();
         // The sysroot package does not currently contain an implemenation for this method, adding a default implementation to avoid breaking stuff
         public virtual string GetIl2CppLinkerFlagsFile() => null;

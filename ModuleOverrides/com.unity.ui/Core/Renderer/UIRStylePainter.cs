@@ -1096,7 +1096,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     if ((backgroundPosition.keyword == BackgroundPositionKeyword.Right) || (backgroundPosition.keyword == BackgroundPositionKeyword.Bottom))
                     {
-
                         offset = (totalRect.size[axis] - linear_size) - offset;
                     }
                 }
@@ -1238,7 +1237,9 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
         void StampRectangleWithSubRect(MeshGenerationContextUtils.RectangleParams rectParams, Rect targetRect, Rect totalRect, Rect targetUV)
         {
-            if (targetRect.width < UIRUtility.k_Epsilon || targetRect.height < UIRUtility.k_Epsilon)
+            const float epsilon = 0.001f;
+
+            if (targetRect.width < epsilon || targetRect.height < epsilon)
                 return;
 
             // Remap the subRect inside the targetRect
@@ -1251,7 +1252,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             subRect.position += fullRect.position;
             subRect.size *= fullRect.size;
 
-            if (rectParams.HasSlices(UIRUtility.k_Epsilon))
+            if (rectParams.HasSlices(epsilon))
             {
                 // Use the full target rect when working with slices. The content will stretch to the full target.
                 rectParams.backgroundRepeatRect = Rect.zero;
@@ -1261,7 +1262,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             {
                 // Find where the subRect intersects with the targetRect.
                 var rect = MeshGenerationContextUtils.RectangleParams.RectIntersection(subRect, targetRect);
-                if (rect.size.x < UIRUtility.k_Epsilon || rect.size.y < UIRUtility.k_Epsilon)
+                if (rect.size.x < epsilon || rect.size.y < epsilon)
                     return;
 
                 if (rect.size != subRect.size)

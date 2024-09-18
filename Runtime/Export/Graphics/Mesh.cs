@@ -766,7 +766,7 @@ namespace UnityEngine
             if (this == null)
                 throw new NullReferenceException();
 
-            if(layout == SkinWeights.None)
+            if (layout == SkinWeights.None)
             {
                 Debug.LogError($"Only possible to access bone weights buffer for values: {SkinWeights.OneBone}, {SkinWeights.TwoBones}, {SkinWeights.FourBones} and {SkinWeights.Unlimited}.");
                 return null;

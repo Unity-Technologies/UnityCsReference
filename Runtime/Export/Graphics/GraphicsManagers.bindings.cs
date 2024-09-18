@@ -234,9 +234,17 @@ namespace UnityEngine
         }
 
         [Obsolete("blendWeights is obsolete. Use skinWeights instead (UnityUpgradable) -> skinWeights", true)]
-        extern public static BlendWeights blendWeights   { [NativeName("GetSkinWeights")] get; [NativeName("SetSkinWeights")] set; }
+        extern public static BlendWeights blendWeights
+        {
+            [NativeName("GetSkinWeights")] get;
+            [NativeThrows]
+            [NativeName("SetSkinWeights")] set; }
 
-        extern public static SkinWeights skinWeights { get; set; }
+        extern public static SkinWeights skinWeights
+        {
+            get;
+            [NativeThrows] set;
+        }
 
         extern public static int count { [NativeName("GetQualitySettingsCount")] get; }
 

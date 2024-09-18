@@ -379,20 +379,29 @@ namespace UnityEditor.Search
                 return;
 
             bool updateViews = false;
+            foreach (var p in FilterIndexes(deleted))
+            {
+                var db = Find(p);
+                if (db)
+                    updateViews = s_DBs.Remove(db);
+            }
+
             foreach (var p in FilterIndexes(updated))
             {
                 var db = Find(p);
                 if (db)
                     continue;
                 s_DBs.Add(AssetDatabase.LoadAssetAtPath<SearchDatabase>(p));
-                updateViews = true;
+                updateViews |= true;
             }
 
-            foreach (var p in FilterIndexes(deleted))
+            foreach (var p in FilterIndexes(moved))
             {
                 var db = Find(p);
                 if (db)
-                    updateViews |= s_DBs.Remove(db);
+                    continue;
+                s_DBs.Add(AssetDatabase.LoadAssetAtPath<SearchDatabase>(p));
+                updateViews |= true;
             }
 
             if (updateViews || s_DBs.RemoveAll(db => !db) > 0)

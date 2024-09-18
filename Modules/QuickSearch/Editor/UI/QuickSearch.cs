@@ -1525,6 +1525,8 @@ namespace UnityEditor.Search
             )
             {
                 var ctrl = evt.control || evt.command;
+                var groupNavModifier = Application.platform == RuntimePlatform.OSXEditor ? (EventModifiers.Command | EventModifiers.Alt) : EventModifiers.Alt;
+
                 if (evt.keyCode == KeyCode.Escape)
                 {
                     HandleEscapeKeyDown(evt);
@@ -1554,7 +1556,7 @@ namespace UnityEditor.Search
                     ToggleWantsMore();
                     evt.Use();
                 }
-                else if (!viewState.hideTabs && evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.LeftArrow)
+                else if (!viewState.hideTabs && evt.modifiers.HasAll(groupNavModifier) && evt.keyCode == KeyCode.LeftArrow)
                 {
                     string previousGroupId = null;
                     foreach (var group in EnumerateGroups())
@@ -1568,7 +1570,7 @@ namespace UnityEditor.Search
                     }
                     evt.Use();
                 }
-                else if (!viewState.hideTabs && evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.RightArrow)
+                else if (!viewState.hideTabs && evt.modifiers.HasAll(groupNavModifier) && evt.keyCode == KeyCode.RightArrow)
                 {
                     bool selectNext = false;
                     foreach (var group in EnumerateGroups())
@@ -2561,8 +2563,7 @@ namespace UnityEditor.Search
         [MenuItem("Window/Search/Transient Window", priority = 1)]
         public static void OpenPopupWindow()
         {
-            if (SearchService.ShowWindow(defaultWidth: 600, defaultHeight: 400, dockable: false) is QuickSearch window)
-                SearchAnalytics.SendEvent(window.windowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "PopupWindow");
+            SearchUtils.OpenTransientWindow();
         }
 
 

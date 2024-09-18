@@ -29,9 +29,9 @@ namespace Unity.Loading
     [StructLayout(LayoutKind.Sequential)]
     public struct ContentFileUnloadHandle
     {
-        internal JobHandle jobHandle;
-        public bool IsCompleted { get { return jobHandle.IsCompleted; } }
-        public bool WaitForCompletion(int timeoutMs) { return ContentLoadInterface.WaitForJobCompletion(jobHandle, timeoutMs); }
+        internal ContentFile Id;
+        public bool IsCompleted { get { return ContentLoadInterface.ContentFile_IsUnloadComplete(Id); } }
+        public bool WaitForCompletion(int timeoutMs) { return ContentLoadInterface.WaitForUnloadCompletion(Id, timeoutMs); }
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -43,7 +43,8 @@ namespace Unity.Loading
         public ContentFileUnloadHandle UnloadAsync()
         {
             ThrowIfInvalidHandle();
-            return ContentLoadInterface.ContentFile_UnloadAsync(this);
+            ContentLoadInterface.ContentFile_UnloadAsync(this);
+            return new ContentFileUnloadHandle { Id = this };
         }
 
         public UnityEngine.Object[] GetObjects()
@@ -148,7 +149,7 @@ namespace Unity.Loading
         unsafe internal static extern ContentFile LoadContentFileAsync(ContentNamespace nameSpace, string filename, void *dependencies, int dependencyCount, JobHandle dependentFence, bool useUnsafe = false);
 
         [NativeThrows]
-        internal extern static ContentFileUnloadHandle ContentFile_UnloadAsync(ContentFile handle);
+        internal extern static void ContentFile_UnloadAsync(ContentFile handle);
 
         internal extern static UnityEngine.Object ContentFile_GetObject(ContentFile handle, UInt64 localIdentifierInFile);
 
@@ -162,8 +163,9 @@ namespace Unity.Loading
 
         internal extern static bool WaitForLoadCompletion(ContentFile handle, int timeoutMs);
 
-        internal extern static bool WaitForJobCompletion(JobHandle handle, int timeoutMs);
+        internal extern static bool WaitForUnloadCompletion(ContentFile handle, int timeoutMs);
 
+        internal extern static bool ContentFile_IsUnloadComplete(ContentFile handle);
 
         [NativeThrows]
         extern unsafe internal static ContentSceneFile LoadSceneAsync(ContentNamespace nameSpace, string filename, string sceneName, ContentSceneParameters sceneParams, ContentFile *dependencies, int dependencyCount, JobHandle dependentFence);
