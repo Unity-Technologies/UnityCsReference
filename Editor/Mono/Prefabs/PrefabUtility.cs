@@ -2809,37 +2809,7 @@ namespace UnityEditor
                 throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}. Prefabs should have exactly 1 root GameObject, {1} was found.", assetPath, roots.Length));
             }
 
-            var prefabRoot = roots[0];
-
-            if (prefabRoot.GetComponent<RectTransform>() != null && prefabRoot.GetComponent<Canvas>() != null)
-            {
-                var prefabAsset = AssetDatabase.LoadMainAssetAtPath(assetPath) as GameObject;
-                if (prefabAsset == null)
-                    throw new ArgumentException(string.Format("Asset at path: {0}, cannot be loaded as GameObject", assetPath));
-
-                var prefabAssetRectTransform = prefabAsset.GetComponent<RectTransform>();
-                var prefabAssetCanvas = prefabAsset.GetComponent<Canvas>();
-
-                if (!prefabAssetRectTransform || !prefabAssetCanvas)
-                    return prefabRoot;
-
-                // Since the condition IsUI checks for the presence of RectTransform, we can safely assume that RectTransform is present.
-                var prefabRootRectTransform = prefabRoot.GetComponent<RectTransform>();
-                var rootCanvas = prefabRoot.GetComponent<Canvas>();
-
-                // Since the prefab we're modifying is non-driven, we need to re-parent it in a similar way to how it's done in prefab staging.
-                // This is important because the root is always considered driven. If we don't do this, it would continue to be treated as a root and set as driven.
-                PrefabStageUtility.HandleUIReparentingIfNeeded(prefabRoot, 0);
-
-                // Ensure that if there is a parent Canvas, the child Canvas's driven values are set to null
-                if (rootCanvas)
-                    rootCanvas.UpdateCanvasRectTransform(true);
-
-                // Now, we can safely reset our prefabRoot's sizeDelta and anchoredPosition to its orginal value.
-                prefabRootRectTransform.sizeDelta = prefabAssetRectTransform.sizeDelta;
-                prefabRootRectTransform.anchoredPosition = prefabAssetRectTransform.anchoredPosition;
-            }
-            return prefabRoot;
+            return roots[0];
         }
 
         public static void UnloadPrefabContents(GameObject contentsRoot)

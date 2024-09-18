@@ -56,6 +56,7 @@ namespace UnityEngine.UIElements
         }
 
         TextInputBase m_TextInputBase;
+        /// <undoc/>
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
         /// </summary>
@@ -459,7 +460,7 @@ namespace UnityEngine.UIElements
         {
             // Do nothing. Value-based fields will override this if appropriate.
         }
-
+        /// <undoc/>
         /// <summary>
         /// This is the input text base class visual representation.
         /// </summary>

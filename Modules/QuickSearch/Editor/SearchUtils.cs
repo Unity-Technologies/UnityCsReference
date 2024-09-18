@@ -1469,6 +1469,17 @@ namespace UnityEditor.Search
             return window;
         }
 
+        internal static ISearchView OpenTransientWindow()
+        {
+            var flags = SearchFlags.GeneralSearchWindow | SearchFlags.Multiselect;
+            var newContext = SearchService.CreateContext("", flags);
+            var viewState = new SearchViewState(newContext);
+            viewState.LoadDefaults();
+            var window  = QuickSearch.Create(viewState).ShowWindow(viewState.windowSize.x, viewState.windowSize.y, flags);
+            SearchAnalytics.SendEvent(window.viewState.sessionId, SearchAnalytics.GenericEventType.QuickSearchOpen, "TransientWindow");
+            return window;
+        }
+
         internal static ISearchView OpenDefaultQuickSearch()
         {
             var window = QuickSearch.Open(flags: SearchFlags.OpenGlobal);

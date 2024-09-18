@@ -72,8 +72,20 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Optionally overwrite the label of the generate property field. If no label is provided the string will be taken from the SerializedProperty.
         /// </summary>
-        public string label { get; set; }
+        public string label
+        {
+            get => m_Label;
+            set
+            {
+                if (m_Label == value) return;
+                m_Label = value;
 
+                // Refresh current label
+                Rebind();
+            }
+        }
+
+        string m_Label;
         SerializedObject m_SerializedObject;
         SerializedProperty m_SerializedProperty;
         string m_SerializedPropertyReferenceTypeName;
