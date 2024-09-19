@@ -14,7 +14,9 @@ namespace UnityEngine
         internal LinkedListNode<TextHandleTuple> tuple;
 
         const float sFallbackFontSize = 13;
-        const float sTimeToFlush = 1.0f;
+        const float sTimeToFlush = 5.0f;
+        const float sTimeBetweenCleanupRuns = 30.0f;
+        const int sNewHandlesBetweenCleanupRuns = 500;
 
         internal static Func<Object> GetEditorTextSettings;
         internal static Func<float, FontAsset, FontAsset> GetBlurryFontAssetMapping;
@@ -24,6 +26,7 @@ namespace UnityEngine
         private static Dictionary<int, IMGUITextHandle> textHandles = new ();
         private static LinkedList<TextHandleTuple> textHandlesTuple = new ();
         private static float lastCleanupTime;
+        private static int newHandlesSinceCleanup = 0;
 
         internal bool isCachedOnNative = false;
 
@@ -67,12 +70,12 @@ namespace UnityEngine
             return GetTextHandle(settings, true, ref isCached);
         }
 
-        private static bool ShouldCleanup(float currentTime, float lastTime)
+        private static bool ShouldCleanup(float currentTime, float lastTime, float cleanupThreshold)
         {
             // timeSinceLastCleanup can end up negative if lastCleanupTime is from a previous run.
             // Clean up if this happens.
             float timeSinceLastCleanup = currentTime - lastTime;
-            return timeSinceLastCleanup > sTimeToFlush || timeSinceLastCleanup < 0;
+            return timeSinceLastCleanup > cleanupThreshold || timeSinceLastCleanup < 0;
         }
 
         private static void ClearUnusedTextHandles()
@@ -81,7 +84,7 @@ namespace UnityEngine
             while (textHandlesTuple.Count > 0)
             {
                 var tuple = textHandlesTuple.First();
-                if (ShouldCleanup(currentTime, tuple.lastTimeUsed))
+                if (ShouldCleanup(currentTime, tuple.lastTimeUsed, sTimeToFlush))
                 {
                     GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);
                     if (textHandles.TryGetValue(tuple.hashCode, out IMGUITextHandle textHandleCached))
@@ -100,10 +103,12 @@ namespace UnityEngine
         {
             isCached = false;
             var currentTime = Time.realtimeSinceStartup;
-            if (ShouldCleanup(currentTime, lastCleanupTime))
+            if (ShouldCleanup(currentTime, lastCleanupTime, sTimeBetweenCleanupRuns) ||
+                newHandlesSinceCleanup > sNewHandlesBetweenCleanupRuns)
             {
                 ClearUnusedTextHandles();
                 lastCleanupTime = currentTime;
+                newHandlesSinceCleanup = 0;
             }
 
             int hash = settings.GetHashCode();
@@ -132,6 +137,7 @@ namespace UnityEngine
             handle.UpdatePreferredSize();
             textHandlesTuple.AddLast(listNode);
             handle.isCachedOnNative = isCalledFromNative;
+            ++newHandlesSinceCleanup;
             return handle;
         }
 

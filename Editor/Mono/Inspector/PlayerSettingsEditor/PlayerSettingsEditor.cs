@@ -157,8 +157,9 @@ namespace UnityEditor
             public static readonly GUIContent vulkanEnableCommandBufferRecycling = EditorGUIUtility.TrTextContent("Recycle command buffers*", "When enabled, command buffers are recycled after they have been executed as opposed to being freed.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
-            public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
-            public static readonly GUIContent spriteBatchingVertexThreshold = EditorGUIUtility.TrTextContent("Sprite Batching Threshold", "Dynamic Batching is always enabled for Sprites and this controls max vertex threshold for batching. ");
+            public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching", "Toggle Dynamic Batching. Note: Sprites are always dynamically batched.");
+            public static readonly GUIContent spriteBatchingVertexThreshold = EditorGUIUtility.TrTextContent("Sprite Batching Threshold", "Maximum vertex threshold of a sprite to be batched. Any sprite with vertex count above this value is not batched.");
+            public static readonly GUIContent spriteBatchingMaxVertexCount = EditorGUIUtility.TrTextContent("Sprite Batching Max Vertex Count", "Maximum vertex count per batch.");
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
@@ -471,6 +472,10 @@ namespace UnityEditor
         SerializedProperty m_ManagedStrippingLevel;
         SerializedProperty m_ActiveInputHandler;
 
+        SerializedProperty m_SpriteBatchVertexThreshold;
+        SerializedProperty m_SpriteBatchMaxVertexCount;
+
+
         // Embedded Linux specific
         SerializedProperty m_ForceSRGBBlit;
 
@@ -526,6 +531,12 @@ namespace UnityEditor
         bool isPresetWindowOpen = false;
         bool hasPresetWindowClosed = false;
 
+        /// <summary>
+        /// Internal callback set by the build profile window when tracking
+        /// changes to settings not represented by a serialized property.
+        /// </summary>
+        Action<SerializedObject> m_OnTrackSerializedObjectValueChanged;
+
         internal bool IsPreset() => playerSettingsType == PlayerSettingsType.Preset;
 
         internal enum PlayerSettingsType
@@ -540,6 +551,11 @@ namespace UnityEditor
         internal bool IsActivePlayerSettingsEditor() => (playerSettingsType == PlayerSettingsType.Global && !BuildProfileContext.ProjectHasActiveProfileWithPlayerSettings()) || playerSettingsType == PlayerSettingsType.ActiveBuildProfile;
 
         const string kSelectedPlatform = "PlayerSettings.SelectedPlatform";
+
+        /// <summary>
+        /// Current serialized object target as <see cref="PlayerSettings"/>.
+        /// </summary>
+        PlayerSettings m_CurrentTarget;
 
         public SerializedProperty FindPropertyAssert(string name)
         {
@@ -556,6 +572,7 @@ namespace UnityEditor
             if (Preset.IsEditorTargetAPreset(target))
                 playerSettingsType = PlayerSettingsType.Preset;
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
+            m_CurrentTarget = target as PlayerSettings;
 
             m_StripEngineCode               = FindPropertyAssert("stripEngineCode");
 
@@ -685,6 +702,9 @@ namespace UnityEditor
             m_LegacyClampBlendShapeWeights = FindPropertyAssert("legacyClampBlendShapeWeights");
             m_AndroidEnableTango           = FindPropertyAssert("AndroidEnableTango");
 
+            m_SpriteBatchVertexThreshold = FindPropertyAssert("m_SpriteBatchVertexThreshold");
+            m_SpriteBatchMaxVertexCount = FindPropertyAssert("m_SpriteBatchMaxVertexCount");
+
             SerializedProperty property = FindPropertyAssert("vrSettings");
             if (property != null)
                 m_Enable360StereoCapture = property.FindPropertyRelative("enable360StereoCapture");
@@ -755,8 +775,14 @@ namespace UnityEditor
         /// tab is displayed in the platform grouping.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal void ConfigurePlayerSettingsForBuildProfile(SerializedObject serializedProfile, string buildProfileModuleName, bool isServerBuildProfile, bool isActiveBuildProfile)
+        internal void ConfigurePlayerSettingsForBuildProfile(
+            SerializedObject serializedProfile,
+            string buildProfileModuleName,
+            bool isServerBuildProfile,
+            bool isActiveBuildProfile,
+            Action<SerializedObject> onTrackSerializedObjectChanged)
         {
+            m_OnTrackSerializedObjectValueChanged = onTrackSerializedObjectChanged;
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
             // We don't want to show other platform tabs that it's not the build profile one
@@ -784,6 +810,47 @@ namespace UnityEditor
             m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(platformModuleName);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
+        }
+
+        /// <summary>
+        /// Handles editor update when player setting changes outside the UI. If required,
+        /// schedules background work during the next editor update. After the global player settings
+        /// has changes.
+        /// </summary>
+        internal static void HandlePlayerSettingsChanged(
+            PlayerSettings current, PlayerSettings next,
+            BuildTarget currentBuildTarget, BuildTarget nextBuildTarget)
+        {
+            BuildTargetGroup currentBuildTargetGroup = BuildPipeline.GetBuildTargetGroup(currentBuildTarget);
+            BuildTargetGroup nextBuildTargetGroup = BuildPipeline.GetBuildTargetGroup(nextBuildTarget);
+            bool isLightmapEncodingChanged =
+                current.GetLightmapEncodingQualityForPlatform_Internal(currentBuildTarget)
+                != next.GetLightmapEncodingQualityForPlatform_Internal(nextBuildTarget);
+            bool isHDRCubemapEncodingChanged =
+                current.GetHDRCubemapEncodingQualityForPlatform_Internal(currentBuildTarget)
+                != next.GetHDRCubemapEncodingQualityForPlatform_Internal(nextBuildTarget);
+            bool isLightmapStreamingChanged =
+                (current.GetLightmapStreamingEnabledForPlatformGroup_Internal(currentBuildTargetGroup)
+                    != next.GetLightmapStreamingEnabledForPlatformGroup_Internal(nextBuildTargetGroup))
+                || (current.GetLightmapStreamingPriorityForPlatformGroup_Internal(currentBuildTargetGroup)
+                    != next.GetLightmapStreamingPriorityForPlatformGroup_Internal(nextBuildTargetGroup));
+            EditorApplication.delayCall += () =>
+            {
+                if (isHDRCubemapEncodingChanged)
+                {
+                    Lightmapping.OnUpdateHDRCubemapEncoding(nextBuildTargetGroup);
+                }
+
+                if (isLightmapEncodingChanged)
+                {
+                    Lightmapping.OnUpdateLightmapEncoding(nextBuildTargetGroup);
+                }
+
+                if (isLightmapStreamingChanged)
+                {
+                    Lightmapping.OnUpdateLightmapStreaming(nextBuildTargetGroup);
+                }
+            };
         }
 
         /// <summary>
@@ -1051,7 +1118,7 @@ namespace UnityEditor
 
         void DisplayBuildProfileHelpBoxIfNeeded()
         {
-            if (playerSettingsType == PlayerSettingsType.Global && BuildProfileContext.instance.activeProfile?.playerSettings != null)
+            if (playerSettingsType == PlayerSettingsType.Global && BuildProfileContext.activeProfile?.playerSettings != null)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
                 GUILayout.BeginVertical();
@@ -1564,7 +1631,7 @@ namespace UnityEditor
                 else
                 {
                     doRestart = EditorUtility.DisplayDialog("Changing editor graphics jobs mode",
-                        "You've changed the active graphics josb mode. This requires a restart of the Editor.",
+                        "You've changed the active graphics jobs mode. This requires a restart of the Editor.",
                         "Restart Editor", "Not now");
                 }
             }
@@ -2001,50 +2068,55 @@ namespace UnityEditor
             GUILayout.Label(SettingsContent.shaderVariantLoadingTitle, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            int defaultChunkSize = PlayerSettings.GetDefaultShaderChunkSizeInMB();
+            int defaultChunkSize = PlayerSettings.GetDefaultShaderChunkSizeInMB_Internal(m_CurrentTarget);
             int newDefaultChunkSize = EditorGUILayout.IntField(SettingsContent.defaultShaderChunkSize, defaultChunkSize);
             if (EditorGUI.EndChangeCheck() && newDefaultChunkSize > 0 && newDefaultChunkSize != defaultChunkSize)
             {
                 Undo.RecordObject(target, SettingsContent.undoChangedDefaultShaderChunkSizeString);
-                PlayerSettings.SetDefaultShaderChunkSizeInMB(newDefaultChunkSize);
+                PlayerSettings.SetDefaultShaderChunkSizeInMB_Internal(m_CurrentTarget, newDefaultChunkSize);
+                m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
             }
 
             EditorGUI.BeginChangeCheck();
-            int defaultChunkCount = PlayerSettings.GetDefaultShaderChunkCount();
+            int defaultChunkCount = PlayerSettings.GetDefaultShaderChunkCount_Internal(m_CurrentTarget);
             int newDefaultChunkCount = EditorGUILayout.IntField(SettingsContent.defaultShaderChunkCount, defaultChunkCount);
             if (EditorGUI.EndChangeCheck() && newDefaultChunkCount >= 0 && newDefaultChunkCount != defaultChunkCount)
             {
                 Undo.RecordObject(target, SettingsContent.undoChangedDefaultShaderChunkCountString);
-                PlayerSettings.SetDefaultShaderChunkCount(newDefaultChunkCount);
+                PlayerSettings.SetDefaultShaderChunkCount_Internal(m_CurrentTarget, newDefaultChunkCount);
+                m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
             }
 
-            bool oldOverride = PlayerSettings.GetOverrideShaderChunkSettingsForPlatform(platform.defaultTarget);
+            bool oldOverride = PlayerSettings.GetOverrideShaderChunkSettingsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
             bool newOverride = EditorGUILayout.Toggle(SettingsContent.overrideDefaultChunkSettings, oldOverride);
             if (oldOverride != newOverride)
-                PlayerSettings.SetOverrideShaderChunkSettingsForPlatform(platform.defaultTarget, newOverride);
+            {
+                PlayerSettings.SetOverrideShaderChunkSettingsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newOverride);
+                m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
+            }
 
             if (newOverride)
             {
-                int currentChunkSize = PlayerSettings.GetShaderChunkSizeInMBForPlatform(platform.defaultTarget);
+                int currentChunkSize = PlayerSettings.GetShaderChunkSizeInMBForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
                 int newChunkSize = EditorGUILayout.IntField(SettingsContent.platformShaderChunkSize, currentChunkSize);
                 if (EditorGUI.EndChangeCheck() && newChunkSize > 0 && newChunkSize != currentChunkSize)
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedPlatformShaderChunkSizeString);
-                    PlayerSettings.SetShaderChunkSizeInMBForPlatform(platform.defaultTarget, newChunkSize);
+                    PlayerSettings.SetShaderChunkSizeInMBForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newChunkSize);
+                    m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                 }
 
                 EditorGUI.BeginChangeCheck();
-                int currentChunkCount = PlayerSettings.GetShaderChunkCountForPlatform(platform.defaultTarget);
+                int currentChunkCount = PlayerSettings.GetShaderChunkCountForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
                 int newChunkCount = EditorGUILayout.IntField(SettingsContent.platformShaderChunkCount, currentChunkCount);
                 if (EditorGUI.EndChangeCheck() && newChunkCount >= 0 && newChunkCount != currentChunkCount)
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedPlatformShaderChunkCountString);
-                    PlayerSettings.SetShaderChunkCountForPlatform(platform.defaultTarget, newChunkCount);
+                    PlayerSettings.SetShaderChunkCountForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newChunkCount);
+                    m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                 }
             }
         }
-
-
 
         private void OtherSectionRenderingGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
@@ -2122,7 +2194,7 @@ namespace UnityEditor
                         staticBatchingSupported = settingsExtension.SupportsStaticBatching();
                         dynamicBatchingSupported = settingsExtension.SupportsDynamicBatching();
                     }
-                    PlayerSettings.GetBatchingForPlatform(platform.defaultTarget, out staticBatching, out dynamicBatching);
+                    PlayerSettings.GetBatchingForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, out staticBatching, out dynamicBatching);
 
                     bool reset = false;
                     if (staticBatchingSupported == false && staticBatching == 1)
@@ -2139,7 +2211,8 @@ namespace UnityEditor
 
                     if (reset)
                     {
-                        PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
+                        PlayerSettings.SetBatchingForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, staticBatching, dynamicBatching);
+                        m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                     }
 
                     EditorGUI.BeginChangeCheck();
@@ -2162,15 +2235,13 @@ namespace UnityEditor
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(target, SettingsContent.undoChangedBatchingString);
-                        PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
+                        PlayerSettings.SetBatchingForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, staticBatching, dynamicBatching);
+                        m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                     }
                 }
 
-                int spriteVertexBatchingThreshold = PlayerSettings.spriteBatchVertexThreshold;
-                EditorGUI.BeginChangeCheck();
-                spriteVertexBatchingThreshold = EditorGUILayout.IntSlider(SettingsContent.spriteBatchingVertexThreshold, spriteVertexBatchingThreshold, 300, 8000);
-                if (EditorGUI.EndChangeCheck())
-                    PlayerSettings.spriteBatchVertexThreshold = spriteVertexBatchingThreshold;
+                EditorGUILayout.IntSlider(m_SpriteBatchVertexThreshold, 300, 8000, SettingsContent.spriteBatchingVertexThreshold);
+                EditorGUILayout.IntSlider(m_SpriteBatchMaxVertexCount, 1024, 65535, SettingsContent.spriteBatchingMaxVertexCount);
             }
 
             bool hdrDisplaySupported = false;
@@ -2413,16 +2484,16 @@ namespace UnityEditor
                 {
                     {
                         EditorGUI.BeginChangeCheck();
-                        LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatform(platform.defaultTarget);
+                        LightmapEncodingQuality encodingQuality = m_CurrentTarget.GetLightmapEncodingQualityForPlatform_Internal(platform.defaultTarget);
                         LightmapEncodingQuality[] lightmapEncodingValues = { LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High };
                         LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
-                            PlayerSettings.SetLightmapEncodingQualityForPlatform(platform.defaultTarget, newEncodingQuality);
+                            m_CurrentTarget.SetLightmapEncodingQualityForPlatform_Internal(platform.defaultTarget, newEncodingQuality);
+                            m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
 
-                            Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
-
-                            serializedObject.ApplyModifiedProperties();
+                            if(IsActivePlayerSettingsEditor())
+                                Lightmapping.OnUpdateLightmapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
 
                             GUIUtility.ExitGUI();
                         }
@@ -2430,16 +2501,16 @@ namespace UnityEditor
 
                     {
                         EditorGUI.BeginChangeCheck();
-                        HDRCubemapEncodingQuality encodingQuality = PlayerSettings.GetHDRCubemapEncodingQualityForPlatform(platform.defaultTarget);
+                        HDRCubemapEncodingQuality encodingQuality = m_CurrentTarget.GetHDRCubemapEncodingQualityForPlatform_Internal(platform.defaultTarget);
                         HDRCubemapEncodingQuality[] hdrCubemapProbeEncodingValues = { HDRCubemapEncodingQuality.Low, HDRCubemapEncodingQuality.Normal, HDRCubemapEncodingQuality.High };
                         HDRCubemapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.hdrCubemapEncodingLabel, encodingQuality, hdrCubemapProbeEncodingValues, SettingsContent.hdrCubemapEncodingNames);
                         if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                         {
-                            PlayerSettings.SetHDRCubemapEncodingQualityForPlatform(platform.defaultTarget, newEncodingQuality);
+                            m_CurrentTarget.SetHDRCubemapEncodingQualityForPlatform_Internal(platform.defaultTarget, newEncodingQuality);
+                            m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
 
-                            Lightmapping.OnUpdateHDRCubemapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
-
-                            serializedObject.ApplyModifiedProperties();
+                            if (IsActivePlayerSettingsEditor())
+                                Lightmapping.OnUpdateHDRCubemapEncoding(platform.namedBuildTarget.ToBuildTargetGroup());
 
                             GUIUtility.ExitGUI();
                         }
@@ -2452,8 +2523,8 @@ namespace UnityEditor
                 // Light map settings
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
-                    bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
-                    int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup());
+                    bool streamingEnabled = m_CurrentTarget.GetLightmapStreamingEnabledForPlatformGroup_Internal(platform.namedBuildTarget.ToBuildTargetGroup());
+                    int streamingPriority = m_CurrentTarget.GetLightmapStreamingPriorityForPlatformGroup_Internal(platform.namedBuildTarget.ToBuildTargetGroup());
 
                     EditorGUI.BeginChangeCheck();
                     streamingEnabled = EditorGUILayout.Toggle(SettingsContent.lightmapStreamingEnabled, streamingEnabled);
@@ -2466,10 +2537,12 @@ namespace UnityEditor
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
-                        PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), streamingEnabled);
-                        PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(platform.namedBuildTarget.ToBuildTargetGroup(), streamingPriority);
+                        m_CurrentTarget.SetLightmapStreamingEnabledForPlatformGroup_Internal(platform.namedBuildTarget.ToBuildTargetGroup(), streamingEnabled);
+                        m_CurrentTarget.SetLightmapStreamingPriorityForPlatformGroup_Internal(platform.namedBuildTarget.ToBuildTargetGroup(), streamingPriority);
+                        m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
 
-                        Lightmapping.OnUpdateLightmapStreaming(platform.namedBuildTarget.ToBuildTargetGroup());
+                        if (IsActivePlayerSettingsEditor())
+                            Lightmapping.OnUpdateLightmapStreaming(platform.namedBuildTarget.ToBuildTargetGroup());
 
                         serializedObject.ApplyModifiedProperties();
 

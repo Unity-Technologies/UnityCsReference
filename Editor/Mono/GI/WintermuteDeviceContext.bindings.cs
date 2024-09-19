@@ -62,10 +62,11 @@ namespace UnityEngine.LightTransport
         [NativeMethod(IsThreadSafe = true)]
         public extern bool Initialize();
 
-        public BufferID CreateBuffer(UInt64 size)
+        public BufferID CreateBuffer(UInt64 count, UInt64 stride)
         {
-            Debug.Assert(size != 0, "Buffer size cannot be zero.");
-            var buffer = new NativeArray<byte>((int)size, Allocator.Persistent);
+            Debug.Assert(count != 0, "Buffer element count cannot be zero.");
+            Debug.Assert(stride != 0, "Buffer stride cannot be zero.");
+            var buffer = new NativeArray<byte>((int)(count * stride), Allocator.Persistent);
             var idInteger = nextFreeBufferId++;
             var id = new BufferID(idInteger);
             buffers[id] = buffer;

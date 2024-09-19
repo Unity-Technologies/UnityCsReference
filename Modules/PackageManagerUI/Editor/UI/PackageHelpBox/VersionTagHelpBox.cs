@@ -21,8 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (version.HasTag(PackageTag.Experimental))
             {
-                text = L10n.Tr("Experimental packages are new packages or experiments on mature packages in the early stages of development. " +
-                               "Experimental packages are not supported by Unity.");
+                text = L10n.Tr("Experimental package versions are experiments in the early stages of development. They are usually not supported by package authors and it is not recommended to use them in production.");
                 m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-exp.html";
                 UIUtils.SetElementDisplay(this, true);
             }
@@ -30,13 +29,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 text = L10n.Tr("Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
                 m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
-                UIUtils.SetElementDisplay(this, true);
-            }
-            else if (version.HasTag(PackageTag.ReleaseCandidate))
-            {
-                text = L10n.Tr("Release Candidate (RC) versions of a package will transition to Released with the current editor release. " +
-                               "RCs are supported by Unity");
-                m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-releasecandidate.html";
                 UIUtils.SetElementDisplay(this, true);
             }
         }

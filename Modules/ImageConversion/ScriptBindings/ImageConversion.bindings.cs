@@ -52,6 +52,9 @@ namespace UnityEngine
             return EncodeToEXR(tex, Texture2D.EXRFlags.None);
         }
 
+        [NativeMethod(Name = "ImageConversionBindings::EncodeToR2D", IsFreeFunction = true, ThrowsException = true)]
+        extern internal static byte[] EncodeToR2DInternal(this Texture2D tex);
+
         [NativeMethod(Name = "ImageConversionBindings::LoadImage", IsFreeFunction = true)]
         extern public static bool LoadImage([NotNull] this Texture2D tex, byte[] data, bool markNonReadable);
         public static bool LoadImage(this Texture2D tex, byte[] data)
@@ -70,6 +73,9 @@ namespace UnityEngine
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToEXR", true)]
         extern public static byte[] EncodeArrayToEXR(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+
+        [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToR2D", true)]
+        extern internal static byte[] EncodeArrayToR2DInternal(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
         public static NativeArray<byte> EncodeNativeArrayToTGA<T>(NativeArray<T> input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0) where T : struct
         {
@@ -127,6 +133,20 @@ namespace UnityEngine
             }
         }
 
+        internal static NativeArray<byte> EncodeNativeArrayToR2DInternal<T>(NativeArray<T> input, GraphicsFormat format, uint width, uint height, uint rowBytes = 0) where T : struct
+        {
+            unsafe
+            {
+                var size   = input.Length * UnsafeUtility.SizeOf<T>();
+                var result = UnsafeEncodeNativeArrayToR2D(NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks<T>(input), ref size, format, width, height, rowBytes);
+                var output = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(result, size, Allocator.Persistent);
+                var safety = AtomicSafetyHandle.Create();
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref output, safety);
+                AtomicSafetyHandle.SetAllowReadOrWriteAccess(safety, true);
+                return output;
+            }
+        }
+
         [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToTGA", true)]
         unsafe extern static void* UnsafeEncodeNativeArrayToTGA(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
@@ -138,6 +158,9 @@ namespace UnityEngine
 
         [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToEXR", true)]
         unsafe extern static void* UnsafeEncodeNativeArrayToEXR(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0, Texture2D.EXRFlags flags = Texture2D.EXRFlags.None);
+
+        [FreeFunctionAttribute("ImageConversionBindings::UnsafeEncodeNativeArrayToR2D", true)]
+        unsafe extern static void* UnsafeEncodeNativeArrayToR2D(void* array, ref int sizeInBytes, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);
 
         [FreeFunctionAttribute("ImageConversionBindings::LoadImageAtPathInternal", true)]
         unsafe extern static void* LoadImageAtPathInternal(string path, ref int width, ref int height, ref int rowBytes, ref GraphicsFormat format);

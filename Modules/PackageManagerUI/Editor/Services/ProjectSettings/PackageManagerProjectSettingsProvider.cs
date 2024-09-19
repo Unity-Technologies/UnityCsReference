@@ -85,7 +85,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Application.OpenURL($"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html");
                 };
 
-                enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
+
+                RefreshEnablePreReleasePackagesCheckbox();
                 enablePreReleasePackages.RegisterValueChangedCallback(changeEvent =>
                 {
                     var newValue = changeEvent.newValue;
@@ -108,12 +109,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                             PackageManagerWindowAnalytics.SendEvent("togglePreReleasePackages");
                         }
                     }
-                    enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.enablePreReleasePackages);
+                    RefreshEnablePreReleasePackagesCheckbox();
                 });
 
                 UIUtils.SetElementDisplay(seeAllPackageVersions, Unsupported.IsDeveloperBuild());
+                UIUtils.SetElementDisplay(seeAllVersionsInfoBox, Unsupported.IsDeveloperBuild());
                 seeAllPackageVersions.SetValueWithoutNotify(m_SettingsProxy.seeAllPackageVersions);
-
                 seeAllPackageVersions.RegisterValueChangedCallback(changeEvent =>
                 {
                     seeAllPackageVersions.SetValueWithoutNotify(changeEvent.newValue);
@@ -124,8 +125,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_SettingsProxy.seeAllPackageVersions = newValue;
                         m_SettingsProxy.Save();
                     }
+                    RefreshEnablePreReleasePackagesCheckbox();
                 });
             };
+        }
+
+        private void RefreshEnablePreReleasePackagesCheckbox()
+        {
+            // When `seeAllPackageVersions` is set to true, PreRelease package versions will be shown whether `enablePreReleasePackages`
+            // is set to true or not. We want the UI to reflect this implicit relationship between the two settings by checking
+            // `enablePreReleasePackages` in the UI when `seeAllPackageVersions` is set to true, and not allowing users to uncheck
+            // `enablePreReleasePackages` until they unchecked `seeAllPackageVersions`
+            enablePreReleasePackages.SetValueWithoutNotify(m_SettingsProxy.seeAllPackageVersions || m_SettingsProxy.enablePreReleasePackages);
+            enablePreReleasePackages.SetEnabled(!m_SettingsProxy.seeAllPackageVersions || !Unsupported.IsDeveloperBuild());
         }
 
         [SettingsProvider]
@@ -157,10 +169,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        private HelpBox preReleaseInfoBox { get { return cache.Get<HelpBox>("preReleaseInfoBox"); } }
-        private Toggle enablePreReleasePackages { get { return rootVisualElement.Q<Toggle>("enablePreReleasePackages"); } }
-        private Foldout advancedSettingsFoldout { get { return rootVisualElement.Q<Foldout>("advancedSettingsFoldout"); } }
-        private Foldout scopedRegistriesSettingsFoldout { get { return rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout"); } }
-        private Toggle seeAllPackageVersions { get { return rootVisualElement.Q<Toggle>("seeAllVersions"); } }
+        private HelpBox preReleaseInfoBox => cache.Get<HelpBox>("preReleaseInfoBox");
+        private Toggle enablePreReleasePackages => rootVisualElement.Q<Toggle>("enablePreReleasePackages");
+        private Foldout advancedSettingsFoldout => rootVisualElement.Q<Foldout>("advancedSettingsFoldout");
+        private Foldout scopedRegistriesSettingsFoldout => rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout");
+        private Toggle seeAllPackageVersions => rootVisualElement.Q<Toggle>("seeAllVersions");
+        private HelpBox seeAllVersionsInfoBox => rootVisualElement.Q<HelpBox>("seeAllVersionsInfoBox");
     }
 }

@@ -1153,10 +1153,19 @@ namespace UnityEditor
         }
 
         internal static extern bool isBuildProfileAvailable { get; set; }
+        internal static BuildProfile activeBuildProfile
+        {
+            get => GetActiveBuildProfile() as BuildProfile;
+            set => SetActiveBuildProfile(value);
+        }
+
+        private static extern ScriptableObject GetActiveBuildProfile();
+        private static extern void SetActiveBuildProfile(ScriptableObject buildProfile);
+
         internal static extern void CopyFromBuildProfile(ScriptableObject buildProfile);
         internal static extern void CopyToBuildProfile(ScriptableObject buildProfile);
 
-        internal static extern void SetBuildProfilePath(string path);
-        internal static extern string[] GetActiveProfileYamlScriptingDefines();
+        internal static extern string[] GetActiveProfileScriptingDefines();
+        internal static extern void SetActiveProfileScriptingDefines(string[] defines);
     }
 }

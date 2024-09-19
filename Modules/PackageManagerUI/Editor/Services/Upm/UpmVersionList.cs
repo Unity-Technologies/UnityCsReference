@@ -20,32 +20,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private int m_NumUnloadedVersions;
         public override int numUnloadedVersions => m_NumUnloadedVersions;
 
-        public override IEnumerable<IPackageVersion> key
-        {
-            get
-            {
-                var installedVersion = installed;
-                var recommendedVersion = recommended;
-
-                // if installed is experimental, return all versions higher than it
-                if (installedVersion != null && installedVersion.HasTag(PackageTag.Experimental))
-                    return m_Versions.Where(v => v == recommendedVersion || v.version >= installedVersion.version);
-
-                var keyVersions = new HashSet<IPackageVersion>();
-
-                if (installedVersion != null)
-                    keyVersions.Add(installedVersion);
-
-                keyVersions.Add(recommendedVersion ?? latest);
-
-                var suggestedUpdateVersion = suggestedUpdate;
-                if (suggestedUpdateVersion != null)
-                    keyVersions.Add(suggestedUpdateVersion);
-
-                return keyVersions.OrderBy(v => v.version);
-            }
-        }
-
         [SerializeField]
         private int m_InstalledIndex;
         public override IPackageVersion installed => m_InstalledIndex < 0 ? null : m_Versions[m_InstalledIndex];
@@ -54,129 +28,121 @@ namespace UnityEditor.PackageManager.UI.Internal
         private int m_RecommendedIndex;
         public override IPackageVersion recommended => m_RecommendedIndex < 0 ? null : m_Versions[m_RecommendedIndex];
 
-        public override IPackageVersion suggestedUpdate
+        [SerializeField]
+        private int m_SuggestedUpdateIndex;
+        public override IPackageVersion suggestedUpdate => m_SuggestedUpdateIndex < 0 ? null : m_Versions[m_SuggestedUpdateIndex];
+
+        public override IPackageVersion latest => m_Versions.LastOrDefault();
+
+        public override IPackageVersion primary => installed ?? recommended ?? latest;
+
+        private static UpmPackageVersion FindSuggestedUpdate(List<UpmPackageVersion> sortedVersions, UpmPackageVersion installedVersion, UpmPackageVersion recommendedVersion)
         {
-            get
-            {
-                var installedVersion = installed;
-                if (installedVersion == null || installedVersion.HasTag(PackageTag.VersionLocked | PackageTag.InstalledFromPath))
-                    return null;
+            if (installedVersion == null || installedVersion.HasTag(PackageTag.InstalledFromPath) || sortedVersions.Count <= 1)
+                return null;
 
-                if (installedVersion.HasTag(PackageTag.Experimental) || m_Versions.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
-                    return latest.isInstalled ? null : latest;
+            if (installedVersion.HasTag(PackageTag.Experimental) || sortedVersions.Any(v => v.availableRegistry != RegistryType.UnityRegistry))
+                return sortedVersions.Last().isInstalled ? null : sortedVersions.Last();
 
-                var recommendedVersion = recommended;
-                if (recommendedVersion is { isInstalled: false } && recommendedVersion.version >= installedVersion.version)
-                    return recommendedVersion;
+            if (recommendedVersion is { isInstalled: false } && recommendedVersion.version >= installedVersion.version)
+                return recommendedVersion;
 
-                var latestSafePatch = GetLatestSafePatch(installedVersion);
-                return latestSafePatch is { isInstalled: true } ? null : latestSafePatch;
-            }
+            var latestSafePatch = GetLatestSafePatch(sortedVersions, installedVersion);
+            return latestSafePatch is { isInstalled: true } ? null : latestSafePatch;
         }
 
         // A "safe" patch is a patch that is not lower in safety level (regarding prerelease) compared to the original version. For example,
         // `1.0.1` is a safe patch for both `1.0.0-pre.0` and `1.0.0`, however
         // `1.0.1-pre.1` is NOT a safe patch for `1.0.0` but can be considered a safe patch for `1.0.0-pre.0`
-        private IPackageVersion GetLatestSafePatch(IPackageVersion version)
+        private static UpmPackageVersion GetLatestSafePatch(IEnumerable<UpmPackageVersion> sortedVersions, UpmPackageVersion version)
         {
-            if (version == null)
-                return null;
-            var availableVersions = m_Versions.Where(i => i != version && !i.HasTag(PackageTag.InstalledFromPath)).ToArray();
+            var availableVersions = sortedVersions.Where(i => i != version && !i.HasTag(PackageTag.InstalledFromPath)).ToArray();
             if (availableVersions.Length == 0)
                 return null;
             var patchVersionString = SemVersionHelper.MaxSatisfying(version.versionString, availableVersions.Select(v => v.versionString).ToArray(), ResolutionStrategy.HighestPatch, !string.IsNullOrEmpty(version.version?.Prerelease));
             return string.IsNullOrEmpty(patchVersionString) ? null : availableVersions.LastOrDefault(v => v.versionString == patchVersionString);
         }
 
-        public override IPackageVersion latest => m_Versions.LastOrDefault();
-
-        public override IPackageVersion primary => installed ?? recommended ?? latest;
-
-        public override IPackageVersion GetUpdateTarget(IPackageVersion version)
+        private static void AddToSortedVersions(List<UpmPackageVersion> sortedVersions, UpmPackageVersion versionToAdd)
         {
-            return version?.isInstalled == true ? suggestedUpdate ?? version : version;
-        }
+            if (versionToAdd == null)
+                return;
 
-        // This function is only used to update the object, not to actually perform the add operation
-        public void AddInstalledVersion(UpmPackageVersion newVersion)
-        {
-            if (m_InstalledIndex >= 0)
-            {
-                m_Versions[m_InstalledIndex].SetInstalled(false);
-                if (m_Versions[m_InstalledIndex].HasTag(PackageTag.InstalledFromPath))
-                    m_Versions.RemoveAt(m_InstalledIndex);
-            }
-            newVersion.SetInstalled(true);
-            m_InstalledIndex = AddToSortedVersions(m_Versions, newVersion);
-        }
-
-        private static int AddToSortedVersions(List<UpmPackageVersion> sortedVersions, UpmPackageVersion versionToAdd)
-        {
             for (var i = 0; i < sortedVersions.Count; ++i)
             {
-                if (versionToAdd.version != null && (sortedVersions[i].version?.CompareTo(versionToAdd.version) ?? -1) < 0)
+                if (sortedVersions[i].version < versionToAdd.version)
                     continue;
-                // note that the difference between this and the previous function is that
-                // two upm package versions could have the same version but different package id
+
+                // Two upm package versions could have the same version but different package id, when one is installed from path for instance
+                // We only want to overwrite when the package id is exactly the same (either both from the registry, or from the same path)
                 if (sortedVersions[i].packageId == versionToAdd.packageId)
                 {
                     sortedVersions[i] = versionToAdd;
-                    return i;
+                    return;
                 }
                 sortedVersions.Insert(i, versionToAdd);
-                return i;
+                return;
             }
             sortedVersions.Add(versionToAdd);
-            return sortedVersions.Count - 1;
         }
 
-        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, RegistryType availableRegistry, Dictionary<string, PackageInfo> extraVersions = null)
+        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, RegistryType availableRegistry, PackageTag tagsToExclude, bool loadAllVersions, Dictionary<string, PackageInfo> extraInfos = null)
         {
             // We prioritize searchInfo over installedInfo, because searchInfo is fetched from the server
             // while installedInfo sometimes only contain local data
             var mainInfo = searchInfo ?? installedInfo;
-            if (mainInfo != null)
+            var allSortedVersions = mainInfo.versions.compatible.Select(versionString =>
             {
-                var mainVersion = new UpmPackageVersion(mainInfo, mainInfo == installedInfo, availableRegistry);
-                m_Versions = mainInfo.versions.compatible.Select(v =>
-                {
-                    SemVersionParser.TryParse(v, out var version);
-                    return new UpmPackageVersion(mainInfo, false, version, mainVersion.displayName, availableRegistry);
-                }).ToList();
-                AddToSortedVersions(m_Versions, mainVersion);
+                SemVersionParser.TryParse(versionString, out var parsedVersion);
+                return new UpmPackageVersion(mainInfo, false, parsedVersion, mainInfo.displayName, availableRegistry);
+            }).ToList();
 
-                if (mainInfo != installedInfo && installedInfo != null)
-                    AddInstalledVersion(new UpmPackageVersion(installedInfo, true, availableRegistry));
+            var installedVersion = installedInfo != null ? new UpmPackageVersion(installedInfo, true, availableRegistry) : null;
+            if (installedVersion != null)
+            {
+                AddToSortedVersions(allSortedVersions, installedVersion);
+                if (installedVersion.HasTag(PackageTag.Experimental))
+                    tagsToExclude &= ~(PackageTag.Experimental | PackageTag.PreRelease);
+                else if (installedVersion.HasTag(PackageTag.PreRelease))
+                    tagsToExclude &= ~PackageTag.PreRelease;
             }
-            m_InstalledIndex = m_Versions?.FindIndex(v => v.isInstalled) ?? -1;
-            SetRecommendedVersion(mainInfo?.versions.recommended);
-            UpdateExtraPackageInfos(extraVersions, availableRegistry);
-            m_NumUnloadedVersions = 0;
-        }
 
-        public UpmVersionList(IEnumerable<UpmPackageVersion> versions, string recommendedVersionString = null, int numUnloadedVersions = 0)
-        {
-            m_Versions = versions?.ToList() ?? new List<UpmPackageVersion>();
-            m_InstalledIndex = m_Versions.FindIndex(v => v.isInstalled);
-            SetRecommendedVersion(recommendedVersionString);
-            m_NumUnloadedVersions = numUnloadedVersions;
-        }
+            var versionsToKeep = allSortedVersions.Where(version => version.isInstalled || !version.HasTag(tagsToExclude)).ToList();
 
-        private void UpdateExtraPackageInfos(Dictionary<string, PackageInfo> extraVersions, RegistryType availableRegistry)
-        {
-            if (extraVersions?.Any() != true)
-                return;
-            foreach (var version in m_Versions.Where(v => !v.isFullyFetched))
-                if (extraVersions.TryGetValue(version.version.ToString(), out var packageInfo))
+            // Since a purchased Upm Package on AssetStore will always be visible when users are on the "My Assets" page,
+            // we are adding a special handling here to at least show one version of the Upm package even if that version
+            // does not match the filtering criteria.
+            // For example, if an Upm package from the Asset Store only contains `Pre-release` versions, but in project
+            // settings "Show Pre-release versions" is not checked, we will only show the latest `Pre-release` version
+            // for the Upm package because we can't hide the whole package.
+            if (versionsToKeep.Count == 0 && allSortedVersions.Count > 0 && availableRegistry == RegistryType.AssetStore)
+                versionsToKeep.Add(allSortedVersions.Last());
+
+            var recommendedVersion = versionsToKeep.Find(v => v.HasTag(PackageTag.Unity) && v.versionString == mainInfo.versions.recommended);
+            var suggestedUpdateVersion = FindSuggestedUpdate(versionsToKeep, installedVersion, recommendedVersion);
+            var numVersionsBeforeUnload = versionsToKeep.Count;
+
+            if (!loadAllVersions && versionsToKeep.Count > 1)
+            {
+                // We want to trim down the amount of versions we keep in memory to a list of key versions (the installed version, suggested update,
+                // recommended version or the latest version if recommended doesn't exist). We do this to save on memory, and also to avoid long
+                // domain reload time, as each version in the memory will need to be serialized on domain reload.
+                var recommendedOrLatest = recommendedVersion ?? versionsToKeep.Last();
+                versionsToKeep.Clear();
+                AddToSortedVersions(versionsToKeep, installedVersion);
+                AddToSortedVersions(versionsToKeep, recommendedOrLatest);
+                AddToSortedVersions(versionsToKeep, suggestedUpdateVersion);
+            }
+
+            foreach (var version in versionsToKeep)
+                if (!version.isFullyFetched && extraInfos?.TryGetValue(version.versionString, out var packageInfo) == true)
                     version.UpdatePackageInfo(packageInfo, availableRegistry);
-        }
 
-        private void SetRecommendedVersion(string versionString)
-        {
-            if (!string.IsNullOrEmpty(versionString))
-                m_RecommendedIndex = m_Versions.FindIndex(v => v.HasTag(PackageTag.Unity) && v.versionString == versionString);
-            else
-                m_RecommendedIndex = -1;
+            m_Versions = versionsToKeep;
+            m_InstalledIndex = installedVersion != null ? m_Versions.FindIndex(v => v == installedVersion) : -1;
+            m_RecommendedIndex = recommendedVersion != null ? m_Versions.FindIndex(v => v == recommendedVersion) : -1;
+            m_SuggestedUpdateIndex = suggestedUpdateVersion != null ? m_Versions.FindIndex(v => v == suggestedUpdateVersion) : -1;
+            m_NumUnloadedVersions = numVersionsBeforeUnload - versionsToKeep.Count;
         }
 
         public override IEnumerator<IPackageVersion> GetEnumerator()

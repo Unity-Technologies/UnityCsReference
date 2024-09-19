@@ -16,7 +16,9 @@ namespace UnityEngine.UIElements
         Unset,
         True,
         False,
-        None
+        None,
+        Cover,
+        Contain
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -40,6 +42,10 @@ namespace UnityEngine.UIElements
                     return "false";
                 case StyleValueKeyword.None:
                     return "none";
+                case StyleValueKeyword.Cover:
+                    return "cover";
+                case StyleValueKeyword.Contain:
+                    return "contain";
                 default:
                     throw new ArgumentOutOfRangeException(nameof(svk), svk, $"Unknown {nameof(StyleValueKeyword)}");
             }

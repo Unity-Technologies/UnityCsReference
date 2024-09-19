@@ -11,8 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     [Serializable]
     internal abstract class BaseVersionList : IVersionList
     {
-        public virtual IEnumerable<IPackageVersion> key => this;
-
         public virtual IPackageVersion installed => null;
 
         public abstract IPackageVersion latest { get; }
@@ -28,8 +26,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract IPackageVersion primary { get; }
 
         public virtual int numUnloadedVersions => 0;
-
-        public virtual IPackageVersion GetUpdateTarget(IPackageVersion version) => suggestedUpdate;
 
         public abstract IEnumerator<IPackageVersion> GetEnumerator();
 

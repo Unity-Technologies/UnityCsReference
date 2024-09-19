@@ -62,10 +62,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Disabled, L10n.Tr("Disabled")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Custom, L10n.Tr("Custom")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.PreRelease, L10n.Tr("Pre-Release")));
-            versionContainer.Add(new PackageReleaseTagLabel(m_PackageDatabase));
-            versionContainer.Add(new PackageSimpleTagLabel(PackageTag.ReleaseCandidate, L10n.Tr("Release Candidate")));
             versionContainer.Add(new PackageSimpleTagLabel(PackageTag.Experimental, L10n.Tr("Experimental")));
-            versionContainer.Add(new PackageScopedRegistryTagLabel());
         }
 
         private void CreateHelpBoxes()

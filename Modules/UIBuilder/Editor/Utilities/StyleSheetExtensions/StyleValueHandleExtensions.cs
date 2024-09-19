@@ -215,6 +215,56 @@ namespace Unity.UI.Builder
             }
         }
 
+        public static BackgroundRepeat GetBackgroundRepeat(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var xval = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var yval = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+
+                return StylePropertyReader.ReadBackgroundRepeat(valCount, xval, yval);
+            }
+            else
+            {
+                return new BackgroundRepeat(Repeat.NoRepeat, Repeat.NoRepeat);
+            }
+        }
+
+        public static BackgroundSize GetBackgroundSize(this StyleSheet styleSheet, StyleProperty styleProperty)
+        {
+            int valCount = styleProperty.values.Length;
+
+            if (valCount > 0)
+            {
+                var xval = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var yval = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+
+                return StylePropertyReader.ReadBackgroundSize(valCount, xval, yval);
+            }
+            else
+            {
+                return new BackgroundSize();
+            }
+        }
+
+        public static BackgroundPosition GetBackgroundPosition(this StyleSheet styleSheet, StyleProperty styleProperty, BackgroundPositionKeyword keyword)
+        {
+            int valCount = styleProperty.values.Length;
+            if (valCount > 0)
+            {
+                var xval = new StylePropertyValue() { handle = styleProperty.values[0], sheet = styleSheet };
+                var yval = valCount > 1 ? new StylePropertyValue() { handle = styleProperty.values[1], sheet = styleSheet } : default;
+
+                return StylePropertyReader.ReadBackgroundPosition(valCount, xval, yval, keyword);
+            }
+            else
+            {
+                return new BackgroundPosition();
+            }
+        }
+
         public static BuilderScale GetScale(this StyleSheet styleSheet, StyleProperty styleProperty)
         {
             int valCount = styleProperty.values.Length;

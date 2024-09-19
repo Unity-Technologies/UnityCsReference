@@ -244,14 +244,17 @@ namespace UnityEditor.Toolbars
             ToolManager.activeToolChanged += UpdateState;
             ToolManager.activeContextChanged += UpdateState;
             SceneViewMotion.viewToolActiveChanged += UpdateState;
+            
+            // We only need the state to auto-refresh for custom tools.
+            // For the built-in tools, we can refresh internally using RefreshAvailableTools if needed.
+            if (!IsBuiltinTool())
+                EditorApplication.update += UpdateState;
 
             if (m_TargetTool == Tool.View)
             {
                 Tools.viewToolChanged += UpdateViewToolContent;
                 UpdateViewToolContent();
             }
-
-            EditorApplication.delayCall += UpdateState;
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
@@ -259,6 +262,9 @@ namespace UnityEditor.Toolbars
             ToolManager.activeContextChanged -= UpdateState;
             ToolManager.activeToolChanged -= UpdateState;
             SceneViewMotion.viewToolActiveChanged -= UpdateState;
+            
+            if (!IsBuiltinTool())
+                EditorApplication.update -= UpdateState;
 
             if (m_TargetTool == Tool.View)
                 Tools.viewToolChanged -= UpdateViewToolContent;
@@ -366,10 +372,6 @@ namespace UnityEditor.Toolbars
 
             if (enabledSelf != enabled)
                 enabledSelf = enabled;
-
-            // Break the delayCall chain if button's dettached from panel
-            if (panel != null)
-                EditorApplication.delayCall += UpdateState;
         }
 
         bool IsActiveTool()
@@ -377,6 +379,11 @@ namespace UnityEditor.Toolbars
             if (Tools.viewToolActive)
                 return m_TargetTool == Tool.View;
             return ToolManager.IsActiveTool(currentVariant);
+        }
+
+        bool IsBuiltinTool()
+        {
+            return EditorToolUtility.IsManipulationTool(m_TargetTool) || (m_TargetTool == Tool.View);
         }
 
         VisualElement GetOverlayCanvas()

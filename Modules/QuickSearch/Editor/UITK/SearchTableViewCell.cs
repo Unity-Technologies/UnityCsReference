@@ -91,7 +91,6 @@ namespace UnityEditor.Search
 
             if (m_SearchColumn.setter == null)
             {
-                RegisterCallback<ClickEvent>(OnDoubleClick);
                 RegisterCallback<PointerDownEvent>(OnItemPointerDown);
                 RegisterCallback<PointerUpEvent>(OnItemPointerUp);
                 RegisterCallback<DragExitedEvent>(OnDragExited);
@@ -103,7 +102,6 @@ namespace UnityEditor.Search
             var pp = parent?.parent;
             pp?.UnregisterCallback<ContextClickEvent>(OnItemContextualClicked);
 
-            UnregisterCallback<ClickEvent>(OnDoubleClick);
             UnregisterCallback<PointerDownEvent>(OnItemPointerDown);
             UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
             UnregisterCallback<PointerUpEvent>(OnItemPointerUp);
@@ -270,14 +268,6 @@ namespace UnityEditor.Search
             m_BindedItem = null;
             m_DeferredUpdateOff?.Invoke();
             m_DeferredUpdateOff = null;
-        }
-
-        private void OnDoubleClick(ClickEvent evt)
-        {
-            if (evt.clickCount != 2)
-                return;
-
-            m_ViewModel.ExecuteAction(null, new[] { m_BindedItem }, endSearch: false);
         }
 
         private void OnItemContextualClicked(ContextClickEvent evt)

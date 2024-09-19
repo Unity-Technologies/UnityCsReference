@@ -327,7 +327,7 @@ namespace UnityEditor
             if (buildProfile == null)
                 throw new ArgumentException("Build profile is invalid.");
 
-            BuildProfileContext.instance.activeProfile = buildProfile;
+            BuildProfileContext.activeProfile = buildProfile;
             var buildPlayerOptions = BuildProfileModuleUtil.GetBuildPlayerOptionsFromActiveProfile(
                 buildPlayerWithProfileOptions.locationPathName, buildPlayerWithProfileOptions.assetBundleManifestPath, buildPlayerWithProfileOptions.options);
             return BuildPlayer(buildPlayerOptions);

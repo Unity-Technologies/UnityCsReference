@@ -355,6 +355,18 @@ namespace Unity.UI.Builder
             }
 
             cachedBinding = null;
+
+            var scaleModeWarningPlaceHolder = this.Q<VisualElement>("scale-mode-warning");
+            var spacer = new VisualElement();
+            spacer.style.marginLeft = 20;
+            spacer.style.minWidth = 105;
+            scaleModeWarningPlaceHolder.style.flexDirection = FlexDirection.Row;
+            scaleModeWarningPlaceHolder.Add(spacer);
+            var helpBox = new UnityEngine.UIElements.HelpBox(
+                "Note: Scale Mode will override some background settings.",
+                HelpBoxMessageType.Warning);
+            helpBox.style.marginLeft = 0.0f;
+            scaleModeWarningPlaceHolder.Add(helpBox);
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -677,9 +689,9 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            if (field is TextShadowStyleField)
+            if (field is TextShadowStyleField || field is BackgroundRepeatStyleField)
             {
-                // Special case for TextShadowStyleField.
+                // Special case for TextShadowStyleField and BackgroundRepeatStyleField
                 // We need to disabled the fields inside so the foldout is still functional
                 var foldout = field.Q<Foldout>();
                 foldout.contentContainer.SetEnabled(enabled);

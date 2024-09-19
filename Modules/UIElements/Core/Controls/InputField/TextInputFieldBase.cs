@@ -331,6 +331,7 @@ namespace UnityEngine.UIElements
         }
 
         TextInputBase m_TextInputBase;
+        /// <undoc/>
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
         /// </summary>
@@ -822,6 +823,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.OnInputCustomStyleResolved(e);
         }
 
+        /// <undoc/>
         /// <summary>
         /// This is the input text base class visual representation.
         /// </summary>

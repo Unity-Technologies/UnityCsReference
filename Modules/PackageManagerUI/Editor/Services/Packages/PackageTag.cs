@@ -21,7 +21,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         Feature             = 1 << 4,
         Placeholder         = 1 << 5,
         SpecialInstall      = 1 << 6,
-        VersionLocked       = 1 << 7,
 
         LegacyFormat        = 1 << 10,   // legacy .unitypackage format
         UpmFormat           = 1 << 11,
@@ -33,7 +32,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         Deprecated          = 1 << 22,
         Release             = 1 << 23,
         Experimental        = 1 << 24,
-        PreRelease          = 1 << 25,
-        ReleaseCandidate    = 1 << 26
+        PreRelease          = 1 << 25
     }
 }

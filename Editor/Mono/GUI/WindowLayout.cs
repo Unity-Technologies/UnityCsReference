@@ -1650,6 +1650,9 @@ namespace UnityEditor
                 return;
             }
 
+            if (!ContainerWindow.CanCloseAll(false))
+                return;
+
             ResetFactorySettings();
         }
 

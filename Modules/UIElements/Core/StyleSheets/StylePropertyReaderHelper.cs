@@ -351,6 +351,14 @@ namespace UnityEngine.UIElements.StyleSheets
                         BackgroundSize.x = Length.Auto();
                         BackgroundSize.y = Length.Auto();
                     }
+                    else if ((StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.Cover)
+                    {
+                        BackgroundSize.sizeType = BackgroundSizeType.Cover;
+                    }
+                    else if ((StyleValueKeyword)val1.handle.valueIndex == StyleValueKeyword.Contain)
+                    {
+                        BackgroundSize.sizeType = BackgroundSizeType.Contain;
+                    }
                 }
                 else if (val1.handle.valueType == StyleValueType.Enum)
                 {

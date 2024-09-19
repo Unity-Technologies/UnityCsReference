@@ -46,20 +46,22 @@ namespace UnityEditor.Search
                 var pos = path.LastIndexOf('/');
                 var name = pos == -1 ? column.name : path.Substring(pos + 1);
                 var prefix = pos == -1 ? null : path.Substring(0, pos);
-
+                var displayName = ObjectNames.NicifyVariableName(string.IsNullOrEmpty(column.content.text) ? column.content.tooltip : SearchColumn.ParseName(column.content.text));
                 AdvancedDropdownItem newItem = new AdvancedDropdownItem(name)
                 {
                     icon = column.content.image as Texture2D,
-                    displayName = string.IsNullOrEmpty(column.content.text) ? column.content.tooltip : SearchColumn.ParseName(column.content.text),
+                    displayName = displayName,
                     tooltip = column.content.tooltip,
                     userData = column
                 };
 
                 m_ColumnIndexes[newItem.id] = column;
-
                 var parent = rootItem;
                 if (prefix != null)
+                {
+                    prefix = ObjectNames.NicifyVariableName(prefix);
                     parent = MakeParents(prefix, column, rootItem);
+                }
 
                 if (FindItem(name, parent) == null)
                     parent.AddChild(newItem);

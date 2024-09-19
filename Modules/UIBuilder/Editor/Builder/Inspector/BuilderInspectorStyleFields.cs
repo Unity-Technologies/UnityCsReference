@@ -354,7 +354,6 @@ namespace Unity.UI.Builder
             }
             else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
             {
-
                 transformOriginStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTransformOrigin(e, styleName));
                 if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, ""), out var styleValueTooltip))
@@ -385,6 +384,18 @@ namespace Unity.UI.Builder
                         e.rect = rotateStyleField.visualInput.GetTooltipRect();
                     });
                 }
+            }
+            else if (IsComputedStyleBackgroundRepeat(val) && fieldElement is BackgroundRepeatStyleField backgroundRepeatStyleField)
+            {
+                backgroundRepeatStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeBackgroundRepeat(e, styleName));
+            }
+            else if (IsComputedStyleBackgroundSize(val) && fieldElement is BackgroundSizeStyleField backgroundSizeStyleField)
+            {
+                backgroundSizeStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeBackgroundSize(e, styleName));
+            }
+            else if (IsComputedStyleBackgroundPosition(val) && fieldElement is BackgroundPositionStyleField backgroundPositionStyleField)
+            {
+                backgroundPositionStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeBackgroundPosition(e, styleName));
             }
             else if (IsComputedStyleScale(val) && fieldElement is ScaleStyleField scaleStyleField)
             {
@@ -840,6 +851,33 @@ namespace Unity.UI.Builder
                 var value = GetComputedStyleRotateValue(val);
                 if (useStyleProperty)
                     value = styleSheet.GetRotate(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleBackgroundRepeat(val) && fieldElement is BackgroundRepeatStyleField)
+            {
+                var uiField = fieldElement as BackgroundRepeatStyleField;
+                var value = GetComputedStyleBackgroundRepeatValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetBackgroundRepeat(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleBackgroundSize(val) && fieldElement is BackgroundSizeStyleField)
+            {
+                var uiField = fieldElement as BackgroundSizeStyleField;
+                var value = GetComputedStyleBackgroundSizeValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetBackgroundSize(styleProperty);
+
+                uiField.SetValueWithoutNotify(value);
+            }
+            else if (IsComputedStyleBackgroundPosition(val) && fieldElement is BackgroundPositionStyleField)
+            {
+                var uiField = fieldElement as BackgroundPositionStyleField;
+                var value = GetComputedStyleBackgroundPositionValue(val);
+                if (useStyleProperty)
+                    value = styleSheet.GetBackgroundPosition(styleProperty, uiField.mode == BackgroundPositionMode.Horizontal ? BackgroundPositionKeyword.Left : BackgroundPositionKeyword.Top);
 
                 uiField.SetValueWithoutNotify(value);
             }
@@ -2706,6 +2744,30 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeBackgroundRepeat(ChangeEvent<BackgroundRepeat> e, string styleName)
+        {
+            var field = e.target as BackgroundRepeatStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
+        }
+
+        void OnFieldValueChangeBackgroundSize(ChangeEvent<BackgroundSize> e, string styleName)
+        {
+            var field = e.target as BackgroundSizeStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
+        }
+
+        void OnFieldValueChangeBackgroundPosition(ChangeEvent<BackgroundPosition> e, string styleName)
+        {
+            var field = e.target as BackgroundPositionStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = field.OnFieldValueChange(styleProperty, styleSheet);
+            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
+        }
+
         void OnFieldValueChangeScale(ChangeEvent<BuilderScale> e, string styleName)
         {
             var field = e.target as ScaleStyleField;
@@ -2861,6 +2923,21 @@ namespace Unity.UI.Builder
             return val is StyleRotate || val is Rotate || val is BuilderRotate;
         }
 
+        static public bool IsComputedStyleBackgroundRepeat(object val)
+        {
+            return val is StyleBackgroundRepeat || val is BackgroundRepeat;
+        }
+
+        static public bool IsComputedStyleBackgroundSize(object val)
+        {
+            return val is StyleBackgroundSize || val is BackgroundSize;
+        }
+
+        static public bool IsComputedStyleBackgroundPosition(object val)
+        {
+            return val is StyleBackgroundPosition || val is BackgroundPosition;
+        }
+
         static public bool IsComputedStyleScale(object val)
         {
             return val is StyleScale || val is Scale || val is BuilderScale;
@@ -2941,6 +3018,33 @@ namespace Unity.UI.Builder
 
             var style = (StyleRotate)val;
             return new BuilderRotate(style);
+        }
+
+        static public BackgroundRepeat GetComputedStyleBackgroundRepeatValue(object val)
+        {
+            if (val is BackgroundRepeat)
+                return (BackgroundRepeat)val;
+
+            var style = (StyleBackgroundRepeat)val;
+            return style.value;
+        }
+
+        static public BackgroundSize GetComputedStyleBackgroundSizeValue(object val)
+        {
+            if (val is BackgroundSize)
+                return (BackgroundSize)val;
+
+            var style = (StyleBackgroundSize)val;
+            return style.value;
+        }
+
+        static public BackgroundPosition GetComputedStyleBackgroundPositionValue(object val)
+        {
+            if (val is BackgroundPosition)
+                return (BackgroundPosition)val;
+
+            var style = (StyleBackgroundPosition)val;
+            return style.value;
         }
 
         static public BuilderScale GetComputedStyleScaleValue(object val)

@@ -24,6 +24,8 @@ namespace UnityEditor.Build.Profile
         const string k_SharedSettingsInfoHelpboxButton = "shared-settings-info-helpbox-button";
         const string k_SceneListFoldout = "scene-list-foldout";
         const string k_SceneListFoldoutRoot = "scene-list-foldout-root";
+        const string k_SceneListFoldoutAddOpenSection = "scene-list-foldout-add-open-section";
+        const string k_SceneListFoldoutAddOpenButton = "scene-list-foldout-add-open-button";
         const string k_SceneListFoldoutClassicSection = "scene-list-foldout-classic-section";
         const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
@@ -282,9 +284,18 @@ namespace UnityEditor.Build.Profile
                 ? new BuildProfileSceneList()
                 : new BuildProfileSceneList(profile);
             Undo.undoRedoEvent += m_SceneList.OnUndoRedo;
-            var container = m_SceneList.GetSceneListGUI(isEnable);
+            var container = m_SceneList.GetSceneListGUI();
             container.SetEnabled(isEnable);
             root.Q<VisualElement>(k_SceneListFoldoutRoot).Add(container);
+
+            if (isEnable)
+            {
+                // Bind Add Open Scenes List button
+                root.Q<VisualElement>(k_SceneListFoldoutAddOpenSection).Show();
+                var addOpenSceneListButton = root.Q<Button>(k_SceneListFoldoutAddOpenButton);
+                addOpenSceneListButton.text = TrText.addOpenScenes;
+                addOpenSceneListButton.clicked += () => m_SceneList.AddOpenScenes();
+            }
 
             if (isClassicPlatform)
             {
@@ -292,10 +303,7 @@ namespace UnityEditor.Build.Profile
                 root.Q<VisualElement>(k_SceneListFoldoutClassicSection).Show();
                 var globalSceneListButton = root.Q<Button>(k_SceneListFoldoutClassicButton);
                 globalSceneListButton.text = TrText.openSceneList;
-                globalSceneListButton.clicked += () =>
-                {
-                    parent.OnClassicSceneListSelected();
-                };
+                globalSceneListButton.clicked += () => parent.OnClassicSceneListSelected();
             }
         }
 
@@ -356,7 +364,7 @@ namespace UnityEditor.Build.Profile
             if (m_Profile == null)
                 return;
 
-            if (m_Profile != BuildProfileContext.instance.activeProfile)
+            if (m_Profile != BuildProfileContext.activeProfile)
                 return;
 
             // Avoid dialog when waiting for compilation.

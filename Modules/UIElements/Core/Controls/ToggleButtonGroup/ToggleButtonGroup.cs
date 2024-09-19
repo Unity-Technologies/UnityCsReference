@@ -224,8 +224,9 @@ namespace UnityEngine.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
-            visualInput = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName } };
-            m_ButtonGroupContainer = visualInput;
+            visualInput = new VisualElement();
+            m_ButtonGroupContainer = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName } };
+            visualInput.Add(m_ButtonGroupContainer);
 
             // Note: We are changing the workflow through these series of callback. The desired workflow is when a user
             //       adds a new button, we would take the button and apply the necessary style and give it the designed

@@ -452,7 +452,7 @@ namespace UnityEditor.Build.Profile
             // before we update the BuildProfileContext's activeProfile,
             // we want to capture the current active profile to check if an editor restart is required
             // because certain player settings changed that will require it
-            var currentBuildProfile = BuildProfileContext.instance.activeProfile;
+            var currentBuildProfile = BuildProfileContext.activeProfile;
 
             // we'll default to the EUBS build target in case we're dealing with an active classic platform
             BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
@@ -463,7 +463,7 @@ namespace UnityEditor.Build.Profile
 
             var nextBuildTarget = activateProfile.buildTarget;
             // success here is handling the player settings, failure is the user cancels handling the restart.
-            var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(currentBuildProfile, activateProfile,
+            var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(currentBuildProfile, activateProfile,
                 currentBuildTarget, nextBuildTarget);
             if (!isSuccess) {
                 return;
@@ -471,7 +471,7 @@ namespace UnityEditor.Build.Profile
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
-            BuildProfileContext.instance.activeProfile = !BuildProfileContext.IsClassicPlatformProfile(activateProfile)
+            BuildProfileContext.activeProfile = !BuildProfileContext.IsClassicPlatformProfile(activateProfile)
                 ? activateProfile : null;
 
             buildProfileEditor.OnActivateClicked();

@@ -32,13 +32,10 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         public static string[] GetBuildProfileScriptDefines()
         {
-            if (!EditorUserBuildSettings.isBuildProfileAvailable)
-                return EditorUserBuildSettings.GetActiveProfileYamlScriptingDefines();
+            var profile = EditorUserBuildSettings.activeBuildProfile;
+            if (profile == null)
+                return EditorUserBuildSettings.GetActiveProfileScriptingDefines();
 
-            if (BuildProfileContext.instance.activeProfile == null)
-                return Array.Empty<string>();
-
-            var profile = BuildProfileContext.instance.activeProfile;
             return profile.scriptingDefines;
         }
     }

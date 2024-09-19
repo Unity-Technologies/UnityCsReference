@@ -49,19 +49,26 @@ namespace Unity.UI.Builder
         public static readonly string KeywordInitial = "initial";
         public static readonly string KeywordAuto = "auto";
         public static readonly string KeywordNone = "none";
+        public static readonly string KeywordCover = "cover";
+        public static readonly string KeywordContain = "contain";
+
 
         public static readonly Dictionary<string, StyleValueKeyword> StringToStyleValueKeywordMap = new Dictionary<string, StyleValueKeyword>()
         {
             { "initial", StyleValueKeyword.Initial },
             { "auto", StyleValueKeyword.Auto },
-            { "none", StyleValueKeyword.None }
+            { "none", StyleValueKeyword.None },
+            { "cover", StyleValueKeyword.Cover },
+            { "contain", StyleValueKeyword.Contain }
         };
 
         public static readonly Dictionary<StyleValueKeyword, string> StyleValueKeywordToStringMap = new Dictionary<StyleValueKeyword, string>()
         {
             { StyleValueKeyword.Initial, "initial" },
             { StyleValueKeyword.Auto, "auto" },
-            { StyleValueKeyword.None, "none" }
+            { StyleValueKeyword.None, "none" },
+            { StyleValueKeyword.Cover, "cover" },
+            { StyleValueKeyword.Contain, "contain" }
         };
 
         // Keyword Lists
@@ -69,11 +76,14 @@ namespace Unity.UI.Builder
         public static readonly List<string> KLDefault = new List<string>() { KeywordInitial };
         public static readonly List<string> KLAuto = new List<string>() { KeywordAuto, KeywordInitial };
         public static readonly List<string> KLNone = new List<string>() { KeywordNone, KeywordInitial };
+        public static readonly List<string> KLCoverContain = new List<string>() { KeywordCover, KeywordContain };
 
         public static List<string> GetStyleKeywords(string binding)
         {
             if (string.IsNullOrEmpty(binding))
+            {
                 return StyleFieldConstants.KLEmpty;
+            }
 
             var syntaxParser = new StyleSyntaxParser();
             var syntaxFound = StylePropertyCache.TryGetSyntax(binding, out var syntax);
@@ -87,8 +97,12 @@ namespace Unity.UI.Builder
 
             var hasAuto = FindKeywordInExpression(expression, StyleFieldConstants.KeywordAuto);
             var hasNone = FindKeywordInExpression(expression, StyleFieldConstants.KeywordNone);
+            var hasCover = FindKeywordInExpression(expression, StyleFieldConstants.KeywordCover);
+            var hasContain = FindKeywordInExpression(expression, StyleFieldConstants.KeywordContain);
 
-            if (hasAuto)
+            if (hasCover && hasContain)
+                return KLCoverContain;
+            else if (hasAuto)
                 return StyleFieldConstants.KLAuto;
             else if (hasNone)
                 return StyleFieldConstants.KLNone;

@@ -217,12 +217,14 @@ namespace UnityEditor.Search
 
             if (evt is KeyDownEvent && !GUIUtility.textFieldInput)
             {
+                var groupNavModifier = Application.platform == RuntimePlatform.OSXEditor ? (EventModifiers.Command | EventModifiers.Alt) : EventModifiers.Alt;
+
                 if (evt.keyCode == KeyCode.Escape)
                 {
                     HandleEscapeKeyDown(evt);
                     return true;
                 }
-                else if (evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.LeftArrow)
+                else if (evt.modifiers.HasAll(groupNavModifier) && evt.keyCode == KeyCode.LeftArrow)
                 {
                     string previousGroupId = null;
                     foreach (var group in EnumerateGroups())
@@ -236,7 +238,7 @@ namespace UnityEditor.Search
                     }
                     return true;
                 }
-                else if (evt.modifiers.HasAny(EventModifiers.Alt) && evt.keyCode == KeyCode.RightArrow)
+                else if (evt.modifiers.HasAll(groupNavModifier) && evt.keyCode == KeyCode.RightArrow)
                 {
                     bool selectNext = false;
                     foreach (var group in EnumerateGroups())
@@ -737,10 +739,9 @@ namespace UnityEditor.Search
                 menu.AddItem(new GUIContent(L10n.Tr($"Query Builder\tF1")), viewState.queryBuilderEnabled, ToggleQueryBuilder);
             menu.AddItem(new GUIContent(L10n.Tr($"Status Bar")), SearchSettings.showStatusBar, ToggleShowStatusBar);
 
-            if (IsSavedSearchQueryEnabled() || m_ViewState.flags.HasNone(SearchViewFlags.DisableInspectorPreview))
-                menu.AddSeparator("");
             if (Utils.isDeveloperBuild)
             {
+                menu.AddSeparator("");
                 menu.AddItem(new GUIContent(L10n.Tr($"Debug")), context?.options.HasAny(SearchFlags.Debug) ?? false, ToggleDebugQuery);
                 menu.AddItem(new GUIContent(L10n.Tr("Serialize SearchContext")), false, () => SerializeSearchContext());
             }
@@ -1326,8 +1327,7 @@ namespace UnityEditor.Search
         [Shortcut("Help/Search Transient Window")]
         public static void OpenPopupWindow()
         {
-            if (SearchService.ShowWindow(defaultWidth: 600, defaultHeight: 400, dockable: false) is SearchWindow window)
-                SearchAnalytics.SendEvent(window.windowId, SearchAnalytics.GenericEventType.QuickSearchOpen, "PopupWindow");
+            SearchUtils.OpenTransientWindow();
         }
 
         [Shortcut("Help/Search Contextual")]

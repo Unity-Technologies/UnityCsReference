@@ -704,6 +704,9 @@ namespace UnityEditor
         // Set Maximum Vertex Threshold for Sprite Batching.
         public static extern int spriteBatchVertexThreshold { get; set; }
 
+        // Set Maxomum Batch Vertex Count
+        internal static extern int spriteBatchMaxVertexCount { get; set; }
+
         // The image to display in the Resolution Dialog window.
         [Obsolete("resolutionDialogBanner has been removed.", false)]
         public static extern Texture2D resolutionDialogBanner { get; set; }
@@ -1467,6 +1470,12 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsJobsForPlatform(BuildTarget platform, bool graphicsJobs);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetEditorGfxJobOverride();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetEditorGfxJobOverride(bool gfxJobsAllow);
+
         public static GraphicsJobMode graphicsJobMode
         {
             get { return GetGraphicsJobModeForPlatform(EditorUserBuildSettings.activeBuildTarget); }
@@ -1774,6 +1783,75 @@ namespace UnityEditor
         internal static extern void UpdatePlayerSettingsObjectFromYAML(PlayerSettings playerSettings, string yamlSettings);
 
         internal static extern bool platformRequiresReadableAssets { get; set; }
+
+        /*
+         * Internal instance methods used when accessing settings outside of the global static instance.
+         * Referenced by PlayerSettingsEditor when reading/writing to a non-active player settings object.
+         */
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void GetBatchingForPlatform_Internal(PlayerSettings instance, BuildTarget platform, out int staticBatching, out int dynamicBatching);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetBatchingForPlatform_Internal(PlayerSettings instance, BuildTarget platform, int staticBatching, int dynamicBatching);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern int GetDefaultShaderChunkSizeInMB_Internal(PlayerSettings instance);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetDefaultShaderChunkSizeInMB_Internal(PlayerSettings instance, int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern int GetDefaultShaderChunkCount_Internal(PlayerSettings instance);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetDefaultShaderChunkCount_Internal(PlayerSettings instance, int chunkCount);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetOverrideShaderChunkSettingsForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetOverrideShaderChunkSettingsForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget, bool value);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern int GetShaderChunkSizeInMBForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetShaderChunkSizeInMBForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget, int sizeInMegabytes);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern int GetShaderChunkCountForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetShaderChunkCountForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget, int chunkCount);
+
+        /*
+         * Internal non-static getter/setters referenced when reading/writing to non-active player settings object.
+         */
+
+        [NativeMethod("GetLightmapStreamingEnabled")]
+        internal extern bool GetLightmapStreamingEnabledForPlatformGroup_Internal(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetLightmapStreamingEnabled")]
+        internal extern void SetLightmapStreamingEnabledForPlatformGroup_Internal(BuildTargetGroup platformGroup, bool lightmapStreamingEnabled);
+
+        [NativeMethod("GetLightmapStreamingPriority")]
+        internal extern int GetLightmapStreamingPriorityForPlatformGroup_Internal(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetLightmapStreamingPriority")]
+        internal extern void SetLightmapStreamingPriorityForPlatformGroup_Internal(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
+
+        [NativeMethod("GetLightmapEncodingQuality")]
+        internal extern LightmapEncodingQuality GetLightmapEncodingQualityForPlatform_Internal(BuildTarget platform);
+
+        [NativeMethod("SetLightmapEncodingQuality")]
+        internal extern void SetLightmapEncodingQualityForPlatform_Internal(BuildTarget platform, LightmapEncodingQuality encodingQuality);
+
+        [NativeMethod("GetHDRCubemapEncodingQuality")]
+        internal extern HDRCubemapEncodingQuality GetHDRCubemapEncodingQualityForPlatform_Internal(BuildTarget platform);
+
+        [NativeMethod("SetHDRCubemapEncodingQuality")]
+        internal extern void SetHDRCubemapEncodingQualityForPlatform_Internal(BuildTarget platform, HDRCubemapEncodingQuality encodingQuality);
 
         [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
         internal static extern string[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);

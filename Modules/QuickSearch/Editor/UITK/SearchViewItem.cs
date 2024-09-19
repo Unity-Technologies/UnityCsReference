@@ -37,7 +37,6 @@ namespace UnityEditor.Search
             m_Thumbnail = new Image() { name = "SearchViewItemThumbnail" };
             m_FavoriteButton = CreateButton("SearchFavoriteButton", searchFavoriteButtonTooltip, OnFavoriteButtonClicked, baseIconButtonClassName, searchFavoriteButtonClassName);
 
-            RegisterCallback<ClickEvent>(OnDoubleClick);
             RegisterCallback<ContextClickEvent>(OnItemContextualClicked);
             RegisterCallback<PointerDownEvent>(OnItemPointerDown);
             RegisterCallback<PointerUpEvent>(OnItemPointerUp);
@@ -77,7 +76,6 @@ namespace UnityEditor.Search
         {
             CancelFetchPreview();
 
-            UnregisterCallback<ClickEvent>(OnDoubleClick);
             UnregisterCallback<ContextClickEvent>(OnItemContextualClicked);
             UnregisterCallback<PointerDownEvent>(OnItemPointerDown);
             UnregisterCallback<PointerMoveEvent>(OnItemPointerMove);
@@ -253,14 +251,6 @@ namespace UnityEditor.Search
             }
 
             m_FetchPreviewOff = null;
-        }
-
-        private void OnDoubleClick(ClickEvent evt)
-        {
-            if (evt.clickCount != 2)
-                return;
-
-            m_ViewModel.ExecuteAction(null, new[] { m_BindedItem }, !SearchSettings.keepOpen);
         }
 
         private void OnItemContextualClicked(ContextClickEvent evt)

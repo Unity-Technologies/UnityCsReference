@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,35 +11,14 @@ namespace UnityEditor.PackageManager.UI.Internal;
 
 internal class SelectionWindowTreeView : TreeView
 {
-    private bool m_ViewDataReady;
-    private bool m_ResetExpansionAndScrollOnViewDataReady;
     public SelectionWindowTreeView(int itemHeight, Func<VisualElement> makeItem, Action<VisualElement, int> bindItem)
         : base(itemHeight, makeItem, bindItem)
     {
         selectionType = SelectionType.None;
     }
 
-    internal override void OnViewDataReady()
-    {
-        base.OnViewDataReady();
-        m_ViewDataReady = true;
-        if (m_ResetExpansionAndScrollOnViewDataReady)
-        {
-            ResetExpansionAndScroll();
-            m_ResetExpansionAndScrollOnViewDataReady = false;
-        }
-    }
-
     private void ResetExpansionAndScroll()
     {
-        // If the view data is not ready, calling ExpandAll will not work because the expansions will be overriden
-        // on view data ready. As a workaround, when we know that the view data is not ready, we delay the reset
-        // expansion and scroll code to when the view data is ready
-        if (!m_ViewDataReady)
-        {
-            m_ResetExpansionAndScrollOnViewDataReady = true;
-            return;
-        }
         ExpandAll();
         // We need to do a delay call because there's a bug with UI toolkit that causes the scrollView
         // to be set back to the saved position even after the OnViewDataReady is called.

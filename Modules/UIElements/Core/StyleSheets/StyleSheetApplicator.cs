@@ -6,9 +6,11 @@ using System;
 using System.Collections.Generic;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
+    [VisibleToOtherModules]
     internal static partial class ShorthandApplicator
     {
         private static List<TimeValue> s_TransitionDelayList = new List<TimeValue>();

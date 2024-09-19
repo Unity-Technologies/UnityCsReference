@@ -110,6 +110,10 @@ namespace UnityEditor.UIElements
             {
                 if (m_Label == value) return;
                 m_Label = value;
+
+                // Refresh current label
+                Rebind();
+
                 NotifyPropertyChanged(labelProperty);
             }
         }

@@ -59,8 +59,8 @@ namespace UnityEditor.Build.Profile.Handlers
                 if (obj != null)
                     continue;
 
-                if (BuildProfileContext.instance.activeProfile == obj)
-                    BuildProfileContext.instance.activeProfile = null;
+                if (BuildProfileContext.activeProfile == obj)
+                    BuildProfileContext.activeProfile = null;
 
                 customBuildProfiles.RemoveAt(i);
                 changed = true;
