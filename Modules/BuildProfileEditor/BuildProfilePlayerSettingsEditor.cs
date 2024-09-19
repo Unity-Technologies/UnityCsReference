@@ -140,7 +140,12 @@ namespace UnityEditor.Build.Profile
             {
                 var isActiveProfile = BuildProfile.GetActiveBuildProfile() == m_Profile;
                 m_PlayerSettingsEditor = Editor.CreateEditor(m_Profile.playerSettings) as PlayerSettingsEditor;
-                m_PlayerSettingsEditor.ConfigurePlayerSettingsForBuildProfile(m_ProfileSerializedObject, m_Profile.moduleName, m_Profile.subtarget == StandaloneBuildSubtarget.Server, isActiveProfile);
+                m_PlayerSettingsEditor.ConfigurePlayerSettingsForBuildProfile(
+                    m_ProfileSerializedObject,
+                    m_Profile.moduleName,
+                    m_Profile.subtarget == StandaloneBuildSubtarget.Server,
+                    isActiveProfile,
+                    OnPlayerSettingsEditorChanged);
             }
 
             if (m_PlayerSettingsInspector == null)
@@ -212,7 +217,7 @@ namespace UnityEditor.Build.Profile
 
             // we only want to show the restart editor prompt when making changes to an active profile
             // otherwise we continue normally with removing the player settings
-            if (m_Profile == BuildProfileContext.instance.activeProfile)
+            if (m_Profile == BuildProfileContext.activeProfile)
             {
                 BuildTarget currentBuildTarget = m_Profile.buildTarget;
                 BuildTarget nextBuildTarget = m_Profile.buildTarget;
@@ -220,7 +225,7 @@ namespace UnityEditor.Build.Profile
                 // failure here is if we found settings requiring restart but the user declined to cancel
                 // so we don't continue with the action
                 var isSuccess =
-                    BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(m_Profile, null, currentBuildTarget,
+                    BuildProfileModuleUtil.HandlePlayerSettingsChanged(m_Profile, null, currentBuildTarget,
                         nextBuildTarget);
                 if (!isSuccess)
                 {
@@ -247,7 +252,7 @@ namespace UnityEditor.Build.Profile
 
             // we only want to show the restart editor prompt when making changes to an active profile
             // otherwise we continue normally with resetting the values to project settings
-            if (m_Profile == BuildProfileContext.instance.activeProfile)
+            if (m_Profile == BuildProfileContext.activeProfile)
             {
                 BuildTarget currentBuildTarget = m_Profile.buildTarget;
                 BuildTarget nextBuildTarget = m_Profile.buildTarget;
@@ -257,7 +262,7 @@ namespace UnityEditor.Build.Profile
                 // if it does, we should a restart prompt. if the user cancels, we cancel the resetting action
 
                 var isSuccess =
-                    BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(m_Profile, null, currentBuildTarget,
+                    BuildProfileModuleUtil.HandlePlayerSettingsChanged(m_Profile, null, currentBuildTarget,
                         nextBuildTarget);
                 if (!isSuccess)
                 {

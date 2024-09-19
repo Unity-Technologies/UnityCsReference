@@ -12,8 +12,6 @@ namespace UnityEditor.Build.Profile.Elements
     
     internal class BuildProfileSceneList
     {
-        static readonly GUIContent s_AddOpenScene = EditorGUIUtility.TrTextContent("Add Open Scenes");
-
         BuildProfile m_Target;
         BuildProfileSceneTreeView m_SceneTreeView;
 
@@ -27,10 +25,9 @@ namespace UnityEditor.Build.Profile.Elements
             m_Target = target;
         }
 
-        public VisualElement GetSceneListGUI(bool showOpenScenes)
+        public VisualElement GetSceneListGUI()
         {
-            TreeViewState m_TreeViewState = new TreeViewState();
-            m_SceneTreeView = new BuildProfileSceneTreeView(m_TreeViewState, m_Target);
+            m_SceneTreeView = new BuildProfileSceneTreeView(new TreeViewState(), m_Target);
             m_SceneTreeView.Reload();
 
             return new IMGUIContainer(() =>
@@ -39,16 +36,12 @@ namespace UnityEditor.Build.Profile.Elements
                     10000, m_SceneTreeView.totalHeight,
                     GUILayout.MinHeight(50));
                 m_SceneTreeView.OnGUI(rect);
-
-                if (showOpenScenes)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.FlexibleSpace();
-                    if (GUILayout.Button(s_AddOpenScene))
-                        m_SceneTreeView.AddOpenScenes();
-                    GUILayout.EndHorizontal();
-                }
             });
+        }
+
+        public void AddOpenScenes()
+        {
+            m_SceneTreeView.AddOpenScenes();
         }
 
         public void OnUndoRedo(in UndoRedoInfo info)

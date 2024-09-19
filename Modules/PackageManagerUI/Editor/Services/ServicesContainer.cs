@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient));
             Register(new AssetStorePackageFactory(uniqueIdMapper, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
             Register(new UpmPackageFactory(uniqueIdMapper, upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy));
-            Register(new UpmOnAssetStorePackageFactory(uniqueIdMapper, unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmClient));
+            Register(new UpmOnAssetStorePackageFactory(uniqueIdMapper, unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmClient, settingsProxy));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
 
             // We need to save some services as serialized members for them to survive domain reload properly

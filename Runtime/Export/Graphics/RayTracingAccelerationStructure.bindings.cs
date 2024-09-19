@@ -41,6 +41,7 @@ namespace UnityEngine.Rendering
         EnableLODCulling        = (1 << 2),
         ComputeMaterialsCRC     = (1 << 3),
         IgnoreReflectionProbes  = (1 << 4),
+        EnableSolidAngleCulling = (1 << 5),
     }
 
     [MovedFrom("UnityEngine.Experimental.Rendering")]
@@ -108,6 +109,7 @@ namespace UnityEngine.Rendering
 
         public Vector3 sphereCenter;
         public float sphereRadius;
+        public float minSolidAngle;
 
         public Plane[] planes;
 

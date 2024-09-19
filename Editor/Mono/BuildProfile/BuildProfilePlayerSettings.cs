@@ -186,7 +186,7 @@ namespace UnityEditor.Build.Profile
 
         internal void UpdateGlobalManagerPlayerSettings(bool activeWillBeRemoved = false)
         {
-            if (BuildProfileContext.instance.activeProfile != this)
+            if (BuildProfileContext.activeProfile != this)
                 return;
 
             var playerSettings = (HasSerializedPlayerSettings() && !activeWillBeRemoved) ? m_PlayerSettings : s_GlobalPlayerSettings;
@@ -195,7 +195,7 @@ namespace UnityEditor.Build.Profile
 
         internal static void TrySetProjectSettingsAssetAsGlobalManagerPlayerSettings()
         {
-            if (BuildProfileContext.instance.activeProfile != null)
+            if (BuildProfileContext.activeProfile != null)
                 return;
 
             TryLoadProjectSettingsAssetPlayerSettings();

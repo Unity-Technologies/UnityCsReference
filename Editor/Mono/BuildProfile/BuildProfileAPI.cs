@@ -14,7 +14,7 @@ namespace UnityEditor.Build.Profile
         /// </returns>
         public static BuildProfile GetActiveBuildProfile()
         {
-            return BuildProfileContext.instance.activeProfile;
+            return BuildProfileContext.activeProfile;
         }
 
         /// <summary>
@@ -26,7 +26,7 @@ namespace UnityEditor.Build.Profile
         /// </param>
         public static void SetActiveBuildProfile(BuildProfile buildProfile)
         {
-            BuildProfileContext.instance.activeProfile = buildProfile;
+            BuildProfileContext.activeProfile = buildProfile;
 
             if (buildProfile == null)
                 return;

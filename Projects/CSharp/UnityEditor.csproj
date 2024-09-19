@@ -5322,9 +5322,6 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs">
-      <Link>Modules\PackageManagerUI\Editor\Services\Common\VersionsFilter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs</Link>
     </Compile>
@@ -5942,12 +5939,6 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDynamicTagLabel.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageDynamicTagLabel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageReleaseTagLabel.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageReleaseTagLabel.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageScopedRegistryTagLabel.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageScopedRegistryTagLabel.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs</Link>
@@ -8690,6 +8681,18 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionDimensionStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionDimensionStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundRepeatStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundRepeatStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundSizeStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundSizeStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BorderBoxModelView.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BorderBoxModelView.cs</Link>

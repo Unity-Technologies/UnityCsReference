@@ -52,8 +52,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
             m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
 
-            m_UpmClient.onPackagesProgressChange += OnPackagesProgressChange;
-            m_UpmClient.onPackageOperationError += OnPackageOperationError;
+            m_UpmClient.onPackagesProgressChange -= OnPackagesProgressChange;
+            m_UpmClient.onPackageOperationError -= OnPackageOperationError;
         }
 
         private void OnPackageOperationError(string packageIdOrName, UIError error)
@@ -142,8 +142,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             var updatedPackages = new List<IPackage>();
             var packagesToRemove = new List<string>();
-            var showPreRelease = m_SettingsProxy.enablePreReleasePackages;
-            var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
+            var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
+                m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
             foreach (var packageName in packageNames)
             {
                 // Upm packages with product ids are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
@@ -161,9 +161,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     var availableRegistry = m_UpmClient.GetAvailableRegistryType(searchInfo ?? installedInfo);
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                    var versionList = new UpmVersionList(searchInfo, installedInfo, availableRegistry, extraVersions);
-                    versionList = VersionsFilter.GetFilteredVersionList(versionList, seeAllVersions, showPreRelease);
-                    versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(packageName));
+                    var versionList = new UpmVersionList(searchInfo, installedInfo, availableRegistry, tagsToExclude, m_UpmCache.IsLoadAllVersions(packageName), extraVersions);
                     if (!versionList.Any())
                     {
                         packagesToRemove.Add(packageName);
@@ -198,6 +196,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IFetchStatusTracker m_FetchStatusTracker;
         private readonly IUpmCache m_UpmCache;
         private readonly IUpmClient m_UpmClient;
+        private readonly IProjectSettingsProxy m_SettingsProxy;
         public UpmOnAssetStorePackageFactory(IUniqueIdMapper uniqueIdMapper,
             IUnityConnectProxy unityConnect,
             IAssetStoreCache assetStoreCache,
@@ -205,7 +204,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageDatabase packageDatabase,
             IFetchStatusTracker fetchStatusTracker,
             IUpmCache upmCache,
-            IUpmClient upmClient)
+            IUpmClient upmClient,
+            IProjectSettingsProxy settingsProxy)
         {
             m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
             m_UnityConnect = RegisterDependency(unityConnect);
@@ -215,11 +215,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker = RegisterDependency(fetchStatusTracker);
             m_UpmCache = RegisterDependency(upmCache);
             m_UpmClient = RegisterDependency(upmClient);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
         public override void OnEnable()
         {
             m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+
+            m_SettingsProxy.onEnablePreReleasePackagesChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged += OnShowPreReleasePackagesOrSeeAllVersionsChanged;
 
             m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
@@ -233,7 +237,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override void OnDisable()
         {
-            m_UnityConnect.onUserLoginStateChange += OnUserLoginStateChange;
+            m_UnityConnect.onUserLoginStateChange -= OnUserLoginStateChange;
+
+            m_SettingsProxy.onEnablePreReleasePackagesChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
+            m_SettingsProxy.onSeeAllVersionsChanged -= OnShowPreReleasePackagesOrSeeAllVersionsChanged;
 
             m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
             m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
@@ -245,12 +252,22 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_FetchStatusTracker.onFetchStatusChanged -= OnFetchStatusChanged;
         }
 
+        private void OnShowPreReleasePackagesOrSeeAllVersionsChanged(bool _)
+        {
+            var allProductIds = m_PackageDatabase.allPackages
+                .Where(p => p.product != null && p.versions.Any(v => v.HasTag(PackageTag.UpmFormat)))
+                .Select(p => p.product.id);
+            GeneratePackagesAndTriggerChangeEvent(allProductIds);
+        }
+
         public void GeneratePackagesAndTriggerChangeEvent(IEnumerable<long> productIds)
         {
             if (productIds?.Any() != true)
                 return;
 
             var packagesChanged = new List<IPackage>();
+            var tagsToExclude = m_SettingsProxy.seeAllPackageVersions ? PackageTag.None :
+                m_SettingsProxy.enablePreReleasePackages ? PackageTag.Experimental : PackageTag.Experimental | PackageTag.PreRelease;
             foreach (var productId in productIds)
             {
                 var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
@@ -287,8 +304,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                     var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
                     var availableRegistry = m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo);
-                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, extraVersions);
-                    versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
+                    var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, tagsToExclude, m_UpmCache.IsLoadAllVersions(productId.ToString()), extraVersions);
                     package = CreatePackage(packageName, versionList, new Product(productId, purchaseInfo, productInfo), isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     if (productInfoFetchError != null)
                         AddError(package, productInfoFetchError.error);

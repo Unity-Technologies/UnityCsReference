@@ -58,7 +58,7 @@ namespace UnityEngine.LightTransport
         public extern bool Initialize();
 
         [NativeMethod(IsThreadSafe = true)]
-        public extern BufferID CreateBuffer(UInt64 size);
+        public extern BufferID CreateBuffer(UInt64 count, UInt64 stride);
 
         [NativeMethod(IsThreadSafe = true)]
         public extern void DestroyBuffer(BufferID id);

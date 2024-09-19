@@ -121,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdatePackageInfo(packageInfo, availableRegistry);
         }
 
-        internal void UpdatePackageInfo(PackageInfo packageInfo, RegistryType availableRegistry)
+        public void UpdatePackageInfo(PackageInfo packageInfo, RegistryType availableRegistry)
         {
             m_IsFullyFetched = m_Version?.ToString() == packageInfo.version;
             m_AvailableRegistry = availableRegistry;
@@ -155,10 +155,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ResolvedPath = packageInfo.resolvedPath;
                 m_DeprecationMessage = packageInfo.deprecationMessage;
 
-                if (packageInfo.ExtractBuiltinDescription(out var result))
-                    m_Description = result;
-                else
-                    m_Description = packageInfo.description;
+                m_Description = packageInfo.ExtractBuiltinDescription(out var result) ? result : packageInfo.description;
             }
             else
             {
@@ -181,21 +178,21 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshTagsForLocalAndGit(PackageSource source)
         {
-            m_Tag &= ~(PackageTag.Custom | PackageTag.VersionLocked | PackageTag.Local | PackageTag.Git);
+            m_Tag &= ~(PackageTag.Custom | PackageTag.Local | PackageTag.Git);
             if (!m_IsInstalled || source is PackageSource.BuiltIn or PackageSource.Registry)
                 return;
 
             switch (source)
             {
                 case PackageSource.Embedded:
-                    m_Tag |= PackageTag.Custom | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Custom;
                     break;
                 case PackageSource.Local:
                 case PackageSource.LocalTarball:
                     m_Tag |= PackageTag.Local;
                     break;
                 case PackageSource.Git:
-                    m_Tag |= PackageTag.Git | PackageTag.VersionLocked;
+                    m_Tag |= PackageTag.Git;
                     break;
             }
         }
@@ -207,7 +204,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // in the case of git/local packages, we always assume that the non-installed versions are from the registry
             if (packageInfo.source == PackageSource.BuiltIn)
             {
-                m_Tag |= PackageTag.Unity | PackageTag.VersionLocked;
+                m_Tag |= PackageTag.Unity;
                 switch (packageInfo.type)
                 {
                     case "module":
@@ -231,23 +228,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!HasTag(PackageTag.InstalledFromPath) && packageInfo.versions.deprecated.Contains(m_VersionString))
                 m_Tag |= PackageTag.Deprecated;
 
-            if (!HasTag(PackageTag.Unity) || HasTag(PackageTag.Deprecated) || isInvalidSemVerInManifest)
+            if (isInvalidSemVerInManifest)
                 return;
 
-            if (m_Version?.HasPreReleaseVersionTag() == true)
-            {
-                // must match exactly to be release candidate
-                if (m_VersionString == packageInfo.versions.recommended)
-                    m_Tag |= PackageTag.ReleaseCandidate;
-                else
-                    m_Tag |= PackageTag.PreRelease;
-            }
-            else if ((m_Version?.Major == 0 && string.IsNullOrEmpty(m_Version?.Prerelease)) ||
-                     m_Version?.IsExperimental() == true ||
-                     "Preview".Equals(m_Version?.Prerelease.Split('.')[0], StringComparison.InvariantCultureIgnoreCase))
+            if (m_Version?.IsExperimental() == true)
                 m_Tag |= PackageTag.Experimental;
-            else if (SemVersionParser.TryParse(packageInfo.versions.recommended, out var parsedSemVer) && m_Version?.IsEqualOrPatchOf(parsedSemVer) == true)
-                m_Tag |= PackageTag.Release;
+            else
+                m_Tag |= string.IsNullOrEmpty(m_Version?.Prerelease) ? PackageTag.Release : PackageTag.PreRelease;
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

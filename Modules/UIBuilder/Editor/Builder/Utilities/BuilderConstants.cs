@@ -449,6 +449,16 @@ namespace Unity.UI.Builder
                 {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-bottom", PixelOrInitialValue},
                 {$"IntegerStyleField{FieldTooltipDictionarySeparator}-unity-slice-right", PixelOrInitialValue},
                 {$"ObjectField{FieldTooltipDictionarySeparator}", "Assign an object by either dragging and dropping it, or by selecting it with the Object Picker."},
+                {$"BackgroundRepeat{FieldTooltipDictionarySeparator}NoRepeat", "value: no-repeat\n\nBackground image will not be repeated and will be displayed once in the background."},
+                {$"BackgroundRepeat{FieldTooltipDictionarySeparator}Repeat","value: repeat\n\nBackground image will only repeat horizontally, creating a tiled effect from left to right." },
+                {$"BackgroundRepeat{FieldTooltipDictionarySeparator}Round","value: round\n\nBackground image will be repeated as needed to fill the available space, while also resizing the image to ensure that there is no remaining space at the edges." },
+                {$"BackgroundRepeat{FieldTooltipDictionarySeparator}Space","value: space\n\nBackground image is repeated as much as possible without clipping. The first and last images are pinned to either side of the element, and whitespace is distributed evenly between the images." },
+                {$"BackgroundPositionX{FieldTooltipDictionarySeparator}Left", "Aligns the background image to the left side."},
+                {$"BackgroundPositionX{FieldTooltipDictionarySeparator}Center", "Centers the background image horizontally."},
+                {$"BackgroundPositionX{FieldTooltipDictionarySeparator}Right", "Aligns the background image to the right side."},
+                {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Top", "Aligns the background image to the top edge."},
+                {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Center", "Centers the background image vertically."},
+                {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Bottom", "Aligns the background image to the bottom edge" },
             };
 
         public static readonly string FoldoutContainsBindingsString = "One or more properties contain a binding (resolved or unresolved).";

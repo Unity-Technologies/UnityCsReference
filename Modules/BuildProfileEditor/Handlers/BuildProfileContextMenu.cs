@@ -138,7 +138,7 @@ namespace UnityEditor.Build.Profile.Handlers
             for (int i = selectedProfiles.Count - 1; i >= 0; --i)
             {
                 var profile = selectedProfiles[i];
-                if (BuildProfileContext.instance.activeProfile == profile)
+                if (BuildProfileContext.activeProfile == profile)
                 {
                     string path = AssetDatabase.GetAssetPath(profile);
                     string finalMessage = $"{path}\n\n{k_DeleteMessage}";
@@ -149,7 +149,7 @@ namespace UnityEditor.Build.Profile.Handlers
                     // if we're deleting an active profile, we want to compare the value of its settings that require a restart
                     // to the value of the settings for the platform we'll be activating after we delete the current platform
                     // and show a restart editor prompt if they're different so the settings take effect
-                    var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsRequiringRestart(profile, null,
+                    var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(profile, null,
                         profile.buildTarget, EditorUserBuildSettings.activeBuildTarget);
                     if (!isSuccess)
                     {

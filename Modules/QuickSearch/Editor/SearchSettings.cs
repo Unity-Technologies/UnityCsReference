@@ -229,7 +229,7 @@ namespace UnityEditor.Search
             trackSelection = ReadSetting(settings, nameof(trackSelection), true);
             fetchPreview = ReadSetting(settings, nameof(fetchPreview), true);
             defaultFlags = (SearchFlags)ReadSetting(settings, nameof(defaultFlags), (int)SearchFlags.None);
-            keepOpen = ReadSetting(settings, nameof(keepOpen), false);
+            keepOpen = ReadSetting(settings, nameof(keepOpen), true);
             queryFolder = ReadSetting(settings, nameof(queryFolder), "Assets");
             onBoardingDoNotAskAgain = ReadSetting(settings, nameof(onBoardingDoNotAskAgain), false);
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);

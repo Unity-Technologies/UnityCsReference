@@ -138,6 +138,7 @@ namespace UnityEditor.Search
         private static readonly string ussPathLight = $"{ussBasePath}/SearchWindow_Light.uss";
 
         public static readonly string baseIconButtonClassName = "search-icon-button";
+        public static readonly string baseIconLabelClassName = "search-icon-label";
 
         protected readonly ISearchView m_ViewModel;
 

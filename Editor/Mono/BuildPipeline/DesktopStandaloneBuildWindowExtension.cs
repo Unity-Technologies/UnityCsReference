@@ -259,11 +259,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     protected abstract RuntimePlatform GetHostPlatform();
     protected abstract string GetHostPlatformName();
 
-    public override bool EnabledBuildAndRunButton()
-    {
-        return true;
-    }
-
     public override bool ShouldDrawWaitForManagedDebugger()
     {
         return true;

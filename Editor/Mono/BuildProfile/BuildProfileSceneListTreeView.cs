@@ -24,6 +24,7 @@ namespace UnityEditor.Build.Profile
 
         public BuildProfileSceneTreeView(TreeViewState state, BuildProfile target) : base(state)
         {
+            showBorder = false;
             m_Target = target;
             m_IsEditorBuildSettingsSceneList = target == null;
         }
@@ -83,7 +84,7 @@ namespace UnityEditor.Build.Profile
             // Classic platforms scene list can only be changed through this component
             // and write data directly to EditorBuildSettings.
             EditorBuildSettings.SetEditorBuildSettingsSceneIgnoreProfile(scenes);
-            if (BuildProfileContext.instance.activeProfile is null)
+            if (BuildProfileContext.activeProfile is null)
                 EditorBuildSettings.SceneListChanged();
         }
     }

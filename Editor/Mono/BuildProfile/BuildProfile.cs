@@ -97,7 +97,7 @@ namespace UnityEditor.Build.Profile
                 m_Scenes = value;
                 CheckSceneListConsistency();
 
-                if (this == BuildProfileContext.instance.activeProfile)
+                if (this == BuildProfileContext.activeProfile)
                     EditorBuildSettings.SceneListChanged();
             }
         }
@@ -105,10 +105,6 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Scripting Compilation Defines used during player and editor builds.
         /// </summary>
-        /// <remarks>
-        /// <see cref="EditorUserBuildSettings.GetActiveProfileYamlScriptingDefines"/> fetches active profile
-        /// define be deserializing the YAML file and assumes defines will be found under "m_ScriptingDefines" node.
-        /// </remarks>
         [SerializeField] private string[] m_ScriptingDefines = Array.Empty<string>();
         public string[] scriptingDefines
         {
@@ -144,10 +140,10 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal bool IsActiveBuildProfileOrPlatform()
         {
-            if (BuildProfileContext.instance.activeProfile == this)
+            if (BuildProfileContext.activeProfile == this)
                 return true;
 
-            if (BuildProfileContext.instance.activeProfile is not null
+            if (BuildProfileContext.activeProfile is not null
                 || !BuildProfileContext.IsClassicPlatformProfile(this))
                 return false;
 
@@ -190,7 +186,7 @@ namespace UnityEditor.Build.Profile
             LoadPlayerSettings();
 
             if (!EditorUserBuildSettings.isBuildProfileAvailable
-                || BuildProfileContext.instance.activeProfile != this)
+                || BuildProfileContext.activeProfile != this)
                 return;
 
             // On disk changes invoke OnEnable,
@@ -206,6 +202,9 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
+            if (IsActiveBuildProfileOrPlatform())
+                EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
+
             var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);
             if (playerSettingsDirty)
             {

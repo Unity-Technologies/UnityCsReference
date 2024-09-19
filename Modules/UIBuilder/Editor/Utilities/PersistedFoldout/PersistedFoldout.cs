@@ -39,6 +39,8 @@ namespace Unity.UI.Builder
         VisualElement m_OverrideBox;
         VisualElement m_Container;
 
+        KeyboardNavigationManipulator m_NavigationManipulator;
+
         public VisualElement header => m_Header;
         public Toggle toggle => m_Toggle;
 
@@ -138,6 +140,8 @@ namespace Unity.UI.Builder
             m_Toggle.AddToClassList(toggleUssClassName);
             m_Header.hierarchy.Add(m_Toggle);
 
+            m_Toggle.AddManipulator(m_NavigationManipulator = new KeyboardNavigationManipulator(Apply));
+
             m_Container = new VisualElement()
             {
                 name = "unity-content",
@@ -156,6 +160,42 @@ namespace Unity.UI.Builder
                 tooltip = null;
                 toggleInput.tooltip = tooltipTemp;
             }
+        }
+
+        private void Apply(KeyboardNavigationOperation op, EventBase sourceEvent)
+        {
+            if (Apply(op))
+            {
+                sourceEvent.StopPropagation();
+                focusController.IgnoreEvent(sourceEvent);
+            }
+        }
+
+        private bool Apply(KeyboardNavigationOperation op)
+        {
+            switch (op)
+            {
+                case KeyboardNavigationOperation.Previous:
+                case KeyboardNavigationOperation.Next:
+                case KeyboardNavigationOperation.SelectAll:
+                case KeyboardNavigationOperation.Cancel:
+                case KeyboardNavigationOperation.Submit:
+                case KeyboardNavigationOperation.Begin:
+                case KeyboardNavigationOperation.End:
+                case KeyboardNavigationOperation.PageDown:
+                case KeyboardNavigationOperation.PageUp:
+                    break; // Allow focus to move outside the Foldout
+                case KeyboardNavigationOperation.MoveRight:
+                    SetValueWithoutNotify(true);
+                    return true;
+                case KeyboardNavigationOperation.MoveLeft:
+                    SetValueWithoutNotify(false);
+                    return true;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(op), op, null);
+            }
+
+            return false;
         }
     }
 }

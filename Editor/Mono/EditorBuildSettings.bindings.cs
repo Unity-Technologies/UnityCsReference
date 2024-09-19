@@ -86,18 +86,18 @@ namespace UnityEditor
         {
             get
             {
-                if (BuildProfileContext.instance.activeProfile is not null)
+                if (BuildProfileContext.activeProfile is not null)
                 {
-                    return BuildProfileContext.instance.activeProfile.scenes;
+                    return BuildProfileContext.activeProfile.scenes;
                 }
 
                 return GetEditorBuildSettingsScenes();
             }
             set
             {
-                if (BuildProfileContext.instance.activeProfile is not null)
+                if (BuildProfileContext.activeProfile is not null)
                 {
-                    BuildProfileContext.instance.activeProfile.scenes = value;
+                    BuildProfileContext.activeProfile.scenes = value;
                 }
                 else
                 {
@@ -109,10 +109,10 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
         {
-            if (!EditorUserBuildSettings.isBuildProfileAvailable || BuildProfileContext.instance.activeProfile is null)
+            if (!EditorUserBuildSettings.isBuildProfileAvailable || BuildProfileContext.activeProfile is null)
                 return null;
 
-            return BuildProfileContext.instance.activeProfile.scenes;
+            return BuildProfileContext.activeProfile.scenes;
         }
 
         static extern EditorBuildSettingsScene[] GetEditorBuildSettingsScenes();

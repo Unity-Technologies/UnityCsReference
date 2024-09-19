@@ -60,7 +60,7 @@ namespace UnityEditor.Search
                 Add(m_PrefButton);
             }
 
-            m_SpinnerButton = CreateButton("SearchInProgressButton", GUIContent.none , () => {}, baseIconButtonClassName);
+            m_SpinnerButton = CreateButton("SearchInProgressButton", GUIContent.none , () => {}, baseIconLabelClassName);
             m_SpinnerButton.binding = new SearchProgressBinding(m_ViewModel, m_SpinnerButton);
             Add(m_SpinnerButton);
 

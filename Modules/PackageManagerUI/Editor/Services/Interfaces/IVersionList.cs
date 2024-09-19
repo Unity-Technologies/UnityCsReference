@@ -8,7 +8,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal interface IVersionList : IEnumerable<IPackageVersion>
     {
-        IEnumerable<IPackageVersion> key { get; }
 
         IPackageVersion installed { get; }
 
@@ -26,8 +25,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         // the primary version is the most important version that we want to show to the user
         // it is the default version that will be displayed in the list as well as in the details
         IPackageVersion primary { get; }
-
-        IPackageVersion GetUpdateTarget(IPackageVersion version);
 
         int numUnloadedVersions { get; }
     }

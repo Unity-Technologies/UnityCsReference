@@ -780,6 +780,9 @@
     <Compile Include="..\..\Modules\IMGUI\TextSelectingUtilities.cs">
       <Link>Modules\IMGUI\TextSelectingUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\AssemblyInfo.cs">
+      <Link>Modules\ImageConversion\ScriptBindings\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs">
       <Link>Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs</Link>
     </Compile>
