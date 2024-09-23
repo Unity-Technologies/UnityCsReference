@@ -116,8 +116,13 @@ namespace UnityEditor
             }
         }
 
-        [NativeMethod("ClearPlatformData")]
-        extern public void ClearSettings();
+        extern private void ClearPlatformData();
+
+        public void ClearSettings()
+        {
+            ClearPlatformData();
+            SetEditorData("DefaultValueInitialized", "true");
+        }
 
         extern public void SetCompatibleWithAnyPlatform(bool enable);
 

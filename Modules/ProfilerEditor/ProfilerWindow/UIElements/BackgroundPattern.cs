@@ -39,6 +39,9 @@ namespace Unity.Profiling.Editor
 
         void TiledQuads(Vector2 pos, Vector2 size, Color color, float scale, Texture2D texture2D, MeshGenerationContext context)
         {
+            if (texture2D == null)
+                return;
+
             var tW = texture2D.width * scale;
             var tH = texture2D.height * scale;
 
