@@ -281,13 +281,6 @@ namespace UnityEditor.SceneManagement
         }
 
         [UsedByNativeCode]
-        internal static bool IsGameObjectInInvalidPrefabStage(GameObject gameObject)
-        {
-            PrefabStage prefabStage = GetCurrentPrefabStage();
-            return (prefabStage != null && prefabStage.scene == gameObject.scene && !prefabStage.isValid);
-        }
-
-        [UsedByNativeCode]
         internal static bool IsPrefabStageScene(Scene scene)
         {
             foreach (var prefabStage in PrefabStage.allPrefabStages)

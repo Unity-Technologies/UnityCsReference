@@ -1542,12 +1542,96 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Called when the <see cref="VisualElement"/> visual contents need to be (re)generated.
+        /// Delegate function to generate the visual content of a visual element.
         /// </summary>
         /// <remarks>
-        /// <para>When this delegate is handled, you can generate custom geometry in the content region of the <see cref="VisualElement"/>. For an example, see the <see cref="MeshGenerationContext"/> documentation.</para>
-        /// <para>This delegate is called only when the <see cref="VisualElement"/> needs to regenerate its visual contents. It is not called every frame when the panel refreshes. The generated content is cached, and remains intact until any of the <see cref="VisualElement"/>'s properties that affects visuals either changes, or <see cref="VisualElement.MarkDirtyRepaint"/> is called.</para>
-        /// <para>When you execute code in a handler to this delegate, do not make changes to any property of the <see cref="VisualElement"/>. A handler should treat the <see cref="VisualElement"/> as 'read-only'. Changing the <see cref="VisualElement"/> during this event might cause undesirable side effects. For example, the changes might lag, or be missed completely.</para>
+        /// Use this delegate to generate custom geometry in the content region of the <see cref="VisualElement"/>. 
+        ///\\
+        ///\\
+        /// This delegate is called during the initial creation of the <see cref="VisualElement"/> and whenever a repaint is needed. 
+        /// This delegate isn't called on every frame refresh. To force a repaint, call <see cref="VisualElement.MarkDirtyRepaint"/>.
+        ///\\
+        ///\\
+        /// __Note__: When you execute code in a handler to this delegate, don't update any property of the <see cref="VisualElement"/>, as this can
+        /// alter the generated content and cause unwanted side effects, such as lagging or missed updates. To avoid this, treat the <see cref="VisualElement"/> 
+        /// as read-only within the delegate.
+        /// </remarks>
+        /// <example>
+        /// <code lang="cs"><![CDATA[
+        /// //This example creates a custom element that dynamically renders a textured 
+        /// //based on the element’s size.
+        /// 
+        /// using UnityEngine;
+        /// using UnityEngine.UIElements;
+        /// 
+        /// public class TexturedElement : VisualElement
+        /// {
+        ///     static readonly Vertex[] k_Vertices = new Vertex[4];
+        ///     static readonly ushort[] k_Indices = { 0, 1, 2, 2, 3, 0 };
+        ///     
+        ///     static TexturedElement()
+        ///     {
+        ///         k_Vertices[0].tint = Color.white;
+        ///         k_Vertices[1].tint = Color.white;
+        ///         k_Vertices[2].tint = Color.white;
+        ///         k_Vertices[3].tint = Color.white;
+        ///         
+        ///         k_Vertices[0].uv = new Vector2(0, 0);
+        ///         k_Vertices[1].uv = new Vector2(0, 1);
+        ///         k_Vertices[2].uv = new Vector2(1, 1);
+        ///         k_Vertices[3].uv = new Vector2(1, 0);
+        ///     }
+        ///     
+        ///    Texture2D m_Texture;
+        ///
+        ///    public TexturedElement()
+        ///    {
+        ///        //This element grows to fill the available space.       
+        ///        style.flexGrow = 1.0f;
+        ///        
+        ///        //Subscribes the OnGenerateVisualContent method to the generateVisualContent delegate.
+        ///        generateVisualContent += OnGenerateVisualContent;
+        ///
+        ///        // Creates a simple 2x2 checkerboard texture.
+        ///        m_Texture = new Texture2D(2, 2);
+        ///        m_Texture.SetPixels(new Color[] {
+        ///            Color.white, Color.black,
+        ///            Color.black, Color.white
+        ///        });
+        ///        
+        ///        //You can also load a texture from a file.
+        ///        //m_Texture = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/tex.png");
+        ///
+        ///        m_Texture.Apply();
+        ///    }
+        ///
+        ///    //This method is called when the element needs to render its content.  
+        ///    void OnGenerateVisualContent(MeshGenerationContext mgc)
+        ///    {
+        ///        Rect r = contentRect;
+        ///        if (r.width < 0.01f || r.height < 0.01f)
+        ///            return; // Skip rendering when too small.
+        ///            
+        ///        float left = 0;
+        ///        float right = r.width;
+        ///        float top = 0;
+        ///        float bottom = r.height;
+        ///
+        ///        k_Vertices[0].position = new Vector3(left, bottom, Vertex.nearZ);
+        ///        k_Vertices[1].position = new Vector3(left, top, Vertex.nearZ);
+        ///        k_Vertices[2].position = new Vector3(right, top, Vertex.nearZ);
+        ///        k_Vertices[3].position = new Vector3(right, bottom, Vertex.nearZ);
+        ///        
+        ///        MeshWriteData mwd = mgc.Allocate(k_Vertices.Length, k_Indices.Length, m_Texture);
+        ///        
+        ///        mwd.SetAllVertices(k_Vertices);
+        ///        mwd.SetAllIndices(k_Indices);
+        ///    }
+        /// }
+        /// ]]></code>
+        /// </example>
+        /// <remarks>
+        /// SA: [[MeshGenerationContext]]
         /// </remarks>
         public Action<MeshGenerationContext> generateVisualContent { get; set; }
 

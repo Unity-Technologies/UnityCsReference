@@ -220,7 +220,7 @@ namespace UnityEngine
             return true;
         }
     }
-
+    [Obsolete("SplatPrototype is obsolete. Use TerrainLayer instead.", false)]
     [StructLayout(LayoutKind.Sequential)]
     [UsedByNativeCode]
     public sealed partial class SplatPrototype
@@ -942,7 +942,7 @@ namespace UnityEngine
             }
         }
 
-        [System.Obsolete("Please use the terrainLayers API instead.", false)]
+        [Obsolete("TerrainData.splatPrototypes is obsolete. Use TerrainData.terrainLayers instead.", false)]
         extern public SplatPrototype[] splatPrototypes
         {
             [FreeFunction(k_ScriptingInterfacePrefix + "GetSplatPrototypes", HasExplicitThis = true)]
