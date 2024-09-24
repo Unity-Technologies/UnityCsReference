@@ -1,4 +1,4 @@
-// Unity C# reference source
+// Unity C# reference source 
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
@@ -12,40 +12,40 @@ namespace UnityEditor
         static int s_BaseTextureWidth = 4096;
         static Material s_Material;
 
-        public double start { get { return m_Start; } }
-        public double length { get { return m_Length; } }
+        public double Start { get; private set; }
+        public double Length { get; private set; }
 
-        public Color backgroundColor { get; set; }
-        public Color waveColor { get; set; }
-        public event Action updated;
-        public UnityEngine.Object presentedObject;
+        public Color BackgroundColor { get; set; }
+        public Color WaveColor { get; set; }
+        public event Action Updated;
+        public UnityEngine.Object PresentedObject { get; private set; }
 
-        public bool optimized
+        public bool Optimized
         {
-            get { return m_Optimized; }
+            get => _optimized;
             set
             {
-                if (m_Optimized != value)
+                if (_optimized != value)
                 {
                     if (value)
-                        m_Dirty = true;
+                        _dirty = true;
 
-                    m_Optimized = value;
-                    m_Flags |= MessageFlags.Optimization;
+                    _optimized = value;
+                    SetFlag(MessageFlags.Optimization, true);
                 }
             }
         }
 
-        public bool looping
+        public bool Looping
         {
-            get { return m_Looping; }
+            get => _looping;
             set
             {
-                if (m_Looping != value)
+                if (_looping != value)
                 {
-                    m_Dirty = true;
-                    m_Looping = value;
-                    m_Flags |= MessageFlags.Looping;
+                    _dirty = true;
+                    _looping = value;
+                    SetFlag(MessageFlags.Looping, true);
                 }
             }
         }
@@ -70,72 +70,66 @@ namespace UnityEditor
             Looping = 1 << 6
         }
 
-        protected static bool HasFlag(MessageFlags flags, MessageFlags test)
+        private double _start;
+        private double _length;
+        private bool _clearTexture = true;
+        private Vector2 _size;
+        private Texture2D _texture;
+        private int _channels;
+        private int _samples;
+        private int _specificChannel;
+        private ChannelMode _channelMode;
+
+        private bool _looping;
+        private bool _optimized;
+        private bool _dirty;
+        private bool _disposed;
+        private MessageFlags _flags;
+
+        protected WaveformPreview(UnityEngine.Object presentedObject, int sampleCount, int channels)
         {
-            return (flags & test) != 0;
+            PresentedObject = presentedObject;
+            Optimized = true;
+            _samples = sampleCount;
+            _channels = channels;
+            BackgroundColor = new Color(40 / 255.0f, 40 / 255.0f, 40 / 255.0f, 1.0f);
+            WaveColor = new Color(255.0f / 255.0f, 140.0f / 255.0f, 0 / 255.0f, 1.0f);
+            UpdateTexture(sampleCount, channels);
         }
 
-        protected double m_Start;
-        protected double m_Length;
-        protected bool m_ClearTexture = true;
-        protected Vector2 Size { get { return m_Size; } }
-
-        Texture2D m_Texture;
-        Vector2 m_Size;
-        int m_Channels;
-        int m_Samples;
-        int m_SpecificChannel;
-        ChannelMode m_ChannelMode;
-
-        bool m_Looping;
-        bool m_Optimized;
-        bool m_Dirty;
-        bool m_Disposed;
-        MessageFlags m_Flags;
-
-        protected WaveformPreview(UnityEngine.Object presentedObject, int samplesAndWidth, int channels)
+        protected internal WaveformPreview(UnityEngine.Object presentedObject, int sampleCount, int channels, bool deferTextureCreation)
         {
-            this.presentedObject = presentedObject;
-            optimized = true;
-            m_Samples = samplesAndWidth;
-            m_Channels = channels;
-            backgroundColor = new Color(40 / 255.0f, 40 / 255.0f, 40 / 255.0f, 1.0f);
-            waveColor = new Color(255.0f / 255.0f, 140.0f / 255.0f, 0 / 255.0f, 1.0f);
-            UpdateTexture(samplesAndWidth, channels);
-        }
+            PresentedObject = presentedObject;
+            Optimized = true;
+            _samples = sampleCount;
+            _channels = channels;
+            BackgroundColor = new Color(40 / 255.0f, 40 / 255.0f, 40 / 255.0f, 1.0f);
+            WaveColor = new Color(255.0f / 255.0f, 140.0f / 255.0f, 0 / 255.0f, 1.0f);
 
-        protected internal WaveformPreview(UnityEngine.Object presentedObject, int samplesAndWidth, int channels, bool deferTextureCreation)
-        {
-            this.presentedObject = presentedObject;
-            optimized = true;
-            m_Samples = samplesAndWidth;
-            m_Channels = channels;
-            backgroundColor = new Color(40 / 255.0f, 40 / 255.0f, 40 / 255.0f, 1.0f);
-            waveColor = new Color(255.0f / 255.0f, 140.0f / 255.0f, 0 / 255.0f, 1.0f);
             if (!deferTextureCreation)
-                UpdateTexture(samplesAndWidth, channels);
+                UpdateTexture(sampleCount, channels);
         }
 
         public void Dispose()
         {
-            if (!m_Disposed)
+            if (!_disposed)
             {
-                m_Disposed = true;
+                _disposed = true;
                 InternalDispose();
 
-                if (m_Texture != null)
+                if (_texture != null)
                 {
                     if (Application.isPlaying)
-                        UnityEngine.Object.Destroy(m_Texture);
+                        UnityEngine.Object.Destroy(_texture);
                     else
-                        UnityEngine.Object.DestroyImmediate(m_Texture);
+                        UnityEngine.Object.DestroyImmediate(_texture);
                 }
 
-                m_Texture = null;
+                _texture = null;
             }
         }
 
-        protected virtual void InternalDispose() {}
+        protected virtual void InternalDispose() { }
 
         public void Render(Rect rect)
         {
@@ -144,135 +138,129 @@ namespace UnityEditor
                 s_Material = EditorGUIUtility.LoadRequired("Previews/PreviewAudioClipWaveform.mat") as Material;
             }
 
-            s_Material.SetTexture("_WavTex", m_Texture);
-            s_Material.SetFloat("_SampCount", m_Samples);
-            s_Material.SetFloat("_ChanCount", m_Channels);
+            s_Material.SetTexture("_WavTex", _texture);
+            s_Material.SetFloat("_SampCount", _samples);
+            s_Material.SetFloat("_ChanCount", _channels);
             s_Material.SetFloat("_RecPixelSize", 1.0f / rect.height);
-            s_Material.SetColor("_BacCol", backgroundColor);
-            s_Material.SetColor("_ForCol", waveColor);
+            s_Material.SetColor("_BacCol", BackgroundColor);
+            s_Material.SetColor("_ForCol", WaveColor);
 
-            int mode = -2;
+            int mode = _channelMode switch
+            {
+                ChannelMode.Separate => -1,
+                ChannelMode.SpecificChannel => _specificChannel,
+                _ => -2
+            };
 
-            if (m_ChannelMode == ChannelMode.Separate)
-                mode = -1;
-            else if (m_ChannelMode == ChannelMode.SpecificChannel)
-                mode = m_SpecificChannel;
+            s_Material.SetFloat("_ChanDrawMode", mode);
 
-            s_Material.SetFloat("_ChanDrawMode", (float)mode);
-
-            Graphics.DrawTexture(rect, m_Texture, s_Material);
+            Graphics.DrawTexture(rect, _texture, s_Material);
         }
 
         public bool ApplyModifications()
         {
-            if (m_Dirty || m_Texture == null)
+            if (_dirty || _texture == null)
             {
-                m_Flags |= UpdateTexture((int)m_Size.x, m_Channels) ? MessageFlags.TextureChanged : MessageFlags.None;
-                OnModifications(m_Flags);
-                m_Flags = MessageFlags.None;
+                SetFlag(UpdateTexture((int)_size.x, _channels) ? MessageFlags.TextureChanged : MessageFlags.None, true);
+                OnModifications(_flags);
+                _flags = MessageFlags.None;
 
-                m_Texture.Apply();
-                m_Dirty = false;
+                _texture.Apply();
+                _dirty = false;
                 return true;
             }
 
             return false;
         }
 
-        public void SetChannelMode(ChannelMode mode, int specificChannelToRender)
+        public void SetChannelMode(ChannelMode mode, int specificChannelToRender = 0)
         {
-            m_ChannelMode = mode;
-            m_SpecificChannel = specificChannelToRender;
+            _channelMode = mode;
+            _specificChannel = specificChannelToRender;
         }
 
-        public void SetChannelMode(ChannelMode mode)
-        {
-            SetChannelMode(mode, 0);
-        }
-
-        bool UpdateTexture(int width, int channels)
+        private bool UpdateTexture(int width, int channels)
         {
             int widthWithChannels = width * channels;
             int textureHeight = 1 + widthWithChannels / s_BaseTextureWidth;
 
-            Action<bool> updateTexture =
-                clear =>
-            {
-                if (m_Texture == null)
-                {
-                    m_Texture = new Texture2D(s_BaseTextureWidth, textureHeight, TextureFormat.RGBAHalf, false, true);
-                    m_Texture.filterMode = FilterMode.Point;
-                    clear = false;
-                }
-                else
-                {
-                    m_Texture.Reinitialize(s_BaseTextureWidth, textureHeight);
-                }
+            EnsureTextureExists(textureHeight);
 
-                if (!clear)
-                    return;
-
-                var fillColorArray = m_Texture.GetPixels();
-                for (var i = 0; i < fillColorArray.Length; ++i)
-                    fillColorArray[i] = Color.black;
-
-                m_Texture.SetPixels(fillColorArray);
-            };
-
-            if (width == m_Samples && channels == m_Channels && m_Texture != null)
-            {
+            if (width == _samples && channels == _channels && _texture != null)
                 return false;
+
+            _samples = width;
+            _channels = channels;
+
+            _dirty = true;
+            return true;
+        }
+
+        private void EnsureTextureExists(int textureHeight)
+        {
+            if (_texture == null)
+            {
+                _texture = new Texture2D(s_BaseTextureWidth, textureHeight, TextureFormat.RGBAHalf, false, true)
+                {
+                    filterMode = FilterMode.Point
+                };
             }
-
-            // resample texture here
-            updateTexture(m_ClearTexture);
-
-            m_Samples = width;
-            m_Channels = channels;
-
-            return m_Dirty = true;
+            else
+            {
+                _texture.Reinitialize(s_BaseTextureWidth, textureHeight);
+            }
         }
 
         public void OptimizeForSize(Vector2 newSize)
         {
             newSize = new Vector2(Mathf.Ceil(newSize.x), Mathf.Ceil(newSize.y));
 
-            if (newSize.x != m_Size.x)
+            if (newSize.x != _size.x)
             {
-                m_Size = newSize;
-                m_Flags |= MessageFlags.Size;
-                m_Dirty = true;
+                _size = newSize;
+                SetFlag(MessageFlags.Size, true);
+                _dirty = true;
             }
         }
 
-        protected virtual void OnModifications(MessageFlags changedFlags) {}
+        protected virtual void OnModifications(MessageFlags changedFlags) { }
 
         public void SetTimeInfo(double start, double length)
         {
-            if (start != m_Start || length != m_Length)
+            if (start != Start || length != Length)
             {
-                m_Start = start;
-                m_Length = length;
-                m_Dirty = true;
-                m_Flags |= MessageFlags.Start | MessageFlags.Length;
+                Start = start;
+                Length = length;
+                _dirty = true;
+                SetFlag(MessageFlags.Start | MessageFlags.Length, true);
             }
         }
 
         public virtual void SetMMWaveData(int interleavedOffset, float[] data)
         {
-            // could be optimized, but profiling shows it isn't the bottleneck at all
-            for (int i = 0; i < data.Length; interleavedOffset++, i += 2)
+            Color[] colors = new Color[data.Length / 2];
+
+            for (int i = 0, j = 0; i < data.Length; i += 2, j++)
             {
-                int x = interleavedOffset % s_BaseTextureWidth;
-                int y = interleavedOffset / s_BaseTextureWidth;
-                m_Texture.SetPixel(x, y, new Color(data[i], data[i + 1], 0.0f, 0.0f));
+                colors[j] = new Color(data[i], data[i + 1], 0.0f, 0.0f);
             }
 
-            m_Dirty = true;
-            m_Flags |= MessageFlags.ContentsChanged;
+            int x = interleavedOffset % s_BaseTextureWidth;
+            int y = interleavedOffset / s_BaseTextureWidth;
+            _texture.SetPixels(x, y, colors.Length, 1, colors);
 
-            if (updated != null)
-                updated();
+            _dirty = true;
+            SetFlag(MessageFlags.ContentsChanged, true);
+
+            Updated?.Invoke();
+        }
+
+        private void SetFlag(MessageFlags flag, bool value)
+        {
+            if (value)
+                _flags |= flag;
+            else
+                _flags &= ~flag;
         }
     }
 }
