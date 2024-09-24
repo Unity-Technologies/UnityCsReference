@@ -483,16 +483,16 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                var ui2World = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
-                var world2UI = ui2World.inverse;
+                var ui2Go = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
+                var go2Ui = ui2Go.inverse;
 
                 var childGoToWorld = transform.localToWorldMatrix;
                 var worldToParentGo = parentUI.transform.worldToLocalMatrix;
 
-                // (GOa - To - World) * (UI2W) * (VEb - Space - To - VEa - Space) = (GOb - To - World) * (UI2W)
-                // (VEb - Space - To - VEa - Space) = (UI2W) ^ -1 * (GOa - To - World) ^ -1 * (GOb - To - World) * (UI2W)
-
-                matrix = world2UI * worldToParentGo * childGoToWorld * ui2World;
+                //      (VEa To World)      * (VEb To VEa) =                                           (VEb To World)
+                // (GOa To World) * (UI2GO) * (VEb To VEa) =                                      (GOb To World) * (UI2GO)
+                //                            (VEb To VEa) = (UI2GO) ^ -1 * (GOa To World) ^ -1 * (GOb To World) * (UI2GO)
+                matrix = go2Ui * worldToParentGo * childGoToWorld * ui2Go;
             }
         }
 

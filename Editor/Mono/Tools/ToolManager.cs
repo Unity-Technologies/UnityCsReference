@@ -163,44 +163,29 @@ namespace UnityEditor.EditorTools
             }
         }
 
-        internal static Type GetLastContextType()
-        {
-            var lastContext = EditorToolManager.lastCustomContext;
-            if (lastContext != null && lastContext != typeof(GameObjectToolContext))
-                return lastContext;
-
-            return allContextsExceptGameObject.FirstOrDefault();
-        }
-
         [Shortcut("Tools/Enter GameObject Mode", typeof(ToolShortcutContext))]
         internal static void ExitToolContext()
         {
             SetActiveContext<GameObjectToolContext>();
         }
 
-        [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext))]
+        [Shortcut("Tools/Cycle Tool Modes", typeof(ToolShortcutContext), KeyCode.G)]
         internal static void CycleToolContexts()
         {
             if (EditorToolUtility.toolContextsInProject < 2)
                 return;
 
             var active = EditorToolManager.activeToolContext;
-
-            if (active is GameObjectToolContext && EditorToolManager.lastCustomContext != null)
-            {
-                var instance = allContextsExceptGameObject.FirstOrDefault(x => x == EditorToolManager.lastCustomContext);
-
-                if (instance != null)
-                {
-                    SetActiveContext(instance);
-                    return;
-                }
-            }
-
             using var all = allContextsExceptGameObject.GetEnumerator();
 
             if (!all.MoveNext())
                 return;
+
+            if (active is GameObjectToolContext)
+            {
+                SetActiveContext(all.Current);
+                return;
+            }
 
             // Select the next available context after the active
             while (all.Current != active.GetType())
@@ -219,7 +204,7 @@ namespace UnityEditor.EditorTools
             if (all.MoveNext())
                 SetActiveContext(all.Current);
             else
-                SetActiveContext(allContextsExceptGameObject.First());
+                SetActiveContext(typeof(GameObjectToolContext));
         }
     }
 }

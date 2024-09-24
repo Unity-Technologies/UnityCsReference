@@ -194,6 +194,14 @@ namespace UnityEditor.PackageManager.UI
             m_Root?.OnLostFocus();
         }
 
+        internal Rect CalculateDropdownPosition(VisualElement anchorElement)
+        {
+            // If a background GUI painted before, the coordinates got could be different.
+            // Repaint the package manager to ensure the coordinates retrieved is from Package Manager Window.
+            RepaintImmediately();
+            return GUIUtility.GUIToScreenRect(anchorElement.worldBound);
+        }
+
         [UsedByNativeCode]
         internal static void OpenURL(string url)
         {
@@ -315,18 +323,6 @@ namespace UnityEditor.PackageManager.UI
             instance.minSize = new Vector2(1050, 250);
             instance.m_Root.SelectPackageAndPage(packageToSelect, pageId, refresh, searchText);
             instance.Show();
-        }
-
-        internal static void CloseAll()
-        {
-            var windows = Resources.FindObjectsOfTypeAll<PackageManagerWindow>();
-            if (windows == null)
-                return;
-
-            foreach (var window in windows)
-                window.Close();
-
-            instance = null;
         }
 
         private static void CheckInnerException<T>(TargetInvocationException e) where T : Exception

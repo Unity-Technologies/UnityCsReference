@@ -756,7 +756,8 @@ namespace UnityEngine.UIElements.UIR
                         indices[i],
                         false,
                         0,
-                        0);
+                        0,
+                        true);
                 }
                 else
                 {
@@ -782,7 +783,8 @@ namespace UnityEngine.UIElements.UIR
                         indices[i],
                         true,
                         sdfScale,
-                        sharpness);
+                        sharpness,
+                        false);
                 }
             }
         }
@@ -799,16 +801,16 @@ namespace UnityEngine.UIElements.UIR
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
                 tint = vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
-                flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)1 : (byte)0)
+                flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
             };
         }
 
-        void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness)
+        void MakeText(Texture texture, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, bool isSdf, float sdfScale, float sharpness, bool multiChannel)
         {
             if (isSdf)
                 m_MeshGenerationContext.entryRecorder.DrawSdfText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, sdfScale, sharpness);
             else
-                m_MeshGenerationContext.entryRecorder.DrawMesh(m_MeshGenerationContext.parentEntry, vertices, indices, texture, true);
+                m_MeshGenerationContext.entryRecorder.DrawRasterText(m_MeshGenerationContext.parentEntry, vertices, indices, texture, multiChannel);
         }
 
         public void DrawRectangle(RectangleParams rectParams)

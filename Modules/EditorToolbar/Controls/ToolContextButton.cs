@@ -105,12 +105,7 @@ namespace UnityEditor.Toolbars
             {
                 if (isGOToolContext)
                 {
-                    var lastContextType = ToolManager.GetLastContextType();
-                    // JIRA: UUM-16237. Use the content of the last context only if the current selection is associated with the same type of context.
-                    if (ToolManager.allContextsExceptGameObject.Contains(lastContextType))
-                        activeContextType = lastContextType;
-                    else
-                        activeContextType = ToolManager.allContextsExceptGameObject.FirstOrDefault();
+                    activeContextType = ToolManager.allContextsExceptGameObject.FirstOrDefault();
                 }
                 else
                     activeContextType = ToolManager.activeContextType;

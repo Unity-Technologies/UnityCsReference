@@ -26,6 +26,11 @@ namespace UnityEngine.UIElements
         public const float k_MaskPosZ = 1.0f; // The correct z value to push/pop a mask
         public const int k_MaxMaskDepth = 7; // Requires 3 bits in the stencil
 
+        // Keep in sync with UIRVertexUtility.h
+        public const byte k_DynamicColorDisabled = 0;
+        public const byte k_DynamicColorEnabled = 1;
+        public const byte k_DynamicColorEnabledText = 2;
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public static bool ShapeWindingIsClockwise(int maskDepth, int stencilRef)
         {

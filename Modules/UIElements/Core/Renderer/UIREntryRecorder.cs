@@ -8,12 +8,12 @@ using Unity.Collections;
 
 namespace UnityEngine.UIElements.UIR
 {
-    enum EntryType
+    enum EntryType : ushort
     {
         DrawSolidMesh,
         DrawTexturedMesh,
         DrawTexturedMeshSkipAtlas,
-        DrawSdfTextMesh,
+        DrawTextMesh,
         DrawGradients,
         DrawImmediate,
         DrawImmediateCull,
@@ -35,9 +35,16 @@ namespace UnityEngine.UIElements.UIR
         DedicatedPlaceholder
     }
 
+    [Flags]
+    enum EntryFlags : ushort
+    {
+        UsesTextCoreSettings = 1 << 0,
+    }
+
     class Entry
     {
         public EntryType type;
+        public EntryFlags flags;
 
         // In an entry, the winding order is ALWAYS clockwise (front-facing)
         public NativeSlice<Vertex> vertices;
@@ -89,10 +96,24 @@ namespace UnityEngine.UIElements.UIR
             AppendMeshEntry(parentEntry, entry);
         }
 
+        public void DrawRasterText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool multiChannel)
+        {
+            var entry = m_EntryPool.Get();
+            entry.type = multiChannel ? EntryType.DrawTexturedMeshSkipAtlas : EntryType.DrawTextMesh;
+            entry.flags = EntryFlags.UsesTextCoreSettings; // For dynamic color
+            entry.vertices = vertices;
+            entry.indices = indices;
+            entry.texture = texture;
+            entry.textScale = 0; // Used in the shader to indicate raster text
+            entry.fontSharpness = 0; // N/A
+            AppendMeshEntry(parentEntry, entry);
+        }
+
         public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
         {
             var entry = m_EntryPool.Get();
-            entry.type = EntryType.DrawSdfTextMesh;
+            entry.type = EntryType.DrawTextMesh;
+            entry.flags = EntryFlags.UsesTextCoreSettings;
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;

@@ -341,7 +341,6 @@ namespace UnityEngine
             }
         }
 
-
         // Deletes previous text on the line
         public bool DeleteLineBack()
         {
@@ -351,6 +350,18 @@ namespace UnityEngine
             {
                 DeleteSelection();
                 return true;
+            }
+
+            if (textHandle.useAdvancedText)
+            {
+                var start = textHandle.GetFirstCharacterIndexOnLine(cursorIndex);
+                if (start != cursorIndex)
+                {
+                    text = text.Remove(start, stringCursorIndex - start);
+                    cursorIndex = selectIndex = start;
+                    return true;
+                }
+                return false;
             }
 
             var currentLineInfo = textHandle.GetLineInfoFromCharacterIndex(cursorIndex);
@@ -422,7 +433,11 @@ namespace UnityEngine
             }
             else if (stringCursorIndex < text.Length)
             {
-                var count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
+                int count;
+                if (textHandle.useAdvancedText)
+                    count = textHandle.NextCodePointIndex(cursorIndex) - cursorIndex;
+                else
+                    count = textHandle.textInfo.textElementInfo[cursorIndex].stringLength;
                 text = text.Remove(stringCursorIndex, count);
                 return true;
             }
@@ -442,10 +457,15 @@ namespace UnityEngine
             else if (cursorIndex > 0)
             {
                 var startIndex = m_TextSelectingUtility.PreviousCodePointIndex(cursorIndex);
-                var count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+                int count;
+                if (textHandle.useAdvancedText)
+                    count = (char.IsSurrogate(text[cursorIndex - 1]) ? 2 : 1);
+                else
+                    count = textHandle.textInfo.textElementInfo[cursorIndex - 1].stringLength;
+
                 text = text.Remove(stringCursorIndex - count, count);
-                cursorIndex = startIndex;
-                selectIndex = startIndex;
+                cursorIndex = textHandle.useAdvancedText ? Math.Max(0, cursorIndex - count) : startIndex;
+                selectIndex = textHandle.useAdvancedText ? Math.Max(0, selectIndex - count) : startIndex;
                 m_TextSelectingUtility.ClearCursorPos();
                 return true;
             }
@@ -479,7 +499,8 @@ namespace UnityEngine
             DeleteSelection();
             text = text.Insert(stringCursorIndex, replace);
 
-            var newIndex = cursorIndexNoValidation + new StringInfo(replace).LengthInTextElements;
+            int length = textHandle.useAdvancedText ? replace.Length : new StringInfo(replace).LengthInTextElements;
+            var newIndex = cursorIndexNoValidation + length;
             cursorIndexNoValidation = newIndex;
             selectIndexNoValidation = newIndex;
             m_TextSelectingUtility.ClearCursorPos();
@@ -538,6 +559,7 @@ namespace UnityEngine
             m_TextSelectingUtility.Copy();
             return DeleteSelection();
         }
+
         public bool Paste()
         {
             RestoreCursorState();
