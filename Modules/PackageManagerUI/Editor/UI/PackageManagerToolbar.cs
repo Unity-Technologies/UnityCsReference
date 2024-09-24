@@ -219,8 +219,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!inProgressSpinner.started)
                     return;
 
-                var rect = GUIUtility.GUIToScreenRect(spinnerButtonContainer.worldBound);
-                var dropdown = new InProgressDropdown(m_ResourceLoader, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = rect };
+                var position = PackageManagerWindow.instance.CalculateDropdownPosition(spinnerButtonContainer);
+                var dropdown = new InProgressDropdown(m_ResourceLoader, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = position };
                 DropdownContainer.ShowDropdown(dropdown);
             });
         }
@@ -341,9 +341,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                     },
                     windowSize = new Vector2(resolvedStyle.width, 50)
                 };
-                // If a background GUI painted before, the coordinates got could be different.
-                // Repaint the package manager to ensure the coordinates retrieved is from packmanager.
-                PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
                 addMenu.ShowInputDropdown(args);
             };
 
@@ -352,18 +349,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
-                // If a background GUI painted before, the coordinates got could be different.
-                // Repaint the package manager to ensure the coordinates retrieved is from packmanager.
-                PackageManagerWindow.GetWindow<PackageManagerWindow>().RepaintImmediately();
-                // Same as above, the worldBound of the toolbar is used rather than the addMenu
-                var rect = GUIUtility.GUIToScreenRect(worldBound);
-
-                // GUIToScreenRect calculates screen space coordinates in relation to contextual menu
-                // which is the last active view. Since we know the exact offset of contextual menu in
-                // relation to package manager we can compensate this by subtracting contextual menu origin.
-                rect.y -= worldBound.yMax;
-
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, PackageManagerWindow.instance) { position = rect };
+                var position = PackageManagerWindow.instance.CalculateDropdownPosition(addMenu);
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, PackageManagerWindow.instance) { position = position};
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }

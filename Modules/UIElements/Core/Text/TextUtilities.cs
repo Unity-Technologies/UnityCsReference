@@ -138,7 +138,7 @@ namespace UnityEngine.UIElements
             return isAdvancedTextGeneratorEnabledOnTextElement && isAdvancedTextGeneratorEnabledOnProject;
         }
 
-        internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve)
+        internal static TextCoreSettings GetTextCoreSettingsForElement(VisualElement ve, bool ignoreColors)
         {
             var fontAsset = GetFontAsset(ve);
             if (fontAsset == null)
@@ -146,27 +146,60 @@ namespace UnityEngine.UIElements
 
             var resolvedStyle = ve.resolvedStyle;
             var computedStyle = ve.computedStyle;
+            TextShadow textShadow = computedStyle.textShadow;
 
             float factor = TextHandle.ConvertPixelUnitsToTextCoreRelativeUnits(computedStyle.fontSize.value, fontAsset);
 
             float outlineWidth = Mathf.Clamp(resolvedStyle.unityTextOutlineWidth * factor, 0.0f, 1.0f);
-            float underlaySoftness = Mathf.Clamp(computedStyle.textShadow.blurRadius * factor, 0.0f, 1.0f);
+            float underlaySoftness = Mathf.Clamp(textShadow.blurRadius * factor, 0.0f, 1.0f);
 
-            float underlayOffsetX = computedStyle.textShadow.offset.x < 0 ? Mathf.Max(computedStyle.textShadow.offset.x * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.x * factor, 1.0f);
-            float underlayOffsetY = computedStyle.textShadow.offset.y < 0 ? Mathf.Max(computedStyle.textShadow.offset.y * factor, -1.0f) : Mathf.Min(computedStyle.textShadow.offset.y * factor, 1.0f);
+            float underlayOffsetX = textShadow.offset.x < 0 ? Mathf.Max(textShadow.offset.x * factor, -1.0f) : Mathf.Min(textShadow.offset.x * factor, 1.0f);
+            float underlayOffsetY = textShadow.offset.y < 0 ? Mathf.Max(textShadow.offset.y * factor, -1.0f) : Mathf.Min(textShadow.offset.y * factor, 1.0f);
             Vector2 underlayOffset = new Vector2(underlayOffsetX, underlayOffsetY);
 
-            var faceColor = resolvedStyle.color;
-            var outlineColor = resolvedStyle.unityTextOutlineColor;
-            if (outlineWidth < UIRUtility.k_Epsilon)
-                outlineColor.a = 0.0f;
+            Color faceColor, underlayColor, outlineColor;
+            if (ignoreColors)
+            {
+                faceColor = Color.white;
+                underlayColor = Color.white;
+                outlineColor = Color.white;
+            }
+            else
+            {
+                bool isMultiChannel = ((Texture2D)fontAsset.material.mainTexture).format != TextureFormat.Alpha8;
+                faceColor = resolvedStyle.color;
+                outlineColor = resolvedStyle.unityTextOutlineColor;
+                if (outlineWidth < UIRUtility.k_Epsilon)
+                    outlineColor.a = 0.0f;
+                underlayColor = textShadow.color;
+
+                if (isMultiChannel)
+                {
+                    // "Textured" Shader Path
+                    // With colored emojis, the render type is "textured"
+                    // The TextCore data will be used if the DynamicColor usage hint is set
+                    // We don't premultiply but we use the alpha only
+                    faceColor = new Color(1, 1, 1, faceColor.a);
+                }
+                else
+                {
+                    // "Text" Shader Path
+                    // These are only used for SDF, independently of DynamicColor
+                    underlayColor.r *= faceColor.a;
+                    underlayColor.g *= faceColor.a;
+                    underlayColor.b *= faceColor.a;
+                    outlineColor.r *= outlineColor.a;
+                    outlineColor.g *= outlineColor.a;
+                    outlineColor.b *= outlineColor.a;
+                }
+            }
 
             return new TextCoreSettings()
             {
                 faceColor = faceColor,
                 outlineColor = outlineColor,
                 outlineWidth = outlineWidth,
-                underlayColor = computedStyle.textShadow.color,
+                underlayColor = textShadow.color,
                 underlayOffset = underlayOffset,
                 underlaySoftness = underlaySoftness
             };

@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements.UIR
                         ProcessMeshEntry(entry, textureId);
                         break;
                     }
-                    case EntryType.DrawSdfTextMesh:
+                    case EntryType.DrawTextMesh:
                     {
                         m_RenderType = VertexFlags.IsText;
                         TextureId textureId = TextureRegistry.instance.Acquire(entry.texture);
@@ -439,7 +439,7 @@ namespace UnityEngine.UIElements.UIR
                 Color32 xformClipPages = new Color32(m_TransformData.r, m_TransformData.g, clipRectData.r, clipRectData.g);
                 Color32 addFlags = new Color32((byte)m_RenderType, 0, 0, 0);
 
-                if (entry.type == EntryType.DrawSdfTextMesh)
+                if ((entry.flags & EntryFlags.UsesTextCoreSettings) != 0)
                 {
                     // It's important to avoid writing these values when the vertices aren't for text,
                     // as some of these settings are shared with the vector graphics gradients.
@@ -469,7 +469,7 @@ namespace UnityEngine.UIElements.UIR
                     addFlags = addFlags,
                     opacityPage = opacityPage,
                     textCoreSettingsPage = m_TextCoreSettingsPage,
-                    isSdfText = entry.type == EntryType.DrawSdfTextMesh ? 1 : 0,
+                    usesTextCoreSettings = (entry.flags & EntryFlags.UsesTextCoreSettings) != 0 ? 1 : 0,
                     textureId = textureId.ConvertToGpu(),
                     gradientSettingsIndexOffset = m_GradientSettingIndexOffset,
 
@@ -500,7 +500,7 @@ namespace UnityEngine.UIElements.UIR
                 var cmd = CreateMeshDrawCommand(m_Mesh, entryIndexCount, m_IndicesFilled, entry.material, textureId);
                 AppendCommand(cmd);
 
-                if (entry.type == EntryType.DrawSdfTextMesh)
+                if (entry.type == EntryType.DrawTextMesh)
                 {
                     // Set font atlas texture gradient scale
                     cmd.state.sdfScale = entry.textScale;

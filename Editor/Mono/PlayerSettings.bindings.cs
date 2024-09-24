@@ -1825,6 +1825,12 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetShaderChunkCountForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget, int chunkCount);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern NormalMapEncoding GetNormalMapEncoding_Internal(PlayerSettings instance, string platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetNormalMapEncoding_Internal(PlayerSettings instance, string platform, NormalMapEncoding encoding);
+
         /*
          * Internal non-static getter/setters referenced when reading/writing to non-active player settings object.
          */

@@ -79,7 +79,7 @@ namespace UnityEditor.Experimental.GraphView
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             e.StopPropagation();
             target.CaptureMouse();
-            m_StartMouse = resizedBase.WorldToLocal(e.mousePosition);
+            m_StartMouse = e.mousePosition;
             m_StartSize = new Vector2(resizedTarget.resolvedStyle.width, resizedTarget.resolvedStyle.height);
             m_StartPosition = new Vector2(resizedTarget.resolvedStyle.left, resizedTarget.resolvedStyle.top);
 
@@ -104,8 +104,10 @@ namespace UnityEditor.Experimental.GraphView
 
             VisualElement resizedTarget = resizedElement.parent;
             VisualElement resizedBase = resizedTarget.parent;
+            var validResizeBase = resizedBase;
+            FindValidBaseElement(ref validResizeBase);
 
-            Vector2 mousePos = resizedBase.WorldToLocal(e.mousePosition);
+            Vector2 mousePos = e.mousePosition;
             if (!m_DragStarted)
             {
                 if (resizedTarget is IResizable)
@@ -149,27 +151,48 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if ((direction & ResizerDirection.Right) != 0)
                 {
-                    resizedTarget.style.width = Mathf.Clamp(m_StartSize.x + mousePos.x - m_StartMouse.x, m_MinSize.x, Mathf.Min(m_MaxSize.x, resizedBase.layout.xMax - resizedTarget.layout.xMin));
+                    var worldZero = validResizeBase.LocalToWorld(Vector2.zero);
+                    var localZero = resizedBase.WorldToLocal(worldZero);
+                    var localWidth = validResizeBase.layout.width / resizedTarget.worldTransform.lossyScale.x;
+                    var newWidth = Mathf.Min(m_StartSize.x + (mousePos.x - m_StartMouse.x) / resizedTarget.worldTransform.lossyScale.x, this.m_MaxSize.x);
+                    var newRight = Mathf.Clamp(resizedTarget.layout.xMin + newWidth, resizedTarget.layout.xMin + m_MinSize.x, localZero.x + localWidth);
+                    resizedTarget.style.width = newRight - resizedTarget.layout.xMin;
                 }
                 else if ((direction & ResizerDirection.Left) != 0)
                 {
-                    float delta = mousePos.x - m_StartMouse.x;
-                    float previousLeft = resizedTarget.style.left.value.value;
-
-                    resizedTarget.style.left = Mathf.Clamp(delta + m_StartPosition.x, 0, resizedTarget.layout.xMax - m_MinSize.x);
-                    resizedTarget.style.width = resizedTarget.resolvedStyle.width + previousLeft - resizedTarget.style.left.value.value;
+                    var worldZero = validResizeBase.LocalToWorld(Vector2.zero);
+                    var localZero = resizedBase.WorldToLocal(worldZero);
+                    var delta = (mousePos.x - m_StartMouse.x) / resizedTarget.worldTransform.lossyScale.x;
+                    var newLeft = Mathf.Clamp(m_StartPosition.x + delta, localZero.x, localZero.x + validResizeBase.layout.width);
+                    var newWidth = resizedTarget.layout.xMax - newLeft;
+                    if (newWidth >= m_MinSize.x && newWidth <= m_MaxSize.x)
+                    {
+                        resizedTarget.style.left = newLeft;
+                        resizedTarget.style.width = newWidth;
+                    }
                 }
                 if ((direction & ResizerDirection.Bottom) != 0)
                 {
-                    resizedTarget.style.height = Mathf.Min(m_MaxSize.y, Mathf.Max(m_MinSize.y, m_StartSize.y + mousePos.y - m_StartMouse.y));
+                    var worldZero = validResizeBase.LocalToWorld(Vector2.zero);
+                    var localZero = resizedBase.WorldToLocal(worldZero);
+                    var localHeight = validResizeBase.layout.height / resizedTarget.worldTransform.lossyScale.x;
+                    var newHeight = m_StartSize.y + (mousePos.y - m_StartMouse.y) / resizedTarget.worldTransform.lossyScale.x;
+                    var newBottom = Mathf.Clamp(resizedTarget.layout.yMin + newHeight, resizedTarget.layout.yMin + m_MinSize.y, localZero.y + localHeight);
+                    resizedTarget.style.height = newBottom - resizedTarget.layout.yMin;
                 }
                 else if ((direction & ResizerDirection.Top) != 0)
                 {
-                    float delta = mousePos.y - m_StartMouse.y;
-                    float previousTop = resizedTarget.style.top.value.value;
-
-                    resizedTarget.style.top = Mathf.Clamp(delta + m_StartPosition.y, 0, m_StartSize.y - 1);
-                    resizedTarget.style.height = resizedTarget.resolvedStyle.height + previousTop - resizedTarget.style.top.value.value;
+                    var worldZero = validResizeBase.LocalToWorld(Vector2.zero);
+                    var localZero = resizedBase.WorldToLocal(worldZero);
+                    var localHeight = validResizeBase.layout.height / resizedTarget.worldTransform.lossyScale.x;
+                    var delta = (mousePos.y - m_StartMouse.y) / resizedTarget.worldTransform.lossyScale.x;
+                    var newTop = Mathf.Clamp(m_StartPosition.y + delta, localZero.y, localZero.y + localHeight);
+                    var newHeight = resizedTarget.layout.yMax - newTop;
+                    if (newHeight >= m_MinSize.y && newHeight <= m_MaxSize.y)
+                    {
+                        resizedTarget.style.top = newTop;
+                        resizedTarget.style.height = newHeight;
+                    }
                 }
             }
             e.StopPropagation();
@@ -193,6 +216,21 @@ namespace UnityEditor.Experimental.GraphView
                 e.StopPropagation();
 
                 m_Active = false;
+            }
+        }
+
+        void FindValidBaseElement(ref VisualElement resizedBase)
+        {
+            // For unknown reason, layers have zero height, which completely break resizing algorithm
+            // So we look for a parent with proper dimension
+            while (resizedBase.layout.width == 0 || resizedBase.layout.height == 0)
+            {
+                if (resizedBase.parent == null)
+                {
+                    break;
+                }
+
+                resizedBase = resizedBase.parent;
             }
         }
     }

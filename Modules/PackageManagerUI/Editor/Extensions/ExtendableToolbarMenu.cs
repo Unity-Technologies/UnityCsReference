@@ -92,14 +92,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ShowInputDropdown(InputDropdownArgs args)
         {
-            var rect = GUIUtility.GUIToScreenRect(worldBound);
-
-            // GUIToScreenRect calculates screen space coordinates in relation to contextual menu
-            // which is the last active view. Since we know the exact offset of contextual menu in
-            // relation to package manager we can compensate this by subtracting contextual menu origin.
-            rect.y -= worldBound.yMax;
-
-            var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, args) { position = rect };
+            var position = PackageManagerWindow.instance.CalculateDropdownPosition(this);
+            var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, args) { position = position };
             DropdownContainer.ShowDropdown(dropdown);
         }
     }

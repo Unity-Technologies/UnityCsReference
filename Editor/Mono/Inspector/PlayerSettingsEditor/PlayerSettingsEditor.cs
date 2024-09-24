@@ -2465,13 +2465,13 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
                 {
                     EditorGUI.BeginChangeCheck();
-                    NormalMapEncoding oldEncoding = PlayerSettings.GetNormalMapEncoding(platform.namedBuildTarget);
+                    var oldEncoding = PlayerSettings.GetNormalMapEncoding_Internal(m_CurrentTarget, platform.name);
                     NormalMapEncoding[] encodingValues = { NormalMapEncoding.XYZ, NormalMapEncoding.DXT5nm };
-                    NormalMapEncoding newEncoding = BuildEnumPopup(SettingsContent.normalMapEncodingLabel, oldEncoding, encodingValues, SettingsContent.normalMapEncodingNames);
+                    var newEncoding = BuildEnumPopup(SettingsContent.normalMapEncodingLabel, oldEncoding, encodingValues, SettingsContent.normalMapEncodingNames);
                     if (EditorGUI.EndChangeCheck() && newEncoding != oldEncoding)
                     {
-                        PlayerSettings.SetNormalMapEncoding(platform.namedBuildTarget, newEncoding);
-                        serializedObject.ApplyModifiedProperties();
+                        PlayerSettings.SetNormalMapEncoding_Internal(m_CurrentTarget, platform.name, newEncoding);
+                        m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
                         GUIUtility.ExitGUI();
                     }
                 }

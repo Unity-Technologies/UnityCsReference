@@ -115,7 +115,7 @@ namespace UnityEngine.UIElements.UIR
         public Color32 addFlags;
         public Color32 opacityPage;
         public Color32 textCoreSettingsPage;
-        public int isSdfText;
+        public int usesTextCoreSettings;
         public float textureId;
         public int gradientSettingsIndexOffset;
 

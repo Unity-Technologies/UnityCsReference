@@ -653,7 +653,7 @@ namespace UnityEngine.UIElements.UIR
 
             bool allocatesID = RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID);
 
-            var settings = TextUtilities.GetTextCoreSettingsForElement(ve);
+            var settings = TextUtilities.GetTextCoreSettingsForElement(ve, false);
 
             // If we aren't using a color ID (the DynamicColor flag), the text color will be stored in the vertex data,
             // so there's no need for a color match with the default TextCore settings.
@@ -881,7 +881,7 @@ namespace UnityEngine.UIElements.UIR
         internal static bool NeedsTextCoreSettings(VisualElement ve)
         {
             // We may require a color ID when using non-trivial TextCore settings.
-            var settings = TextUtilities.GetTextCoreSettingsForElement(ve);
+            var settings = TextUtilities.GetTextCoreSettingsForElement(ve, true);
             if (settings.outlineWidth != 0.0f || settings.underlayOffset != Vector2.zero || settings.underlaySoftness != 0.0f)
                 return true;
 

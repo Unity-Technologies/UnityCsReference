@@ -362,13 +362,8 @@ namespace UnityEngine.TextCore.Text
 
         public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
-            if (useAdvancedText)
-            {
-                Debug.LogError("Cannot use GetCursorPositionFromStringIndexUsingCharacterHeight while using Advanced Text");
-                return Vector2.zero;
-            }
             AddTextInfoToPermanentCache();
-            return textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
+            return useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
         }
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)

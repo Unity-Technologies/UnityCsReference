@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.DrawSolidMesh:
                     case EntryType.DrawTexturedMesh:
                     case EntryType.DrawTexturedMeshSkipAtlas:
-                    case EntryType.DrawSdfTextMesh:
+                    case EntryType.DrawTextMesh:
                     case EntryType.DrawGradients:
                         Debug.Assert(entry.vertices.Length <= UIRenderDevice.maxVerticesPerPage);
                         Add(entry.vertices.Length, entry.indices.Length);

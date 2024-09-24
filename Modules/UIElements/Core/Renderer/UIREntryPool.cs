@@ -27,6 +27,7 @@ namespace UnityEngine.UIElements.UIR
             e.texture = null;
             e.material = null;
             e.gradientsOwner = null;
+            e.flags = 0;
         };
 
         public EntryPool(int maxCapacity = 1024)

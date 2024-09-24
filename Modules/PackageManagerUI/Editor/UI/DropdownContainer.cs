@@ -40,14 +40,5 @@ namespace UnityEditor.PackageManager.UI.Internal
             instance.ShowAsDropDown(content.position, content.windowSize);
             content.OnDropdownShown();
         }
-
-        static void ShowDropdownContainer()
-        {
-            instance.ShowAsDropDown(instance.m_Content.position, instance.m_Content.windowSize);
-            instance.m_Content.OnDropdownShown();
-
-            // Make sure delayCall has no chance to execute twice or more for the same menu. We had some issues like this in UI Elements tests suite
-            EditorApplication.delayCall -= ShowDropdownContainer;
-        }
     }
 }
