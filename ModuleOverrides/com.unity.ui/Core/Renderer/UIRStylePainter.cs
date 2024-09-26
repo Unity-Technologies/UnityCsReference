@@ -1058,6 +1058,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
                     d[axis] = new_size;
                     rect.size = d;
+                    targetRect = rect;
 
                     for (int i = 0; i < count; ++i)
                     {
