@@ -27,16 +27,16 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshOptions.UpmList | RefreshOptions.UpmSearch,                  // PackageFilterTab.MyRegistries
         };
 
-        public virtual event Action<PageSelection> onSelectionChanged = delegate {};
-        public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate {};
-        public virtual event Action<ListUpdateArgs> onListUpdate = delegate {};
-        public virtual event Action<IPage> onListRebuild = delegate {};
-        public virtual event Action<IPage> onSubPageChanged = delegate {};
-        public virtual event Action<PageFilters> onFiltersChange = delegate {};
+        public virtual event Action<PageSelection> onSelectionChanged = delegate { };
+        public virtual event Action<IEnumerable<VisualState>> onVisualStateChange = delegate { };
+        public virtual event Action<ListUpdateArgs> onListUpdate = delegate { };
+        public virtual event Action<IPage> onListRebuild = delegate { };
+        public virtual event Action<IPage> onSubPageChanged = delegate { };
+        public virtual event Action<PageFilters> onFiltersChange = delegate { };
 
-        public virtual event Action onRefreshOperationStart = delegate {};
-        public virtual event Action onRefreshOperationFinish = delegate {};
-        public virtual event Action<UIError> onRefreshOperationError = delegate {};
+        public virtual event Action onRefreshOperationStart = delegate { };
+        public virtual event Action onRefreshOperationFinish = delegate { };
+        public virtual event Action<UIError> onRefreshOperationError = delegate { };
 
         private Dictionary<RefreshOptions, long> m_RefreshTimestamps = new Dictionary<RefreshOptions, long>();
         private Dictionary<RefreshOptions, UIError> m_RefreshErrors = new Dictionary<RefreshOptions, UIError>();
@@ -353,7 +353,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void SetSelected(IPackage package, IPackageVersion version = null, bool forceSelectInInspector = false)
         {
-            SetSelected(new[] { new PackageAndVersionIdPair(package?.uniqueId, version?.uniqueId) }, forceSelectInInspector);
+            SetSelected(new[] { new PackageAndVersionIdPair(package?.uniqueId, version?.uniqueId ?? package?.versions?.primary?.uniqueId) }, forceSelectInInspector);
         }
 
         public virtual void SetSelected(IEnumerable<PackageAndVersionIdPair> newSelection, bool forceSelectInInspector = false)
