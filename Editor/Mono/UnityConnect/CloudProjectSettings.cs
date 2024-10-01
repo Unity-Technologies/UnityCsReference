@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -44,6 +46,9 @@ namespace UnityEditor
         {
             UnityConnect.instance.RefreshAccessToken(refresh);
         }
+
+        public static Task<string> GetServiceTokenAsync(CancellationToken cancellationToken = default)
+            => ServiceToken.Instance.GetServiceTokenAsync(accessToken, cancellationToken);
 
         /// <summary>
         /// This method shows the Unity login popup.

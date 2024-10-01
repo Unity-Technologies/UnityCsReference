@@ -3631,11 +3631,53 @@
     <Compile Include="..\..\Editor\Mono\UnityConnect\CoppaCompliance.cs">
       <Link>Editor\Mono\UnityConnect\CoppaCompliance.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UnityConnectWebRequestException.cs">
+      <Link>Editor\Mono\UnityConnect\Network\UnityConnectWebRequestException.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UnityConnectWebRequestUtils.cs">
+      <Link>Editor\Mono\UnityConnect\Network\UnityConnectWebRequestUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\GenesisAndServiceTokenCaching.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\GenesisAndServiceTokenCaching.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\IGenesisAndServiceTokenCaching.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\IGenesisAndServiceTokenCaching.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\JsonWebToken.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\JsonWebToken.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\Tokens.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\Tokens.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\CloudEnvironmentConfigProvider.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\CloudEnvironmentConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\ICloudEnvironmentConfigProvider.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\ICloudEnvironmentConfigProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ServiceToken.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\ServiceToken.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\TokenExchange\ITokenExchange.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\TokenExchange\ITokenExchange.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\TokenExchange\Model\TokenExchangeRequest.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\TokenExchange\Model\TokenExchangeRequest.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\TokenExchange\Model\TokenExchangeResponse.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\TokenExchange\Model\TokenExchangeResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\TokenExchange\TokenExchange.cs">
+      <Link>Editor\Mono\UnityConnect\ServiceToken\TokenExchange\TokenExchange.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs">
       <Link>Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.bindings.cs">
       <Link>Editor\Mono\UnityConnect\UnityConnect.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Utils\AsyncUtils.cs">
+      <Link>Editor\Mono\UnityConnect\Utils\AsyncUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityStats.bindings.cs">
       <Link>Editor\Mono\UnityStats.bindings.cs</Link>
@@ -8382,9 +8424,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\UIElementsNotificationSubscriber.cs">
       <Link>Modules\UnityConnectEditor\Common\UIElementsNotificationSubscriber.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs">
-      <Link>Modules\UnityConnectEditor\Common\UnityConnectWebRequestException.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs">
       <Link>Modules\UnityConnectEditor\ProjectSettings\AdsProjectSettings.cs</Link>

@@ -946,6 +946,15 @@ namespace UnityEditor
             set;
         }
 
+        // Enable shader debugging using NVN Graphics Debugger
+        public static extern bool switchNVNAftermath
+        {
+            [NativeMethod("GetNVNAftermath")]
+            get;
+            [NativeMethod("SetNVNAftermath")]
+            set;
+        }
+
         // Enable debug validation of NVN drawcalls
         [Obsolete("switchNVNDrawValidation is deprecated, use switchNVNDrawValidation_Heavy instead.")]
         public static bool switchNVNDrawValidation

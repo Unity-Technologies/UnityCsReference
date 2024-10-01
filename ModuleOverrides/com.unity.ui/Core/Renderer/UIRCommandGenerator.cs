@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
             k_ComputeTransformMatrixMarker.Begin();
 
             ve.GetPivotedMatrixWithLayout(out result);
-            VisualElement currentAncestor = ve.parent;
+            VisualElement currentAncestor = ve.hierarchy.parent;
             if ((currentAncestor == null) || (ancestor == currentAncestor))
             {
                 k_ComputeTransformMatrixMarker.End();
@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 else
                     VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
 
-                currentAncestor = currentAncestor.parent;
+                currentAncestor = currentAncestor.hierarchy.parent;
 
                 destIsTemp = !destIsTemp;
             } while ((currentAncestor != null) && (ancestor != currentAncestor));

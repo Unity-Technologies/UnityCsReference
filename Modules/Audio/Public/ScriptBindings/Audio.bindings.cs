@@ -229,6 +229,13 @@ namespace UnityEngine
         User = 27
     }
 
+    public enum AudioSpatialExperience
+    {
+        Bypassed = 0,
+        HeadTracked = 1,
+        Fixed = 2
+    }
+
     // Controls the global audio settings from script.
     [NativeHeader("Modules/Audio/Public/ScriptBindings/Audio.bindings.h")]
     [StaticAccessor("GetAudioManager()", StaticAccessorType.Dot)]
@@ -372,6 +379,12 @@ namespace UnityEngine
 
         [NativeMethod(Name = "AudioSettings::SetAmbisonicName", IsFreeFunction = true)]
         extern static internal void SetAmbisonicDecoderPluginName(string name);
+
+        static public AudioSpatialExperience audioSpatialExperience
+        {
+            get { return AudioSpatialExperience.Bypassed; }
+            set { Debug.LogWarning("AudioSettings.audioSpatialExperience is not implemented on this platform."); }
+        }
 
         public static class Mobile
         {
