@@ -58,5 +58,20 @@ namespace UnityEngine.TextCore.Text
 
         [NativeMethod(Name = "TextSelectionService::GetLineNumberFromLogicalIndex")]
         internal static extern int GetLineNumber(IntPtr textGenerationInfo, int logicalIndex);
+
+        [NativeMethod(Name = "TextSelectionService::SelectToPreviousParagraph")]
+        internal static extern void SelectToPreviousParagraph(IntPtr textGenerationInfo, ref int cursorIndex);
+
+        [NativeMethod(Name = "TextSelectionService::SelectToStartOfParagraph")]
+        internal static extern void SelectToStartOfParagraph(IntPtr textGenerationInfo, ref int cursorIndex);
+
+        [NativeMethod(Name = "TextSelectionService::SelectToEndOfParagraph")]
+        internal static extern void SelectToEndOfParagraph(IntPtr textGenerationInfo, ref int cursorIndex);
+
+        [NativeMethod(Name = "TextSelectionService::SelectToNextParagraph")]
+        internal static extern void SelectToNextParagraph(IntPtr textGenerationInfo, ref int cursorIndex);
+
+        [NativeMethod(Name = "TextSelectionService::SelectCurrentParagraph")]
+        internal static extern void SelectCurrentParagraph(IntPtr textGenerationInfo, ref int cursorIndex, ref int selectIndex);
     }
 }

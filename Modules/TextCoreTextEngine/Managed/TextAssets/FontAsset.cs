@@ -956,6 +956,7 @@ namespace UnityEngine.TextCore.Text
                 // We need to update those lists to native in case they changed
                 UpdateFallbacks();
                 UpdateWeightFallbacks();
+                UpdateFaceInfo();
             }
         }
 

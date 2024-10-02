@@ -349,7 +349,6 @@ namespace UnityEditor
             s_platform_43,
             s_platform_45,
             s_platform_46,
-            s_platform_47,
             s_platform_48,
         };
 

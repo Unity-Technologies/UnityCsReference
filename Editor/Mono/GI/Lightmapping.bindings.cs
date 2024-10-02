@@ -100,6 +100,13 @@ namespace UnityEditor
             Legacy = 2
         }
 
+        [NativeHeader("Runtime/Graphics/LightmapSettings.h")]
+        public enum BakeOnSceneLoadMode
+        {
+            Never = 0,
+            IfMissingLightingData = 1,
+        };
+
         // Obsolete, please use Actions instead
         public delegate void OnStartedFunction();
         public delegate void OnCompletedFunction();
@@ -446,6 +453,9 @@ namespace UnityEditor
 
         [FreeFunction]
         public static extern void GetTerrainGIChunks([NotNull] Terrain terrain, ref int numChunksX, ref int numChunksY);
+
+        [StaticAccessor("GetLightmapSettings()")]
+        public static extern BakeOnSceneLoadMode bakeOnSceneLoad { get; set; }
 
         [StaticAccessor("GetLightmapSettings()")]
         public static extern LightingDataAsset lightingDataAsset { get; set; }

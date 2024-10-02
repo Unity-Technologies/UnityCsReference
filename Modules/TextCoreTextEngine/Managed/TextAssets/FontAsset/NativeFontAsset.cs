@@ -44,6 +44,11 @@ namespace UnityEngine.TextCore.Text
             UpdateWeightFallbacks(nativeFontAsset, weights.Item1, weights.Item2);
         }
 
+        internal void UpdateFaceInfo()
+        {
+            UpdateFaceInfo(nativeFontAsset, faceInfo);
+        }
+
         internal IntPtr[] GetFallbacks()
         {
             List<IntPtr> fallbackList = new List<IntPtr>();
@@ -177,6 +182,7 @@ namespace UnityEngine.TextCore.Text
         private static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
 
         private static extern IntPtr Create(FaceInfo faceInfo, Font sourceFontFile, Font sourceFont_EditorRef, string sourceFontFilePath, int fontInstanceID, IntPtr[] fallbacks, IntPtr[] weightFallbacks, IntPtr[] italicFallbacks);
+        private static extern void UpdateFaceInfo(IntPtr ptr, FaceInfo faceInfo);
 
         [FreeFunction("FontAsset::Destroy")]
         private static extern void Destroy(IntPtr ptr);

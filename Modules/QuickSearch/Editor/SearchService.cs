@@ -38,7 +38,7 @@ namespace UnityEditor.Search
     public static class SearchService
     {
         private const int k_MaxFetchTimeMs = 50;
-        private const int k_MaxSessionTimeMs = 60000;
+        private const int k_MaxSessionTimeMs = SearchSession.k_InfiniteSession;
         static SearchProvider s_SearchServiceProvider;
 
         /// <summary>

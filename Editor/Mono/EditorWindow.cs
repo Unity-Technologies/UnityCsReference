@@ -1081,6 +1081,12 @@ namespace UnityEditor
             if (WindowLayout.IsMaximized(this))
                 WindowLayout.Unmaximize(this);
 
+            // [UUM-58449] If the focused window got closed, reset the IME composition mode to the default value. The normal codepaths may not run since this object is immediately destroyed.
+            if (focusedWindow == this)
+            {
+                GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
+            }
+
             DockArea da = m_Parent as DockArea;
             if (da)
             {

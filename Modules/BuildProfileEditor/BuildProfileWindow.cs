@@ -19,7 +19,6 @@ namespace UnityEditor.Build.Profile
     /// Build Settings window in 'File > Build Settings'.
     /// Handles creating and editing of <see cref="BuildProfile"/> assets.
     /// </summary>
-    [EditorWindowTitle(title = "Build Settings")]
     internal class BuildProfileWindow : EditorWindow
     {
         const string k_DevOpsUrl = "https://unity.com/products/unity-devops?utm_medium=desktop-app&utm_source=unity-editor-window-menu&utm_content=buildsettings";
@@ -152,6 +151,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
             BuildProfileContext.activeProfileChanged += OnActiveProfileChanged;
+            ActiveBuildTargetListener.activeBuildTargetChanged += OnActiveBuildTargetChanged;
         }
 
         public void OnDisable()
@@ -159,6 +159,7 @@ namespace UnityEditor.Build.Profile
             DestroyImmediate(buildProfileEditor);
 
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
+            ActiveBuildTargetListener.activeBuildTargetChanged -= OnActiveBuildTargetChanged;
 
             if (m_BuildProfileDataSource != null)
             {
@@ -533,6 +534,15 @@ namespace UnityEditor.Build.Profile
         void OnActiveProfileChanged(BuildProfile prev, BuildProfile cur)
         {
             RebuildProfileListViews();
+            UpdateFormButtonState(m_BuildProfileSelection.Get(0));
+        }
+
+        /// <summary>
+        /// Callback invoked when the active build target changes.
+        /// </summary>
+        void OnActiveBuildTargetChanged(BuildTarget prev, BuildTarget cur)
+        {
+            m_ProfileListViews.Rebuild();
             UpdateFormButtonState(m_BuildProfileSelection.Get(0));
         }
 

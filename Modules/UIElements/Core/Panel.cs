@@ -1356,6 +1356,8 @@ namespace UnityEngine.UIElements
         {
             return m_VisualTreeUpdater.GetUpdater(phase);
         }
+
+        internal virtual Color HyperlinkColor => Color.blue;
     }
 
     internal abstract class BaseRuntimePanel : Panel
@@ -1581,6 +1583,7 @@ namespace UnityEngine.UIElements
         {
             PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
+
     }
 
     internal interface IRuntimePanelComponent

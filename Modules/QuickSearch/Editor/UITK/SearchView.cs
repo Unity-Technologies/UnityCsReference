@@ -740,7 +740,7 @@ namespace UnityEditor.Search
                     syncViewId = typeof(SceneSearchEngine).FullName;
                     break;
             }
-            UnityEditor.SearchService.SearchService.NotifySyncSearchChanged(evt, syncViewId, context.searchText);
+            UnityEditor.SearchService.SearchService.NotifySyncSearchChanged(evt, syncViewId, context.searchQuery);
         }
 
         public void SetupColumns(IList<SearchField> fields)

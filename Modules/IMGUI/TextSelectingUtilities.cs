@@ -387,6 +387,15 @@ namespace UnityEngine
         {
             ClearCursorPos();
             bool wasBehind = cursorIndex < selectIndex;
+
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToNextParagraph(ref cursorTempIndex);
+                cursorIndex = cursorTempIndex;
+                return;
+            }
+
             if (cursorIndex < characterCount)
             {
                 cursorIndex = IndexOfEndOfLine(cursorIndex + 1);
@@ -399,9 +408,19 @@ namespace UnityEngine
         {
             ClearCursorPos();
             bool wasInFront = cursorIndex > selectIndex;
+
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
+                cursorIndex = cursorTempIndex;
+                return;
+            }
+
             if (cursorIndex > 1)
             {
                 cursorIndex = textHandle.LastIndexOf(kNewLineChar, cursorIndex - 2) + 1;
+
                 if (wasInFront && cursorIndex < selectIndex)
                     cursorIndex = selectIndex;
             }
@@ -453,6 +472,16 @@ namespace UnityEngine
         {
             ClearCursorPos();
             int textLen = characterCount;
+
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                int selectTempIndex = selectIndex;
+                textHandle.SelectCurrentParagraph(ref cursorTempIndex, ref selectTempIndex);
+                cursorIndex = cursorTempIndex;
+                selectIndex = selectTempIndex;
+                return;
+            }
 
             if (cursorIndex < textLen)
                 cursorIndex = IndexOfEndOfLine(cursorIndex);
@@ -583,6 +612,14 @@ namespace UnityEngine
         /// Move to the next paragraph
         public void MoveParagraphForward()
         {
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToNextParagraph(ref cursorTempIndex);
+                cursorIndex = selectIndex = cursorTempIndex;
+                return;
+            }
+
             cursorIndex = cursorIndex > selectIndex ? cursorIndex : selectIndex;
             if (cursorIndex < characterCount)
             {
@@ -593,6 +630,14 @@ namespace UnityEngine
         /// Move to the previous paragraph
         public void MoveParagraphBackward()
         {
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
+                cursorIndex = selectIndex = cursorTempIndex;
+                return;
+            }
+
             cursorIndex = cursorIndex < selectIndex ? cursorIndex : selectIndex;
             if (cursorIndex > 1)
             {
@@ -760,8 +805,16 @@ namespace UnityEngine
                 } // paragraph
                 else
                 {
-                    if (p <= m_DblClickInitPosStart)
+                    if ((!textHandle.useAdvancedText && p <= m_DblClickInitPosStart) || (textHandle.useAdvancedText && p < m_DblClickInitPosStart))
                     {
+                        if (textHandle.useAdvancedText)
+                        {
+                            int selectTempIndex = p;
+                            textHandle.SelectToStartOfParagraph(ref selectTempIndex);
+                            selectIndex = selectTempIndex;
+                            return;
+                        }
+
                         if (p > 0)
                             cursorIndex = textHandle.LastIndexOf(kNewLineChar, Mathf.Max(0, p - 1)) + 1;
                         else
@@ -771,6 +824,14 @@ namespace UnityEngine
                     }
                     else if (p >= m_DblClickInitPosEnd)
                     {
+                        if (textHandle.useAdvancedText)
+                        {
+                            int cursorTempIndex = p;
+                            textHandle.SelectToEndOfParagraph(ref cursorTempIndex);
+                            cursorIndex = cursorTempIndex;
+                            return;
+                        }
+
                         if (p < characterCount)
                         {
                             cursorIndex = IndexOfEndOfLine(p);
@@ -782,8 +843,16 @@ namespace UnityEngine
                     }
                     else
                     {
-                        cursorIndex = m_DblClickInitPosStart;
-                        selectIndex = m_DblClickInitPosEnd;
+                        if (textHandle.useAdvancedText)
+                        {
+                            cursorIndex = m_DblClickInitPosEnd;
+                            selectIndex = m_DblClickInitPosStart;
+                        }
+                        else
+                        {
+                            cursorIndex = m_DblClickInitPosStart;
+                            selectIndex = m_DblClickInitPosEnd;
+                        }
                     }
                 }
             }

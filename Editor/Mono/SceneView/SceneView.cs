@@ -2459,6 +2459,10 @@ namespace UnityEditor
         {
             if (!Tools.viewToolActive || Event.current.type != EventType.Repaint)
                 return;
+            // In case multiple scene views are opened, we only want to set the cursor for the one being hovered
+            // Skip if the mouse is over an overlay or an area that should not use a custom cursor
+            if (mouseOverWindow is SceneView view && (mouseOverWindow != this || !view.sceneViewMotion.viewportsUnderMouse))
+                return;
 
             var cursor = MouseCursor.Arrow;
             switch (Tools.viewTool)
@@ -3011,13 +3015,6 @@ namespace UnityEditor
             {
                 bool repaintView = false;
                 MouseCursor cursor = MouseCursor.Arrow;
-
-                //Reset the cursor if the mouse is over an overlay or an area that should not use a custom cursor
-                if (mouseOverWindow is SceneView view && !view.sceneViewMotion.viewportsUnderMouse)
-                {
-                    InternalEditorUtility.ResetCursor();
-                    return;
-                }
 
                 foreach (CursorRect r in s_MouseRects)
                 {

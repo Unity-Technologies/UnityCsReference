@@ -302,18 +302,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             // of this function to after the `My Assets` logic is done so that we don't break `My Assets` and the Entitlement Error checker.
             if (!m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
                 return false;
-            
+
             if (string.IsNullOrEmpty(args.packageToSelect))
             {
                 m_PageManager.activePage = args.page;
                 return true;
             }
-            
+
             m_PackageDatabase.GetPackageAndVersionByIdOrName(args.packageToSelect, out var package, out var version, true);
 
             if (package == null && failIfPackageIsNotFoundInDatabase)
                 return false;
-            
+
             m_PageManager.activePage = args.page;
             if (package != null)
             {
@@ -380,11 +380,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     var packageToSelectSplit = packageToSelect.Split('@');
                     var versionString = packageToSelectSplit.Length == 2 ? packageToSelectSplit[1] : string.Empty;
 
-                    // Package is not found in PackageDatabase but we can determine if it's a preview package or not with it's version string.
-                    SemVersionParser.TryParse(versionString, out var semVersion);
-                    if (!m_SettingsProxy.enablePreReleasePackages && semVersion.HasValue && (semVersion.Value.Major == 0 || semVersion.Value.Prerelease.StartsWith("preview")))
+                    // Package is not found in PackageDatabase, but we can determine if it's a prerelease package or not with its version string.
+                    if (!m_SettingsProxy.enablePreReleasePackages && SemVersionParser.TryParse(versionString, out var semVersion) && semVersion?.GetExpOrPreOrReleaseTag() == PackageTag.PreRelease)
                     {
-                        Debug.Log("You must check \"Enable Preview Packages\" in Project Settings > Package Manager in order to see this package.");
+                        Debug.Log("You must check \"Enable Pre-release Package Versions\" in Project Settings > Package Manager in order to see this package.");
                         args.packageToSelect = null;
                     }
                     args.page = m_PageManager.activePage;

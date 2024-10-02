@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements.Internal;
+using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {

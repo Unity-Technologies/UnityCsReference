@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -27,6 +28,7 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo)
         {
+            Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
             var textInfo = GenerateTextInternal(settings, textGenerationInfo);
 
             foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
@@ -62,10 +64,12 @@ namespace UnityEngine.TextCore.Text
                     bottomRightUV.x = topRightUV.x;
                     bottomRightUV.y = bottomLeftUV.y;
 
-                    textElementInfo.bottomLeft.uv0 = bottomLeftUV;
-                    textElementInfo.topLeft.uv0 = topLeftUV;
-                    textElementInfo.topRight.uv0 = topRightUV;
-                    textElementInfo.bottomRight.uv0 = bottomRightUV;
+                    // The native code is not yet aware of the atlas, and glyphs for the underline+strikethrough have their UV manually eddited to
+                    // be stretched without side effect. We need to combine the position in the atlas with the expected position in the source glyph.
+                    textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomLeft.uv0);
+                    textElementInfo.topLeft.uv0 = topRightUV * textElementInfo.topLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topLeft.uv0); ;
+                    textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topRight.uv0); ;
+                    textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomRight.uv0); ;
                 }
             }
             return textInfo;
@@ -77,6 +81,10 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextLib::MeasureText")]
         internal extern Vector2 MeasureText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NativeMethod(Name = "TextLib::FindIntersectingLink")]
+        static internal extern int FindIntersectingLink(Vector2 point, IntPtr textGenerationInfo);
 
         internal static class BindingsMarshaller
         {
@@ -134,10 +142,9 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class TextGenerationInfo
     {
-        internal static extern IntPtr Create();
+        public static extern IntPtr Create();
 
         [FreeFunction("TextGenerationInfo::Destroy")]
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern void Destroy(IntPtr ptr);
+        public static extern void Destroy(IntPtr ptr);
     }
 }

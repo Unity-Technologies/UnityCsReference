@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
+using System.Collections.Generic;
 
 namespace UnityEngine.TextCore
 {
@@ -18,28 +19,68 @@ namespace UnityEngine.TextCore
     {
         public IntPtr fontAsset;
         public IntPtr[] globalFontAssetFallbacks;
-        public string text; // TODO: use RenderedText instead of string here
+        public string text;         // Contains the parsed text, meaning the rich text tags have been removed.
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
-        public int fontSize;        // Encoded in Fixed Point.
         public WhiteSpace wordWrap;
         public LanguageDirection languageDirection;
-
+        public int vertexPadding; // Encoded in Fixed Point.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal HorizontalAlignment horizontalAlignment;
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal VerticalAlignment verticalAlignment;
 
-        public Color32 color;
+        public int fontSize;        // Encoded in Fixed Point.
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
-        public int vertexPadding; // Encoded in Fixed Point.
+
+        public TextSpan[] textSpans;
+        public Color32 color;
+
+        public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
+
+        public readonly TextSpan CreateTextSpan()
+        {
+            return new TextSpan()
+            {
+                fontAsset = this.fontAsset,
+                fontSize = this.fontSize,
+                color = this.color,
+                fontStyle = this.fontStyle,
+                fontWeight = this.fontWeight,
+                linkID = -1
+            };
+        }
+
+        // Used by automated tests
+        public string GetTextSpanContent(int spanIndex)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                throw new InvalidOperationException("The text property is null or empty.");
+            }
+
+            if (textSpans == null || spanIndex < 0 || spanIndex >= textSpans.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid span index.");
+            }
+
+            TextSpan span = textSpans[spanIndex];
+
+            if (span.startIndex < 0 || span.startIndex >= text.Length || span.startIndex + span.length > text.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(spanIndex), "Invalid startIndex or length for the current text.");
+            }
+
+            return text.Substring(span.startIndex, span.length);
+        }
 
         public static NativeTextGenerationSettings Default => new ()
         {
             fontStyle = FontStyles.Normal,
-            fontWeight = TextFontWeight.Regular
+            fontWeight = TextFontWeight.Regular,
+            color = Color.black,
         };
 
         // Used by automated tests
@@ -59,28 +100,73 @@ namespace UnityEngine.TextCore
             fontWeight = tgs.fontWeight;
             languageDirection = tgs.languageDirection;
             vertexPadding = tgs.vertexPadding;
+            textSpans = tgs.textSpans != null ? (TextSpan[])tgs.textSpans.Clone() : null;
         }
 
         public override string ToString()
         {
             string fallbacksString = globalFontAssetFallbacks != null
-              ? $"{string.Join(", ", globalFontAssetFallbacks)}"
-              : "null";
+                ? $"{string.Join(", ", globalFontAssetFallbacks)}"
+                : "null";
+
+            string textSpansString = "null";
+            if (textSpans != null)
+            {
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                sb.Append("[");
+                for (int i = 0; i < textSpans.Length; i++)
+                {
+                    if (i > 0)
+                    {
+                        sb.Append(", ");
+                    }
+                    sb.Append(textSpans[i].ToString());
+                }
+                sb.Append("]");
+                textSpansString = sb.ToString();
+            }
 
             return $"{nameof(fontAsset)}: {fontAsset}\n" +
-               $"{nameof(globalFontAssetFallbacks)}: {fallbacksString}\n" +
-               $"{nameof(text)}: {text}\n" +
-               $"{nameof(screenWidth)}: {screenWidth}\n" +
-               $"{nameof(screenHeight)}: {screenHeight}\n" +
-               $"{nameof(fontSize)}: {fontSize}\n" +
-               $"{nameof(wordWrap)}: {wordWrap}\n" +
-               $"{nameof(languageDirection)}: {languageDirection}\n" +
-               $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
-               $"{nameof(verticalAlignment)}: {verticalAlignment}\n" +
-               $"{nameof(color)}: {color}\n" +
-               $"{nameof(fontStyle)}: {fontStyle}\n" +
-               $"{nameof(fontWeight)}: {fontWeight}\n" +
-               $"{nameof(vertexPadding)}: {vertexPadding}";
+                $"{nameof(globalFontAssetFallbacks)}: {fallbacksString}\n" +
+                $"{nameof(text)}: {text}\n" +
+                $"{nameof(screenWidth)}: {screenWidth}\n" +
+                $"{nameof(screenHeight)}: {screenHeight}\n" +
+                $"{nameof(fontSize)}: {fontSize}\n" +
+                $"{nameof(wordWrap)}: {wordWrap}\n" +
+                $"{nameof(languageDirection)}: {languageDirection}\n" +
+                $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
+                $"{nameof(verticalAlignment)}: {verticalAlignment}\n" +
+                $"{nameof(color)}: {color}\n" +
+                $"{nameof(fontStyle)}: {fontStyle}\n" +
+                $"{nameof(fontWeight)}: {fontWeight}\n" +
+                $"{nameof(vertexPadding)}: {vertexPadding}\n" +
+                $"{nameof(textSpans)}: {textSpansString}";
+        }
+    }
+
+    [VisibleToOtherModules( "UnityEngine.UIElementsModule")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct TextSpan
+    {
+        public int startIndex;
+        public int length;
+        public IntPtr fontAsset;
+        public int fontSize;        // Encoded in Fixed Point.
+        public Color32 color;
+        public FontStyles fontStyle;
+        public TextFontWeight fontWeight;
+        public int linkID;
+
+        public override string ToString()
+        {
+            return $"{nameof(color)}: {color}\n" +
+                $"{nameof(fontStyle)}: {fontStyle}\n" +
+                $"{nameof(fontWeight)}: {fontWeight}\n" +
+                $"{nameof(linkID)}: {linkID}\n" +
+                $"{nameof(fontSize)}: {fontSize}\n" +
+                $"{nameof(fontAsset)}: {fontAsset}" +
+                $"{nameof(startIndex)}: {startIndex}\n" +
+                $"{nameof(length)}: {length}";
         }
     }
 

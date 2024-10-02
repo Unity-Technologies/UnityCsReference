@@ -200,11 +200,12 @@ namespace UnityEditor.Search
         /// This event is used to know when a search has finished fetching items.
         /// </summary>
         public event Action<SearchContext> sessionEnded;
+        public const int k_InfiniteSession = -1;
 
         private SearchSessionContext m_Context;
         private SearchProvider m_Provider;
         private Stopwatch m_SessionTimer = new Stopwatch();
-        private const long k_DefaultSessionTimeOut = 10000;
+        private const long k_DefaultSessionTimeOut = k_InfiniteSession;
         private long m_SessionTimeOut = k_DefaultSessionTimeOut;
 
         /// <summary>
@@ -280,7 +281,7 @@ namespace UnityEditor.Search
                 m_SessionTimer.Restart();
             }
 
-            if (m_SessionTimer.ElapsedMilliseconds > m_SessionTimeOut)
+            if (m_SessionTimeOut > 0 && m_SessionTimer.ElapsedMilliseconds > m_SessionTimeOut)
             {
                 // Do this before stopping to get target IEnumerator
                 var timeOutError = BuildSessionContextTimeOutError();

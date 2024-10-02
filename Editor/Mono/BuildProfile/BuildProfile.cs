@@ -23,6 +23,12 @@ namespace UnityEditor.Build.Profile
     public sealed partial class BuildProfile : ScriptableObject
     {
         /// <summary>
+        /// Asset Schema Version
+        /// </summary>
+        [SerializeField]
+        uint m_AssetVersion = 1;
+
+        /// <summary>
         /// Build Target used to fetch module and build profile extension.
         /// </summary>
         [SerializeField] BuildTarget m_BuildTarget = BuildTarget.NoTarget;
@@ -79,6 +85,17 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// When set, this build profiles <see cref="scenes"/> used when building.
+        /// </summary>
+        /// <seealso cref="EditorBuildSettings"/>
+        [SerializeField] private bool m_OverrideGlobalSceneList = false;
+        internal bool overrideGlobalSceneList
+        {
+            get => m_OverrideGlobalSceneList;
+            set => m_OverrideGlobalSceneList = value;
+        }
+
+        /// <summary>
         /// List of scenes specified in the build profile.
         /// </summary>
         [SerializeField] private EditorBuildSettingsScene[] m_Scenes = Array.Empty<EditorBuildSettingsScene>();
@@ -97,7 +114,7 @@ namespace UnityEditor.Build.Profile
                 m_Scenes = value;
                 CheckSceneListConsistency();
 
-                if (this == BuildProfileContext.activeProfile)
+                if (this == BuildProfileContext.activeProfile && m_OverrideGlobalSceneList)
                     EditorBuildSettings.SceneListChanged();
             }
         }
@@ -202,7 +219,7 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
-            if (IsActiveBuildProfileOrPlatform())
+            if (BuildProfileContext.activeProfile == this)
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
 
             var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);

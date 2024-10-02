@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -39,6 +41,9 @@ namespace UnityEditor
                 return UnityConnect.instance.GetAccessToken();
             }
         }
+
+        public static Task<string> GetServiceTokenAsync(CancellationToken cancellationToken = default)
+            => ServiceToken.Instance.GetServiceTokenAsync(accessToken, cancellationToken);
 
         public static void RefreshAccessToken(Action<bool> refresh)
         {

@@ -257,6 +257,9 @@ namespace UnityEditor
         public static GUIStyle inspectorDefaultMargins { get { return s_Current.m_InspectorDefaultMargins; } }
         private GUIStyle m_InspectorDefaultMargins;
 
+        internal static GUIStyle inspectorHorizontalDefaultMargins => s_Current.m_InspectorHorizontalDefaultMargins;
+        private GUIStyle m_InspectorHorizontalDefaultMargins;
+
         public static GUIStyle inspectorFullWidthMargins { get { return s_Current.m_InspectorFullWidthMargins; } }
         private GUIStyle m_InspectorFullWidthMargins;
 
@@ -562,6 +565,11 @@ namespace UnityEditor
             m_InspectorDefaultMargins = new GUIStyle
             {
                 padding = new RectOffset(kInspectorPaddingLeft, kInspectorPaddingRight, kInspectorPaddingTop, 0)
+            };
+
+            m_InspectorHorizontalDefaultMargins = new GUIStyle
+            {
+                padding = new RectOffset(kInspectorPaddingLeft, kInspectorPaddingRight, 0, 0)
             };
 
             // For the full width margins, use padding from right side in both sides,

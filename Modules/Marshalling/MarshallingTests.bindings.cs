@@ -901,6 +901,13 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
         [NativeThrows] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
         [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
+        public static extern Span<int> ReturnsArrayRefWritableAsSpan(int val1, int val2, int val3);
+        public static extern Span<int> ReturnsCoreVectorRefAsSpan(int val1, int val2, int val3);
+        public static extern Span<int> ReturnsScriptingSpanAsSpan(int val1, int val2, int val3);
+        public static extern ReadOnlySpan<int> ReturnsArrayRefWritableAsReadOnlySpan(int val1, int val2, int val3);
+        public static extern ReadOnlySpan<int> ReturnsCoreVectorRefAsReadOnlySpan(int val1, int val2, int val3);
+        public static extern ReadOnlySpan<int> ReturnsArrayRefAsReadOnlySpan(int val1, int val2, int val3);
+        public static extern ReadOnlySpan<int> ReturnsScriptingReadOnlySpanAsSpan(int val1, int val2, int val3);
     }
 
     // --------------------------------------------------------------------

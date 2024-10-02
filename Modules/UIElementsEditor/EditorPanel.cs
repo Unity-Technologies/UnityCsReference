@@ -59,7 +59,7 @@ namespace UnityEditor.UIElements
                 EditorWindow editorWindow => GetBackingScaleFactor(editorWindow?.m_Parent),
                 IEditorWindowModel ewm => GetBackingScaleFactor(ewm.window),
                 _ => null,
-            } ;
+            };
         }
 
         private void CheckPanelScaling()
@@ -72,11 +72,11 @@ namespace UnityEditor.UIElements
                 var windowScaling = GetBackingScaleFactor();
                 if (windowScaling == null || windowScaling.Value == -1)
                 {
-                    Debug.Assert(windowScaling != null, "got -1 here!!" );
-                   // if we have -1, we were able to get to a GuiView, but the native call returned -1 because there is no containerWindow
-                   // if the windowScaling == null we were simply not able to get to a GuiView
-                   // in both cases, we want to update the scaling like the old behavior.
-                   pixelsPerPoint = GUIUtility.pixelsPerPoint;
+                    Debug.Assert(windowScaling != null, "got -1 here!!");
+                    // if we have -1, we were able to get to a GuiView, but the native call returned -1 because there is no containerWindow
+                    // if the windowScaling == null we were simply not able to get to a GuiView
+                    // in both cases, we want to update the scaling like the old behavior.
+                    pixelsPerPoint = GUIUtility.pixelsPerPoint;
                 }
                 else
                 {
@@ -100,5 +100,15 @@ namespace UnityEditor.UIElements
             CheckPanelScaling();
             base.Render();
         }
+
+        internal override Color HyperlinkColor
+        {
+            get
+            {
+                ColorUtility.TryParseHtmlString(EditorGUIUtility.GetHyperlinkColorForSkin(), out Color color);
+                return color;
+            }
+        }
+    
     }
 }
