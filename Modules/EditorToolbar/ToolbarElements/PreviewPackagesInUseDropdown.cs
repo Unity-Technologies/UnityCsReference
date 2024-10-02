@@ -31,6 +31,8 @@ namespace UnityEditor.Toolbars
         private const string previewIcon = "unity-editor-toolbar-preview-package-in-use__icon";
         private const string previewArrowIcon = "unity-icon-arrow-preview-packages-in-use";
 
+        private static readonly string k_ExpPackagesInUseText = L10n.Tr("Experimental Packages In Use");
+
         public PreviewPackagesInUseDropdown()
         {
             m_ApplicationProxy = ServicesContainer.instance.Resolve<IApplicationProxy>();
@@ -41,7 +43,9 @@ namespace UnityEditor.Toolbars
 
             AddToClassList("unity-toolbar-button-preview-packages-in-use");
 
-            AddTextElement(this).text = L10n.Tr("Experimental Packages In Use");
+            tooltip = k_ExpPackagesInUseText;
+
+            AddTextElement(this).text = k_ExpPackagesInUseText;
             AddIconElement(this);
             AddArrowElement(this);
             clicked += () => ShowUserMenu(worldBound);

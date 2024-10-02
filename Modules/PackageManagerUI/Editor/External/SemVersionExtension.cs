@@ -26,13 +26,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             return version.Major == olderVersion?.Major && version.Minor == olderVersion?.Minor && version >= olderVersion;
         }
 
-        // The implementation here matches with the experimental version tagging check implemented in Package Validation Suite (US0017 CorrectPackageVersionTags)
-        public static bool IsExperimental(this SemVersion version)
+        // The implementation to check for Experimental packages here matches with the experimental version tagging check implemented in Package Validation Suite (US0017 CorrectPackageVersionTags)
+        public static PackageTag GetExpOrPreOrReleaseTag(this SemVersion version)
         {
             if (string.IsNullOrEmpty(version.Prerelease))
-                return false;
+                return PackageTag.Release;
             var match = k_ExpRegex.Match(version.Prerelease);
-            return match.Success && match.Groups["iteration"].Success && match.Groups["feature"].Value.Length <= 10;
+            return match.Success && match.Groups["iteration"].Success && match.Groups["feature"].Value.Length <= 10 ? PackageTag.Experimental : PackageTag.PreRelease;
         }
     }
 }

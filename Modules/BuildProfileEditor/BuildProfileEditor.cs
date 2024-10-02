@@ -28,6 +28,7 @@ namespace UnityEditor.Build.Profile
         const string k_SceneListFoldoutAddOpenButton = "scene-list-foldout-add-open-button";
         const string k_SceneListFoldoutClassicSection = "scene-list-foldout-classic-section";
         const string k_SceneListFoldoutClassicButton = "scene-list-foldout-classic-button";
+        const string k_SceneListGlobalToggle = "scene-list-global-toggle";
         const string k_CompilingWarningHelpBox = "compiling-warning-help-box";
         const string k_VirtualTextureWarningHelpBox = "virtual-texture-warning-help-box";
         const string k_PlatformBuildWarningsRoot = "platform-build-warning-root";
@@ -279,6 +280,8 @@ namespace UnityEditor.Build.Profile
             bool isEnable = isGlobalSceneList || !isClassicPlatform;
 
             var sceneListFoldout = root.Q<Foldout>(k_SceneListFoldout);
+            var globalToggle = root.Q<Toggle>(k_SceneListGlobalToggle);
+            globalToggle.label = TrText.sceneListOverride;
             sceneListFoldout.text = TrText.sceneList;
             m_SceneList = (isGlobalSceneList || isClassicPlatform)
                 ? new BuildProfileSceneList()
@@ -303,8 +306,35 @@ namespace UnityEditor.Build.Profile
                 root.Q<VisualElement>(k_SceneListFoldoutClassicSection).Show();
                 var globalSceneListButton = root.Q<Button>(k_SceneListFoldoutClassicButton);
                 globalSceneListButton.text = TrText.openSceneList;
-                globalSceneListButton.clicked += () => parent.OnClassicSceneListSelected();
+                globalSceneListButton.clicked += () =>
+                {
+                    parent.OnClassicSceneListSelected();
+                };
+
+                globalToggle.Hide();
+                return;
             }
+
+            if (isGlobalSceneList)
+            {
+                globalToggle.Hide();
+                return;
+            }
+
+            var globalToggleProperty = serializedObject.FindProperty("m_OverrideGlobalSceneList");
+            globalToggle.BindProperty(globalToggleProperty);
+            globalToggle.TrackPropertyValue(globalToggleProperty, property =>
+            {
+                if (property.boolValue)
+                    sceneListFoldout.Show();
+                else
+                    sceneListFoldout.Hide();
+            });
+
+            if (globalToggleProperty.boolValue)
+                sceneListFoldout.Show();
+            else
+                sceneListFoldout.Hide();
         }
 
         void CleanupEventHandlers()

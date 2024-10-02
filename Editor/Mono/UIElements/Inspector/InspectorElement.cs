@@ -179,6 +179,7 @@ namespace UnityEditor.UIElements
         bool m_IsOpenForEdit;
         bool m_InvalidateGUIBlockCache = true;
         bool m_Rebind;
+        VisualElement m_ContextWidthElement;
 
         /// <summary>
         /// Gets or sets the editor backing this inspector element.
@@ -337,6 +338,19 @@ namespace UnityEditor.UIElements
             {
                 m_Rebind = true;
                 this.Bind(boundObject);
+            }
+
+            var currentElement = parent;
+            while (currentElement != null)
+            {
+                if (!currentElement.ClassListContains(PropertyEditor.s_MainContainerClassName))
+                {
+                    currentElement = currentElement.parent;
+                    continue;
+                }
+
+                m_ContextWidthElement = currentElement;
+                break;
             }
         }
 
@@ -686,7 +700,7 @@ namespace UnityEditor.UIElements
                     EditorGUIUtility.hierarchyMode = true;
                     EditorGUIUtility.comparisonViewMode = comparisonViewMode;
 
-                    var originalWideMode = SetWideModeForWidth(inspector);
+                    var originalWideMode = SetWideModeForWidth(m_ContextWidthElement ?? inspector);
 
                     GUIStyle editorWrapper = (targetEditor.UseDefaultMargins() && targetEditor.CanBeExpandedViaAFoldoutWithoutUpdate()
                         ? EditorStyles.inspectorDefaultMargins

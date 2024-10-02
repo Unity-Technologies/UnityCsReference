@@ -4,12 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
+    [DebuggerDisplay("{settings.text}")]
     [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
     internal partial class TextHandle
     {
@@ -181,7 +183,7 @@ namespace UnityEngine.TextCore.Text
             {
                 s_PermanentCache.RemoveTextInfoFromCache(this);
             }
-            
+
         }
 
         public static void UpdateCurrentFrame()
@@ -465,7 +467,7 @@ namespace UnityEngine.TextCore.Text
                 Debug.LogError("Cannot use GetLineInfoFromCharacterIndex while using Advanced Text");
                 return new LineInfo();
             }
-                
+
             return textInfo.GetLineInfoFromCharacterIndex(index);
         }
 
@@ -600,6 +602,56 @@ namespace UnityEngine.TextCore.Text
                 return;
             }
             TextSelectionService.SelectCurrentWord(textGenerationInfo, index, ref cursorIndex, ref selectIndex);
+        }
+
+        public void SelectCurrentParagraph(ref int cursorIndex, ref int selectIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectCurrentParagraph while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectCurrentParagraph(textGenerationInfo, ref cursorIndex, ref selectIndex);
+        }
+
+        public void SelectToPreviousParagraph(ref int cursorIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectToPreviousParagraph while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectToPreviousParagraph(textGenerationInfo, ref cursorIndex);
+        }
+
+        public void SelectToNextParagraph(ref int cursorIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectToNextParagraph while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectToNextParagraph(textGenerationInfo, ref cursorIndex);
+        }
+
+        public void SelectToStartOfParagraph(ref int cursorIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectToStartOfParagraph while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectToStartOfParagraph(textGenerationInfo, ref cursorIndex);
+        }
+
+        public void SelectToEndOfParagraph(ref int cursorIndex)
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("Cannot use SelectToEndOfParagraph while using Standard Text");
+                return;
+            }
+            TextSelectionService.SelectToEndOfParagraph(textGenerationInfo, ref cursorIndex);
         }
 
         internal virtual bool IsAdvancedTextEnabledForElement() { return false; }

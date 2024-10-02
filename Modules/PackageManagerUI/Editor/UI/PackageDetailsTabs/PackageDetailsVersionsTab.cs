@@ -111,8 +111,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            var seeVersionsToolbar = versions.numUnloadedVersions > 0 && (m_SettingsProxy.seeAllPackageVersions || m_Version.availableRegistry != RegistryType.UnityRegistry || m_Version.package.versions.installed?.HasTag(PackageTag.Experimental) == true);
-            UIUtils.SetElementDisplay(m_VersionsToolbar, seeVersionsToolbar);
+            UIUtils.SetElementDisplay(m_VersionsToolbar, versions.numUnloadedVersions > 0);
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
             var primaryVersion = m_Version.package?.versions.primary;

@@ -766,6 +766,11 @@ namespace UnityEditor.Overlays
             m_ModalPopup.Focus();
         }
 
+        public void RefreshPopup()
+        {
+            m_ModalPopup?.Refresh();
+        }
+
         void ClosePopup()
         {
             m_ModalPopup?.RemoveFromHierarchy();

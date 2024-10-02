@@ -228,13 +228,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!HasTag(PackageTag.InstalledFromPath) && packageInfo.versions.deprecated.Contains(m_VersionString))
                 m_Tag |= PackageTag.Deprecated;
 
-            if (isInvalidSemVerInManifest)
+            if (isInvalidSemVerInManifest || m_Version == null)
                 return;
 
-            if (m_Version?.IsExperimental() == true)
-                m_Tag |= PackageTag.Experimental;
-            else
-                m_Tag |= string.IsNullOrEmpty(m_Version?.Prerelease) ? PackageTag.Release : PackageTag.PreRelease;
+            m_Tag |= m_Version.Value.GetExpOrPreOrReleaseTag();
         }
 
         public override string GetDescriptor(bool isFirstLetterCapitalized = false)

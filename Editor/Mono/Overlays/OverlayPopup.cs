@@ -33,13 +33,26 @@ namespace UnityEditor.Overlays
             AddToClassList(Overlay.ussClassName);
             style.position = Position.Absolute;
 
-            var root = this.Q("overlay-content");
-            root.renderHints = RenderHints.ClipWithScissors;
-            root.Add(overlay.GetSimpleHeader());
-            root.Add(overlay.CreatePanelContent());
+            Refresh();
 
             RegisterCallback<MouseEnterEvent>(evt => m_CursorIsOverPopup = true);
             RegisterCallback<MouseLeaveEvent>(evt => m_CursorIsOverPopup = false);
+        }
+
+        public void Refresh()
+        {
+            var root = this.Q("overlay-content");
+
+            root.Clear();
+
+            root.renderHints = RenderHints.ClipWithScissors;
+            style.maxHeight = StyleKeyword.Initial;
+            style.maxWidth = StyleKeyword.Initial;
+
+            root.Add(overlay.GetSimpleHeader());
+            root.Add(overlay.CreatePanelContent());
+
+            root.Focus();
         }
 
         public static OverlayPopup CreateUnderOverlay(Overlay overlay)

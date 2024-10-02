@@ -39,6 +39,8 @@ namespace UnityEditor
             public static readonly GUIContent progressiveGPUChangeWarning = EditorGUIUtility.TrTextContent("Changing the compute device used by the Progressive GPU Lightmapper requires the editor to be relaunched. Do you want to change device and restart?");
             public static readonly GUIContent gpuBakingProfile = EditorGUIUtility.TrTextContent("GPU Baking Profile", "The profile chosen for trading off between performance and memory usage when baking using the GPU.");
 
+            public static readonly GUIContent bakeOnSceneLoad = EditorGUIUtility.TrTextContent("Bake On Scene Load", "Whether to automatically generate lighting for Scenes that do not have valid lighting data when first opened."); 
+
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
 
@@ -539,6 +541,16 @@ namespace UnityEditor
             }
         }
 
+        void DrawBakeOnLoadSelector()
+        {
+            var selected = (Lightmapping.BakeOnSceneLoadMode)EditorGUILayout.EnumPopup(Styles.bakeOnSceneLoad, Lightmapping.bakeOnSceneLoad);
+            if (selected != Lightmapping.bakeOnSceneLoad)
+            {
+                Undo.RecordObject(LightmapEditorSettings.GetLightmapSettings(), "Change Bake On Load Setting");
+                Lightmapping.bakeOnSceneLoad = selected;
+            }
+        }
+
         void DrawBottomBarGUI(Mode selectedMode)
         {
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
@@ -552,6 +564,7 @@ namespace UnityEditor
                 // Bake settings.
                 DrawGPUDeviceSelector();
                 DrawBakingProfileSelector();
+                DrawBakeOnLoadSelector();
 
                 {
                     // Bake button if we are not currently baking

@@ -7,6 +7,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
+
     [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEngine.IMGUIModule")]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextInfo.h")]

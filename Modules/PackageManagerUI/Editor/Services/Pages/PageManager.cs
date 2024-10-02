@@ -243,8 +243,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (packages.All(p => page.ShouldInclude(p)))
                     return page;
 
-            if (!m_SettingsProxy.enablePreReleasePackages && packages.Any(p => p.versions.primary.version?.Prerelease.StartsWith("pre.") == true))
-                Debug.Log(L10n.Tr("You must check \"Show Pre-release Package Versions\" in Project Settings > Package Manager in order to see this package."));
             return null;
         }
 

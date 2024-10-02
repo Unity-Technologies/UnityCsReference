@@ -1452,6 +1452,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\NativeTextGenerationSettings.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextTagParser.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\RichTextTagParser.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextGenerationSettings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextGenerationSettings.cs</Link>
     </Compile>
@@ -2843,6 +2846,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TextShadow.cs">
       <Link>Modules\UIElements\Core\TextShadow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextEventHandler.cs">
+      <Link>Modules\UIElements\Core\Text\ATGTextEventHandler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\ATGTextHandle.cs</Link>

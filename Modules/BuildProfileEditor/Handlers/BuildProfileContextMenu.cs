@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Text;
+using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
 using UnityEngine.UIElements;
 
@@ -17,8 +19,13 @@ namespace UnityEditor.Build.Profile.Handlers
 
         static readonly string k_DeleteContinue = L10n.Tr("Continue");
         static readonly string k_DeleteCancel = L10n.Tr("Cancel");
-        static readonly string k_DeleteTitle = L10n.Tr("Delete Active Build Profile");
-        static readonly string k_DeleteMessage = L10n.Tr("This will delete your active build profile and activate the respective platform build profile. This cannot be undone.");
+        static readonly string k_DeleteActiveProfileTitle = L10n.Tr("Delete Active Build Profile");
+        static readonly string k_DeleteActiveProfileMessage = L10n.Tr("This will delete your active build profile and activate the respective platform build profile. This cannot be undone.");
+        static readonly string k_DeleteProfileTitle = L10n.Tr("Delete Selected Build Profile");
+        static readonly string k_DeleteProfileMessage = L10n.Tr("This will delete the selected build profile. This cannot be undone.");
+        static readonly string k_DeleteMultipleProfilesTitle = L10n.Tr("Delete Selected Build Profiles");
+        static readonly string k_DeleteActiveAndOtherProfilesMessage = L10n.Tr("This will delete the selected build profiles, including your active build profile, and activate the respective platform build profile. This cannot be undone.");
+        static readonly string k_DeleteMultipleProfilesMessage = L10n.Tr("This will delete the selected build profiles. This cannot be undone.");
 
         readonly BuildProfileWindowSelection m_ProfileSelection;
         readonly BuildProfileDataSource m_ProfileDataSource;
@@ -132,20 +139,55 @@ namespace UnityEditor.Build.Profile.Handlers
                 m_ProfileSelection.visualElement.SelectBuildProfile(index);
         }
 
+        /// <summary>
+        /// Given a list of build profiles, prompts for user confirmation for deletion.
+        /// </summary>
+        /// <returns>true, if user approves deletion.</returns>
+        bool ShowDeleteSelectedProfilesDialog(List<BuildProfile> selectedProfiles)
+        {
+            var maxPathsToShow = 3;
+            var paths = new StringBuilder();
+            var containsActiveProfile = false;
+            for (int i = selectedProfiles.Count - 1; i >= 0; --i)
+            {
+                if (i < selectedProfiles.Count - maxPathsToShow)
+                {
+                    paths.Append("...\n");
+                    break;
+                }
+
+                var profile = selectedProfiles[i];
+                if (BuildProfileContext.activeProfile == profile)
+                    containsActiveProfile = true;
+
+                var path = AssetDatabase.GetAssetPath(profile);
+                paths.Append(path + "\n");
+            }
+
+            var multipleProfiles = selectedProfiles.Count > 1;
+            var title = multipleProfiles
+                ? k_DeleteMultipleProfilesTitle
+                : containsActiveProfile ? k_DeleteActiveProfileTitle : k_DeleteProfileTitle;
+            var message = paths + "\n" + (multipleProfiles
+                ? (containsActiveProfile ? k_DeleteActiveAndOtherProfilesMessage : k_DeleteMultipleProfilesMessage)
+                : (containsActiveProfile ? k_DeleteActiveProfileMessage : k_DeleteProfileMessage));
+
+            return EditorUtility.DisplayDialog(title, message, k_DeleteContinue, k_DeleteCancel);
+        }
+
         void HandleDeleteSelectedProfiles()
         {
             var selectedProfiles = m_ProfileSelection.GetAll();
+            var isDeleteConfirmed = ShowDeleteSelectedProfilesDialog(selectedProfiles);
+            if (!isDeleteConfirmed)
+                return;
+
+            var profilesDeleted = false;
             for (int i = selectedProfiles.Count - 1; i >= 0; --i)
             {
                 var profile = selectedProfiles[i];
                 if (BuildProfileContext.activeProfile == profile)
                 {
-                    string path = AssetDatabase.GetAssetPath(profile);
-                    string finalMessage = $"{path}\n\n{k_DeleteMessage}";
-                    if (!EditorUtility.DisplayDialog(k_DeleteTitle, finalMessage, k_DeleteContinue, k_DeleteCancel))
-                    {
-                        continue;
-                    }
                     // if we're deleting an active profile, we want to compare the value of its settings that require a restart
                     // to the value of the settings for the platform we'll be activating after we delete the current platform
                     // and show a restart editor prompt if they're different so the settings take effect
@@ -158,11 +200,13 @@ namespace UnityEditor.Build.Profile.Handlers
                 }
 
                 m_ProfileDataSource.DeleteAsset(profile);
+                profilesDeleted = true;
             }
 
             // No need to select a profile after deletion, since the method below
             // selects the active profile after repaint
-            m_ProfileWindow.RepaintAndClearSelection();
+            if (profilesDeleted)
+                m_ProfileWindow.RepaintAndClearSelection();
         }
     }
 }
