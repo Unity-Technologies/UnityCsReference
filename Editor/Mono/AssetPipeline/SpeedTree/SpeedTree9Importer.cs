@@ -21,11 +21,9 @@ using static UnityEditor.SpeedTree.Importer.SpeedTree9Reader;
 
 namespace UnityEditor.SpeedTree.Importer
 {
-    // [2024-08-07] version: 2
-    // Fixed mesh's UV2 & UV3 data usage strategy to 'always allocate' from 'conditionally allocate'
-    // to fix unwanted application of leaf-facing effect to geometries without leaf-facing data.
-
-    [ScriptedImporter(version: 2, ext: "st9", AllowCaching = true)]
+    // [2024-09-27] version: 3
+    // Fixed code that would lead to m_LODCount vs m_PerLODSettings.arraySize mismatching in GUI 
+    [ScriptedImporter(version: 3, ext: "st9", AllowCaching = true)]
     public class SpeedTree9Importer : ScriptedImporter
     {
         const int SPEEDTREE_9_WIND_VERSION = 1;
@@ -233,6 +231,16 @@ namespace UnityEditor.SpeedTree.Importer
         {
             // Variables used a lot are cached, since accessing any Reader array has a non-negligeable cost. 
             m_LODCount = (uint)m_Tree.Lod.Length;
+            if(m_LODCount > LODGroupGUI.kLODColors.Length)
+            {
+                Debug.LogWarningFormat("Number of LOD meshes in asset ({0}) is larger than the maximum number supported by Unity GUI ({1})." +
+                    "\nImporting only the first {1} LOD meshes."
+                    , m_LODCount, LODGroupGUI.kLODColors.Length);
+
+                // LODGroup GUI won't draw if we're above this limit, so we prevent future assertions here.
+                m_LODCount = (uint)LODGroupGUI.kLODColors.Length;
+            }
+
             m_HasFacingData = TreeHasFacingData();
             m_HasBranch2Data = m_Tree.Wind.DoBranch2;
             m_LastLodIsBillboard = m_Tree.BillboardInfo.LastLodIsBillboard;
@@ -532,6 +540,7 @@ namespace UnityEditor.SpeedTree.Importer
             }
             else if (m_PerLODSettings.Count < m_LODCount)
             {
+                m_PerLODSettings.Clear();
                 for (int i = 0; i < m_LODCount; ++i)
                 {
                     bool isBillboardLOD = m_LastLodIsBillboard && i == m_LODCount - 1;

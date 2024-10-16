@@ -533,7 +533,7 @@ namespace UnityEngine.TextCore.Text
                 return true;
 
             // Add glyph which did not fit in current atlas texture to new atlas texture.
-            if (m_IsMultiAtlasTexturesEnabled)
+            if (m_IsMultiAtlasTexturesEnabled && m_UsedGlyphRects.Count > 0)
             {
                 // Create new atlas texture
                 SetupNewAtlasTexture();

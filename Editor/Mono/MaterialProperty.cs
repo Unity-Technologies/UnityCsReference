@@ -477,7 +477,7 @@ namespace UnityEditor
 
             static void HandleCopyPaste(GenericMenu menu)
             {
-                GetCopyPasteAction(capturedProperties[0], out var copyAction, out var pasteAction);
+                GetCopyPasteAction(s_CopyPasteCache, out var copyAction, out var pasteAction);
 
                 if (menu.GetItemCount() != 0)
                     menu.AddSeparator("");
@@ -520,9 +520,11 @@ namespace UnityEditor
                 if (isOverriden)
                     HandleApplyRevert(menu, singleEditing, targets);
 
-                if (singleEditing && capturedProperties.Count == 1)
+                if (singleEditing && s_CopyPasteCache != null)
+                {
                     HandleCopyPaste(menu);
-
+                    s_CopyPasteCache = null;
+                }
                 DisplayMode displayMode = GetDisplayMode(targets);
                 if (displayMode == DisplayMode.Material)
                 {
@@ -537,7 +539,7 @@ namespace UnityEditor
 
             static void GetCopyPasteAction(MaterialProperty prop, out GenericMenu.MenuFunction copyAction, out GenericMenu.MenuFunction pasteAction)
             {
-                bool canCopy = !capturedProperties[0].hasMixedValue;
+                bool canCopy = !s_CopyPasteCache.hasMixedValue;
                 bool canPaste = GUI.enabled;
 
                 copyAction = null;
@@ -652,6 +654,7 @@ namespace UnityEditor
             }
         }
         static List<PropertyData> s_PropertyStack = new List<PropertyData>();
+        static MaterialProperty s_CopyPasteCache = null;
         internal static void ClearStack() => s_PropertyStack.Clear();
 
         internal static void BeginProperty(MaterialProperty prop, Object[] targets)
@@ -672,6 +675,9 @@ namespace UnityEditor
 
         internal static void BeginProperty(Rect totalRect, MaterialProperty prop, MaterialSerializedProperty serializedProp, Object[] targets, float startY = -1)
         {
+            if (Event.current.rawType == EventType.ContextClick && (totalRect.Contains(Event.current.mousePosition)))
+                s_CopyPasteCache = prop;
+
             if (targets == null || IsRegistered(prop, serializedProp))
             {
                 s_PropertyStack.Add(new PropertyData() { targets = null });

@@ -168,9 +168,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
                     }
 
-                    var isLocked = versionList.installed?.isDirectDependency != true &&
-                                   m_PackageDatabase.GetFeaturesThatUseThisPackage(versionList.installed)?.Any() == true;
-                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null, isDeprecated: isDeprecated, deprecationMessage: deprecationMessage, isLocked: isLocked);
+                    var package = CreatePackage(packageName, versionList, isDiscoverable: searchInfo != null, isDeprecated: isDeprecated, deprecationMessage: deprecationMessage);
                     updatedPackages.Add(package);
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early

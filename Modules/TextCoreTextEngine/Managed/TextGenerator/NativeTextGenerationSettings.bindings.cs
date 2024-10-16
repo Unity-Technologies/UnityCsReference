@@ -23,6 +23,7 @@ namespace UnityEngine.TextCore
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
         public WhiteSpace wordWrap;
+        public TextOverflow overflow;
         public LanguageDirection languageDirection;
         public int vertexPadding; // Encoded in Fixed Point.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -100,6 +101,7 @@ namespace UnityEngine.TextCore
             fontWeight = tgs.fontWeight;
             languageDirection = tgs.languageDirection;
             vertexPadding = tgs.vertexPadding;
+            overflow = tgs.overflow;
             textSpans = tgs.textSpans != null ? (TextSpan[])tgs.textSpans.Clone() : null;
         }
 
@@ -140,6 +142,7 @@ namespace UnityEngine.TextCore
                 $"{nameof(fontStyle)}: {fontStyle}\n" +
                 $"{nameof(fontWeight)}: {fontWeight}\n" +
                 $"{nameof(vertexPadding)}: {vertexPadding}\n" +
+                $"{nameof(overflow)}: {overflow}\n" +
                 $"{nameof(textSpans)}: {textSpansString}";
         }
     }
@@ -212,4 +215,10 @@ namespace UnityEngine.TextCore
         PreWrap
     }
 
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    internal enum TextOverflow
+    {
+        Clip,
+        Ellipsis
+    }
 }

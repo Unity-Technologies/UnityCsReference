@@ -1328,6 +1328,12 @@ namespace UnityEditor
             set { EditorGUI.RecycledTextEditor.s_ActuallyEditing = value; }
         }
 
+        internal static bool renameWasCompleted
+        {
+            get { return EditorGUI.RecycledTextEditor.s_EditingWasCompleted; }
+            set { EditorGUI.RecycledTextEditor.s_EditingWasCompleted = value; }
+        }
+
         public static bool textFieldHasSelection
         {
             get { return EditorGUI.s_RecycledEditor.hasSelection; }

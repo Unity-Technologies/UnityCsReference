@@ -63,9 +63,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (primary.HasTag(PackageTag.Custom))
                     return PackageState.InDevelopment;
 
-                if (isLocked)
-                    return PackageState.Locked;
-
                 if (primary.isInstalled && !primary.isDirectDependency)
                     return PackageState.InstalledAsDependency;
 
@@ -99,10 +96,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private bool m_IsDeprecated;
         public virtual bool isDeprecated => m_IsDeprecated;
-
-        [SerializeField]
-        private bool m_IsLocked;
-        public virtual bool isLocked => m_IsLocked;
 
         // errors on the package level (not just about a particular version)
         [SerializeField]
@@ -144,7 +137,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             LinkPackageAndVersions();
         }
 
-        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, bool isLocked = false)
+        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
         {
             m_Name = name;
             m_VersionList = versionList;
@@ -159,8 +152,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDeprecated = versionList.primary?.HasTag(PackageTag.InstalledFromPath) == false && isDeprecated;
             m_DeprecationMessage = deprecationMessage;
 
-            m_IsLocked = isLocked;
-
             LinkPackageAndVersions();
         }
 
@@ -169,9 +160,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // package modifications that's not caught by the package change events.
         internal class Factory : BaseService
         {
-            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, bool isLocked = false)
+            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
             {
-                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage, isLocked);
+                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage);
             }
 
             public void AddError(Package package, UIError error)

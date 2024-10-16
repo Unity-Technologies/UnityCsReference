@@ -63,15 +63,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ErrorState = new PackageToolBarError { name = "toolbarErrorState" };
             m_MainContainer.Add(m_ErrorState);
 
-            var leftItems = new VisualElement();
-            leftItems.AddToClassList("leftItems");
-            m_MainContainer.Add(leftItems);
+            var actionButtons = new VisualElement();
+            actionButtons.AddToClassList("actionButtons");
+            m_MainContainer.Add(actionButtons);
 
             extensions = new VisualElement { name = "extensionItems" };
-            leftItems.Add(extensions);
+            actionButtons.Add(extensions);
 
             m_BuiltInActionsContainer = new VisualElement { name = "builtInActions" };
-            m_BuiltInActionsContainer.AddToClassList("rightItems");
+            m_BuiltInActionsContainer.AddToClassList("actionButtons");
             m_MainContainer.Add(m_BuiltInActionsContainer);
 
             m_ProgressContainer = new VisualElement { name = "toolbarProgressContainer" };
