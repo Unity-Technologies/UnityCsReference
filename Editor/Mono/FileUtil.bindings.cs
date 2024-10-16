@@ -151,8 +151,12 @@ namespace UnityEditor
         public static void ReplaceDirectory(string src, string dst)
         {
             if (Directory.Exists(dst))
-                FileUtil.DeleteFileOrDirectory(dst);
-
+            {
+                bool succesfullyDeletedDirectory = FileUtil.DeleteFileOrDirectory(dst);
+                if (succesfullyDeletedDirectory == false)
+                    throw new System.IO.IOException(string.Format(
+                        "Failed to delete directory '{0}'.", dst));
+            }
             FileUtil.CopyFileOrDirectory(src, dst);
         }
 
