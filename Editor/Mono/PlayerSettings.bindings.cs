@@ -840,7 +840,7 @@ namespace UnityEditor
         {
             SetGraphicsAPIsImpl(platform, apis);
             // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
-            PlayerSettingsEditor.SyncPlatformAPIsList(platform);
+            PlayerSettingsEditor.SyncEditors(platform);
         }
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -853,7 +853,7 @@ namespace UnityEditor
         {
             SetUseDefaultGraphicsAPIsImpl(platform, automatic);
             // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
-            PlayerSettingsEditor.SyncPlatformAPIsList(platform);
+            PlayerSettingsEditor.SyncEditors(platform);
         }
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
@@ -867,7 +867,7 @@ namespace UnityEditor
         {
             SetColorGamutsImpl(colorSpaces);
             // Color space data is cached in player settings editor
-            PlayerSettingsEditor.SyncColorGamuts();
+            PlayerSettingsEditor.SyncEditors(BuildTarget.NoTarget);
         }
 
         [NativeMethod("SetColorGamuts")]
@@ -1233,6 +1233,14 @@ namespace UnityEditor
         [NativeMethod("GetEditorAssembliesCompatibilityLevel")]
         private static extern EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevelInternal();
         public static EditorAssembliesCompatibilityLevel GetEditorAssembliesCompatibilityLevel() => GetEditorAssembliesCompatibilityLevelInternal();
+
+        [NativeMethod("GetEditorOnly().HasAnyNetFXCompatibilityLevel")]
+        private extern bool HasAnyNetFXCompatibilityLevelInternal();
+
+        internal bool HasAnyNetFXCompatibilityLevel()
+        {
+            return HasAnyNetFXCompatibilityLevelInternal();
+        }
 
         [NativeThrows]
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
@@ -1730,7 +1738,6 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetShaderPrecisionModel(ShaderPrecisionModel model);
 
-
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
         internal static extern TextureCompressionFormat GetDefaultTextureCompressionFormat(BuildTarget platform);
 
@@ -1822,6 +1829,22 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern int GetShaderChunkCountForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget);
 
+        // --- Graphics Job
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetGraphicsJobsForPlatform_Internal(PlayerSettings instance, BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsJobsForPlatform_Internal(PlayerSettings instance, BuildTarget platform, bool graphicsJobs);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern GraphicsJobMode GetGraphicsJobModeForPlatform_Internal(PlayerSettings instance, BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsJobModeForPlatform_Internal(PlayerSettings instance, BuildTarget platform, GraphicsJobMode gfxJobMode);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetGraphicsThreadingModeForPlatform_Internal(PlayerSettings instance, BuildTarget platform, GfxThreadingMode gfxJobMode);
+
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetShaderChunkCountForPlatform_Internal(PlayerSettings instance, BuildTarget buildTarget, int chunkCount);
 
@@ -1830,6 +1853,15 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetNormalMapEncoding_Internal(PlayerSettings instance, string platform, NormalMapEncoding encoding);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern ScriptingImplementation GetScriptingBackend_Internal(PlayerSettings playerSettings, string buildTargetGroupName);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool ShouldSyncShaderPrecisionModel(PlayerSettings prev, PlayerSettings next);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SyncShaderPrecisionModel();
 
         /*
          * Internal non-static getter/setters referenced when reading/writing to non-active player settings object.
@@ -1861,5 +1893,61 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
         internal static extern string[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);
+
+        // Load / Store
+        [NativeMethod("GetLoadStoreDebugModeEnabled")]
+        internal extern bool GetLoadStoreDebugModeEnabledForPlatformGroup_Internal(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetLoadStoreDebugModeEnabled")]
+        internal extern void SetLoadStoreDebugModeEnabledForPlatformGroup_Internal(BuildTargetGroup platformGroup, bool loadStoreDebugModeEnabled);
+
+        [NativeMethod("GetLoadStoreDebugModeEditorOnly")]
+        internal extern bool GetLoadStoreDebugModeEditorOnlyForPlatformGroup_Internal(BuildTargetGroup platformGroup);
+
+        [NativeMethod("SetLoadStoreDebugModeEditorOnly")]
+        internal extern void SetLoadStoreDebugModeEditorOnlyForPlatformGroup_Internal(BuildTargetGroup platformGroup, bool loadStoreDebugModeEnabled);
+
+        // Mobile Rendering
+        [NativeThrows]
+        [NativeMethod("SetMobileMTRendering")]
+        internal extern void SetMobileMTRenderingInternal_Instance(string buildTargetName, bool enable);
+
+        [NativeThrows]
+        [NativeMethod("GetMobileMTRendering")]
+        internal extern bool GetMobileMTRenderingInternal_Instance(string buildTargetName);
+
+        // Graphics APIs
+        [NativeMethod("GetPlatformAutomaticGraphicsAPIs")]
+        internal extern bool GetUseDefaultGraphicsAPIs_Internal(BuildTarget platform);
+
+        internal void SetUseDefaultGraphicsAPIs_Internal(BuildTarget platform, bool automatic)
+        {
+            SetUseDefaultGraphicsAPIsImpl_Internal(this, platform, automatic);
+            // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
+            PlayerSettingsEditor.SyncEditors(platform);
+        }
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        private static extern void SetUseDefaultGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, bool automatic);
+
+        [NativeMethod("GetPlatformGraphicsAPIs")]
+        internal extern UnityEngine.Rendering.GraphicsDeviceType[] GetGraphicsAPIs_Internal(BuildTarget platform);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        private static extern void SetGraphicsAPIsImpl_Internal(PlayerSettings instance, BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis);
+
+        internal void SetGraphicsAPIs_Internal(BuildTarget platform, UnityEngine.Rendering.GraphicsDeviceType[] apis, bool shouldSync)
+        {
+            SetGraphicsAPIsImpl_Internal(this, platform, apis);
+            // we do cache api list in player settings editor, so if we update from script we should forcibly update cache
+            if (shouldSync)
+                PlayerSettingsEditor.SyncEditors(platform);
+        }
+
+        [NativeMethod("GetColorGamuts")]
+        internal extern ColorGamut[] GetColorGamuts_Internal();
+
+        [NativeMethod("SetColorGamuts")]
+        internal extern void SetColorGamuts_Internal(ColorGamut[] colorSpaces);
     }
 }

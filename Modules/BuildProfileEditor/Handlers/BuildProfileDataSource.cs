@@ -186,10 +186,10 @@ namespace UnityEditor.Build.Profile.Handlers
         /// build profile list. The build profile will be re-added when it
         /// gets enabled after renaming.
         /// </summary>
-        internal void RenameAsset(BuildProfile buildProfile, string newName)
+        internal bool RenameAsset(BuildProfile buildProfile, string newName)
         {
             if (buildProfile?.name == newName || string.IsNullOrEmpty(newName))
-                return;
+                return false;
 
             var originalPath = AssetDatabase.GetAssetPath(buildProfile);
             var newPath = ReplaceFileNameInPath(originalPath, newName);
@@ -204,7 +204,10 @@ namespace UnityEditor.Build.Profile.Handlers
                 customBuildProfiles.Remove(buildProfile);
                 m_Window.RebuildProfileListViews();
                 AssetDatabase.RenameAsset(originalPath, finalName);
+                return true;
             }
+
+            return false;
         }
 
         /// <summary>

@@ -1013,7 +1013,7 @@ namespace UnityEditor
                 else if (type == ParticleSystemShapeType.Mesh)
                 {
                     Mesh mesh = shapeModule.mesh;
-                    if (mesh)
+                    if (mesh && Event.current.type == EventType.Repaint)
                     {
                         bool orgWireframeMode = GL.wireframe;
                         GL.wireframe = true;
@@ -1044,7 +1044,7 @@ namespace UnityEditor
                 else if (type == ParticleSystemShapeType.Sprite)
                 {
                     Sprite sprite = shapeModule.sprite;
-                    if (sprite)
+                    if (sprite && Event.current.type == EventType.Repaint)
                     {
                         if (!s_SpriteMesh)
                         {
@@ -1074,6 +1074,9 @@ namespace UnityEditor
 
         private static void OnSceneViewTextureGUI(ParticleSystem.ShapeModule shapeModule, Mesh mesh, bool twoSided, Material mat, Matrix4x4 transform)
         {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
             Texture texture = shapeModule.texture;
             if (texture)
             {

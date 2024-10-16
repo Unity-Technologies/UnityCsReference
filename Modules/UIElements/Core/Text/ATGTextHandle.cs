@@ -148,11 +148,12 @@ namespace UnityEngine.UIElements
             nativeSettings.fontSize = (int)(style.fontSize.value > 0
                 ? style.fontSize.value * 64.0f
                 : fa.faceInfo.pointSize * 64.0f);
-            nativeSettings.wordWrap = m_TextElement.computedStyle.whiteSpace.toTextCore();
+            nativeSettings.wordWrap = style.whiteSpace.toTextCore();
+            nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
 
-            nativeSettings.color = m_TextElement.computedStyle.color;
+            nativeSettings.color = style.color;
             nativeSettings.fontAsset = fa.nativeFontAsset;
             nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
             nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);

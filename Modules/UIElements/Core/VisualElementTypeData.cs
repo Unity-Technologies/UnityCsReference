@@ -20,7 +20,6 @@ namespace UnityEngine.UIElements
 
             private string m_FullTypeName = string.Empty;
             private string m_TypeName = string.Empty;
-            private string m_TypeNamespace = string.Empty;
 
             public string fullTypeName
             {
@@ -52,15 +51,6 @@ namespace UnityEngine.UIElements
                     }
 
                     return m_TypeName;
-                }
-            }
-            public string typeNamespace
-            {
-                get
-                {
-                    if (string.IsNullOrEmpty(m_TypeNamespace))
-                        m_TypeNamespace = type.Namespace;
-                    return m_TypeNamespace;
                 }
             }
         }

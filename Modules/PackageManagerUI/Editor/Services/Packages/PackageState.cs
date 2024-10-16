@@ -17,8 +17,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpdateAvailable,
         InProgress,
         Error,
-        Warning,
-        Locked,
-        UnlockedByUser
+        Warning
     }
 }

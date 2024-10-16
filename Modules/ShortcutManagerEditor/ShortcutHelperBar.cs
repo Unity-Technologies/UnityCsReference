@@ -55,10 +55,8 @@ namespace UnityEditor.ShortcutManagement
 
                 m_LabelStyle = new GUIStyle(EditorStyles.label);
 
-                if (EditorGUIUtility.isProSkin)
-                    m_LabelStyle.normal.textColor = new Color(0.5f, 0.5f, 0.5f, 1f);
-                else
-                    m_LabelStyle.normal.textColor = new Color(0.2f, 0.2f, 0.2f, 1f);
+                var color = m_LabelStyle.normal.textColor;
+                m_LabelStyle.normal.textColor = new Color(color.r, color.g, color.b, 0.5f);
 
                 return m_LabelStyle;
             }
@@ -74,16 +72,11 @@ namespace UnityEditor.ShortcutManagement
 
                 m_BoldLabelStyle = new GUIStyle(EditorStyles.boldLabel);
 
-                if (EditorGUIUtility.isProSkin)
-                {
-                    m_BoldLabelStyle.normal.textColor = new Color(0.6f, 0.6f, 0.6f, 1f);
-                    m_BoldLabelStyle.hover.textColor = new Color(0.6f, 0.6f, 0.6f, 1f);
-                }
-                else
-                {
-                    m_BoldLabelStyle.normal.textColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-                    m_BoldLabelStyle.hover.textColor = new Color(0.3f, 0.3f, 0.3f, 1f);
-                }
+                var normalColor = m_BoldLabelStyle.normal.textColor;
+                m_BoldLabelStyle.normal.textColor = new Color(normalColor.r, normalColor.g, normalColor.b, 0.6f);
+
+                var hoverColor = m_BoldLabelStyle.hover.textColor;
+                m_BoldLabelStyle.hover.textColor = new Color(hoverColor.r, hoverColor.g, hoverColor.b, 0.6f);
 
                 return m_BoldLabelStyle;
             }

@@ -273,7 +273,7 @@ namespace UnityEditor.UIElements.Debugger
         void AddType(Type type, bool value)
         {
             var methodInfo = type.GetMethod("TypeId", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            if (methodInfo == null)
+            if (methodInfo == null || methodInfo.ContainsGenericParameters)
                 return;
 
             var typeId = (long)methodInfo.Invoke(null, null);

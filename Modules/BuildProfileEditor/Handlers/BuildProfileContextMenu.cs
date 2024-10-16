@@ -95,14 +95,18 @@ namespace UnityEditor.Build.Profile.Handlers
 
         internal bool UpdateBuildProfileLabelName(object buildProfileObject, string buildProfileLabelName)
         {
+            buildProfileLabelName = buildProfileLabelName?.Trim();
+
             var buildProfile = buildProfileObject as BuildProfile;
             if (buildProfile == null || string.IsNullOrEmpty(buildProfileLabelName))
                 return false;
 
             string newName = buildProfileLabelName;
-            m_ProfileDataSource.RenameAsset(buildProfile, newName);
-            SelectBuildProfileInView(buildProfile, isClassic: false, shouldAppend: false);
-            return true;
+            if (m_ProfileDataSource.RenameAsset(buildProfile, newName)) {
+                SelectBuildProfileInView(buildProfile, isClassic: false, shouldAppend: false);
+                return true;
+            }
+            return false;
         }
 
         internal void HandleDuplicateSelectedProfiles(bool duplicateClassic)

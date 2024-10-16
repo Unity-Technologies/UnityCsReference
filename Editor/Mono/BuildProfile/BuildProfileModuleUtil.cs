@@ -625,5 +625,14 @@ namespace UnityEditor.Build.Profile
             return EditorUtility.DisplayDialog(L10n.Tr("Unity editor restart required"),
                 editorPromptText.ToString(), L10n.Tr("Apply"), L10n.Tr("Cancel"));
         }
+
+        internal static PlayerSettings GetBuildProfileOrGlobalPlayerSettings(BuildProfile buildProfile)
+        {
+            if (buildProfile == null || buildProfile.playerSettings == null)
+            {
+                return BuildProfile.GetGlobalPlayerSettings();
+            }
+            return buildProfile.playerSettings;
+        }
     }
 }

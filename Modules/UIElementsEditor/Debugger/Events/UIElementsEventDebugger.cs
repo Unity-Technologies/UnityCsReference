@@ -1391,10 +1391,10 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         void UpdatePlaybackButtons()
         {
             var isProSkin = EditorGUIUtility.isProSkin;
-            m_DecreasePlaybackSpeedButton.EnableInClassList("light", !isProSkin);
-            m_IncreasePlaybackSpeedButton.EnableInClassList("light", !isProSkin);
-            m_SaveReplayButton.EnableInClassList("light", !isProSkin);
-            m_LoadReplayButton.EnableInClassList("light", !isProSkin);
+            m_DecreasePlaybackSpeedButton?.EnableInClassList("light", !isProSkin);
+            m_IncreasePlaybackSpeedButton?.EnableInClassList("light", !isProSkin);
+            m_SaveReplayButton?.EnableInClassList("light", !isProSkin);
+            m_LoadReplayButton?.EnableInClassList("light", !isProSkin);
 
             var anySelected = m_SelectedEvents != null && m_SelectedEvents.Any();
             m_TogglePlayback?.SetEnabled(m_Debugger.isReplaying);

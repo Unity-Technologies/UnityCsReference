@@ -89,10 +89,16 @@ namespace UnityEngine.UIElements
         public override void AddTextInfoToPermanentCache()
         {
             if (useAdvancedText)
-                ConvertUssToNativeTextGenerationSettings();
-            else
-                ConvertUssToTextGenerationSettings();
+            {
+                if (textGenerationInfo == IntPtr.Zero)
+                    textGenerationInfo = TextGenerationInfo.Create();
+                bool success = false;
+                UpdateNative(ref success);
 
+                return;
+            }
+
+            ConvertUssToTextGenerationSettings();
             base.AddTextInfoToPermanentCache();
         }
 

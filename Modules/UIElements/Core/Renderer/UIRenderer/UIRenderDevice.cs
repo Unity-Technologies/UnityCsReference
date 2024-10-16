@@ -169,35 +169,6 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        #region Default system resources
-        static private Texture2D s_DefaultShaderInfoTexFloat;
-        static internal Texture2D defaultShaderInfoTexFloat
-        {
-            get
-            {
-                if (s_DefaultShaderInfoTexFloat == null)
-                {
-                    s_DefaultShaderInfoTexFloat = new Texture2D(64, 64, TextureFormat.RGBAFloat, false); // No mips
-                    s_DefaultShaderInfoTexFloat.name = "DefaultShaderInfoTexFloat";
-                    s_DefaultShaderInfoTexFloat.hideFlags = HideFlags.HideAndDontSave;
-                    s_DefaultShaderInfoTexFloat.filterMode = FilterMode.Point;
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 0, UIRVEShaderInfoAllocator.identityTransformRow0Value);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 1, UIRVEShaderInfoAllocator.identityTransformRow1Value);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.identityTransformTexel.x, UIRVEShaderInfoAllocator.identityTransformTexel.y + 2, UIRVEShaderInfoAllocator.identityTransformRow2Value);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.infiniteClipRectTexel.x, UIRVEShaderInfoAllocator.infiniteClipRectTexel.y, UIRVEShaderInfoAllocator.infiniteClipRectValue);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.fullOpacityTexel.x, UIRVEShaderInfoAllocator.fullOpacityTexel.y, UIRVEShaderInfoAllocator.fullOpacityValue);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 0, Color.white);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 1, Color.clear);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 2, Color.clear);
-                    s_DefaultShaderInfoTexFloat.SetPixel(UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.x, UIRVEShaderInfoAllocator.defaultTextCoreSettingsTexel.y + 3, Color.clear);
-                    s_DefaultShaderInfoTexFloat.Apply(false, true);
-                }
-                return s_DefaultShaderInfoTexFloat;
-            }
-        }
-
-        #endregion
-
         void InitVertexDeclaration()
         {
             var vertexDecl = new VertexAttributeDescriptor[]
@@ -1216,11 +1187,6 @@ namespace UnityEngine.UIElements.UIR
         internal static void PrepareForGfxDeviceRecreate()
         {
             m_ActiveDeviceCount += 1; // Don't let the count reach 0 and unsubscribe from GfxDeviceRecreate
-            if (s_DefaultShaderInfoTexFloat != null)
-            {
-                UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
-                s_DefaultShaderInfoTexFloat = null;
-            }
         }
 
         internal static void WrapUpGfxDeviceRecreate() { m_ActiveDeviceCount -= 1; }
@@ -1305,11 +1271,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (m_ActiveDeviceCount == 0 && m_SubscribedToNotifications)
             {
-                if (s_DefaultShaderInfoTexFloat != null)
-                {
-                    UIRUtility.Destroy(s_DefaultShaderInfoTexFloat);
-                    s_DefaultShaderInfoTexFloat = null;
-                }
                 Utility.NotifyOfUIREvents(false);
                 m_SubscribedToNotifications = false;
             }

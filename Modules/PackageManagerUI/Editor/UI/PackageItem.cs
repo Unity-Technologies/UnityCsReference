@@ -101,6 +101,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_StateIcon = new VisualElement { name = "stateIcon", classList = { "status" } };
             m_StateContainer.Add(m_StateIcon);
 
+            m_LockedIcon = new VisualElement { name = "lockedIcon", classList = { "lock" } };
+            m_MainItem.Add(m_LockedIcon);
+
             if (isFeature)
             {
                 m_InfoStateIcon = new VisualElement { name = "versionState" };
@@ -134,7 +137,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_TagLabel.Refresh(package.versions.primary);
 
-            RefreshRightStateIcons();
+            RefreshIconsOnTheRight();
             RefreshSelection();
             RefreshEntitlement();
         }
@@ -145,30 +148,19 @@ namespace UnityEditor.PackageManager.UI.Internal
             name = package?.displayName ?? package?.uniqueId ?? string.Empty;
         }
 
-        public void RefreshRightStateIcons()
+        private void RefreshIconsOnTheRight()
         {
+            UIUtils.SetElementDisplay(m_Spinner, false);
+            UIUtils.SetElementDisplay(m_StateIcon, false);
+            UIUtils.SetElementDisplay(m_LockedIcon, false);
+
             if (RefreshSpinner())
                 return;
 
-            var state = GetCurrentPackageState();
-            var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
-            if (!string.IsNullOrEmpty(m_CurrentStateClass))
-                m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
-            if (!string.IsNullOrEmpty(stateClass))
-                m_StateIcon.AddToClassList(stateClass);
-            m_CurrentStateClass = stateClass;
+            if (RefreshLockIcons())
+                return;
 
-            m_StateIcon.tooltip = GetTooltipByState(state);
-
-            if (state == PackageState.Installed && package.versions.primary.HasTag(PackageTag.Feature))
-                RefreshFeatureState();
-        }
-
-        private PackageState GetCurrentPackageState()
-        {
-            return package?.state == PackageState.Locked && visualState.userUnlocked
-                ? PackageState.UnlockedByUser
-                : package?.state ?? PackageState.None;
+            RefreshRightStateIcons();
         }
 
         // Returns true if package is in progress and spinner is visible
@@ -181,6 +173,52 @@ namespace UnityEditor.PackageManager.UI.Internal
             else
                 StopSpinner();
             return isInProgress;
+        }
+
+        private bool RefreshLockIcons()
+        {
+            const string k_Locked = "locked";
+            const string k_UnlockedByUser = "unlockedbyuser";
+
+            m_LockedIcon.RemoveFromClassList(k_Locked);
+            m_LockedIcon.RemoveFromClassList(k_UnlockedByUser);
+
+            if (!visualState.userUnlocked && !visualState.isLocked)
+               return false;
+
+            UIUtils.SetElementDisplay(m_LockedIcon, true);
+            if (visualState.userUnlocked)
+            {
+                m_LockedIcon.AddToClassList(k_UnlockedByUser);
+                m_LockedIcon.tooltip = string.Format(L10n.Tr("This {0} is unlocked. You can now change its version."),
+                                        package.versions.primary.GetDescriptor());
+            }
+            else if (visualState.isLocked)
+            {
+                m_LockedIcon.AddToClassList(k_Locked);
+                m_LockedIcon.tooltip = string.Format(L10n.Tr("This {0} is installed by a feature."),
+                                        package.versions.primary.GetDescriptor());
+            }
+
+            return true;
+        }
+
+        public void RefreshRightStateIcons()
+        {
+            UIUtils.SetElementDisplay(m_StateIcon, true);
+
+            var state = package?.state ?? PackageState.None;
+            var stateClass = state != PackageState.None ? state.ToString().ToLower() : null;
+            if (!string.IsNullOrEmpty(m_CurrentStateClass))
+                m_StateIcon.RemoveFromClassList(m_CurrentStateClass);
+            if (!string.IsNullOrEmpty(stateClass))
+                m_StateIcon.AddToClassList(stateClass);
+            m_CurrentStateClass = stateClass;
+
+            m_StateIcon.tooltip = GetTooltipByState(state);
+
+            if (state == PackageState.Installed && package.versions.primary.HasTag(PackageTag.Feature))
+                RefreshFeatureState();
         }
 
         private void RefreshFeatureState()
@@ -246,6 +284,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void StartSpinner()
         {
+            UIUtils.SetElementDisplay(m_Spinner, true);
+
             if (m_Spinner == null)
             {
                 m_Spinner = new LoadingSpinner {name = "packageSpinner"};
@@ -254,19 +294,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_Spinner.Start();
             m_Spinner.tooltip = GetTooltipByProgress(package.progress);
-            UIUtils.SetElementDisplay(m_StateIcon, false);
         }
 
         private void StopSpinner()
         {
             m_Spinner?.Stop();
-            UIUtils.SetElementDisplay(m_StateIcon, true);
         }
 
         private Label m_NameLabel;
         private PackageDynamicTagLabel m_TagLabel;
         private VisualElement m_MainItem;
         private VisualElement m_StateIcon;
+        private VisualElement m_LockedIcon;
         private VisualElement m_InfoStateIcon;
         private VisualElement m_StateContainer;
         private Label m_EntitlementLabel;
@@ -289,9 +328,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             L10n.Tr("A newer version of this {0} is available."),
             "",
             L10n.Tr("There are errors with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance."),
-            L10n.Tr("This {0} is installed by a feature."),
-            L10n.Tr("This {0} is unlocked. You can now change its version.")
+            L10n.Tr("There are warnings with this {0}. Read the {0} details for further guidance.")
         };
 
         public string GetTooltipByState(PackageState state)

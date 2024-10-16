@@ -493,7 +493,12 @@ namespace UnityEditor.SpeedTree.Importer
         private string GetLODSubmeshAndTriCountLabel(int numLODs, int lodGroupIndex, SpeedTree9Importer im, LODGroup lodGroup)
         {
             LOD[] lods = lodGroup.GetLODs();
-            Debug.Assert(lods.Length == numLODs);
+
+            if(lods.Length != numLODs)
+            {
+                Debug.LogWarningFormat("Number of LODs mismatch between serialized object & LODGroup: {0}\nPlease re-import the asset and kindly report a bug if this warning keeps coming back.", im.assetPath);
+                numLODs = lods.Length;
+            }
 
             int[][] primitiveCounts = new int[numLODs][];
             int[] submeshCounts = new int[numLODs];
@@ -547,6 +552,11 @@ namespace UnityEditor.SpeedTree.Importer
             return $"{totalTriCount} {LODGroupGUI.GUIStyles.m_TriangleCountLabel.text} {triangleChangeLabel} {submeshCountLabel}";
         }
 
+        private Color GetLODGroupColor(int lodIndex)
+        {
+            return LODGroupGUI.kLODColors[lodIndex % LODGroupGUI.kLODColors.Length];
+        }
+
         private void DrawLODGroupFoldout(Camera camera, int lodGroupIndex, ref SavedBool foldoutState, List<LODGroupGUI.LODInfo> lodInfoList)
         {
             GameObject[] ObjectArrayToGameObjectArray(UnityEngine.Object[] objects)
@@ -598,7 +608,7 @@ namespace UnityEditor.SpeedTree.Importer
                 , foldoutState.value
                 , LODFoldoutHeaderLabel
                 , m_LODColorTextures[lodGroupIndex]
-                , LODGroupGUI.kLODColors[lodGroupIndex] * 0.6f // 0.5f magic number is copied from LODGroupsGUI.cs
+                , GetLODGroupColor(lodGroupIndex) * 0.6f // 0.5f magic number is copied from LODGroupsGUI.cs
                 , LODFoldoutHeaderGroupAdditionalText
             );
 
@@ -727,13 +737,13 @@ namespace UnityEditor.SpeedTree.Importer
             for (int i = 0; i < m_LODColorTextures.Length; i++)
             {
                 m_LODColorTextures[i] = new Texture2D(1, 1);
-                m_LODColorTextures[i].SetPixel(0, 0, LODGroupGUI.kLODColors[i]);
+                m_LODColorTextures[i].SetPixel(0, 0, GetLODGroupColor(i));
             }
         }
 
         void ResetFoldoutLists()
         {
-            int lodArraySize = m_PerLODSettings.arraySize;
+            int lodArraySize = Mathf.Min(m_PerLODSettings.arraySize, LODGroupGUI.kLODColors.Length);
             m_LODGroupFoldoutHeaderValues = new SavedBool[lodArraySize];
             for (int i = 0; i < lodArraySize; i++)
             {

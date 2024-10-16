@@ -162,20 +162,20 @@ namespace UnityEngine.UIElements.UIR
 
         // The page coordinates correspond to the atlas's internal algorithm's results.
         // If that algorithm changes, the new results must be put here to match
-        internal static readonly Vector2Int identityTransformTexel = new Vector2Int(0, 0);
-        internal static readonly Vector2Int infiniteClipRectTexel = new Vector2Int(0, 32);
-        internal static readonly Vector2Int fullOpacityTexel = new Vector2Int(32, 32);
-        internal static readonly Vector2Int clearColorTexel = new Vector2Int(0, 40);
-        internal static readonly Vector2Int defaultTextCoreSettingsTexel = new Vector2Int(32, 0);
+        static readonly Vector2Int identityTransformTexel = new Vector2Int(0, 0);
+        static readonly Vector2Int infiniteClipRectTexel = new Vector2Int(0, 32);
+        static readonly Vector2Int fullOpacityTexel = new Vector2Int(32, 32);
+        static readonly Vector2Int clearColorTexel = new Vector2Int(0, 40);
+        static readonly Vector2Int defaultTextCoreSettingsTexel = new Vector2Int(32, 0);
 
-        internal static readonly Matrix4x4 identityTransformValue = Matrix4x4.identity;
-        internal static readonly Vector4 identityTransformRow0Value = identityTransformValue.GetRow(0);
-        internal static readonly Vector4 identityTransformRow1Value = identityTransformValue.GetRow(1);
-        internal static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
-        internal static readonly Vector4 infiniteClipRectValue = new Vector4(0, 0, 0, 0);
-        internal static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
-        internal static readonly Vector4 clearColorValue = new Vector4(0, 0, 0, 0);
-        internal static readonly TextCoreSettings defaultTextCoreSettingsValue = new TextCoreSettings() {
+        static readonly Matrix4x4 identityTransformValue = Matrix4x4.identity;
+        static readonly Vector4 identityTransformRow0Value = identityTransformValue.GetRow(0);
+        static readonly Vector4 identityTransformRow1Value = identityTransformValue.GetRow(1);
+        static readonly Vector4 identityTransformRow2Value = identityTransformValue.GetRow(2);
+        static readonly Vector4 infiniteClipRectValue = new Vector4(0, 0, 0, 0);
+        static readonly Vector4 fullOpacityValue = new Vector4(1, 1, 1, 1);
+        static readonly Vector4 clearColorValue = new Vector4(0, 0, 0, 0);
+        static readonly TextCoreSettings defaultTextCoreSettingsValue = new TextCoreSettings() {
             faceColor = Color.white,
             outlineColor = Color.clear,
             outlineWidth = 0.0f,
@@ -188,6 +188,38 @@ namespace UnityEngine.UIElements.UIR
 #pragma warning disable 649
         public static readonly BMPAlloc identityTransform, infiniteClipRect, fullOpacity, clearColor, defaultTextCoreSettings;
 #pragma warning restore 649
+
+        static int s_DefaultShaderInfoTextureRefCount;
+        static Texture2D s_DefaultShaderInfoTexture;
+        static void AcquireDefaultShaderInfoTexture()
+        {
+            if (++s_DefaultShaderInfoTextureRefCount == 1)
+            {
+                s_DefaultShaderInfoTexture = new Texture2D(64, 64, TextureFormat.RGBAFloat, false); // No mips
+                s_DefaultShaderInfoTexture.name = "DefaultShaderInfoTexFloat";
+                s_DefaultShaderInfoTexture.hideFlags = HideFlags.HideAndDontSave;
+                s_DefaultShaderInfoTexture.filterMode = FilterMode.Point;
+                s_DefaultShaderInfoTexture.SetPixel(identityTransformTexel.x, identityTransformTexel.y + 0, identityTransformRow0Value);
+                s_DefaultShaderInfoTexture.SetPixel(identityTransformTexel.x, identityTransformTexel.y + 1, identityTransformRow1Value);
+                s_DefaultShaderInfoTexture.SetPixel(identityTransformTexel.x, identityTransformTexel.y + 2, identityTransformRow2Value);
+                s_DefaultShaderInfoTexture.SetPixel(infiniteClipRectTexel.x, infiniteClipRectTexel.y, infiniteClipRectValue);
+                s_DefaultShaderInfoTexture.SetPixel(fullOpacityTexel.x, fullOpacityTexel.y, fullOpacityValue);
+                s_DefaultShaderInfoTexture.SetPixel(defaultTextCoreSettingsTexel.x, defaultTextCoreSettingsTexel.y + 0, Color.white);
+                s_DefaultShaderInfoTexture.SetPixel(defaultTextCoreSettingsTexel.x, defaultTextCoreSettingsTexel.y + 1, Color.clear);
+                s_DefaultShaderInfoTexture.SetPixel(defaultTextCoreSettingsTexel.x, defaultTextCoreSettingsTexel.y + 2, Color.clear);
+                s_DefaultShaderInfoTexture.SetPixel(defaultTextCoreSettingsTexel.x, defaultTextCoreSettingsTexel.y + 3, Color.clear);
+                s_DefaultShaderInfoTexture.Apply(false, true);
+            }
+        }
+
+        static void ReleaseDefaultShaderInfoTexture()
+        {
+            if (--s_DefaultShaderInfoTextureRefCount == 0)
+            {
+                UIRUtility.Destroy(s_DefaultShaderInfoTexture);
+                s_DefaultShaderInfoTexture = null;
+            }
+        }
 
         static Vector2Int AllocToTexelCoord(ref BitmapAllocator32 allocator, BMPAlloc alloc)
         {
@@ -213,7 +245,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 if (m_StorageReallyCreated)
                     return m_Storage.texture;
-                return UIRenderDevice.defaultShaderInfoTexFloat;
+                return s_DefaultShaderInfoTexture;
             }
         }
         public bool internalAtlasCreated { get { return m_StorageReallyCreated; } } // For diagnostics really
@@ -236,6 +268,8 @@ namespace UnityEngine.UIElements.UIR
             m_ColorAllocator.ForceFirstAlloc((ushort)clearColorTexel.x, (ushort)clearColorTexel.y);
             m_TextSettingsAllocator.Construct(pageHeight, 1, 4);
             m_TextSettingsAllocator.ForceFirstAlloc((ushort)defaultTextCoreSettingsTexel.x, (ushort)defaultTextCoreSettingsTexel.y);
+
+            AcquireDefaultShaderInfoTexture();
         }
 
         void ReallyCreateStorage()
@@ -281,6 +315,7 @@ namespace UnityEngine.UIElements.UIR
                 m_Storage.Dispose();
             m_Storage = null;
             m_StorageReallyCreated = false;
+            ReleaseDefaultShaderInfoTexture();
         }
 
         public void IssuePendingStorageChanges()

@@ -25,6 +25,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Profile;
+using UnityEditor.UIElements;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -308,6 +309,12 @@ namespace UnityEditor
 
         private static MeshDeformation[] m_MeshDeformations = { MeshDeformation.CPU, MeshDeformation.GPU, MeshDeformation.GPUBatched };
 
+        internal static void SyncEditors(BuildTarget target)
+        {
+            foreach(var editor in s_activeEditors)
+                editor.OnSyncEditor(target);
+        }
+
         // Section and tab selection state
 
         SavedInt m_SelectedSection = new SavedInt("PlayerSettings.ShownSection", -1);
@@ -483,22 +490,8 @@ namespace UnityEditor
         string m_LocalizedTargetName;
 
         // reorderable lists of graphics devices, per platform
-        static Dictionary<BuildTarget, ReorderableList> s_GraphicsDeviceLists = new Dictionary<BuildTarget, ReorderableList>();
-
-        public static void SyncPlatformAPIsList(BuildTarget target)
-        {
-            if (!s_GraphicsDeviceLists.ContainsKey(target))
-                return;
-            s_GraphicsDeviceLists[target].list = PlayerSettings.GetGraphicsAPIs(target).ToList();
-        }
-
-        static ReorderableList s_ScriptingDefineSymbolsList;
-        static ReorderableList s_ColorGamutList;
-
-        public static void SyncColorGamuts()
-        {
-            s_ColorGamutList.list = PlayerSettings.GetColorGamuts().ToList();
-        }
+        Dictionary<BuildTarget, ReorderableList> m_GraphicsDeviceLists = new Dictionary<BuildTarget, ReorderableList>();
+        ReorderableList m_ColorGamutList;
 
         int scriptingDefinesControlID = 0;
 
@@ -549,6 +542,18 @@ namespace UnityEditor
         internal PlayerSettingsType playerSettingsType = PlayerSettingsType.Global;
         internal bool IsBuildProfileEditor() => playerSettingsType == PlayerSettingsType.ActiveBuildProfile || playerSettingsType == PlayerSettingsType.NonActiveBuildProfile;
         internal bool IsActivePlayerSettingsEditor() => (playerSettingsType == PlayerSettingsType.Global && !BuildProfileContext.ProjectHasActiveProfileWithPlayerSettings()) || playerSettingsType == PlayerSettingsType.ActiveBuildProfile;
+
+        internal void OnTargetObjectChangedDirectly() => m_OnTrackSerializedObjectValueChanged?.Invoke(serializedObject);
+
+        internal void OnSyncEditor(BuildTarget target)
+        {
+            SyncColorGamuts();
+
+            if (target == BuildTarget.NoTarget)
+                return;
+
+            SyncPlatformAPIsList(target);
+        }
 
         const string kSelectedPlatform = "PlayerSettings.SelectedPlatform";
 
@@ -736,7 +741,7 @@ namespace UnityEditor
 
             // we clear it just to be on the safe side:
             // we access this cache both from player settings editor and script side when changing api
-            s_GraphicsDeviceLists.Clear();
+            m_GraphicsDeviceLists.Clear();
 
             var selectedPlatform = SessionState.GetInt(kSelectedPlatform, currentPlatform);
             if (selectedPlatform < 0)
@@ -834,6 +839,8 @@ namespace UnityEditor
                     != next.GetLightmapStreamingEnabledForPlatformGroup_Internal(nextBuildTargetGroup))
                 || (current.GetLightmapStreamingPriorityForPlatformGroup_Internal(currentBuildTargetGroup)
                     != next.GetLightmapStreamingPriorityForPlatformGroup_Internal(nextBuildTargetGroup));
+            bool isShaderPrecisionChanged = PlayerSettings.ShouldSyncShaderPrecisionModel(current, next);
+
             EditorApplication.delayCall += () =>
             {
                 if (isHDRCubemapEncodingChanged)
@@ -849,6 +856,11 @@ namespace UnityEditor
                 if (isLightmapStreamingChanged)
                 {
                     Lightmapping.OnUpdateLightmapStreaming(nextBuildTargetGroup);
+                }
+
+                if (isShaderPrecisionChanged)
+                {
+                    PlayerSettings.SyncShaderPrecisionModel();
                 }
             };
         }
@@ -1404,12 +1416,13 @@ namespace UnityEditor
         private void AddGraphicsDeviceMenuSelected(object userData, string[] options, int selected)
         {
             var target = (BuildTarget)userData;
-            var apis = PlayerSettings.GetGraphicsAPIs(target);
+            var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
             if (apis == null)
                 return;
             var apiToAdd = GraphicsDeviceTypeFromString(options[selected]);
             apis = apis.Append(apiToAdd).ToArray();
-            PlayerSettings.SetGraphicsAPIs(target, apis);
+            m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
+            OnTargetObjectChangedDirectly();
         }
 
         private void AddGraphicsDeviceElement(BuildTarget target, Rect rect, ReorderableList list)
@@ -1454,7 +1467,7 @@ namespace UnityEditor
 
         private void RemoveGraphicsDeviceElement(BuildTarget target, ReorderableList list)
         {
-            var apis = PlayerSettings.GetGraphicsAPIs(target);
+            var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
             if (apis == null)
                 return;
             // don't allow removing the last API
@@ -1473,7 +1486,7 @@ namespace UnityEditor
 
         private void ReorderGraphicsDeviceElement(BuildTarget target, ReorderableList list)
         {
-            var previousAPIs = PlayerSettings.GetGraphicsAPIs(target);
+            var previousAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
             var apiList = (List<GraphicsDeviceType>)list.list;
             var apis = apiList.ToArray();
 
@@ -1551,9 +1564,12 @@ namespace UnityEditor
         private void ApplyChangeGraphicsApiAction(BuildTarget target, GraphicsDeviceType[] apis, ChangeGraphicsApiAction action)
         {
             if (action.changeList)
-                PlayerSettings.SetGraphicsAPIs(target, apis);
+            {
+                m_CurrentTarget.SetGraphicsAPIs_Internal(target, apis, true);
+                OnTargetObjectChangedDirectly();
+            }
             else
-                s_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
+                m_GraphicsDeviceLists.Remove(target); // we cancelled the list change, so remove the cached one
 
             if (action.reloadGfx)
             {
@@ -1570,7 +1586,7 @@ namespace UnityEditor
 
         private void DrawGraphicsDeviceElement(BuildTarget target, Rect rect, int index, bool selected, bool focused)
         {
-            var name = GraphicsDeviceTypeToString(target, (GraphicsDeviceType)s_GraphicsDeviceLists[target].list[index]);
+            var name = GraphicsDeviceTypeToString(target, (GraphicsDeviceType)m_GraphicsDeviceLists[target].list[index]);
 
             GUI.Label(rect, name, EditorStyles.label);
         }
@@ -1645,7 +1661,7 @@ namespace UnityEditor
             if (!hasES31Options)
                 return;
 
-            var apis = PlayerSettings.GetGraphicsAPIs(targetPlatform);
+            var apis = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             // only available if we include ES3
             var hasMinES3 = apis.Contains(GraphicsDeviceType.OpenGLES3);
             if (!hasMinES3)
@@ -1659,7 +1675,7 @@ namespace UnityEditor
         void ExclusiveGraphicsAPIsGUI(BuildTarget targetPlatform, string displayTitle)
         {
             EditorGUI.BeginChangeCheck();
-            GraphicsDeviceType[] currentDevices = PlayerSettings.GetGraphicsAPIs(targetPlatform);
+            GraphicsDeviceType[] currentDevices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
 
             GUIContent[] names = new GUIContent[availableDevices.Length];
@@ -1672,7 +1688,8 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck() && selected != currentDevices[0])
             {
                 Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                PlayerSettings.SetGraphicsAPIs(targetPlatform, new GraphicsDeviceType[] { selected });
+                m_CurrentTarget.SetGraphicsAPIs_Internal(targetPlatform, new GraphicsDeviceType[] { selected }, true);
+                OnTargetObjectChangedDirectly();
             }
         }
 
@@ -1689,12 +1706,13 @@ namespace UnityEditor
 
             // toggle for automatic API selection
             EditorGUI.BeginChangeCheck();
-            var automatic = PlayerSettings.GetUseDefaultGraphicsAPIs(targetPlatform);
+            var automatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
             automatic = EditorGUILayout.Toggle(string.Format(L10n.Tr("Auto Graphics API {0}"), (platformTitle ?? string.Empty)), automatic);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
-                PlayerSettings.SetUseDefaultGraphicsAPIs(targetPlatform, automatic);
+                m_CurrentTarget.SetUseDefaultGraphicsAPIs_Internal(targetPlatform, automatic);
+                OnTargetObjectChangedDirectly();
             }
 
             // graphics API list if not automatic
@@ -1717,9 +1735,9 @@ namespace UnityEditor
                 }
 
                 // create reorderable list for this target if needed
-                if (!s_GraphicsDeviceLists.ContainsKey(targetPlatform))
+                if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
                 {
-                    GraphicsDeviceType[] devices = PlayerSettings.GetGraphicsAPIs(targetPlatform);
+                    GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
                     var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
                     var rlist = new ReorderableList(devicesList, typeof(GraphicsDeviceType), true, true, true, true);
                     rlist.onAddDropdownCallback = (rect, list) => AddGraphicsDeviceElement(targetPlatform, rect, list);
@@ -1730,15 +1748,15 @@ namespace UnityEditor
                     rlist.drawHeaderCallback = (rect) => GUI.Label(rect, displayTitle, EditorStyles.label);
                     rlist.elementHeight = 16;
 
-                    s_GraphicsDeviceLists.Add(targetPlatform, rlist);
+                    m_GraphicsDeviceLists.Add(targetPlatform, rlist);
                 }
 
-                if (targetPlatform == BuildTarget.StandaloneOSX && s_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
+                if (targetPlatform == BuildTarget.StandaloneOSX && m_GraphicsDeviceLists[BuildTarget.StandaloneOSX].list.Contains(GraphicsDeviceType.OpenGLCore))
                 {
                     EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
                 }
 
-                s_GraphicsDeviceLists[targetPlatform].DoLayoutList();
+                m_GraphicsDeviceLists[targetPlatform].DoLayoutList();
 
                 //@TODO: undo
             }
@@ -1823,9 +1841,11 @@ namespace UnityEditor
         private void AddColorGamutMenuSelected(object userData, string[] options, int selected)
         {
             var colorGamuts = (ColorGamut[])userData;
-            var colorGamutList = PlayerSettings.GetColorGamuts().ToList();
+            var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
             colorGamutList.Add(colorGamuts[selected]);
-            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+            m_CurrentTarget.SetColorGamuts_Internal(colorGamutList.ToArray());
+            OnTargetObjectChangedDirectly();
+            SyncColorGamuts();
         }
 
         private bool CanRemoveColorGamutElement(ReorderableList list)
@@ -1837,7 +1857,7 @@ namespace UnityEditor
 
         private void RemoveColorGamutElement(ReorderableList list)
         {
-            var colorGamutList = PlayerSettings.GetColorGamuts().ToList();
+            var colorGamutList = m_CurrentTarget.GetColorGamuts_Internal().ToList();
             // don't allow removing the last ColorGamut
             if (colorGamutList.Count < 2)
             {
@@ -1845,18 +1865,22 @@ namespace UnityEditor
                 return;
             }
             colorGamutList.RemoveAt(list.index);
-            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+            m_CurrentTarget.SetColorGamuts_Internal(colorGamutList.ToArray());
+            OnTargetObjectChangedDirectly();
+            SyncColorGamuts();
         }
 
         private void ReorderColorGamutElement(ReorderableList list)
         {
             var colorGamutList = (List<ColorGamut>)list.list;
-            PlayerSettings.SetColorGamuts(colorGamutList.ToArray());
+            m_CurrentTarget.SetColorGamuts_Internal(colorGamutList.ToArray());
+            OnTargetObjectChangedDirectly();
+            SyncColorGamuts();
         }
 
         private void DrawColorGamutElement(BuildTargetGroup targetGroup, Rect rect, int index, bool selected, bool focused)
         {
-            var colorGamut = s_ColorGamutList.list[index];
+            var colorGamut = m_ColorGamutList.list[index];
             GUI.Label(rect, GetColorGamutDisplayString(targetGroup, (ColorGamut)colorGamut), EditorStyles.label);
         }
 
@@ -1874,9 +1898,9 @@ namespace UnityEditor
                (properties?.SupportsColorGamut ?? false)))
                 return;
 
-            if (s_ColorGamutList == null)
+            if (m_ColorGamutList == null)
             {
-                ColorGamut[] colorGamuts = PlayerSettings.GetColorGamuts();
+                ColorGamut[] colorGamuts = m_CurrentTarget.GetColorGamuts_Internal();
                 var colorGamutsList = (colorGamuts != null) ? colorGamuts.ToList() : new List<ColorGamut>();
                 var rlist = new ReorderableList(colorGamutsList, typeof(ColorGamut), true, true, true, true);
                 rlist.onCanRemoveCallback = CanRemoveColorGamutElement;
@@ -1884,23 +1908,23 @@ namespace UnityEditor
                 rlist.onReorderCallback = ReorderColorGamutElement;
                 rlist.elementHeight = 16;
 
-                s_ColorGamutList = rlist;
+                m_ColorGamutList = rlist;
             }
 
             // On standalone inspector mention that the setting applies only to Mac
             // (Temporarily until other standalones support this setting)
             GUIContent header = targetGroup == BuildTargetGroup.Standalone ? SettingsContent.colorGamutForMac : SettingsContent.colorGamut;
-            s_ColorGamutList.drawHeaderCallback = (rect) =>
+            m_ColorGamutList.drawHeaderCallback = (rect) =>
                 GUI.Label(rect, header, EditorStyles.label);
 
             // we want to change the displayed text per platform, to indicate unsupported gamuts
-            s_ColorGamutList.onAddDropdownCallback = (rect, list) =>
+            m_ColorGamutList.onAddDropdownCallback = (rect, list) =>
                 AddColorGamutElement(targetGroup, rect, list);
 
-            s_ColorGamutList.drawElementCallback = (rect, index, selected, focused) =>
+            m_ColorGamutList.drawElementCallback = (rect, index, selected, focused) =>
                 DrawColorGamutElement(targetGroup, rect, index, selected, focused);
 
-            s_ColorGamutList.DoLayoutList();
+            m_ColorGamutList.DoLayoutList();
         }
 
         public void DebugAndCrashReportingGUI(BuildPlatform platform,
@@ -2051,13 +2075,17 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
             {
                 EditorGUI.BeginChangeCheck();
-
-                ShaderPrecisionModel currShaderPrecisionModel = PlayerSettings.GetShaderPrecisionModel();
+                ShaderPrecisionModel currShaderPrecisionModel = (ShaderPrecisionModel) m_ShaderPrecisionModel.intValue;
                 ShaderPrecisionModel[] shaderPrecisionModelValues = { ShaderPrecisionModel.PlatformDefault, ShaderPrecisionModel.Unified };
-                ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues, SettingsContent.shaderPrecisionModelOptions);
+                ShaderPrecisionModel newShaderPrecisionModel = BuildEnumPopup(
+                    SettingsContent.shaderPrecisionModel, currShaderPrecisionModel, shaderPrecisionModelValues,
+                    SettingsContent.shaderPrecisionModelOptions);
                 if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
                 {
-                    PlayerSettings.SetShaderPrecisionModel(newShaderPrecisionModel);
+                    m_ShaderPrecisionModel.intValue = (int) newShaderPrecisionModel;
+                    serializedObject.ApplyModifiedProperties();
+                    if (IsActivePlayerSettingsEditor())
+                        PlayerSettings.SyncShaderPrecisionModel();
                 }
             }
 
@@ -2257,7 +2285,7 @@ namespace UnityEditor
             {
                 if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
                 {
-                    GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                    GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
 
                     hdrDisplaySupported = gfxAPIs[0] == GraphicsDeviceType.Direct3D11 || gfxAPIs[0] == GraphicsDeviceType.Direct3D12 || gfxAPIs[0] == GraphicsDeviceType.Vulkan || gfxAPIs[0] == GraphicsDeviceType.Metal;
                 }
@@ -2265,12 +2293,12 @@ namespace UnityEditor
 
             if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
             {
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
             }
             else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Android)
             {
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
             }
 
@@ -2279,7 +2307,7 @@ namespace UnityEditor
             {
                 bool platformSupportsBatching = false;
 
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 foreach (GraphicsDeviceType api in gfxAPIs)
                 {
                     if (api == GraphicsDeviceType.Switch ||
@@ -2339,7 +2367,7 @@ namespace UnityEditor
             }
 
             bool graphicsJobsOptionEnabled = true;
-            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.defaultTarget);
+            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
 
             if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
@@ -2347,31 +2375,33 @@ namespace UnityEditor
                 // on XBoxOne, we only have kGfxJobModeNative active for DX12 API and kGfxJobModeLegacy for the DX11 API
                 // no need for a drop down popup for XBoxOne
                 // also if XboxOneD3D12 is selected as GraphicsAPI, then we want to set graphics jobs and disable the user option
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 GraphicsJobMode newGfxJobMode = GraphicsJobMode.Legacy;
                 if (gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12)
                 {
                     newGfxJobMode = GraphicsJobMode.Split;
                     if (graphicsJobs == false)
                     {
-                        PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
+                        PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, true);
                         graphicsJobs = true;
                         newGraphicsJobs = true;
                     }
                 }
-                PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
-                PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
+                PlayerSettings.SetGraphicsJobModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newGfxJobMode);
+                PlayerSettings.SetGraphicsThreadingModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, GfxThreadingMode.SplitJobs);
+                OnTargetObjectChangedDirectly();
             }
             else if (platform.namedBuildTarget == NamedBuildTarget.PS5)
             {
                 // On PS5NGGC, we always have graphics jobs enabled so we disable the option in that case
-                GraphicsDeviceType[] gfxAPIs = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 if (gfxAPIs[0] == GraphicsDeviceType.PlayStation5NGGC)
                 {
                     graphicsJobsOptionEnabled = false;
                     if (graphicsJobs == false)
                     {
-                        PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, true);
+                        PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, true);
+                        OnTargetObjectChangedDirectly();
                         graphicsJobs = true;
                         newGraphicsJobs = true;
                     }
@@ -2400,10 +2430,10 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
+                    PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newGraphicsJobs);
+                    OnTargetObjectChangedDirectly();
 
-                    bool restartEditor = CheckApplyGraphicsJobsModeChange(platform.defaultTarget);
-                    if (restartEditor)
+                    if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
                     {
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                         GUIUtility.ExitGUI();
@@ -2416,7 +2446,7 @@ namespace UnityEditor
                 var checkGfxJobModeSupport = (Enum value) => { return settingsExtension != null ? settingsExtension.AdjustGfxJobMode((GraphicsJobMode)value) == (GraphicsJobMode)value : true; };
 
                 EditorGUI.BeginChangeCheck();
-                GraphicsJobMode currGfxJobMode = PlayerSettings.GetGraphicsJobModeForPlatform(platform.defaultTarget);
+                GraphicsJobMode currGfxJobMode = PlayerSettings.GetGraphicsJobModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
                 GraphicsJobMode newGfxJobMode = (GraphicsJobMode)EditorGUILayout.EnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, checkGfxJobModeSupport, false);
 
                 if (EditorGUI.EndChangeCheck() && (newGfxJobMode != currGfxJobMode))
@@ -2434,17 +2464,17 @@ namespace UnityEditor
                 // Finally we apply the change of gfx job mode
                 if (newGfxJobMode != currGfxJobMode)
                 {
-                    PlayerSettings.SetGraphicsJobModeForPlatform(platform.defaultTarget, newGfxJobMode);
+                    PlayerSettings.SetGraphicsJobModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newGfxJobMode);
 
                     if(newGfxJobMode == GraphicsJobMode.Native)
-                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, GfxThreadingMode.ClientWorkerNativeJobs);
                     else if (newGfxJobMode == GraphicsJobMode.Legacy)
-                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, GfxThreadingMode.ClientWorkerJobs);
                     else if (newGfxJobMode == GraphicsJobMode.Split)
-                        PlayerSettings.SetGraphicsThreadingModeForPlatform(platform.defaultTarget, GfxThreadingMode.SplitJobs);
+                        PlayerSettings.SetGraphicsThreadingModeForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, GfxThreadingMode.SplitJobs);
 
-                    bool restartEditor = CheckApplyGraphicsJobsModeChange(platform.defaultTarget);
-                    if (restartEditor)
+                    OnTargetObjectChangedDirectly();
+                    if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))
                     {
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                         GUIUtility.ExitGUI();
@@ -2688,8 +2718,8 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
             {
                 var target = platform.namedBuildTarget.ToBuildTargetGroup();
-                bool debugModeEnabled = PlayerSettings.GetLoadStoreDebugModeEnabledForPlatformGroup(target);
-                bool debugModeEditorOnly = PlayerSettings.GetLoadStoreDebugModeEditorOnlyForPlatformGroup(target);
+                bool debugModeEnabled = m_CurrentTarget.GetLoadStoreDebugModeEnabledForPlatformGroup_Internal(target);
+                bool debugModeEditorOnly = m_CurrentTarget.GetLoadStoreDebugModeEditorOnlyForPlatformGroup_Internal(target);
 
                 EditorGUI.BeginChangeCheck();
                 debugModeEnabled = EditorGUILayout.Toggle(SettingsContent.loadStoreDebugModeCheckbox, debugModeEnabled);
@@ -2701,8 +2731,9 @@ namespace UnityEditor
                 }
                 if (EditorGUI.EndChangeCheck())
                 {
-                    PlayerSettings.SetLoadStoreDebugModeEnabledForPlatformGroup(target, debugModeEnabled);
-                    PlayerSettings.SetLoadStoreDebugModeEditorOnlyForPlatformGroup(target, debugModeEditorOnly);
+                    m_CurrentTarget.SetLoadStoreDebugModeEnabledForPlatformGroup_Internal(target, debugModeEnabled);
+                    m_CurrentTarget.SetLoadStoreDebugModeEditorOnlyForPlatformGroup_Internal(target, debugModeEditorOnly);
+                    OnTargetObjectChangedDirectly();
 
                     GUIUtility.ExitGUI();
                 }
@@ -2713,7 +2744,7 @@ namespace UnityEditor
 
         private bool VirtualTexturingInvalidGfxAPI(BuildTarget target, bool checkEditor)
         {
-            GraphicsDeviceType[] gfxTypes = PlayerSettings.GetGraphicsAPIs(target);
+            GraphicsDeviceType[] gfxTypes = m_CurrentTarget.GetGraphicsAPIs_Internal(target);
 
             bool supportedAPI = true;
             foreach (GraphicsDeviceType api in gfxTypes)
@@ -2754,7 +2785,7 @@ namespace UnityEditor
         {
             foreach (var target in k_WebGPUSupportedBuildTargets)
             {
-                if (PlayerSettings.GetGraphicsAPIs(target).Contains(GraphicsDeviceType.WebGPU))
+                if (m_CurrentTarget.GetGraphicsAPIs_Internal(target).Contains(GraphicsDeviceType.WebGPU))
                 {
                     return true;
                 }
@@ -2993,6 +3024,11 @@ namespace UnityEditor
             return (EditorAssembliesCompatibilityLevel)m_EditorAssembliesCompatibilityLevel.intValue;
         }
 
+        bool HasAnyNetFXCompatibilityLevel()
+        {
+            return m_CurrentTarget?.HasAnyNetFXCompatibilityLevel() ?? false;
+        }
+
         private void SetEditorAssembliesCompatibilityLevel(EditorAssembliesCompatibilityLevel editorAssembliesCompatibilityLevel)
         {
             // We won't allow switching back to the "Default" value.
@@ -3082,7 +3118,7 @@ namespace UnityEditor
                 }
 
                 // Editor Assemblies Compatibility level
-                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects))
+                using (new EditorGUI.DisabledScope(m_SerializedObject.isEditingMultipleObjects || HasAnyNetFXCompatibilityLevel()))
                 {
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
@@ -4172,6 +4208,21 @@ namespace UnityEditor
                 return false;
 
             return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(settingsBuildTarget, SystemInfo.operatingSystemFamily);
+        }
+
+        void SyncColorGamuts()
+        {
+            if (m_ColorGamutList == null)
+                return;
+
+            m_ColorGamutList.list = m_CurrentTarget.GetColorGamuts_Internal().ToList();
+        }
+
+        void SyncPlatformAPIsList(BuildTarget target)
+        {
+            if (!m_GraphicsDeviceLists.ContainsKey(target))
+                return;
+            m_GraphicsDeviceLists[target].list = m_CurrentTarget.GetGraphicsAPIs_Internal(target).ToList();
         }
     }
 }

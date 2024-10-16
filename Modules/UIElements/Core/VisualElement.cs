@@ -222,8 +222,8 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
 
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceDrawer] Object dataSource;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSource_UxmlAttributeFlags;
+            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
@@ -279,8 +279,8 @@ namespace UnityEngine.UIElements
                     e.tabIndex = tabIndex;
                 if (ShouldWriteAttributeValue(focusable_UxmlAttributeFlags))
                     e.focusable = focusable;
-                if (ShouldWriteAttributeValue(dataSource_UxmlAttributeFlags))
-                    e.dataSource = dataSource ? dataSource : null;
+                if (ShouldWriteAttributeValue(dataSourceUnityObject_UxmlAttributeFlags))
+                    e.dataSourceUnityObject = dataSourceUnityObject ? dataSourceUnityObject : null;
                 if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
                     e.dataSourcePathString = dataSourcePathString;
                 if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))

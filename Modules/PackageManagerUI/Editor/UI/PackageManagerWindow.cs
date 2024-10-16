@@ -63,7 +63,6 @@ namespace UnityEditor.PackageManager.UI
         internal static PackageManagerWindow instance { get; private set; }
 
         private PackageManagerWindowRoot m_Root;
-        private ScrollView m_ScrollView;
 
         internal const string k_UpmUrl = "com.unity3d.kharma:upmpackage/";
 
@@ -76,7 +75,7 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
-            minSize = new Vector2(1050, 250);
+            minSize = new Vector2(748, 250);
             BuildGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
@@ -98,23 +97,12 @@ namespace UnityEditor.PackageManager.UI
             var assetStoreCachePathProxy = container.Resolve<IAssetStoreCachePathProxy>();
             var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
             var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
-
-            // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
-            // Since the StyleSheet is added to PackageManagerRoot, the css is exceptionally added directly to the object
-            m_ScrollView = new ScrollView
-            {
-                mode = ScrollViewMode.Horizontal,
-                style =
-                {
-                    flexGrow = 1
-                }
-            };
+            
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, operationDispatcher);
             try
             {
                 m_Root.OnEnable();
-                rootVisualElement.Add(m_ScrollView);
-                m_ScrollView.Add(m_Root);
+                rootVisualElement.Add(m_Root);
             }
             catch (ResourceLoaderException)
             {
@@ -320,7 +308,7 @@ namespace UnityEditor.PackageManager.UI
         internal static void SelectPackageAndPageStatic(string packageToSelect = null, string pageId = null, bool refresh = false, string searchText = "")
         {
             instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(1050, 250);
+            instance.minSize = new Vector2(748, 250);
             instance.m_Root.SelectPackageAndPage(packageToSelect, pageId, refresh, searchText);
             instance.Show();
         }
