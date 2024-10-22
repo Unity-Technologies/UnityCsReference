@@ -1971,7 +1971,8 @@ namespace UnityEditor
 
             public override void OnGUI()
             {
-                s_Inspector.SelfAndInterCollisionEditing();
+                if (s_Inspector != null)
+                    s_Inspector.SelfAndInterCollisionEditing();
             }
         }
     }

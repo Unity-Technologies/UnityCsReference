@@ -785,13 +785,13 @@ namespace UnityEditor
             if (instanceID == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
 
-            // Ensure we add the main asset as ancestor if input is a subasset
+            // Ensure we add the main asset as ancestor if input is a sub-asset
             int mainAssetInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetAssetPath(instanceID));
             bool isSubAsset = mainAssetInstanceID != instanceID;
             if (isSubAsset)
                 ancestors.Add(mainAssetInstanceID);
 
-            // Find ancestors of main aset
+            // Find ancestors of main asset
             string currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(mainAssetInstanceID));
             while (!string.IsNullOrEmpty(currentFolderPath))
             {
@@ -1020,11 +1020,13 @@ namespace UnityEditor
                 {
                     infotext.AppendLine();
                     string name = (paths.Length == 1) ? "This Material" : "One or more of these Material(s)";
-                    infotext.AppendLine(name + " has one or more children. Would you like to reparent all of these children to their closest remaining ancestor?");
-                    int dialogOptionIndex = EditorUtility.DisplayDialogComplex(title, infotext.ToString(), L10n.Tr("Delete and reparent children"), L10n.Tr("Delete only"), L10n.Tr("Cancel"));
-                    if (dialogOptionIndex == 0)
+                    infotext.AppendLine(name + " is inherited by one or more children. Deleting will result in the children re-mapping to their closest remaining ancestor. Would you like to proceed with re-parenting?");
+
+                    bool dialogOptionIndex = EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete and re-parent children"), L10n.Tr("Cancel"));
+
+                    if (dialogOptionIndex)
                         reparentMaterials = true;
-                    else if (dialogOptionIndex == 2)
+                    else
                         return false;
                 }
                 else if (!EditorUtility.DisplayDialog(title, infotext.ToString(), L10n.Tr("Delete"), L10n.Tr("Cancel")))

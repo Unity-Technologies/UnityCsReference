@@ -1494,6 +1494,7 @@ namespace UnityEditor.Search
             return OpenWithContextualProviders("", providerIds);
         }
 
+        [Flags]
         internal enum OpenWithContextualProvidersFlags
         {
             None = 0,
