@@ -16,6 +16,8 @@ namespace UnityEngine
             _synchronizationContext = synchronizationContext;
         }
 
+        public static SynchronizationContext MainThreadSynchronizationContext => _synchronizationContext;
+
         public static MainThreadAwaitable MainThreadAsync()
         {
             return new MainThreadAwaitable(_synchronizationContext);
@@ -24,6 +26,74 @@ namespace UnityEngine
         public static BackgroundThreadAwaitable BackgroundThreadAsync()
         {
             return new BackgroundThreadAwaitable(_synchronizationContext);
+        }
+    }
+
+    public static class AwaitableExtension
+    {
+        public static async Awaitable<T> OnBackgroundThread<T>(this Task<T> task)
+        {
+            var result = await task;
+            await Awaitable.BackgroundThreadAsync();
+            return result;
+        }
+
+        public static async Awaitable<T> OnMainThread<T>(this Task<T> task)
+        {
+            var result = await task;
+            await Awaitable.MainThreadAsync();
+            return result;
+        }
+
+        public static async Awaitable<T> OnEndOfFrame<T>(this Task<T> task,CancellationToken cancellationToken = default)
+        {
+            var result = await task;
+            await Awaitable.EndOfFrameAsync(cancellationToken);
+            return result;
+        }
+
+        public static async Awaitable<T> OnFixedUpdate<T>(this Task<T> task,CancellationToken cancellationToken = default)
+        {
+            var result = await task;
+            await Awaitable.FixedUpdateAsync(cancellationToken);
+            return result;
+        }
+
+        public static async Awaitable<T> OnNextFrame<T>(this Task<T> task,CancellationToken cancellationToken = default)
+        {
+            var result = await task;
+            await Awaitable.NextFrameAsync(cancellationToken);
+            return result;
+        }
+
+        public static async Awaitable OnBackgroundThread(this Task task)
+        {
+            await task;
+            await Awaitable.BackgroundThreadAsync();
+        }
+
+        public static async Awaitable OnMainThread(this Task task)
+        {
+            await task;
+            await Awaitable.MainThreadAsync();
+        }
+
+        public static async Awaitable OnEndOfFrame(this Task task,CancellationToken cancellationToken = default)
+        {
+            await task;
+            await Awaitable.EndOfFrameAsync(cancellationToken);
+        }
+
+        public static async Awaitable OnFixedUpdate(this Task task,CancellationToken cancellationToken = default)
+        {
+            await task;
+            await Awaitable.FixedUpdateAsync(cancellationToken);
+        }
+
+        public static async Awaitable OnNextFrame(this Task task,CancellationToken cancellationToken = default)
+        {
+            await task;
+            await Awaitable.NextFrameAsync(cancellationToken);
         }
     }
 
