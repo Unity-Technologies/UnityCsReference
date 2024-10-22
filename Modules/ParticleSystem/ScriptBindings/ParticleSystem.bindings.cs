@@ -231,6 +231,7 @@ namespace UnityEngine
         unsafe internal static extern JobHandle ScheduleManagedJob(ref JobsUtility.JobScheduleParameters parameters, void* additionalData);
         [ThreadSafe]
         unsafe internal static extern void CopyManagedJobData(void* systemPtr, out NativeParticleData particleData);
+        internal static extern bool UserJobCanBeScheduled();
 
 
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]

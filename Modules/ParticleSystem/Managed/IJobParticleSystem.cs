@@ -94,28 +94,50 @@ namespace UnityEngine.ParticleSystemJobs
 
     public static class IParticleSystemJobExtensions
     {
+        private static readonly string k_UserJobScheduledOutsideOfCallbackErrorMsg = "Particle System jobs can only be scheduled in MonoBehaviour.OnParticleUpdateJobScheduled()";
         unsafe public static JobHandle Schedule<T>(this T jobData, ParticleSystem ps, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParticleSystem
         {
-            var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemExtensions.GetReflectionData<T>());
-            var handle = ParticleSystem.ScheduleManagedJob(ref scheduleParams, ps.GetManagedJobData());
-            ps.SetManagedJobHandle(handle);
-            return handle;
+            if (ParticleSystem.UserJobCanBeScheduled())
+            {
+                var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemExtensions.GetReflectionData<T>());
+                var handle = ParticleSystem.ScheduleManagedJob(ref scheduleParams, ps.GetManagedJobData());
+                ps.SetManagedJobHandle(handle);
+                return handle;
+            }
+            else
+            {
+                throw new InvalidOperationException(k_UserJobScheduledOutsideOfCallbackErrorMsg);
+            }
         }
 
         unsafe public static JobHandle Schedule<T>(this T jobData, ParticleSystem ps, int minIndicesPerJobCount, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParticleSystemParallelFor
         {
-            var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemParallelForExtensions.GetReflectionData<T>());
-            var handle = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParams, minIndicesPerJobCount, ps.GetManagedJobData(), null);
-            ps.SetManagedJobHandle(handle);
-            return handle;
+            if (ParticleSystem.UserJobCanBeScheduled())
+            {
+                var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemParallelForExtensions.GetReflectionData<T>());
+                var handle = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParams, minIndicesPerJobCount, ps.GetManagedJobData(), null);
+                ps.SetManagedJobHandle(handle);
+                return handle;
+            }
+            else
+            {
+                throw new InvalidOperationException(k_UserJobScheduledOutsideOfCallbackErrorMsg);
+            }
         }
 
         unsafe public static JobHandle ScheduleBatch<T>(this T jobData, ParticleSystem ps, int innerLoopBatchCount, JobHandle dependsOn = new JobHandle()) where T : struct, IJobParticleSystemParallelForBatch
         {
-            var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemParallelForBatchExtensions.GetReflectionData<T>());
-            var handle = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParams, innerLoopBatchCount, ps.GetManagedJobData(), null);
-            ps.SetManagedJobHandle(handle);
-            return handle;
+            if (ParticleSystem.UserJobCanBeScheduled())
+            {
+                var scheduleParams = ParticleSystemJobUtility.CreateScheduleParams(ref jobData, ps, dependsOn, IJobParticleSystemParallelForBatchExtensions.GetReflectionData<T>());
+                var handle = JobsUtility.ScheduleParallelForDeferArraySize(ref scheduleParams, innerLoopBatchCount, ps.GetManagedJobData(), null);
+                ps.SetManagedJobHandle(handle);
+                return handle;
+            }
+            else
+            {
+                throw new InvalidOperationException(k_UserJobScheduledOutsideOfCallbackErrorMsg);
+            }
         }
     }
 }
