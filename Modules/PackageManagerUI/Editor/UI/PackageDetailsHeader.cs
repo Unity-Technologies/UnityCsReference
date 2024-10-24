@@ -165,7 +165,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private static Button CreateLink(IPackageVersion version)
         {
-            var featureSetLink = new Button(() => { PackageManagerWindow.OpenPackageManager(version.name); });
+            var featureSetLink = new Button(() => { PackageManagerWindow.OpenAndSelectPackage(version.name); });
             featureSetLink.AddClasses("link featureSetLink");
             featureSetLink.text = version.displayName;
             return featureSetLink;

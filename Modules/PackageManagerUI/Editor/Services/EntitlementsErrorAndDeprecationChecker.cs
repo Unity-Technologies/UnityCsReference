@@ -55,7 +55,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (entitlementErrorPackage != null)
             {
-                PackageManagerWindow.OpenPackageManager(entitlementErrorPackage.name);
+                PackageManagerWindow.OpenAndSelectPackage(entitlementErrorPackage.name);
                 return true;
             }
 
@@ -87,7 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             switch (dialogResult)
             {
                 case 0:
-                    PackageManagerWindow.OpenPackageManager(deprecatedPackage.name);
+                    PackageManagerWindow.OpenAndSelectPackage(deprecatedPackage.name);
                     return true;
                 // Dismiss Forever
                 case 2:

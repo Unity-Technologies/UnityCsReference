@@ -5694,6 +5694,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DelayedSelectionHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\DelayedSelectionHandler.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs</Link>
     </Compile>
@@ -8450,6 +8453,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs</Link>

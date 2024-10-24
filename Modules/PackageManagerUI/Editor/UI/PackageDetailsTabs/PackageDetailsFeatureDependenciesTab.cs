@@ -195,7 +195,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             var pageId = version.isDirectDependency ? InProjectPage.k_Id : UnityRegistryPage.k_Id;
-            dependencyLink.clickable.clicked += () => PackageManagerWindow.SelectPackageAndPageStatic(version.name, pageId);
+            dependencyLink.clickable.clicked += () => PackageManagerWindow.OpenAndSelectPackage(version.name, pageId);
 
             UIUtils.SetElementDisplay(dependencyInfoBox, featureState == FeatureState.Customized);
             if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)

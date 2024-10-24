@@ -248,7 +248,7 @@ namespace UnityEditor.Toolbars
             // We only need the state to auto-refresh for custom tools.
             // For the built-in tools, we can refresh internally using RefreshAvailableTools if needed.
             if (!IsBuiltinTool())
-                EditorApplication.update += UpdateState;
+                EditorApplication.update += UpdateAvailability;
 
             if (m_TargetTool == Tool.View)
             {
@@ -264,7 +264,7 @@ namespace UnityEditor.Toolbars
             SceneViewMotion.viewToolActiveChanged -= UpdateState;
             
             if (!IsBuiltinTool())
-                EditorApplication.update -= UpdateState;
+                EditorApplication.update -= UpdateAvailability;
 
             if (m_TargetTool == Tool.View)
                 Tools.viewToolChanged -= UpdateViewToolContent;
@@ -358,18 +358,24 @@ namespace UnityEditor.Toolbars
 
         void UpdateState()
         {
-            SetValueWithoutNotify(IsActiveTool());
+            var isActiveTool = IsActiveTool();
+            if (value != isActiveTool)
+                SetValueWithoutNotify(isActiveTool);
 
+            UpdateAvailability();
+        }
+
+        void UpdateAvailability()
+        {
             var missing = EditorToolUtility.GetEditorToolWithEnum(m_TargetTool) is NoneTool;
             var display = missing ? DisplayStyle.None : DisplayStyle.Flex;
-            var enabled = currentVariant.IsAvailable();
-
             if (style.display != display)
             {
                 style.display = display;
                 displayChanged?.Invoke();
             }
 
+            var enabled = currentVariant.IsAvailable();
             if (enabledSelf != enabled)
                 enabledSelf = enabled;
         }

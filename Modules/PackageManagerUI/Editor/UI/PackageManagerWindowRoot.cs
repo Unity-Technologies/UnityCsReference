@@ -14,38 +14,35 @@ namespace UnityEditor.PackageManager.UI.Internal
 
     internal class PackageManagerWindowRoot : VisualElement, IWindow
     {
-        private PackageAndPageSelectionArgs m_DelayedPackageAndPageSelectionArgs;
-
         private const string k_SelectedInInspectorClassName = "selectedInInspector";
         public const string k_FocusedClassName = "focus";
 
-        private IResourceLoader m_ResourceLoader;
-        private IExtensionManager m_ExtensionManager;
-        private ISelectionProxy m_Selection;
-        private IPackageManagerPrefs m_PackageManagerPrefs;
-        private IPackageDatabase m_PackageDatabase;
-        private IPageManager m_PageManager;
-        private IProjectSettingsProxy m_SettingsProxy;
-        private IUnityConnectProxy m_UnityConnectProxy;
-        private IApplicationProxy m_ApplicationProxy;
-        private IUpmClient m_UpmClient;
-        private IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
-        private IPageRefreshHandler m_PageRefreshHandler;
-        private IPackageOperationDispatcher m_OperationDispatcher;
-
-        private void ResolveDependencies(IResourceLoader resourceLoader,
+        private readonly IResourceLoader m_ResourceLoader;
+        private readonly IExtensionManager m_ExtensionManager;
+        private readonly ISelectionProxy m_Selection;
+        private readonly IPackageManagerPrefs m_PackageManagerPrefs;
+        private readonly IPackageDatabase m_PackageDatabase;
+        private readonly IPageManager m_PageManager;
+        private readonly IUnityConnectProxy m_UnityConnectProxy;
+        private readonly IApplicationProxy m_ApplicationProxy;
+        private readonly IUpmClient m_UpmClient;
+        private readonly IAssetStoreCachePathProxy m_AssetStoreCachePathProxy;
+        private readonly IPageRefreshHandler m_PageRefreshHandler;
+        private readonly IPackageOperationDispatcher m_OperationDispatcher;
+        private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
+        public PackageManagerWindowRoot(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
             ISelectionProxy selection,
             IPackageManagerPrefs packageManagerPrefs,
             IPackageDatabase packageDatabase,
             IPageManager pageManager,
-            IProjectSettingsProxy settingsProxy,
             IUnityConnectProxy unityConnectProxy,
             IApplicationProxy applicationProxy,
             IUpmClient upmClient,
             IAssetStoreCachePathProxy assetStoreCachePathProxy,
             IPageRefreshHandler pageRefreshHandler,
-            IPackageOperationDispatcher packageOperationDispatcher)
+            IPackageOperationDispatcher packageOperationDispatcher,
+            IDelayedSelectionHandler delayedSelectionHandler)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -53,30 +50,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageManagerPrefs = packageManagerPrefs;
             m_PackageDatabase = packageDatabase;
             m_PageManager = pageManager;
-            m_SettingsProxy = settingsProxy;
             m_UnityConnectProxy = unityConnectProxy;
             m_ApplicationProxy = applicationProxy;
             m_UpmClient = upmClient;
             m_AssetStoreCachePathProxy = assetStoreCachePathProxy;
             m_PageRefreshHandler = pageRefreshHandler;
             m_OperationDispatcher = packageOperationDispatcher;
-        }
-
-        public PackageManagerWindowRoot(IResourceLoader resourceLoader,
-                                        IExtensionManager extensionManager,
-                                        ISelectionProxy selection,
-                                        IPackageManagerPrefs packageManagerPrefs,
-                                        IPackageDatabase packageDatabase,
-                                        IPageManager pageManager,
-                                        IProjectSettingsProxy settingsProxy,
-                                        IUnityConnectProxy unityConnectProxy,
-                                        IApplicationProxy applicationProxy,
-                                        IUpmClient upmClient,
-                                        IAssetStoreCachePathProxy assetStoreCachePathProxy,
-                                        IPageRefreshHandler pageRefreshHandler,
-                                        IPackageOperationDispatcher packageOperationDispatcher)
-        {
-            ResolveDependencies(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, settingsProxy, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, packageOperationDispatcher);
+            m_DelayedSelectionHandler = delayedSelectionHandler;
         }
 
         public void OnEnable()
@@ -100,7 +80,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             globalSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.sidebarWidth;
             mainContainerSplitter.fixedPaneInitialDimension = m_PackageManagerPrefs.leftContainerWidth;
 
-            m_PageRefreshHandler.onRefreshOperationFinish += OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             m_AssetStoreCachePathProxy.onConfigChanged += OnAssetStoreCacheConfigChange;
@@ -223,7 +202,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_PackageManagerPrefs.activePageIdFromLastUnitySession = m_PageManager.activePage.id;
 
-            m_PageRefreshHandler.onRefreshOperationFinish -= OnRefreshOperationFinish;
             m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
             m_AssetStoreCachePathProxy.onConfigChanged -= OnAssetStoreCacheConfigChange;
 
@@ -275,54 +253,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             LoadingSpinner.ClearAllSpinners();
         }
 
-        private void OnRefreshOperationFinish()
-        {
-            if (m_DelayedPackageAndPageSelectionArgs == null || m_PageRefreshHandler.GetRefreshTimestamp(m_DelayedPackageAndPageSelectionArgs.page) <= 0)
-                return;
-
-            if (TryApplyPackageAndPageSelection(m_DelayedPackageAndPageSelectionArgs, false))
-                m_DelayedPackageAndPageSelectionArgs = null;
-        }
-
-        // Returns true if the selection is applied
-        private bool TryApplyPackageAndPageSelection(PackageAndPageSelectionArgs args, bool failIfPackageIsNotFoundInDatabase)
-        {
-            if (args == null)
-                return false;
-
-            if (args.page.id == MyAssetsPage.k_Id)
-            {
-                m_PageManager.activePage = args.page;
-                args.page.Load(args.packageToSelect);
-                return true;
-            }
-
-            // The !IsInitialFetchingDone check was added to the start of this function in the past for the Entitlement Error checker,
-            // But it caused `Open In Unity` to not work sometimes for the `My Assets` page. Hence we moved the check from the beginning
-            // of this function to after the `My Assets` logic is done so that we don't break `My Assets` and the Entitlement Error checker.
-            if (!m_PageRefreshHandler.IsInitialFetchingDone(m_PageManager.activePage))
-                return false;
-
-            if (string.IsNullOrEmpty(args.packageToSelect))
-            {
-                m_PageManager.activePage = args.page;
-                return true;
-            }
-
-            m_PackageDatabase.GetPackageAndVersionByIdOrName(args.packageToSelect, out var package, out var version, true);
-
-            if (package == null && failIfPackageIsNotFoundInDatabase)
-                return false;
-
-            m_PageManager.activePage = args.page;
-            if (package != null)
-            {
-                m_PageManager.activePage.SetNewSelection(package, true);
-                packageList.OnFocus();
-            }
-            return true;
-        }
-
         public void OnFocus()
         {
             AddToClassList(k_FocusedClassName);
@@ -358,47 +288,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddToClassList(k_SelectedInInspectorClassName);
             else
                 RemoveFromClassList(k_SelectedInInspectorClassName);
-        }
-
-        public void SelectPackageAndPage(string packageToSelect = null, string pageId = null, bool refresh = false, string searchText = null)
-        {
-            if (string.IsNullOrEmpty(packageToSelect) && string.IsNullOrEmpty(pageId))
-                return;
-
-            var args = new PackageAndPageSelectionArgs
-            {
-                packageToSelect = packageToSelect,
-                page = m_PageManager.GetPage(pageId)
-            };
-            if (args.page == null)
-            {
-                m_PackageDatabase.GetPackageAndVersionByIdOrName(packageToSelect, out var package, out var version, true);
-                if (package != null)
-                    args.page = m_PageManager.FindPage(package) ?? m_PageManager.activePage;
-                else
-                {
-                    var packageToSelectSplit = packageToSelect.Split('@');
-                    var versionString = packageToSelectSplit.Length == 2 ? packageToSelectSplit[1] : string.Empty;
-
-                    // Package is not found in PackageDatabase, but we can determine if it's a prerelease package or not with its version string.
-                    if (!m_SettingsProxy.enablePreReleasePackages && SemVersionParser.TryParse(versionString, out var semVersion) && semVersion?.GetExpOrPreOrReleaseTag() == PackageTag.PreRelease)
-                    {
-                        Debug.Log("You must check \"Enable Pre-release Package Versions\" in Project Settings > Package Manager in order to see this package.");
-                        args.packageToSelect = null;
-                    }
-                    args.page = m_PageManager.activePage;
-                }
-            }
-            if (args.page != null && (!string.IsNullOrEmpty(searchText) || !string.IsNullOrEmpty(packageToSelect)))
-                args.page.searchText = searchText;
-
-            if (refresh || m_PackageDatabase.isEmpty)
-            {
-                DelayRefresh(args.page);
-                m_DelayedPackageAndPageSelectionArgs = args;
-            }
-            else if (!TryApplyPackageAndPageSelection(args, true))
-                m_DelayedPackageAndPageSelectionArgs = args;
         }
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
@@ -447,7 +336,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void Select(string identifier)
         {
-            SelectPackageAndPage(identifier);
+            // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
+            // selection is set. That could happen when we want to open Package Manager and select a package, but
+            // the refresh call is not yet finished. It could also happen when we create a package and the newly
+            // crated package is not yet in the database until after package resolution.
+            m_DelayedSelectionHandler.SelectPackage(identifier);
         }
 
         public PackageSelectionArgs activeSelection
@@ -458,12 +351,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 // When there are multiple versions selected, we want to make the legacy single select arguments to be null
                 // that way extension UI implemented for single package selection will not show for multi-select cases.
-                var packages = selections.Select(selection =>
-                {
-                    var package = m_PackageDatabase.GetPackage(selection);
-                    return package;
-                }).ToArray();
-
+                var packages = selections.Select(selection => m_PackageDatabase.GetPackage(selection)).ToArray();
                 var package = packages.Length > 1 ? null : packages.FirstOrDefault();
                 return new PackageSelectionArgs { package = package, packageVersion = package?.versions.primary, packages = packages, window = this };
             }
@@ -485,11 +373,5 @@ namespace UnityEditor.PackageManager.UI.Internal
         private Sidebar sidebar => cache.Get<Sidebar>("sidebar");
         private TwoPaneSplitView globalSplitter => cache.Get<TwoPaneSplitView>("globalSplitter");
         private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainer");
-    }
-
-    internal class PackageAndPageSelectionArgs
-    {
-        public IPage page;
-        public string packageToSelect;
     }
 }

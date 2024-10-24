@@ -407,6 +407,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string movableUssClassName = ussClassName + "--movable";
 
+        internal const string k_FillElementName = "unity-fill";
+
         internal BaseSlider(string label, TValueType start, TValueType end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize)
             : base(label, null)
         {
@@ -805,25 +807,26 @@ namespace UnityEngine.UIElements
 
             if (fillElement == null)
             {
-                fillElement = new VisualElement { name = "unity-fill", usageHints = UsageHints.DynamicColor };
+                fillElement = new VisualElement { name = k_FillElementName, usageHints = UsageHints.DynamicColor };
                 fillElement.AddToClassList(fillUssClassName);
                 trackElement.Add(fillElement);
             }
 
             float inverseNormalizedValue = 1.0f - normalizedValue;
+            var valuePercent = Length.Percent(inverseNormalizedValue * 100.0f);
             if (direction == SliderDirection.Vertical)
             {
                 fillElement.style.right = 0;
                 fillElement.style.left = 0;
-                fillElement.style.bottom = 0;
-                fillElement.style.top = Length.Percent(inverseNormalizedValue * 100.0f);
+                fillElement.style.bottom = inverted ? valuePercent : 0;
+                fillElement.style.top = inverted ? 0 : valuePercent;
             }
             else
             {
                 fillElement.style.top = 0;
                 fillElement.style.bottom = 0;
-                fillElement.style.left = 0;
-                fillElement.style.right = Length.Percent(inverseNormalizedValue * 100.0f);
+                fillElement.style.left = inverted ? valuePercent : 0;
+                fillElement.style.right = inverted ? 0 : valuePercent;
             }
         }
 

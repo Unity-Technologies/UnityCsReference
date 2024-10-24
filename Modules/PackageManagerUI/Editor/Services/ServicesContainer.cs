@@ -102,6 +102,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PageRefreshHandler m_SerializedPageRefreshHandler;
         [SerializeField]
         private PackageDatabase m_SerializedPackageDatabase;
+        [SerializeField]
+        private DelayedSelectionHandler m_DelayedSelectionHandler;
 
         private readonly Dictionary<Type, IService> m_RegisteredServices = new();
 
@@ -157,6 +159,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var backgroundFetchHandler = Register(new BackgroundFetchHandler(applicationProxy, unityConnectProxy, upmCache, upmClient, assetStoreClient, assetStoreCache, fetchStatusTracker, pageManager, pageRefreshHandler));
             var upmCacheRootClient = Register(new UpmCacheRootClient(clientProxy, applicationProxy));
             var inspectorSelectionHandler = Register(new InspectorSelectionHandler(selectionProxy, packageDatabase, pageManager));
+            var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
 
             Register(new EditorAnalyticsProxy());
             Register(new ExtensionManager(packageManagerPrefs));
@@ -189,6 +192,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             // A reset is needed to avoid creating new stylesheets each time we reload through the internal menu
             m_SerializedResourceLoader?.Reset();
             m_SerializedResourceLoader = resourceLoader;
+            m_DelayedSelectionHandler = delayedSelectionHandler;
         }
 
         public void OnDisable()

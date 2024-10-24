@@ -22,7 +22,8 @@ namespace UnityEngine.UIElements
 
         public void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
         {
-            ConvertUssToNativeTextGenerationSettings();
+            if (!ConvertUssToNativeTextGenerationSettings())
+                return;
             nativeSettings.text = textToMeasure.CreateString();
             nativeSettings.screenWidth = float.IsNaN(width) ? Int32.MaxValue : (int)(width * 64.0f);
             nativeSettings.screenHeight = float.IsNaN(height) ? Int32.MaxValue : (int)(height * 64.0f);

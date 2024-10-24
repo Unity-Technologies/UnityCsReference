@@ -36,6 +36,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabHeaderContainer.name = "packageDetailsTabViewHeaderContainer";
             m_BodyContainer.name = "packageDetailsTabViewBodyContainer";
             m_TabHeaderDropdown.name = "packageDetailsTabViewHeaderDropdown";
+            m_TabHeaderDropdown.SetIcon(Icon.PullDown);
 
             m_EntitlementsErrorLabel = new Label(L10n.Tr("Information is unavailable because the package license isn't registered to your user account."));
             m_EntitlementsErrorLabel.AddClasses("packageTabsEntitlementsError");

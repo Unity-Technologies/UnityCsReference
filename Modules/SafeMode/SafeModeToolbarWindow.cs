@@ -211,7 +211,7 @@ namespace UnityEditor
             // Here we open the package manager, In-Project open and search field have experimental.
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Experimental Packages..."), false, () =>
             {
-                PackageManagerWindow.SelectPackageAndPageStatic(string.Empty, InProjectPage.k_Id, true, "experimental");
+                PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
             });
             menu.AddSeparator("");
 

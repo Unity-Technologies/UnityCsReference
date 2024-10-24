@@ -598,7 +598,7 @@ namespace UnityEditor
                 // This should not happen, all known valid platforms should have
                 // been created in advance, including the Default Platform.
                 ResetSerializedProperties();
-                throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, did initialization fail?");
+                throw new UnityException("Cannot find any Platform Settings, including the Default Platform. This is incorrect, please report a bug.");
             }
             else
             {
@@ -619,7 +619,7 @@ namespace UnityEditor
                 if (model.platformTextureSettingsProp is null)
                 {
                     ResetSerializedProperties();
-                    throw new UnityException("Could not find the requested Platform Texture Settings. This is incorrect, did initialization fail?");
+                    throw new UnityException($"Could not find the requested Platform Texture Settings ('{model.platformTextureSettings.name}'). This is incorrect, please report a bug.");
                 }
             }
 

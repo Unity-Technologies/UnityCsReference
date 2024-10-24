@@ -954,7 +954,7 @@ namespace UnityEditor.Search
 
         internal static void OpenPackageManager(string packageName)
         {
-            PackageManager.UI.PackageManagerWindow.SelectPackageAndPageStatic(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);
+            PackageManager.UI.PackageManagerWindow.OpenAndSelectPackage(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);
         }
 
         internal static char FastToLower(char c)
