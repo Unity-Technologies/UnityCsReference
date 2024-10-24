@@ -117,7 +117,15 @@ namespace UnityEditor
 
             // check up and down for adjacent menu item on same submenu level
             for (int i = index - 1; i > -1 && !above; i--)
-                above = GetSubmenuPath(items[i]).StartsWith(submenu);
+            {
+                if (GetSubmenuPath(items[i]).StartsWith(submenu))
+                {
+                    // We have an adjacent seperator at the same level above, this should be removed (UUM-83272)
+                    if (items[i].separator)
+                        break;
+                    above = true;
+                }
+            }
 
             for (int i = index + 1, c = items.Count; i < c && !below; i++)
                 below = GetSubmenuPath(items[i]).StartsWith(submenu);

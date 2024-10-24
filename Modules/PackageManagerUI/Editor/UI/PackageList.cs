@@ -154,6 +154,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             foreach (var item in args.selection.previousSelections.Where(s => !args.selection.Contains(s)).Concat(args.selection))
                 currentView.GetPackageItem(item)?.RefreshSelection();
 
+            if (!args.isExplicitUserSelection)
+                currentView.ScrollToSelection();
+
             if (args.selection.previousSelections.Count() == 1)
                 m_UpmCache.SetLoadAllVersions(args.selection.previousSelections.FirstOrDefault(), false);
         }

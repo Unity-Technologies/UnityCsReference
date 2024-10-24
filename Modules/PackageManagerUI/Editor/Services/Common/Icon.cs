@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
-
 namespace UnityEditor.PackageManager.UI.Internal;
 
 internal enum Icon
@@ -30,7 +28,9 @@ internal enum Icon
 
     Error,
     Warning,
-    Success
+    Success,
+
+    PullDown
 }
 
 internal static class IconExtension

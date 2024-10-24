@@ -73,10 +73,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var package = m_PackageDatabase.GetPackage(visualState?.packageUniqueId);
                 return package?.uniqueId;
             }).Where(s => !string.IsNullOrEmpty(s)).ToArray();
-
-            // SelectionChange happens before BindItems, hence we use m_PageManager.SetSelected instead of packageItem.SelectMainItem
-            // as PackageItems are null sometimes when SelectionChange is triggered
-            m_PageManager.activePage.SetNewSelection(selections);
+            m_PageManager.activePage.SetNewSelection(selections, true);
         }
 
         private void UnbindItem(VisualElement item, int index)

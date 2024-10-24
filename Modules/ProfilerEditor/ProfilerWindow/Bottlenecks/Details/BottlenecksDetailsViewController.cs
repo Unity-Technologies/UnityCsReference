@@ -271,7 +271,7 @@ namespace Unity.Profiling.Editor.UI
 
                 case BottlenecksDetailsViewModel.k_DescriptionLinkId_ProfileAnalyzer:
                     // Open Profile Analyzer in the Package Manager.
-                    PackageManagerWindow.OpenPackageManager("Profile Analyzer");
+                    PackageManagerWindow.OpenAndSelectPackage("Profile Analyzer");
                     linkDescription = k_LinkDescription_OpenProfileAnalyzer;
                     break;
 

@@ -239,11 +239,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return activePage;
 
             var pageIdsToCheck = new[] { BuiltInPage.k_Id, InProjectPage.k_Id, UnityRegistryPage.k_Id, MyAssetsPage.k_Id, MyRegistriesPage.k_Id};
-            foreach (var page in pageIdsToCheck.Select(GetPage).Where(p => !p.isActivePage))
-                if (packages.All(p => page.ShouldInclude(p)))
-                    return page;
-
-            return null;
+            return pageIdsToCheck.Select(GetPage).FirstOrDefault(page => !page.isActivePage && packages.All(page.ShouldInclude));
         }
 
         [ExcludeFromCodeCoverage]

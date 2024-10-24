@@ -13,7 +13,6 @@ namespace Unity.UI.Builder
     internal class BuilderStyleSheets : BuilderExplorer
     {
         static readonly string kToolbarPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorControls.uxml";
-        static readonly string kHelpTooltipPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorHelpTips.uxml";
         private static readonly string kMessageLinkClassName = "unity-builder-message-link";
 
         ToolbarMenu m_AddUSSMenu;
@@ -50,9 +49,7 @@ namespace Unity.UI.Builder
             m_TooltipPreview = tooltipPreview;
             if (m_TooltipPreview != null)
             {
-                var helpTooltipTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(kHelpTooltipPath);
-                var helpTooltipContainer = helpTooltipTemplate.CloneTree();
-                m_TooltipPreview.Add(helpTooltipContainer); // We are the only ones using it so just add the contents and be done.
+                m_TooltipPreview.Add(BuilderStyleSheetsNewSelectorHelpTips.Create());
                 m_MessageLink = m_TooltipPreview.Q<Label>(null, kMessageLinkClassName);
                 m_MessageLink.focusable = true;
             }

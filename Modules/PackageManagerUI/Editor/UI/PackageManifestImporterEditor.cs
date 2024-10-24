@@ -189,7 +189,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             GUI.enabled = packageState != null && packageState.isValidFile && targets.Length == 1;
             if (GUILayout.Button(Styles.viewInPackageManager, EditorStyles.miniButton))
             {
-                PackageManagerWindow.SelectPackageAndPageStatic(packageState.info.packageName.completeName);
+                PackageManagerWindow.OpenAndSelectPackage(packageState.info.packageName.completeName);
             }
             GUI.enabled = previousEnabled;
         }

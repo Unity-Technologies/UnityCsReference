@@ -170,23 +170,9 @@ namespace UnityEngine.UIElements
             return TryGetValueFromBagAsString(bag, cc, out value, out _);
         }
 
-        // This method is necessary for attributes which may need to do further processing on the attribute value
-        // And thus require from which VisualTreeAsset instance was the attribute extracted
-        internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value, out VisualTreeAsset sourceAsset)
+        internal bool TryGetAttributeOverrideValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value, out VisualTreeAsset sourceAsset)
         {
-            value = null;
-            sourceAsset = null;
-
-            // Regardless of whether the attribute is overridden or not, we want to error here
-            // if there is no valid name.
-            if (name == null && (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0))
-            {
-                Debug.LogError("Attribute description has no name.");
-                return false;
-            }
-
-            string elementName;
-            bag.TryGetAttributeValue("name", out elementName);
+            bag.TryGetAttributeValue("name", out var elementName);
             if (!string.IsNullOrEmpty(elementName) && cc.attributeOverrides != null)
             {
                 foreach (CreationContext.AttributeOverrideRange attributeOverrideRange in cc.attributeOverrides)
@@ -199,12 +185,36 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            sourceAsset = null;
+            value = null;
+            return false;
+        }
+
+        internal bool ValidateName()
+        {
+            if (name == null && (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0))
+            {
+                Debug.LogError("Attribute description has no name.");
+                return false;
+            }
+            return true;
+        }
+
+        // This method is necessary for attributes which may need to do further processing on the attribute value
+        // And thus require from which VisualTreeAsset instance was the attribute extracted
+        internal bool TryGetValueFromBagAsString(IUxmlAttributes bag, CreationContext cc, out string value, out VisualTreeAsset sourceAsset)
+        {
+            value = null;
+            sourceAsset = null;
+
+            if (!ValidateName())
+                return false;
+
+            if (TryGetAttributeOverrideValueFromBagAsString(bag, cc, out value, out sourceAsset))
+                return true;
+
             if (name == null)
             {
-                // Check for:
-                // (m_ObsoleteNames == null || m_ObsoleteNames.Length == 0)
-                // moved at the top of method so we can assume we have obsolete names here.
-
                 for (var i = 0; i < m_ObsoleteNames.Length; i++)
                 {
                     if (bag.TryGetAttributeValue(m_ObsoleteNames[i], out value))

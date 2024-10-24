@@ -16,7 +16,6 @@ namespace Unity.UI.Builder
         private BuilderNewSelectorField m_NewSelectorField;
         private VisualElement m_NewSelectorHelpTipsContainer;
 
-        static readonly string kHelpTooltipPath = BuilderConstants.UIBuilderPackagePath + "/Explorer/BuilderStyleSheetsNewSelectorHelpTips.uxml";
         private static readonly string kNewSelectorHelpTipsContainerName = "new-selector-help-tips-container";
 
         public VisualElement root => m_StyleSheetSection;
@@ -34,9 +33,7 @@ namespace Unity.UI.Builder
             m_NewSelectorHelpTipsContainer = m_Inspector.Q<VisualElement>(kNewSelectorHelpTipsContainerName);
 
             m_NewSelectorField.RegisterCallback<NewSelectorSubmitEvent>(OnCreateNewSelector);
-            var helpTooltipTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(kHelpTooltipPath);
-            var helpTooltipContainer = helpTooltipTemplate.CloneTree();
-            m_NewSelectorHelpTipsContainer.Add(helpTooltipContainer);
+            m_NewSelectorHelpTipsContainer.Add(BuilderStyleSheetsNewSelectorHelpTips.Create());
         }
 
         void OnCreateNewSelector(NewSelectorSubmitEvent evt)

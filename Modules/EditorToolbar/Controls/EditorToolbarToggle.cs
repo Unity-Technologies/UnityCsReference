@@ -160,8 +160,10 @@ namespace UnityEditor.Toolbars
 
         public override void SetValueWithoutNotify(bool newValue)
         {
+            var changed = newValue != value;
             base.SetValueWithoutNotify(newValue);
-            UpdateIcon();
+            if (changed)
+                UpdateIcon();
         }
 
         void UpdateIcon()

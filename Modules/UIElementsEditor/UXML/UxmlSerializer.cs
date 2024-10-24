@@ -231,6 +231,22 @@ namespace UnityEditor.UIElements
             }
         }
 
+        internal bool TryGetValueOverrideFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
+        {
+            if (!ValidateName() || !TryGetAttributeOverrideValueFromBagAsString(bag, cc, out var str, out _))
+            {
+                value = null;
+                return false;
+            }
+
+            if (UxmlAttributeConverter.TryConvertFromString(type, str, cc, out value))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         internal virtual bool TryGetValueFromBagAsObject(IUxmlAttributes bag, CreationContext cc, out object value)
         {
             if (!TryGetValueFromBagAsString(bag, cc, out var str))
@@ -627,8 +643,9 @@ namespace UnityEditor.UIElements
         /// <param name="description"></param>
         /// <param name="bag"></param>
         /// <param name="cc"></param>
+        /// <param name="serializeOverrides">When true values will be extracted from attributeOverrides instead of the bag.</param>
         /// <returns></returns>
-        public static UxmlSerializedData Serialize(UxmlSerializedDataDescription description, IUxmlAttributes bag, CreationContext cc)
+        public static UxmlSerializedData Serialize(UxmlSerializedDataDescription description, IUxmlAttributes bag, CreationContext cc, bool serializeOverrides = false)
         {
             var data = description.CreateSerializedData();
             if (bag is UxmlAsset uxmlAsset)
@@ -652,7 +669,8 @@ namespace UnityEditor.UIElements
                     continue;
                 }
 
-                if (!attribute.TryGetValueFromBagAsObject(bag, cc, out var value))
+                var handled = serializeOverrides ? attribute.TryGetValueOverrideFromBagAsObject(bag, cc, out var value) : attribute.TryGetValueFromBagAsObject(bag, cc, out value);
+                if (!handled)
                 {
                     attribute.SetSerializedValueAttributeFlags(data, UxmlSerializedData.UxmlAttributeFlags.Ignore);
                     continue;
@@ -792,7 +810,7 @@ namespace UnityEditor.UIElements
                     continue;
 
                 var templateContext = new CreationContext(null, overrideRanges, null, vta, null, null, namesCopy);
-                var serializedDataOverride = Serialize(desc, vea, templateContext);
+                var serializedDataOverride = Serialize(desc, vea, templateContext, true);
                 rootTemplate.serializedDataOverrides.Add(new TemplateAsset.UxmlSerializedDataOverride()
                 {
                     m_ElementId = vea.id,

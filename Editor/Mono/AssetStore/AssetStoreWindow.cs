@@ -42,7 +42,7 @@ namespace UnityEditor
         [MenuItem("Window/My Assets", false, 1498)]
         public static void OpenMyAssetsInPackageManager()
         {
-            PackageManagerWindow.SelectPackageAndPageStatic(pageId: PackageManager.UI.Internal.MyAssetsPage.k_Id);
+            PackageManagerWindow.OpenAndSelectPage(PackageManager.UI.Internal.MyAssetsPage.k_Id);
         }
 
         public void OnEnable()
@@ -100,7 +100,7 @@ namespace UnityEditor
 
         private void OnLaunchPackageManagerButtonClicked()
         {
-            PackageManagerWindow.OpenPackageManager(null);
+            PackageManagerWindow.OpenAndSelectPackage(null);
         }
 
         private void SetMinMaxSizes()

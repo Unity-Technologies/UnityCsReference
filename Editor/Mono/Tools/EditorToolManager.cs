@@ -444,7 +444,16 @@ namespace UnityEditor.EditorTools
             instance.CleanupSingletons();
             if (type == null)
                 return null;
-            var res = instance.m_SingletonObjects.FirstOrDefault(x => x.GetType() == type);
+            var res = default(ScriptableObject);
+            for (int i = 0; i < instance.m_SingletonObjects.Count; ++i)
+            {
+                if (instance.m_SingletonObjects[i].GetType() == type)
+                {
+                    res = instance.m_SingletonObjects[i];
+                    break;
+                }
+            }
+
             if (res != null)
                 return res;
             res = CreateInstance(type);

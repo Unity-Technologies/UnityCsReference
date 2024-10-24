@@ -12,6 +12,7 @@ using UnityEditorInternal;
 using UnityEngine.Networking;
 using System.Text.RegularExpressions;
 using UnityEditor.Presets;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -253,6 +254,7 @@ namespace UnityEditor
             return uri;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string FindHelpNamed(string topic)
         {
             if (m_UrlCache.ContainsKey(topic))
