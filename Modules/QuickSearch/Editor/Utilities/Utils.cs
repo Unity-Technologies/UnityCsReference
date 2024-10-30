@@ -154,12 +154,30 @@ namespace UnityEditor.Search
         public static Texture2D GetAssetPreviewFromPath(SearchContext ctx, string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
         {
             var assetType = AssetDatabase.GetMainAssetTypeAtPath(path);
-            if (assetType == typeof(SceneAsset))
+            var p = GetAssetPreviewFromTypeAtPath(ctx, assetType, path, previewSize, previewOptions);
+            if (p != null) return p;
+
+            var obj = AssetDatabase.LoadMainAssetAtPath(path);
+            return GetAssetPreviewFromObjectAtPath(ctx, obj, path, previewSize, previewOptions);
+        }
+
+        public static Texture2D GetAssetPreviewFromPath(SearchContext ctx, UnityEngine.Object obj, string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
+        {
+            var assetType = obj.GetType();
+            var p = GetAssetPreviewFromTypeAtPath(ctx, assetType, path, previewSize, previewOptions);
+            if (p != null) return p;
+
+            return GetAssetPreviewFromObjectAtPath(ctx, obj, path, previewSize, previewOptions);
+        }
+
+        public static Texture2D GetAssetPreviewFromTypeAtPath(SearchContext ctx, Type type, string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
+        {
+            if (type == typeof(SceneAsset))
                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
 
             if (previewOptions.HasAny(FetchPreviewOptions.Normal))
             {
-                if (assetType == typeof(AudioClip))
+                if (type == typeof(AudioClip))
                     return GetAssetThumbnailFromPath(ctx, path);
 
                 try
@@ -176,14 +194,18 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (typeof(Texture).IsAssignableFrom(assetType))
+            if (typeof(Texture).IsAssignableFrom(type))
             {
                 var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
                 if (tex)
                     return tex;
             }
 
-            var obj = AssetDatabase.LoadMainAssetAtPath(path);
+            return null;
+        }
+
+        public static Texture2D GetAssetPreviewFromObjectAtPath(SearchContext ctx, UnityEngine.Object obj, string path, Vector2 previewSize, FetchPreviewOptions previewOptions)
+        {
             if (obj == null)
                 return null;
 
@@ -954,7 +976,7 @@ namespace UnityEditor.Search
 
         internal static void OpenPackageManager(string packageName)
         {
-            PackageManager.UI.PackageManagerWindow.SelectPackageAndPageStatic(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);
+            PackageManager.UI.PackageManagerWindow.OpenAndSelectPackage(packageName, PackageManager.UI.Internal.MyAssetsPage.k_Id);
         }
 
         internal static char FastToLower(char c)

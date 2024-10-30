@@ -24,6 +24,9 @@ namespace UnityEditor.Modules
         static Dictionary<string, IPlatformSupportModule> s_PlatformModules;
 
         [NonSerialized]
+        static Dictionary<GUID, IPlatformSupportModule> s_PlatformModulesByGuid;
+
+        [NonSerialized]
         static bool s_PlatformModulesInitialized;
 
         [NonSerialized]
@@ -36,6 +39,16 @@ namespace UnityEditor.Modules
                 if (s_PlatformModules == null)
                     RegisterPlatformSupportModules();
                 return s_PlatformModules;
+            }
+        }
+
+        internal static Dictionary<GUID, IPlatformSupportModule> platformSupportModulesByGuid
+        {
+            get
+            {
+                if (s_PlatformModulesByGuid == null)
+                    RegisterPlatformSupportModules();
+                return s_PlatformModulesByGuid;
             }
         }
 
@@ -81,6 +94,11 @@ namespace UnityEditor.Modules
         internal static bool IsPlatformSupportLoaded(string target)
         {
             return platformSupportModules.ContainsKey(target);
+        }
+
+        internal static bool IsPlatformSupportLoadedByGuid(GUID platformId)
+        {
+            return platformSupportModulesByGuid.ContainsKey(platformId);
         }
 
         // Native binding doesn't support overloaded functions
@@ -166,6 +184,7 @@ namespace UnityEditor.Modules
         {
             var allTypesWithInterface = TypeCache.GetTypesDerivedFrom<IPlatformSupportModule>();
             s_PlatformModules = new Dictionary<string, IPlatformSupportModule>(allTypesWithInterface.Count);
+            s_PlatformModulesByGuid = new Dictionary<GUID, IPlatformSupportModule>(allTypesWithInterface.Count);
 
             foreach (var type in allTypesWithInterface)
             {
@@ -178,6 +197,28 @@ namespace UnityEditor.Modules
                 {
                     var platformSupportModule = Activator.CreateInstance(type) as IPlatformSupportModule;
                     s_PlatformModules.Add(platformSupportModule.TargetName, platformSupportModule);
+                    if (platformSupportModule is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+                    {
+                        s_PlatformModulesByGuid.Add(derivedBuildTargetProvider.GetBasePlatformGuid(), platformSupportModule);
+                        var derivedBuildTargets = derivedBuildTargetProvider.GetDerivedBuildTargets();
+                        foreach (var target in derivedBuildTargets)
+                        {
+                            s_PlatformModulesByGuid.Add(target.Guid, platformSupportModule);
+                        }
+                    }
+                    else
+                    {
+                        s_PlatformModulesByGuid.Add(platformSupportModule.PlatformBuildTarget.Guid, platformSupportModule);
+                    }
+                    var (buildTarget, _) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformSupportModule.PlatformBuildTarget.Guid);
+                    if (BuildTargetDiscovery.IsStandalonePlatform(buildTarget))
+                    {
+                        if (BuildTargetDiscovery.TryGetServerGUIDFromBuildTarget(NamedBuildTarget.Server, buildTarget, out var serverGuid))
+                        {
+                            if (BuildTargetDiscovery.BuildPlatformIsInstalled(serverGuid))
+                                s_PlatformModulesByGuid.Add(serverGuid, platformSupportModule);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -200,9 +241,16 @@ namespace UnityEditor.Modules
 
         internal static IPlatformSupportModule FindPlatformSupportModule(string moduleName)
         {
-            foreach (var module in platformSupportModules.Values)
-                if (module.TargetName == moduleName)
-                    return module;
+            if (platformSupportModules.TryGetValue(moduleName, out var module))
+                return module;
+
+            return null;
+        }
+
+        internal static IPlatformSupportModule FindPlatformSupportModule(GUID platformGuid)
+        {
+            if (platformSupportModulesByGuid.TryGetValue(platformGuid, out var module))
+                return module;
 
             return null;
         }
@@ -233,11 +281,28 @@ namespace UnityEditor.Modules
             return null;
         }
 
-        internal static IBuildTarget GetIBuildTarget(string moduleName)
+        internal static IBuildTarget GetIBuildTarget(GUID platformGuid)
         {
-            if (platformSupportModules.TryGetValue(moduleName, out var module))
+            if (platformSupportModulesByGuid.TryGetValue(platformGuid, out var module))
             {
-                return module.PlatformBuildTarget;
+                if (module.PlatformBuildTarget.Guid == platformGuid)
+                {
+                    return module.PlatformBuildTarget;
+                }
+                else
+                {
+                    if (module is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+                    {
+                        var derivedBuildTargets = derivedBuildTargetProvider.GetDerivedBuildTargets();
+                        foreach (var target in derivedBuildTargets)
+                        {
+                            if (target.Guid == platformGuid)
+                            {
+                                return target;
+                            }
+                        }
+                    }
+                }
             }
 
             return null;
@@ -428,14 +493,18 @@ namespace UnityEditor.Modules
             return GetPluginImporterExtension(GetTargetStringFromBuildTargetGroup(target));
         }
 
-        internal static IBuildProfileExtension GetBuildProfileExtension(string target)
+        internal static IBuildProfileExtension GetBuildProfileExtension(GUID platformId)
         {
-            if (string.IsNullOrEmpty(target))
-                return null;
-
-            if (platformSupportModules.TryGetValue(target, out var module))
+            if (platformSupportModulesByGuid.TryGetValue(platformId, out var module))
             {
-                return module.CreateBuildProfileExtension();
+                if (module is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+                {
+                    return derivedBuildTargetProvider.CreateBuildProfileExtension(platformId);
+                }
+                else
+                {
+                    return module.CreateBuildProfileExtension();
+                }
             }
 
             return null;

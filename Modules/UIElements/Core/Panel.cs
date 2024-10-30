@@ -601,6 +601,11 @@ namespace UnityEngine.UIElements
             return m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId);
         }
 
+        internal void RemoveElementFromPointerCache(VisualElement e)
+        {
+            m_TopElementUnderPointers.RemoveElementUnderPointer(e);
+        }
+
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
             VisualElement element = null;
@@ -627,9 +632,9 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.SetTemporaryElementUnderPointer(null, pointerId, triggerEvent);
         }
 
-        internal void CommitElementUnderPointers()
+        internal bool CommitElementUnderPointers()
         {
-            m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher, contextType);
+            return m_TopElementUnderPointers.CommitElementUnderPointers(dispatcher, contextType);
         }
 
         internal event Action isFlatChanged;
@@ -665,7 +670,8 @@ namespace UnityEngine.UIElements
         internal event Action<IPanel> beforeUpdate;
         internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
 
-        internal void UpdateElementUnderPointers()
+        // returns true if elements under pointer have changed
+        internal bool UpdateElementUnderPointers()
         {
             foreach (var pointerId in PointerId.hoveringPointers)
             {
@@ -686,7 +692,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            CommitElementUnderPointers();
+            return CommitElementUnderPointers();
         }
 
         void IGroupBox.OnOptionAdded(IGroupBoxOption option) { /* Nothing to do here. */ }
@@ -1096,7 +1102,8 @@ namespace UnityEngine.UIElements
             return PickAll(root, point);
         }
 
-        private static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
+        // For tests only.
+        internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null, bool includeIgnoredElement = false)
         {
             s_MarkerPickAll.Begin();
             var result = PerformPick(root, point, picked, includeIgnoredElement);

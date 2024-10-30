@@ -5,9 +5,8 @@
 using System;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile.Elements;
-using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile
 {
@@ -89,6 +88,7 @@ namespace UnityEditor.Build.Profile
             }
 
             m_Profile = profile;
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
 
             CleanupEventHandlers();
 
@@ -114,12 +114,19 @@ namespace UnityEditor.Build.Profile
             platformSettingsLabel.text = TrText.platformSettings;
             buildDataLabel.text = TrText.buildData;
             sharedSettingsInfoHelpBox.text = TrText.sharedSettingsInfo;
-            buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId));
+            buildSettingsFoldout.text = TrText.GetSettingsSectionName(BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid));
+
+            if (m_PlatformExtension != null)
+            {
+                string profileInfoMessage = m_PlatformExtension.GetProfileInfoMessage();
+                if (!string.IsNullOrEmpty(profileInfoMessage))
+                    sharedSettingsInfoHelpBox.text = profileInfoMessage;
+            }
 
             AddSceneList(root, profile);
             AddScriptingDefineListView(root);
 
-            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformId);
+            bool hasErrors = Util.UpdatePlatformRequirementsWarningHelpBox(noModuleFoundHelpBox, profile.platformGuid);
             bool isClassic = BuildProfileContext.IsClassicPlatformProfile(profile);
 
             if (!isClassic)
@@ -127,6 +134,7 @@ namespace UnityEditor.Build.Profile
                 sharedSettingsInfoHelpBox.Hide();
                 m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor
                     .CreatePlayerSettingsUI(root, hasErrors ? null : serializedObject);
+                BuildProfileGraphicsSettingsOverridesView.CreateGUI(profile, root);
             }
             else
             {
@@ -253,7 +261,7 @@ namespace UnityEditor.Build.Profile
         void ShowPlatformSettings(BuildProfile profile, VisualElement platformSettingsBaseRoot, VisualElement platformBuildWarningsRoot)
         {
             var platformProperties = serializedObject.FindProperty(k_PlatformSettingPropertyName);
-            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.moduleName);
+            m_PlatformExtension = BuildProfileModuleUtil.GetBuildProfileExtension(profile.platformGuid);
             if (m_PlatformExtension == null)
                 return;
 

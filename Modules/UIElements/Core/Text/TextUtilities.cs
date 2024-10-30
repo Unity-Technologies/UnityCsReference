@@ -228,5 +228,14 @@ namespace UnityEngine.UIElements
                 _ => TextCore.WhiteSpace.Normal
             };
         }
+
+        public static TextCore.TextOverflow toTextCore(this TextOverflow textOverflow, OverflowInternal overflow)
+        {
+            return textOverflow switch
+            {
+                TextOverflow.Ellipsis when overflow == OverflowInternal.Hidden => TextCore.TextOverflow.Ellipsis,
+                _ => TextCore.TextOverflow.Clip
+            };
+        }
     }
 }

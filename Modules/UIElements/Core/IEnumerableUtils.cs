@@ -49,5 +49,17 @@ namespace UnityEngine.UIElements
 
             return count;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static bool Any<T>(this List<T> source, Func<T, bool> predicate)
+        {
+            foreach (var item in source)
+            {
+                if (predicate(item))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

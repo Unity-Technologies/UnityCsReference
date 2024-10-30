@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
 using UnityEngine;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
@@ -788,16 +789,28 @@ namespace UnityEditor
         {
             get
             {
+                // The following code is addressing the fact that the actually selected build target
+                // and the stored GUID might disagree. This can happen when a platform is not available
+                // in the editor(for example a user selects a platform, checks in that setting, another
+                // one pulls the project but does not have the platform installed).
                 GUID activePlatformGuid = GetInternalActivePlatformGuid();
-                GUID buildTargetGuid = BuildTargetDiscovery.GetGUIDFromBuildTarget(EditorUserBuildSettingsUtils.CalculateActiveNamedBuildTarget(), activeBuildTarget);
+                GUID basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(EditorUserBuildSettingsUtils.CalculateActiveNamedBuildTarget(), activeBuildTarget);
 
-                // TODO: Account for derived platforms.
-                // Jira https://jira.unity3d.com/browse/PLAT-9234
                 if (activePlatformGuid.Empty())
-                    return buildTargetGuid;
+                    return basePlatformGuid;
 
-                if(activePlatformGuid != buildTargetGuid)
-                    return buildTargetGuid;
+                // Account for derived platforms (the active platform is different from its base platform).
+                // Jira https://jira.unity3d.com/browse/PLAT-9234
+                if (activePlatformGuid != basePlatformGuid)
+                {
+                    // This logic will make sure that the base platform gets selected if the encountered platform
+                    // is a derived one and the platform support for the derived platform is not available to
+                    // align with the behavior of the editor before introducing derived platforms.
+                    var module = ModuleManager.FindPlatformSupportModule(activePlatformGuid);
+                    if (module is IDerivedBuildTargetProvider)
+                        return activePlatformGuid;
+                    return basePlatformGuid;
+                }
 
                 return activePlatformGuid;
             }
@@ -807,8 +820,17 @@ namespace UnityEditor
         private static extern bool SwitchActiveBuildTargetAndSubTargetGuid(GUID platformGuid, BuildTarget target, int subtarget);
         internal static bool SwitchActiveBuildTargetGuid(GUID platformGuid)
         {
-            // TODO: Account for derived platforms.
+            // Account for derived platforms.
             // Jira https://jira.unity3d.com/browse/PLAT-9234
+            // The editor triggers recompilation on a build target or subtarget change already. Both of these values
+            // will not change by design when switching between a derived platform and its base platform or between
+            // derived platforms of the same baseplatform so we need to trigger a rebuild if the GUID changes and
+            // the support module stays the same.
+            if (platformGuid != activePlatformGuid && ModuleManager.FindPlatformSupportModule(platformGuid) == ModuleManager.FindPlatformSupportModule(activePlatformGuid))
+            {
+                BuildProfileModuleUtil.RequestScriptCompilation(null);
+            }
+
             var (buildTargetFromGuid, subTargetFromGuid) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformGuid);
 
             int activeSubtarget = (int)subTargetFromGuid;

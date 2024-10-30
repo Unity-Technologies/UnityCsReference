@@ -1613,7 +1613,7 @@ namespace Unity.UI.Builder
                         menu.AppendAction(BuilderConstants.ContextMenuRemoveVariableMessage, RemoveVariableViaContextMenu,
                             (a) => DropdownMenuAction.Status.Normal, fieldElement);
                 }
-                else if (isSelector)
+                else if (isSelector && fieldElement is not BoxModelStyleField)
                 {
                     menu.AppendAction(BuilderConstants.ContextMenuSetVariableMessage, ViewVariableViaContextMenu,
                         VariableActionStatus,

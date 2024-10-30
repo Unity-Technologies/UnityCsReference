@@ -24,11 +24,25 @@ namespace UnityEditor.Build
         // TODO: Some packages are still using targetGroup, so we keep it here as a getter for compatibility
         public BuildTargetGroup targetGroup => namedBuildTarget.ToBuildTargetGroup();
 
+        string m_LocTitle;
+        string m_IconId;
+
         ScalableGUIContent m_Title;
         ScalableGUIContent m_SmallTitle;
 
-        public GUIContent title => m_Title;
+        Texture2D m_CompoundSmallIcon;
+        Texture2D m_CompoundSmallIconForQualitySettings;
+        string m_CompoundTooltip;
+        ScalableGUIContent m_CompoundTitle;
+
+        IEnumerable<BuildPlatform> m_DerivedPlatforms;
+
+        public GUIContent title => m_CompoundTitle ?? m_Title;
         public Texture2D smallIcon => ((GUIContent)m_SmallTitle).image as Texture2D;
+
+        public Texture2D compoundSmallIcon => GetCompoundSmallIcon();
+        public Texture2D compoundSmallIconForQualitySettings => GetCompoundSmallIconForQualitySettings();
+        public string compoundTooltip => m_CompoundTooltip ?? tooltip;
 
         public BuildPlatform(string locTitle, string iconId, NamedBuildTarget namedBuildTarget, BuildTarget defaultTarget, bool hideInUi, bool installed)
             : this(locTitle, "", iconId, namedBuildTarget, defaultTarget, hideInUi, installed)
@@ -40,11 +54,9 @@ namespace UnityEditor.Build
             this.namedBuildTarget = namedBuildTarget;
             name = namedBuildTarget.TargetName;
 
-            // Workaround for some platforms which have | in their name which is also used as separator for tooltips
-            if (locTitle.Contains("|"))      
-                m_Title = new ScalableGUIContent(locTitle.Replace("|", " "), null, iconId);
-            else
-                m_Title = new ScalableGUIContent(locTitle, null, iconId);
+            m_IconId = iconId;
+            m_LocTitle = locTitle;
+            m_Title = CreateTitle(locTitle, iconId);
 
             m_SmallTitle = new ScalableGUIContent(null, null, iconId + ".Small");
             this.tooltip = tooltip;
@@ -56,6 +68,138 @@ namespace UnityEditor.Build
         public object Clone()
         {
             return MemberwiseClone();
+        }
+
+        Texture2D GetCompoundSmallIcon()
+        {
+            GenerateCompoundData();
+            return m_CompoundSmallIcon ?? smallIcon;
+        }
+
+        Texture2D GetCompoundSmallIconForQualitySettings()
+        {
+            GenerateCompoundData();
+            return m_CompoundSmallIconForQualitySettings ?? smallIcon;
+        }
+
+        void GenerateCompoundData()
+        {
+            if (m_DerivedPlatforms != null)
+            {
+                GenerateCompoundTooltip(m_DerivedPlatforms);
+                GenerateCompoundTitle(m_DerivedPlatforms);
+                GenerateCompoundIconTexture(m_DerivedPlatforms);
+                m_DerivedPlatforms = null;
+            }
+        }
+
+        internal void SetDerivedPlatforms(IEnumerable<BuildPlatform> derivedPlatforms)
+        {
+            m_DerivedPlatforms = derivedPlatforms;
+        }
+
+        static ScalableGUIContent CreateTitle(string locTitle, string iconId)
+        {
+            // Workaround for some platforms which have | in their name which is also used as separator for tooltips
+            const string TooltipSeparator = "|";
+            if (locTitle.Contains(TooltipSeparator))
+                return new ScalableGUIContent(locTitle.Replace(TooltipSeparator, " "), null, iconId);
+            else
+                return new ScalableGUIContent(locTitle, null, iconId);
+        }
+
+        void GenerateCompoundIconTexture(IEnumerable<BuildPlatform> derivedPlatforms)
+        {
+            static Texture2D DuplicateAsReadableTexture(Texture2D sourceTexture)
+            {
+                var renderTexture = RenderTexture.GetTemporary(sourceTexture.width, sourceTexture.height,
+                    0, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
+                Graphics.Blit(sourceTexture, renderTexture);
+                var previouslyActiveRenderTexture = RenderTexture.active;
+                RenderTexture.active = renderTexture;
+                var readableTexture = new Texture2D(sourceTexture.width, sourceTexture.height);
+                readableTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+                readableTexture.Apply();
+                RenderTexture.active = previouslyActiveRenderTexture;
+                RenderTexture.ReleaseTemporary(renderTexture);
+                return readableTexture;
+            }
+
+            static void ClearTexture(Texture2D texture)
+            {
+                Color TransparentBlack = new(0, 0, 0, 0);
+                for (int y = 0; y < texture.height; y++)
+                {
+                    for (int x = 0; x < texture.width; x++)
+                    {
+                        texture.SetPixel(x, y, TransparentBlack);
+                    }
+                }
+            }
+
+            var readableSmallIcon = DuplicateAsReadableTexture(smallIcon);
+            var qualityIconWidth = readableSmallIcon.width;
+            var qualityIconHeight = readableSmallIcon.height;
+            var compoundIconWidth = readableSmallIcon.width;
+            var compoundIconHeight = readableSmallIcon.height;
+            var horizontalGapSize = (int)Math.Round(4 * readableSmallIcon.pixelsPerPoint);
+            var verticalGapSize = (int)Math.Round(2 * readableSmallIcon.pixelsPerPoint);
+            foreach (var derivedPlatform in derivedPlatforms)
+            {
+                var derivedSmallIcon = derivedPlatform.smallIcon;
+                compoundIconWidth += horizontalGapSize;
+                qualityIconHeight += verticalGapSize;
+                compoundIconHeight = Math.Max(compoundIconHeight, derivedSmallIcon.height);
+                compoundIconWidth += derivedSmallIcon.width;
+                qualityIconHeight += derivedSmallIcon.height;
+            }
+            var qualityTexture = new Texture2D(qualityIconWidth, qualityIconHeight, readableSmallIcon.format, false);
+            var texture = new Texture2D(compoundIconWidth, compoundIconHeight, readableSmallIcon.format, false);
+            ClearTexture(qualityTexture);
+            ClearTexture(texture);
+            var compoundIconXPosition = 0;
+            var qualityIconYPosition = qualityIconHeight - readableSmallIcon.height;
+            texture.CopyPixels(readableSmallIcon, 0, 0, 0, 0, readableSmallIcon.width, readableSmallIcon.height, 0, compoundIconXPosition, 0);
+            qualityTexture.CopyPixels(readableSmallIcon, 0, 0, 0, 0, readableSmallIcon.width, readableSmallIcon.height, 0, 0, qualityIconYPosition);
+            compoundIconXPosition += readableSmallIcon.width;
+            qualityIconYPosition -= verticalGapSize;
+            foreach (var derivedPlatform in derivedPlatforms)
+            {
+                var readableDerivedSmallIcon = DuplicateAsReadableTexture(derivedPlatform.smallIcon);
+                compoundIconXPosition += horizontalGapSize;
+                qualityIconYPosition -= readableDerivedSmallIcon.height;
+                texture.CopyPixels(readableDerivedSmallIcon, 0, 0, 0, 0, readableDerivedSmallIcon.width, readableDerivedSmallIcon.height, 0, compoundIconXPosition, 0);
+                qualityTexture.CopyPixels(readableDerivedSmallIcon, 0, 0, 0, 0, readableDerivedSmallIcon.width, readableDerivedSmallIcon.height, 0, 0, qualityIconYPosition);
+                compoundIconXPosition += readableDerivedSmallIcon.width;
+                qualityIconYPosition -= verticalGapSize;
+            }
+            texture.pixelsPerPoint = readableSmallIcon.pixelsPerPoint;
+            texture.Apply();
+            qualityTexture.pixelsPerPoint = readableSmallIcon.pixelsPerPoint;
+            qualityTexture.Apply();
+            m_CompoundSmallIcon = texture;
+            m_CompoundSmallIconForQualitySettings = qualityTexture;
+        }
+
+        void GenerateCompoundTooltip(IEnumerable<BuildPlatform> derivedPlatforms)
+        {
+            var ttip = m_LocTitle;
+            foreach (var derivedPlatform in derivedPlatforms)
+            {
+                ttip += $", {derivedPlatform.m_LocTitle}";
+            }
+            ttip += " settings";
+            m_CompoundTooltip = ttip;
+        }
+
+        void GenerateCompoundTitle(IEnumerable<BuildPlatform> derivedPlatforms)
+        {
+            var title = m_LocTitle;
+            foreach (var derivedPlatform in derivedPlatforms)
+            {
+                title += $", {derivedPlatform.m_LocTitle}";
+            }
+            m_CompoundTitle = CreateTitle(title, m_IconId);
         }
     }
 
@@ -107,13 +251,30 @@ namespace UnityEditor.Build
                 if (!target.HasFlag(TargetAttributes.IsStandalonePlatform))
                 {
                     NamedBuildTarget namedBuildTarget = NamedBuildTarget.FromBuildTargetGroup(BuildPipeline.GetBuildTargetGroup(target.buildTargetPlatformVal));
-                    buildPlatformsList.Add(new BuildPlatform(
+                    var buildPlatform = new BuildPlatform(
                         BuildPipeline.GetBuildTargetGroupDisplayName(namedBuildTarget.ToBuildTargetGroup()),
                         target.iconName,
                         namedBuildTarget,
                         target.buildTargetPlatformVal,
                         hideInUi: target.HasFlag(TargetAttributes.HideInUI),
-                        installed: BuildPipeline.GetPlaybackEngineDirectory(target.buildTargetPlatformVal, BuildOptions.None, false) != string.Empty));
+                        installed: BuildPipeline.GetPlaybackEngineDirectory(target.buildTargetPlatformVal, BuildOptions.None, false) != string.Empty);
+                    buildPlatformsList.Add(buildPlatform);
+                    var derivedBuildTargets = BuildTargetDiscovery.GetDerivedBuildTargetInfoList(target.buildTargetPlatformVal);
+                    if (derivedBuildTargets.Length > 0)
+                    {
+                        var derivedBuildPlatforms = new List<BuildPlatform>();
+                        foreach (var derivedTarget in derivedBuildTargets)
+                        {
+                            derivedBuildPlatforms.Add(new BuildPlatform(
+                                derivedTarget.niceName,
+                                derivedTarget.iconName,
+                                namedBuildTarget,
+                                target.buildTargetPlatformVal,
+                                hideInUi: target.HasFlag(TargetAttributes.HideInUI),
+                                installed: BuildPipeline.GetPlaybackEngineDirectory(target.buildTargetPlatformVal, BuildOptions.None, false) != string.Empty));
+                        }
+                        buildPlatform.SetDerivedPlatforms(derivedBuildPlatforms);
+                    }
                 }
             }
 

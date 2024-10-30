@@ -239,6 +239,35 @@ namespace NiceIO
         [MethodImpl(MethodImplOptions_AggressiveInlining)]
         private static bool IsSlash(char c) => c == '/' || c == '\\';
 
+        private static bool IsAbsolute(string path)
+        {
+            if (path == null) return false;
+
+            if (path.Length > 0 && IsSlash(path[0])) return true;
+
+            if (path.Length >= 3 && Char.IsLetter(path[0]) && path[1] == ':' && IsSlash(path[2])) return true;
+
+            return false;
+        }
+
+        // Return a path string that is safe to append to another path string.
+        private static string NormaliseRelativePath(string path)
+        {
+            // Beware of C:foo\bar.txt style relative windows paths.
+            if (path.Length >= 3 && Char.IsLetter(path[0]) && path[1] == ':')
+                return path.Substring(2);
+            if (path.Length == 2 && Char.IsLetter(path[0]) && path[1] == ':')
+                return ".";
+
+            // Note: this function doesn't return fully normalised strings. For example, the
+            // following are equivalent but this function will happily return any of them:
+            // ""
+            // "."
+            // "././././."
+
+            return path;
+        }
+
         /// <summary>
         /// Create a new NPath by appending a path fragment.
         /// </summary>
@@ -246,9 +275,15 @@ namespace NiceIO
         /// <returns>A new NPath which is the existing path with the fragment appended.</returns>
         public NPath Combine(string append)
         {
-            if (IsSlash(append[0]))
-                throw new ArgumentException($"You cannot .Combine a non-relative path: {append}");
-            return new NPath(_path + "/" + append);
+            var normalisedAppend = NormaliseRelativePath(append);
+
+            if (normalisedAppend == "" || normalisedAppend == ".")
+                return new NPath(_path, guaranteed_well_formed: true); // "" is treated as "." - nothing to append.
+
+            if (IsAbsolute(append))
+                throw new ArgumentException($"You cannot .Combine an absolute path: {append}");
+
+            return new NPath(_path + "/" + normalisedAppend);
         }
 
         /// <summary>
@@ -259,7 +294,21 @@ namespace NiceIO
         /// <returns>A new NPath which is the existing path with the first fragment appended, then the second fragment appended.</returns>
         public NPath Combine(string append1, string append2)
         {
-            return new NPath(_path + "/" + append1 + "/" + append2);
+            if (IsAbsolute(append1))
+                throw new ArgumentException($"You cannot .Combine an absolute path: {append1}");
+            if (IsAbsolute(append2))
+                throw new ArgumentException($"You cannot .Combine an absolute path: {append2}");
+
+            var normalisedAppend1 = NormaliseRelativePath(append1);
+            var normalisedAppend2 = NormaliseRelativePath(append2);
+
+            if (normalisedAppend1 == "" || normalisedAppend1 == ".")
+                return Combine(normalisedAppend2);
+
+            if (normalisedAppend2 == "" || normalisedAppend2 == ".")
+                return Combine(normalisedAppend1);
+
+            return new NPath(_path + "/" + normalisedAppend1 + "/" + normalisedAppend2);
         }
 
         /// <summary>
@@ -272,14 +321,19 @@ namespace NiceIO
             if (append == null)
                 throw new ArgumentNullException(nameof(append));
 
-            var firstChar = append._path[0];
-            if (IsSlash(firstChar))
-                throw new ArgumentException($"You cannot .Combine a non-relative path: {append._path}");
+            if (!append.IsRelative)
+                throw new ArgumentException($"You cannot .Combine an absolute path: {append}");
 
-            //if the to-append path starts by going up directories, we need to run our normalizing constructor, if not, we can take the fast path
-            if (firstChar == '.' || _path[0] == '.' || _path.Length == 1)
-                return new NPath(_path + "/" + append._path);
-            return new NPath(_path + "/" + append, true);
+            var normalisedAppend = NormaliseRelativePath(append._path);
+            if (normalisedAppend == "" || normalisedAppend == ".")
+                return new NPath(_path, guaranteed_well_formed: true);
+
+            // If the to-append path starts by going up directories, we need to run
+            // our normalizing constructor, if not, we can take the fast path.
+            if (append._path[0] == '.' || _path[0] == '.' || _path.Length == 1)
+                return new NPath(_path + "/" + normalisedAppend);
+
+            return new NPath(_path + "/" + normalisedAppend, guaranteed_well_formed: true);
         }
 
         /// <summary>
@@ -293,10 +347,14 @@ namespace NiceIO
             foreach (var a in append)
             {
                 if (!a.IsRelative)
-                    throw new ArgumentException($"You cannot .Combine a non-relative path: {a}");
+                    throw new ArgumentException($"You cannot .Combine an absolute path: {a}");
+
+                var normalisedStr = NormaliseRelativePath(a.ToString());
+                if (normalisedStr == "" || normalisedStr == ".")
+                    continue;
 
                 sb.Append("/");
-                sb.Append(a);
+                sb.Append(normalisedStr);
             }
 
             return new NPath(sb.ToString());
@@ -412,13 +470,13 @@ namespace NiceIO
         {
             get
             {
-                if (_path[0] == '/')
+                if (IsSlash(_path[0]))
                     return false;
 
-                if (_path.Length >= 3 && _path[1] == ':' && _path[2] == '/')
-                    return false;
-
-                if (_path[0] == '\\')
+                // An unusual cases for windows to watch out for:
+                // C:foo.txt is relative (`pwd`/foo.txt)
+                // https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
+                if (_path.Length >= 3 && _path[1] == ':' && IsSlash(_path[2]))
                     return false;
 
                 return true;

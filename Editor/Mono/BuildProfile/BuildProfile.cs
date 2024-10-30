@@ -67,11 +67,20 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         [SerializeField] string m_PlatformId;
         [VisibleToOtherModules]
-        internal string platformId
+        internal GUID platformGuid
         {
-            get => m_PlatformId;
-            set => m_PlatformId = value;
+            get => new GUID(m_PlatformId);
+            set => m_PlatformId = value.ToString();
         }
+
+        /// <summary>
+        /// Platform ID of the build profile as string.
+        /// This is needed because the server team decided to use this
+        /// internal getter in their package.
+        /// PLEASE DON'T USE, USE platformGuid INSTEAD!
+        /// </summary>
+        [VisibleToOtherModules]
+        internal string platformId => m_PlatformId;
 
         /// <summary>
         /// Platform module specific build settings; e.g. AndroidBuildSettings.
@@ -144,11 +153,20 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal Action OnPlayerSettingsUpdatedFromYAML;
 
+        [VisibleToOtherModules]
+        internal Action OnGraphicsSettingsSubAssetRemoved;
+
+        /// <summary>
+        /// Cross-pipeline graphics settings overrides in build profile
+        /// </summary>
+        [VisibleToOtherModules]
+        internal BuildProfileGraphicsSettings graphicsSettings;
+
         // TODO: Return server IBuildTargets for server build profiles. (https://jira.unity3d.com/browse/PLAT-6612)
         /// <summary>
         /// Get the IBuildTarget of the build profile.
         /// </summary>
-        internal IBuildTarget GetIBuildTarget() => ModuleManager.GetIBuildTarget(buildTarget);
+        internal IBuildTarget GetIBuildTarget() => ModuleManager.GetIBuildTarget(platformGuid);
 
         /// <summary>
         /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic
@@ -164,7 +182,7 @@ namespace UnityEditor.Build.Profile
                 || !BuildProfileContext.IsClassicPlatformProfile(this))
                 return false;
 
-            return platformId == EditorUserBuildSettings.activePlatformGuid.ToString();
+            return platformGuid == EditorUserBuildSettings.activePlatformGuid;
         }
 
         [VisibleToOtherModules]
@@ -172,7 +190,7 @@ namespace UnityEditor.Build.Profile
         {
             // Note: A platform build profile may have a non-null value even if its module is not installed.
             // This scenario is true for server platform profiles, which are the same type as the standalone one.
-            return platformBuildProfile != null && BuildProfileModuleUtil.IsModuleInstalled(platformId);
+            return platformBuildProfile != null && BuildProfileModuleUtil.IsModuleInstalled(platformGuid);
         }
 
         internal string GetLastRunnableBuildPathKey()
@@ -188,11 +206,25 @@ namespace UnityEditor.Build.Profile
             return BuildProfileModuleUtil.GetLastRunnableBuildKeyFromAssetPath(assetPath, key);
         }
 
+        /// <summary>
+        /// Duplicate the build profile. Note this does not create a new asset.
+        /// </summary>
+        [VisibleToOtherModules]
+        internal BuildProfile Duplicate()
+        {
+            var duplicatedProfile = Instantiate(this);
+
+            if (graphicsSettings != null)
+                duplicatedProfile.graphicsSettings = Instantiate(graphicsSettings);
+
+            return duplicatedProfile;
+        }
+
         void OnEnable()
         {
             ValidateDataConsistency();
 
-            moduleName = BuildProfileModuleUtil.GetModuleName(platformId);
+            moduleName = BuildProfileModuleUtil.GetModuleName(platformGuid);
 
             // Check if the platform support module has been installed,
             // and try to set an uninitialized platform settings.
@@ -201,6 +233,8 @@ namespace UnityEditor.Build.Profile
 
             onBuildProfileEnable?.Invoke(this);
             LoadPlayerSettings();
+
+            TryLoadGraphicsSettings();
 
             if (!EditorUserBuildSettings.isBuildProfileAvailable
                 || BuildProfileContext.activeProfile != this)
@@ -215,6 +249,21 @@ namespace UnityEditor.Build.Profile
             }
             BuildProfileContext.instance.cachedEditorScriptingDefines = m_ScriptingDefines;
             BuildProfileModuleUtil.RequestScriptCompilation(this);
+        }
+
+        void TryLoadGraphicsSettings()
+        {
+            if (graphicsSettings != null)
+                return;
+
+            var path = AssetDatabase.GetAssetPath(this);
+            var objects = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            var data = Array.Find(objects, obj => obj is BuildProfileGraphicsSettings) as BuildProfileGraphicsSettings;
+            if (data == null)
+                return;
+
+            graphicsSettings = data;
         }
 
         void OnDisable()
@@ -248,6 +297,7 @@ namespace UnityEditor.Build.Profile
             targetBuildProfile.scriptingDefines = Array.Empty<string>();
 
             BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
+            targetBuildProfile.RemoveGraphicsSettings();
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
         }
@@ -256,15 +306,15 @@ namespace UnityEditor.Build.Profile
         {
             // TODO: Remove migration code (https://jira.unity3d.com/browse/PLAT-8909)
             // Set platform ID for build profiles created before it is introduced.
-            if (string.IsNullOrEmpty(platformId))
+            if (platformGuid.Empty())
             {
-                platformId = BuildProfileContext.IsSharedProfile(buildTarget) ?
-                    new GUID(string.Empty).ToString() : BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
+                platformGuid = BuildProfileContext.IsSharedProfile(buildTarget) ?
+                    new GUID(string.Empty) : BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
                 EditorUtility.SetDirty(this);
             }
             else
             {
-                var (curBuildTarget, curSubtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
+                var (curBuildTarget, curSubtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformGuid);
                 if (buildTarget != curBuildTarget || subtarget != curSubtarget)
                 {
                     buildTarget = curBuildTarget;

@@ -550,6 +550,7 @@ namespace UnityEngine
         NoResolvedColorSurface = 1 << 8,
         DynamicallyScalable = 1 << 10,
         BindMS = 1 << 11,
+        ShadingRate = 1 << 14,
         DynamicallyScalableExplicit = 1 << 17,
     }
 
@@ -1561,6 +1562,7 @@ namespace UnityEngine.Rendering
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public struct RenderTargetIdentifier : IEquatable<RenderTargetIdentifier>
     {
+        public static readonly RenderTargetIdentifier Invalid = new RenderTargetIdentifier();
         public const int AllDepthSlices = -1;
 
         // constructors
@@ -1980,8 +1982,11 @@ namespace UnityEngine.Rendering
     // Match VideoShadersMode on C++ side
     public enum VideoShadersIncludeMode
     {
+        [InspectorName("Don't include")]
         Never = 0,
+        [InspectorName("Include if referenced")]
         Referenced = 1,
+        [InspectorName("Always include")]
         Always = 2
     }
 
@@ -2092,7 +2097,8 @@ namespace UnityEngine.Rendering
         Color = 0,
         Depth = 1,
         Stencil = 2,
-        Default = 3
+        Default = 3,
+        ShadingRate = 4,
     }
 
     // Tries to follow naming from https://unity3d.com/learn/tutorials/topics/best-practices/multithreaded-rendering-graphics-jobs
@@ -2134,6 +2140,58 @@ namespace UnityEngine.Rendering
 
         // control invalidation of state tracking done by the backend
         CustomMarkerCallbackForceInvalidateStateTracking = 1 << 2
+    }
+
+    // Needs to be kept in sync with Runtime\GfxDevice\GfxDeviceTypes.h
+    public enum ShadingRateFragmentSize
+    {
+        [InspectorName("FragmentSize 1x1")]
+        FragmentSize1x1,
+
+        [InspectorName("FragmentSize 1x2")]
+        FragmentSize1x2,
+
+        [InspectorName("FragmentSize 2x1")]
+        FragmentSize2x1,
+
+        [InspectorName("FragmentSize 2x2")]
+        FragmentSize2x2,
+
+        [InspectorName("FragmentSize 1x4")]
+        FragmentSize1x4,
+
+        [InspectorName("FragmentSize 4x1")]
+        FragmentSize4x1,
+
+        [InspectorName("FragmentSize 2x4")]
+        FragmentSize2x4,
+
+        [InspectorName("FragmentSize 4x2")]
+        FragmentSize4x2,
+
+        [InspectorName("FragmentSize 4x4")]
+        FragmentSize4x4,
+    };
+
+    public enum ShadingRateCombinerStage
+    {
+        Primitive,
+        Fragment,
+    }
+
+    public enum ShadingRateCombiner
+    {
+        Keep,
+        Override,
+        Min,
+        Max,
+    }
+
+    public enum ShadingRateFeatureTier
+    {
+        None,
+        Tier1,
+        Tier2,
     }
 } // namespace UnityEngine.Rendering
 

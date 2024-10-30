@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile;
+using UnityEditor.Modules;
 using System;
 
 namespace UnityEditor.Build

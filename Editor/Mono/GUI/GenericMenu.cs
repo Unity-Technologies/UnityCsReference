@@ -80,6 +80,14 @@ namespace UnityEditor
                 func2 = _func;
                 userData = _userData;
             }
+
+            public override string ToString()
+            {
+                var label = content?.text;
+                if (separator)
+                    return label + "[separator]";
+                return label;
+            }
         }
 
         // Show the menu under the mouse

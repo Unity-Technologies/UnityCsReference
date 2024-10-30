@@ -213,7 +213,8 @@ namespace UnityEngine.Rendering
         None = 0,
         ReadOnlyDepth = 1 << 1,
         ReadOnlyStencil = 1 << 2,
-        ReadOnlyDepthStencil = ReadOnlyDepth | ReadOnlyStencil
+        ReadOnlyDepthStencil = ReadOnlyDepth | ReadOnlyStencil,
+        UseShadingRateImage = 1 << 3,
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -302,5 +303,4 @@ namespace UnityEngine.Rendering
         public AttachmentIndexArray colorOutputs;
         public SubPassFlags flags;
     }
-
 }

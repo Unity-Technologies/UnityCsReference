@@ -848,6 +848,7 @@ namespace UnityEngine
         extern public bool enableRandomWrite { get; set; }
         extern public bool useDynamicScale { get; set; }
         extern public bool useDynamicScaleExplicit { get; set; }
+        extern public bool enableShadingRate { get; set; }
 
         extern public void ApplyDynamicScale();
 

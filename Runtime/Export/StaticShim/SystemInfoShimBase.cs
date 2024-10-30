@@ -74,6 +74,8 @@ namespace UnityEngine
 
         public virtual FoveatedRenderingCaps foveatedRenderingCaps => UnityEngine.SystemInfo.foveatedRenderingCaps;
 
+        public virtual bool supportsVariableRateShading => UnityEngine.SystemInfo.supportsVariableRateShading;
+
         public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>

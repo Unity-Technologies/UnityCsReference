@@ -155,7 +155,7 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    if (!IsValidAttributeType(fieldInfo.FieldType))
+                    if (!UxmlAttributeConverter.HasConverter(fieldInfo.FieldType))
                     {
                         Debug.LogError($"[UxmlElement] '{elementType.Name}' has a [UxmlAttribute] '{attDescription.uxmlName}' of an unknown type '{fieldInfo.FieldType.Name}'.\n" +
                                        $"To fix this error define a custom {nameof(UxmlAttributeConverter)}<{fieldInfo.FieldType.Name}>.");
@@ -257,11 +257,6 @@ namespace UnityEditor.UIElements
             }
 
             return true;
-        }
-
-        private static bool IsValidAttributeType(Type t)
-        {
-            return UxmlAttributeConverter.TryGetConverter(t, out _) || typeof(UnityEngine.Object).IsAssignableFrom(t);
         }
     }
 }

@@ -65,7 +65,7 @@ namespace UnityEditor.UIElements
         private void CheckPanelScaling()
         {
             // Can be disabled for setting a manual scale for testing
-            if (UpdateScalingFromEditorWindow)
+            if (UpdateScalingFromEditorWindow && ownerObject != null)
             {
 
                 //check that the scaling is up to date

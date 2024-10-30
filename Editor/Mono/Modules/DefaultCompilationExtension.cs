@@ -33,6 +33,11 @@ namespace UnityEditor.Modules
             return new string[0];
         }
 
+        public virtual IEnumerable<string> GetAdditionalEditorDefines()
+        {
+            return new string[0];
+        }
+
         public virtual IEnumerable<string> GetAdditionalSourceFiles()
         {
             return new string[0];

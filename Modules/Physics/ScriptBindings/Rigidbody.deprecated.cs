@@ -44,5 +44,9 @@ namespace UnityEngine
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations", true)]
         public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Please use Rigidbody.mass instead. Setting density on a Rigidbody no longer has any effect.", false)]
+        public void SetDensity(float density) { }
     }
 }

@@ -29,21 +29,50 @@ namespace UnityEngine.Rendering
         }
 
 
+        /// <summary>
+        /// Schedules the beginning of a new render pass. Only one render pass can be active at any time.
+        /// </summary>
+        /// <param name="width">The width of the render pass surfaces in pixels.</param>
+        /// <param name="height">The height of the render pass surfaces in pixels.</param>
+        /// <param name="volumeDepth">The number of slices of the render pass surfaces. The default value is 1.</param>
+        /// <param name="samples">MSAA sample count; set to 1 to disable antialiasing.</param>
+        /// <param name="shadingRateImage">Shading rate images to use within the render pass.</param>
+        /// <param name="attachments">Array of color attachments to use within this render pass. The values in the array are copied immediately.</param>
+        /// <param name="depthAttachmentIndex">The index of the attachment to be used as the depth/stencil buffer for this render pass, or -1 to disable depth/stencil.</param>
+        /// <param name="shadingRateImageAttachmentIndex">The index of the attachment to be used as the shading rate image for this render pass, or -1 to disable shading rate image.</param>
+        public unsafe void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex)
+        {
+            Validate();
+            BeginRenderPass_Internal(m_Ptr, width, height, volumeDepth, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, shadingRateImageAttachmentIndex);
+        }
+
         public unsafe void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
         {
             Validate();
-            BeginRenderPass_Internal(m_Ptr, width, height, volumeDepth, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
+            BeginRenderPass_Internal(m_Ptr, width, height, volumeDepth, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, -1);
+        }
+
+        public unsafe void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex)
+        {
+            Validate();
+            BeginRenderPass_Internal(m_Ptr, width, height, 1, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, shadingRateImageAttachmentIndex);
         }
 
         public unsafe void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
         {
             Validate();
-            BeginRenderPass_Internal(m_Ptr, width, height, 1, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
+            BeginRenderPass_Internal(m_Ptr, width, height, 1, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex, -1);
+        }
+
+        public ScopedRenderPass BeginScopedRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex)
+        {
+            BeginRenderPass(width, height, samples, attachments, depthAttachmentIndex, shadingRateImageAttachmentIndex);
+            return new ScopedRenderPass(this);
         }
 
         public ScopedRenderPass BeginScopedRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
         {
-            BeginRenderPass(width, height, samples, attachments, depthAttachmentIndex);
+            BeginRenderPass(width, height, samples, attachments, depthAttachmentIndex, -1);
             return new ScopedRenderPass(this);
         }
 

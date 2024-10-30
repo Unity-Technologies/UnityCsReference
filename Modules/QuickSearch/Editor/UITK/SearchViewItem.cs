@@ -138,8 +138,6 @@ namespace UnityEditor.Search
             m_FavoriteButton.pseudoStates &= ~PseudoStates.Active;
             if (m_BindedItem != null)
             {
-                m_BindedItem.preview = null;
-                m_BindedItem.thumbnail = null;
                 m_BindedItem = null;
             }
 

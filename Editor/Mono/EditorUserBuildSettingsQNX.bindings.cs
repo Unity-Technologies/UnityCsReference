@@ -9,9 +9,6 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum QNXOsVersion
     {
-        [System.Obsolete("Neutrino RTOS 7.0 has been removed in 2023.2")]
-        Neutrino70 = 0,
-
         [UnityEngine.InspectorName("Neutrino RTOS 7.1")]
         Neutrino71 = 1,
     }

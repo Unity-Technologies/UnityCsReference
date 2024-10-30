@@ -1397,7 +1397,7 @@ namespace UnityEditor.Search
             switch(prop.propertyType)
             {
                 case SerializedPropertyType.Color:
-                    return $"#{ColorUtility.ToHtmlStringRGB((Color)value)}";
+                    return $"#{ColorUtility.ToHtmlStringRGBA((Color)value)}";
                 case SerializedPropertyType.ObjectReference:
                 case SerializedPropertyType.ManagedReference:
                 case SerializedPropertyType.ExposedReference:
@@ -1498,6 +1498,18 @@ namespace UnityEditor.Search
         internal static ISearchView OpenWithContextualProviders(params string[] providerIds)
         {
             return OpenWithContextualProviders("", providerIds);
+        }
+
+        internal static SearchWindow FindReusableWindow(SearchViewState compatibleState)
+        {
+            if (EditorWindow.HasOpenInstances<SearchWindow>())
+            {
+                return Resources.FindObjectsOfTypeAll<SearchWindow>()
+                    .Where(w => w.state.searchFlags.HasAny(SearchFlags.ReuseExistingWindow)
+                        || (w.context?.options.HasAny(SearchFlags.ReuseExistingWindow) ?? false))
+                    .FirstOrDefault();
+            }
+            return null;
         }
 
         [Flags]

@@ -33,6 +33,7 @@ namespace UnityEngine.Rendering
         int m_fallbackMaterialInstanceId;
         int m_MainLightIndex;
         int m_UseSrpBatcher; // only needed to match native struct
+        int m_LodCrossFadeStencilMask;
 #pragma warning restore 414
 
         public DrawingSettings(ShaderTagId shaderPassName, SortingSettings sortingSettings)
@@ -58,6 +59,7 @@ namespace UnityEngine.Rendering
             }
 
             m_UseSrpBatcher = 0;
+            m_LodCrossFadeStencilMask = 0;
         }
 
         public SortingSettings sortingSettings
@@ -132,6 +134,12 @@ namespace UnityEngine.Rendering
             set { m_MainLightIndex = value; }
         }
 
+        public int lodCrossFadeStencilMask
+        {
+            get { return m_LodCrossFadeStencilMask; }
+            set { m_LodCrossFadeStencilMask = value; }
+        }
+
         public ShaderTagId GetShaderPassName(int index)
         {
             if (index >= maxShaderPasses || index < 0)
@@ -168,7 +176,8 @@ namespace UnityEngine.Rendering
                 && m_OverrideMaterialInstanceId == other.m_OverrideMaterialInstanceId
                 && m_OverrideMaterialPassIndex == other.m_OverrideMaterialPassIndex
                 && m_fallbackMaterialInstanceId == other.m_fallbackMaterialInstanceId
-                && m_UseSrpBatcher == other.m_UseSrpBatcher;
+                && m_UseSrpBatcher == other.m_UseSrpBatcher
+                && m_LodCrossFadeStencilMask == other.m_LodCrossFadeStencilMask;
         }
 
         public override bool Equals(object obj)
@@ -188,6 +197,7 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_OverrideMaterialPassIndex;
                 hashCode = (hashCode * 397) ^ m_fallbackMaterialInstanceId;
                 hashCode = (hashCode * 397) ^ m_UseSrpBatcher;
+                hashCode = (hashCode * 397) ^ m_LodCrossFadeStencilMask;
                 return hashCode;
             }
         }

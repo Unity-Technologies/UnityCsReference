@@ -9,8 +9,9 @@ namespace UnityEngine.Rendering
 {
     [MovedFrom("UnityEngine.Experimental.Rendering")]
     [NativeHeader("Runtime/Shaders/RayTracing/RayTracingShader.h")]
-    [NativeHeader("Runtime/Shaders/RayTracing/RayTracingAccelerationStructure.h")]
+    [NativeHeader("Runtime/Graphics/RayTracing/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
+
     public sealed partial class RayTracingShader : Object
     {
         public extern float maxRecursionDepth { get; }

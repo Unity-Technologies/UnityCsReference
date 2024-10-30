@@ -55,6 +55,7 @@ namespace UnityEngine.Android
         }
 
         private static AndroidConfiguration m_CurrentConfiguration;
+        private static AndroidInsets m_CurrentAndroidInsets;
 
         [RequiredByNativeCode(GenerateProxy = true)]
         private static void SetCurrentConfiguration(AndroidConfiguration config)
@@ -75,9 +76,29 @@ namespace UnityEngine.Android
                 onConfigurationChanged?.Invoke(m_CurrentConfiguration);
         }
 
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static void SetCurrentInsets(AndroidInsets insets)
+        {
+            m_CurrentAndroidInsets = insets;
+        }
+
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static AndroidInsets GetCurrentInsets()
+        {
+            return m_CurrentAndroidInsets;
+        }
+
+        [RequiredByNativeCode(GenerateProxy = true)]
+        private static void DispatchInsetsChanged()
+        {
+            onInsetsChanged?.Invoke(m_CurrentAndroidInsets);
+        }
+
         public static AndroidConfiguration currentConfiguration => m_CurrentConfiguration;
 
         public static event Action<AndroidConfiguration> onConfigurationChanged;
+		
+		internal static event Action<AndroidInsets> onInsetsChanged;
 
         public static void InvokeOnUIThread(Action action)
         {

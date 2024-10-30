@@ -183,6 +183,9 @@
     <Compile Include="..\..\Modules\AndroidJNI\AndroidGame.cs">
       <Link>Modules\AndroidJNI\AndroidGame.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\AndroidJNI\AndroidInsets.bindings.cs">
+      <Link>Modules\AndroidJNI\AndroidInsets.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\AndroidJNI\AndroidJNI.bindings.cs">
       <Link>Modules\AndroidJNI\AndroidJNI.bindings.cs</Link>
     </Compile>
@@ -3827,6 +3830,15 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\ShaderWarmup.bindings.cs">
       <Link>Runtime\Export\Graphics\ShaderWarmup.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\ShadingRateImage.bindings.cs">
+      <Link>Runtime\Export\Graphics\ShadingRateImage.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\ShadingRateImage.cs">
+      <Link>Runtime\Export\Graphics\ShadingRateImage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\ShadingRateInfo.binding.cs">
+      <Link>Runtime\Export\Graphics\ShadingRateInfo.binding.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\SplashScreen.bindings.cs">
       <Link>Runtime\Export\Graphics\SplashScreen.bindings.cs</Link>

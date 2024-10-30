@@ -26,11 +26,12 @@ namespace Unity.UI.Builder
             Header = 1 << 1,
             StyleSheet = 1 << 2,
             StyleSelector = 1 << 3,
-            ElementAttributes = 1 << 4,
-            ElementInheritedStyles = 1 << 5,
-            LocalStyles = 1 << 6,
-            VisualTreeAsset = 1 << 7,
-            MultiSelection = 1 << 8,
+            Variables = 1 << 4,
+            ElementAttributes = 1 << 5,
+            ElementInheritedStyles = 1 << 6,
+            LocalStyles = 1 << 7,
+            VisualTreeAsset = 1 << 8,
+            MultiSelection = 1 << 9,
         }
 
         // View Data
@@ -80,6 +81,8 @@ namespace Unity.UI.Builder
         // Header
         BuilderInspectorHeader m_HeaderSection;
         internal BuilderInspectorHeader headerSection => m_HeaderSection;
+        // used for testing
+        internal BuilderInspectorVariables variablesSection => m_VariablesSection;
 
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
@@ -87,6 +90,7 @@ namespace Unity.UI.Builder
         BuilderInspectorInheritedStyles m_InheritedStyleSection;
         BuilderInspectorLocalStyles m_LocalStylesSection;
         BuilderInspectorStyleSheet m_StyleSheetSection;
+        BuilderInspectorVariables m_VariablesSection;
 
         // Selector Preview
         TwoPaneSplitView m_SplitView;
@@ -246,17 +250,9 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
-            if (Unsupported.IsDeveloperMode())
-            {
-                UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
-                m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
-            }
-            else
-            {
-                UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
-                m_TextGeneratorStyle.style.display = DisplayStyle.None;
-            }
 
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
+            m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -313,6 +309,10 @@ namespace Unity.UI.Builder
             // StyleSheet Section
             m_StyleSheetSection = new BuilderInspectorStyleSheet(this);
             m_Sections.Add(m_StyleSheetSection.root);
+
+            // Variables Section
+            m_VariablesSection = new BuilderInspectorVariables(this);
+            m_Sections.Add(m_VariablesSection.root);
 
             // Attributes Section
             m_AttributesSection = new BuilderInspectorAttributes(this);
@@ -584,6 +584,8 @@ namespace Unity.UI.Builder
                 EnableSection(m_HeaderSection.header);
             if (section.HasFlag(Section.StyleSheet))
                 EnableSection(m_StyleSheetSection.root);
+            if (section.HasFlag(Section.Variables))
+                EnableSection(m_VariablesSection.root);
             if (section.HasFlag(Section.ElementAttributes))
                 EnableSection(m_AttributesSection.root);
             if (section.HasFlag(Section.ElementInheritedStyles))
@@ -1252,7 +1254,8 @@ namespace Unity.UI.Builder
                     EnableSections(
                         Section.Header |
                         Section.StyleSelector |
-                        Section.LocalStyles);
+                        Section.LocalStyles |
+                        Section.Variables);
                     break;
                 case BuilderSelectionType.ElementInTemplateInstance:
                 case BuilderSelectionType.ElementInControlInstance:
@@ -1307,6 +1310,8 @@ namespace Unity.UI.Builder
 
             // Create the fields for the overridable styles.
             m_LocalStylesSection.Refresh();
+
+            m_VariablesSection.Refresh();
 
             m_CanvasSection.Refresh();
 

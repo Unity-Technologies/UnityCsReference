@@ -82,8 +82,16 @@ namespace UnityEngine.UIElements
 
             m_LastVersion = m_Version;
 
-            panel.UpdateElementUnderPointers();
             panel.visualTree.UpdateBoundingBox();
+
+            bool hasChanged = panel.UpdateElementUnderPointers();
+
+            // Runtime panels are re-applying styles during the rendering playerloop callback
+            // Editor panels must re-evaluate styles to properly render hover states on the first frame a change occured
+            if (hasChanged && panel.contextType == ContextType.Editor)
+            {
+                panel.ApplyStyles();
+            }
         }
     }
 }

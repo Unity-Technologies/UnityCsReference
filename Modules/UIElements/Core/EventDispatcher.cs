@@ -388,6 +388,10 @@ namespace UnityEngine.UIElements
 
         void ProcessEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel)
         {
+            // UUM-83486: interacting with a disposed panel can lead to all kinds of exceptions; in that case, skip it.
+            if (panel.disposed)
+                return;
+
             Event e = evt.imguiEvent;
             // Sometimes (in tests only?) we receive Used events. Protect our verification from this case.
             bool imguiEventIsInitiallyUsed = e != null && e.rawType == EventType.Used;

@@ -206,8 +206,8 @@ namespace UnityEditor.Build.Profile
         {
             bool removePlayerSettings = EditorUtility.DisplayDialog(TrText.removePlayerSettingsDialogTitle,
                                                                     TrText.removePlayerSettingsDialogMessage,
-                                                                    TrText.playerSettingsContinue,
-                                                                    TrText.playerSettingsCancel);
+                                                                    TrText.continueButtonText,
+                                                                    TrText.cancelButtonText);
             if (!removePlayerSettings)
                 return;
 
@@ -244,8 +244,8 @@ namespace UnityEditor.Build.Profile
         {
             bool resetPlayerSettings = EditorUtility.DisplayDialog(TrText.resetPlayerSettingsDialogTitle,
                                                                     TrText.resetPlayerSettingsDialogMessage,
-                                                                    TrText.playerSettingsContinue,
-                                                                    TrText.playerSettingsCancel);
+                                                                    TrText.continueButtonText,
+                                                                    TrText.cancelButtonText);
 
             if (!resetPlayerSettings)
                 return;

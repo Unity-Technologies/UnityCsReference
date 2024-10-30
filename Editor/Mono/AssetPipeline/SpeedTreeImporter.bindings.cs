@@ -305,9 +305,14 @@ namespace UnityEditor
                 bool st8 = asset.EndsWith(".st", StringComparison.OrdinalIgnoreCase);
                 if(st8)
                 {
+                    SpeedTreeImporter importer = AssetImporter.GetAtPath(asset) as SpeedTreeImporter;
+                    if (importer == null)
+                        continue;
+
                     // Check the external materials in case the user has extracted
-                    Dictionary<AssetImporter.SourceAssetIdentifier, UnityEngine.Object> externalAssets = (AssetImporter.GetAtPath(asset) as SpeedTreeImporter).GetExternalObjectMap();
-                    FixExtraTexture_sRGB(externalAssets.Values);
+                    Dictionary<AssetImporter.SourceAssetIdentifier, UnityEngine.Object> externalAssets = importer.GetExternalObjectMap();
+                    if(externalAssets != null)
+                        FixExtraTexture_sRGB(externalAssets.Values);
 
                     // Check the object subassets -- updates the materials if they're embedded in the SpeedTree asset
                     UnityEngine.Object[] subAssets = AssetDatabase.LoadAllAssetsAtPath(asset);

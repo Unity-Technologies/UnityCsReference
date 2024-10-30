@@ -2555,6 +2555,10 @@ namespace UnityEditor
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraViewport;
 
+            //If we know the window space camera rect is invalid, we can early-out here
+            if(windowSpaceCameraRect.width <= 0 || windowSpaceCameraRect.height <= 0)
+                return;
+
             HandleClickAndDragToFocus();
 
             BeginWindows();

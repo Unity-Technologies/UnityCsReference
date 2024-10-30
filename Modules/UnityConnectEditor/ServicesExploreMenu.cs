@@ -12,7 +12,7 @@ namespace UnityEditor.Connect
         static void OpenPackageManagerOnServicesFilter()
         {
             EditorGameServicesAnalytics.SendTopMenuExploreEvent();
-            PackageManagerWindow.OpenPackageManagerOnPage(ServicesConstants.ExploreServicesPackageManagerPageId);
+            PackageManagerWindow.OpenAndSelectPage(ServicesConstants.ExploreServicesPackageManagerPageId);
         }
     }
 }

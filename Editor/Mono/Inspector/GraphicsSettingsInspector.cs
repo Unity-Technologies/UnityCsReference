@@ -10,11 +10,13 @@ using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.UIElements;
 using UnityEditor.UIElements.ProjectSettings;
 using UnityEditorInternal;
+using UnityEditor.Rendering;
+using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using Button = UnityEngine.UIElements.Button;
-using UnityEditor.Rendering;
+using HelpBox = UnityEngine.UIElements.HelpBox;
 
 namespace UnityEditor
 {
@@ -31,6 +33,8 @@ namespace UnityEditor
 
             internal static GUIContent builtInWarningText =
                 EditorGUIUtility.TrTextContent("A Scriptable Render Pipeline is in use. Settings in the Built-In Render Pipeline are not currently in use.");
+            internal static readonly string k_BuildProfileGraphicsSettingsOverrideWarning =
+                L10n.Tr("The current active build profile has overridden certain Graphics settings. To ensure that the correct settings are included in your build, see the Build Profiles...");
         }
         internal IEnumerable<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> globalSettings => m_GlobalSettings;
 
@@ -39,6 +43,8 @@ namespace UnityEditor
         VisualElement m_CurrentRoot;
         ScrollView m_ScrollView;
         List<GraphicsSettingsInspectorUtility.GlobalSettingsContainer> m_GlobalSettings;
+        HelpBox m_BuildProfileGraphicsSettingsOverrideWarning;
+        internal static Action OnActiveProfileGraphicsSettingsChanged;
 
         readonly Dictionary<VisualElement, List<Label>> m_Labels = new();
         string m_CurrentText;
@@ -95,6 +101,7 @@ namespace UnityEditor
             m_VisibilityController.Dispose();
 
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            OnActiveProfileGraphicsSettingsChanged -= UpdateBuildProfileGraphicsSettingsOverrideWarning;
             m_FinishedInitialization = false;
         }
 
@@ -105,6 +112,11 @@ namespace UnityEditor
             m_CurrentRoot
                 .Query<ProjectSettingsElementWithSO>()
                 .ForEach(d => d.Initialize(serializedObject));
+
+            m_BuildProfileGraphicsSettingsOverrideWarning = m_CurrentRoot.Query<HelpBox>("build-profile-override-warning-help-box");
+            m_BuildProfileGraphicsSettingsOverrideWarning.text = GraphicsSettingsData.k_BuildProfileGraphicsSettingsOverrideWarning;
+            UpdateBuildProfileGraphicsSettingsOverrideWarning();
+            OnActiveProfileGraphicsSettingsChanged += UpdateBuildProfileGraphicsSettingsOverrideWarning;
 
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
@@ -286,6 +298,14 @@ namespace UnityEditor
             var transparencySortAxis = root.MandatoryQ<PropertyField>("TransparencySortAxis");
             transparencySortMode.RegisterValueChangeCallback(evt =>
                 UIElementsEditorUtility.SetVisibility(transparencySortAxis, (TransparencySortMode)evt.changedProperty.enumValueIndex == TransparencySortMode.CustomAxis));
+        }
+
+        void UpdateBuildProfileGraphicsSettingsOverrideWarning()
+        {
+            if (BuildProfileContext.ActiveProfileHasGraphicsSettings())
+                m_BuildProfileGraphicsSettingsOverrideWarning.style.display = DisplayStyle.Flex;
+            else
+                m_BuildProfileGraphicsSettingsOverrideWarning.style.display = DisplayStyle.None;
         }
 
         [Serializable]

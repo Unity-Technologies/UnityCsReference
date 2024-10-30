@@ -240,13 +240,6 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
 
-            [NativeProperty("webGLEnableWebGPU", TargetType.Field)]
-            public extern static bool enableWebGPU
-            {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
-            }
-
             [NativeProperty("webGLPowerPreference", TargetType.Field)]
             public extern static WebGLPowerPreference powerPreference
             {

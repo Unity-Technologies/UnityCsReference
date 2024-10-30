@@ -196,15 +196,40 @@ namespace UnityEditor
             GUILayout.BeginVertical();
             var selectedLevel = currentQualitylevel;
 
+            //calculate maximum height
+            var max_height = 0.0f;
+            var min_height = float.MaxValue;
+            foreach (var platform in m_ValidPlatforms)
+            {
+                var icon = platform.compoundSmallIconForQualitySettings;
+                max_height = System.Math.Max(icon.height/icon.pixelsPerPoint + 2, max_height);
+                min_height = System.Math.Min(icon.height/icon.pixelsPerPoint + 2, min_height);
+            }
+
             //Header row
             GUILayout.BeginHorizontal();
-            EditorGUILayout.PrefixLabel("Levels", EditorStyles.label, EditorStyles.boldLabel);
+            {
+                var followingStyle = EditorStyles.label;
+                var labelStyle = EditorStyles.boldLabel;
+                float p = followingStyle.margin.left;
+                var label = EditorGUIUtility.TempContent("Levels");
+                Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth - p, EditorGUI.kSingleLineHeight, followingStyle, GUILayout.ExpandWidth(false));
+                var delta = max_height - min_height;
+                r.yMax += delta;
+                r.yMin += delta;
+                r.xMin += EditorGUI.indent;
+                EditorGUI.HandlePrefixLabel(r, r, label, 0, labelStyle);
+            }
 
             //Header row icons
             foreach (var platform in m_ValidPlatforms)
             {
-                var iconRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(Styles.kHeaderRowHeight));
-                var temp = EditorGUIUtility.TempContent(platform.smallIcon);
+                var icon = platform.compoundSmallIconForQualitySettings;
+                var iconRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(icon.height/icon.pixelsPerPoint + 2));
+                var delta = max_height - icon.height/icon.pixelsPerPoint-2;
+                iconRect.yMax += delta;
+                iconRect.yMin += delta;
+                var temp = EditorGUIUtility.TempContent(icon);
                 temp.tooltip = platform.title.text;
                 GUI.Label(iconRect, temp);
                 temp.tooltip = "";

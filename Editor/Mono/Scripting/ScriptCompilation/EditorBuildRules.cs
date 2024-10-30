@@ -297,6 +297,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 {
                     PlatformSupportModuleHelpers.AddAdditionalPlatformSupportData(settings.CompilationExtension, ref scriptAssembly);
                 }
+                else
+                {
+                    if (settings.CompilationExtension != null)
+                        scriptAssembly.Defines = scriptAssembly.Defines.Concat(settings.CompilationExtension.GetAdditionalEditorDefines()).ToArray();
+                }
             }
 
             if (assemblies.RoslynAnalyzerDllPaths != null)

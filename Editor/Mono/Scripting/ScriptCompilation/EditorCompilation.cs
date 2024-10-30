@@ -966,11 +966,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             predefinedAssembliesCompilerOptions.ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(namedBuildTarget);
 
-            ICompilationExtension compilationExtension = null;
-            if ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0)
-            {
-                compilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
-            }
+            var tempCompilationExtension = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(buildTarget))?.CreateCompilationExtension();
+            ICompilationExtension compilationExtension =
+                ((options & EditorScriptCompilationOptions.BuildingForEditor) == 0 || tempCompilationExtension?.GetAdditionalEditorDefines().Count() > 0) ?
+                    tempCompilationExtension : null;
 
             List<string> additionalCompilationArguments = new List<string>(PlayerSettings.GetAdditionalCompilerArguments(namedBuildTarget));
 

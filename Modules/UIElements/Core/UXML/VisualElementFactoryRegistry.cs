@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Reflection;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
@@ -24,9 +23,9 @@ namespace UnityEngine.UIElements
             if (type == null)
                 return string.Empty;
 
-            MovedFromAttributeData data = attr.data;
-            var namespaceName = data.nameSpaceHasChanged ? data.nameSpace : VisualElement.GetOrCreateTypeData(type).typeNamespace;
-            var typeName = data.classHasChanged ? data.className : VisualElement.GetOrCreateTypeData(type).typeName;
+            var data = attr.data;
+            var namespaceName = data.nameSpaceHasChanged ? data.nameSpace : type.Namespace;
+            var typeName = data.classHasChanged ? data.className : type.Name;
             var fullOldName = namespaceName + "." + typeName;
             return fullOldName;
         }

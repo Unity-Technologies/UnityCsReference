@@ -4,6 +4,7 @@
 
 namespace UnityEngine.UIElements
 {
+
     class ElementUnderPointer
     {
         VisualElement[] m_PendingTopElementUnderPointer = new VisualElement[PointerId.maxPointers];
@@ -30,14 +31,28 @@ namespace UnityEngine.UIElements
             return m_PendingTopElementUnderPointer[pointerId];
         }
 
+
+        internal void RemoveElementUnderPointer(VisualElement elementToRemove)
+        {
+            for (int pointerId = 0; pointerId < m_TopElementUnderPointer.Length; ++pointerId)
+            {
+                var previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
+
+                if (previousTopElementUnderPointer == elementToRemove)
+                {
+                    SetElementUnderPointer(null, pointerId, null);
+                }
+            }
+        }
+
         internal void SetElementUnderPointer(VisualElement newElementUnderPointer, int pointerId, Vector2 pointerPos)
         {
             Debug.Assert(pointerId >= 0, "SetElementUnderPointer expects pointerId >= 0");
 
-            VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
+            var previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
             m_IsPickingPointerTemporaries[pointerId] = false;
             m_PickingPointerPositions[pointerId] = pointerPos;
-            if (newElementUnderPointer == previousTopElementUnderPointer)
+            if (previousTopElementUnderPointer == newElementUnderPointer)
             {
                 return;
             }
@@ -83,8 +98,8 @@ namespace UnityEngine.UIElements
             m_PickingPointerPositions[pointerId] = GetEventPointerPosition(triggerEvent);
             m_PendingTopElementUnderPointer[pointerId] = newElementUnderPointer;
 
-            VisualElement previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
-            if (newElementUnderPointer == previousTopElementUnderPointer)
+            var previousTopElementUnderPointer = m_TopElementUnderPointer[pointerId];
+            if (previousTopElementUnderPointer == newElementUnderPointer)
             {
                 return;
             }
@@ -95,15 +110,16 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void CommitElementUnderPointers(EventDispatcher dispatcher, ContextType contextType)
+        internal bool CommitElementUnderPointers(EventDispatcher dispatcher, ContextType contextType)
         {
+            bool elementUnderPointerChanged = false;
             for (var i = 0; i < PointerId.maxPointers; i++)
             {
                 var triggerEvent = m_TriggerEvent[i];
                 var previous = m_TopElementUnderPointer[i];
                 var current = m_PendingTopElementUnderPointer[i];
 
-                if (current == previous)
+                if (previous == current)
                 {
                     if (triggerEvent != null)
                     {
@@ -111,6 +127,8 @@ namespace UnityEngine.UIElements
                     }
                     continue;
                 }
+
+                elementUnderPointerChanged = true;
 
                 m_TopElementUnderPointer[i] = current;
 
@@ -210,6 +228,7 @@ namespace UnityEngine.UIElements
 
                 m_TriggerEvent[i] = null;
             }
+            return elementUnderPointerChanged;
         }
     }
 }

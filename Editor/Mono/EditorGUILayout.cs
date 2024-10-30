@@ -2307,7 +2307,7 @@ sealed partial class EditorGUILayout
             }
             else
             {
-                content = new GUIContent(platforms[i].smallIcon, platforms[i].tooltip);
+                content = new GUIContent(platforms[i].compoundSmallIcon, platforms[i].compoundTooltip);
             }
 
             GUIStyle buttonStyle = null;

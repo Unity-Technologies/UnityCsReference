@@ -38,8 +38,8 @@ namespace Unity.UI.Builder
 
         public static bool CreateNewUSSAsset(BuilderPaneWindow paneWindow, string ussPath)
         {
-            // Create the file. Can be empty.
-            File.WriteAllText(ussPath, string.Empty);
+            // Create the file.
+            File.WriteAllText(ussPath, ":root {\n\n}");
             AssetDatabase.Refresh();
 
             return AddUSSToAsset(paneWindow, ussPath);

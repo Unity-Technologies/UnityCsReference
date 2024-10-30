@@ -89,6 +89,7 @@ namespace UnityEditor.DeviceSimulation
         public override bool graphicsMultiThreaded  =>  m_GraphicsSystemInfoFields.Contains("graphicsMultiThreaded") ? m_GraphicsSystemInfo.graphicsMultiThreaded : base.graphicsMultiThreaded;
         public override RenderingThreadingMode renderingThreadingMode  =>  m_GraphicsSystemInfoFields.Contains("renderingThreadingMode") ? m_GraphicsSystemInfo.renderingThreadingMode : base.renderingThreadingMode;
         public override FoveatedRenderingCaps foveatedRenderingCaps => m_GraphicsSystemInfoFields.Contains("foveatedRenderingCaps") ? m_GraphicsSystemInfo.foveatedRenderingCaps : base.foveatedRenderingCaps;
+        public override bool supportsVariableRateShading => m_GraphicsSystemInfoFields.Contains("supportsVariableRateShading") ? m_GraphicsSystemInfo.supportsVariableRateShading : base.supportsVariableRateShading;
         public override bool hasHiddenSurfaceRemovalOnGPU  =>  m_GraphicsSystemInfoFields.Contains("hasHiddenSurfaceRemovalOnGPU") ? m_GraphicsSystemInfo.hasHiddenSurfaceRemovalOnGPU : base.hasHiddenSurfaceRemovalOnGPU;
         public override bool hasDynamicUniformArrayIndexingInFragmentShaders  =>  m_GraphicsSystemInfoFields.Contains("hasDynamicUniformArrayIndexingInFragmentShaders") ? m_GraphicsSystemInfo.hasDynamicUniformArrayIndexingInFragmentShaders : base.hasDynamicUniformArrayIndexingInFragmentShaders;
         public override bool supportsShadows  =>  m_GraphicsSystemInfoFields.Contains("supportsShadows") ? m_GraphicsSystemInfo.supportsShadows : base.supportsShadows;

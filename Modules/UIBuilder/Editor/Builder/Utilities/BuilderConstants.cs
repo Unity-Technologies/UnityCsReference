@@ -62,6 +62,7 @@ namespace Unity.UI.Builder
         public static string UssPath_BuilderWindow_Themed => EditorGUIUtility.isProSkin ? UssPath_BuilderWindow_Dark : UssPath_BuilderWindow_Light;
 
         public const string UssPath_InspectorWindow = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uss";
+        public const string UssPath_InspectorVariable = BuilderConstants.UIBuilderPackagePath + "/Inspector/StyleSectionsVariables.uss";
         public const string UssPath_InspectorWindow_Dark = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspectorDark.uss";
         public const string UssPath_InspectorWindow_Light = BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspectorLight.uss";
         public static string UssPath_InspectorWindow_Themed => EditorGUIUtility.isProSkin ? UssPath_InspectorWindow_Dark : UssPath_InspectorWindow_Light;
@@ -92,6 +93,7 @@ namespace Unity.UI.Builder
         public const string OpenBracket = "(";
         public const string CloseBracket = ")";
         public const string EllipsisText = "...";
+        public const string VariablePrefix = "--";
 
         // Notifications
         public static readonly string previewNotificationKey = "builder-preview-mode-notification";
@@ -164,8 +166,8 @@ namespace Unity.UI.Builder
         public static readonly string InspectorBindingIndicatorClassName = "unity-builder-foldout-binding-indicator";
         public static readonly string InspectorFieldBindingInlineEditingEnabledClassName = "unity-builder-binding-inline-editing-enabled";
         public static readonly string InspectorFixedItemHeightFieldClassName = "unity-builder-uxml-attribute__fixed-item-height";
-        public static readonly string InspectorShownNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
-        public static readonly string InspectorHiddenNegativeWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
+        public static readonly string InspectorShownWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--shown";
+        public static readonly string InspectorHiddenWarningMessageClassName = "unity-builder-uxml-attribute__negative-warning--hidden";
         public static readonly string InspectorListViewAllowAddRemoveFieldClassName = "unity-builder-uxml-attribute__allow-add-remove";
 
         // Inspector Links VE Property Names
@@ -223,6 +225,8 @@ namespace Unity.UI.Builder
         public static readonly string HeaderSectionHelpBoxMessage = "This control is not supported in Runtime UI. Remove it, or enable Editor Extension Authoring in the Library.";
         public static readonly string UnresolvedValue = "Unresolved";
         public static readonly string HeightIntFieldValueCannotBeNegativeMessage = "Please enter a positive number. Non-positive numbers will default to 1.";
+        public static readonly string VariableNameFieldMustBeValidMessage = "Name must only contain letters, numbers, '-' or '_'. No spaces or other special characters allowed.";
+        public static readonly string VariableEnumFieldMustBeValidMessage = "An empty Enum is not a valid value.";
         public static readonly string UnnamedValue = "<No Name>";
         public static readonly string ManualUIBuilderUrl = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/UIBuilder.html";
 

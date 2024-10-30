@@ -35,6 +35,10 @@ namespace Unity.UI.Builder
                     index = to.AddValueToArray(from.GetString(valueHandle)); break;
                 case StyleValueType.Enum:
                     index = to.AddValueToArray(from.GetEnum(valueHandle)); break;
+                case StyleValueType.Function:
+                    index = to.AddValueToArray(from.GetFunction(valueHandle)); break;
+                case StyleValueType.Variable:
+                    index = to.AddValueToArray(from.GetVariable(valueHandle)); break;
             }
 
             return index;

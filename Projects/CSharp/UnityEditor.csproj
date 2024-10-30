@@ -747,6 +747,12 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileCreate.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileCreate.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileGraphicsSettings.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileGraphicsSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileGraphicsSettingsEditor.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileGraphicsSettingsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileModuleUtil.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileModuleUtil.cs</Link>
     </Compile>
@@ -1776,6 +1782,12 @@
     <Compile Include="..\..\Editor\Mono\ICleanuppable.cs">
       <Link>Editor\Mono\ICleanuppable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\IDerivedBuildTarget.cs">
+      <Link>Editor\Mono\IDerivedBuildTarget.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\IDerivedBuildTargetProvider.cs">
+      <Link>Editor\Mono\IDerivedBuildTargetProvider.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\IDropArea.cs">
       <Link>Editor\Mono\IDropArea.cs</Link>
     </Compile>
@@ -2612,6 +2624,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs">
       <Link>Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\DerivedBuildTargetExtensionsProvider.cs">
+      <Link>Editor\Mono\Modules\DerivedBuildTargetExtensionsProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\Modules\IDerivedBuildTargetExtensions.cs">
+      <Link>Editor\Mono\Modules\IDerivedBuildTargetExtensions.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Modules\ModuleManager.cs">
       <Link>Editor\Mono\Modules\ModuleManager.cs</Link>
@@ -4497,6 +4515,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileCard.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileCard.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileGraphicsSettingsOverridesView.cs">
+      <Link>Modules\BuildProfileEditor\Elements\BuildProfileGraphicsSettingsOverridesView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileListEditableLabel.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileListEditableLabel.cs</Link>
     </Compile>
@@ -4511,6 +4532,12 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PlatformListView.cs">
       <Link>Modules\BuildProfileEditor\Elements\PlatformListView.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PlatformPackageEntry.cs">
+      <Link>Modules\BuildProfileEditor\Elements\PlatformPackageEntry.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PlatformPackageItem.cs">
+      <Link>Modules\BuildProfileEditor\Elements\PlatformPackageItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Events.cs">
       <Link>Modules\BuildProfileEditor\Events.cs</Link>
@@ -5693,6 +5720,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\BaseDropdownButton.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DelayedSelectionHandler.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Common\DelayedSelectionHandler.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\Common\DropdownButton.cs</Link>
@@ -8442,6 +8472,12 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleSheet.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorStyleSheet.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorVariables.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorVariables.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorVariablesListItem.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorVariablesListItem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorWindow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderInspectorWindow.cs</Link>
     </Compile>
@@ -8450,6 +8486,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleRow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Inspector\BuilderStyleSheetsNewSelectorHelpTips.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Inspector\IBuilderInspectorSection.cs</Link>
@@ -8640,6 +8679,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Viewport\IBuilderViewportWindow.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Viewport\IBuilderViewportWindow.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\UIElementsViewImporterEditor.cs">
+      <Link>Modules\UIBuilder\Editor\UIElementsViewImporterEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\Background\CheckerboardBackground.cs</Link>
     </Compile>
@@ -8822,6 +8864,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TranslateStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TranslateStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\USSVariablesStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\USSVariablesStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\VariableCompleter.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\VariableCompleter.cs</Link>

@@ -58,6 +58,7 @@ namespace UnityEditor.Modules
         NamedBuildTarget m_NamedBuildTarget;
         protected bool m_IsClassicProfile = false;
         protected SharedPlatformSettings m_SharedSettings;
+        BuildProfile m_BuildProfile;
 
         // The properties can be unresponsive on multiple clicks due to the
         // complex layout calculations which can slow down GUI rendering.
@@ -87,6 +88,16 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawExplicitNullCheckbox() => false;
         public virtual bool ShouldDrawExplicitDivideByZeroCheckbox() => false;
         public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() => false;
+
+        protected virtual string GetPlatformProfileInfoMessage()
+        {
+            return null;
+        }
+
+        public string GetProfileInfoMessage()
+        {
+            return GetPlatformProfileInfoMessage();
+        }
 
         public VisualElement CreateSettingsGUI(
             SerializedObject serializedObject, SerializedProperty rootProperty, BuildProfileWorkflowState workflowState)
@@ -146,13 +157,13 @@ namespace UnityEditor.Modules
             m_CompressionType = FindPlatformSettingsPropertyAssert(rootProperty, "m_CompressionType");
             m_InstallInBuildFolder = FindPlatformSettingsPropertyAssert(rootProperty, "m_InstallInBuildFolder");
 
-            var profile = serializedObject.targetObject as BuildProfile;
-            Debug.Assert(profile != null);
-            m_BuildTarget = profile.buildTarget;
-            var subtarget = profile.subtarget;
+            m_BuildProfile = serializedObject.targetObject as BuildProfile;
+            Debug.Assert(m_BuildProfile != null, "Build profile cannot be null");
+            m_BuildTarget = m_BuildProfile.buildTarget;
+            var subtarget = m_BuildProfile.subtarget;
             m_BuildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_BuildTarget);
             m_NamedBuildTarget = (subtarget == StandaloneBuildSubtarget.Server) ? NamedBuildTarget.Server : NamedBuildTarget.FromBuildTargetGroup(m_BuildTargetGroup);
-            m_IsClassicProfile = BuildProfileContext.IsClassicPlatformProfile(profile);
+            m_IsClassicProfile = BuildProfileContext.IsClassicPlatformProfile(m_BuildProfile);
             m_SharedSettings = BuildProfileContext.instance.sharedProfile.platformBuildProfile as SharedPlatformSettings;
 
             return new IMGUIContainer(
@@ -321,8 +332,8 @@ namespace UnityEditor.Modules
         public virtual void ShowScriptDebuggingCheckbox()
         {
             ShowManagedDebuggerCheckboxes();
-
-            if (m_AllowDebugging.boolValue && PlayerSettings.GetScriptingBackend(m_NamedBuildTarget) == ScriptingImplementation.IL2CPP)
+            var currentPlayerSettings = BuildProfileModuleUtil.GetBuildProfileOrGlobalPlayerSettings(m_BuildProfile);
+            if (m_AllowDebugging.boolValue && PlayerSettings.GetScriptingBackend_Internal(currentPlayerSettings, m_NamedBuildTarget.TargetName) == ScriptingImplementation.IL2CPP)
             {
                 var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(m_NamedBuildTarget);
                 bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||

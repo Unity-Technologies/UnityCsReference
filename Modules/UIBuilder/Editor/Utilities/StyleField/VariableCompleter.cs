@@ -53,7 +53,6 @@ namespace Unity.UI.Builder
                 var res = results[i];
 
                 e.Q<Label>(s_ItemNameLabelName).text = res.name;
-                e.Q<Label>(s_ItemEditorOnlyLabelName).EnableInClassList(BuilderConstants.HiddenStyleClassName, !res.isEditorVar);
             };
 
             hoveredItemChanged += UpdateDetailView;
@@ -66,23 +65,14 @@ namespace Unity.UI.Builder
 
         void UpdateDetailView(VariableInfo data)
         {
-            if (m_DetailsView == null) return;
+            if (m_DetailsView == null || !data.IsValid()) return;
 
             m_DetailsView.SetInfo(data);
-            if (data.IsValid())
-            {
-                m_DetailsView.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
-            }
-            else
-            {
-                m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
-            }
         }
 
         protected override VisualElement MakeDetailsContent()
         {
             m_DetailsView = new VariableInfoView();
-            m_DetailsView.AddToClassList(BuilderConstants.HiddenStyleClassName);
             return m_DetailsView;
         }
 
@@ -99,42 +89,50 @@ namespace Unity.UI.Builder
 
             var val = StyleDebug.GetComputedStyleValue(handler.inspector.currentVisualElement.computedStyle, handler.styleName);
 
-            if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
-                BuilderInspectorStyleFields.IsComputedStyleInt(val) ||
-                BuilderInspectorStyleFields.IsComputedStyleLength(val) ||
-                BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
+            if (BuilderInspectorStyleFields.IsComputedStyleLength(val) || BuilderInspectorStyleFields.IsComputedStyleRotate(val))
             {
-                return new[] { StyleValueType.Float, StyleValueType.Dimension };
+                return new[] { StyleValueType.Dimension, StyleValueType.Keyword };
+            }
+
+            if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleInt(val))
+            {
+                return new[] { StyleValueType.Float, StyleValueType.Keyword, StyleValueType.Function };
+            }
+
+            if (BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
+            {
+                return new[] { StyleValueType.Float, StyleValueType.Dimension, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleColor(val))
             {
-                return new[] { StyleValueType.Color };
+                return new[] { StyleValueType.Color, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName) || BuilderInspectorStyleFields.IsComputedStyleFontAsset(val, handler.styleName))
             {
-                return new[] { StyleValueType.AssetReference, StyleValueType.ResourcePath };
+                return new[] { StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleBackground(val))
             {
-                return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
+                return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleCursor(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<StylePropertyName>(val))
             {
-                return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
+                return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, styleType) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val))
             {
-                return new[] { StyleValueType.Enum };
+                return new[] { StyleValueType.Enum, StyleValueType.Keyword };
             }
 
-            return new[] { StyleValueType.Invalid };
+            return new[] { StyleValueType.Invalid, StyleValueType.Keyword };
         }
 
         bool Matcher(string filter, VariableInfo data)

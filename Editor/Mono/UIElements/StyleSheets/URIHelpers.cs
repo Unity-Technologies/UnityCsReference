@@ -95,6 +95,9 @@ namespace UnityEditor.UIElements.StyleSheets
             public string resolvedSubAssetPath;
             public Object resolvedQueryAsset;
 
+            // Indicates the url contains some parts that can be updated, such as when a file has been moved/renamed.
+            public bool resolvedUrlChanged;
+
             public bool hasWarningMessage => !string.IsNullOrEmpty(warningMessage);
 
             public bool isLibraryAsset =>
@@ -230,6 +233,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                             "Asset reference to GUID '{0}' resolved to '{2}', but URL path hints at '{1}'. Update the URL '{3}' to remove this warning."),
                                         query.guid, response.resolvedProjectRelativePath, pathFromGuid, originalPath);
                                 }
+                                response.resolvedUrlChanged = true;
                                 response.resolvedProjectRelativePath = pathFromGuid;
                             }
                         }
@@ -240,6 +244,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                 L10n.Tr(
                                     "Could not resolve asset with GUID '{0}' and file ID '{1}' from URL '{2}'. Using asset path '{3}' instead. Update the URL to remove this warning."),
                                 query.guid, query.fileId, path, response.resolvedProjectRelativePath);
+                            response.resolvedUrlChanged = true;
                         }
                         else
                         {
@@ -276,6 +281,7 @@ namespace UnityEditor.UIElements.StyleSheets
                                     L10n.Tr(
                                         "Asset reference to GUID '{0}' was moved from '{1}' to '{2}'. Update the URL '{3}' to remove this warning."),
                                     query.guid, response.resolvedProjectRelativePath, realAssetPath, originalPath);
+                                response.resolvedUrlChanged = true;
                             }
                         }
 

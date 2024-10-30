@@ -1251,7 +1251,7 @@ namespace UnityEditor
         void InitUITKPreview()
         {
             // Toolbar
-            PrepareToolbar(previewWindow);
+            PrepareToolbar();
             UpdateLabel(previewWindow);
 
             // Dragline
@@ -1293,10 +1293,10 @@ namespace UnityEditor
             dragline.style.marginRight = margin;
         }
 
-        internal void PrepareToolbar(InspectorPreviewWindow toolbar, bool isFloatingPreviewWindow = false)
+        internal void PrepareToolbar(bool isFloatingPreviewWindow = false)
         {
             if(!isFloatingPreviewWindow)
-                CreatePreviewEllipsisMenu(toolbar, this);
+                CreatePreviewEllipsisMenu();
         }
 
         internal void UpdateLabel(InspectorPreviewWindow toolbar)
@@ -1587,7 +1587,7 @@ namespace UnityEditor
 
         protected virtual bool BeginDrawPreviewAndLabels() { return true; }
         protected virtual void EndDrawPreviewAndLabels(Event evt, Rect rect, Rect dragRect) {}
-        protected virtual void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor) {}
+        protected virtual void CreatePreviewEllipsisMenu() {}
 
         protected TwoPaneSplitView m_SplitView = null;
         VisualElement preview = null;

@@ -21,7 +21,7 @@ namespace UnityEditor.Build.Profile.Elements
             public BuildProfile data;
             public string text;
             public Texture2D icon;
-            public string platformId;
+            public GUID platformId;
         }
 
         internal enum ListItemType
@@ -111,7 +111,7 @@ namespace UnityEditor.Build.Profile.Elements
                 editableBuildProfileLabel.dataSource = profile;
                 UnityEngine.Assertions.Assert.IsNotNull(editableBuildProfileLabel, "Build profile label is null");
 
-                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformId);
+                var icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid);
                 editableBuildProfileLabel.Set(profile.name, icon);
 
                 if (profile.IsActiveBuildProfileOrPlatform())
@@ -227,8 +227,8 @@ namespace UnityEditor.Build.Profile.Elements
                 {
                     type = ListItemType.InstalledPlatform,
                     data = profile,
-                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
-                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformId)
+                    text = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
+                    icon = BuildProfileModuleUtil.GetPlatformIconSmall(profile.platformGuid)
                 });
             }
 

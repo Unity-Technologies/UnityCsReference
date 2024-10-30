@@ -137,7 +137,7 @@ namespace UnityEditor.Toolbars
 
             menu.AddItem(EditorGUIUtility.TrTextContent("Show Experimental Packages..."), false, () =>
             {
-                PackageManagerWindow.SelectPackageAndPageStatic(string.Empty, InProjectPage.k_Id, true, "experimental");
+                PackageManagerWindow.OpenAndSelectPage(InProjectPage.k_Id, "experimental");
             });
             menu.AddSeparator("");
 

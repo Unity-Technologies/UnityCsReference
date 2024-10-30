@@ -11,6 +11,7 @@ using UnityEditor.Utils;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
+using UnityEditor.Modules;
 
 namespace UnityEditor
 {
@@ -77,6 +78,22 @@ namespace UnityEditor
 
         public static extern DiscoveredTargetInfo[] GetBuildTargetInfoList();
 
+        internal static DiscoveredTargetInfo[] GetDerivedBuildTargetInfoList(BuildTarget target)
+        {
+            List<DiscoveredTargetInfo> discoveredTargetInfos = new();
+            var module = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFrom(target));
+            if (module is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+            {
+                var derivedBuildTargets = derivedBuildTargetProvider.GetDerivedBuildTargets();
+                foreach (var derivedBuildTarget in derivedBuildTargets)
+                {
+                    if (derivedBuildTargetProvider.TryGetDiscoveredTargetInfo(derivedBuildTarget.Guid, out var discoveredTargetInfo))
+                        discoveredTargetInfos.Add(discoveredTargetInfo);
+                }
+            }
+            return discoveredTargetInfos.ToArray();
+        }
+
         public static extern BuildTarget GetBuildTargetByName(string name);
 
         public static extern int[] GetRenderList(BuildTarget platform);
@@ -138,7 +155,7 @@ namespace UnityEditor
             BuildTarget.StandaloneLinux64,
         };
 
-        static bool IsStandalonePlatform(BuildTarget buildTarget)
+        internal static bool IsStandalonePlatform(BuildTarget buildTarget)
         {
             foreach (var target in StandaloneBuildTargets)
             {
@@ -193,8 +210,10 @@ namespace UnityEditor
         static readonly GUID s_platform_05 = new("4e3c793746204150860bf175a9a41a05");
         static readonly GUID s_platform_09 = new("ad48d16a66894befa4d8181998c3cb09");
         static readonly GUID s_platform_13 = new("b9b35072a6f44c2e863f17467ea3dc13");
+        static readonly GUID s_platform_14 = new("80657fe557de4d17822398b3a01b8c9e");
         static readonly GUID s_platform_20 = new("84a3bb9e7420477f885e98145999eb20");
         static readonly GUID s_platform_21 = new("32e92b6f4db44fadb869cafb8184d021");
+        static readonly GUID s_platform_22 = new("d80a96315208455a9ba318d697981cfc");
         static readonly GUID s_platform_24 = new("cb423bfea44b4d658edb8bc5d91a3024");
         static readonly GUID s_platform_31 = new("5d4f9b64eeb74b18a2de0de6f0c36931");
         static readonly GUID s_platform_37 = new("81e4f4c492fd4311bbf5b0b88a28c737");
@@ -207,6 +226,7 @@ namespace UnityEditor
         static readonly GUID s_platform_46 = new("99ef95e1e9b048fa9628d7eed27a8646");
         static readonly GUID s_platform_47 = new("53916e6f1f7240d992977ffa2322b047");
         static readonly GUID s_platform_48 = new("25a09d2ed10c42f789b61d99b4d9bf83");
+        static readonly GUID s_platform_49 = new("f8c7649c24f344129a97cf9854e2d582");
         static readonly GUID s_platform_100 = new("8d1e1bca926649cba89d37a4c66e8b3d");
         static readonly GUID s_platform_101 = new("91d938b35f6f4798811e41f2acf9377f");
         static readonly GUID s_platform_102 = new("8659dec1db6b4fac86149f99f2fa4291");
@@ -236,12 +256,15 @@ namespace UnityEditor
             s_platform_48,
             // then others
             s_platform_20,
+            s_platform_22,
+            s_platform_14,
             s_platform_21,
             s_platform_37,
             s_platform_47,
             s_platform_41,
             s_platform_45,
             s_platform_46,
+            s_platform_49,
         };
 
         static GUID[] WindowsBuildTargets { get; } = new GUID[]
@@ -250,8 +273,10 @@ namespace UnityEditor
             s_platform_05,
             s_platform_09,
             s_platform_13,
+            s_platform_14,
             s_platform_20,
             s_platform_21,
+            s_platform_22,
             s_platform_24,
             s_platform_31,
             s_platform_37,
@@ -275,8 +300,10 @@ namespace UnityEditor
             s_platform_05,
             s_platform_09,
             s_platform_13,
+            s_platform_14,
             s_platform_20,
             s_platform_21,
+            s_platform_22,
             s_platform_24,
             s_platform_37,
             s_platform_41,
@@ -293,13 +320,16 @@ namespace UnityEditor
             s_platform_05,
             s_platform_09,
             s_platform_13,
+            s_platform_14,
             s_platform_20,
+            s_platform_22,
             s_platform_24,
             s_platform_37,
             s_platform_41,
             s_platform_45,
             s_platform_46,
             s_platform_47,
+            s_platform_49,
             s_platform_100,
             s_platform_101,
             s_platform_102,
@@ -311,7 +341,9 @@ namespace UnityEditor
             s_platform_05,
             s_platform_09,
             s_platform_13,
+            s_platform_14,
             s_platform_20,
+            s_platform_22,
             s_platform_24,
             s_platform_37,
             s_platform_41,
@@ -329,6 +361,7 @@ namespace UnityEditor
             s_platform_44,
             s_platform_38,
             s_platform_48,
+            s_platform_49,
         };
 
         static GUID[] ExternalDownloadForBuildTarget { get; } = new GUID[]
@@ -350,6 +383,12 @@ namespace UnityEditor
             s_platform_45,
             s_platform_46,
             s_platform_48,
+            s_platform_49,
+        };
+
+        internal static GUID[] s_PlatformVisibleInPlatformBrowserOnly =
+        {
+            s_platform_22
         };
 
         static Dictionary<BuildTarget, GUID> s_PlatformGUIDData = new()
@@ -373,6 +412,7 @@ namespace UnityEditor
             { BuildTarget.QNX, s_platform_46 },
             { BuildTarget.VisionOS, s_platform_47 },
             { BuildTarget.ReservedCFE, s_platform_48 },
+            { BuildTarget.Kepler, s_platform_49 },
         };
 
         static readonly Dictionary<GUID, (BuildTarget, StandaloneBuildSubtarget)> k_PlatformBuildTargetAndSubtargetGUIDData = new()
@@ -381,7 +421,9 @@ namespace UnityEditor
             { s_platform_05, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player) },
             { s_platform_09, (BuildTarget.iOS, StandaloneBuildSubtarget.Default) },
             { s_platform_13, (BuildTarget.Android, StandaloneBuildSubtarget.Default) },
+            { s_platform_14, (BuildTarget.Android, StandaloneBuildSubtarget.Default) },
             { s_platform_20, (BuildTarget.WebGL, StandaloneBuildSubtarget.Default) },
+            { s_platform_22, (BuildTarget.WebGL, StandaloneBuildSubtarget.Default) },
             { s_platform_21, (BuildTarget.WSAPlayer, StandaloneBuildSubtarget.Default) },
             { s_platform_24, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Player) },
             { s_platform_31, (BuildTarget.PS4, StandaloneBuildSubtarget.Default) },
@@ -395,19 +437,22 @@ namespace UnityEditor
             { s_platform_46, (BuildTarget.QNX, StandaloneBuildSubtarget.Default) },
             { s_platform_47, (BuildTarget.VisionOS, StandaloneBuildSubtarget.Default) },
             { s_platform_48, (BuildTarget.ReservedCFE, StandaloneBuildSubtarget.Default) },
+            { s_platform_49, (BuildTarget.Kepler, StandaloneBuildSubtarget.Default) },
             { s_platform_101, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server) },
             { s_platform_100, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Server) },
             { s_platform_102, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Server) },
         };
 
-        static Dictionary<GUID, string> s_PlatformRequiredPackages = new()
+        static Dictionary<GUID, string[]> s_PlatformRequiredPackages = new()
         {
-            {  s_platform_45, L10n.Tr("") }, //https://github.cds.internal.unity3d.com/unity/unity/blob/690ff735df474658b18a6ce362b64384dd09a889/PlatformDependent/EmbeddedLinux/Extensions/Managed/EmbeddedLinuxToolchainPackageInstaller.cs#L71 and https://github.cds.internal.unity3d.com/unity/unity/blob/690ff735df474658b18a6ce362b64384dd09a889/PlatformDependent/LinuxStandalone/Extensions/Managed/LinuxStandaloneToolchainPackageInstaller.cs#L16
+            {  s_platform_14, new string[] { "com.unity.xr.meta-openxr" } },
+            {  s_platform_100, new string[] { "com.unity.dedicated-server" } },
+            {  s_platform_101, new string[] { "com.unity.dedicated-server" } },
+            {  s_platform_102, new string[] { "com.unity.dedicated-server" } },
         };
 
-        static Dictionary<GUID, string> s_PlatformRecommendedPackages = new()
+        static Dictionary<GUID, string[]> s_PlatformRecommendedPackages = new()
         {
-            {  s_platform_45, L10n.Tr("") },
         };
 
         static Dictionary<GUID, string> s_PlatformDescription = new()
@@ -478,8 +523,10 @@ namespace UnityEditor
             {  s_platform_05, "Windows" },
             {  s_platform_09, "iOS" },
             {  s_platform_13, "Android™" },
+            {  s_platform_14, "Meta Quest" },
             {  s_platform_20, "Web" },
             {  s_platform_21, "Universal Windows Platform" },
+            {  s_platform_22, "Facebook Instant Games" },
             {  s_platform_24, "Linux" },
             {  s_platform_31, "PlayStation®4" },
             {  s_platform_37, "tvOS" },
@@ -492,6 +539,7 @@ namespace UnityEditor
             {  s_platform_46, "QNX®" },
             {  s_platform_47, "visionOS" },
             {  s_platform_48, "ReservedCFE" },
+            {  s_platform_49, "Kepler"},
             {  s_platform_100, "Windows Server" },
             {  s_platform_101, "Linux Server" },
             {  s_platform_102, "macOS Server" },
@@ -504,8 +552,10 @@ namespace UnityEditor
             { s_platform_05, "BuildSettings.Windows" },
             { s_platform_09, "BuildSettings.iPhone" },
             { s_platform_13, "BuildSettings.Android" },
+            { s_platform_14, "BuildSettings.Meta" },
             { s_platform_20, "BuildSettings.WebGL" },
             { s_platform_21, "BuildSettings.Metro" },
+            { s_platform_22, "BuildSettings.Facebook" },
             { s_platform_24, "BuildSettings.Linux" },
             { s_platform_31, "BuildSettings.PS4" },
             { s_platform_37, "BuildSettings.tvOS" },
@@ -518,6 +568,7 @@ namespace UnityEditor
             { s_platform_46, "BuildSettings.QNX" },
             { s_platform_47, "BuildSettings.visionOS" },
             { s_platform_48, "BuildSettings.DedicatedServer" },
+            { s_platform_49, "BuildSettings.EmbeddedLinux" },
             { s_platform_100, "BuildSettings.DedicatedServer" },
             { s_platform_101, "BuildSettings.DedicatedServer" },
             { s_platform_102, "BuildSettings.DedicatedServer" },
@@ -533,22 +584,49 @@ namespace UnityEditor
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
             if (s_PlatformGUIDData.TryGetValue(buildTarget, out GUID value))
-                return value;
+            {
+                var module = ModuleManager.FindPlatformSupportModule(value);
+                if (module != null && module is IDerivedBuildTargetProvider)
+                    return module.PlatformBuildTarget.Guid;
+                else
+                    return value;
+            }
 
             return new GUID("");
         }
 
-        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        static GUID EmptyGuid = new GUID("");
+
+        internal static bool TryGetServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
         {
+            result = EmptyGuid;
             if (namedBuildTarget == NamedBuildTarget.Server)
             {
                 if (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64)
-                    return s_platform_100;
+                    result = s_platform_100;
                 else if (buildTarget == BuildTarget.StandaloneLinux64)
-                    return s_platform_101;
+                    result = s_platform_101;
                 else if (buildTarget == BuildTarget.StandaloneOSX)
-                    return s_platform_102;
+                    result = s_platform_102;
             }
+            return !result.Empty();
+        }
+
+        internal static GUID GetBasePlatformGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        {
+            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+                return value;
+
+            if (s_PlatformGUIDData.TryGetValue(buildTarget, out value))
+                return value;
+
+            return EmptyGuid;
+        }
+
+        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        {
+            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+                return value;
 
             return GetGUIDFromBuildTarget(buildTarget);
         }
@@ -745,39 +823,58 @@ namespace UnityEditor
             return false;
         }
 
-        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
-        public static string BuildPlatformRecommendeddPackages(BuildTarget platform)
+        public static bool BuildPlatformIsVisibleInPlatformBrowserOnly(GUID platformGuid)
         {
-            if (s_PlatformRecommendedPackages.TryGetValue(GetGUIDFromBuildTarget(platform), out string recommendedPackages))
-                return recommendedPackages;
+            foreach (var platform in s_PlatformVisibleInPlatformBrowserOnly)
+                if (platform == platformGuid)
+                    return true;
 
-            return "";
+            return false;
         }
 
-        public static string BuildPlatformRecommendeddPackages(IBuildTarget platform)
+        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
+        public static string[] BuildPlatformRecommendedPackages(BuildTarget platform)
         {
-            if (s_PlatformRecommendedPackages.TryGetValue(platform.Guid, out string recommendedPackages))
+            return BuildPlatformRecommendedPackages(GetGUIDFromBuildTarget(platform));
+        }
+
+        public static string[] BuildPlatformRecommendedPackages(IBuildTarget platform)
+        {
+            return BuildPlatformRecommendedPackages(platform.Guid);
+        }
+
+        public static string[] BuildPlatformRecommendedPackages(GUID platformGuid)
+        {
+            if (s_PlatformRecommendedPackages.TryGetValue(platformGuid, out var recommendedPackages))
                 return recommendedPackages;
 
-            return "";
+            return Array.Empty<string>();
+        }
+
+        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
+        public static string[] BuildPlatformRequiredPackages(BuildTarget platform)
+        {
+            return BuildPlatformRequiredPackages(GetGUIDFromBuildTarget(platform));
+        }
+
+        public static string[] BuildPlatformRequiredPackages(GUID platformGuid)
+        {
+            if (s_PlatformRequiredPackages.TryGetValue(platformGuid, out var requiredPackages))
+                return requiredPackages;
+
+            return Array.Empty<string>();
         }
 
         [System.Obsolete("BuildPlatformDescription(BuildTarget) is obsolete. Use BuildPlatformDescription(IBuildTarget) instead.", false)]
 
         public static string BuildPlatformDescription(BuildTarget platform)
         {
-            if (s_PlatformDescription.TryGetValue(GetGUIDFromBuildTarget(platform), out string description))
-                return description;
-
-            return string.Empty;
+            return BuildPlatformDescription(GetGUIDFromBuildTarget(platform));
         }
 
         public static string BuildPlatformDescription(IBuildTarget platform)
         {
-            if (s_PlatformDescription.TryGetValue(platform.Guid, out string description))
-                return description;
-
-            return string.Empty;
+            return BuildPlatformDescription(platform.Guid);
         }
 
         public static string BuildPlatformDescription(GUID platformGuid)
@@ -842,17 +939,9 @@ namespace UnityEditor
         [System.Obsolete("BuildPlatformDisplayName(BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
         public static string BuildPlatformDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
         {
-            var guid = GetGUIDFromBuildTarget(buildTarget);
+            if (!TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var guid))
+                guid = GetGUIDFromBuildTarget(buildTarget);
 
-            if (namedBuildTarget == NamedBuildTarget.Server)
-            {
-                if (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64)
-                    guid = s_platform_100;
-                else if (buildTarget == BuildTarget.StandaloneLinux64)
-                    guid = s_platform_101;
-                else if (buildTarget == BuildTarget.StandaloneOSX)
-                    guid = s_platform_102;
-            }
             if (s_PlatformDisplayName.TryGetValue(guid, out string displayName))
                 return displayName;
 

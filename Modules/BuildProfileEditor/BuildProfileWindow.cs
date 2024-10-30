@@ -238,7 +238,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Handles selection of unavailable and supported platform.
         /// </summary>
-        internal void OnMissingClassicPlatformSelected(string platformId)
+        internal void OnMissingClassicPlatformSelected(GUID platformId)
         {
             m_SelectionHeader.Show();
             m_ProfileListViews.ClearProfileSelection();
@@ -579,20 +579,20 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            Dictionary<string, BuildProfileWorkflowReport> modules = new();
+            Dictionary<GUID, BuildProfileWorkflowReport> modules = new();
             foreach (var profile in m_BuildProfileDataSource.customBuildProfiles)
             {
-                if (modules.TryGetValue(profile.platformId, out var report))
+                if (modules.TryGetValue(profile.platformGuid, out var report))
                 {
                     report.Increment();
                     continue;
                 }
 
-                modules.Add(profile.platformId,
+                modules.Add(profile.platformGuid,
                     new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
                 {
-                    platformId = profile.platformId,
-                    platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId),
+                    platformId = profile.platformGuid,
+                    platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
                     count = 1
                 }));
             }

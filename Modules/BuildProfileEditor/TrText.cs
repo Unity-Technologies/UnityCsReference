@@ -46,6 +46,9 @@ namespace UnityEditor.Build.Profile
         public static readonly string scriptingDefinesWarningHelpbox = L10n.Tr("Additional scripting defines are specified in Player Settings.");
         public static readonly string apply = L10n.Tr("Apply");
         public static readonly string revert = L10n.Tr("Revert");
+        public static readonly string cancelButtonText = L10n.Tr("Cancel");
+        public static readonly string continueButtonText = L10n.Tr("Continue");
+        public static readonly GUIContent resetToGlobals = EditorGUIUtility.TrTextContent("Reset to Globals");
 
         // Build Profile Player Settings
         public static readonly string playerSettingsLabelText = L10n.Tr("Player Settings Overrides");
@@ -54,8 +57,6 @@ namespace UnityEditor.Build.Profile
         public static readonly string playerSettingsClassicInfo =
             L10n.Tr("Platforms use the global player settings. To customize player settings, create a Build Profile for this platform.");
         public static readonly string customizePlayerSettingsButton = "Customize player settings";
-        public static readonly string playerSettingsCancel = L10n.Tr("Cancel");
-        public static readonly string playerSettingsContinue = L10n.Tr("Continue");
         public static readonly string removePlayerSettingsDialogTitle = L10n.Tr("Remove Player Settings Overrides");
         public static readonly string removePlayerSettingsDialogMessage = L10n.Tr("This will remove all Player Settings overrides");
         public static readonly string resetPlayerSettingsDialogTitle = L10n.Tr("Reset Player Settings to Globals");
@@ -63,12 +64,27 @@ namespace UnityEditor.Build.Profile
         public static readonly GUIContent playerSettingsReset = EditorGUIUtility.TrTextContent("Reset to Globals");
         public static readonly GUIContent playerSettingsRemove = EditorGUIUtility.TrTextContent("Remove Overrides");
 
+        // Build Profile Graphics Settings
+        public static readonly string graphicsSettings = L10n.Tr("Graphics Settings");
+        public static readonly string overrideGraphicsSettingsToggleLabel = L10n.Tr("Override Global Graphics Settings");
+        public static readonly string overrideFoldoutLabel = L10n.Tr("Override Options");
+        public static readonly string removeGraphicsSettingsDialogTitle = L10n.Tr("Remove Graphics Settings Overrides");
+        public static readonly string removeGraphicsSettingsDialogMessage = L10n.Tr("This will remove all Graphics Settings overrides");
+        public static readonly string resetGraphicsSettingsDialogTitle = L10n.Tr("Reset Graphics Settings to Globals");
+        public static readonly string resetGraphicsSettingsDialogMessage = L10n.Tr("This will reset all Graphics Settings overrides to the original globals.");
+
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");
         public static readonly string notSupportedWarning = L10n.Tr("Target platform does not currently support build profiles.");
         public static readonly string active = L10n.Tr("Active");
         public static readonly string description = L10n.Tr("Description");
+        public static readonly string packageInstalled = L10n.Tr("Package already installed.");
+        public static readonly string required = L10n.Tr("Required");
+        public static readonly string selectAll = L10n.Tr("Select All");
+        public static readonly string deselectAll = L10n.Tr("Deselect All");
+        public static readonly string packagesHeader = L10n.Tr("Packages");
+        public static readonly string descriptionHeader = L10n.Tr("Description");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

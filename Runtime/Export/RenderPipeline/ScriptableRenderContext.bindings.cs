@@ -19,7 +19,7 @@ namespace UnityEngine.Rendering
     public partial struct ScriptableRenderContext
     {
         [FreeFunction("ScriptableRenderContext::BeginRenderPass")]
-        static extern unsafe void BeginRenderPass_Internal(IntPtr self, int width, int height, int volumeDepth, int samples, IntPtr colors, int colorCount, int depthAttachmentIndex);
+        static extern unsafe void BeginRenderPass_Internal(IntPtr self, int width, int height, int volumeDepth, int samples, IntPtr colors, int colorCount, int depthAttachmentIndex, int shadingRateImageAttachmentIndex);
 
         [FreeFunction("ScriptableRenderContext::BeginSubPass")]
         static extern unsafe void BeginSubPass_Internal(IntPtr self, IntPtr colors, int colorCount, IntPtr inputs, int inputCount, bool isDepthReadOnly, bool isStencilReadOnly);

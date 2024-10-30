@@ -30,7 +30,7 @@ namespace UnityEngine
             set
             {
                 _graphicsFormat = value;
-                SetOrClearRenderTextureCreationFlag(GraphicsFormatUtility.IsSRGBFormat(value), RenderTextureCreationFlags.SRGB);                
+                SetOrClearRenderTextureCreationFlag(GraphicsFormatUtility.IsSRGBFormat(value), RenderTextureCreationFlags.SRGB);
             }
         }
 
@@ -56,7 +56,7 @@ namespace UnityEngine
                 shadowSamplingMode = RenderTexture.GetShadowSamplingModeForFormat(value);
                 GraphicsFormat requestedFormat = GraphicsFormatUtility.GetGraphicsFormat(value, sRGB);
                 graphicsFormat = SystemInfo.GetCompatibleFormat(requestedFormat, GraphicsFormatUsage.Render);
-                depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBufferBits, shadowSamplingMode);                              
+                depthStencilFormat = RenderTexture.GetDepthStencilFormatLegacy(depthBufferBits, shadowSamplingMode);
             }
         }
 
@@ -218,6 +218,19 @@ namespace UnityEngine
         {
             get { return (_flags & RenderTextureCreationFlags.DynamicallyScalableExplicit) != 0; }
             set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.DynamicallyScalableExplicit); }
+        }
+
+        /// <summary>
+        /// Set to true if the render texture is to be used as a shading rate image.
+        /// </summary>
+        /// <remarks>
+        /// Width and height are usually in pixels but if enableShadingRate is set to true, width and height are in tiles.
+        /// See also <a href="https://docs.unity3d.com/Manual/variable-rate-shading">Variable Rate Shading</a>.
+        /// </remarks>
+        public bool enableShadingRate
+        {
+            get { return (_flags & RenderTextureCreationFlags.ShadingRate) != 0; }
+            set { SetOrClearRenderTextureCreationFlag(value, RenderTextureCreationFlags.ShadingRate); }
         }
     }
 

@@ -23,8 +23,9 @@ using StyleSheet = UnityEngine.UIElements.StyleSheet;
 namespace UnityEditor.UIElements
 {
     // Make sure UXML is imported after assets than can be addressed in USS
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 20, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 21, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -78,188 +79,6 @@ namespace UnityEditor.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UXMLImporterImpl : StyleValueImporter
     {
-        internal struct Error
-        {
-            public readonly Level level;
-            public readonly ImportErrorType error;
-            public readonly ImportErrorCode code;
-            public readonly object context;
-            public readonly string filePath;
-            public readonly IXmlLineInfo xmlLineInfo;
-
-            public enum Level
-            {
-                Warning,
-                Fatal,
-            }
-
-            public Error(ImportErrorType error, ImportErrorCode code, object context, Level level, string filePath,
-                IXmlLineInfo xmlLineInfo)
-            {
-                this.xmlLineInfo = xmlLineInfo;
-                this.error = error;
-                this.code = code;
-                this.context = context;
-                this.level = level;
-                this.filePath = filePath;
-            }
-
-            private static string ErrorMessage(ImportErrorCode errorCode)
-            {
-                switch (errorCode)
-                {
-                    case ImportErrorCode.InvalidXml:
-                        return "Xml is not valid, exception during parsing: {0}";
-                    case ImportErrorCode.InvalidRootElement:
-                        return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
-                    case ImportErrorCode.TemplateHasEmptyName:
-                        return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr +
-                               "' attribute";
-                    case ImportErrorCode.TemplateInstanceHasEmptySource:
-                        return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" +
-                               k_TemplateInstanceSourceAttr + "' attribute";
-                    case ImportErrorCode.TemplateMissingPathOrSrcAttribute:
-                        return "'" + k_TemplateNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
-                               "' attribute referencing another UXML file";
-                    case ImportErrorCode.TemplateSrcAndPathBothSpecified:
-                        return "'" + k_TemplateNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
-                               "' attributes";
-                    case ImportErrorCode.DuplicateTemplateName:
-                        return "Duplicate name '{0}'";
-                    case ImportErrorCode.UnknownTemplate:
-                        return "Unknown template name '{0}'";
-                    case ImportErrorCode.UnknownElement:
-                        return "Unknown element name '{0}'";
-                    case ImportErrorCode.UnknownAttribute:
-                        return "Unknown attribute: '{0}'";
-                    case ImportErrorCode.InvalidCssInStyleAttribute:
-                        return "USS in 'style' attribute is invalid: {0}";
-                    case ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr:
-                        return "'" + k_StyleReferenceNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
-                               "' attribute referencing a USS file";
-                    case ImportErrorCode.StyleReferenceSrcAndPathBothSpecified:
-                        return "'" + k_StyleReferenceNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
-                               "' attributes";
-                    case ImportErrorCode.SlotsAreExperimental:
-                        return "Slot are an experimental feature. Syntax and semantic may change in the future.";
-                    case ImportErrorCode.DuplicateSlotDefinition:
-                        return "Slot definition '{0}' is defined more than once";
-                    case ImportErrorCode.SlotUsageInNonTemplate:
-                        return "Element has an assigned slot, but its parent '{0}' is not a template reference";
-                    case ImportErrorCode.SlotDefinitionHasEmptyName:
-                        return "Slot definition has an empty name";
-                    case ImportErrorCode.SlotUsageHasEmptyName:
-                        return "Slot usage has an empty name";
-                    case ImportErrorCode.DuplicateContentContainer:
-                        return "'contentContainer' attribute must be defined once at most";
-                    case ImportErrorCode.DeprecatedAttributeName:
-                        return "'{0}' attribute name is deprecated";
-                    case ImportErrorCode.ReplaceByAttributeName:
-                        return "Please use '{0}' instead";
-                    case ImportErrorCode.AttributeOverridesMissingElementNameAttr:
-                        return "AttributeOverrides node missing 'element-name' attribute.";
-                    case ImportErrorCode.AttributeOverridesInvalidAttr:
-                        return "AttributeOverrides node cannot override attribute '{0}'.";
-                    case ImportErrorCode.ReferenceInvalidURILocation:
-                        return "The specified URL is empty or invalid : {0}";
-                    case ImportErrorCode.ReferenceInvalidURIScheme:
-                        return "The scheme specified for the URI is invalid : {0}";
-                    case ImportErrorCode.ReferenceInvalidURIProjectAssetPath:
-                        return "The specified URI does not exist in the current project : {0}";
-                    case ImportErrorCode.ReferenceInvalidAssetType:
-                        return "The specified URI refers to an invalid asset : {0}";
-                    case ImportErrorCode.TemplateHasCircularDependency:
-                        return "The specified URI contains a circular dependency: {0}";
-                    case ImportErrorCode.InvalidUxmlObjectParent:
-                        return "Uxml object can only be placed under VisualElements or other UxmlObjects: {0}";
-                    case ImportErrorCode.InvalidUxmlObjectChild:
-                        return "Uxml object has an invalid child element: {0}";
-                    default:
-                        throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
-                }
-            }
-
-            public override string ToString()
-            {
-                string message = ErrorMessage(code);
-                string lineInfo = xmlLineInfo == null
-                    ? ""
-                    : UnityString.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
-                return UnityString.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error,
-                    UnityString.Format(message, context == null ? "<null>" : context.ToString()));
-            }
-        }
-
-        internal class DefaultLogger
-        {
-            protected List<Error> m_Errors = new List<Error>();
-            protected string m_Path;
-
-            internal virtual void LogError(ImportErrorType error, ImportErrorCode code, object context,
-                Error.Level level, IXmlLineInfo xmlLineInfo)
-            {
-                m_Errors.Add(new Error(error, code, context, level, m_Path, xmlLineInfo));
-            }
-
-            internal virtual void BeginImport(string path)
-            {
-                m_Path = path;
-                // UXML files can be re-imported several times in the same refresh
-                // therefore we make sure that previously reported errors are gone.
-                // Even though dependency order will eventually be honoured
-                // some files are unexpectedly getting imported before their dependencies.
-                m_Errors.RemoveAll(e => e.filePath == path);
-            }
-
-            private void LogError(VisualTreeAsset obj, Error error)
-            {
-                try
-                {
-                    switch (error.level)
-                    {
-                        case Error.Level.Warning:
-                            Debug.LogWarningFormat(obj, error.ToString());
-                            break;
-                        case Error.Level.Fatal:
-                            Debug.LogErrorFormat(obj, error.ToString());
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(error));
-                    }
-                }
-                catch (FormatException)
-                {
-                    switch (error.level)
-                    {
-                        case Error.Level.Warning:
-                            Debug.LogWarning(error.ToString(), obj);
-                            break;
-                        case Error.Level.Fatal:
-                            Debug.LogError(error.ToString(), obj);
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException(nameof(error));
-                    }
-                }
-            }
-
-            internal virtual void FinishImport()
-            {
-                Dictionary<string, VisualTreeAsset> cache = new Dictionary<string, VisualTreeAsset>();
-
-                foreach (var error in m_Errors)
-                {
-                    VisualTreeAsset obj = null;
-                    if (!string.IsNullOrEmpty(error.filePath) && !cache.TryGetValue(error.filePath, out obj))
-                        cache.Add(error.filePath, obj = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(error.filePath));
-
-                    LogError(obj, error);
-                }
-
-                m_Errors.Clear();
-            }
-        }
-
         const string k_ClassAttr = "class";
         const string k_StyleAttr = "style";
         const string k_GenericPathAttr = UxmlGenericAttributeNames.k_PathAttributeName;
@@ -292,19 +111,16 @@ namespace UnityEditor.UIElements
 
         public void Import(out VisualTreeAsset asset)
         {
-            // Errors from this import will only be logged inside a post-processor.
-            // This guarantees that all files were imported in the correct order before logging any errors.
-            logger.BeginImport(assetPath);
             ImportXml(assetPath, out asset);
         }
 
-        // This variable is overriden during editor tests
-        internal static DefaultLogger logger = new DefaultLogger();
-
         void LogWarning(VisualTreeAsset asset, ImportErrorType errorType, ImportErrorCode code, object context, IXmlLineInfo xmlLineInfo)
         {
-            // If we ever want to use the AssetDatabase error reporting APIs, use m_Context.LogImportWarning() here
-            logger.LogError(errorType, code, context, Error.Level.Warning, xmlLineInfo);
+            if (m_Context != null)
+            {
+                var error = FormatError(code, errorType, xmlLineInfo, context);
+                m_Context.LogImportWarning(error);
+            }
 
             if (asset != null)
                 asset.importedWithWarnings = true;
@@ -312,11 +128,98 @@ namespace UnityEditor.UIElements
 
         void LogError(VisualTreeAsset asset, ImportErrorType errorType, ImportErrorCode code, object context, IXmlLineInfo xmlLineInfo)
         {
-            // If we ever want to use the AssetDatabase error reporting APIs, use m_Context.LogImportError() here
-            logger.LogError(errorType, code, context, Error.Level.Fatal, xmlLineInfo);
+            if (m_Context != null)
+            {
+                var error = FormatError(code, errorType, xmlLineInfo, context);
+                m_Context.LogImportError(error);
+            }
 
             if (asset != null)
                 asset.importedWithErrors = true;
+        }
+
+        public static string FormatError(ImportErrorCode code, ImportErrorType error, IXmlLineInfo xmlLineInfo, object context)
+        {
+            string message = ErrorMessage(code);
+            string lineInfo = xmlLineInfo == null ? ""
+                : UnityString.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+            return UnityString.Format("{0}: {1} - {2}", lineInfo, error,
+                UnityString.Format(message, context == null ? "<null>" : context.ToString()));
+        }
+
+        static string ErrorMessage(ImportErrorCode errorCode)
+        {
+            switch (errorCode)
+            {
+                case ImportErrorCode.InvalidXml:
+                    return "Xml is not valid, exception during parsing: {0}";
+                case ImportErrorCode.InvalidRootElement:
+                    return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
+                case ImportErrorCode.TemplateHasEmptyName:
+                    return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr +
+                           "' attribute";
+                case ImportErrorCode.TemplateInstanceHasEmptySource:
+                    return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" +
+                           k_TemplateInstanceSourceAttr + "' attribute";
+                case ImportErrorCode.TemplateMissingPathOrSrcAttribute:
+                    return "'" + k_TemplateNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
+                           "' attribute referencing another UXML file";
+                case ImportErrorCode.TemplateSrcAndPathBothSpecified:
+                    return "'" + k_TemplateNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
+                           "' attributes";
+                case ImportErrorCode.DuplicateTemplateName:
+                    return "Duplicate name '{0}'";
+                case ImportErrorCode.UnknownTemplate:
+                    return "Unknown template name '{0}'";
+                case ImportErrorCode.UnknownElement:
+                    return "Unknown element name '{0}'";
+                case ImportErrorCode.UnknownAttribute:
+                    return "Unknown attribute: '{0}'";
+                case ImportErrorCode.InvalidCssInStyleAttribute:
+                    return "USS in 'style' attribute is invalid: {0}";
+                case ImportErrorCode.StyleReferenceEmptyOrMissingPathOrSrcAttr:
+                    return "'" + k_StyleReferenceNode + "' declaration requires a '" + k_GenericPathAttr + "' or '" + k_GenericSrcAttr +
+                           "' attribute referencing a USS file";
+                case ImportErrorCode.StyleReferenceSrcAndPathBothSpecified:
+                    return "'" + k_StyleReferenceNode + "' declaration does not accept both '" + k_GenericSrcAttr + "' and '" + k_GenericPathAttr +
+                           "' attributes";
+                case ImportErrorCode.SlotsAreExperimental:
+                    return "Slot are an experimental feature. Syntax and semantic may change in the future.";
+                case ImportErrorCode.DuplicateSlotDefinition:
+                    return "Slot definition '{0}' is defined more than once";
+                case ImportErrorCode.SlotUsageInNonTemplate:
+                    return "Element has an assigned slot, but its parent '{0}' is not a template reference";
+                case ImportErrorCode.SlotDefinitionHasEmptyName:
+                    return "Slot definition has an empty name";
+                case ImportErrorCode.SlotUsageHasEmptyName:
+                    return "Slot usage has an empty name";
+                case ImportErrorCode.DuplicateContentContainer:
+                    return "'contentContainer' attribute must be defined once at most";
+                case ImportErrorCode.DeprecatedAttributeName:
+                    return "'{0}' attribute name is deprecated";
+                case ImportErrorCode.ReplaceByAttributeName:
+                    return "Please use '{0}' instead";
+                case ImportErrorCode.AttributeOverridesMissingElementNameAttr:
+                    return "AttributeOverrides node missing 'element-name' attribute.";
+                case ImportErrorCode.AttributeOverridesInvalidAttr:
+                    return "AttributeOverrides node cannot override attribute '{0}'.";
+                case ImportErrorCode.ReferenceInvalidURILocation:
+                    return "The specified URL is empty or invalid : {0}";
+                case ImportErrorCode.ReferenceInvalidURIScheme:
+                    return "The scheme specified for the URI is invalid : {0}";
+                case ImportErrorCode.ReferenceInvalidURIProjectAssetPath:
+                    return "The specified URI does not exist in the current project : {0}";
+                case ImportErrorCode.ReferenceInvalidAssetType:
+                    return "The specified URI refers to an invalid asset : {0}";
+                case ImportErrorCode.TemplateHasCircularDependency:
+                    return "The specified URI contains a circular dependency: {0}";
+                case ImportErrorCode.InvalidUxmlObjectParent:
+                    return "Uxml object can only be placed under VisualElements or other UxmlObjects: {0}";
+                case ImportErrorCode.InvalidUxmlObjectChild:
+                    return "Uxml object has an invalid child element: {0}";
+                default:
+                    throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
+            }
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -611,7 +514,9 @@ namespace UnityEditor.UIElements
                     }
                     else
                     {
-                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateHasCircularDependency, projectRelativePath, Error.Level.Warning, templateNode);
+                        // There is no AssetImportContext here so we have to log the error directly
+                        var error = FormatError(ImportErrorCode.TemplateHasCircularDependency, ImportErrorType.Semantic, templateNode, projectRelativePath);
+                        Debug.LogError(error);
                     }
 
                     break;
@@ -1030,8 +935,7 @@ namespace UnityEditor.UIElements
 
             if (response.hasWarningMessage)
             {
-                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidURIProjectAssetPath,
-                    response.warningMessage, Error.Level.Warning, elt);
+                LogWarning(vta, ImportErrorType.Semantic, ImportErrorCode.ReferenceInvalidURIProjectAssetPath, response.warningMessage, elt);
             }
 
             if (result != URIValidationResult.OK)
@@ -1117,8 +1021,7 @@ namespace UnityEditor.UIElements
 
                 if (assetType != null || s_UxmlAssetAttributeCache.GetAssetAttributeType(res.fullTypeName, attrName, out assetType))
                 {
-                    res.SetAttribute(xattr.Name.LocalName, xattr.Value);
-
+                    var value = xattr.Value;
                     if (assetType != typeof(VisualTreeAsset) || !vta.TemplateExists(xattr.Value))
                     {
                         var (response, asset) = ValidateAndLoadResource(elt, vta, xattr.Value, true);
@@ -1126,9 +1029,19 @@ namespace UnityEditor.UIElements
                         if (response.result == URIValidationResult.OK && !vta.AssetEntryExists(xattr.Value, assetType))
                         {
                             asset = ExtractSubAssetFromParent(asset, assetType, response);
-                            vta.RegisterAssetEntry(xattr.Value, assetType, asset);
+
+                            // Update the url value so it is correct when saved back to UXML
+                            if (response.resolvedUrlChanged)
+                            {
+                                value = URIHelpers.MakeAssetUri(asset);
+                                vta.importerWithUpdatedUrls = true;
+                            }
+
+                            vta.RegisterAssetEntry(value, assetType, asset);
                         }
                     }
+
+                    res.SetAttribute(xattr.Name.LocalName, value);
 
                     continue;
                 }
@@ -1145,10 +1058,6 @@ namespace UnityEditor.UIElements
                         case "content-container":
                         case "contentContainer":
                             vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
-                            if (attrName == "contentContainer")
-                            {
-                            }
-
                             if (vta.contentContainerId != 0)
                             {
                                 LogError(vta, ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, elt);

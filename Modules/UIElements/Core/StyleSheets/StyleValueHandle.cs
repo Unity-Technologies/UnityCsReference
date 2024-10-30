@@ -20,6 +20,7 @@ namespace UnityEngine.UIElements
             {
                 return m_ValueType;
             }
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set
             {
                 m_ValueType = value;

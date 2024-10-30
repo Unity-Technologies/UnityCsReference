@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
 
         internal void RestoreValueAndText();
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Func<char, bool> AcceptCharacter { get; set; }
         internal Action<bool> UpdateScrollOffset { get; set; }
         internal Action UpdateValueFromText { get; set; }

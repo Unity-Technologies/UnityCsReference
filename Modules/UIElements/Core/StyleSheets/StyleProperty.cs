@@ -58,9 +58,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal bool isCustomProperty;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [NonSerialized]
         internal bool requireVariableResolve;
     }

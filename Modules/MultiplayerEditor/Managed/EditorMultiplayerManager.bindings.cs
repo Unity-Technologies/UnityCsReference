@@ -39,14 +39,6 @@ namespace UnityEditor.Multiplayer.Internal
         public static event Action activeMultiplayerRoleChanged;
         public static event Action enableMultiplayerRolesChanged;
 
-        /// <summary>
-        /// Use drawingMultiplayerBuildOptionsForBuildProfile instead, this is kept for backwards compatibility.
-        /// </summary>
-        public static event Action<NamedBuildTarget> drawingMultiplayerBuildOptions
-        {
-            add => BuildPlayerWindow.drawingMultiplayerBuildOptions += (profile) => value(NamedBuildTarget.FromTargetAndSubtarget(profile.buildTarget, (int)profile.subtarget));
-            remove => BuildPlayerWindow.drawingMultiplayerBuildOptions -= (profile) => value(NamedBuildTarget.FromTargetAndSubtarget(profile.buildTarget, (int)profile.subtarget));
-        }
         public static event Action<BuildProfile> drawingMultiplayerBuildOptionsForBuildProfile
         {
             add => BuildPlayerWindow.drawingMultiplayerBuildOptions += value;

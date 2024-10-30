@@ -37,7 +37,6 @@ namespace UnityEngine
         extern public float linearDamping { get; set; }
         extern public float angularDamping { get; set; }
         extern public float mass { get; set; }
-        extern public void SetDensity(float density);
         extern public bool useGravity { get; set; }
         extern public float maxDepenetrationVelocity { get; set; }
         extern public bool isKinematic { get; set; }

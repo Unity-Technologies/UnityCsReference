@@ -34,20 +34,19 @@ namespace UnityEditor.Build.Profile
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
-            buildProfile.platformId = BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
+            buildProfile.platformGuid = BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
             buildProfile.OnEnable();
             return buildProfile;
         }
 
-        internal static BuildProfile CreateInstance(GUID platformGuid)
+        internal static BuildProfile CreateInstance(GUID platformId)
         {
-            var platformId = platformGuid.ToString();
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var moduleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
-            buildProfile.platformId = platformId;
+            buildProfile.platformGuid = platformId;
             buildProfile.OnEnable();
             return buildProfile;
         }
@@ -57,14 +56,14 @@ namespace UnityEditor.Build.Profile
         /// event after an asset is created by AssetDatabase.CreateAsset.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static void CreateInstance(string platformId, string assetPath)
+        internal static void CreateInstance(GUID platformId, string assetPath)
         {
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var moduleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
-            buildProfile.platformId = platformId;
+            buildProfile.platformGuid = platformId;
             AssetDatabase.CreateAsset(
                 buildProfile,
                 AssetDatabase.GenerateUniqueAssetPath(assetPath));
@@ -81,12 +80,27 @@ namespace UnityEditor.Build.Profile
                 return;
             }
 
-            IBuildProfileExtension buildProfileExtension = ModuleManager.GetBuildProfileExtension(moduleName);
+            IBuildProfileExtension buildProfileExtension = ModuleManager.GetBuildProfileExtension(platformGuid);
             if (buildProfileExtension != null && ModuleManager.IsPlatformSupportLoaded(moduleName))
             {
                 platformBuildProfile = buildProfileExtension.CreateBuildProfilePlatformSettings();
                 EditorUtility.SetDirty(this);
             }
+        }
+
+        /// <summary>
+        /// Remove the Graphics Settings overrides from the build profile.
+        /// </summary>
+        internal void RemoveGraphicsSettings()
+        {
+            if (graphicsSettings == null)
+                return;
+
+            AssetDatabase.RemoveObjectFromAsset(graphicsSettings);
+            graphicsSettings = null;
+            EditorUtility.SetDirty(this);
+
+            OnGraphicsSettingsSubAssetRemoved?.Invoke();
         }
     }
 }

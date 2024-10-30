@@ -47,6 +47,25 @@ namespace UnityEditor
 
         public bool isVisible => m_Parent.actualView == this;
 
+        internal class TestHelper
+        {
+            public static void PopupPreviewWindow(InspectorWindow inspector)
+            {
+                inspector.PopupPreviewWindow();
+            }
+
+            public static PreviewWindow GetPreviewWindow(InspectorWindow inspector)
+            {
+                return inspector.m_PreviewWindow;
+            }
+
+            public static InspectorPreviewWindow GetInspectorPreviewWindow(InspectorWindow inspector)
+            {
+                return inspector.previewWindow;
+            }
+        }
+
+
         internal void Awake()
         {
             AddInspectorWindow(this);
@@ -354,22 +373,22 @@ namespace UnityEditor
                 DetachPreview();
         }
 
-        protected override void CreatePreviewEllipsisMenu(InspectorPreviewWindow window, PropertyEditor editor)
+        protected override void CreatePreviewEllipsisMenu()
         {
-            if (editor.previewWindow == null)
+            if (previewWindow == null)
                 return;
 
             var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
             var previewContainer = m_SplitView.Q(s_PreviewContainer);
 
-            window.ClearEllipsisMenu();
-            window.AppendActionToEllipsisMenu(
+            previewWindow.ClearEllipsisMenu();
+            previewWindow.AppendActionToEllipsisMenu(
                 "Convert to Floating Window",
                 (e) =>
                 {
                     if (m_PreviewWindow == null)
                     {
-                        PopupPreviewWindow(window);
+                        PopupPreviewWindow();
 
                         previewContainer.style.display = DisplayStyle.None;
                         draglineAnchor.style.display = DisplayStyle.None;
@@ -385,31 +404,31 @@ namespace UnityEditor
                 },
                 a => hasFloatingPreviewWindow ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
 
-            window.AppendActionToEllipsisMenu(
+            previewWindow.AppendActionToEllipsisMenu(
                 "Minimize in Inspector",
                 (e) =>
                 {
-                    editor.ExpandCollapsePreview();
+                    ExpandCollapsePreview();
                 },
-                a => !editor.showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
+                a => !showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
             );
 
-            draglineAnchor.RegisterCallback<PointerUpEvent, InspectorPreviewWindow>(OnDraglineChange, window);
+            draglineAnchor.RegisterCallback<PointerUpEvent>(OnDraglineChange);
         }
 
-        void OnDraglineChange(PointerUpEvent evt, InspectorPreviewWindow window)
+        void OnDraglineChange(PointerUpEvent evt)
         {
             if (m_PreviewWindow != null || evt.button != (int)MouseButton.RightMouse)
                 return;
 
-            PopupPreviewWindow(window);
+            PopupPreviewWindow();
         }
 
-        void PopupPreviewWindow(InspectorPreviewWindow window)
+        void PopupPreviewWindow()
         {
             DetachPreview(false);
             hasFloatingPreviewWindow = true;
-            window.parent.Remove(window);
+            previewWindow.parent?.Remove(previewWindow);
         }
 
         private void DetachPreview(bool exitGUI = true)

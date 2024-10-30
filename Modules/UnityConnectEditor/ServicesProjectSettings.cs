@@ -1316,7 +1316,7 @@ namespace UnityEditor.Connect
                     {
                         var packageName = provider.serviceInstance.packageName;
                         EditorAnalytics.SendOpenPackManFromServiceSettings(new OpenPackageManager() { packageName = packageName });
-                        PackageManagerWindow.OpenPackageManager(packageName);
+                        PackageManagerWindow.OpenAndSelectPackage(packageName);
                     };
                 }
                 m_CurrentPackageVersionLabel = sectionRoot.Q<Label>(k_CurrentVersionInfo);

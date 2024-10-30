@@ -112,6 +112,8 @@ namespace UnityEditor
             if (!m_IsRenaming)
                 return;
 
+            EditorGUIUtility.renameWasCompleted = true;
+
             Undo.undoRedoEvent -= UndoRedoWasPerformed;
             EditorApplication.update -= BeginRenameInternalCallback;
 

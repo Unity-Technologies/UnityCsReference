@@ -24,6 +24,13 @@ namespace UnityEditor.UIElements.ProjectSettings
             Initialize();
         }
 
+        internal void InitializeWithoutWindow(SerializedObject serializedObject)
+        {
+            m_SerializedObject = serializedObject;
+
+            Initialize();
+        }
+
         protected abstract void Initialize();
     }
 }

@@ -43,6 +43,7 @@ namespace UnityEditor.Rendering
         }
 
         extern public static BatchRendererGroupStrippingMode batchRendererGroupShaderStrippingMode { get; }
+        extern internal static bool activeProfileHasGraphicsSettings { get; set; }
 
         [NativeName("RegisterRenderPipelineSettings")] static extern bool Internal_TryRegisterRenderPipeline(string renderpipelineName, Object settings);
         [NativeName("UnregisterRenderPipelineSettings")] static extern bool Internal_TryUnregisterRenderPipeline(string renderpipelineName);

@@ -411,6 +411,11 @@ namespace UnityEngine
             get { return 1; }
         }
 
+        public static bool supportsVariableRateShading
+        {
+            get { return SupportsVariableRateShading(); }
+        }
+
         // The enums are only marked as obsolete in the editor.
         /// <summary>
         /// Determine if enum value is obsolete.
@@ -1064,5 +1069,8 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsDepthFetchInRenderPass")]
         static extern bool SupportsDepthFetchInRenderPass();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsVariableRateShading")]
+        static extern bool SupportsVariableRateShading();
     }
 }

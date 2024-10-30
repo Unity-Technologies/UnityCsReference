@@ -508,6 +508,7 @@ namespace UnityEditor
         internal class RecycledTextEditor : TextEditor
         {
             internal static bool s_ActuallyEditing = false; // internal so we can save this state.
+            internal static bool s_EditingWasCompleted = false; // internal so we can save this state.
             internal static bool s_AllowContextCutOrPaste = true; // e.g. selectable labels only allow for copying
             private long[] s_OriginalLongValues;
             private double[] s_OriginalDoubleValues;
@@ -585,6 +586,7 @@ namespace UnityEditor
 
                 controlID = 0;
                 s_ActuallyEditing = false;
+                s_EditingWasCompleted = false;
                 s_AllowContextCutOrPaste = true;
                 UnityEditor.Undo.IncrementCurrentGroup();
 
@@ -1022,8 +1024,8 @@ namespace UnityEditor
                 }
             }
 
-            // Inform editor that someone removed focus from us.
-            if (editor.controlID == id && GUIUtility.keyboardControl != id || (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed))
+            // Inform editor that someone removed focus from us or a rename operation was completed.
+            if (editor.controlID == id && GUIUtility.keyboardControl != id || EditorGUIUtility.renameWasCompleted || (evt.type == EventType.ValidateCommand && evt.commandName == EventCommandNames.UndoRedoPerformed))
             {
                 editor.EndEditing();
             }

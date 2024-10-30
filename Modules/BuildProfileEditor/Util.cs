@@ -21,7 +21,7 @@ namespace UnityEditor.Build.Profile
         /// Helper function for setting the platform settings helpbox based on
         /// license and module installation status.
         /// </summary>
-        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox target, string platformId)
+        internal static bool UpdatePlatformRequirementsWarningHelpBox(HelpBox target, GUID platformId)
         {
             if (target.childCount > k_HelBoxChildItemCount)
             {

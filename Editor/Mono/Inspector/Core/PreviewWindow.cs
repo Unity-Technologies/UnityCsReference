@@ -93,7 +93,7 @@ namespace UnityEditor
             {
                 if (previewWindow.childCount == 0)
                 {
-                    PrepareToolbar(previewWindow, true);
+                    PrepareToolbar(true);
                     UpdateLabel(previewWindow);
                     VisualElement previewPane = previewWindow.GetPreviewPane();
 

@@ -63,6 +63,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged += OnSelectionChanged;
 
+            m_PageManager.onVisualStateChange += OnVisualStateChange;
+
             m_UnityConnectProxy.onUserLoginStateChange += OnUserLoginStateChange;
 
             // We need this refresh because there is a small delay between OnEnable and OnCreateGUI
@@ -97,7 +99,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_PageManager.onSelectionChanged -= OnSelectionChanged;
 
+            m_PageManager.onVisualStateChange -= OnVisualStateChange;
+
             m_UnityConnectProxy.onUserLoginStateChange -= OnUserLoginStateChange;
+        }
+
+        private void OnVisualStateChange(VisualStateChangeArgs args)
+        {
+            if (args.page == m_PageManager.activePage)
+                Refresh(m_PageManager.activePage.GetSelection());
         }
 
         private void RefreshSelectedTabHeight(GeometryChangedEvent evt)

@@ -222,8 +222,8 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
 
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceDrawer] Object dataSource;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSource_UxmlAttributeFlags;
+            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
@@ -279,8 +279,8 @@ namespace UnityEngine.UIElements
                     e.tabIndex = tabIndex;
                 if (ShouldWriteAttributeValue(focusable_UxmlAttributeFlags))
                     e.focusable = focusable;
-                if (ShouldWriteAttributeValue(dataSource_UxmlAttributeFlags))
-                    e.dataSource = dataSource ? dataSource : null;
+                if (ShouldWriteAttributeValue(dataSourceUnityObject_UxmlAttributeFlags))
+                    e.dataSourceUnityObject = dataSourceUnityObject ? dataSourceUnityObject : null;
                 if (ShouldWriteAttributeValue(dataSourcePathString_UxmlAttributeFlags))
                     e.dataSourcePathString = dataSourcePathString;
                 if (ShouldWriteAttributeValue(dataSourceTypeString_UxmlAttributeFlags))
@@ -1622,6 +1622,13 @@ namespace UnityEngine.UIElements
                 CreateBindingRequests();
                 DetachDataSource();
 
+                if (containedPointerIds != 0)
+                {
+                    //We need to remove this element from the ElementsUnderPointer
+                    elementPanel.RemoveElementFromPointerCache(this);
+                    elementPanel.CommitElementUnderPointers();
+                }
+
                 // Only send this event if the element isn't waiting for an attach event already
                 if ((m_Flags & VisualElementFlags.NeedsAttachToPanelEvent) == 0)
                 {
@@ -1940,15 +1947,15 @@ namespace UnityEngine.UIElements
         /// Delegate function to generate the visual content of a visual element.
         /// </summary>
         /// <remarks>
-        /// Use this delegate to generate custom geometry in the content region of the <see cref="VisualElement"/>. 
+        /// Use this delegate to generate custom geometry in the content region of the <see cref="VisualElement"/>.
         ///\\
         ///\\
-        /// This delegate is called during the initial creation of the <see cref="VisualElement"/> and whenever a repaint is needed. 
+        /// This delegate is called during the initial creation of the <see cref="VisualElement"/> and whenever a repaint is needed.
         /// This delegate isn't called on every frame refresh. To force a repaint, call <see cref="VisualElement.MarkDirtyRepaint"/>.
         ///\\
         ///\\
         /// __Note__: When you execute code in a handler to this delegate, don't update any property of the <see cref="VisualElement"/>, as this can
-        /// alter the generated content and cause unwanted side effects, such as lagging or missed updates. To avoid this, treat the <see cref="VisualElement"/> 
+        /// alter the generated content and cause unwanted side effects, such as lagging or missed updates. To avoid this, treat the <see cref="VisualElement"/>
         /// as read-only within the delegate.
         /// </remarks>
         /// <example>

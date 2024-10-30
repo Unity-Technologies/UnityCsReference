@@ -73,6 +73,8 @@ namespace UnityEngine.Device
 
         public static FoveatedRenderingCaps foveatedRenderingCaps => ShimManager.systemInfoShim.foveatedRenderingCaps;
 
+        public static bool supportsVariableRateShading => ShimManager.systemInfoShim.supportsVariableRateShading;
+
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
 
         public static bool hasDynamicUniformArrayIndexingInFragmentShaders =>

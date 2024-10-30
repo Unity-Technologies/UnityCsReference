@@ -29,7 +29,15 @@ namespace UnityEditor.Rendering
 
     public enum BatchRendererGroupStrippingMode
     {
+        [InspectorName("Strip if Entities Graphics Package is not installed")]
         KeepIfEntitiesGraphics = 0,
+        StripAll,
+        KeepAll
+    }
+
+    internal enum InstancingStrippingMode
+    {
+        StripUnused = 0,
         StripAll,
         KeepAll
     }

@@ -143,10 +143,16 @@ namespace UnityEditor.Modules
             // For other platforms the "Multithreaded Rendering" feature is controlled by PlayerSettings::m_MTRendering. Default value is true (set during PlayerSettings::Reset)
             if (BuildTargetDiscovery.PlatformGroupHasFlag(namedBuildTarget.ToBuildTargetGroup(), TargetAttributes.IsMTRenderingDisabledByDefault))
             {
-                bool oldValue = PlayerSettings.GetMobileMTRendering(namedBuildTarget);
+                var playerSettings = playerSettingsEditor.m_SerializedObject.targetObject as PlayerSettings;
+                Debug.Assert(playerSettings != null);
+
+                bool oldValue = playerSettings.GetMobileMTRenderingInternal_Instance(namedBuildTarget.TargetName);
                 bool newValue = EditorGUILayout.Toggle(MultithreadedRenderingGUITooltip(), oldValue);
                 if (oldValue != newValue)
-                    PlayerSettings.SetMobileMTRendering(namedBuildTarget, newValue);
+                {
+                    playerSettings.SetMobileMTRenderingInternal_Instance(namedBuildTarget.TargetName, newValue);
+                    playerSettingsEditor.OnTargetObjectChangedDirectly();
+                }
             }
             else EditorGUILayout.PropertyField(m_MTRendering, m_MTRenderingTooltip);
         }

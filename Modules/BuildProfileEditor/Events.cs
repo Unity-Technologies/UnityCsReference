@@ -25,7 +25,7 @@ namespace UnityEditor.Build.Profile
             /// <summary>
             /// Platform ID of the target build profile.
             /// </summary>
-            public string platformId;
+            public GUID platformId;
 
             /// <summary>
             /// Platform display name of the target build profile.
@@ -39,7 +39,7 @@ namespace UnityEditor.Build.Profile
         {
             m_Payload = new Payload()
             {
-                platformId = new GUID(string.Empty).ToString(),
+                platformId = new GUID(string.Empty),
                 platformDisplayName = string.Empty,
                 wasProfileCreated = false
             };
@@ -71,7 +71,7 @@ namespace UnityEditor.Build.Profile
             /// <summary>
             /// Platform ID of the target build profile.
             /// </summary>
-            public string platformId;
+            public GUID platformId;
 
             /// <summary>
             /// Platform display name of the target build profile.
@@ -91,7 +91,7 @@ namespace UnityEditor.Build.Profile
             this.m_Payload = new Payload()
             {
                 count = 0,
-                platformId = new GUID(string.Empty).ToString(),
+                platformId = new GUID(string.Empty),
                 platformDisplayName = string.Empty
             };
         }
@@ -133,7 +133,7 @@ namespace UnityEditor.Build.Profile
             /// <summary>
             /// Platform ID of the created profile.
             /// </summary>
-            public string platformId;
+            public GUID platformId;
 
             /// <summary>
             /// Platform display name of the target build profile.

@@ -184,20 +184,20 @@ namespace UnityEditor.UIElements
                     negativeWarningHelpBox = new UnityEngine.UIElements.HelpBox(
                         L10n.Tr(BuilderConstants.HeightIntFieldValueCannotBeNegativeMessage), HelpBoxMessageType.Warning);
                     field.parent.Add(negativeWarningHelpBox);
-                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, true);
+                    negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorShownWarningMessageClassName);
                 }
                 else
                 {
-                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, true);
-                    negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName, false);
+                    negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorShownWarningMessageClassName);
+                    negativeWarningHelpBox.RemoveFromClassList(BuilderConstants.InspectorHiddenWarningMessageClassName);
                 }
                 return;
             }
 
             if (negativeWarningHelpBox == null)
                 return;
-            negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorHiddenNegativeWarningMessageClassName, true);
-            negativeWarningHelpBox.EnableInClassList(BuilderConstants.InspectorShownNegativeWarningMessageClassName, false);
+            negativeWarningHelpBox.AddToClassList(BuilderConstants.InspectorHiddenWarningMessageClassName);
+            negativeWarningHelpBox.RemoveFromClassList(BuilderConstants.InspectorShownWarningMessageClassName);
         }
     }
 

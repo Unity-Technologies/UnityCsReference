@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.IO;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.Build.Profile.Handlers;
@@ -27,11 +29,15 @@ namespace UnityEditor.Build.Profile
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
+        ListView m_PackagesListView;
+        Foldout m_PackagesFoldout;
+
         /// <summary>
         /// Warning message displayed when the selected card's platform
         /// is not supported.
         /// </summary>
         HelpBox m_CardWarningHelpBox;
+        VisualElement m_HelpBoxWrapper;
 
         public static void ShowWindow()
         {
@@ -59,6 +65,51 @@ namespace UnityEditor.Build.Profile
             m_CardWarningHelpBox = rootVisualElement.Q<HelpBox>("helpbox-card-warning");
             m_SelectedDescriptionFoldout = rootVisualElement.Q<Foldout>("platform-description-foldout");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
+            m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
+            m_PackagesListView = rootVisualElement.Q<ListView>("packages-root-listview");
+            m_PackagesFoldout = rootVisualElement.Q<Foldout>("packages-foldout");
+            m_PackagesFoldout.text = TrText.packagesHeader;
+
+            m_PackagesListView.itemsSource = Array.Empty<object>();
+            m_PackagesListView.makeItem = PlatformPackageItem.Make;
+            m_PackagesListView.bindItem = (VisualElement element, int index) =>
+            {
+                if (element is not PlatformPackageItem packageItem)
+                {
+                    Debug.LogWarning("Unexpected element type in PlatformDiscoveryWindow. element=" + element);
+                    return;
+                }
+
+                var packageEntry = m_PackagesListView.itemsSource[index] as PlatformPackageEntry;
+                packageItem.Set(packageEntry);
+            };
+            var packageSelectAll = m_PackagesFoldout.Q<Button>("package-select-all");
+            packageSelectAll.text = TrText.selectAll;
+            packageSelectAll.clicked += () =>
+            {
+                for (int i = 0; i <  m_PackagesListView.itemsSource.Count; ++i)
+                {
+                    var item = m_PackagesListView.GetRootElementForIndex(i);
+                    if (item is not PlatformPackageItem packageItemVisualElement)
+                        continue;
+
+                    packageItemVisualElement.SetShouldInstallToggle(true);
+
+                }
+            };
+            var packageDeselectAll = m_PackagesFoldout.Q<Button>("package-deselect-all");
+            packageDeselectAll.text = TrText.deselectAll;
+            packageDeselectAll.clicked += () =>
+            {
+                for (int i = 0; i < m_PackagesListView.itemsSource.Count; ++i)
+                {
+                    var item = m_PackagesListView.GetRootElementForIndex(i);
+                    if (item is not PlatformPackageItem packageItemVisualElement)
+                        continue;
+
+                    packageItemVisualElement.SetShouldInstallToggle(false);
+                }
+            };
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -96,16 +147,28 @@ namespace UnityEditor.Build.Profile
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
-            Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId);
-
-            string description = BuildProfileModuleUtil.GetPlatformDescription(card.platformId);
-            if (string.IsNullOrEmpty(description))
-                m_SelectedDescriptionFoldout.Hide();
+            if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
+                m_HelpBoxWrapper.Show();
             else
+                m_HelpBoxWrapper.Hide();
+
+            if (card.requiredPackages.Length > 0 || card.recommendedPackages.Length > 0)
             {
-                m_SelectedDescriptionFoldout.Show();
-                m_SelectedDescriptionLabel.text = description;
+                m_PackagesListView.itemsSource = PlatformPackageItem
+                    .CreateItemSource(card.requiredPackages, card.recommendedPackages);
+                m_PackagesListView.Rebuild();
+                m_PackagesFoldout.Show();
             }
+            else
+                m_PackagesFoldout.Hide();
+
+            if (card.description.Length > 0)
+            {
+                m_SelectedDescriptionLabel.text = card.description;
+                m_SelectedDescriptionFoldout.Show();
+            }
+            else
+                m_SelectedDescriptionFoldout.Hide();
         }
 
         ListView CreateCardListView()
@@ -146,7 +209,7 @@ namespace UnityEditor.Build.Profile
         /// <summary>
         /// Creates a build profile assets based on the selected card.
         /// </summary>
-        static void OnAddBuildProfileClicked(BuildProfileCard card)
+        void OnAddBuildProfileClicked(BuildProfileCard card)
         {
             BuildProfileDataSource.CreateNewAsset(card.platformId, card.displayName);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
@@ -155,6 +218,16 @@ namespace UnityEditor.Build.Profile
                 platformId = card.platformId,
                 platformDisplayName = card.displayName,
             }));
+
+            // Scan list view packages.
+            List<string> packagesToAdd = new List<string>();
+            foreach(PlatformPackageEntry item in m_PackagesListView.itemsSource)
+            {
+                if (!item.isInstalled && item.shouldInstalled)
+                    packagesToAdd.Add(item.packageName);
+            }
+            if (packagesToAdd.Count > 0)
+               PackageManager.Client.AddAndRemove(packagesToAdd.ToArray());
         }
 
         static BuildProfileCard[] FindAllVisiblePlatforms()
@@ -162,13 +235,19 @@ namespace UnityEditor.Build.Profile
             var cards = new List<BuildProfileCard>();
             foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
             {
-                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(new GUID(platformId), SystemInfo.operatingSystemFamily))
+                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
                     continue;
+
+                var requiredPackageNames = BuildProfileModuleUtil.BuildPlatformRequiredPackages(platformId);
+                var recommendedPackageNames = BuildProfileModuleUtil.BuildPlatformRecommendedPackages(platformId);
 
                 cards.Add(new BuildProfileCard()
                 {
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
-                    platformId = platformId
+                    platformId = platformId,
+                    description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    recommendedPackages = recommendedPackageNames,
+                    requiredPackages = requiredPackageNames
                 });
             }
             return cards.ToArray();

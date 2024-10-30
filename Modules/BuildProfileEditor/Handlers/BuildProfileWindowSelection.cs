@@ -53,7 +53,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             if (IsMultipleSelection())
             {
-                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(string.Empty);
+                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(new GUID(string.Empty));
                 m_SelectedProfileNameLabel.text = $"{m_SelectedBuildProfiles.Count} Build Profiles";
             }
             else
@@ -61,8 +61,8 @@ namespace UnityEditor.Build.Profile.Handlers
                 // Selected profile could be a custom or classic platform.
                 // Classic platforms only display the platform name, while custom show file name and platform name.
                 // When a selection is made, we clear the currently selection in the opposite list view.
-                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(profile.platformId);
-                var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformId);
+                m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(profile.platformGuid);
+                var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid);
                 if (BuildProfileContext.IsClassicPlatformProfile(profile))
                 {
                     m_SelectedProfileNameLabel.text = platformDisplayName;
@@ -80,7 +80,7 @@ namespace UnityEditor.Build.Profile.Handlers
         /// <summary>
         /// Update selected profile for missing platform
         /// </summary>
-        internal void MissingPlatformSelected(string platformId)
+        internal void MissingPlatformSelected(GUID platformId)
         {
             ClearSelectedProfiles();
 

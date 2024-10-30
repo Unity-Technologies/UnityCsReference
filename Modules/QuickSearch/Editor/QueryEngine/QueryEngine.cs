@@ -1654,9 +1654,8 @@ namespace UnityEditor.Search
         IParseResult GenerateParseResultForType(string value, Type type)
         {
             // Check if we have a default type parser before doing the expensive reflection call
-            if (m_DefaultTypeParsers.ContainsKey(type))
+            if (m_DefaultTypeParsers.TryGetValue(type, out var parser))
             {
-                var parser = m_DefaultTypeParsers[type];
                 return parser.Parse(value);
             }
 
@@ -3047,6 +3046,16 @@ namespace UnityEditor.Search
         /// <param name="op">The filter operator.</param>
         /// <param name="handler">Callback to handle the operation. Takes a TFilterVariable (value returned by the filter handler, will vary for each element), a TFilterConstant (right hand side value of the operator, which is constant), a StringComparison option and returns a boolean indicating if the filter passes or not.</param>
         public void AddOperatorHandler<TFilterVariable, TFilterConstant>(string op, Func<TFilterVariable, TFilterConstant, StringComparison, bool> handler)
+        {
+            m_Impl.AddOperatorHandler(op, handler);
+        }
+
+        internal void AddOperatorHandler<TFilterVariable, TFilterConstant>(string op, Func<FilterOperatorContext, TFilterVariable, TFilterConstant, bool> handler)
+        {
+            m_Impl.AddOperatorHandler(op, handler);
+        }
+
+        internal void AddOperatorHandler<TFilterVariable, TFilterConstant>(string op, Func<FilterOperatorContext, TFilterVariable, TFilterConstant, StringComparison, bool> handler)
         {
             m_Impl.AddOperatorHandler(op, handler);
         }

@@ -495,7 +495,7 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_BuildRayTracingAccelerationStructure", HasExplicitThis = true)]
         extern private void Internal_BuildRayTracingAccelerationStructure([NotNull] RayTracingAccelerationStructure accelerationStructure, RayTracingAccelerationStructure.BuildSettings buildSettings);
-       
+
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetRayTracingAccelerationStructure", HasExplicitThis = true)]
         extern private void Internal_SetRayTracingAccelerationStructure([NotNull] RayTracingShader rayTracingShader, int nameID, [NotNull] RayTracingAccelerationStructure accelerationStructure);
 
@@ -1411,30 +1411,54 @@ namespace UnityEngine.Rendering
 
 
         [FreeFunction("RenderingCommandBuffer_Bindings::BeginRenderPass", HasExplicitThis = true)]
-        extern void BeginRenderPass_Internal(int width, int height, int volumeDepth, int samples, ReadOnlySpan<AttachmentDescriptor> attachments, int depthAttachmentIndex, ReadOnlySpan<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8);
+        extern void BeginRenderPass_Internal(int width, int height, int volumeDepth, int samples, ReadOnlySpan<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex, ReadOnlySpan<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8);
 
-        public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
+        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
-        }
-
-        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
-        {
-            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, -1, subPasses, debugNameUtf8);
         }
 
         public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, subPasses, debugNameUtf8);
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, -1, subPasses, debugNameUtf8);
         }
 
-        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
+        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
-            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, subPasses, debugNameUtf8);
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, -1, subPasses, new ReadOnlySpan<byte>());
+        }
+
+        public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, -1, subPasses, new ReadOnlySpan<byte>());
+        }
+
+        public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, shadingRateImageAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
+        }
+
+        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex, NativeArray<SubPassDescriptor> subPasses)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, shadingRateImageAttachmentIndex, subPasses, new ReadOnlySpan<byte>());
+        }
+
+        public void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, 1, samples, attachments, depthAttachmentIndex, shadingRateImageAttachmentIndex, subPasses, debugNameUtf8);
+        }
+
+        public void BeginRenderPass(int width, int height, int volumeDepth, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex, int shadingRateImageAttachmentIndex, NativeArray<SubPassDescriptor> subPasses, ReadOnlySpan<byte> debugNameUtf8)
+        {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+            BeginRenderPass_Internal(width, height, volumeDepth, samples, attachments, depthAttachmentIndex, shadingRateImageAttachmentIndex, subPasses, debugNameUtf8);
         }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::NextSubPass", HasExplicitThis = true)]
@@ -1474,5 +1498,53 @@ namespace UnityEngine.Rendering
             public static CommandBuffer ConvertToManaged(IntPtr ptr) => new CommandBuffer(ptr);
             public static IntPtr ConvertToNative(CommandBuffer commandBuffer) => commandBuffer.m_Ptr;
         }
+
+        /// <summary>
+        /// Set base shading rate fragment size.
+        /// </summary>
+        /// <param name="shadingRateFragmentSize"><Shading rate fragment size/param>
+        public void SetShadingRateFragmentSize(ShadingRateFragmentSize shadingRateFragmentSize)
+        {
+            SetShadingRateFragmentSize_Impl(shadingRateFragmentSize);
+        }
+
+        /// <summary>
+        /// Set shading rate combiners
+        /// </summary>
+        /// <param name="shadingRateCombiner">Shading rate combiners</param>
+        public void SetShadingRateCombiner(ShadingRateCombinerStage stage, ShadingRateCombiner combiner)
+        {
+            SetShadingRateCombiner_Impl(stage, combiner);
+        }
+
+        /// <summary>
+        /// Set shading rate image
+        /// </summary>
+        /// <param name="RenderTargetIdentifier">Shading rate image to set</param>
+        public void SetShadingRateImage(in RenderTargetIdentifier shadingRateImage)
+        {
+            SetShadingRateImage_Impl(shadingRateImage);
+        }
+
+        /// <summary>
+        /// Convenience function to reset shading rate state to default values.
+        /// </summary>
+        /// <returns></returns>
+        public void ResetShadingRate()
+        {
+            ResetShadingRate_Impl();
+        }
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetShadingRateFragmentSize_Impl", HasExplicitThis = true)]
+        extern private void SetShadingRateFragmentSize_Impl(ShadingRateFragmentSize shadingRateFragmentSize);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetShadingRateCombiner_Impl", HasExplicitThis = true)]
+        extern private void SetShadingRateCombiner_Impl(ShadingRateCombinerStage stage, ShadingRateCombiner combiner);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetShadingRateImage_Impl", HasExplicitThis = true)]
+        extern private void SetShadingRateImage_Impl(in RenderTargetIdentifier shadingRateImage);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::ResetShadingRate_Impl", HasExplicitThis = true)]
+        extern private void ResetShadingRate_Impl();
     }
 }
