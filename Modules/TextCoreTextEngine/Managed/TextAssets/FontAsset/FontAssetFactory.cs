@@ -209,7 +209,6 @@ internal class FontAssetFactory
 
         fontAsset.IsEditorFont = true;
         fontAsset.isMultiAtlasTexturesEnabled = true;
-        fontAsset.atlasTexture.filterMode = FilterMode.Point;
     }
 
     public static void SetHideFlags(FontAsset fontAsset)

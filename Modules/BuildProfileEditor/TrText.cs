@@ -73,6 +73,14 @@ namespace UnityEditor.Build.Profile
         public static readonly string resetGraphicsSettingsDialogTitle = L10n.Tr("Reset Graphics Settings to Globals");
         public static readonly string resetGraphicsSettingsDialogMessage = L10n.Tr("This will reset all Graphics Settings overrides to the original globals.");
 
+        // Build Profile Quality Settings
+        public static readonly string overrideQualitySettingsToggleLabel = L10n.Tr("Override Global Quality Settings");
+        public static readonly string overrideQualitySettingsFoldoutLabel = L10n.Tr("Included Quality Levels");
+        public static readonly string removeQualitySettingsDialogTitle = L10n.Tr("Remove Quality Settings Overrides");
+        public static readonly string removeQualitySettingsDialogMessage = L10n.Tr("This will remove all Quality Settings overrides");
+        public static readonly string resetQualitySettingsDialogTitle = L10n.Tr("Reset Quality Settings to Globals");
+        public static readonly string resetQualitySettingsDialogMessage = L10n.Tr("This will reset all Quality Settings overrides to the original globals.");
+
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");

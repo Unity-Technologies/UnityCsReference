@@ -1086,6 +1086,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!IsCompilationTaskCompiling() && IsScriptCompilationRequested())
             {
                 Profiler.BeginSample("CompilationPipeline.CompileScripts");
+
                 CompileStatus compileStatus;
                 try
                 {
@@ -1149,6 +1150,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         Console.WriteLine(msg.Output);
                     }
             }
+
+            ConsoleWindow.ClearConsoleOnRecompile();
 
             var messagesForNodeResults = ProcessCompilationResult(scriptCompilationState.ScriptAssemblies, result, scriptCompilationState.Settings.BuildingForEditor, scriptCompilationState.ActiveBuild);
             var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();

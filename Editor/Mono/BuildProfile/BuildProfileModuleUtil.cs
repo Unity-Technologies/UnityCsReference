@@ -608,9 +608,81 @@ namespace UnityEditor.Build.Profile
             GraphicsSettingsInspector.OnActiveProfileGraphicsSettingsChanged?.Invoke();
         }
 
+        internal static void RemoveQualityLevelFromAllProfiles(string qualityLevelName)
+        {
+            var profiles = GetAllBuildProfiles();
+            foreach (var profile in profiles)
+            {
+                if (profile.qualitySettings == null)
+                    continue;
+
+                profile.qualitySettings.RemoveQualityLevel(qualityLevelName);
+            }
+        }
+
+        internal static void RenameQualityLevelInAllProfiles(string oldName, string newName)
+        {
+            var profiles = GetAllBuildProfiles();
+            foreach (var profile in profiles)
+            {
+                if (profile.qualitySettings == null)
+                    continue;
+
+                profile.qualitySettings.RenameQualityLevel(oldName, newName);
+            }
+        }
+
+        /// <summary>
+        /// Get all custom build profiles in the project.
+        /// </summary>
+        public static List<BuildProfile> GetAllBuildProfiles()
+        {
+            var alreadyLoadedBuildProfiles = Resources.FindObjectsOfTypeAll<BuildProfile>();
+
+            const string buildProfileAssetSearchString = $"t:{nameof(BuildProfile)}";
+            var assetsGuids = AssetDatabase.FindAssets(buildProfileAssetSearchString);
+            var result = new List<BuildProfile>(assetsGuids.Length);
+
+            // Suppress missing type warning thrown by serialization. This could happen
+            // when the build profile window is opened, then entering play mode and the
+            // module for that profile is not installed.
+            BuildProfileModuleUtil.SuppressMissingTypeWarning();
+
+            foreach (var guid in assetsGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                BuildProfile profile = AssetDatabase.LoadAssetAtPath<BuildProfile>(path);
+                if (profile == null)
+                {
+                    Debug.LogWarning($"[BuildProfile] Failed to load asset at path: {path}");
+                    continue;
+                }
+
+                result.Add(profile);
+            }
+
+            foreach (var buildProfile in alreadyLoadedBuildProfiles)
+            {
+                // Asset database will not give us any build profiles that get created in memory
+                // and we need to include them in this list as we use it to detect that build profiles
+                // have been destroyed and destroy their resources like PlayerSettings afterwards.
+                // Skipping the in-memory build profiles will result in us deleting their associated
+                // player settings object while it's being used and will lead to a crash (UUM-77423)
+                if (buildProfile &&
+                    !BuildProfileContext.IsClassicPlatformProfile(buildProfile) &&
+                    !BuildProfileContext.IsSharedProfile(buildProfile.buildTarget) &&
+                    !EditorUtility.IsPersistent(buildProfile))
+                {
+                    result.Add(buildProfile);
+                }
+            }
+
+            return result;
+        }
+
         public static string[] GetSettingsRequiringRestart(PlayerSettings previousProfileSettings, PlayerSettings newProfileSettings, BuildTarget oldBuildTarget, BuildTarget newBuildTarget)
         {
-            return  PlayerSettings.GetSettingsRequiringRestart(previousProfileSettings, newProfileSettings, oldBuildTarget, newBuildTarget);
+            return PlayerSettings.GetSettingsRequiringRestart(previousProfileSettings, newProfileSettings, oldBuildTarget, newBuildTarget);
         }
 
         public static PlayerSettings GetGlobalPlayerSettings()

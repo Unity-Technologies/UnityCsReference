@@ -102,5 +102,20 @@ namespace UnityEditor.Build.Profile
 
             OnGraphicsSettingsSubAssetRemoved?.Invoke();
         }
+
+        /// <summary>
+        /// Remove the Quality Settings overrides from the build profile.
+        /// </summary>
+        internal void RemoveQualitySettings()
+        {
+            if (qualitySettings == null)
+                return;
+
+            AssetDatabase.RemoveObjectFromAsset(qualitySettings);
+            qualitySettings = null;
+            EditorUtility.SetDirty(this);
+
+            OnQualitySettingsSubAssetRemoved?.Invoke();
+        }
     }
 }

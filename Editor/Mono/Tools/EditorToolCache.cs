@@ -122,8 +122,10 @@ namespace UnityEditor.EditorTools
                 if (additionalEditors == null)
                     return inspector.targets;
                 List<UnityObject> objects = new List<UnityObject>(inspector.targets);
-                foreach (var insp in additionalEditors)
-                    objects.AddRange(insp.targets);
+                foreach (var additionalInspector in additionalEditors)
+                    foreach (var additionalTarget in additionalInspector.targets)
+                        if (!objects.Contains(additionalTarget))
+                            objects.Add(additionalTarget);
                 return objects.ToArray();
             }
         }
@@ -171,20 +173,6 @@ namespace UnityEditor.EditorTools
         // Type association data for all loaded tools, regardless of whether they are registered with an EditorToolAttribute.
         Dictionary<Type, EditorTypeAssociation> m_ToolMetaData = new Dictionary<Type, EditorTypeAssociation>();
         Dictionary<Type, List<EditorTypeAssociation>> s_EditorTargetCache = new Dictionary<Type, List<EditorTypeAssociation>>();
-
-        // Static fields in generic classes result in multiple static field instances. In this case that's fine.
-        // ReSharper disable once StaticMemberInGenericType
-        static ActiveEditorTracker m_Tracker;
-
-        static ActiveEditorTracker sharedTracker
-        {
-            get
-            {
-                if (m_Tracker == null)
-                    m_Tracker = new ActiveEditorTracker();
-                return m_Tracker;
-            }
-        }
 
         public EditorToolCache(Type attributeType)
         {
@@ -299,10 +287,10 @@ namespace UnityEditor.EditorTools
         {
             editors.Clear();
 
-            // If the shared tracker is locked, use our own tracker instance so that the current selection is always
+            // If the shared tracker is locked, use fallback tracker instance so that the current selection is always
             // represented. Addresses case where a single locked inspector is open.
             var shared = ActiveEditorTracker.sharedTracker;
-            var activeTracker = shared.isLocked ? sharedTracker : shared;
+            var activeTracker = shared.isLocked ? ActiveEditorTracker.fallbackTracker : shared;
             var propertyEditors = PropertyEditor.GetPropertyEditors();
 
             // Collect editor tools for the shared tracker first, then any locked inspectors or open properties editors

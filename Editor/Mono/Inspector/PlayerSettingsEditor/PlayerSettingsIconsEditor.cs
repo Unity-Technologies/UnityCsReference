@@ -14,7 +14,7 @@ namespace UnityEditor
 {
     internal class PlayerSettingsIconsEditor
     {
-        class SettingsContent
+        internal class SettingsContent
         {
             public static readonly GUIContent iconTitle = EditorGUIUtility.TrTextContent("Icon");
             public static readonly GUIContent defaultIcon = EditorGUIUtility.TrTextContent("Default Icon");

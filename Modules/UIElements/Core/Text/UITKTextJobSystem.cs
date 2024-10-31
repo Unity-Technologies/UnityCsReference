@@ -166,6 +166,10 @@ namespace UnityEngine.UIElements
             k_UpdateMainThreadMarker.Begin();
             foreach (var textData in textJobDatas)
             {
+                // Loading line breaking rules is done here because it requires the main thread
+                var settings = TextUtilities.GetTextSettingsFrom(textData.visualElement);
+                settings?.lineBreakingRules?.LoadLineBreakingRules();
+
                 if (textData.prepareSuccess)
                     continue;
 

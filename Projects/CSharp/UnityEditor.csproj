@@ -762,6 +762,12 @@
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfilePlayerSettings.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfilePlayerSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileQualitySettings.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileQualitySettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileQualitySettingsEditor.cs">
+      <Link>Editor\Mono\BuildProfile\BuildProfileQualitySettingsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildProfile\BuildProfileRenameOverlay.cs">
       <Link>Editor\Mono\BuildProfile\BuildProfileRenameOverlay.cs</Link>
     </Compile>
@@ -4524,6 +4530,9 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileListLabel.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileQualitySettingsOverridesView.cs">
+      <Link>Modules\BuildProfileEditor\Elements\BuildProfileQualitySettingsOverridesView.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\BuildProfileSceneList.cs">
       <Link>Modules\BuildProfileEditor\Elements\BuildProfileSceneList.cs</Link>
     </Compile>
@@ -6210,9 +6219,6 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\PackRequest.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\PerformSearchRequest.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Requests\PerformSearchRequest.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs">
       <Link>Modules\PackageManager\Editor\Managed\Requests\RemoveRequest.cs</Link>
     </Compile>
@@ -6243,23 +6249,8 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchCapabilities.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchEntitlement.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Search\SearchEntitlement.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOptions.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Search\SearchOptions.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOrder.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Search\SearchOrder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchOrderBy.cs">
       <Link>Modules\PackageManager\Editor\Managed\Search\SearchOrderBy.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResultEntry.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Search\SearchResultEntry.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Search\SearchResults.cs">
-      <Link>Modules\PackageManager\Editor\Managed\Search\SearchResults.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\SemVersionHelper.cs">
       <Link>Modules\PackageManager\Editor\Managed\SemVersionHelper.cs</Link>

@@ -153,14 +153,23 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal Action OnPlayerSettingsUpdatedFromYAML;
 
-        [VisibleToOtherModules]
-        internal Action OnGraphicsSettingsSubAssetRemoved;
-
         /// <summary>
         /// Cross-pipeline graphics settings overrides in build profile
         /// </summary>
         [VisibleToOtherModules]
         internal BuildProfileGraphicsSettings graphicsSettings;
+
+        [VisibleToOtherModules]
+        internal Action OnGraphicsSettingsSubAssetRemoved;
+
+        /// <summary>
+        /// Quality settings overrides in build profile
+        /// </summary>
+        [VisibleToOtherModules]
+        internal BuildProfileQualitySettings qualitySettings;
+
+        [VisibleToOtherModules]
+        internal Action OnQualitySettingsSubAssetRemoved;
 
         // TODO: Return server IBuildTargets for server build profiles. (https://jira.unity3d.com/browse/PLAT-6612)
         /// <summary>
@@ -235,6 +244,7 @@ namespace UnityEditor.Build.Profile
             LoadPlayerSettings();
 
             TryLoadGraphicsSettings();
+            TryLoadQualitySettings();
 
             if (!EditorUserBuildSettings.isBuildProfileAvailable
                 || BuildProfileContext.activeProfile != this)
@@ -264,6 +274,21 @@ namespace UnityEditor.Build.Profile
                 return;
 
             graphicsSettings = data;
+        }
+
+        void TryLoadQualitySettings()
+        {
+            if (qualitySettings != null)
+                return;
+
+            var path = AssetDatabase.GetAssetPath(this);
+            var objects = AssetDatabase.LoadAllAssetsAtPath(path);
+
+            var data = Array.Find(objects, obj => obj is BuildProfileQualitySettings) as BuildProfileQualitySettings;
+            if (data == null)
+                return;
+
+            qualitySettings = data;
         }
 
         void OnDisable()
@@ -297,6 +322,7 @@ namespace UnityEditor.Build.Profile
             targetBuildProfile.scriptingDefines = Array.Empty<string>();
 
             BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
+            targetBuildProfile.RemoveQualitySettings();
             targetBuildProfile.RemoveGraphicsSettings();
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);

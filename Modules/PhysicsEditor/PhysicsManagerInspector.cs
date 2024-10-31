@@ -467,7 +467,6 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_BroadphaseType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_FrictionType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableEnhancedDeterminism")));
-            tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableUnifiedHeightmaps")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ImprovedPatchFriction")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_SolverType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_DefaultMaxAngularSpeed")));

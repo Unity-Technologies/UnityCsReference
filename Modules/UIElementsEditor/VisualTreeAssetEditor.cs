@@ -10,40 +10,35 @@ namespace UnityEditor.UIElements
     [CustomEditor(typeof(VisualTreeAsset))]
     internal class VisualTreeAssetEditor : ScriptableObjectAssetEditor
     {
-        private Panel m_Panel;
-        private VisualElement m_Tree;
-        private VisualTreeAsset m_LastTree;
+        private VisualTreeAsset m_VTA;
+        private VisualElement m_VisualTree;
         protected Texture2D m_FileTypeIcon;
         protected RenderTexture m_preview_texture;
         private Event m_evt = new Event();//Dummy event to fake rendering, cached to reduce memory allocation.
         private int m_LastDirtyCount;
         private int m_LastContentHash;
 
+        // Used by tests
+        internal VisualElement visualTree => m_VisualTree;
+
         //Currently just uses a fixed size texture to minimize lag/jitter as we are not integrated in the update loop. (instead of the real preview size)
         private Vector2Int m_TextureSize = new Vector2Int(512, 512);
-
-        // Used in tests
-        internal Panel panel => m_Panel;
 
         protected void OnEnable()
         {
             m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
             EditorApplication.update += Update;
-            m_LastTree = null;//Force redraw;
+            m_VTA = null;//Force redraw;
         }
 
         protected void OnDisable()
         {
             EditorApplication.update -= Update;
-            if (m_Panel != null)
+
+            if (m_VisualTree != null)
             {
-                if (m_Tree != null)
-                {
-                    m_Tree.RemoveFromHierarchy();
-                    m_Tree = null;
-                }
-                m_Panel.Dispose();
-                m_Panel = null;
+                m_VisualTree.RemoveFromHierarchy();
+                m_VisualTree = null;
             }
         }
 
@@ -61,11 +56,6 @@ namespace UnityEditor.UIElements
 
         protected void OnDestroy()
         {
-            if (m_LastTree != null)
-            {
-                UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
-            }
-
             if (m_preview_texture != null)
             {
                 m_preview_texture.Release();
@@ -91,17 +81,28 @@ namespace UnityEditor.UIElements
             //It is not necessary if rendereing to a rendertexture in the editor update loop but mandatory to do an IM rendering
             //RectInt oldViewport = UnityEngine.UIElements.UIR.Utility.GetActiveViewport();
 
+            m_VisualTree = m_VTA.Instantiate();
+            m_VisualTree.StretchToParentSize();
+
+            // Create a transient panel to render the visual tree asset
+            var panel = EditorPanel.FindOrCreate(m_VTA);
+            var visualTree = panel.visualTree;
+            visualTree.Add(m_VisualTree);
+
+            Binding.SetPanelLogLevel(panel, BindingLogLevel.None); // We don't want preview to log errors.
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
+
             var r = new Rect(0, 0, width, height);
             var viewportRect = GUIClip.UnclipToWindow(r); // Still in points, not pixels
-            m_Panel.pixelsPerPoint = 1;
-            m_Panel.UpdateScalingFromEditorWindow = false;
-            m_Panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
-            m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
+            panel.pixelsPerPoint = 1;
+            panel.UpdateScalingFromEditorWindow = false;
+            panel.visualTree.SetSize(viewportRect.size); // We will draw relative to a viewport covering the preview area, so draw at 0,0
+            panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
 
             var backup = RenderTexture.active;
             GL.PushMatrix();
             var oldState = SavedGUIState.Create();
-            PanelClearSettings oldClearSettings = m_Panel.clearSettings;
+            PanelClearSettings oldClearSettings = panel.clearSettings;
 
             try
             {
@@ -128,16 +129,19 @@ namespace UnityEditor.UIElements
                     clips--;
                 }
 
-                m_Panel.clearSettings = new PanelClearSettings();
+                panel.clearSettings = new PanelClearSettings();
 
                 //Use a dummy repaint event, otherwise imgui element wont be shown when using event.current and rendered in the editor update loop
                 m_evt.type = EventType.Repaint;
-                m_Panel.Repaint(m_evt);
-                m_Panel.Render();
+                panel.Repaint(m_evt);
+                panel.Render();
+
+                panel.Dispose();
+                UIElementsUtility.RemoveCachedPanel(m_VTA.GetInstanceID());
             }
             finally
             {
-                m_Panel.clearSettings = oldClearSettings;
+                panel.clearSettings = oldClearSettings;
                 oldState.ApplyAndForget();
                 GL.PopMatrix();
                 RenderTexture.active = backup;
@@ -171,29 +175,16 @@ namespace UnityEditor.UIElements
             var vta = target as VisualTreeAsset;
             bool dirty = false;
             int currentDirtyCount = EditorUtility.GetDirtyCount(target);
-            if (vta != m_LastTree || !m_LastTree || currentDirtyCount != m_LastDirtyCount || vta.contentHash != m_LastContentHash)
+            if (vta != m_VTA || !m_VTA || currentDirtyCount != m_LastDirtyCount || vta.contentHash != m_LastContentHash)
             {
-                m_LastTree = vta;
-                m_Tree = vta.Instantiate();
-                m_Tree.StretchToParentSize();
+                m_VTA = vta;
                 m_LastDirtyCount = currentDirtyCount;
                 m_LastContentHash = vta.contentHash;
                 dirty = true;
             }
 
-            if (m_Panel == null)
-            {
-                m_Panel = EditorPanel.FindOrCreate(m_LastTree);
-                Binding.SetPanelLogLevel(m_Panel, BindingLogLevel.None); // We don't want preview to log errors.
-                var visualTree = m_Panel.visualTree;
-                UIElementsEditorUtility.AddDefaultEditorStyleSheets(visualTree);
-                dirty = true;
-            }
-
             if (dirty)
             {
-                m_Panel.visualTree.Clear();
-                m_Panel.visualTree.Add(m_Tree);
                 RenderStaticPreview(width, height, ref m_preview_texture);
             }
 

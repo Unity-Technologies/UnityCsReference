@@ -899,6 +899,9 @@ namespace UnityEngine.Rendering
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::ClearInstances", HasExplicitThis = true)]
         extern public void ClearInstances();
 
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::RemoveInstances", HasExplicitThis = true)]
+        extern public void RemoveInstances(int layerMask, RayTracingModeMask rayTracingModeMask);
+
         public RayTracingInstanceCullingResults CullInstances(ref RayTracingInstanceCullingConfig cullingConfig) => Internal_CullInstances(in cullingConfig);
 
 

@@ -315,6 +315,17 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Check if the active build profile has quality settings
+        /// </summary>
+        internal static bool ActiveProfileHasQualitySettings()
+        {
+            if (activeProfile == null)
+                return false;
+
+            return activeProfile.qualitySettings != null;
+        }
+
+        /// <summary>
         /// Sync the active build profile to EditorUserBuildSettings to ensure they are in a consistent state.
         /// </summary>
         void SyncActiveProfileToFallback()
@@ -732,6 +743,24 @@ namespace UnityEditor.Build.Profile
 
             activeProfile.graphicsSettings.preloadedShaders = collection;
             return true;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string[] GetActiveProfileQualityLevels()
+        {
+            if (!ActiveProfileHasQualitySettings())
+                return Array.Empty<string>();
+
+            return activeProfile.qualitySettings.qualityLevels;
+        }
+
+        [RequiredByNativeCode, UsedImplicitly]
+        static string GetActiveProfileDefaultQualityLevel()
+        {
+            if (!ActiveProfileHasQualitySettings())
+                return string.Empty;
+
+            return activeProfile.qualitySettings.defaultQualityLevel;
         }
 
         [RequiredByNativeCode]
