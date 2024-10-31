@@ -587,10 +587,26 @@ namespace UnityEditor.Search
         {}
 
         public PropertyDatabaseRecordValue(byte propertyType, byte value1, byte value2, byte value3, byte value4)
+            : this(propertyType, value1, value2, value3, value4, (byte)0, (byte)0, (byte)0, (byte)0)
+        {}
+
+        public PropertyDatabaseRecordValue(byte propertyType, byte value1, byte value2, byte value3, byte value4, byte value5)
+            : this(propertyType, value1, value2, value3, value4, value5, (byte)0, (byte)0, (byte)0)
+        {}
+
+        public PropertyDatabaseRecordValue(byte propertyType, byte value1, byte value2, byte value3, byte value4, byte value5, byte value6)
+            : this(propertyType, value1, value2, value3, value4, value5, value6, (byte)0, (byte)0)
+        {}
+
+        public PropertyDatabaseRecordValue(byte propertyType, byte value1, byte value2, byte value3, byte value4, byte value5, byte value6, byte value7)
+            : this(propertyType, value1, value2, value3, value4, value5, value6, value7, (byte)0)
+        {}
+
+        public PropertyDatabaseRecordValue(byte propertyType, byte value1, byte value2, byte value3, byte value4, byte value5, byte value6, byte value7, byte value8)
         {
             this.propertyType = propertyType;
             m_u32_0 = value1 | (uint)value2 << 8 | (uint)value3 << 16 | (uint)value4 << 24;
-            m_u32_1 = 0;
+            m_u32_1 = value5 | (uint)value6 << 8 | (uint)value7 << 16 | (uint)value8 << 24;
             m_u32_2 = 0;
             m_u32_3 = 0;
             m_u32_4 = 0;

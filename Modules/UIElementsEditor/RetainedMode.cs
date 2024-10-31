@@ -86,8 +86,6 @@ namespace UnityEditor
                 HashSet<VisualTreeAsset> uxmlModifiedAssets = null;
                 if (uxmlImportedAssets.Count > 0)
                 {
-                    UXMLImporterImpl.logger.FinishImport();
-
                     // the inline stylesheet cache might get out of date.
                     // Usually called by the USS importer, which might not get called here
                     StyleSheetCache.ClearCaches();

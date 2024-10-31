@@ -640,7 +640,7 @@ namespace UnityEditor
                 }
             }
 
-            return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
+            return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }
 
         internal static string GetUnityHubModuleDownloadURL(string moduleName)

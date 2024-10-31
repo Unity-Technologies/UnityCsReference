@@ -572,7 +572,7 @@ namespace Unity.UI.Builder
             if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
                 return factories[0].uxmlName;
 
-            return null;
+            return element.typeName;
         }
 
         public static string GetUxmlFullTypeName(this VisualElement element)

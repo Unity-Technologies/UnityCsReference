@@ -41,7 +41,7 @@ namespace UnityEditor.Search
         public IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, Filter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
         {
             var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
-            var filterOperatorContext = new FilterOperatorContext(filter);
+            var filterOperatorContext = new FilterOperatorContext(filter, data.op, data.filterValue, data.paramValue);
             Func<TData, TFilterRhs, bool> operation = (o, filterValue) => false;
 
             var handlerFound = false;
@@ -82,7 +82,7 @@ namespace UnityEditor.Search
         public IFilterOperation GenerateOperation<TData, TFilterLhs>(FilterOperationGeneratorData data, RegexFilter<TData, TFilterLhs> filter, int operatorIndex, ICollection<QueryError> errors)
         {
             var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
-            var filterOperatorContext = new FilterOperatorContext(filter);
+            var filterOperatorContext = new FilterOperatorContext(filter, data.op, data.filterValue, data.paramValue);
             Func<TData, TFilterRhs, bool> operation = (o, filterValue) => false;
 
             var handlerFound = false;
@@ -124,7 +124,7 @@ namespace UnityEditor.Search
         {
             Func<TData, TParam, TFilterRhs, bool> operation = (o, p, fv) => false;
             var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
-            var filterOperatorContext = new FilterOperatorContext(filter);
+            var filterOperatorContext = new FilterOperatorContext(filter, data.op, data.filterValue, data.paramValue);
 
             var handlerFound = false;
             var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();
@@ -165,7 +165,7 @@ namespace UnityEditor.Search
         {
             Func<TData, TParam, TFilterRhs, bool> operation = (o, p, fv) => false;
             var stringComparisonOptions = filter.overridesStringComparison ? filter.stringComparison : data.globalStringComparison;
-            var filterOperatorContext = new FilterOperatorContext(filter);
+            var filterOperatorContext = new FilterOperatorContext(filter, data.op, data.filterValue, data.paramValue);
 
             var handlerFound = false;
             var typedHandler = data.op.GetHandler<TFilterLhs, TFilterRhs>();

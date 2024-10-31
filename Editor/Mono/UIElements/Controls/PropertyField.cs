@@ -450,7 +450,7 @@ namespace UnityEditor.UIElements
                             var imguiSpacing = EditorGUI.kLabelWidthMargin;
                             var contextWidthElement = m_ContextWidthElement ?? m_InspectorElement;
                             var contextWidth = contextWidthElement.resolvedStyle.width;
-                            var labelWidth = (contextWidth * EditorGUI.kLabelWidthRatio - imguiSpacing - spacing);
+                            var labelWidth = (Mathf.Ceil(contextWidth * EditorGUI.kLabelWidthRatio) - imguiSpacing - spacing);
                             var minWidth = EditorGUI.kMinLabelWidth + EditorGUI.kLabelWidthPadding;
                             var minLabelWidth = Mathf.Max(minWidth - spacing, 0f);
 

@@ -22,10 +22,16 @@ namespace UnityEditor.Search
     readonly struct FilterOperatorContext
     {
         public readonly IQueryEngineFilter filter;
+        public readonly QueryFilterOperator op;
+        public readonly StringView filterValue;
+        public readonly StringView paramValue;
 
-        public FilterOperatorContext(IQueryEngineFilter filter)
+        public FilterOperatorContext(IQueryEngineFilter filter, QueryFilterOperator op, StringView filterValue, StringView paramValue)
         {
             this.filter = filter;
+            this.op = op;
+            this.filterValue = filterValue;
+            this.paramValue = paramValue;
         }
     }
 
@@ -118,7 +124,7 @@ namespace UnityEditor.Search
         /// <param name="handler">Callback to handle the operation. Takes a TFilterVariable (value returned by the filter handler, will vary for each element) and a TFilterConstant (right hand side value of the operator, which is constant), and returns a boolean indicating if the filter passes or not.</param>
         public QueryFilterOperator AddHandler<TFilterVariable, TFilterConstant>(Func<TFilterVariable, TFilterConstant, bool> handler)
         {
-            return AddHandler((FilterOperatorContext ctx, TFilterVariable l, TFilterConstant r, StringComparison sc) => handler(l, r));
+            return AddHandler((FilterOperatorContext _, TFilterVariable l, TFilterConstant r, StringComparison _) => handler(l, r));
         }
 
         /// <summary>
@@ -129,12 +135,12 @@ namespace UnityEditor.Search
         /// <param name="handler">Callback to handle the operation. Takes a TFilterVariable (value returned by the filter handler, will vary for each element), a TFilterConstant (right hand side value of the operator, which is constant), a StringComparison option and returns a boolean indicating if the filter passes or not.</param>
         public QueryFilterOperator AddHandler<TFilterVariable, TFilterConstant>(Func<TFilterVariable, TFilterConstant, StringComparison, bool> handler)
         {
-            return AddHandler((FilterOperatorContext ctx, TFilterVariable l, TFilterConstant r, StringComparison sc) => handler(l, r, sc));
+            return AddHandler((FilterOperatorContext _, TFilterVariable l, TFilterConstant r, StringComparison sc) => handler(l, r, sc));
         }
 
         internal QueryFilterOperator AddHandler<TLhs, TRhs>(Func<FilterOperatorContext, TLhs, TRhs, bool> handler)
         {
-            return AddHandler((FilterOperatorContext ctx, TLhs l, TRhs r, StringComparison sc) => handler(ctx, l, r));
+            return AddHandler((FilterOperatorContext ctx, TLhs l, TRhs r, StringComparison _) => handler(ctx, l, r));
         }
 
         internal QueryFilterOperator AddHandler<TLhs, TRhs>(Func<FilterOperatorContext, TLhs, TRhs, StringComparison, bool> handler)
@@ -150,10 +156,7 @@ namespace UnityEditor.Search
             var filterHandlerDelegate = new FilterHandlerDelegate<TLhs, TRhs>(handler);
 
             var handlersByLeftHandSideType = handlers[leftHandSideType];
-            if (handlersByLeftHandSideType.ContainsKey(rightHandSideType))
-                handlersByLeftHandSideType[rightHandSideType] = filterHandlerDelegate;
-            else
-                handlersByLeftHandSideType.Add(rightHandSideType, filterHandlerDelegate);
+            handlersByLeftHandSideType[rightHandSideType] = filterHandlerDelegate;
             m_EngineImplementation.AddFilterOperationGenerator<TRhs>();
             // Enums are user defined but still simple enough to generate a parse function for them.
             if (typeof(TRhs).IsEnum)

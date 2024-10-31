@@ -1431,7 +1431,7 @@ namespace UnityEditor
                     return s_LabelWidth;
 
                 if (hierarchyMode)
-                    return Mathf.Max(contextWidth * EditorGUI.kLabelWidthRatio - EditorGUI.kLabelWidthMargin, EditorGUI.kMinLabelWidth);
+                    return Mathf.Max(Mathf.Ceil(contextWidth * EditorGUI.kLabelWidthRatio) - EditorGUI.kLabelWidthMargin, EditorGUI.kMinLabelWidth);
                 return 150;
             }
             set { s_LabelWidth = value; }

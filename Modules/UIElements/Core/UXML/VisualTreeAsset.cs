@@ -36,6 +36,19 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
+        bool m_HasUpdatedUrls;
+
+        /// <summary>
+        /// Indicates that some asset Urls were updated and that if we saved the asset again they could be updated.
+        /// </summary>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool importerWithUpdatedUrls
+        {
+            get { return m_HasUpdatedUrls; }
+            set { m_HasUpdatedUrls = value; }
+        }
+
+        [SerializeField]
         bool m_ImportedWithWarnings;
 
         /// <summary>

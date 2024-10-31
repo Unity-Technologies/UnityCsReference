@@ -18,9 +18,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         string packageUniqueId { get; }
         long productId { get; }
 
-        // a timestamp is added to keep track of how `fresh` the result is
-        // in the case of an online operation, it is the time when the operation starts
-        // in the case of an offline operation, it is set to the timestamp of the last online operation
         long timestamp { get; }
         long lastSuccessTimestamp { get; }
         bool isOfflineMode { get; }

@@ -177,7 +177,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             addOperation.onProcessResult += OnProcessAddResult;
             addOperation.onOperationError += (_, error) => onPackageOperationError?.Invoke(addOperation.packageName, error);
-            addOperation.onOperationFinalized += (_) =>
+            addOperation.onOperationFinalized += _ =>
                 onPackagesProgressChange?.Invoke(new[] { (addOperation.packageName, PackageProgress.None) });
 
             addOperation.logErrorInConsole = true;
@@ -290,7 +290,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             addAndRemoveOperation.onProcessResult += OnProcessAddAndRemoveResult;
             addAndRemoveOperation.onOperationError += (_, error) =>
             {
-                // For now we only handle addAndRemove operation error when there's a primary `packageName` for the operation
+                // For now, we only handle addAndRemove operation error when there's a primary `packageName` for the operation
                 // This indicates that this operation is likely related to resetting a specific package.
                 // For all other cases, since PAK team only provide one error message for all packages, we don't know which package
                 // to attach the operation error to, so we don't do any extra handling other than logging the error in the console.
@@ -343,10 +343,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnProcessListResult(ListRequest request, bool offlineMode)
         {
             // skip operation when the result from the online operation is more up-to-date.
-            if (offlineMode && listOfflineOperation.timestamp < listOperation.lastSuccessTimestamp)
+            if (offlineMode && listOfflineOperation.dataTimestamp < listOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetInstalledPackageInfos(request.Result, listOperation.lastSuccessTimestamp);
+            m_UpmCache.SetInstalledPackageInfos(request.Result, listOfflineOperation.dataTimestamp);
         }
 
         public void RemoveByName(string packageName)
@@ -427,10 +427,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnProcessSearchAllResult(SearchRequest request, bool offlineMode)
         {
             // skip operation when the result from the online operation is more up-to-date.
-            if (offlineMode && searchOfflineOperation.timestamp < searchOperation.lastSuccessTimestamp)
+            if (offlineMode && searchOfflineOperation.dataTimestamp < searchOperation.lastSuccessTimestamp)
                 return;
 
-            m_UpmCache.SetSearchPackageInfos(request.Result, searchOperation.lastSuccessTimestamp);
+            m_UpmCache.SetSearchPackageInfos(request.Result, searchOfflineOperation.dataTimestamp);
         }
 
         public void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null)
@@ -440,23 +440,23 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation = new UpmSearchOperation();
                 operation.ResolveDependencies(m_ClientProxy, m_Application);
                 operation.Search(packageIdOrName, productId);
-                operation.onProcessResult += (request) => OnProcessExtraFetchResult(request, productId);
-                operation.onOperationFinalized += (op) => m_ExtraFetchOperations.Remove(packageIdOrName);
+                operation.onProcessResult += request => OnProcessExtraFetchResult(request, productId);
+                operation.onOperationFinalized += _ => m_ExtraFetchOperations.Remove(packageIdOrName);
                 m_ExtraFetchOperations[packageIdOrName] = operation;
 
                 if (productId > 0)
                 {
-                    operation.onOperationError += (op, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
+                    operation.onOperationError += (_, error) => m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
                     m_FetchStatusTracker.SetFetchInProgress(productId, FetchType.ProductSearchInfo);
                 }
             }
 
             if (successCallback != null)
-                operation.onProcessResult += (request) => successCallback.Invoke(request.Result.FirstOrDefault());
+                operation.onProcessResult += request => successCallback.Invoke(request.Result.FirstOrDefault());
             if (errorCallback != null)
-                operation.onOperationError += (op, error) => errorCallback.Invoke(error);
+                operation.onOperationError += (_, error) => errorCallback.Invoke(error);
             if (doneCallback != null)
-                operation.onOperationFinalized += (op) => doneCallback.Invoke();
+                operation.onOperationFinalized += _ => doneCallback.Invoke();
         }
 
         private void OnProcessExtraFetchResult(SearchRequest request, long productId = 0)

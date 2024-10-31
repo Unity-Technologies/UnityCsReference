@@ -233,6 +233,18 @@ namespace UnityEditor.Search.Providers
                     return null;
             }
 
+            if (obj && AssetDatabase.IsSubAsset(obj))
+            {
+                var p = Utils.GetAssetPreviewFromPath(context, obj, info.source, size, options);
+                if (p) return p;
+
+                if (info.type != null)
+                {
+                    p = SearchUtils.GetTypeIcon(info.type);
+                    if (p) return p;
+                }
+            }
+
             return Utils.GetAssetPreviewFromPath(context, info.source, size, options);
         }
 

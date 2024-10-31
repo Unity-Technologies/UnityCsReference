@@ -105,6 +105,16 @@ namespace UnityEditor.Search
             return string.Compare(m_BaseString, m_StartIndex, other.m_BaseString, other.m_StartIndex, length, comparisonOptions) == 0;
         }
 
+        internal int Compare(StringView other, StringComparison comparisonOptions)
+        {
+            return string.Compare(m_BaseString, m_StartIndex, other.m_BaseString, other.m_StartIndex, Math.Max(length, other.length), comparisonOptions);
+        }
+
+        internal int Compare(string other, StringComparison comparisonOptions)
+        {
+            return string.Compare(m_BaseString, m_StartIndex, other, 0, Math.Max(length, other.Length), comparisonOptions);
+        }
+
         public StringView Substring(int start)
         {
             if (start >= length)

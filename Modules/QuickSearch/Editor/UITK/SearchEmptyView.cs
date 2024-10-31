@@ -329,14 +329,14 @@ namespace UnityEditor.Search
 
             m_Areas = new QueryBuilder(string.Empty);
             var allArea = new QueryAreaBlock(m_Areas, GroupedSearchList.allGroupId, string.Empty);
-            allArea.RegisterCallback<ClickEvent>(OnProviderClicked);
+            allArea.RegisterCallback<MouseDownEvent> (OnProviderClicked);
             m_Areas.AddBlock(allArea);
 
             var providers = SearchUtils.SortProvider(GetActiveHelperProviders(blockMode));
             foreach (var p in providers)
             {
                 var providerBlock = new QueryAreaBlock(m_Areas, p);
-                providerBlock.RegisterCallback<ClickEvent>(OnProviderClicked);
+                providerBlock.RegisterCallback<MouseDownEvent>(OnProviderClicked);
                 m_Areas.AddBlock(providerBlock);
             }
             m_Areas.@readonly = true;
@@ -365,7 +365,7 @@ namespace UnityEditor.Search
             return providersContainer;
         }
 
-        private void OnProviderClicked(ClickEvent evt)
+        private void OnProviderClicked(MouseDownEvent evt)
         {
             if (evt.currentTarget is not QueryAreaBlock area)
                 return;
@@ -376,7 +376,7 @@ namespace UnityEditor.Search
                 var query = CreateQuery(area.ToString());
                 ExecuteQuery(query);
             }
-            else
+            else if (SearchSettings.helperWidgetCurrentArea != GetFilterId(area))
             {
                 SetCurrentArea(area);
             }

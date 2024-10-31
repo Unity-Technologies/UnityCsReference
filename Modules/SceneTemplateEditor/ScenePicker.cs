@@ -25,7 +25,7 @@ namespace UnityEditor.Search
             SearchService.ShowPicker(state);
         }
 
-        static IEnumerable<SearchProvider> CreateOpenSceneProviders()
+        internal static IEnumerable<SearchProvider> CreateOpenSceneProviders()
         {
             yield return new SearchProvider("stemplates", L10n.Tr("Templates"), FetchTemplates)
             {
@@ -121,7 +121,7 @@ namespace UnityEditor.Search
 
         static IEnumerable<SearchItem> FetchScenes(SearchContext context, SearchProvider provider)
         {
-            using (var findContext = SearchService.CreateContext("find", $"(*.unity) {context.searchQuery}"))
+            using (var findContext = SearchService.CreateContext("find", $"\\.unity$ {context.searchQuery}"))
             using (var request = SearchService.Request(findContext))
             {
                 foreach (var r in request)

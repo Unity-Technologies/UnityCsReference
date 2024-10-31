@@ -35,8 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public string packageNewPath => m_ProductNewPath;
 
 
-        // a timestamp is added to keep track of how `fresh` the result is
-        // it doesn't apply in the case of download operations
+        // timestamps are usually used for refresh operations, for download operations it is not used, so we won't bother setting them for now
         public long timestamp => 0;
         public long lastSuccessTimestamp => 0;
 

@@ -35,15 +35,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected long m_Timestamp = 0;
-        public long timestamp { get { return m_Timestamp; } }
+        public long timestamp => m_Timestamp;
+
+        // a data timestamp is added to keep track of how `fresh` the result is.
+        // for online operations, it is the same as the operation timestamp
+        // for offline operations, it is set to the timestamp of the last online operation
+        [SerializeField]
+        protected long m_OfflineDataTimestamp;
+        public long dataTimestamp => m_OfflineMode ? m_OfflineDataTimestamp : m_Timestamp;
 
         [SerializeField]
         protected long m_LastSuccessTimestamp = 0;
-        public long lastSuccessTimestamp { get { return m_LastSuccessTimestamp; } }
+        public long lastSuccessTimestamp => m_LastSuccessTimestamp;
 
         [SerializeField]
         protected bool m_OfflineMode = false;
-        public bool isOfflineMode { get { return m_OfflineMode; } }
+        public bool isOfflineMode => m_OfflineMode;
 
         [SerializeField]
         protected bool m_LogErrorInConsole = false;
@@ -89,7 +96,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         protected T m_Request;
         [SerializeField]
         protected bool m_IsCompleted;
-        public override bool isInProgress { get { return m_Request != null && m_Request.Id != 0 && !m_IsCompleted; } }
+        public override bool isInProgress => m_Request != null && m_Request.Id != 0 && !m_IsCompleted;
 
         protected abstract T CreateRequest();
 
@@ -102,14 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
             }
 
-            if (!isOfflineMode)
-                m_Timestamp = DateTime.Now.Ticks;
-            // Usually the timestamp for an offline operation is the last success timestamp of its online equivalence (to indicate the freshness of the data)
-            // But in the rare case where we start an offline operation before an online one, we use the start timestamp of the editor instead of 0,
-            // because we consider a `0` refresh timestamp as `not initialized`/`no refreshes have been done`.
-            else if (m_Timestamp == 0)
-                m_Timestamp = DateTime.Now.Ticks - (long)(EditorApplication.timeSinceStartup * TimeSpan.TicksPerSecond);
-
+            m_Timestamp = DateTime.Now.Ticks;
             if (!m_Application.isUpmRunning)
             {
                 EditorApplication.delayCall += () =>

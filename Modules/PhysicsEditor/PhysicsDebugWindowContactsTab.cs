@@ -265,6 +265,7 @@ namespace UnityEditor
                     }
                 }
 
+                sceneContacts.Handle.Complete();
                 var array = sceneContacts.ContactArray;
 
                 array.Clear();
