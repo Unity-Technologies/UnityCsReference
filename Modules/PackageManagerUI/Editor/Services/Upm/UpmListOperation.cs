@@ -20,10 +20,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Start();
         }
 
-        public void ListOffline(long timestamp)
+        public void ListOffline(long offlineDataTimestamp)
         {
             m_OfflineMode = true;
-            m_Timestamp = timestamp;
+            m_OfflineDataTimestamp = offlineDataTimestamp;
             Start();
         }
 

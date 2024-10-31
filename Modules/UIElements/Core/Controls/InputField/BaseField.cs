@@ -140,12 +140,10 @@ namespace UnityEngine.UIElements
         static CustomStyleProperty<float> s_LabelWidthRatioProperty = new CustomStyleProperty<float>("--unity-property-field-label-width-ratio");
         static CustomStyleProperty<float> s_LabelExtraPaddingProperty = new CustomStyleProperty<float>("--unity-property-field-label-extra-padding");
         static CustomStyleProperty<float> s_LabelBaseMinWidthProperty = new CustomStyleProperty<float>("--unity-property-field-label-base-min-width");
-        static CustomStyleProperty<float> s_LabelExtraContextWidthProperty = new CustomStyleProperty<float>("--unity-base-field-extra-context-width");
 
         private float m_LabelWidthRatio;
         private float m_LabelExtraPadding;
         private float m_LabelBaseMinWidth;
-        private float m_LabelExtraContextWidth;
 
         private VisualElement m_VisualInput;
 
@@ -405,9 +403,6 @@ namespace UnityEngine.UIElements
             m_LabelExtraPadding = 37.0f;
             m_LabelBaseMinWidth = 123.0f;
 
-            // The inspector panel has a 1px border we need to consider as part of the context width.
-            m_LabelExtraContextWidth = 1.0f;
-
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
             AddToClassList(inspectorFieldUssClassName);
             RegisterCallback<GeometryChangedEvent>(OnInspectorFieldGeometryChanged);
@@ -459,11 +454,6 @@ namespace UnityEngine.UIElements
                 m_LabelBaseMinWidth = labelBaseMinWidth;
             }
 
-            if (evt.customStyle.TryGetValue(s_LabelExtraContextWidthProperty, out var labelExtraContextWidth))
-            {
-                m_LabelExtraContextWidth = labelExtraContextWidth;
-            }
-
             AlignLabel();
         }
 
@@ -494,7 +484,7 @@ namespace UnityEngine.UIElements
             labelElement.style.minWidth = Mathf.Max(minWidth, 0);
 
             // Formula to follow IMGUI label width settings
-            var newWidth = (contextWidthElement.resolvedStyle.width + m_LabelExtraContextWidth) * m_LabelWidthRatio - totalPadding;
+            var newWidth = Mathf.Ceil(contextWidthElement.resolvedStyle.width * m_LabelWidthRatio) - totalPadding;
             if (Mathf.Abs(labelElement.resolvedStyle.width - newWidth) > UIRUtility.k_Epsilon)
             {
                 labelElement.style.width = Mathf.Max(0f, newWidth);

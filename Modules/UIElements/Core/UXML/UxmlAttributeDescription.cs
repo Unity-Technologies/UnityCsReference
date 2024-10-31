@@ -219,9 +219,6 @@ namespace UnityEngine.UIElements
                 {
                     if (bag.TryGetAttributeValue(m_ObsoleteNames[i], out value))
                     {
-                        if (cc.visualTreeAsset != null)
-                        {
-                        }
                         sourceAsset = cc.visualTreeAsset;
                         return true;
                     }
@@ -237,9 +234,6 @@ namespace UnityEngine.UIElements
                     {
                         if (bag.TryGetAttributeValue(m_ObsoleteNames[i], out value))
                         {
-                            if (cc.visualTreeAsset != null)
-                            {
-                            }
                             sourceAsset = cc.visualTreeAsset;
 
                             // Auto upgrade the attribute to use the correct name

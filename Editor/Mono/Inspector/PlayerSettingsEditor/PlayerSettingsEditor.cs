@@ -3413,8 +3413,6 @@ namespace UnityEditor
                         UpdateScriptingDefineSymbolsLists();
                     }
 
-                    lastNamedBuildTarget = platform.namedBuildTarget;
-
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         GUILayout.FlexibleSpace();
@@ -3472,7 +3470,16 @@ namespace UnityEditor
 
                     using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, m_AdditionalCompilerArguments))
                     {
-                        additionalCompilerArgumentsReorderableList.DoLayoutList();
+                        if (lastNamedBuildTarget.TargetName == platform.namedBuildTarget.TargetName)
+                        {
+                            additionalCompilerArgumentsReorderableList.DoLayoutList();
+                        }
+                        else
+                        {
+                            // If platform changes, update define symbols
+                            serializedAdditionalCompilerArguments = GetAdditionalCompilerArgumentsForGroup(platform.namedBuildTarget);
+                            UpdateAdditionalCompilerArgumentsLists();
+                        }
 
                         using (new EditorGUILayout.HorizontalScope())
                         {
@@ -3501,6 +3508,9 @@ namespace UnityEditor
                             }
                         }
                     }
+                    //We want to cache latest build target only after rendering both Scripting Defines and Additional Args
+                    //Because both elements share the same logic
+                    lastNamedBuildTarget = platform.namedBuildTarget;
                 }
             }
 
@@ -4120,7 +4130,8 @@ namespace UnityEditor
 
         void InitReorderableAdditionalCompilerArgumentsList(NamedBuildTarget namedBuildTarget)
         {
-            additionalCompilerArgumentsList = new List<string>(serializedAdditionalCompilerArguments);
+            var additionalCompilerArgumentsArray = GetAdditionalCompilerArgumentsForGroup(namedBuildTarget);
+            additionalCompilerArgumentsList = additionalCompilerArgumentsArray.ToList();
 
             additionalCompilerArgumentsReorderableList = new ReorderableList(additionalCompilerArgumentsList, typeof(string), true, true, true, true);
             additionalCompilerArgumentsReorderableList.drawElementCallback = (rect, index, isActive, isFocused) => DrawTextFieldAdditionalCompilerArguments(rect, index);

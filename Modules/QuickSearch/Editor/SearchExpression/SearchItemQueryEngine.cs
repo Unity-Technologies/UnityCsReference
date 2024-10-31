@@ -186,7 +186,7 @@ namespace UnityEditor.Search
             this.color = default;
             this.v4 = Vector4.zero;
         }
-        
+
         public SearchValue(double number)
         {
             this.type = ValueType.Number;
@@ -404,22 +404,6 @@ namespace UnityEditor.Search
 
         public static void SetupEngine<T>(QueryEngine<T> queryEngine)
         {
-            queryEngine.AddOperatorHandler(":", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Contains, v, range));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Equal, v, range));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.NotEqual, v, range));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.LessOrEqual, v, range));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Less, v, range));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.Greater, v, range));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, PropertyRange range) => PropertyRangeCompare(SearchIndexOperator.GreaterOrEqual, v, range));
-
-            queryEngine.AddOperatorHandler(":", (SearchValue v, float number, StringComparison sc) => PropertyFloatCompare(SearchIndexOperator.Contains, v, number));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Equal, v, number));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.NotEqual, v, number));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.LessOrEqual, v, number));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Less, v, number));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.Greater, v, number));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, float number) => PropertyFloatCompare(SearchIndexOperator.GreaterOrEqual, v, number));
-
             queryEngine.AddOperatorHandler(":", (Vector4 v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(SearchIndexOperator.Contains, v, v4));
             queryEngine.AddOperatorHandler("=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Equal, v, v4));
             queryEngine.AddOperatorHandler("!=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.NotEqual, v, v4));
@@ -428,33 +412,58 @@ namespace UnityEditor.Search
             queryEngine.AddOperatorHandler(">", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Greater, v, v4));
             queryEngine.AddOperatorHandler(">=", (Vector4 v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.GreaterOrEqual, v, v4));
 
-            queryEngine.AddOperatorHandler(":", (SearchValue v, Vector4 v4, StringComparison sc) => PropertyVector4Compare(SearchIndexOperator.Contains, v, v4));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Equal, v, v4));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.NotEqual, v, v4));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.LessOrEqual, v, v4));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Less, v, v4));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.Greater, v, v4));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, Vector4 v4) => PropertyVector4Compare(SearchIndexOperator.GreaterOrEqual, v, v4));
+            queryEngine.AddOperatorHandler(":", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.Contains, val, propRange)));
+            queryEngine.AddOperatorHandler("=", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.Equal, val, propRange)));
+            queryEngine.AddOperatorHandler("!=", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.NotEqual, val, propRange)));
+            queryEngine.AddOperatorHandler("<=", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.LessOrEqual, val, propRange)));
+            queryEngine.AddOperatorHandler("<", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.Less, val, propRange)));
+            queryEngine.AddOperatorHandler(">", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.Greater, val, propRange)));
+            queryEngine.AddOperatorHandler(">=", (FilterOperatorContext ctx, SearchValue v, PropertyRange range, StringComparison sc) => PropertyCompare(ctx, v, range, sc, (val, propRange) => PropertyRangeCompare(SearchIndexOperator.GreaterOrEqual, val, propRange)));
 
-            queryEngine.AddOperatorHandler("=", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
-            queryEngine.AddOperatorHandler(":", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f == r));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, bool b) => PropertyBoolCompare(v, b, (f, r) => f != r));
+            queryEngine.AddOperatorHandler(":", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.Contains, sv, fv)));
+            queryEngine.AddOperatorHandler("=", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.Equal, sv, fv)));
+            queryEngine.AddOperatorHandler("!=", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.NotEqual, sv, fv)));
+            queryEngine.AddOperatorHandler("<=", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.LessOrEqual, sv, fv)));
+            queryEngine.AddOperatorHandler("<", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.Less, sv, fv)));
+            queryEngine.AddOperatorHandler(">", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.Greater, sv, fv)));
+            queryEngine.AddOperatorHandler(">=", (FilterOperatorContext ctx, SearchValue v, float number, StringComparison sc) => PropertyCompare(ctx, v, number, sc, (sv, fv) => PropertyFloatCompare(SearchIndexOperator.GreaterOrEqual, sv, fv)));
 
-            queryEngine.AddOperatorHandler(":", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => StringContains(f, r, sc)));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Equals(f, r, sc)));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => !string.Equals(f, r, sc)));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) <= 0));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) < 0));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) > 0));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => string.Compare(f, r, sc) >= 0));
+            queryEngine.AddOperatorHandler(":", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.Contains, sv, fv)));
+            queryEngine.AddOperatorHandler("=", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.Equal, sv, fv)));
+            queryEngine.AddOperatorHandler("!=", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.NotEqual, sv, fv)));
+            queryEngine.AddOperatorHandler("<=", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.LessOrEqual, sv, fv)));
+            queryEngine.AddOperatorHandler("<", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.Less, sv, fv)));
+            queryEngine.AddOperatorHandler(">", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.Greater, sv, fv)));
+            queryEngine.AddOperatorHandler(">=", (FilterOperatorContext ctx, SearchValue v, Vector4 v4, StringComparison sc) => PropertyCompare(ctx, v, v4, sc, (sv, fv) => PropertyVector4Compare(SearchIndexOperator.GreaterOrEqual, sv, fv)));
 
-            queryEngine.AddOperatorHandler(":", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f == r));
-            queryEngine.AddOperatorHandler("=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f == r));
-            queryEngine.AddOperatorHandler("!=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f != r));
-            queryEngine.AddOperatorHandler("<=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f <= r));
-            queryEngine.AddOperatorHandler("<", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f < r));
-            queryEngine.AddOperatorHandler(">", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f > r));
-            queryEngine.AddOperatorHandler(">=", (SearchValue v, SearchColor c) => PropertyColorCompare(v, c, (f, r) => f >= r));
+            queryEngine.AddOperatorHandler("=", (FilterOperatorContext ctx, SearchValue v, bool b, StringComparison sc) => PropertyCompare(ctx, v, b, sc, (sv, fv) => PropertyBoolCompare(sv, fv, (f, r) => f == r)));
+            queryEngine.AddOperatorHandler(":", (FilterOperatorContext ctx, SearchValue v, bool b, StringComparison sc) => PropertyCompare(ctx, v, b, sc, (sv, fv) => PropertyBoolCompare(sv, fv, (f, r) => f == r)));
+            queryEngine.AddOperatorHandler("!=", (FilterOperatorContext ctx, SearchValue v, bool b, StringComparison sc) => PropertyCompare(ctx, v, b, sc, (sv, fv) => PropertyBoolCompare(sv, fv, (f, r) => f != r)));
+
+            queryEngine.AddOperatorHandler(":", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f == r)));
+            queryEngine.AddOperatorHandler("=", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f == r)));
+            queryEngine.AddOperatorHandler("!=", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f != r)));
+            queryEngine.AddOperatorHandler("<=", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f <= r)));
+            queryEngine.AddOperatorHandler("<", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f < r)));
+            queryEngine.AddOperatorHandler(">", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f > r)));
+            queryEngine.AddOperatorHandler(">=", (FilterOperatorContext ctx, SearchValue v, SearchColor c, StringComparison sc) => PropertyCompare(ctx, v, c, sc, (sv, fv) => PropertyColorCompare(sv, fv, (f, r) => f >= r)));
+
+            // Keep those last as the order of the handlers has an impact on the type that the filter value is converted to
+            queryEngine.AddOperatorHandler(":", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => StringContains(f, r, sc)));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => f.Equals(r, sc)));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => !f.Equals(r, sc)));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => f.Compare(r, sc) <= 0));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => f.Compare(r, sc) < 0));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => f.Compare(r, sc) > 0));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, string s, StringComparison sc) => PropertyStringCompare(v, s.GetStringView(), (f, r) => f.Compare(r, sc) >= 0));
+
+            queryEngine.AddOperatorHandler(":", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => StringContains(f, r, sc)));
+            queryEngine.AddOperatorHandler("=", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => f.Equals(r, sc)));
+            queryEngine.AddOperatorHandler("!=", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => !f.Equals(r, sc)));
+            queryEngine.AddOperatorHandler("<=", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => f.Compare(r, sc) <= 0));
+            queryEngine.AddOperatorHandler("<", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => f.Compare(r, sc) < 0));
+            queryEngine.AddOperatorHandler(">", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => f.Compare(r, sc) > 0));
+            queryEngine.AddOperatorHandler(">=", (SearchValue v, StringView s, StringComparison sc) => PropertyStringCompare(v, s, (f, r) => f.Compare(r, sc) >= 0));
 
             queryEngine.AddTypeParser(arg =>
             {
@@ -480,9 +489,21 @@ namespace UnityEditor.Search
             });
         }
 
-        private static bool StringContains(string ev, string fv, StringComparison sc)
+        static bool PropertyCompare<TFilterType>(FilterOperatorContext ctx, SearchValue v, TFilterType filterValue, StringComparison sc, Func<SearchValue, TFilterType, bool> comparer)
         {
-            if (ev == null || fv == null)
+            if (v.type == ValueType.Text && typeof(TFilterType) != typeof(string))
+            {
+                var handler = ctx.op.GetHandler<SearchValue, StringView>();
+                if (handler != null)
+                    return handler(ctx, v, ctx.filterValue, sc);
+            }
+
+            return comparer(v, filterValue);
+        }
+
+        private static bool StringContains(StringView ev, StringView fv, StringComparison sc)
+        {
+            if (!ev.valid || !fv.valid)
                 return false;
             return ev.IndexOf(fv, sc) != -1;
         }
@@ -546,19 +567,19 @@ namespace UnityEditor.Search
             return comparer(v.floatNumber == 1d, b);
         }
 
-        private static bool PropertyStringCompare(in SearchValue v, string s, Func<string, string, bool> comparer)
+        private static bool PropertyStringCompare(in SearchValue v, StringView s, Func<StringView, StringView, bool> comparer)
         {
             if (v.type == ValueType.Enum)
-                return comparer(v.text, s);
+                return comparer(v.text.GetStringView(), s);
             if (v.type == ValueType.Object)
             {
-                if (string.Equals(s, "none", StringComparison.Ordinal) && string.Equals(v.text, string.Empty, StringComparison.Ordinal))
-                    return comparer(s, "none");
+                if (s.Equals("none", StringComparison.Ordinal) && string.Equals(v.text, string.Empty, StringComparison.Ordinal))
+                    return comparer(s, "none".GetStringView());
                 if (string.IsNullOrEmpty(v.text))
                     return false;
 
                 // Test with the value as is.
-                if (comparer(v.text, s))
+                if (comparer(v.text.GetStringView(), s))
                     return true;
 
                 // Could be an asset path, try to resolve it.
@@ -567,7 +588,7 @@ namespace UnityEditor.Search
                     var obj = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(v.text);
 
                     // Compare with the name of the asset.
-                    return obj != null && comparer(obj.name, s);
+                    return obj != null && comparer(obj.name.GetStringView(), s);
                 }
 
                 // Might be a global object id, try to resolve it.
@@ -579,36 +600,36 @@ namespace UnityEditor.Search
                         return false;
 
                     // Compare name of the object.
-                    if (comparer(obj.name, s))
+                    if (comparer(obj.name.GetStringView(), s))
                         return true;
 
                     if (obj is Component c)
                     {
                         var tp = SearchUtils.GetTransformPath(c.gameObject.transform);
-                        return comparer(tp, s);
+                        return comparer(tp.GetStringView(), s);
                     }
 
                     var assetPath = AssetDatabase.GetAssetPath(obj);
                     if (!string.IsNullOrEmpty(assetPath) && Utils.IsBuiltInResource(assetPath))
-                        return comparer(assetPath, s);
+                        return comparer(assetPath.GetStringView(), s);
 
                     if (obj is GameObject go)
                     {
                         var tp = SearchUtils.GetTransformPath(go.transform);
-                        return comparer(tp, s);
+                        return comparer(tp.GetStringView(), s);
                     }
                 }
             }
             if (v.type == ValueType.Bool)
             {
-                if (v.boolean && string.Equals(s, "on", StringComparison.OrdinalIgnoreCase))
+                if (v.boolean && s.Equals("on", StringComparison.OrdinalIgnoreCase))
                     return true;
-                if (!v.boolean && string.Equals(s, "off", StringComparison.OrdinalIgnoreCase))
+                if (!v.boolean && s.Equals("off", StringComparison.OrdinalIgnoreCase))
                     return true;
             }
             else if (v.type != ValueType.Text || string.IsNullOrEmpty(v.text))
                 return false;
-            return comparer(v.text, s);
+            return comparer(v.text.GetStringView(), s);
         }
 
         private static bool PropertyColorCompare(in SearchValue v, SearchColor value, Func<SearchColor, SearchColor, bool> comparer)
