@@ -951,19 +951,22 @@ namespace TreeEditor
             Event evt = Event.current;
 
             #region Do Root Handles
-            if (s_SelectedGroup.GetType() == typeof(TreeGroupRoot))
+            if (Event.current.type == EventType.Repaint)
             {
-                Tools.s_Hidden = false;
+                if (s_SelectedGroup.GetType() == typeof(TreeGroupRoot))
+                {
+                    Tools.s_Hidden = false;
 
-                Handles.color = s_NormalColor;
-                Handles.DrawWireDisc(treeTransform.position, treeTransform.up, treeData.root.rootSpread);
-            }
-            else
-            {
-                Tools.s_Hidden = true;
+                    Handles.color = s_NormalColor;
+                    Handles.DrawWireDisc(treeTransform.position, treeTransform.up, treeData.root.rootSpread);
+                }
+                else
+                {
+                    Tools.s_Hidden = true;
 
-                Handles.color = Handles.secondaryColor;
-                Handles.DrawWireDisc(treeTransform.position, treeTransform.up, treeData.root.rootSpread);
+                    Handles.color = Handles.secondaryColor;
+                    Handles.DrawWireDisc(treeTransform.position, treeTransform.up, treeData.root.rootSpread);
+                }
             }
             #endregion
 
@@ -977,35 +980,38 @@ namespace TreeEditor
                     oldEventType = evt.rawType;
 
                 // Draw all splines in a single GL.Begin / GL.End
-                Handles.DrawLine(Vector3.zero, Vector3.zero);
-                HandleUtility.ApplyWireMaterial();
-                GL.Begin(GL.LINES);
-                for (int nodeIndex = 0; nodeIndex < s_SelectedGroup.nodeIDs.Length; nodeIndex++)
+                if (Event.current.type == EventType.Repaint)
                 {
-                    TreeNode branch = treeData.GetNode(s_SelectedGroup.nodeIDs[nodeIndex]);
-                    TreeSpline spline = branch.spline;
-                    if (spline == null) continue;
-
-                    Handles.color = (branch == s_SelectedNode) ? s_NormalColor : s_GroupColor;
-
-                    Matrix4x4 branchMatrix = treeMatrix * branch.matrix;
-
-                    // Draw Spline
-                    Vector3 prevPos = branchMatrix.MultiplyPoint(spline.GetPositionAtTime(0.0f));
-
-                    GL.Color(Handles.color);
-                    for (float t = 0.01f; t <= 1.0f; t += 0.01f)
+                    Handles.DrawLine(Vector3.zero, Vector3.zero);
+                    HandleUtility.ApplyWireMaterial();
+                    GL.Begin(GL.LINES);
+                    for (int nodeIndex = 0; nodeIndex < s_SelectedGroup.nodeIDs.Length; nodeIndex++)
                     {
-                        Vector3 currPos = branchMatrix.MultiplyPoint(spline.GetPositionAtTime(t));
-                        //Handles.DrawLine(prevPos, currPos);
+                        TreeNode branch = treeData.GetNode(s_SelectedGroup.nodeIDs[nodeIndex]);
+                        TreeSpline spline = branch.spline;
+                        if (spline == null) continue;
 
-                        GL.Vertex(prevPos);
-                        GL.Vertex(currPos);
+                        Handles.color = (branch == s_SelectedNode) ? s_NormalColor : s_GroupColor;
 
-                        prevPos = currPos;
+                        Matrix4x4 branchMatrix = treeMatrix * branch.matrix;
+
+                        // Draw Spline
+                        Vector3 prevPos = branchMatrix.MultiplyPoint(spline.GetPositionAtTime(0.0f));
+
+                        GL.Color(Handles.color);
+                        for (float t = 0.01f; t <= 1.0f; t += 0.01f)
+                        {
+                            Vector3 currPos = branchMatrix.MultiplyPoint(spline.GetPositionAtTime(t));
+                            //Handles.DrawLine(prevPos, currPos);
+
+                            GL.Vertex(prevPos);
+                            GL.Vertex(currPos);
+
+                            prevPos = currPos;
+                        }
                     }
+                    GL.End();
                 }
-                GL.End();
 
                 // Draw all handles
                 for (int nodeIndex = 0; nodeIndex < s_SelectedGroup.nodeIDs.Length; nodeIndex++)
