@@ -652,6 +652,8 @@ namespace UnityEngine
         // Do a drag selection. Used to expand the selection in MouseDrag events.
         public void SelectToPosition(Vector2 cursorPosition)
         {
+            if (characterCount == 0)
+                return;
             if (!m_MouseDragSelectsWholeWords)
                 cursorIndex = m_TextHandle.GetCursorIndexFromPosition(cursorPosition);
             else // snap to words/paragraphs

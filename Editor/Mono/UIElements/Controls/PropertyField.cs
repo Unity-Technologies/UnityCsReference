@@ -116,6 +116,8 @@ namespace UnityEditor.UIElements
         /// </summary>
         public static readonly string inspectorElementUssClassName = ussClassName + "__inspector-property";
 
+        internal static readonly string imguiContainerPropertyUssClassName = ussClassName + "__imgui-container-property";
+
         /// <summary>
         /// PropertyField constructor.
         /// </summary>
@@ -286,6 +288,9 @@ namespace UnityEditor.UIElements
                     if (customPropertyGUI == null)
                     {
                         customPropertyGUI = CreatePropertyIMGUIContainer();
+
+                        AddToClassList(imguiContainerPropertyUssClassName);
+
                         m_imguiChildField = customPropertyGUI;
                     }
                     else
@@ -370,11 +375,11 @@ namespace UnityEditor.UIElements
 
         private VisualElement CreatePropertyIMGUIContainer()
         {
-            GUIContent customLabel = string.IsNullOrEmpty(label) ? null : new GUIContent(label);
-
             var imguiContainer = new IMGUIContainer(() =>
             {
                 var originalWideMode = InspectorElement.SetWideModeForWidth(this);
+                var originalHierarchyMode = EditorGUIUtility.hierarchyMode;
+                EditorGUIUtility.hierarchyMode = true;
                 var oldLabelWidth = EditorGUIUtility.labelWidth;
 
                 try
@@ -382,91 +387,95 @@ namespace UnityEditor.UIElements
                     if (!serializedProperty.isValid)
                         return;
 
-                    if (m_InspectorElement is InspectorElement inspectorElement)
+                    EditorGUILayout.BeginVertical(EditorStyles.inspectorHorizontalDefaultMargins);
                     {
-                        //set the current PropertyHandlerCache to the current editor
-                        ScriptAttributeUtility.propertyHandlerCache = inspectorElement.editor.propertyHandlerCache;
-                    }
-
-                    EditorGUI.BeginChangeCheck();
-                    serializedProperty.serializedObject.Update();
-
-                    if (classList.Contains(inspectorElementUssClassName))
-                    {
-                        var spacing = 0f;
-
-                        if (m_imguiChildField != null)
+                        if (m_InspectorElement is InspectorElement inspectorElement)
                         {
-                            spacing = m_imguiChildField.worldBound.x - m_InspectorElement.worldBound.x - m_InspectorElement.resolvedStyle.paddingLeft;
+                            //set the current PropertyHandlerCache to the current editor
+                            ScriptAttributeUtility.propertyHandlerCache = inspectorElement.editor.propertyHandlerCache;
                         }
 
-                        var imguiSpacing = EditorGUI.kLabelWidthMargin - EditorGUI.kLabelWidthPadding;
-                        var contextWidthElement = m_ContextWidthElement ?? m_InspectorElement;
-                        var contextWidth = contextWidthElement.resolvedStyle.width;
-                        var labelWidth = (contextWidth * EditorGUI.kLabelWidthRatio - imguiSpacing - spacing);
-                        var minWidth = EditorGUI.kMinLabelWidth + EditorGUI.kLabelWidthPadding;
-                        var minLabelWidth = Mathf.Max(minWidth - spacing, 0f);
+                        EditorGUI.BeginChangeCheck();
+                        serializedProperty.serializedObject.Update();
 
-                        EditorGUIUtility.labelWidth = Mathf.Max(labelWidth, minLabelWidth);
-                    }
-                    else
-                    {
-                        if (m_FoldoutDepth > 0)
-                            EditorGUI.indentLevel += m_FoldoutDepth;
-                    }
-
-                    // Wait at last minute to call GetHandler, sometimes the handler cache is cleared between calls.
-                    var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
-                    using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
-                    {
-                        // Decorator drawers are already handled on the uitk side
-                        handler.skipDecoratorDrawers = true;
-
-                        var previousLeftMarginCoord = EditorGUIUtility.leftMarginCoord;
-
-                        if (m_InspectorElement != null && m_imguiChildField != null)
+                        if (classList.Contains(inspectorElementUssClassName))
                         {
-                            // Set a left margin offset to align the prefab override bar with the property field
-                            var extraLeftMargin = m_InspectorElement.worldBound.x;
-                            EditorGUIUtility.leftMarginCoord = -m_imguiChildField.worldBound.x + extraLeftMargin;
-                        }
+                            var spacing = 0f;
 
-                        if (label == null)
-                        {
-                            EditorGUILayout.PropertyField(serializedProperty, true);
-                        }
-                        else if (label == string.Empty)
-                        {
-                            EditorGUILayout.PropertyField(serializedProperty, GUIContent.none, true);
+                            if (m_imguiChildField != null)
+                            {
+                                spacing = m_imguiChildField.worldBound.x - m_InspectorElement.worldBound.x - m_InspectorElement.resolvedStyle.paddingLeft - resolvedStyle.marginLeft;
+                            }
+
+                            var imguiSpacing = EditorGUI.kLabelWidthMargin;
+                            var contextWidthElement = m_ContextWidthElement ?? m_InspectorElement;
+                            var contextWidth = contextWidthElement.resolvedStyle.width;
+                            var labelWidth = (contextWidth * EditorGUI.kLabelWidthRatio - imguiSpacing - spacing);
+                            var minWidth = EditorGUI.kMinLabelWidth + EditorGUI.kLabelWidthPadding;
+                            var minLabelWidth = Mathf.Max(minWidth - spacing, 0f);
+
+                            EditorGUIUtility.labelWidth = Mathf.Max(labelWidth, minLabelWidth);
                         }
                         else
                         {
-                            EditorGUILayout.PropertyField(serializedProperty, new GUIContent(label), true);
+                            if (m_FoldoutDepth > 0)
+                                EditorGUI.indentLevel += m_FoldoutDepth;
                         }
 
-                        if (m_InspectorElement != null && m_imguiChildField != null)
+                        // Wait at last minute to call GetHandler, sometimes the handler cache is cleared between calls.
+                        var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
+                        using (var nestingContext = handler.ApplyNestingContext(m_DrawNestingLevel))
                         {
-                            // Reset the left margin to the original value
-                            EditorGUIUtility.leftMarginCoord = previousLeftMarginCoord;
+                            // Decorator drawers are already handled on the uitk side
+                            handler.skipDecoratorDrawers = true;
+
+                            var previousLeftMarginCoord = EditorGUIUtility.leftMarginCoord;
+
+                            if (m_InspectorElement != null && m_imguiChildField != null)
+                            {
+                                // Set a left margin offset to align the prefab override bar with the property field
+                                var extraLeftMargin = m_InspectorElement.worldBound.x;
+                                EditorGUIUtility.leftMarginCoord = -m_imguiChildField.worldBound.x + extraLeftMargin;
+                            }
+
+                            if (label == null)
+                            {
+                                EditorGUILayout.PropertyField(serializedProperty, true);
+                            }
+                            else if (label == string.Empty)
+                            {
+                                EditorGUILayout.PropertyField(serializedProperty, GUIContent.none, true);
+                            }
+                            else
+                            {
+                                EditorGUILayout.PropertyField(serializedProperty, new GUIContent(label), true);
+                            }
+
+                            if (m_InspectorElement != null && m_imguiChildField != null)
+                            {
+                                // Reset the left margin to the original value
+                                EditorGUIUtility.leftMarginCoord = previousLeftMarginCoord;
+                            }
+                        }
+
+                        if (!classList.Contains(inspectorElementUssClassName))
+                        {
+                            if (m_FoldoutDepth > 0)
+                                EditorGUI.indentLevel -= m_FoldoutDepth;
+                        }
+
+                        serializedProperty.serializedObject.ApplyModifiedProperties();
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            DispatchPropertyChangedEvent();
                         }
                     }
-
-                    if (!classList.Contains(inspectorElementUssClassName))
-                    {
-                        if (m_FoldoutDepth > 0)
-                            EditorGUI.indentLevel -= m_FoldoutDepth;
-                    }
-
-                    serializedProperty.serializedObject.ApplyModifiedProperties();
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        DispatchPropertyChangedEvent();
-                    }
+                    EditorGUILayout.EndVertical();
                 }
                 finally
                 {
                     EditorGUIUtility.wideMode = originalWideMode;
-
+                    EditorGUIUtility.hierarchyMode = originalHierarchyMode;
                     if (classList.Contains(inspectorElementUssClassName))
                     {
                         EditorGUIUtility.labelWidth = oldLabelWidth;

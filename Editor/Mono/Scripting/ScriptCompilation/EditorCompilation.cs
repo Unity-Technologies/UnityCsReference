@@ -1113,6 +1113,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
             }
 
+            ConsoleWindow.ClearConsoleOnRecompile();
             var messagesForNodeResults = ProcessCompilationResult(_currentBeeScriptCompilationState.ScriptAssemblies, result, _currentBeeScriptCompilationState.Settings.BuildingForEditor, _currentBeeScriptCompilationState.ActiveBuild);
             var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();
 
