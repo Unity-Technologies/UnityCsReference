@@ -1206,12 +1206,9 @@ namespace UnityEditor.Search
             var context = viewArgs.context;
             var flags = viewArgs.context?.options ?? SearchFlags.OpenDefault;
             SearchWindow searchWindow;
-            if (flags.HasAny(SearchFlags.ReuseExistingWindow) && HasOpenInstances<T>())
+            if (flags.HasAny(SearchFlags.ReuseExistingWindow))
             {
-                searchWindow = Resources.FindObjectsOfTypeAll<SearchWindow>()
-                    .Where(w => w.viewState.searchFlags.HasAny(SearchFlags.ReuseExistingWindow)
-                        || (w.context?.options.HasAny(SearchFlags.ReuseExistingWindow) ?? false))
-                    .FirstOrDefault();
+                searchWindow = SearchUtils.FindReusableWindow(viewArgs);
                 if (!searchWindow)
                 {
                     searchWindow = CreateInstance<T>();
@@ -1264,37 +1261,40 @@ namespace UnityEditor.Search
 
         public SearchWindow ShowWindow(float width, float height, SearchFlags flags)
         {
-            using (new EditorPerformanceTracker("SearchView.ShowWindow"))
+            if (m_Parent == null)
             {
-                var windowSize = new Vector2(width, height);
-                if (flags.HasAny(SearchFlags.Dockable) && viewState.flags.HasNone(SearchViewFlags.Borderless))
+                using (new EditorPerformanceTracker("SearchView.ShowWindow"))
                 {
-                    bool firstOpen = Utils.IsRunningTests() || !EditorPrefs.HasKey(k_CheckWindowKeyName);
-                    Show(true);
-                    if (firstOpen)
+                    var windowSize = new Vector2(width, height);
+                    if (flags.HasAny(SearchFlags.Dockable) && viewState.flags.HasNone(SearchViewFlags.Borderless))
                     {
-                        var centeredPosition = Utils.GetMainWindowCenteredPosition(windowSize);
-                        position = centeredPosition;
-                    }
-                    else if (!firstOpen && !docked)
-                    {
-                        var newWindow = this;
-                        var existingWindow = Resources.FindObjectsOfTypeAll<SearchWindow>().FirstOrDefault(w => w != newWindow);
-                        if (existingWindow)
+                        bool firstOpen = Utils.IsRunningTests() || !EditorPrefs.HasKey(k_CheckWindowKeyName);
+                        Show(true);
+                        if (firstOpen)
                         {
-                            var cascadedWindowPosition = existingWindow.position.position;
-                            cascadedWindowPosition += new Vector2(30f, 30f);
-                            position = new Rect(cascadedWindowPosition, position.size);
+                            var centeredPosition = Utils.GetMainWindowCenteredPosition(windowSize);
+                            position = centeredPosition;
+                        }
+                        else if (!firstOpen && !docked)
+                        {
+                            var newWindow = this;
+                            var existingWindow = Resources.FindObjectsOfTypeAll<SearchWindow>().FirstOrDefault(w => w != newWindow);
+                            if (existingWindow)
+                            {
+                                var cascadedWindowPosition = existingWindow.position.position;
+                                cascadedWindowPosition += new Vector2(30f, 30f);
+                                position = new Rect(cascadedWindowPosition, position.size);
+                            }
                         }
                     }
+                    else
+                    {
+                        this.ShowDropDown(windowSize);
+                    }
                 }
-                else
-                {
-                    this.ShowDropDown(windowSize);
-                }
-                Focus();
-                return this;
             }
+            Focus();
+            return this;
         }
 
         void ISearchView.SetupColumns(IList<SearchField> fields)

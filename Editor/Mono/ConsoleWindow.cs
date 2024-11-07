@@ -1200,6 +1200,17 @@ namespace UnityEditor
             }
         }
 
+        internal static void ClearConsoleOnRecompile()
+        {
+            // During build process, there are multiple compilation events that can trigger console clearing
+            // We don't want to lose the log entries during build process so we re-enable the flag only when editor is not building
+            // For clearing on build we have a separate option
+            if (HasFlag(ConsoleFlags.ClearOnRecompile) && !BuildPipeline.isBuildingPlayer)
+            {
+                LogEntries.Clear();
+            }
+        }
+
         private void SetFilter(string filteringText)
         {
             m_RestoreLatestSelection = String.IsNullOrEmpty(filteringText) && !String.IsNullOrEmpty(m_SearchText) && m_LastActiveEntryIndex != -1;

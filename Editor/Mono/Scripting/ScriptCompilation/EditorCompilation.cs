@@ -1151,6 +1151,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     }
             }
 
+            ConsoleWindow.ClearConsoleOnRecompile();
             var messagesForNodeResults = ProcessCompilationResult(scriptCompilationState.ScriptAssemblies, result, scriptCompilationState.Settings.BuildingForEditor, scriptCompilationState.ActiveBuild);
             var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();
 
@@ -1232,7 +1233,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         void CompleteActiveBuildWhilePumping()
         {
-            var synchroContext = (UnitySynchronizationContext) SynchronizationContext.Current;
+            var synchroContext = SynchronizationContext.Current as UnitySynchronizationContext;
+            if (synchroContext is null && SynchronizationContext.Current is not null)
+            {
+                var message = $"Unexpected SynchronizationContext.Current found. Expected UnitySynchronizationContext but it is {SynchronizationContext.Current.GetType().FullName};\nChanging the synchronization context is not supported and editor/runtime may misbehave or freeze.";
+                Debug.LogError(message);
+                Environment.FailFast(message);
+            }
 
             var activeBuild = _currentBeeScriptCompilationState.ActiveBuild;
             while (true)

@@ -17,8 +17,8 @@ namespace UnityEditor.UIElements
 {
     internal interface IUxmlAttributeConverter
     {
-        public object FromString(string value);
-        public string ToString(object value); // One value
+        public object FromString(string value, CreationContext cc);
+        public string ToString(object value, VisualTreeAsset visualTreeAsset);
     }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -49,8 +49,10 @@ namespace UnityEditor.UIElements
                             conversionType = conversionType.GetGenericTypeDefinition();
                     }
                 }
-                Debug.Assert(conversionType != null);
-                s_RegisteredConverterTypes[conversionType] = converterType;
+
+                // Some converers such as List, Array and Unity Object are invoked manually.
+                if (conversionType != null)
+                    s_RegisteredConverterTypes[conversionType] = converterType;
             }
         }
 
@@ -61,23 +63,9 @@ namespace UnityEditor.UIElements
 
         public static bool TryConvertFromString(Type type, string value, CreationContext cc, out object result)
         {
-            // Special handling for Unity Object
-            if (typeof(Object).IsAssignableFrom(type))
+            if (TryGetConverter(type, out var converter))
             {
-                // Optional support for referencing by template alias
-                if (type == typeof(VisualTreeAsset))
-                {
-                    result = cc.visualTreeAsset.ResolveTemplate(value);
-                    if (result != null)
-                        return true;
-                }
-
-                result = cc.visualTreeAsset.GetAsset(value, type);
-                return true;
-            }
-            else if (TryGetConverter(type, out var converter))
-            {
-                result = converter.FromString(value);
+                result = converter.FromString(value, cc);
                 return true;
             }
 
@@ -103,19 +91,9 @@ namespace UnityEditor.UIElements
             if (typeof(Type).IsAssignableFrom(type))
                 type = typeof(Type);
 
-            // Special handling for Unity Object
-            if (typeof(Object).IsAssignableFrom(type))
-            {
-                var obj = value as Object;
-                result = URIHelpers.MakeAssetUri(obj);
-                if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.AssetEntryExists(result, type))
-                    visualTreeAsset.RegisterAssetEntry(result, type, obj);
-                return true;
-            }
-
             if (TryGetConverter(type, out var converter))
             {
-                result = converter.ToString(value);
+                result = converter.ToString(value, visualTreeAsset);
                 return true;
             }
 
@@ -128,59 +106,74 @@ namespace UnityEditor.UIElements
             return TryGetConverter(typeof(T), out converter);
         }
 
-        public static bool TryGetConverter(Type type, out IUxmlAttributeConverter converter)
+        public static bool TryGetConverterType(Type type, out Type converterType)
         {
-            if (!s_RegisteredConverterTypes.ContainsKey(type))
+            if (s_RegisteredConverterTypes.TryGetValue(type, out converterType))
+                return true;
+
+            if (type.IsEnum)
             {
-                if (type.IsEnum)
-                {
-                    converter = GetOrCreateConverter(typeof(Enum));
-                    ((EnumAttributeConverter)converter).type = type;
-                    return true;
-                }
-
-                if (type.IsGenericType)
-                {
-                    var genericTypeDefinition = type.GetGenericTypeDefinition();
-                    if (genericTypeDefinition == typeof(List<>))
-                    {
-                        var genericTypeArgument0 = type.GetGenericArguments()[0];
-                        if (s_RegisteredConverterTypes.ContainsKey(genericTypeArgument0) || genericTypeArgument0.IsEnum)
-                        {
-                            var converterType = typeof(ListAttributeConverter<>).MakeGenericType(genericTypeArgument0);
-                            s_RegisteredConverterTypes[type] = converterType;
-                            converter = GetOrCreateConverter(type);
-                            return true;
-                        }
-                    }
-                    else if (s_RegisteredConverterTypes.TryGetValue(genericTypeDefinition, out var genericConverterType))
-                    {
-                        // Check for a generic converter type
-                        var converterType = genericConverterType.MakeGenericType(type.GetGenericArguments());
-                        s_RegisteredConverterTypes[type] = converterType;
-                        converter = GetOrCreateConverter(type);
-                        return true;
-                    }
-                }
-
-                if (type.IsArray)
-                {
-                    var elementType = type.GetElementType();
-                    if (s_RegisteredConverterTypes.ContainsKey(elementType) || elementType.IsEnum)
-                    {
-                        var converterType = typeof(ArrayAttributeConverter<>).MakeGenericType(elementType);
-                        s_RegisteredConverterTypes[type] = converterType;
-                        converter = GetOrCreateConverter(type);
-                        return true;
-                    }
-                }
-
-                converter = null;
-                return false;
+                converterType = typeof(EnumAttributeConverter<>).MakeGenericType(type);
+                s_RegisteredConverterTypes[type] = converterType;
+                return true;
             }
 
-            converter = GetOrCreateConverter(type);
-            return true;
+            if (type.IsGenericType)
+            {
+                var genericTypeDefinition = type.GetGenericTypeDefinition();
+                if (genericTypeDefinition == typeof(List<>))
+                {
+                    var genericTypeArgument0 = type.GetGenericArguments()[0];
+                    if (HasConverter(genericTypeArgument0))
+                    {
+                        converterType = typeof(ListAttributeConverter<>).MakeGenericType(genericTypeArgument0);
+                        s_RegisteredConverterTypes[type] = converterType;
+                        return true;
+                    }
+                }
+                else if (s_RegisteredConverterTypes.TryGetValue(genericTypeDefinition, out var genericConverterType))
+                {
+                    // Check for a generic converter type
+                    converterType = genericConverterType.MakeGenericType(type.GetGenericArguments());
+                    s_RegisteredConverterTypes[type] = converterType;
+                    return true;
+                }
+            }
+
+            if (type.IsArray)
+            {
+                var elementType = type.GetElementType();
+                if (HasConverter(elementType))
+                {
+                    converterType = typeof(ArrayAttributeConverter<>).MakeGenericType(elementType);
+                    s_RegisteredConverterTypes[type] = converterType;
+                    return true;
+                }
+            }
+
+            // Unity object reference
+            if (typeof(Object).IsAssignableFrom(type))
+            {
+                converterType = typeof(UnityObjectConverter<>).MakeGenericType(type);
+                s_RegisteredConverterTypes[type] = converterType;
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool HasConverter(Type type) => TryGetConverterType(type, out _);
+
+        public static bool TryGetConverter(Type type, out IUxmlAttributeConverter converter)
+        {
+            if (TryGetConverterType(type, out var converterType))
+            {
+                converter = GetOrCreateConverter(type);
+                return true;
+            }
+
+            converter = null;
+            return false;
         }
 
         private static IUxmlAttributeConverter GetOrCreateConverter(Type type)
@@ -283,8 +276,8 @@ namespace UnityEditor.UIElements
         /// <returns>A string representation of the type.</returns>
         public virtual string ToString(T value) => Convert.ToString(value, CultureInfo.InvariantCulture);
 
-        string IUxmlAttributeConverter.ToString(object value) => ToString((T)value);
-        object IUxmlAttributeConverter.FromString(string value) => FromString(value);
+        string IUxmlAttributeConverter.ToString(object value, VisualTreeAsset visualTreeAsset) => ToString((T)value);
+        object IUxmlAttributeConverter.FromString(string value, CreationContext cc) => FromString(value);
     }
 
     internal class BoolAttributeConverter : UxmlAttributeConverter<bool>
@@ -356,12 +349,11 @@ namespace UnityEditor.UIElements
         }
     }
 
-    internal class EnumAttributeConverter : UxmlAttributeConverter<Enum>
+    internal class EnumAttributeConverter<T> : UxmlAttributeConverter<Enum>
     {
-        public Type type;
         public override Enum FromString(string value)
         {
-            if (Enum.TryParse(type, value, true, out var result))
+            if (Enum.TryParse(typeof(T), value, true, out var result))
                 return (Enum)result;
             return default;
         }
@@ -553,9 +545,33 @@ namespace UnityEditor.UIElements
         public override string ToString(Vector4 value) => UxmlUtility.ValueToString(value);
     }
 
-    internal class ListAttributeConverter<T> : UxmlAttributeConverter<List<T>>
+    internal class UnityObjectConverter<T> : IUxmlAttributeConverter where T : Object
     {
-        public override List<T> FromString(string value)
+        public object FromString(string value, CreationContext cc)
+        {
+            // Optional support for referencing by template alias
+            if (typeof(T) == typeof(VisualTreeAsset))
+            {
+                var vta = cc.visualTreeAsset.ResolveTemplate(value);
+                if (vta != null)
+                    return vta;
+            }
+            return cc.visualTreeAsset.GetAsset(value, typeof(T));
+        }
+
+        public string ToString(object value, VisualTreeAsset visualTreeAsset)
+        {
+            var obj = value as Object;
+            var result = URIHelpers.MakeAssetUri(obj);
+            if (visualTreeAsset != null && !string.IsNullOrEmpty(result) && !visualTreeAsset.AssetEntryExists(result, typeof(T)))
+                visualTreeAsset.RegisterAssetEntry(result, typeof(T), obj);
+            return result;
+        }
+    }
+
+    internal class ListAttributeConverter<T> : IUxmlAttributeConverter
+    {
+        public object FromString(string value, CreationContext cc)
         {
             if (value == null)
                 return null;
@@ -571,23 +587,24 @@ namespace UnityEditor.UIElements
                 if (string.IsNullOrEmpty(s))
                     continue;
 
-                result.Add((T)converter.FromString(s));
+                result.Add((T)converter.FromString(s, cc));
             }
 
             return result;
         }
 
-        public override string ToString(List<T> value)
+        public string ToString(object value, VisualTreeAsset visualTreeAsset)
         {
+            var list = value as IList<T>;
             if (!UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return string.Empty;
 
             var sb = StringBuilderPool.Get();
-            for (int i = 0; i < value.Count; i++)
+            for (int i = 0; i < list.Count; i++)
             {
-                var s = converter.ToString(value[i]);
+                var s = converter.ToString(list[i], visualTreeAsset);
                 sb.Append(s);
-                if (i + 1 != value.Count)
+                if (i + 1 != list.Count)
                     sb.Append(",");
             }
 
@@ -597,28 +614,29 @@ namespace UnityEditor.UIElements
         }
     }
 
-    internal class ArrayAttributeConverter<T> : UxmlAttributeConverter<T[]>
+    internal class ArrayAttributeConverter<T> : IUxmlAttributeConverter
     {
         private static ListAttributeConverter<T> s_ListAttributeConverter;
 
-        public override T[] FromString(string value)
+        public object FromString(string value, CreationContext cc)
         {
             s_ListAttributeConverter ??= new ListAttributeConverter<T>();
-            var result = s_ListAttributeConverter.FromString(value);
+            var result = (List<T>)s_ListAttributeConverter.FromString(value, cc);
             return result.ToArray();
         }
 
-        public override string ToString(T[] value)
+        public string ToString(object value, VisualTreeAsset visualTreeAsset)
         {
+            var array = value as T[];
             if (!UxmlAttributeConverter.TryGetConverter<T>(out var converter))
                 return string.Empty;
 
             var sb = StringBuilderPool.Get();
-            for (int i = 0; i < value.Length; i++)
+            for (int i = 0; i < array.Length; i++)
             {
-                var s = converter.ToString(value[i]);
+                var s = converter.ToString(array[i], visualTreeAsset);
                 sb.Append(s);
-                if (i + 1 != value.Length)
+                if (i + 1 != array.Length)
                     sb.Append(",");
             }
 

@@ -19,11 +19,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         void Refresh(RefreshOptions options);
         void CancelRefresh(RefreshOptions options);
         bool IsRefreshInProgress(RefreshOptions options);
-        bool IsInitialFetchingDone(RefreshOptions options);
         void SetRefreshTimestampSingleFlag(RefreshOptions option, long timestamp);
         long GetRefreshTimestamp(RefreshOptions options);
-        void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error);
-        UIError GetRefreshError(RefreshOptions options);
         long GetRefreshTimestamp(IPage page);
         UIError GetRefreshError(IPage page);
         bool IsRefreshInProgress(IPage page);
@@ -163,25 +160,27 @@ namespace UnityEditor.PackageManager.UI.Internal
         // returns true if a full scan was done, false if not
         private bool RefreshImportedAssets()
         {
-            if (GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) != 0)
-                return false;
-
+            var needRefresh = GetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets) == 0;
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
+            // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
             SetRefreshTimestampSingleFlag(RefreshOptions.ImportedAssets, DateTime.Now.Ticks);
-            m_AssetStoreClient.RefreshImportedAssets();
-            return true;
+
+            if (needRefresh)
+                m_AssetStoreClient.RefreshImportedAssets();
+            return needRefresh;
         }
 
         private void RefreshLocalInfos()
         {
-            if (GetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo) != 0)
-                return;
-
+            var needRefresh = GetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo) == 0;
             // We set the timestamp before the actual operation because the results are retrieved synchronously, if we set the timestamp after
             // we will encounter an issue where the results are back but the UI still thinks the refresh is in progress
+            // We also always update the timestamp even when the data has not changed to reflect the last time we do the Refresh operation
             SetRefreshTimestampSingleFlag(RefreshOptions.LocalInfo, DateTime.Now.Ticks);
-            m_AssetStoreClient.RefreshLocal();
+
+            if (needRefresh)
+                m_AssetStoreClient.RefreshLocal();
         }
 
         public void CancelRefresh(RefreshOptions options)
@@ -251,17 +250,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private void OnRefreshOperationSuccess(IOperation operation)
         {
             SetRefreshTimestampSingleFlag(operation.refreshOptions, operation.timestamp);
-            switch (operation.refreshOptions)
-            {
-                // when an online operation successfully returns with a timestamp newer than the offline timestamp, we update the offline timestamp as well
-                // since we merge the online & offline result in the PackageDatabase and it's the newer ones that are being shown
-                case RefreshOptions.UpmSearch when GetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline) < operation.timestamp:
-                    SetRefreshTimestampSingleFlag(RefreshOptions.UpmSearchOffline, operation.timestamp);
-                    break;
-                case RefreshOptions.UpmList when GetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline) < operation.timestamp:
-                    SetRefreshTimestampSingleFlag(RefreshOptions.UpmListOffline, operation.timestamp);
-                    break;
-            }
             m_RefreshErrors.Remove(operation.refreshOptions);
         }
 
@@ -307,7 +295,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         // is passed, the result won't be correct.
         private long GetRefreshTimestampSingleFlag(RefreshOptions option)
         {
-            return m_RefreshTimestamps.TryGetValue(option, out var value) ? value : 0;
+            return m_RefreshTimestamps.GetValueOrDefault(option, 0);
         }
 
         public void SetRefreshErrorSingleFlag(RefreshOptions option, UIError error)
@@ -319,7 +307,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual UIError GetRefreshError(RefreshOptions options)
         {
             return options.Split()
-                .Select(o => m_RefreshErrors.TryGetValue(o, out var error) ? error : null)
+                .Select(o => m_RefreshErrors.GetValueOrDefault(o))
                 .FirstOrDefault(e => e != null);
         }
 

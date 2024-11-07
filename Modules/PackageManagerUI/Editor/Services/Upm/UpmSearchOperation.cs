@@ -27,10 +27,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             Start();
         }
 
-        public void SearchAllOffline(long timestamp)
+        public void SearchAllOffline(long offlineDataTimestamp)
         {
             m_OfflineMode = true;
-            m_Timestamp = timestamp;
+            m_OfflineDataTimestamp = offlineDataTimestamp;
             m_PackageIdOrName = string.Empty;
             m_ProductId = 0;
             Start();
@@ -44,21 +44,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             Start();
         }
 
-        public void SearchOffline(string packageIdOrName, long timestamp)
-        {
-            m_OfflineMode = true;
-            m_Timestamp = timestamp;
-            m_PackageIdOrName = packageIdOrName;
-            m_ProductId = 0;
-            Start();
-        }
-
         protected override SearchRequest CreateRequest()
         {
-            if (string.IsNullOrEmpty(m_PackageIdOrName))
-                return m_ClientProxy.SearchAll(isOfflineMode);
-            else
-                return m_ClientProxy.Search(m_PackageIdOrName, isOfflineMode);
+            return string.IsNullOrEmpty(m_PackageIdOrName) ? m_ClientProxy.SearchAll(isOfflineMode) : m_ClientProxy.Search(m_PackageIdOrName, isOfflineMode);
         }
     }
 }
