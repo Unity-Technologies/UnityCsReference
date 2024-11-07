@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 
 namespace UnityEngine.TextCore.Text
@@ -92,9 +93,7 @@ namespace UnityEngine.TextCore.Text
         HashSet<uint> m_LeadingCharactersLookup;
         HashSet<uint> m_FollowingCharactersLookup;
 
-        /// <summary>
-        ///
-        /// </summary>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal void LoadLineBreakingRules()
         {
             if (m_LeadingCharactersLookup == null)

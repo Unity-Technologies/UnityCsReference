@@ -182,7 +182,8 @@ namespace UnityEditor
 
                 var textContentWidth = r.width - iconRect.width;
                 var textContentX = iconRect.xMax + margin;
-                if (!PackageImportWizard.instance.IsMultiStepWizard)
+                var packageImportWizard = PackageImportWizard.instance;
+                if (!packageImportWizard.IsMultiStepWizard)
                     titleRect = new Rect(textContentX, iconRect.yMin, textContentWidth, iconRect.height);
                 else
                 {
@@ -190,12 +191,12 @@ namespace UnityEditor
 
                     // Subtitle
                     var subtitleRect = new Rect(textContentX + 1f, iconRect.yMin + iconRect.height * 0.50f, textContentWidth, iconRect.height / 4);
-                    var subtitleText = PackageImportWizard.instance.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
+                    var subtitleText = packageImportWizard.IsProjectSettingStep ? "Import Settings Overrides" : "Import Content";
                     GUI.Label(subtitleRect, EditorGUIUtility.TrTextContent(subtitleText), ms_Constants.subtitle);
 
                     // "Step x of y" label
                     var stepInfoRect = new Rect(textContentX, iconRect.yMin + iconRect.height * 0.75f, textContentWidth, iconRect.height / 4);
-                    var stepInfoText = PackageImportWizard.instance.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
+                    var stepInfoText = packageImportWizard.IsProjectSettingStep ? "Step 2 of 2" : "Step 1 of 2";
                     GUI.Label(stepInfoRect, EditorGUIUtility.TrTextContent(stepInfoText), ms_Constants.stepInfo);
                 }
             }
@@ -243,26 +244,28 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
 
+            var packageImportWizard = PackageImportWizard.instance;
             GUILayout.FlexibleSpace();
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Cancel")))
             {
-                PackageImportWizard.instance.CancelImport();
+                packageImportWizard.CancelImport();
             }
 
-            var isSecondStep = PackageImportWizard.instance.IsMultiStepWizard &&
-                               PackageImportWizard.instance.IsProjectSettingStep;
-            if (isSecondStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
+            var hasPreviousStep = packageImportWizard.IsMultiStepWizard && packageImportWizard.IsProjectSettingStep;
+            var hasNextStep = packageImportWizard.IsMultiStepWizard && !packageImportWizard.IsProjectSettingStep;
+            var anyElementsSelected = packageImportWizard.AreAnyElementsSelected();
+            if (hasPreviousStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Back")))
             {
-                PackageImportWizard.instance.DoPreviousStep(m_ImportPackageItems);
+                packageImportWizard.DoPreviousStep(m_ImportPackageItems);
             }
-            var buttonText = isSecondStep || !PackageImportWizard.instance.IsMultiStepWizard ? "Import" : "Next";
-            GUI.enabled = m_Tree.isAnyItemEnabled;
-            if (GUILayout.Button(EditorGUIUtility.TrTextContent(buttonText)))
+            if (hasNextStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Next")))
             {
-                if (m_ImportPackageItems != null)
-                    PackageImportWizard.instance.DoNextStep(m_ImportPackageItems);
-                else
-                    PackageImportWizard.instance.CloseImportWindow();
+                packageImportWizard.DoNextStep(m_ImportPackageItems);
+            }
+            GUI.enabled = anyElementsSelected;
+            if (!hasNextStep && GUILayout.Button(EditorGUIUtility.TrTextContent("Import")))
+            {
+                packageImportWizard.DoImportStep(m_ImportPackageItems);
             }
             GUI.enabled = true;
 
@@ -464,19 +467,21 @@ namespace UnityEditor
 
         public void DoNextStep(ImportPackageItem[] importPackageItems)
         {
-            if (IsProjectSettingStep)
-                m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
-            else
-                m_AssetContentItems = new List<ImportPackageItem>(importPackageItems);
+            if (!IsMultiStepWizard && IsProjectSettingStep)
+                return;
 
+            m_AssetContentItems = new List<ImportPackageItem>(importPackageItems);
+            m_IsProjectSettingStep = true;
+            ShowImportWindow(m_ProjectSettingItems.ToArray());
+        }
 
-            if (!IsMultiStepWizard || IsProjectSettingStep)
-                FinishImport();
-            else
-            {
-                m_IsProjectSettingStep = true;
-                ShowImportWindow(m_ProjectSettingItems.ToArray());
-            }
+        public void DoImportStep(ImportPackageItem[] importPackageItems)
+        {
+            if (IsMultiStepWizard && !IsProjectSettingStep)
+                return;
+
+            m_ProjectSettingItems = new List<ImportPackageItem>(importPackageItems);
+            FinishImport();
         }
 
         public void DoPreviousStep(ImportPackageItem[] importPackageItems)
@@ -529,6 +534,11 @@ namespace UnityEditor
 
             m_IsMultiStepWizard = false;
             m_IsProjectSettingStep = false;
+        }
+
+        public bool AreAnyElementsSelected()
+        {
+            return m_AssetContentItems.Exists(i => i.enabledStatus == 1) || m_ProjectSettingItems.Exists(i => i.enabledStatus == 1);
         }
     }
 }

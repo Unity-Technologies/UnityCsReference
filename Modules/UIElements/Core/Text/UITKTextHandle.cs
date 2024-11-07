@@ -77,7 +77,7 @@ namespace UnityEngine.UIElements
             var hashCode = settings.GetHashCode();
 
             // this should be a dynamic asset
-            if (m_PreviousGenerationSettingsHash == hashCode)
+            if (m_PreviousGenerationSettingsHash == hashCode && !isDirty)
                 AddTextInfoToTemporaryCache(hashCode);
             else
             {
@@ -98,8 +98,8 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            ConvertUssToTextGenerationSettings();
-            base.AddTextInfoToPermanentCache();
+            if (ConvertUssToTextGenerationSettings())
+                base.AddTextInfoToPermanentCache();
         }
 
         TextOverflowMode GetTextOverflowMode()
@@ -129,11 +129,11 @@ namespace UnityEngine.UIElements
             tgs.isIMGUI = false;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
             if (tgs.textSettings == null)
-                return true;
+                return false;
 
             tgs.fontAsset = TextUtilities.GetFontAsset(m_TextElement);
             if (tgs.fontAsset == null)
-                return true;
+                return false;
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
             tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);

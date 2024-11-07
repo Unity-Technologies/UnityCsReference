@@ -8,10 +8,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ScopedRegistryHelpBox : PackageHelpBoxWithReadMore
     {
-        private readonly IUpmCache m_UpmCache;
-        public ScopedRegistryHelpBox(IApplicationProxy application, IUpmCache upmCache) : base(application)
+        public ScopedRegistryHelpBox(IApplicationProxy application) : base(application)
         {
-            m_UpmCache = upmCache;
             text = L10n.Tr("This package is hosted on a Scoped Registry.");
             messageType = HelpBoxMessageType.Info;
             m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
@@ -24,9 +22,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(this, false);
                 return;
             }
-
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(version.name, version.isInstalled, version.versionString);
-            UIUtils.SetElementDisplay(this, packageInfo?.registry is { isDefault: false });
+            UIUtils.SetElementDisplay(this, version.availableRegistry == RegistryType.MyRegistries);
         }
     }
 }

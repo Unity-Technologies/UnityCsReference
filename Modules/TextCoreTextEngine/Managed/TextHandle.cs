@@ -219,7 +219,7 @@ namespace UnityEngine.TextCore.Text
 
         protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
-        private bool isDirty;
+        protected bool isDirty;
         public void SetDirty()
         {
             isDirty = true;

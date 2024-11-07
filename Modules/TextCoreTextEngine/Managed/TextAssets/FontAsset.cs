@@ -898,6 +898,36 @@ namespace UnityEngine.TextCore.Text
         internal static Func<Font, string> SetSourceFontGUID;
         internal static Func<bool> EditorApplicationIsUpdating;
 
+        /// <summary>
+        /// Weak reference to all <see cref="FontAsset"/> instances.
+        /// </summary>
+        static readonly List<WeakReference<FontAsset>> s_CallbackInstances = new();
+
+        /// <summary>
+        /// Register an instance for static lookup.
+        /// </summary>
+        /// <param name="instance">The instance to register.</param>
+        void RegisterCallbackInstance(FontAsset instance)
+        {
+            // Verify that it is not already registered.
+            for (var i = 0; i < s_CallbackInstances.Count; i++)
+            {
+                if (s_CallbackInstances[i].TryGetTarget(out FontAsset fa) && fa == instance)
+                    return;
+            }
+
+            for (var i = 0; i < s_CallbackInstances.Count; i++)
+            {
+                if (!s_CallbackInstances[i].TryGetTarget(out _))
+                {
+                    s_CallbackInstances[i] = new WeakReference<FontAsset>(instance);
+                    return;
+                }
+            }
+
+            s_CallbackInstances.Add(new WeakReference<FontAsset>(this));
+        }
+
         // Profiler Marker declarations
         private static ProfilerMarker k_ReadFontAssetDefinitionMarker = new ProfilerMarker("FontAsset.ReadFontAssetDefinition");
         private static ProfilerMarker k_AddSynthesizedCharactersMarker = new ProfilerMarker("FontAsset.AddSynthesizedCharacters");
@@ -1022,6 +1052,8 @@ namespace UnityEngine.TextCore.Text
 
             IsFontAssetLookupTablesDirty = false;
 
+            RegisterCallbackInstance(this);
+
             k_ReadFontAssetDefinitionMarker.End();
         }
 
@@ -1117,6 +1149,28 @@ namespace UnityEngine.TextCore.Text
 
             // Clear missing unicode lookup
             m_MissingUnicodesFromFontFile?.Clear();
+        }
+
+        internal void ClearFallbackCharacterTable()
+        {
+            var keysToRemove = new List<uint>();
+
+            foreach (var characterLookup in m_CharacterLookupDictionary)
+            {
+                var character = characterLookup.Value;
+
+                // Collect the keys to remove
+                if (character.textAsset != this)
+                {
+                    keysToRemove.Add(characterLookup.Key);
+                }
+            }
+
+            // Now remove the collected keys
+            foreach (var key in keysToRemove)
+            {
+                m_CharacterLookupDictionary.Remove(key);
+            }
         }
 
         internal void InitializeLigatureSubstitutionLookupDictionary()
@@ -1847,7 +1901,12 @@ namespace UnityEngine.TextCore.Text
 
                 ReadFontAssetDefinition();
 
-                //TextResourceManager.RebuildFontAssetCache();
+                // Clear fallback character table for all other fontAssets, in case they were refereing this one.
+                for (var i = 0; i < s_CallbackInstances.Count; i++)
+                    if (s_CallbackInstances[i].TryGetTarget(out var target) && target != this)
+                        target.ClearFallbackCharacterTable();
+
+                TextEventManager.ON_FONT_PROPERTY_CHANGED(true, this);
 
                 // Makes the changes to the font asset persistent.
                 RegisterResourceForUpdate?.Invoke(this);

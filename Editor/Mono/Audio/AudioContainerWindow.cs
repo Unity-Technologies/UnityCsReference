@@ -348,8 +348,6 @@ sealed class AudioContainerWindow : EditorWindow
             m_CachedElements.Clear();
         else
             m_CachedElements = State.AudioContainer.elements.ToList();
-
-        m_AddedElements.Clear();
     }
 
     void OnSerializedObjectChanged(SerializedObject obj)
@@ -836,7 +834,17 @@ sealed class AudioContainerWindow : EditorWindow
     void OnListItemsAdded(IEnumerable<int> indices)
     {
         var indicesArray = indices as int[] ?? indices.ToArray();
+        const string undoName = $"Add {nameof(AudioRandomContainer)} element";
+        var groupUndoName = undoName;
+
+        if (indicesArray.Length > 1)
+        {
+            groupUndoName = $"{undoName}s";
+        }
+
+        Undo.SetCurrentGroupName(groupUndoName);
         var elements = State.AudioContainer.elements.ToList();
+        m_AddedElements.Clear();
 
         foreach (var index in indicesArray)
         {
@@ -852,22 +860,10 @@ sealed class AudioContainerWindow : EditorWindow
 
         State.AudioContainer.elements = elements.ToArray();
 
-        // Object creation undo recording needs to be done in a separate pass from the object property changes above
         foreach (var element in m_AddedElements)
-            Undo.RegisterCreatedObjectUndo(element, "Create AudioContainerElement");
-
-        m_AddedElements.Clear();
-
-        var undoName = $"Add {nameof(AudioRandomContainer)} element";
-
-        if (indicesArray.Length > 1)
         {
-            undoName = $"{undoName}s";
+            Undo.RegisterCreatedObjectUndo(element, undoName);
         }
-
-        Undo.SetCurrentGroupName(undoName);
-
-        m_AddedElements.Clear();
     }
 
     void OnListItemsRemoved(IEnumerable<int> indices)
@@ -881,12 +877,9 @@ sealed class AudioContainerWindow : EditorWindow
         {
             if (m_CachedElements[index] != null)
             {
-                AssetDatabase.RemoveObjectFromAsset(m_CachedElements[index]);
                 Undo.DestroyObjectImmediate(m_CachedElements[index]);
             }
         }
-
-        State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
 
         var undoName = $"Remove {nameof(AudioRandomContainer)} element";
 
@@ -896,6 +889,7 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         Undo.SetCurrentGroupName(undoName);
+        State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnItemListIndexChanged(int oldIndex, int newIndex)
@@ -906,14 +900,18 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnAudioClipDrag(List<AudioClip> audioClips)
     {
-        var undoName = $"Add {nameof(AudioRandomContainer)} element";
+        const string undoName = $"Add {nameof(AudioRandomContainer)} element";
+        var groupUndoName = undoName;
 
         if (audioClips.Count > 1)
-            undoName = $"{undoName}s";
+        {
+            groupUndoName = $"{undoName}s";
+        }
 
-        Undo.RegisterCompleteObjectUndo(State.AudioContainer, undoName);
-
+        Undo.RegisterCompleteObjectUndo(State.AudioContainer, groupUndoName);
+        Undo.SetCurrentGroupName(groupUndoName);
         var elements = State.AudioContainer.elements.ToList();
+        m_AddedElements.Clear();
 
         foreach (var audioClip in audioClips)
         {
@@ -930,12 +928,10 @@ sealed class AudioContainerWindow : EditorWindow
 
         State.AudioContainer.elements = elements.ToArray();
 
-        // Object creation undo recording needs to be done in a separate pass from the object property changes above
         foreach (var element in m_AddedElements)
-            Undo.RegisterCreatedObjectUndo(element, "Create AudioContainerElement");
-
-        m_AddedElements.Clear();
-        Undo.SetCurrentGroupName(undoName);
+        {
+            Undo.RegisterCreatedObjectUndo(element, undoName);
+        }
     }
 
     void OnAudioClipListChanged(SerializedProperty property)
@@ -948,6 +944,12 @@ sealed class AudioContainerWindow : EditorWindow
 
             foreach (var elm in elements)
             {
+                // If the element is null, OnBindListItem will handle it, log an error and grey out the list entry.
+                if (elm == null)
+                {
+                    continue;
+                }
+
                 AssetDatabase.TryGetGUIDAndLocalFileIdentifier(elm, out var guid, out var localId);
 
                 // An empty asset GUID means the subasset has lost the reference
