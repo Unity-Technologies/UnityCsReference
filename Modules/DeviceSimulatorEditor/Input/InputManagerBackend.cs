@@ -34,6 +34,7 @@ namespace UnityEditor.DeviceSimulation
         private double m_LastEventTime;
         private List<EndedTouch> m_EndedTouches = new List<EndedTouch>();
         private Touch m_NextTouch;
+        private Vector2 m_StartPosition;
         private bool m_TouchInProgress;
 
         public InputManagerBackend()
@@ -69,6 +70,7 @@ namespace UnityEditor.DeviceSimulation
 
             if (newPhase == UnityEngine.TouchPhase.Began)
             {
+                m_StartPosition = position;
                 m_TouchInProgress = true;
                 m_NextTouch.tapCount = GetTapCount(m_NextTouch.position);
                 m_NextTouch.deltaTime = 0;
@@ -79,6 +81,8 @@ namespace UnityEditor.DeviceSimulation
                 if (m_NextTouch.phase == UnityEngine.TouchPhase.Ended)
                     m_EndedTouches.Add(new EndedTouch(m_NextTouch.position, EditorApplication.timeSinceStartup, m_NextTouch.tapCount));
             }
+            m_NextTouch.rawPosition = m_StartPosition;
+
             Input.SimulateTouch(m_NextTouch);
         }
 

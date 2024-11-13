@@ -7,29 +7,34 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Analytics;
+using UnityEngine.Scripting;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
     internal class PackageExport : EditorWindow
     {
-        [SerializeField] private ExportPackageItem[]    m_ExportPackageItems;
-        [SerializeField] private bool                   m_IncludeDependencies = true;
-        [SerializeField] private TreeViewState          m_TreeViewState;
-        [NonSerialized]  private PackageExportTreeView  m_Tree;
-        [NonSerialized]  private bool                   m_DidScheduleUpdate = false;
+        [SerializeField] private ExportPackageItem[] m_ExportPackageItems;
+        [SerializeField] private bool m_IncludeDependencies = true;
+        [SerializeField] private bool m_IncludeScripts = true;
+        [SerializeField] private TreeViewState m_TreeViewState;
+        [NonSerialized] private PackageExportTreeView m_Tree;
+        [NonSerialized] private bool m_DidScheduleUpdate = false;
 
         public ExportPackageItem[] items { get { return m_ExportPackageItems; } }
 
         internal static class Styles
         {
-            public static GUIStyle title                     = "LargeBoldLabel";
-            public static GUIStyle bottomBarBg               = "ProjectBrowserBottomBarBg";
-            public static GUIStyle topBarBg                  = "OT TopBar";
-            public static GUIStyle loadingTextStyle          = "CenteredLabel";
-            public static GUIContent allText                 = EditorGUIUtility.TrTextContent("All");
-            public static GUIContent noneText                = EditorGUIUtility.TrTextContent("None");
-            public static GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies");
-            public static GUIContent header                  = EditorGUIUtility.TrTextContent("Items to Export");
+            public static GUIStyle title = "LargeBoldLabel";
+            public static GUIStyle bottomBarBg = "ProjectBrowserBottomBarBg";
+            public static GUIStyle topBarBg = "OT TopBar";
+            public static GUIStyle loadingTextStyle = "CenteredLabel";
+            public static GUIContent allText = EditorGUIUtility.TrTextContent("All");
+            public static GUIContent noneText = EditorGUIUtility.TrTextContent("None");
+            public static GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies", "Include all dependencies required for the selected items in the export list.");
+            public static GUIContent includeScriptsText = EditorGUIUtility.TrTextContent("Include all scripts", "Include all project scripts in the export list to avoid potential compilation errors.");
+            public static GUIContent header = EditorGUIUtility.TrTextContent("Items to Export");
         }
 
         public PackageExport()
@@ -45,7 +50,7 @@ namespace UnityEditor
             GetWindow<PackageExport>(true, "Exporting package");
         }
 
-        internal static IEnumerable<ExportPackageItem> GetAssetItemsForExport(ICollection<string> guids, bool includeDependencies)
+        internal static IEnumerable<ExportPackageItem> GetAssetItemsForExport(ICollection<string> guids, bool includeDependencies, bool includeScripts)
         {
             // if nothing is selected, export all
             if (0 == guids.Count)
@@ -55,9 +60,8 @@ namespace UnityEditor
             }
 
             ExportPackageItem[] assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(guids.ToArray(), includeDependencies, true);
-
-            // If any scripts are included, add all scripts with dependencies
-            if (includeDependencies && assets.Any(asset => UnityEditorInternal.InternalEditorUtility.IsScriptOrAssembly(asset.assetPath)))
+            
+            if (includeScripts)
             {
                 assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(
                     guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies, true);
@@ -175,6 +179,14 @@ namespace UnityEditor
                 SendAnalyticsEvent("toggleIncludeDependencies");
             }
 
+            GUILayout.Space(5);
+            var includeScriptsNewValue = GUILayout.Toggle(m_IncludeScripts, Styles.includeScriptsText);
+            if (m_IncludeScripts != includeScriptsNewValue)
+            {
+                m_IncludeScripts = includeScriptsNewValue;
+                SendAnalyticsEvent("toggleIncludeScripts");
+            }
+
             if (EditorGUI.EndChangeCheck())
             {
                 RefreshAssetList();
@@ -263,7 +275,7 @@ namespace UnityEditor
         {
             UnscheduleBuildAssetList();
 
-            m_ExportPackageItems = GetAssetItemsForExport(Selection.assetGUIDsDeepSelection, m_IncludeDependencies).ToArray();
+            m_ExportPackageItems = GetAssetItemsForExport(Selection.assetGUIDsDeepSelection, m_IncludeDependencies, m_IncludeScripts).ToArray();
 
             // GUI is reconstructed in OnGUI (when needed)
             m_Tree = null;
