@@ -38,17 +38,8 @@ namespace UnityEditor
             var editor = Editor.CreateEditor(obj);
             if (editor == null)
                 return null;
-
-            //Check that Render Pipeline is ready
-            //Beware: AssetImportWorkers have their own Render Pipeline instance. Render Pipeline will be separately created for each one of them.
-            var pipelineWasNotInitialized = !RenderPipelineManager.pipelineSwitchCompleted;
-
-            //We always keep this call to initialize Render Pipeline when Render Pipeline was not ready
+            
             var previewTexture = editor.RenderStaticPreview(assetPath, subAssets, width, height);
-
-            //If after render our Render Pipeline is initialized we re-render to have a valid result
-            if (pipelineWasNotInitialized && RenderPipelineManager.pipelineSwitchCompleted)
-                previewTexture = editor.RenderStaticPreview(assetPath, subAssets, width, height);
 
             // For debugging we write the preview to a file (keep)
             //{
