@@ -1354,6 +1354,7 @@ namespace UnityEditor
             rootVisualElement.Add(cameraViewVisualElement);
 
             m_SceneViewMotion = new SceneViewMotion();
+
             rootVisualElement.RegisterCallback<MouseEnterEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
 
@@ -1362,6 +1363,13 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
 
             m_RectSelection = new RectSelection();
+
+            if (s_SceneViews.Count == 0)
+            {
+                m_SceneViewMotion.RegisterShortcutContexts();
+                m_RectSelection.RegisterShortcutContext();
+            }
+
             m_SceneViewMotion.CompleteSceneViewMotionTool();
             m_Viewpoint.AssignSceneView(this);
 
@@ -1632,6 +1640,12 @@ namespace UnityEditor
                 DestroyImmediate(s_MipColorsTexture, true);
 
             s_SceneViews.Remove(this);
+
+            if (s_SceneViews.Count == 0)
+            {
+                m_SceneViewMotion.UnregisterShortcutContexts();
+                m_RectSelection.UnregisterShortcutContext();
+            }
 
             if (s_LastActiveSceneView == this)
                 lastActiveSceneView = s_SceneViews.Count > 0 ? s_SceneViews[0] as SceneView : null;
@@ -2554,6 +2568,10 @@ namespace UnityEditor
             Color origColor = GUI.color;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraViewport;
+
+            //If we know the window space camera rect is invalid, we can early-out here
+            if(windowSpaceCameraRect.width <= 0 || windowSpaceCameraRect.height <= 0)
+                return;
 
             HandleClickAndDragToFocus();
 

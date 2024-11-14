@@ -452,16 +452,33 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Optional attribute on overrides of <see cref="CallbackEventHandler.HandleEventBubbleUp"/>.
+    /// Optional attribute on overrides of <see cref="CallbackEventHandler.HandleEventBubbleUp"/>
+    /// and <see cref="CallbackEventHandler.HandleEventTrickleDown"/>.
+    /// Use this attribute to specify all the event types used by the method override.
+    /// The event dispatcher can then safely skip events not needed for this method
+    /// if they are identified internally as valid candidates for performance optimizations.
     /// </summary>
     /// <remarks>
-    /// Use this to specify all the event types that these methods require to operate.
-    /// If an override of one of these methods doesn't have any <see cref="EventInterestAttribute"/>, UI Toolkit will
-    /// assume that the method doesn't have enough information on what event types it needs, and will conservatively
-    /// send all incoming events to that method.
-    /// It is generally a good idea to use the <see cref="EventInterestAttribute"/> attribute because it allows
-    /// UI Toolkit to perform optimizations and not calculate all the information related to an event if it isn't used
-    /// by the method that would receive it.
+    /// Only use this attribute for performance optimizations, not for filtering out
+    /// specific event types.
+    /// All event types specified in an <see cref="EventInterestAttribute"/> on a HandleEvent method override
+    /// are guaranteed to be sent to that method.
+    /// However, event types not specified in any <see cref="EventInterestAttribute"/> might still be sent
+    /// to that method under various conditions:
+    ///
+    ///- A base class override uses it,
+    ///- The event is part of a group that includes at least one event of interest, or
+    ///- Event optimizations are not applied for any other reason.
+    ///\\
+    ///\\
+    /// If no <see cref="EventInterestAttribute"/> is specified, UI Toolkit
+    /// assumes that the method doesn't have enough information on necessary event types, and
+    /// sends all incoming events to that method conservatively.
+    ///\\
+    ///\\
+    /// It is recommended to use the <see cref="EventInterestAttribute"/> attribute because it allows
+    /// UI Toolkit to optimize performance by skipping unnecessary event-related calculations for methods
+    /// that don’t use the event.
     /// </remarks>
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public class EventInterestAttribute : Attribute
