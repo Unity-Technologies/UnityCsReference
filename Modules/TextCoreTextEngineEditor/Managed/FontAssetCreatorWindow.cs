@@ -19,6 +19,7 @@ using FaceInfo = UnityEngine.TextCore.FaceInfo;
 using Glyph = UnityEngine.TextCore.Glyph;
 using GlyphRect = UnityEngine.TextCore.GlyphRect;
 using GlyphMetrics = UnityEngine.TextCore.GlyphMetrics;
+using System;
 
 
 namespace UnityEditor.TextCore.Text
@@ -215,8 +216,7 @@ namespace UnityEditor.TextCore.Text
             }
 
             // Get potential font face and styles for the current font.
-            if (m_SourceFont != null)
-                m_SourceFontFaces = GetFontFaces();
+            m_SourceFontFaces = GetFontFaces();
 
             ClearGeneratedData();
         }
@@ -441,8 +441,7 @@ namespace UnityEditor.TextCore.Text
                 {
                     m_SelectedFontAsset = null;
                     m_IsFontAtlasInvalid = true;
-                    if (m_SourceFont != null)
-                        m_SourceFontFaces = GetFontFaces();
+                    m_SourceFontFaces = GetFontFaces();
                     m_SourceFontFaceIndex = 0;
                 }
 
@@ -1222,7 +1221,8 @@ namespace UnityEditor.TextCore.Text
         /// <returns></returns>
         string[] GetFontFaces()
         {
-            FontEngine.LoadFontFace(m_SourceFont, 0, 0);
+            if (FontEngine.LoadFontFace(m_SourceFont, 0, 0) != FontEngineError.Success)
+                return Array.Empty<string>();
             return FontEngine.GetFontFaces();
         }
 
@@ -1824,8 +1824,7 @@ namespace UnityEditor.TextCore.Text
         {
             m_SourceFont = AssetDatabase.LoadAssetAtPath<Font>(AssetDatabase.GUIDToAssetPath(settings.sourceFontFileGUID));
             m_SourceFontFaceIndex = settings.faceIndex;
-            if (m_SourceFont != null)
-                m_SourceFontFaces = GetFontFaces();
+            m_SourceFontFaces = GetFontFaces();
             m_PointSizeSamplingMode  = settings.pointSizeSamplingMode;
             m_PointSize = (int)settings.pointSize;
             m_Padding = settings.padding;

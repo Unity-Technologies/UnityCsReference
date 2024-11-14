@@ -172,6 +172,7 @@ namespace UnityEditor
         bool                        m_2D;
 
         bool                        m_IsValid;
+        bool                        m_IsCurrentPreviewInstanceFallback = false;
 
         private const float kFloorFadeDuration = 0.2f;
         private const float kFloorScale = 5;
@@ -338,7 +339,9 @@ namespace UnityEditor
 
         void SetupBounds(GameObject go)
         {
-            m_IsValid = go != null && go != GetGenericAnimationFallback();
+            bool isGenericAnimationFallback = go == GetGenericAnimationFallback();
+            m_IsCurrentPreviewInstanceFallback = isGenericAnimationFallback || go == GetHumanoidFallback();
+            m_IsValid = go != null && !isGenericAnimationFallback;
 
             if (go != null)
             {
@@ -741,7 +744,7 @@ namespace UnityEditor
             SetPreviewCharacterEnabled(true, m_ShowReference);
             foreach (var previewable in m_Previewables)
                 previewable.OnPreviewUpdate();
-            previewUtility.Render(option != PreviewPopupOptions.DefaultModel);
+            previewUtility.Render(!m_IsCurrentPreviewInstanceFallback);
             SetPreviewCharacterEnabled(false, false);
 
             // Texture offset - negative in order to compensate the floor movement.

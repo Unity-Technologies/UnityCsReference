@@ -585,7 +585,6 @@ namespace UnityEditor.Build.Profile
             {
                 s_Instance = CreateInstance<BuildProfileContext>();
                 s_Instance.hideFlags = HideFlags.DontSave;
-                Save();
             }
 
             System.Diagnostics.Debug.Assert(s_Instance != null);

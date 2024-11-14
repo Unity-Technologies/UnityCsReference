@@ -41,8 +41,8 @@ namespace UnityEditor
             public static GUIContent mass = EditorGUIUtility.TrTextContent("Mass", "Mass of this rigid body.");
             public static GUIContent useGravity = EditorGUIUtility.TrTextContent("Use Gravity", "Controls whether gravity affects this rigid body.");
 
-            public static GUIContent drag = EditorGUIUtility.TrTextContent("Drag", "Damping factor that affects how this body resists linear motion.");
-            public static GUIContent angularDrag = EditorGUIUtility.TrTextContent("Angular Drag", "Damping factor that affects how this body resists rotations.");
+            public static GUIContent drag = EditorGUIUtility.TrTextContent("Linear Damping", "Damping factor that affects how this body resists linear motion.");
+            public static GUIContent angularDrag = EditorGUIUtility.TrTextContent("Angular Damping", "Damping factor that affects how this body resists rotations.");
             public static GUIContent isKinematic = EditorGUIUtility.TrTextContent("Is Kinematic", "Controls whether physics affects the rigidbody.");
             public static GUIContent interpolate = EditorGUIUtility.TrTextContent("Interpolate", "Smooths out the effect of running physics at a fixed frame rate.");
 

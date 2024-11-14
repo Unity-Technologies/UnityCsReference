@@ -3977,12 +3977,12 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
+        internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
         {
-            return BuildPathBoxButton(prop, uiString, directory, null);
+            BuildPathBoxButton(prop, uiString, directory, null, null);
         }
 
-        internal static bool BuildPathBoxButton(SerializedProperty prop, string uiString, string directory, Action onSelect)
+        internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory, Action onSelect, Action onChanged)
         {
             float h = EditorGUI.kSingleLineHeight;
             float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
@@ -4011,19 +4011,21 @@ namespace UnityEditor
 
                 prop.serializedObject.ApplyModifiedProperties();
 
+                if (changed && onChanged != null)
+                    onChanged();
+
+                // Necessary to avoid the error "BeginLayoutGroup must be called first".
                 GUIUtility.ExitGUI();
             }
-
-            return changed;
         }
 
-        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
+        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory, string ext)
         {
-            return BuildFileBoxButton(prop, uiString, directory, ext, null);
+            BuildFileBoxButton(prop, uiString, directory, ext, null, null);
         }
 
-        internal static bool BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
-            string ext, Action onSelect)
+        internal static void BuildFileBoxButton(SerializedProperty prop, string uiString, string directory,
+            string ext, Action onSelect, Action onChanged)
         {
             bool changed = false;
             using (var vertical = new EditorGUILayout.VerticalScope())
@@ -4055,11 +4057,13 @@ namespace UnityEditor
 
                     prop.serializedObject.ApplyModifiedProperties();
 
+                    if (changed && onChanged != null)
+                        onChanged();
+
+                    // Necessary to avoid the error "BeginLayoutGroup must be called first".
                     GUIUtility.ExitGUI();
                 }
             }
-
-            return changed;
         }
 
         public void PublishSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 5)

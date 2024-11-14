@@ -261,11 +261,6 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
-        /// Used to keep track of which Sprite Assets have been searched.
-        /// </summary>
-        private static HashSet<int> k_searchedSpriteAssets;
-
-        /// <summary>
         /// Search through the given sprite asset and its fallbacks for the specified sprite matching the given unicode character.
         /// </summary>
         /// <param name="spriteAsset">The sprite asset asset to search for the given unicode.</param>
@@ -284,18 +279,15 @@ namespace UnityEngine.TextCore.Text
                 return spriteAsset;
 
             // Initialize list to track instance of Sprite Assets that have already been searched.
-            if (k_searchedSpriteAssets == null)
-                k_searchedSpriteAssets = new HashSet<int>();
-            else
-                k_searchedSpriteAssets.Clear();
+            HashSet<int> searchedSpriteAssets = new HashSet<int>();
 
             // Get instance ID of sprite asset and add to list.
             int id = spriteAsset.GetInstanceID();
-            k_searchedSpriteAssets.Add(id);
+            searchedSpriteAssets.Add(id);
 
             // Search potential fallback sprite assets if includeFallbacks is true.
             if (includeFallbacks && spriteAsset.fallbackSpriteAssets != null && spriteAsset.fallbackSpriteAssets.Count > 0)
-                return SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, unicode, true, out spriteIndex);
+                return SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, unicode, true, searchedSpriteAssets, out spriteIndex);
 
             // Search default sprite asset potentially assigned in the TMP Settings.
             //if (includeFallbacks && TMP_Settings.defaultSpriteAsset != null)
@@ -313,7 +305,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="includeFallbacks"></param>
         /// <param name="spriteIndex"></param>
         /// <returns></returns>
-        private static SpriteAsset SearchForSpriteByUnicodeInternal(List<SpriteAsset> spriteAssets, uint unicode, bool includeFallbacks, out int spriteIndex)
+        private static SpriteAsset SearchForSpriteByUnicodeInternal(List<SpriteAsset> spriteAssets, uint unicode, bool includeFallbacks, HashSet<int> searchedSpriteAssets, out int spriteIndex)
         {
             for (int i = 0; i < spriteAssets.Count; i++)
             {
@@ -323,10 +315,10 @@ namespace UnityEngine.TextCore.Text
                 int id = temp.GetInstanceID();
 
                 // Skip sprite asset if it has already been searched.
-                if (k_searchedSpriteAssets.Add(id) == false)
+                if (searchedSpriteAssets.Add(id) == false)
                     continue;
 
-                temp = SearchForSpriteByUnicodeInternal(temp, unicode, includeFallbacks, out spriteIndex);
+                temp = SearchForSpriteByUnicodeInternal(temp, unicode, includeFallbacks, searchedSpriteAssets, out spriteIndex);
 
                 if (temp != null)
                     return temp;
@@ -344,7 +336,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="includeFallbacks"></param>
         /// <param name="spriteIndex"></param>
         /// <returns></returns>
-        private static SpriteAsset SearchForSpriteByUnicodeInternal(SpriteAsset spriteAsset, uint unicode, bool includeFallbacks, out int spriteIndex)
+        private static SpriteAsset SearchForSpriteByUnicodeInternal(SpriteAsset spriteAsset, uint unicode, bool includeFallbacks, HashSet<int> searchedSpriteAssets, out int spriteIndex)
         {
             // Get sprite index for the given unicode
             spriteIndex = spriteAsset.GetSpriteIndexFromUnicode(unicode);
@@ -353,7 +345,7 @@ namespace UnityEngine.TextCore.Text
                 return spriteAsset;
 
             if (includeFallbacks && spriteAsset.fallbackSpriteAssets != null && spriteAsset.fallbackSpriteAssets.Count > 0)
-                return SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, unicode, true, out spriteIndex);
+                return SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, unicode, true, searchedSpriteAssets, out spriteIndex);
 
             spriteIndex = -1;
             return null;
@@ -377,22 +369,19 @@ namespace UnityEngine.TextCore.Text
                 return spriteAsset;
 
             // Initialize or clear list to Sprite Assets that have already been searched.
-            if (k_searchedSpriteAssets == null)
-                k_searchedSpriteAssets = new HashSet<int>();
-            else
-                k_searchedSpriteAssets.Clear();
+            HashSet<int> searchedSpriteAssets = new HashSet<int>();
 
             int id = spriteAsset.GetHashCode();
 
             // Add to list of font assets already searched.
-            k_searchedSpriteAssets.Add(id);
+            searchedSpriteAssets.Add(id);
 
             SpriteAsset tempSpriteAsset;
 
             // Search potential local fallbacks assigned to the sprite asset.
             if (includeFallbacks && spriteAsset.fallbackSpriteAssets != null && spriteAsset.fallbackSpriteAssets.Count > 0)
             {
-                tempSpriteAsset = SearchForSpriteByHashCodeInternal(spriteAsset.fallbackSpriteAssets, hashCode, true, out spriteIndex);
+                tempSpriteAsset = SearchForSpriteByHashCodeInternal(spriteAsset.fallbackSpriteAssets, hashCode, true, searchedSpriteAssets, out spriteIndex);
 
                 if (spriteIndex != -1)
                     return tempSpriteAsset;
@@ -408,14 +397,14 @@ namespace UnityEngine.TextCore.Text
             // Search default sprite asset potentially assigned in the Text Settings.
             if (includeFallbacks && textSettings.defaultSpriteAsset != null)
             {
-                tempSpriteAsset = SearchForSpriteByHashCodeInternal(textSettings.defaultSpriteAsset, hashCode, true, out spriteIndex);
+                tempSpriteAsset = SearchForSpriteByHashCodeInternal(textSettings.defaultSpriteAsset, hashCode, true, searchedSpriteAssets, out spriteIndex);
 
                 if (spriteIndex != -1)
                     return tempSpriteAsset;
             }
 
             // Clear search list since we are now looking for the missing sprite character.
-            k_searchedSpriteAssets.Clear();
+            searchedSpriteAssets.Clear();
 
             uint missingSpriteCharacterUnicode = textSettings.missingSpriteCharacterUnicode;
 
@@ -425,12 +414,12 @@ namespace UnityEngine.TextCore.Text
                 return spriteAsset;
 
             // Add current sprite asset to list of assets already searched.
-            k_searchedSpriteAssets.Add(id);
+            searchedSpriteAssets.Add(id);
 
             // Search for the missing sprite character in the local sprite asset and potential fallbacks.
             if (includeFallbacks && spriteAsset.fallbackSpriteAssets != null && spriteAsset.fallbackSpriteAssets.Count > 0)
             {
-                tempSpriteAsset = SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, missingSpriteCharacterUnicode, true, out spriteIndex);
+                tempSpriteAsset = SearchForSpriteByUnicodeInternal(spriteAsset.fallbackSpriteAssets, missingSpriteCharacterUnicode, true, searchedSpriteAssets, out spriteIndex);
 
                 if (spriteIndex != -1)
                     return tempSpriteAsset;
@@ -439,7 +428,7 @@ namespace UnityEngine.TextCore.Text
             // Search for the missing sprite character in the default sprite asset and potential fallbacks.
             if (includeFallbacks && textSettings.defaultSpriteAsset != null)
             {
-                tempSpriteAsset = SearchForSpriteByUnicodeInternal(textSettings.defaultSpriteAsset, missingSpriteCharacterUnicode, true, out spriteIndex);
+                tempSpriteAsset = SearchForSpriteByUnicodeInternal(textSettings.defaultSpriteAsset, missingSpriteCharacterUnicode, true, searchedSpriteAssets,out spriteIndex);
                 if (spriteIndex != -1)
                     return tempSpriteAsset;
             }
@@ -456,7 +445,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="searchFallbacks"></param>
         /// <param name="spriteIndex"></param>
         /// <returns></returns>
-        private static SpriteAsset SearchForSpriteByHashCodeInternal(List<SpriteAsset> spriteAssets, int hashCode, bool searchFallbacks, out int spriteIndex)
+        private static SpriteAsset SearchForSpriteByHashCodeInternal(List<SpriteAsset> spriteAssets, int hashCode, bool searchFallbacks, HashSet<int> searchedSpriteAssets, out int spriteIndex)
         {
             // Search through the list of sprite assets
             for (int i = 0; i < spriteAssets.Count; i++)
@@ -467,10 +456,10 @@ namespace UnityEngine.TextCore.Text
                 int id = temp.GetHashCode();
 
                 // Skip sprite asset if it has already been searched.
-                if (k_searchedSpriteAssets.Add(id) == false)
+                if (searchedSpriteAssets.Add(id) == false)
                     continue;
 
-                temp = SearchForSpriteByHashCodeInternal(temp, hashCode, searchFallbacks, out spriteIndex);
+                temp = SearchForSpriteByHashCodeInternal(temp, hashCode, searchFallbacks, searchedSpriteAssets, out spriteIndex);
 
                 if (temp != null)
                     return temp;
@@ -488,7 +477,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="searchFallbacks"></param>
         /// <param name="spriteIndex"></param>
         /// <returns></returns>
-        private static SpriteAsset SearchForSpriteByHashCodeInternal(SpriteAsset spriteAsset, int hashCode, bool searchFallbacks, out int spriteIndex)
+        private static SpriteAsset SearchForSpriteByHashCodeInternal(SpriteAsset spriteAsset, int hashCode, bool searchFallbacks, HashSet<int> searchedSpriteAssets, out int spriteIndex)
         {
             // Get the sprite for the given hash code.
             spriteIndex = spriteAsset.GetSpriteIndexFromHashcode(hashCode);
@@ -496,7 +485,7 @@ namespace UnityEngine.TextCore.Text
                 return spriteAsset;
 
             if (searchFallbacks && spriteAsset.fallbackSpriteAssets != null && spriteAsset.fallbackSpriteAssets.Count > 0)
-                return SearchForSpriteByHashCodeInternal(spriteAsset.fallbackSpriteAssets, hashCode, true, out spriteIndex);
+                return SearchForSpriteByHashCodeInternal(spriteAsset.fallbackSpriteAssets, hashCode, true, searchedSpriteAssets, out spriteIndex);
 
             spriteIndex = -1;
             return null;

@@ -208,8 +208,22 @@ namespace UnityEditor
             }
         }
 
+        // Only valid and rebuilds when sharedTracker is locked
+        internal static ActiveEditorTracker fallbackTracker
+        {
+            get
+            {
+                var tracker = new ActiveEditorTracker();
+                SetupFallbackTracker(tracker);
+                return tracker;
+            }
+        }
+
         [FreeFunction("Internal_SetupSharedTracker")]
         static extern void SetupSharedTracker(ActiveEditorTracker sharedTracker);
+
+        [FreeFunction("Internal_SetupFallbackTracker")]
+        static extern void SetupFallbackTracker(ActiveEditorTracker fallbackTracker);
 
         [RequiredByNativeCode]
         static void Internal_OnTrackerRebuild()
