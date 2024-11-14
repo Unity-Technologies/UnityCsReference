@@ -75,6 +75,15 @@ namespace UnityEditor.Modules
         {
         }
 
+        public virtual PreconfiguredSettingsVariant[] GetPreconfiguredSettingsVariants()
+        {
+            return Array.Empty<PreconfiguredSettingsVariant>();
+        }
+
+        public virtual void OnBuildProfileCreated(BuildProfile buildProfile, int preconfiguredSettingsVariant)
+        {
+        }
+
         public virtual void OnDisable()
         {
         }

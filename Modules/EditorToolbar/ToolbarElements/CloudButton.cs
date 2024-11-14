@@ -38,7 +38,7 @@ namespace UnityEditor.Toolbars
             style.display = MPE.ProcessService.level == MPE.ProcessLevel.Main ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
-        [MenuItem("Window/General/Services %0", false, 302)]
+        [MenuItem("Window/Package Management/Services %0", false, 1502)]
         static void OpenServicesDiscoveryWindowFromMenu()
         {
             OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendTopMenuServicesEvent);

@@ -1376,7 +1376,7 @@ namespace UnityEditor
 
             Menu.RemoveMenuItem(k_RootMenuItemName);
             var editorWindows = Resources.FindObjectsOfTypeAll<EditorWindow>();
-            int menuIdx = -10;
+            int menuIdx = -15;
 
             Menu.AddMenuItem($"{k_RootMenuItemName}/Close all floating panels...", "", false, menuIdx++, () =>
             {

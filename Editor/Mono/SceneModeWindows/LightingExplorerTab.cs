@@ -121,7 +121,7 @@ namespace UnityEditor
 
             m_Column.sortedAscending        = true;
             m_Column.sortingArrowAlignment  = TextAlignment.Center;
-            m_Column.autoResize             = false;
+            m_Column.autoResize             = true;
             m_Column.allowToggleVisibility  = true;
             m_Column.headerTextAlignment    = type == DataType.Checkbox ? TextAlignment.Center : TextAlignment.Left;
 

@@ -185,28 +185,61 @@ namespace UnityEditor.Build.Profile.Elements
         /// </summary>
         internal void SelectActiveProfile()
         {
-            var search = m_DataSource.customBuildProfiles;
-            for (int i = 0; i < search.Count; ++i)
-            {
-                if (search[i].IsActiveBuildProfileOrPlatform())
-                {
-                    SelectBuildProfile(i);
-                    return;
-                }
-            }
+            if (TrySelectCustomBuildProfile())
+                return;
 
-            search = m_DataSource.classicPlatforms;
+            if (TrySelectClassicPlatform())
+                return;
+
+            if (TrySelectClassicBasePlatform())
+                return;
+
+            Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
+        }
+
+        bool TrySelectClassicPlatform()
+        {
+            var search = m_DataSource.classicPlatforms;
             for (int i = 0; i < search.Count; ++i)
             {
                 if (search[i].IsActiveBuildProfileOrPlatform())
                 {
                     // Consider scene list item occupies the first index.
                     SelectInstalledPlatform(i);
-                    return;
+                    return true;
                 }
             }
+            return false;
+        }
 
-            Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
+        bool TrySelectClassicBasePlatform()
+        {
+            var search = m_DataSource.classicPlatforms;
+            for (int i = 0; i < search.Count; ++i)
+            {
+                if (BuildProfileModuleUtil.IsBasePlatformOfActivePlatform(search[i].platformGuid))
+                {
+                    // Consider scene list item occupies the first index.
+                    SelectInstalledPlatform(i);
+                    BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(search[i]);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool TrySelectCustomBuildProfile()
+        {
+            var search = m_DataSource.customBuildProfiles;
+            for (int i = 0; i < search.Count; ++i)
+            {
+                if (search[i].IsActiveBuildProfileOrPlatform())
+                {
+                    SelectBuildProfile(i);
+                    return true;
+                }
+            }
+            return false;
         }
 
         static List<ClassicItemData> GetPlatformListData(BuildProfileDataSource dataSource)

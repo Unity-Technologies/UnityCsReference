@@ -309,9 +309,6 @@ namespace UnityEngine.TextCore.Text
                     m_CurrentSpriteAsset = sprite.textAsset as SpriteAsset;
                     m_SpriteIndex = (int)sprite.glyphIndex;
 
-                    if (sprite == null)
-                        continue;
-
                     // Sprites are assigned in the E000 Private Area + sprite Index
                     if (charCode == '<')
                         charCode = 57344 + (uint)m_SpriteIndex;

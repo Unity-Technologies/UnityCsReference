@@ -252,6 +252,7 @@ namespace UnityEditor
                 for (int i = 0; i < destination.columns.Length; ++i)
                 {
                     destination.columns[i].sortedAscending = source.columns[i].sortedAscending;
+                    destination.columns[i].autoResize = true;
 
                     var sourceColumn = source.columns[i] as Column;
                     var destColumn = destination.columns[i] as Column;

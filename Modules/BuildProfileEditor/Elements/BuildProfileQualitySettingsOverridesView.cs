@@ -62,11 +62,8 @@ namespace UnityEditor.Build.Profile.Elements
                 if (qualitySettings != null)
                     return;
 
-                qualitySettings = ScriptableObject.CreateInstance<BuildProfileQualitySettings>();
-                qualitySettings.Instantiate();
-                profile.qualitySettings = qualitySettings;
-                AssetDatabase.AddObjectToAsset(qualitySettings, profile);
-                EditorUtility.SetDirty(profile);
+                BuildProfileModuleUtil.CreateQualitySettings(profile);
+                qualitySettings = profile.qualitySettings;
 
                 editor = Editor.CreateEditor(qualitySettings) as BuildProfileQualitySettingsEditor;
                 editor.ResetToGlobalQualitySettingsValues(profile);
@@ -91,11 +88,7 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
                 }
 
-                AssetDatabase.RemoveObjectFromAsset(qualitySettings);
-                profile.qualitySettings = null;
-                EditorUtility.SetDirty(profile);
-
-                UpdateViewOnQualitySettingsSubAssetRemoved();
+                BuildProfileModuleUtil.RemoveQualitySettings(profile);
             }
 
             void UpdateViewOnQualitySettingsSubAssetRemoved()

@@ -11,9 +11,14 @@ namespace UnityEngine.Rendering
     public static partial class ShadingRateInfo
     {
         /// <summary>
-        /// Get the shading rate feature tier supoprted by the current platform.
+        /// Returns true if image-based fragment shading rates are supported by the current graphics card.
         /// </summary>
-        public static ShadingRateFeatureTier featureTier => GetFeatureTier();
+        public static bool supportsPerImageTile => SupportsPerImageTile();
+
+        /// <summary>
+        /// Returns true if variable fragment shading rates per draw call are supported by the current graphics card
+        /// </summary>
+        public static bool supportsPerDrawCall => SupportsPerDrawCall();
 
         /// <summary>
         /// Get the shading rate image tile size used by the current platform.
@@ -38,8 +43,11 @@ namespace UnityEngine.Rendering
         [FreeFunction("ShadingRateInfo::QueryNativeValue")]
         public static extern byte QueryNativeValue(ShadingRateFragmentSize fragmentSize);
 
-        [FreeFunction("ShadingRateInfo::GetFeatureTier")]
-        static extern ShadingRateFeatureTier GetFeatureTier();
+        [FreeFunction("ShadingRateInfo::SupportsPerImageTile")]
+        static extern bool SupportsPerImageTile();
+
+        [FreeFunction("ShadingRateInfo::SupportsPerDrawCall")]
+        static extern bool SupportsPerDrawCall();
 
         [FreeFunction("ShadingRateInfo::GetImageTileSize")]
         static extern Vector2Int GetImageTileSize();

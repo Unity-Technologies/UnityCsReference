@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor.Modules;
 using UnityEditor.Rendering;
 using UnityEngine;
@@ -428,6 +429,43 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Create graphics settings override for build profile
+        /// </summary>
+        public static void CreateGraphicsSettings(BuildProfile buildProfile)
+        {
+            buildProfile.CreateGraphicsSettings();
+        }
+
+        /// <summary>
+        /// Remove build profile graphics settings override
+        /// </summary>
+        public static void RemoveGraphicsSettings(BuildProfile buildProfile)
+        {
+            buildProfile.RemoveGraphicsSettings();
+        }
+
+        /// <summary>
+        /// Create graphics settings quality for build profile
+        /// </summary>
+        public static void CreateQualitySettings(BuildProfile buildProfile)
+        {
+            buildProfile.CreateQualitySettings();
+        }
+
+        /// <summary>
+        /// Remove build profile quality settings override
+        /// </summary>
+        public static void RemoveQualitySettings(BuildProfile buildProfile)
+        {
+            buildProfile.RemoveQualitySettings();
+        }
+
+        public static void NotifyBuildProfileExtensionOfCreation(BuildProfile buildProfile, int preconfiguredSettingsVariant)
+        {
+            buildProfile.NotifyBuildProfileExtensionOfCreation(preconfiguredSettingsVariant);
+        }
+
+        /// <summary>
         /// Create player settings for build profile based on global player settings
         /// </summary>
         public static void CreatePlayerSettingsFromGlobal(BuildProfile buildProfile)
@@ -680,7 +718,7 @@ namespace UnityEditor.Build.Profile
             return result;
         }
 
-        public static string[] GetSettingsRequiringRestart(PlayerSettings previousProfileSettings, PlayerSettings newProfileSettings, BuildTarget oldBuildTarget, BuildTarget newBuildTarget)
+        public static PlayerSettingsRequiringRestart[] GetSettingsRequiringRestart(PlayerSettings previousProfileSettings, PlayerSettings newProfileSettings, BuildTarget oldBuildTarget, BuildTarget newBuildTarget)
         {
             return PlayerSettings.GetSettingsRequiringRestart(previousProfileSettings, newProfileSettings, oldBuildTarget, newBuildTarget);
         }
@@ -722,7 +760,7 @@ namespace UnityEditor.Build.Profile
                 }
             }
 
-            string[] settingsRequiringRestart = GetSettingsRequiringRestart(currentPlayerSettings,
+            var settingsRequiringRestart = GetSettingsRequiringRestart(currentPlayerSettings,
                 nextPlayerSettings, currentBuildTarget, nextBuildTarget);
             // if we've found settings that need restarting..
             if (settingsRequiringRestart.Length > 0 )
@@ -730,6 +768,11 @@ namespace UnityEditor.Build.Profile
                 // ..we show the restart prompt, if the user restarts, we add a restart call to the editor
                 if (ShowRestartEditorDialog(settingsRequiringRestart))
                 {
+                    if (ContainsPlayerSetting(settingsRequiringRestart, PlayerSettingsRequiringRestart.VirtualTexturing))
+                    {
+                        PlayerSettings.SyncVirtualTexturingState(nextPlayerSettings);
+                    }
+
                     EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                     return true;
                 }
@@ -746,21 +789,20 @@ namespace UnityEditor.Build.Profile
             return true;
         }
 
+
         /// <summary>
         /// Show the restart editor dialog with the names of the settings that required the restart to take effect.
         /// </summary>
-        static bool ShowRestartEditorDialog(string[] settingsRequiringRestart)
+        static bool ShowRestartEditorDialog(PlayerSettingsRequiringRestart[] settingsRequiringRestart)
         {
-            var editorPromptText = new System.Text.StringBuilder();
+            var editorPromptText = new StringBuilder();
             editorPromptText.AppendLine(L10n.Tr("The Unity editor must be restarted for the following settings to take effect:"));
-            for (int i = 0; i < settingsRequiringRestart.Length; i++)
-            {
-                editorPromptText.AppendLine(settingsRequiringRestart[i]);
-            }
-
+            var playerSettingNames = GetPlayerSettingNamesToEditorRestartPromptText(settingsRequiringRestart);
+            editorPromptText.AppendLine(playerSettingNames.ToString());
             return EditorUtility.DisplayDialog(L10n.Tr("Unity editor restart required"),
                 editorPromptText.ToString(), L10n.Tr("Apply"), L10n.Tr("Cancel"));
         }
+
 
         internal static PlayerSettings GetBuildProfileOrGlobalPlayerSettings(BuildProfile buildProfile)
         {
@@ -769,6 +811,63 @@ namespace UnityEditor.Build.Profile
                 return BuildProfile.GetGlobalPlayerSettings();
             }
             return buildProfile.playerSettings;
+        }
+
+        public static bool IsBasePlatformOfActivePlatform(GUID platformGuid)
+        {
+            var module = ModuleManager.FindPlatformSupportModule(EditorUserBuildSettings.activePlatformGuid);
+            if (module == null)
+                return false;
+            if (module is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+            {
+                var basePlatformGuid = derivedBuildTargetProvider.GetBasePlatformGuid();
+                return basePlatformGuid == platformGuid;
+            }
+            return false;
+        }
+
+        public static void RepaintProjectSettingsWindow()
+        {
+            foreach (var window in EditorWindow.activeEditorWindows)
+            {
+                if (window is ProjectSettingsWindow)
+                {
+                    window.Repaint();
+                }
+            }
+        }
+
+        /*
+         * private helper functions
+         */
+        private static bool ContainsPlayerSetting(PlayerSettingsRequiringRestart[] playerSettings, PlayerSettingsRequiringRestart targetSetting)
+        {
+            foreach (PlayerSettingsRequiringRestart setting in playerSettings)
+            {
+                if (setting == targetSetting)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static StringBuilder GetPlayerSettingNamesToEditorRestartPromptText(PlayerSettingsRequiringRestart[] settingsRequiringRestart)
+        {
+            var settingsText = new StringBuilder();
+            foreach (PlayerSettingsRequiringRestart setting in settingsRequiringRestart)
+            {
+                var settingPromptText = setting switch
+                {
+                    PlayerSettingsRequiringRestart.IncrementalGC => "Incremental GC",
+                    PlayerSettingsRequiringRestart.ActiveInputHandling => "Active Input Handling",
+                    PlayerSettingsRequiringRestart.GraphicsJobs => "Graphics Jobs",
+                    PlayerSettingsRequiringRestart.VirtualTexturing => "Virtual Texturing",
+                    _ => string.Empty
+                };
+                settingsText.AppendLine(settingPromptText);
+            }
+            return settingsText;
         }
     }
 }

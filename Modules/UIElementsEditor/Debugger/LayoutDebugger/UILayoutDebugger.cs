@@ -176,7 +176,7 @@ namespace UnityEditor.UIElements.Experimental.UILayoutDebugger
                                     m_LastDrawElement.enabledInHierarchy,
                                     m_LastDrawElement.isDirty);
 
-                                m_InfoLine4.text = string.Format("<color=\"white\">Count of ZeroSize Element:{0} {1}%   Count of Out of Root Element:{0} {1}%",
+                                m_InfoLine4.text = string.Format("<color=\"white\">Count of ZeroSize Element:{0} {1}%   Count of Out of Root Element:{2} {3}%",
                                     countOfZeroSizeElement,
                                     100.0f * countOfZeroSizeElement / count,
                                     outOfRootVE,

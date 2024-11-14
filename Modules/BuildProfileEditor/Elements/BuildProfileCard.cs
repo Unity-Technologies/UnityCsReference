@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Modules;
 
 namespace UnityEditor.Build.Profile.Elements
 {
@@ -24,12 +25,15 @@ namespace UnityEditor.Build.Profile.Elements
 
         public string[] requiredPackages { get; set; }
 
+        public PreconfiguredSettingsVariant[] preconfiguredSettingsVariants { get; set; }
+
         public BuildProfileCard()
         {
             displayName = string.Empty;
             platformId = new GUID(string.Empty);
             recommendedPackages = Array.Empty<string>();
             requiredPackages = Array.Empty<string>();
+            preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
             description = string.Empty;
         }
     }

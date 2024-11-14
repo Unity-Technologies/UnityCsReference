@@ -119,6 +119,7 @@ namespace UnityEditor.Build
                 RenderTexture.active = renderTexture;
                 var readableTexture = new Texture2D(sourceTexture.width, sourceTexture.height);
                 readableTexture.ReadPixels(new Rect(0, 0, renderTexture.width, renderTexture.height), 0, 0);
+                readableTexture.pixelsPerPoint = sourceTexture.pixelsPerPoint;
                 readableTexture.Apply();
                 RenderTexture.active = previouslyActiveRenderTexture;
                 RenderTexture.ReleaseTemporary(renderTexture);

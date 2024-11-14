@@ -108,7 +108,7 @@ namespace UnityEditor
             {
                 return iBuildTarget.RootSystemType;
             }
-            return "";
+            return string.Empty;
         }
 
         public static bool BuildTargetSupportsRenderer(BuildPlatform platform, GraphicsDeviceType type)
@@ -206,384 +206,367 @@ namespace UnityEditor
             return false;
         }
 
-        static readonly GUID s_platform_02 = new("0d2129357eac403d8b359c2dcbf82502");
-        static readonly GUID s_platform_05 = new("4e3c793746204150860bf175a9a41a05");
-        static readonly GUID s_platform_09 = new("ad48d16a66894befa4d8181998c3cb09");
-        static readonly GUID s_platform_13 = new("b9b35072a6f44c2e863f17467ea3dc13");
-        static readonly GUID s_platform_14 = new("80657fe557de4d17822398b3a01b8c9e");
-        static readonly GUID s_platform_20 = new("84a3bb9e7420477f885e98145999eb20");
-        static readonly GUID s_platform_21 = new("32e92b6f4db44fadb869cafb8184d021");
-        static readonly GUID s_platform_22 = new("d80a96315208455a9ba318d697981cfc");
-        static readonly GUID s_platform_24 = new("cb423bfea44b4d658edb8bc5d91a3024");
-        static readonly GUID s_platform_31 = new("5d4f9b64eeb74b18a2de0de6f0c36931");
-        static readonly GUID s_platform_37 = new("81e4f4c492fd4311bbf5b0b88a28c737");
-        static readonly GUID s_platform_38 = new("08d61a9cdfb840119d9bea5588e2f338");
-        static readonly GUID s_platform_41 = new("f188349a68c441ec9e3eb4c6f59abd41");
-        static readonly GUID s_platform_42 = new("c9f186cd3d594a1496bca1860359f842");
-        static readonly GUID s_platform_43 = new("a6f1094111614cba85f0508bf9778843");
-        static readonly GUID s_platform_44 = new("e30a9c34166844499a56eaa4ed115c44");
-        static readonly GUID s_platform_45 = new("f1d7bec2fd7f42f481c66ef512f47845");
-        static readonly GUID s_platform_46 = new("99ef95e1e9b048fa9628d7eed27a8646");
-        static readonly GUID s_platform_47 = new("53916e6f1f7240d992977ffa2322b047");
-        static readonly GUID s_platform_48 = new("25a09d2ed10c42f789b61d99b4d9bf83");
-        static readonly GUID s_platform_49 = new("f8c7649c24f344129a97cf9854e2d582");
-        static readonly GUID s_platform_100 = new("8d1e1bca926649cba89d37a4c66e8b3d");
-        static readonly GUID s_platform_101 = new("91d938b35f6f4798811e41f2acf9377f");
-        static readonly GUID s_platform_102 = new("8659dec1db6b4fac86149f99f2fa4291");
+        [Flags]
+        enum PlatformAttributes
+        {
+            None = 0,
+            IsDeprecated = (1 << 0),
+            IsWindowsBuildTarget = (1 << 1),
+            IsWindowsArm64BuildTarget = (1 << 2),
+            IsMacBuildTarget = (1 << 3),
+            IsLinuxBuildTarget = (1 << 4),
+            IsMobileBuildTarget = (1 << 5),
+            IsNDAPlatform = (1 << 6),
+            IsHidden = (1 << 7),
+            ExternalDownloadForBuildTarget = (1 << 8),
+            IsWindowsServerBuildTarget = (1 << 9),
+            IsMacServerBuildTarget = (1 << 10),
+            IsLinuxServerBuildTarget = (1 << 11),
+            IsVisibleInPlatformBrowserOnly = (1 << 12),
+            IsDerivedBuildTarget = (1 << 13),
+        }
+
+        struct PlatformInfo
+        {
+            public string displayName = String.Empty;
+            public BuildTarget buildTarget = BuildTarget.NoTarget;
+            public StandaloneBuildSubtarget subtarget = StandaloneBuildSubtarget.Default;
+            public PlatformAttributes flags = PlatformAttributes.None;
+
+            public string[] requiredPackage = new string[] {};
+            public string[] recommendedPackage = new string[] {};
+            public string description = L10n.Tr("");
+            public string link = L10n.Tr("");    
+            public string instructions = L10n.Tr("*standard install form hub");
+            public string iconName = "BuildSettings.Editor";
+            public PlatformInfo(){}
+
+            public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
+        }
+
+
+        static GUID EmptyGuid = new GUID("");
+
+        static Dictionary<BuildTarget, GUID> s_PlatformGUIDDataQuickLookup = new Dictionary<BuildTarget, GUID>();
+
+        // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead. 
+        // Changes here should be synced with the usage of
+        // BuildTargetDiscovery::HideInUI flag in [Platform]BuildTarget.cpp
+        // This list is ordered by the order in which platforms are displayed in the build profiles window (Do not change!)
+        // Changes here should be synced with kBuildTargetUIOrder[] in BuildTargetDiscovery.cpp
+        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platform]BuildTarget.cpp respective DisplayName, niceName and iconName
+        static readonly Dictionary<GUID, PlatformInfo> allPlatforms = new Dictionary<GUID, PlatformInfo>
+        {
+            // first standalones and servers
+            {
+                new("4e3c793746204150860bf175a9a41a05"),
+                new PlatformInfo
+                {
+                    displayName = "Windows",
+                    description = L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem."),
+                    subtarget = StandaloneBuildSubtarget.Player,
+                    buildTarget = BuildTarget.StandaloneWindows64,
+                    iconName = "BuildSettings.Windows",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("0d2129357eac403d8b359c2dcbf82502"),
+                new PlatformInfo
+                {
+                    displayName = "macOS",
+                    description = L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices."),
+                    subtarget = StandaloneBuildSubtarget.Player,
+                    buildTarget = BuildTarget.StandaloneOSX,
+                    iconName = "BuildSettings.OSX",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("cb423bfea44b4d658edb8bc5d91a3024"),
+                new PlatformInfo
+                {
+                    displayName = "Linux",
+                    description = L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels."),
+                    subtarget = StandaloneBuildSubtarget.Player,
+                    buildTarget = BuildTarget.StandaloneLinux64,
+                    iconName = "BuildSettings.Linux",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            // Server platforms
+            {
+                new("8d1e1bca926649cba89d37a4c66e8b3d"),
+                new PlatformInfo
+                {
+                    displayName = "Windows Server",
+                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games."),
+                    buildTarget = BuildTarget.StandaloneWindows64,
+                    subtarget = StandaloneBuildSubtarget.Server,
+                    iconName = "BuildSettings.DedicatedServer",
+                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    flags = PlatformAttributes.IsWindowsServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("8659dec1db6b4fac86149f99f2fa4291"),
+                new PlatformInfo
+                {
+                    displayName = "macOS Server",
+                    description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games."),
+                    buildTarget = BuildTarget.StandaloneOSX,
+                    subtarget = StandaloneBuildSubtarget.Server,
+                    iconName = "BuildSettings.DedicatedServer",
+                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    flags = PlatformAttributes.IsMacServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("91d938b35f6f4798811e41f2acf9377f"),
+                new PlatformInfo
+                {
+                    displayName = "Linux Server",
+                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games."),
+                    buildTarget = BuildTarget.StandaloneLinux64,
+                    subtarget = StandaloneBuildSubtarget.Server,
+                    iconName = "BuildSettings.DedicatedServer",
+                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    flags = PlatformAttributes.IsLinuxServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            // then mobile
+            {
+                new("b9b35072a6f44c2e863f17467ea3dc13"),
+                new PlatformInfo
+                {
+                    displayName = "Android™",
+                    description = L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
+                    buildTarget = BuildTarget.Android,
+                    link = L10n.Tr("Unity Android Manual / https://docs.unity3d.com/Manual/android.html"),
+                    iconName = "BuildSettings.Android",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("ad48d16a66894befa4d8181998c3cb09"),
+                new PlatformInfo
+                {
+                    displayName = "iOS",
+                    description =  L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
+                    buildTarget = BuildTarget.iOS,
+                    iconName = "BuildSettings.iPhone",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            // then consoles
+            {
+                new("5d4f9b64eeb74b18a2de0de6f0c36931"),
+                new PlatformInfo
+                {
+                    displayName = "PlayStation®4",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level."),
+                    buildTarget = BuildTarget.PS4,
+                    link = L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ "),
+                    iconName = "BuildSettings.PS4",
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            {
+                new("e30a9c34166844499a56eaa4ed115c44"),
+                new PlatformInfo
+                {
+                    displayName = "PlayStation®5",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level."),
+                    buildTarget = BuildTarget.PS5,
+                    link = L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ "),
+                    iconName = "BuildSettings.PS5",
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            {
+                new("c9f186cd3d594a1496bca1860359f842"),
+                new PlatformInfo
+                {
+                    displayName = "Xbox Series X|S",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description = L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12."),
+                    buildTarget = BuildTarget.GameCoreXboxSeries,
+                    link = L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id "),
+                    iconName = "BuildSettings.GameCoreScarlett",
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            {
+                new("a6f1094111614cba85f0508bf9778843"),
+                new PlatformInfo
+                {
+                    displayName = "Xbox One",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description = L10n.Tr("Attract and engage over 50 million players around the world on Xbox One."),
+                    buildTarget = BuildTarget.GameCoreXboxOne,
+                    link = L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id "),
+                    iconName = "BuildSettings.GameCoreXboxOne",
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            {
+                new("08d61a9cdfb840119d9bea5588e2f338"),
+                new PlatformInfo
+                {
+                    displayName = "Nintendo Switch™",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description = L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum."),
+                    buildTarget = BuildTarget.Switch,
+                    link = L10n.Tr("Register as a Nintendo developer / http://developer.nintendo.com "),
+                    iconName = "BuildSettings.Switch",
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            {
+               new("25a09d2ed10c42f789b61d99b4d9bf83"),
+               new PlatformInfo
+               {
+                    displayName = "ReservedCFE",
+                    instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
+                    description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
+                    buildTarget = BuildTarget.ReservedCFE,
+                    link = L10n.Tr("More details coming soon"),
+                    flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
+                }
+            },
+            // then others
+            {
+                new("84a3bb9e7420477f885e98145999eb20"),
+                new PlatformInfo
+                {
+                    displayName = "Web",
+                    description =  L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers."),
+                    buildTarget = BuildTarget.WebGL,
+                    iconName = "BuildSettings.WebGL",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+               new("d80a96315208455a9ba318d697981cfc"),
+               new PlatformInfo
+               {
+                    displayName = "Facebook Instant Games",
+                    buildTarget = BuildTarget.WebGL,
+                    link = L10n.Tr("More details coming soon"),
+                    iconName = "BuildSettings.Facebook",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
+                }
+            },
+            {
+               new("80657fe557de4d17822398b3a01b8c9e"),
+               new PlatformInfo
+               {
+                    displayName = "Meta Quest",
+                    buildTarget = BuildTarget.Android,
+                    link = L10n.Tr("More details coming soon"),
+                    iconName = "BuildSettings.Meta",
+                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.meta-openxr") },
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
+                }
+            },
+            {
+                new("32e92b6f4db44fadb869cafb8184d021"),
+                new PlatformInfo
+                {
+                    displayName = "Universal Windows Platform",
+                    description = L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others."),
+                    buildTarget = BuildTarget.WSAPlayer,
+                    iconName = "BuildSettings.Metro",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget
+                }
+            },
+            {
+                new("81e4f4c492fd4311bbf5b0b88a28c737"),
+                new PlatformInfo
+                {
+                    displayName = "tvOS",
+                    description = L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts."),
+                    buildTarget = BuildTarget.tvOS,
+                    iconName = "BuildSettings.tvOS",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("53916e6f1f7240d992977ffa2322b047"),
+                new PlatformInfo
+                {
+                    displayName = "visionOS",
+                    description = L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro."),
+                    buildTarget = BuildTarget.VisionOS,
+                    iconName = "BuildSettings.visionOS",
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("f188349a68c441ec9e3eb4c6f59abd41"),
+                new PlatformInfo
+                {
+                    displayName = "Linux Headless Simulation",
+                    description = L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments."),
+                    buildTarget = BuildTarget.LinuxHeadlessSimulation,
+                    iconName = "BuildSettings.LinuxHeadlessSimulation",
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("f1d7bec2fd7f42f481c66ef512f47845"),
+                new PlatformInfo
+                {
+                    displayName = "Embedded Linux",
+                    instructions = L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
+                    description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances."),
+                    buildTarget = BuildTarget.EmbeddedLinux,
+                    iconName = "BuildSettings.EmbeddedLinux",
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+                new("99ef95e1e9b048fa9628d7eed27a8646"),
+                new PlatformInfo
+                {
+                    displayName = "QNX®",
+                    instructions = L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
+                    description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system."),
+                    buildTarget = BuildTarget.QNX,
+                    iconName = "BuildSettings.QNX",
+                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                }
+            },
+            {
+               new("f8c7649c24f344129a97cf9854e2d582"),
+               new PlatformInfo
+               {
+                    displayName = "Kepler",
+                    buildTarget = BuildTarget.Kepler,
+                    link = L10n.Tr("More details coming soon"),
+                    iconName = "BuildSettings.EmbeddedLinux",
+                    flags = PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsHidden
+                }
+            }
+        };
 
         static readonly Dictionary<GUID, bool> k_PlatformInstalledData = new();
 
-        // This list is ordered by the order in which platforms are displayed in the build profiles window
-        // Changes here should be synced with kBuildTargetUIOrder[] in BuildTargetDiscovery.cpp
-        static GUID[] allPlatforms { get; } = new GUID[]
-        {
-            // first standalones and servers
-            s_platform_05,
-            s_platform_02,
-            s_platform_24,
-            s_platform_100,
-            s_platform_102,
-            s_platform_101,
-            // then mobile
-            s_platform_13,
-            s_platform_09,
-            // then consoles
-            s_platform_31,
-            s_platform_44,
-            s_platform_42,
-            s_platform_43,
-            s_platform_38,
-            s_platform_48,
-            // then others
-            s_platform_20,
-            s_platform_22,
-            s_platform_14,
-            s_platform_21,
-            s_platform_37,
-            s_platform_47,
-            s_platform_41,
-            s_platform_45,
-            s_platform_46,
-            s_platform_49,
-        };
-
-        static GUID[] WindowsBuildTargets { get; } = new GUID[]
-        {
-            s_platform_02,
-            s_platform_05,
-            s_platform_09,
-            s_platform_13,
-            s_platform_14,
-            s_platform_20,
-            s_platform_21,
-            s_platform_22,
-            s_platform_24,
-            s_platform_31,
-            s_platform_37,
-            s_platform_38,
-            s_platform_41,
-            s_platform_42,
-            s_platform_43,
-            s_platform_44,
-            s_platform_45,
-            s_platform_46,
-            s_platform_47,
-            s_platform_48,
-            s_platform_100,
-            s_platform_101,
-            s_platform_102,
-        };
-
-        static GUID[] WindowsARM64BuildTargets { get; } = new GUID[]
-        {
-            s_platform_02,
-            s_platform_05,
-            s_platform_09,
-            s_platform_13,
-            s_platform_14,
-            s_platform_20,
-            s_platform_21,
-            s_platform_22,
-            s_platform_24,
-            s_platform_37,
-            s_platform_41,
-            s_platform_46,
-            s_platform_47,
-            s_platform_100,
-            s_platform_101,
-            s_platform_102,
-        };
-
-        static GUID[] MacBuildTargets { get; } = new GUID[]
-        {
-            s_platform_02,
-            s_platform_05,
-            s_platform_09,
-            s_platform_13,
-            s_platform_14,
-            s_platform_20,
-            s_platform_22,
-            s_platform_24,
-            s_platform_37,
-            s_platform_41,
-            s_platform_45,
-            s_platform_46,
-            s_platform_47,
-            s_platform_49,
-            s_platform_100,
-            s_platform_101,
-            s_platform_102,
-        };
-
-        static GUID[] LinuxBuildTargets { get; } = new GUID[]
-        {
-            s_platform_02,
-            s_platform_05,
-            s_platform_09,
-            s_platform_13,
-            s_platform_14,
-            s_platform_20,
-            s_platform_22,
-            s_platform_24,
-            s_platform_37,
-            s_platform_41,
-            s_platform_45,
-            s_platform_46,
-            s_platform_47,
-            s_platform_100,
-            s_platform_101,
-            s_platform_102,
-        };
-
-        static GUID[] NDABuildTargets { get; } = new GUID[]
-        {
-            s_platform_31,
-            s_platform_44,
-            s_platform_38,
-            s_platform_48,
-            s_platform_49,
-        };
-
-        static GUID[] ExternalDownloadForBuildTarget { get; } = new GUID[]
-        {
-            s_platform_31,
-            s_platform_43,
-            s_platform_44,
-            s_platform_48,
-        };
-
-        // Changes here should be synced with the usage of
-        // BuildTargetDiscovery::HideInUI flag in [Platform]BuildTarget.cpp
-        internal static GUID[] hiddenPlatforms { get; } = new GUID[]
-        {
-            s_platform_38,
-            s_platform_41,
-            s_platform_42,
-            s_platform_43,
-            s_platform_45,
-            s_platform_46,
-            s_platform_48,
-            s_platform_49,
-        };
-
-        internal static GUID[] s_PlatformVisibleInPlatformBrowserOnly =
-        {
-            s_platform_22
-        };
-
-        static Dictionary<BuildTarget, GUID> s_PlatformGUIDData = new()
-        {
-            { BuildTarget.StandaloneOSX, s_platform_02 },
-            { BuildTarget.StandaloneWindows, s_platform_05 },
-            { BuildTarget.StandaloneWindows64, s_platform_05 }, // return same build target GUID for Win and Win64 since we only have one
-            { BuildTarget.iOS, s_platform_09 },
-            { BuildTarget.Android, s_platform_13 },
-            { BuildTarget.WebGL, s_platform_20 },
-            { BuildTarget.WSAPlayer, s_platform_21 },
-            { BuildTarget.StandaloneLinux64, s_platform_24 },
-            { BuildTarget.PS4, s_platform_31 },
-            { BuildTarget.tvOS, s_platform_37 },
-            { BuildTarget.Switch, s_platform_38 },
-            { BuildTarget.LinuxHeadlessSimulation, s_platform_41 },
-            { BuildTarget.GameCoreXboxSeries, s_platform_42 },
-            { BuildTarget.GameCoreXboxOne, s_platform_43 },
-            { BuildTarget.PS5, s_platform_44 },
-            { BuildTarget.EmbeddedLinux, s_platform_45 },
-            { BuildTarget.QNX, s_platform_46 },
-            { BuildTarget.VisionOS, s_platform_47 },
-            { BuildTarget.ReservedCFE, s_platform_48 },
-            { BuildTarget.Kepler, s_platform_49 },
-        };
-
-        static readonly Dictionary<GUID, (BuildTarget, StandaloneBuildSubtarget)> k_PlatformBuildTargetAndSubtargetGUIDData = new()
-        {
-            { s_platform_02, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Player) },
-            { s_platform_05, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Player) },
-            { s_platform_09, (BuildTarget.iOS, StandaloneBuildSubtarget.Default) },
-            { s_platform_13, (BuildTarget.Android, StandaloneBuildSubtarget.Default) },
-            { s_platform_14, (BuildTarget.Android, StandaloneBuildSubtarget.Default) },
-            { s_platform_20, (BuildTarget.WebGL, StandaloneBuildSubtarget.Default) },
-            { s_platform_22, (BuildTarget.WebGL, StandaloneBuildSubtarget.Default) },
-            { s_platform_21, (BuildTarget.WSAPlayer, StandaloneBuildSubtarget.Default) },
-            { s_platform_24, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Player) },
-            { s_platform_31, (BuildTarget.PS4, StandaloneBuildSubtarget.Default) },
-            { s_platform_37, (BuildTarget.tvOS, StandaloneBuildSubtarget.Default) },
-            { s_platform_38, (BuildTarget.Switch, StandaloneBuildSubtarget.Default) },
-            { s_platform_41, (BuildTarget.LinuxHeadlessSimulation, StandaloneBuildSubtarget.Default) },
-            { s_platform_42, (BuildTarget.GameCoreXboxSeries, StandaloneBuildSubtarget.Default) },
-            { s_platform_43, (BuildTarget.GameCoreXboxOne, StandaloneBuildSubtarget.Default) },
-            { s_platform_44, (BuildTarget.PS5, StandaloneBuildSubtarget.Default) },
-            { s_platform_45, (BuildTarget.EmbeddedLinux, StandaloneBuildSubtarget.Default) },
-            { s_platform_46, (BuildTarget.QNX, StandaloneBuildSubtarget.Default) },
-            { s_platform_47, (BuildTarget.VisionOS, StandaloneBuildSubtarget.Default) },
-            { s_platform_48, (BuildTarget.ReservedCFE, StandaloneBuildSubtarget.Default) },
-            { s_platform_49, (BuildTarget.Kepler, StandaloneBuildSubtarget.Default) },
-            { s_platform_101, (BuildTarget.StandaloneLinux64, StandaloneBuildSubtarget.Server) },
-            { s_platform_100, (BuildTarget.StandaloneWindows64, StandaloneBuildSubtarget.Server) },
-            { s_platform_102, (BuildTarget.StandaloneOSX, StandaloneBuildSubtarget.Server) },
-        };
-
-        static Dictionary<GUID, string[]> s_PlatformRequiredPackages = new()
-        {
-            {  s_platform_14, new string[] { "com.unity.xr.meta-openxr" } },
-            {  s_platform_100, new string[] { "com.unity.dedicated-server" } },
-            {  s_platform_101, new string[] { "com.unity.dedicated-server" } },
-            {  s_platform_102, new string[] { "com.unity.dedicated-server" } },
-        };
-
-        static Dictionary<GUID, string[]> s_PlatformRecommendedPackages = new()
-        {
-        };
-
-        static Dictionary<GUID, string> s_PlatformDescription = new()
-        {
-            {  s_platform_02, L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices.") },
-            {  s_platform_05, L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem.") },
-            {  s_platform_09, L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_13, L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth.") },
-            {  s_platform_20, L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers.") },
-            {  s_platform_21, L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others.") },
-            {  s_platform_24, L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels.") },
-            {  s_platform_31, L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level.") },
-            {  s_platform_37, L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts.") },
-            {  s_platform_38, L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum.") },
-            {  s_platform_41, L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments.") },
-            {  s_platform_42, L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12.") },
-            {  s_platform_43, L10n.Tr("Attract and engage over 50 million players around the world on Xbox One.") },
-            {  s_platform_44, L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level.") },
-            {  s_platform_45, L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances.") },
-            {  s_platform_46, L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system.") },
-            {  s_platform_47, L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro.")},
-            {  s_platform_48, L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform") },
-            {  s_platform_100, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games.") },
-            {  s_platform_101, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games.") },
-            {  s_platform_102, L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games.") },
-        };
-
-        static Dictionary<GUID, string> s_PlatformLink = new()
-        {
-            {  s_platform_13, L10n.Tr("Unity Android Manual / https://docs.unity3d.com/Manual/android.html") },
-            {  s_platform_31, L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ ") },
-            {  s_platform_38, L10n.Tr("Register as a Nintendo developer / http://developer.nintendo.com ") },
-            {  s_platform_42, L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id ") },
-            {  s_platform_43, L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id ") },
-            {  s_platform_44, L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ ") },
-            {  s_platform_48, L10n.Tr("More details coming soon") },
-        };
-
-        static Dictionary<GUID, string> s_PlatformInstructions = new()
-        {
-            {  s_platform_02, L10n.Tr("*standard install form hub") },
-            {  s_platform_05, L10n.Tr("*standard install form hub") },
-            {  s_platform_09, L10n.Tr("*standard install form hub") },
-            {  s_platform_13, L10n.Tr("*standard install form hub") },
-            {  s_platform_20, L10n.Tr("*standard install form hub") },
-            {  s_platform_21, L10n.Tr("*standard install form hub") },
-            {  s_platform_24, L10n.Tr("*standard install form hub") },
-            {  s_platform_31, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_37, L10n.Tr("*standard install form hub") },
-            {  s_platform_38, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_41, L10n.Tr("*standard install form hub") },
-            {  s_platform_42, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_43, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_44, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_45, L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.") },
-            {  s_platform_46, L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access.") },
-            {  s_platform_47, L10n.Tr("*standard install form hub") },
-            {  s_platform_48, L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more.") },
-            {  s_platform_100, L10n.Tr("*standard install form hub") },
-            {  s_platform_101, L10n.Tr("*standard install form hub") },
-            {  s_platform_102, L10n.Tr("*standard install form hub") },
-        };
-
-        // Name changes here must be reflected in the platform [PLATFORM]BuildTarget.cs and [Platform]BuildTarget.cpp respective DisplayName and niceName
-        static Dictionary<GUID, string> s_PlatformDisplayName = new()
-        {
-            {  s_platform_02, "macOS" },
-            {  s_platform_05, "Windows" },
-            {  s_platform_09, "iOS" },
-            {  s_platform_13, "Android™" },
-            {  s_platform_14, "Meta Quest" },
-            {  s_platform_20, "Web" },
-            {  s_platform_21, "Universal Windows Platform" },
-            {  s_platform_22, "Facebook Instant Games" },
-            {  s_platform_24, "Linux" },
-            {  s_platform_31, "PlayStation®4" },
-            {  s_platform_37, "tvOS" },
-            {  s_platform_38, "Nintendo Switch™" },
-            {  s_platform_41, "Linux Headless Simulation" },
-            {  s_platform_42, "Xbox Series X|S" },
-            {  s_platform_43, "Xbox One" },
-            {  s_platform_44, "PlayStation®5" },
-            {  s_platform_45, "Embedded Linux" },
-            {  s_platform_46, "QNX®" },
-            {  s_platform_47, "visionOS" },
-            {  s_platform_48, "ReservedCFE" },
-            {  s_platform_49, "Kepler"},
-            {  s_platform_100, "Windows Server" },
-            {  s_platform_101, "Linux Server" },
-            {  s_platform_102, "macOS Server" },
-        };
-
-        // Changes here should be synced with [Platform]BuildTarget.cpp respective iconName
-        static readonly Dictionary<GUID, string> k_PlatformIconName = new()
-        {
-            { s_platform_02, "BuildSettings.OSX" },
-            { s_platform_05, "BuildSettings.Windows" },
-            { s_platform_09, "BuildSettings.iPhone" },
-            { s_platform_13, "BuildSettings.Android" },
-            { s_platform_14, "BuildSettings.Meta" },
-            { s_platform_20, "BuildSettings.WebGL" },
-            { s_platform_21, "BuildSettings.Metro" },
-            { s_platform_22, "BuildSettings.Facebook" },
-            { s_platform_24, "BuildSettings.Linux" },
-            { s_platform_31, "BuildSettings.PS4" },
-            { s_platform_37, "BuildSettings.tvOS" },
-            { s_platform_38, "BuildSettings.Switch" },
-            { s_platform_41, "BuildSettings.LinuxHeadlessSimulation" },
-            { s_platform_42, "BuildSettings.GameCoreScarlett" },
-            { s_platform_43, "BuildSettings.GameCoreXboxOne" },
-            { s_platform_44, "BuildSettings.PS5" },
-            { s_platform_45, "BuildSettings.EmbeddedLinux" },
-            { s_platform_46, "BuildSettings.QNX" },
-            { s_platform_47, "BuildSettings.visionOS" },
-            { s_platform_48, "BuildSettings.DedicatedServer" },
-            { s_platform_49, "BuildSettings.EmbeddedLinux" },
-            { s_platform_100, "BuildSettings.DedicatedServer" },
-            { s_platform_101, "BuildSettings.DedicatedServer" },
-            { s_platform_102, "BuildSettings.DedicatedServer" },
-        };
 
         static BuildTargetDiscovery()
         {
             PreloadBuildPlatformInstalledData();
         }
-
-        public static GUID[] GetAllPlatforms() => allPlatforms;
+        public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
 
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
-            if (s_PlatformGUIDData.TryGetValue(buildTarget, out GUID value))
+            if (buildTarget == BuildTarget.StandaloneWindows) //workaround for win64 and win having the same guid in new Build Target system
+                buildTarget = BuildTarget.StandaloneWindows64;
+
+            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID value))
             {
                 var module = ModuleManager.FindPlatformSupportModule(value);
                 if (module != null && module is IDerivedBuildTargetProvider)
@@ -592,22 +575,27 @@ namespace UnityEditor
                     return value;
             }
 
-            return new GUID("");
+            return EmptyGuid;
         }
-
-        static GUID EmptyGuid = new GUID("");
 
         internal static bool TryGetServerGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget, out GUID result)
         {
             result = EmptyGuid;
+
             if (namedBuildTarget == NamedBuildTarget.Server)
-            {
-                if (buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64)
-                    result = s_platform_100;
-                else if (buildTarget == BuildTarget.StandaloneLinux64)
-                    result = s_platform_101;
-                else if (buildTarget == BuildTarget.StandaloneOSX)
-                    result = s_platform_102;
+            { 
+                foreach (var platform in allPlatforms)
+                {
+                    if(platform.Value.subtarget == StandaloneBuildSubtarget.Server)
+                    {
+                        if((buildTarget == BuildTarget.StandaloneWindows || buildTarget == BuildTarget.StandaloneWindows64) && platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget))
+                            result = platform.Key;
+                        else if(buildTarget == BuildTarget.StandaloneLinux64 && platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget))
+                            result = platform.Key;
+                        else if(buildTarget == BuildTarget.StandaloneOSX && platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
+                            result = platform.Key;
+                    }
+                }
             }
             return !result.Empty();
         }
@@ -617,8 +605,8 @@ namespace UnityEditor
             if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
                 return value;
 
-            if (s_PlatformGUIDData.TryGetValue(buildTarget, out value))
-                return value;
+            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID guid))
+                return guid;
 
             return EmptyGuid;
         }
@@ -633,8 +621,8 @@ namespace UnityEditor
 
         public static (BuildTarget, StandaloneBuildSubtarget) GetBuildTargetAndSubtargetFromGUID(GUID guid)
         {
-            if (k_PlatformBuildTargetAndSubtargetGUIDData.TryGetValue(guid, out var value))
-                return value;
+            if(allPlatforms.TryGetValue(guid,out PlatformInfo platformInfo))
+                return (platformInfo.buildTarget, platformInfo.subtarget);
 
             return (BuildTarget.NoTarget, StandaloneBuildSubtarget.Default);
         }
@@ -643,23 +631,30 @@ namespace UnityEditor
         {
             foreach (var platform in allPlatforms)
             {
-                var (buildTarget, _) = GetBuildTargetAndSubtargetFromGUID(platform);
-                var playbackEngineDirectory = BuildPipeline.GetPlaybackEngineDirectory(buildTarget, BuildOptions.None, false);
+                if (platform.Value.buildTarget != BuildTarget.StandaloneWindows
+                    && platform.Value.subtarget != StandaloneBuildSubtarget.Server
+                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
+                    ) //workaround for win64 and win having the same guid in new Build Target system and for derived build targets
+                { 
+                    s_PlatformGUIDDataQuickLookup.Add(platform.Value.buildTarget, platform.Key);
+                }
+
+                var playbackEngineDirectory = BuildPipeline.GetPlaybackEngineDirectory(platform.Value.buildTarget, BuildOptions.None, false);
 
                 if (string.IsNullOrEmpty(playbackEngineDirectory))
                 {
-                    k_PlatformInstalledData.Add(platform, false);
+                    k_PlatformInstalledData.Add(platform.Key, false);
                     continue;
                 }
 
-                if (!IsStandalonePlatform(buildTarget))
+                if (!IsStandalonePlatform(platform.Value.buildTarget))
                 {
-                    k_PlatformInstalledData.Add(platform, true);
+                    k_PlatformInstalledData.Add(platform.Key, true);
                     continue;
                 }
 
-                bool isInstalled;
-                if (platform == s_platform_100)
+                bool isInstalled = false;
+                if (platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget))
                 {
                     var serverVariations = new[]
                     {
@@ -672,7 +667,7 @@ namespace UnityEditor
                     };
                     isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
                 }
-                else if (platform == s_platform_101)
+                else if (platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget))
                 {
                     var serverVariations = new[]
                     {
@@ -681,7 +676,7 @@ namespace UnityEditor
                     };
                     isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
                 }
-                else if (platform == s_platform_102)
+                else if (platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
                 {
                     var serverVariations = new[]
                     {
@@ -697,7 +692,7 @@ namespace UnityEditor
                 else
                     isInstalled = true;
 
-                k_PlatformInstalledData.Add(platform, isInstalled);
+                k_PlatformInstalledData.Add(platform.Key, isInstalled);
             }
         }
 
@@ -720,11 +715,9 @@ namespace UnityEditor
         }
 
         [System.Obsolete("BuildPlatformIsInstalled(BuildTarget) is obsolete. Use BuildPlatformIsInstalled(IBuildTarget) instead.", false)]
-        public static bool BuildPlatformIsInstalled(BuildTarget platform) =>
-            BuildPlatformIsInstalled(GetGUIDFromBuildTarget(platform));
+        public static bool BuildPlatformIsInstalled(BuildTarget platform) => BuildPlatformIsInstalled(GetGUIDFromBuildTarget(platform));
 
-        public static bool BuildPlatformIsInstalled(IBuildTarget platform) =>
-            BuildPlatformIsInstalled(platform.Guid);
+        public static bool BuildPlatformIsInstalled(IBuildTarget platform) => BuildPlatformIsInstalled(platform.Guid);
 
         public static bool BuildPlatformIsInstalled(GUID platformGuid)
         {
@@ -738,20 +731,19 @@ namespace UnityEditor
         public static bool BuildPlatformIsAvailableOnHostPlatform(BuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform) => BuildPlatformIsAvailableOnHostPlatform(GetGUIDFromBuildTarget(platform), hostPlatform);
         public static bool BuildPlatformIsAvailableOnHostPlatform(IBuildTarget platform, UnityEngine.OperatingSystemFamily hostPlatform) => BuildPlatformIsAvailableOnHostPlatform(platform.Guid, hostPlatform);
 
-        public static bool BuildPlatformIsAvailableOnHostPlatform(GUID platformGuid, UnityEngine.OperatingSystemFamily hostPlatform)
+        public static bool BuildPlatformIsAvailableOnHostPlatform(GUID guid, UnityEngine.OperatingSystemFamily hostPlatform)
         {
-            var platformTargetArray = WindowsBuildTargets;
-
-            if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows && IsWindowsArm64Architecture())
-                platformTargetArray = WindowsARM64BuildTargets;
-            else if (hostPlatform == UnityEngine.OperatingSystemFamily.MacOSX)
-                platformTargetArray = MacBuildTargets;
-            else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux)
-                platformTargetArray = LinuxBuildTargets;
-
-            foreach (var platformTarget in platformTargetArray)
-                if (platformTarget == platformGuid)
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+            {
+                if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows && IsWindowsArm64Architecture() && platformInfo.HasFlag(PlatformAttributes.IsWindowsArm64BuildTarget))
                     return true;
+                if (hostPlatform == UnityEngine.OperatingSystemFamily.Windows && platformInfo.HasFlag(PlatformAttributes.IsWindowsBuildTarget))
+                    return true;
+                else if (hostPlatform == UnityEngine.OperatingSystemFamily.MacOSX && platformInfo.HasFlag(PlatformAttributes.IsMacBuildTarget))
+                    return true;
+                else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux && platformInfo.HasFlag(PlatformAttributes.IsLinuxBuildTarget))
+                    return true;
+            }   
 
             return false;
         }
@@ -769,198 +761,143 @@ namespace UnityEditor
         }
 
         [System.Obsolete("BuildPlatformCanBeInstalledWithHub(BuildTarget) is obsolete. Use BuildPlatformCanBeInstalledWithHub(IBuildTarget) instead.", false)]
-        public static bool BuildPlatformCanBeInstalledWithHub(BuildTarget platform)
-        {
-            foreach (var target in ExternalDownloadForBuildTarget)
-                if (target == GetGUIDFromBuildTarget(platform))
-                    return false;
+        public static bool BuildPlatformCanBeInstalledWithHub(BuildTarget platform) => BuildPlatformCanBeInstalledWithHub(GetGUIDFromBuildTarget(platform));
 
-            return true;
-        }
+        public static bool BuildPlatformCanBeInstalledWithHub(IBuildTarget platform) => BuildPlatformCanBeInstalledWithHub(platform.Guid);
 
-        public static bool BuildPlatformCanBeInstalledWithHub(IBuildTarget platform)
+        public static bool BuildPlatformCanBeInstalledWithHub(GUID guid)
         {
-            foreach (var invisibleTarget in ExternalDownloadForBuildTarget)
-                if (invisibleTarget == platform.Guid)
-                    return false;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.ExternalDownloadForBuildTarget))
+                return false;
 
             return true;
         }
 
         [System.Obsolete("BuildPlatformIsUnderNDA(BuildTarget) is obsolete. Use BuildPlatformIsUnderNDA(IBuildTarget) instead.", false)]
 
-        public static bool BuildPlatformIsUnderNDA(BuildTarget platform)
-        {
-            foreach (var ndaTarget in NDABuildTargets)
-                if (ndaTarget == GetGUIDFromBuildTarget(platform))
-                    return true;
+        public static bool BuildPlatformIsUnderNDA(BuildTarget platform) => BuildPlatformIsUnderNDA(GetGUIDFromBuildTarget(platform));
 
-            return false;
-        }
+        public static bool BuildPlatformIsUnderNDA(IBuildTarget platform) => BuildPlatformIsUnderNDA(platform.Guid);
 
-        public static bool BuildPlatformIsUnderNDA(IBuildTarget platform)
+        public static bool BuildPlatformIsUnderNDA(GUID guid)
         {
-            foreach (var ndaTarget in NDABuildTargets)
-                if (ndaTarget == platform.Guid)
-                    return true;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsNDAPlatform))
+                return true;
 
             return false;
         }
 
         [System.Obsolete("BuildPlatformIsHiddenInUI(BuildTarget) is obsolete. Use BuildPlatformIsHiddenInUI(IBuildTarget) instead.", false)]
-        public static bool BuildPlatformIsHiddenInUI(BuildTarget platform) =>
-            BuildPlatformIsHiddenInUI(GetGUIDFromBuildTarget(platform));
+        public static bool BuildPlatformIsHiddenInUI(BuildTarget platform) => BuildPlatformIsHiddenInUI(GetGUIDFromBuildTarget(platform));
 
-        public static bool BuildPlatformIsHiddenInUI(IBuildTarget platform) =>
-            BuildPlatformIsHiddenInUI(platform.Guid);
+        public static bool BuildPlatformIsHiddenInUI(IBuildTarget platform) => BuildPlatformIsHiddenInUI(platform.Guid);
 
-        public static bool BuildPlatformIsHiddenInUI(GUID platformGuid)
+        public static bool BuildPlatformIsHiddenInUI(GUID guid)
         {
-            foreach (var hiddenPlatform in hiddenPlatforms)
-                if (hiddenPlatform == platformGuid)
-                    return true;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsHidden))
+                return true;
 
             return false;
         }
 
-        public static bool BuildPlatformIsVisibleInPlatformBrowserOnly(GUID platformGuid)
-        {
-            foreach (var platform in s_PlatformVisibleInPlatformBrowserOnly)
-                if (platform == platformGuid)
-                    return true;
+        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendedPackages(IBuildTarget) instead.", false)]
+        public static string[] BuildPlatformRecommendedPackages(BuildTarget platform) => BuildPlatformRecommendedPackages(GetGUIDFromBuildTarget(platform));
 
-            return false;
-        }
+        public static string[] BuildPlatformRecommendedPackages(IBuildTarget platform) => BuildPlatformRecommendedPackages(platform.Guid);
 
-        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
-        public static string[] BuildPlatformRecommendedPackages(BuildTarget platform)
+        public static string[] BuildPlatformRecommendedPackages(GUID guid)
         {
-            return BuildPlatformRecommendedPackages(GetGUIDFromBuildTarget(platform));
-        }
-
-        public static string[] BuildPlatformRecommendedPackages(IBuildTarget platform)
-        {
-            return BuildPlatformRecommendedPackages(platform.Guid);
-        }
-
-        public static string[] BuildPlatformRecommendedPackages(GUID platformGuid)
-        {
-            if (s_PlatformRecommendedPackages.TryGetValue(platformGuid, out var recommendedPackages))
-                return recommendedPackages;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                    return platformInfo.recommendedPackage;
 
             return Array.Empty<string>();
         }
 
-        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendeddPackages(IBuildTarget) instead.", false)]
-        public static string[] BuildPlatformRequiredPackages(BuildTarget platform)
-        {
-            return BuildPlatformRequiredPackages(GetGUIDFromBuildTarget(platform));
-        }
+        public static string[] BuildPlatformRequiredPackages(IBuildTarget platform) => BuildPlatformRequiredPackages(platform.Guid);
 
-        public static string[] BuildPlatformRequiredPackages(GUID platformGuid)
+        public static string[] BuildPlatformRequiredPackages(GUID guid)
         {
-            if (s_PlatformRequiredPackages.TryGetValue(platformGuid, out var requiredPackages))
-                return requiredPackages;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.requiredPackage;
 
             return Array.Empty<string>();
         }
 
         [System.Obsolete("BuildPlatformDescription(BuildTarget) is obsolete. Use BuildPlatformDescription(IBuildTarget) instead.", false)]
 
-        public static string BuildPlatformDescription(BuildTarget platform)
-        {
-            return BuildPlatformDescription(GetGUIDFromBuildTarget(platform));
-        }
+        public static string BuildPlatformDescription(BuildTarget platform) => BuildPlatformDescription(GetGUIDFromBuildTarget(platform));
 
-        public static string BuildPlatformDescription(IBuildTarget platform)
-        {
-            return BuildPlatformDescription(platform.Guid);
-        }
+        public static string BuildPlatformDescription(IBuildTarget platform) => BuildPlatformDescription(platform.Guid);
 
-        public static string BuildPlatformDescription(GUID platformGuid)
+        public static string BuildPlatformDescription(GUID guid)
         {
-            if (s_PlatformDescription.TryGetValue(platformGuid, out string description))
-                return description;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.description;
 
             return string.Empty;
         }
 
         [System.Obsolete("BuildPlatformDocumentationLink(BuildTarget) is obsolete. Use BuildPlatformDocumentationLink(IBuildTarget) instead.", false)]
+        public static string BuildPlatformDocumentationLink(BuildTarget platform) => BuildPlatformDocumentationLink(GetGUIDFromBuildTarget(platform));
 
-        public static string BuildPlatformDocumentationLink(BuildTarget platform)
+        public static string BuildPlatformDocumentationLink(IBuildTarget platform) => BuildPlatformDocumentationLink(platform.Guid);
+
+        public static string BuildPlatformDocumentationLink(GUID guid)
         {
-            if (s_PlatformLink.TryGetValue(GetGUIDFromBuildTarget(platform), out string link))
-                return link;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.link;
 
-            return "";
-        }
-
-        public static string BuildPlatformDocumentationLink(IBuildTarget platform)
-        {
-            if (s_PlatformLink.TryGetValue(platform.Guid, out string link))
-                return link;
-
-            return "";
+            return string.Empty;
         }
 
         [System.Obsolete("BuildPlatformOnboardingInstructions(BuildTarget) is obsolete. Use BuildPlatformOnboardingInstructions(IBuildTarget) instead.", false)]
+        public static string BuildPlatformOnboardingInstructions(BuildTarget platform) => BuildPlatformOnboardingInstructions(GetGUIDFromBuildTarget(platform));
 
-        public static string BuildPlatformOnboardingInstructions(BuildTarget platform)
+        public static string BuildPlatformOnboardingInstructions(IBuildTarget platform) => BuildPlatformOnboardingInstructions(platform.Guid);
+
+        public static string BuildPlatformOnboardingInstructions(GUID guid)
         {
-            if (s_PlatformInstructions.TryGetValue(GetGUIDFromBuildTarget(platform), out string instructions))
-                return instructions;
-
-            return "";
-        }
-
-        public static string BuildPlatformOnboardingInstructions(IBuildTarget platform)
-        {
-            if (s_PlatformInstructions.TryGetValue(platform.Guid, out string instructions))
-                return instructions;
-
-            return "";
-        }
-
-        [System.Obsolete("BuildPlatformDisplayName(BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
-        public static string BuildPlatformDisplayName(BuildTarget platform) =>
-            BuildPlatformDisplayName(GetGUIDFromBuildTarget(platform));
-
-        public static string BuildPlatformDisplayName(IBuildTarget platform) =>
-            BuildPlatformDisplayName(platform.Guid);
-
-        public static string BuildPlatformDisplayName(GUID platformGuid)
-        {
-            if (s_PlatformDisplayName.TryGetValue(platformGuid, out string displayName))
-                return displayName;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.instructions;
 
             return string.Empty;
         }
 
         [System.Obsolete("BuildPlatformDisplayName(BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
-        public static string BuildPlatformDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        public static string BuildPlatformDisplayName(BuildTarget platform) => BuildPlatformDisplayName(GetGUIDFromBuildTarget(platform));
+
+        public static string BuildPlatformDisplayName(IBuildTarget platform) => BuildPlatformDisplayName(platform.Guid);
+
+        public static string BuildPlatformDisplayName(GUID guid)
         {
-            if (!TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var guid))
-                guid = GetGUIDFromBuildTarget(buildTarget);
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.displayName;
 
-            if (s_PlatformDisplayName.TryGetValue(guid, out string displayName))
-                return displayName;
-
-            return "";
+            return string.Empty;
         }
 
+        [System.Obsolete("BuildPlatformDisplayName(NamedBuildTarget, BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
+        public static string BuildPlatformDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget) => BuildPlatformDisplayName(GetGUIDFromBuildTarget(namedBuildTarget, buildTarget));
+
         [System.Obsolete("BuildPlatformIconName(BuildTarget) is obsolete. Use BuildPlatformIconName(IBuildTarget) instead.", false)]
-        public static string BuildPlatformIconName(BuildTarget platform) =>
-            BuildPlatformIconName(GetGUIDFromBuildTarget(platform));
+        public static string BuildPlatformIconName(BuildTarget platform) => BuildPlatformIconName(GetGUIDFromBuildTarget(platform));
 
-        public static string BuildPlatformIconName(IBuildTarget platform) =>
-            BuildPlatformIconName(platform.Guid);
+        public static string BuildPlatformIconName(IBuildTarget platform) => BuildPlatformIconName(platform.Guid);
 
-        public static string BuildPlatformIconName(GUID platformGuid)
+        public static string BuildPlatformIconName(GUID guid)
         {
-            if (k_PlatformIconName.TryGetValue(platformGuid, out string iconName))
-                return iconName;
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.iconName;
 
-            return "";
+            return string.Empty;
+        }
+
+        public static bool BuildPlatformIsVisibleInPlatformBrowserOnly(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsVisibleInPlatformBrowserOnly))
+                return true;
+
+            return false;
         }
     }
 }

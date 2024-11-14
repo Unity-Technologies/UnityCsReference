@@ -20,8 +20,12 @@ namespace UnityEditor.Build.Profile.Handlers
 
         const string k_AssetFolderPath = "Assets/Settings/Build Profiles";
 
-        static string GetDefaultNewProfilePath(string platformDisplayName) =>
-            $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile.asset";
+        static string GetDefaultNewProfilePath(string platformDisplayName, string variantName = null)
+        {
+            if (variantName == null)
+                return $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile.asset";
+            return $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile - {SanitizeFileName(variantName)}.asset";
+        }
 
         static string GetDefaultNewProfilePath(GUID platformGuid)
         {
@@ -98,10 +102,10 @@ namespace UnityEditor.Build.Profile.Handlers
         /// Create a new custom build profile asset with the default name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        internal static void CreateNewAsset(GUID platformId, string platformDisplayName)
+        internal static void CreateNewAsset(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant)
         {
             EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName));
+            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant);
         }
 
         /// <summary>

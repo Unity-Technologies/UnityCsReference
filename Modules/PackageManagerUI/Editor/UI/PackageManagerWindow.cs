@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI
     /// </summary>
     public static class Window
     {
-        [MenuItem("Window/Package Manager", priority = 1500)]
+        [MenuItem("Window/Package Management/Package Manager", priority = 1500)]
         internal static void ShowPackageManagerWindow(MenuCommand item)
         {
             Open(item.context?.name);

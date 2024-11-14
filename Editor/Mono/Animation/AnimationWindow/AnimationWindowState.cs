@@ -697,7 +697,7 @@ namespace UnityEditorInternal
                 m_AllCurvesCache.Clear();
 
             var animationClip = activeAnimationClip;
-            if (animationClip == null)
+            if (animationClip == null || (!selection.animationIsEditable && !showReadOnly))
                 return;
 
             EditorCurveBinding[] curveBindings = AnimationUtility.GetCurveBindings(animationClip);

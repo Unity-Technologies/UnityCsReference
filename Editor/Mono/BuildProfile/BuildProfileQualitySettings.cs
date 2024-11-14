@@ -62,5 +62,15 @@ namespace UnityEditor.Build.Profile
 
             EditorUtility.SetDirty(this);
         }
+
+        public void AddQualityLevel(string qualityLevel)
+        {
+            var newQualityLevels = new string[qualityLevels.Length + 1];
+            Array.Copy(qualityLevels, 0, newQualityLevels, 0, qualityLevels.Length);
+            newQualityLevels[qualityLevels.Length] = qualityLevel;
+            qualityLevels = newQualityLevels;
+
+            EditorUtility.SetDirty(this);
+        }
     }
 }

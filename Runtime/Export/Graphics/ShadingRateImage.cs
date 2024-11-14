@@ -6,7 +6,7 @@ namespace UnityEngine.Rendering
 {
     /// <summary>
     /// Convenience class to handle differences between regular RenderTexture and shading rate images.
-    /// The resolution of shading rate images is in tiles and is platform-dependent. 
+    /// The resolution of shading rate images is in tiles and is platform-dependent.
     /// Functions that needs to be aware of this will specify if conversion is handled.
     /// </summary>
     public static partial class ShadingRateImage
@@ -63,7 +63,7 @@ namespace UnityEngine.Rendering
             int volumeDepth = 1,
             TextureDimension textureDimension = TextureDimension.Tex2D)
         {
-            if (ShadingRateInfo.featureTier >= ShadingRateFeatureTier.Tier2)
+            if (ShadingRateInfo.supportsPerImageTile)
             {
                 return new RenderTextureDescriptor(width, height)
                 {

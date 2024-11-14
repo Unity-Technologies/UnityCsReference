@@ -210,6 +210,8 @@ namespace UnityEditor.Build.Profile
 
             if (shouldRebuild)
                 RebuildProfileListViews();
+
+            BuildProfileModuleUtil.RepaintProjectSettingsWindow();
         }
 
         /// <summary>
@@ -233,6 +235,8 @@ namespace UnityEditor.Build.Profile
 
             if (m_BuildProfileDataSource.ClearDeletedProfiles())
                 RebuildProfileListViews();
+
+            BuildProfileModuleUtil.RepaintProjectSettingsWindow();
         }
 
         /// <summary>
@@ -257,6 +261,8 @@ namespace UnityEditor.Build.Profile
 
             // Update details headers.
             m_BuildProfileSelection.MissingPlatformSelected(platformId);
+
+            BuildProfileModuleUtil.RepaintProjectSettingsWindow();
         }
 
         /// <summary>

@@ -2186,13 +2186,6 @@ namespace UnityEngine.Rendering
         Min,
         Max,
     }
-
-    public enum ShadingRateFeatureTier
-    {
-        None,
-        Tier1,
-        Tier2,
-    }
 } // namespace UnityEngine.Rendering
 
 namespace UnityEngineInternal

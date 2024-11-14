@@ -19,7 +19,7 @@ namespace UnityEditor
         {
             public GUIContent s_MaxRecursionDepthText = EditorGUIUtility.TrTextContent("Max. Recursion Depth", "Limit on ray recursion for the Ray Tracing pipeline. This is defined in the shader by using max_recursion_depth pragma(e.g. \"#pragma max_recursion_depth 5\"). Applications should pick a limit that is as low as absolutely necessary. A value of 1 means that only primary rays can be cast.");
             public GUIContent s_PlatformList = EditorGUIUtility.TrTextContent("Platforms:");
-            public GUIContent s_NotSupported = EditorGUIUtility.TrTextContent("Ray Tracing Shader not supported! No graphics APIs with Ray Tracing support found in the Graphics APIs list.");
+            public GUIContent s_NotSupported = EditorGUIUtility.TrTextContent("Ray Tracing Shader not supported! No graphics APIs with Ray Tracing support found in the graphics APIs list or the importing process failed.");
             public GUIContent s_Index = EditorGUIUtility.TrTextContent("Index");
             public GUIContent s_Name = EditorGUIUtility.TrTextContent("Name");
             public GUIContent s_PayloadSize = EditorGUIUtility.TrTextContent("Payload Size (Bytes)");

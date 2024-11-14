@@ -274,6 +274,15 @@ namespace UnityEditor
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)] get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)] set;
             }
+
+            [NativeProperty("webEnableSubmoduleStrippingCompatibility", TargetType.Field)]
+            public extern static bool enableSubmoduleStrippingCompatibility
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
         }
     }
 }

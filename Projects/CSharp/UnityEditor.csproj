@@ -3849,9 +3849,6 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\Toolbar\ToolbarToggle.cs">
       <Link>Editor\Mono\UIElements\Controls\Toolbar\ToolbarToggle.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\UIElements\Controls\VisualSplitter.cs">
-      <Link>Editor\Mono\UIElements\Controls\VisualSplitter.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\DefaultMainToolbar.cs">
       <Link>Editor\Mono\UIElements\DefaultMainToolbar.cs</Link>
     </Compile>
@@ -4547,6 +4544,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PlatformPackageItem.cs">
       <Link>Modules\BuildProfileEditor\Elements\PlatformPackageItem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\Elements\PreconfiguredSettingsItem.cs">
+      <Link>Modules\BuildProfileEditor\Elements\PreconfiguredSettingsItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\Events.cs">
       <Link>Modules\BuildProfileEditor\Events.cs</Link>

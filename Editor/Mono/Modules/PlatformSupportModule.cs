@@ -355,6 +355,24 @@ namespace UnityEditor.Modules
         void ShowImportSettings(BaseTextureImportPlatformSettings editor);
     }
 
+    /// <summary>
+    /// Describes a setting variant and if it should be selected in the UI initially.
+    /// </summary>
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+    internal class PreconfiguredSettingsVariant
+    {
+        public string Name { get; }
+        public bool SelectedInitially { get; }
+        public bool Selected { get; set; }
+
+        public PreconfiguredSettingsVariant(string name, bool selectedInitially)
+        {
+            Name = name;
+            SelectedInitially = selectedInitially;
+            Selected = selectedInitially;
+        }
+    }
+
     // Interface for implementing platform specific setting in Build Profiles window.
     [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal interface IBuildProfileExtension
@@ -418,6 +436,17 @@ namespace UnityEditor.Modules
         /// Message to be displayed.
         /// </returns>
         string GetProfileInfoMessage();
+
+        /// <summary>
+        /// Provides the list of preconfigured settings variants to display in the platform browser window
+        /// when creating a new build profile.
+        /// </summary>
+        PreconfiguredSettingsVariant[] GetPreconfiguredSettingsVariants();
+
+        /// <summary>
+        /// Gets called when a build profile is created from defaults or by duplication from a classic profile.
+        /// </summary>
+        void OnBuildProfileCreated(BuildProfile buildProfile, int preconfiguredSettingsVariant);
 
         void OnDisable();
     }

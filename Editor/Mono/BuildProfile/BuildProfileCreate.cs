@@ -56,10 +56,9 @@ namespace UnityEditor.Build.Profile
         /// event after an asset is created by AssetDatabase.CreateAsset.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static void CreateInstance(GUID platformId, string assetPath)
+        internal static void CreateInstance(GUID platformId, string assetPath, int preconfiguredSettingsVariant = -1)
         {
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
-            var moduleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
@@ -68,8 +67,18 @@ namespace UnityEditor.Build.Profile
                 buildProfile,
                 AssetDatabase.GenerateUniqueAssetPath(assetPath));
             buildProfile.OnEnable();
+            buildProfile.NotifyBuildProfileExtensionOfCreation(preconfiguredSettingsVariant);
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
+        }
+
+        internal void NotifyBuildProfileExtensionOfCreation(int preconfiguredSettingsVariant)
+        {
+            var buildProfileExtension = BuildProfileModuleUtil.GetBuildProfileExtension(platformGuid);
+            if (buildProfileExtension != null)
+            {
+                buildProfileExtension.OnBuildProfileCreated(this, preconfiguredSettingsVariant);
+            }
         }
 
         void TryCreatePlatformSettings()
@@ -89,6 +98,20 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
+        /// Add Graphics Settings overrides to the build profile.
+        /// </summary>
+        internal void CreateGraphicsSettings()
+        {
+            if (graphicsSettings != null)
+                return;
+
+            graphicsSettings = CreateInstance<BuildProfileGraphicsSettings>();
+            graphicsSettings.Instantiate();
+            AssetDatabase.AddObjectToAsset(graphicsSettings, this);
+            EditorUtility.SetDirty(this);
+        }
+
+        /// <summary>
         /// Remove the Graphics Settings overrides from the build profile.
         /// </summary>
         internal void RemoveGraphicsSettings()
@@ -101,6 +124,20 @@ namespace UnityEditor.Build.Profile
             EditorUtility.SetDirty(this);
 
             OnGraphicsSettingsSubAssetRemoved?.Invoke();
+        }
+
+        /// <summary>
+        /// Add Quality Settings overrides to the build profile.
+        /// </summary>
+        internal void CreateQualitySettings()
+        {
+            if (qualitySettings != null)
+                return;
+
+            qualitySettings = ScriptableObject.CreateInstance<BuildProfileQualitySettings>();
+            qualitySettings.Instantiate();
+            AssetDatabase.AddObjectToAsset(qualitySettings, this);
+            EditorUtility.SetDirty(this);
         }
 
         /// <summary>

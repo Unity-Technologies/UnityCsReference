@@ -70,11 +70,8 @@ namespace UnityEditor.Build.Profile.Elements
                 if (graphicsSettings != null)
                     return;
 
-                graphicsSettings = ScriptableObject.CreateInstance<BuildProfileGraphicsSettings>();
-                graphicsSettings.Instantiate();
-                profile.graphicsSettings = graphicsSettings;
-                AssetDatabase.AddObjectToAsset(graphicsSettings, profile);
-                EditorUtility.SetDirty(profile);
+                BuildProfileModuleUtil.CreateGraphicsSettings(profile);
+                graphicsSettings = profile.graphicsSettings;
 
                 editor = Editor.CreateEditor(graphicsSettings) as BuildProfileGraphicsSettingsEditor;
                 editor.ResetToGlobalGraphicsSettingsValues();
@@ -99,11 +96,7 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
                 }
 
-                AssetDatabase.RemoveObjectFromAsset(graphicsSettings);
-                profile.graphicsSettings = null;
-                EditorUtility.SetDirty(profile);
-
-                UpdateViewOnGraphicsSettingsSubAssetRemoved();
+                BuildProfileModuleUtil.RemoveGraphicsSettings(profile);
             }
 
             void UpdateViewOnGraphicsSettingsSubAssetRemoved()

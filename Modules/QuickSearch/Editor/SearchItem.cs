@@ -631,7 +631,7 @@ namespace UnityEditor.Search
 
         public override bool Equals(object other)
         {
-            return other is SearchIndexEntry l && Equals(l);
+            return other is SearchField l && Equals(l);
         }
 
         public bool Equals(SearchField other)

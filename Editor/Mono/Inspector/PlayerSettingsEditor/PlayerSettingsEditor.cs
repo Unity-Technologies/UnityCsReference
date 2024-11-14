@@ -264,6 +264,7 @@ namespace UnityEditor
             public static readonly GUIContent allowHDRDisplay = EditorGUIUtility.TrTextContent("Allow HDR Display Output*", "Enable the use of HDR displays and include all the resources required for them to function correctly.");
             public static readonly GUIContent useHDRDisplay = EditorGUIUtility.TrTextContent("Use HDR Display Output*", "Checks if the main display supports HDR and if it does, switches to HDR output at the start of the application.");
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
+            public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
 
             public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing (e.g., by com.unity.logging");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
@@ -1384,26 +1385,51 @@ namespace UnityEditor
             EndSettingsBox();
         }
 
+        // Checks if the GraphicsDeviceType is deprecated
+        static private bool IsGraphicsDeviceTypeDeprecated(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
+        {
+            switch (graphicsDeviceType)
+            {
+                case GraphicsDeviceType.PlayStation5: return true;
+                case GraphicsDeviceType.OpenGLCore: return target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
+                default: return false;
+            }
+        }
+
+        static private GraphicsDeviceType RecommendedGraphicsDeviceTypeFromDeprecated(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
+        {
+            switch (graphicsDeviceType)
+            {
+                case GraphicsDeviceType.PlayStation5: return GraphicsDeviceType.PlayStation5NGGC;
+                case GraphicsDeviceType.OpenGLCore: return target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64 ?
+                        GraphicsDeviceType.Vulkan : graphicsDeviceType;
+                default: return graphicsDeviceType;
+            }
+        }
+
+        // Checks if the GraphicsDeviceType is experimental
+        static private bool IsGraphicsDeviceTypeExperimental(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
+        {
+            switch (graphicsDeviceType)
+            {
+                case GraphicsDeviceType.WebGPU: return true;
+                default: return false;
+            }
+        }
+
         // Converts a GraphicsDeviceType to a string, along with visual modifiers for given target platform
         static private string GraphicsDeviceTypeToString(BuildTarget target, GraphicsDeviceType graphicsDeviceType)
         {
-
-            if (graphicsDeviceType == GraphicsDeviceType.WebGPU)
-            {
-                return "WebGPU (Experimental)";
-            }
-            else if (target == BuildTarget.WebGL)
+            if (graphicsDeviceType != GraphicsDeviceType.WebGPU && target == BuildTarget.WebGL)
             {
                 return "WebGL 2";
             }
 
-            switch (target)
+            if (IsGraphicsDeviceTypeDeprecated(target, graphicsDeviceType))
+                return graphicsDeviceType.ToString() + " (Deprecated)";
+            else if (IsGraphicsDeviceTypeExperimental(target, graphicsDeviceType))
             {
-                case BuildTarget.StandaloneWindows:
-                case BuildTarget.StandaloneWindows64:
-                    if (graphicsDeviceType == GraphicsDeviceType.OpenGLCore)
-                        return graphicsDeviceType.ToString() + " (Deprecated)";
-                    break;
+                return graphicsDeviceType.ToString() + " (Experimental)";
             }
 
             return graphicsDeviceType.ToString();
@@ -1414,7 +1440,6 @@ namespace UnityEditor
         {
             graphicsDeviceType = graphicsDeviceType.Replace(" (Deprecated)", "");
             graphicsDeviceType = graphicsDeviceType.Replace(" (Experimental)", "");
-            if (graphicsDeviceType.Contains("WebGPU")) return GraphicsDeviceType.WebGPU;
             if (graphicsDeviceType == "WebGL 2") return GraphicsDeviceType.OpenGLES3;
             return (GraphicsDeviceType)Enum.Parse(typeof(GraphicsDeviceType), graphicsDeviceType, true);
         }
@@ -1689,6 +1714,13 @@ namespace UnityEditor
                 m_CurrentTarget.SetGraphicsAPIs_Internal(targetPlatform, new GraphicsDeviceType[] { selected }, true);
                 OnTargetObjectChangedDirectly();
             }
+
+            if (IsGraphicsDeviceTypeDeprecated(targetPlatform, selected))
+            {
+                GraphicsDeviceType recommendedAPI = RecommendedGraphicsDeviceTypeFromDeprecated(targetPlatform, selected);
+                string text = $"The Graphics API has been deprecated and will be removed in a future version. Use {GraphicsDeviceTypeToString(targetPlatform, recommendedAPI)} instead.";
+                EditorGUILayout.HelpBox(L10n.Tr(text), MessageType.Info, true);
+            }
         }
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, GUIContent platformTitleContent)
@@ -1735,12 +1767,12 @@ namespace UnityEditor
                     ExclusiveGraphicsAPIsGUI(targetPlatform, displayTitle);
                     return;
                 }
-
+                
+                GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
+                var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
                 // create reorderable list for this target if needed
                 if (!m_GraphicsDeviceLists.ContainsKey(targetPlatform))
                 {
-                    GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
-                    var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
                     var rlist = new ReorderableList(devicesList, typeof(GraphicsDeviceType), true, true, true, true);
                     rlist.onAddDropdownCallback = (rect, list) => AddGraphicsDeviceElement(targetPlatform, rect, list);
                     rlist.onCanRemoveCallback = CanRemoveGraphicsDeviceElement;
@@ -1757,8 +1789,12 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
                 }
-
+                
                 m_GraphicsDeviceLists[targetPlatform].DoLayoutList();
+                
+                bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
+                if (containsDeprecatedAPIs)
+                    EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
 
                 //@TODO: undo
             }
@@ -2664,15 +2700,20 @@ namespace UnityEditor
                     m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (PlayerSettings.OnVirtualTexturingChanged())
+                        if (IsActivePlayerSettingsEditor())
                         {
-                            PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
-                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
-                            GUIUtility.ExitGUI();
-                        }
-                        else
-                        {
-                            m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                            if (PlayerSettings.OnVirtualTexturingChanged())
+                            {
+                                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled
+                                    .boolValue);
+                                m_VirtualTexturingSupportEnabled.serializedObject.ApplyModifiedProperties();
+                                EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
+                                GUIUtility.ExitGUI();
+                            }
+                            else
+                            {
+                                m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                            }
                         }
                     }
                 }
@@ -3226,7 +3267,7 @@ namespace UnityEditor
                         if (ShouldRestartEditorToApplySetting())
                         {
                             m_GCIncremental.serializedObject.ApplyModifiedProperties();
-                            EditorApplication.OpenProject(Environment.CurrentDirectory);
+                            EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                         }
                         else
                             m_GCIncremental.boolValue = oldValue;
@@ -3313,7 +3354,7 @@ namespace UnityEditor
                         if (ShouldRestartEditorToApplySetting())
                         {
                             m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                            EditorApplication.RestartEditorAndRecompileScripts();
+                            EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                         }
                         else
                             m_ActiveInputHandler.intValue = currValue;
