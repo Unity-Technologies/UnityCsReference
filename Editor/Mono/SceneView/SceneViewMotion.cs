@@ -38,6 +38,11 @@ namespace UnityEditor
 
         readonly CameraFlyModeContext m_CameraFlyModeContext = new CameraFlyModeContext();
 
+        readonly SceneViewViewport m_SceneViewViewportContext = new SceneViewViewport();
+        readonly SceneViewViewport2D m_SceneViewViewport2DContext = new SceneViewViewport2D();
+        readonly SceneViewViewport3D m_SceneViewViewport3DContext = new SceneViewViewport3D();
+        readonly SceneViewViewportLockedPanTool m_SceneViewViewportLockedPanToolContext = new SceneViewViewportLockedPanTool();
+
         AnimVector3 m_FlySpeed = new AnimVector3(Vector3.zero);
 
         public static event Action viewToolActiveChanged;
@@ -66,14 +71,23 @@ namespace UnityEditor
         static bool s_ViewToolIsActive = false;
         public static bool viewToolIsActive => UpdateViewToolState();
 
-        [InitializeOnLoadMethod]
-        static void RegisterShortcutContexts() => EditorApplication.delayCall += () =>
+        public void RegisterShortcutContexts()
         {
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport());
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport2D());
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewport3D());
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewViewportLockedPanTool());
-        };
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_SceneViewViewportContext);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_SceneViewViewport2DContext);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_SceneViewViewport3DContext);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_SceneViewViewportLockedPanToolContext);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_CameraFlyModeContext);
+        }
+
+        public void UnregisterShortcutContexts()
+        {
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_SceneViewViewportContext);
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_SceneViewViewport2DContext);
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_SceneViewViewport3DContext);
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_SceneViewViewportLockedPanToolContext);
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_CameraFlyModeContext);
+        }
 
         interface ISceneViewContext : IShortcutToolContext
         {

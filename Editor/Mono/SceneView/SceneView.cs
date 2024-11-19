@@ -1245,6 +1245,12 @@ namespace UnityEditor
 
             m_RectSelection = new RectSelection();
 
+            if (s_SceneViews.Count == 0)
+            {
+                m_SceneViewMotion.RegisterShortcutContexts();
+                m_RectSelection.RegisterShortcutContext();
+            }
+
             m_SceneViewMotion.CompleteSceneViewMotionTool();
 
             if (m_Grid == null)
@@ -1506,6 +1512,12 @@ namespace UnityEditor
                 DestroyImmediate(s_MipColorsTexture, true);
 
             s_SceneViews.Remove(this);
+
+            if (s_SceneViews.Count == 0)
+            {
+                m_SceneViewMotion.UnregisterShortcutContexts();
+                m_RectSelection.UnregisterShortcutContext();
+            }
 
             if (s_LastActiveSceneView == this)
                 lastActiveSceneView = s_SceneViews.Count > 0 ? s_SceneViews[0] as SceneView : null;

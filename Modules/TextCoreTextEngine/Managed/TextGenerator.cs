@@ -5129,6 +5129,8 @@ namespace UnityEngine.TextCore.Text
                 c3 = m_TintSprite ? ColorUtilities.MultiplyColors(c3, m_ColorGradientPreset.bottomRight) : c3;
             }
 
+            m_TintSprite = false;
+
             textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.color = c0;
             textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = c1;
             textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = c2;

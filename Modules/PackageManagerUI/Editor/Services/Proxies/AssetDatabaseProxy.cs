@@ -17,7 +17,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh()
         {
-            AssetDatabase.Refresh();
+            AssetDatabase.ScheduleRefresh();
         }
 
         public virtual T LoadAssetAtPath<T>(string assetPath) where T : Object
