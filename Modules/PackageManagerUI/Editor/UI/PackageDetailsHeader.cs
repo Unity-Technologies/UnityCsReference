@@ -98,11 +98,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshName();
             RefreshDependency();
             RefreshFeatureSetElements();
-            RefreshAuthor();
             RefreshTags();
             RefreshVersionLabel();
             RefreshVersionInfoIcon();
-            RefreshDetailRegistry();
+            RefreshRegistryAndAuthor();
+            RefreshScopedRegistryInfoBox();
             RefreshEntitlement();
             RefreshEmbeddedFeatureSetWarningBox();
             RefreshHiddenAssetInfo();
@@ -268,18 +268,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
-        private void RefreshAuthor()
-        {
-            var publisherName = m_Package?.publisherName;
-            var publisherLink = m_Package?.publisherLink;
-
-            var showDetailAuthorLink = !string.IsNullOrEmpty(publisherName) && !string.IsNullOrEmpty(publisherLink);
-            if (showDetailAuthorLink)
-                detailAuthorLink.text = publisherName;
-
-            UIUtils.SetElementDisplay(detailAuthorLink, showDetailAuthorLink);
-        }
-
         private void RefreshTags()
         {
             foreach (var tag in k_VisibleTags)
@@ -386,46 +374,54 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
-        private void RefreshDetailRegistry()
+        private bool TryShowAuthorLink()
         {
-            var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
-            var registry = packageInfo?.registry;
-            var showRegistry = registry != null && !m_Package.Is(PackageType.AssetStore);
-            UIUtils.SetElementDisplay(detailRegistry, showRegistry);
+            var publisherName = m_Package?.publisherName;
+            var publisherLink = m_Package?.publisherLink;
 
-            if (showRegistry)
-            {
-                var isByUnity = packageInfo.versions.all.Length > 0 && registry.isDefault && !m_Version.HasTag(PackageTag.InstalledFromPath);
+            var showDetailAuthorLink = !string.IsNullOrEmpty(publisherName) && !string.IsNullOrEmpty(publisherLink);
+            if (showDetailAuthorLink)
+                detailAuthorLink.text = publisherName;
 
-                var detailRegistryName = isByUnity ? "Unity Registry" : registry.name;
-                var detailRegistryAuthor = isByUnity ? "Unity Technologies Inc." : m_Version?.author;
-                detailRegistry.tooltip = isByUnity ? registry.url : string.Empty;
-                detailRegistry.enableRichText = true;
-
-                if (!string.IsNullOrEmpty(detailRegistryName) && !string.IsNullOrEmpty(detailRegistryAuthor))
-                    detailRegistry.text = string.Format(L10n.Tr("From <b>{0}</b> by {1}"), detailRegistryName, detailRegistryAuthor);
-                else if (!string.IsNullOrEmpty(detailRegistryName))
-                    detailRegistry.text = string.Format(L10n.Tr("From <b>{0}</b>"), detailRegistryName);
-                else if (!string.IsNullOrEmpty(detailRegistryAuthor))
-                    detailRegistry.text = string.Format(L10n.Tr("By {0}"), detailRegistryAuthor);
-                else
-                    detailRegistry.text = L10n.Tr("Author unknown");
-            }
-
-            RefreshScopedRegistryInfoBox(registry, showRegistry);
+            UIUtils.SetElementDisplay(detailAuthorLink, showDetailAuthorLink);
+            return showDetailAuthorLink;
         }
 
-        private void RefreshScopedRegistryInfoBox(RegistryInfo registry, bool showRegistry)
+        private void RefreshRegistryAndAuthor()
         {
-            UIUtils.SetElementDisplay(scopedRegistryInfoBox, showRegistry);
+            var showRegistryAndAuthorLabel = !TryShowAuthorLink();
+            UIUtils.SetElementDisplay(registryAndAuthorLabel, showRegistryAndAuthorLabel);
+            if (!showRegistryAndAuthorLabel)
+                return;
 
-            if (showRegistry)
+            var isByUnity = m_Version.availableRegistry == RegistryType.UnityRegistry && !m_Version.HasTag(PackageTag.InstalledFromPath);
+            var author = isByUnity ? L10n.Tr("Unity Technologies Inc.") : m_Version?.author;
+            registryAndAuthorLabel.tooltip = string.Empty;
+            if (m_Version is { availableRegistry: RegistryType.UnityRegistry or RegistryType.MyRegistries })
+            {
+                var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
+                var registryName = isByUnity ? L10n.Tr("Unity Registry") : packageInfo.registry.name;
+                if (isByUnity)
+                    registryAndAuthorLabel.tooltip = packageInfo.registry.url;
+                if (!string.IsNullOrEmpty(registryName))
+                {
+                    registryAndAuthorLabel.text = string.IsNullOrEmpty(author)
+                        ? string.Format(L10n.Tr("From <b>{0}</b>"), registryName)
+                        : string.Format(L10n.Tr("From <b>{0}</b> by {1}"), registryName, author);
+                    return;
+                }
+            }
+            registryAndAuthorLabel.text = string.IsNullOrEmpty(author) ? L10n.Tr("Author unknown") : string.Format(L10n.Tr("By {0}"), author);
+        }
+
+        private void RefreshScopedRegistryInfoBox()
+        {
+            if (m_Version.availableRegistry == RegistryType.MyRegistries)
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ScopedRegistry];
-                UIUtils.SetElementDisplay(scopedRegistryInfoBox, !registry.isDefault);
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
             }
-
-            if (m_Version.HasTag(PackageTag.Experimental))
+            else if (m_Version.HasTag(PackageTag.Experimental))
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.Experimental];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
@@ -439,6 +435,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 scopedRegistryInfoBox.text = k_InfoBoxReadMoreText[(int)InfoBoxState.ReleaseCandidate];
                 UIUtils.SetElementDisplay(scopedRegistryInfoBox, true);
+            }
+            else
+            {
+                UIUtils.SetElementDisplay(scopedRegistryInfoBox, false);
             }
         }
 
@@ -474,7 +474,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         internal PackageTagLabel GetTagLabel(string tag) => cache.Get<PackageTagLabel>("tag" + tag);
 
-        private Label detailRegistry => cache.Get<Label>("detailRegistry");
+        private Label registryAndAuthorLabel => cache.Get<Label>("registryAndAuthorLabel");
         private HelpBox scopedRegistryInfoBox => cache.Get<HelpBox>("scopedRegistryInfoBox");
         private Button quickStart => cache.Get<Button>("quickStart");
 

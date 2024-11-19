@@ -371,6 +371,24 @@ namespace UnityEditor
                     scenes[i] = scenes[i].Replace('\\', '/').Replace("//", "/");
             }
 
+            if ((options & BuildOptions.Development) == 0)
+            {
+                if ((options & BuildOptions.AllowDebugging) != 0)
+                {
+                    throw new ArgumentException("Non-development build cannot allow debugging. Either add the Development build option, or remove the AllowDebugging build option.");
+                }
+
+                if ((options & BuildOptions.EnableDeepProfilingSupport) != 0)
+                {
+                    throw new ArgumentException("Non-development build cannot allow deep profiling support. Either add the Development build option, or remove the EnableDeepProfilingSupport build option.");
+                }
+
+                if ((options & BuildOptions.ConnectWithProfiler) != 0)
+                {
+                    throw new ArgumentException("Non-development build cannot allow auto-connecting the profiler. Either add the Development build option, or remove the ConnectWithProfiler build option.");
+                }
+            }
+
             try
             {
                 return BuildPlayerInternal(scenes, locationPathName, assetBundleManifestPath, buildTargetGroup, target, subtarget, options, extraScriptingDefines);

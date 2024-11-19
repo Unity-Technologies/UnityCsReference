@@ -319,6 +319,8 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingAsset, PreventExecutionSeverity.PreventExecution_Error)]
         extern public static void Refresh([uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
 
+        extern public static void ScheduleRefresh();
+
         [FreeFunction("::CanOpenAssetInEditor")]
         extern public static bool CanOpenAssetInEditor(int instanceID);
 

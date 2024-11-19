@@ -25,6 +25,8 @@ namespace UnityEditor
 
         Dictionary<GameObject, bool> m_LastSelection;
 
+        readonly SceneViewRectSelection m_RectSelectionShortcutContext = new SceneViewRectSelection();
+
         public static event Action rectSelectionStarting = delegate { };
         public static event Action rectSelectionFinished = delegate { };
 
@@ -42,11 +44,15 @@ namespace UnityEditor
 
         readonly int k_RectSelectionID = GUIUtility.GetPermanentControlID();
 
-        [InitializeOnLoadMethod]
-        static void RegisterShortcutContext() => EditorApplication.delayCall += () =>
+        public void RegisterShortcutContext()
         {
-            ShortcutIntegration.instance.contextManager.RegisterToolContext(new SceneViewRectSelection());
-        };
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_RectSelectionShortcutContext);
+        }
+
+        public void UnregisterShortcutContext()
+        {
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_RectSelectionShortcutContext);
+        }
 
         class SceneViewRectSelection : IShortcutToolContext
         {
