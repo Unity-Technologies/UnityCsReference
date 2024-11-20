@@ -35,8 +35,16 @@ namespace UnityEditor.Build.Profile
 
         public static void ShowWindow()
         {
+            ShowWindowAndSelectPlatform();
+        }
+
+        public static void ShowWindowAndSelectPlatform(string platformId = null)
+        {
             var window = GetWindow<PlatformDiscoveryWindow>(true, TrText.platformDiscoveryTitle, true);
             window.minSize = new Vector2(900, 500);
+
+            if (platformId != null)
+                window.SelectPlatform(platformId);
         }
 
         public void OnDisable()
@@ -85,6 +93,20 @@ namespace UnityEditor.Build.Profile
 
             // First element should match standalone platform.
             cards.SetSelection(0);
+        }
+
+        void SelectPlatform(string platformId)
+        {
+            for (var index = 0; index < m_Cards.Length; index++)
+            {
+                var card = m_Cards[index];
+                if (card.platformId == platformId)
+                {
+                    var cardListView = rootVisualElement.Q<ListView>("cards-root-listview");
+                    cardListView.SetSelection(index);
+                    break;
+                }
+            }
         }
 
         /// <summary>

@@ -241,7 +241,7 @@ namespace UnityEngine.TextCore.Text
                             {
                                 float gap = generationSettings.isRightToLeft ? lineInfo.width + lineInfo.maxAdvance : lineInfo.width - lineInfo.maxAdvance;
                                 int visibleCount = lineInfo.visibleCharacterCount - 1 + lineInfo.controlCharacterCount;
-                                int spaces = lineInfo.spaceCount - lineInfo.controlCharacterCount;
+                                int spaces = lineInfo.visibleSpaceCount - lineInfo.controlCharacterCount;
 
                                 if (isFirstSeperator) { spaces -= 1; visibleCount += 1; }
 
