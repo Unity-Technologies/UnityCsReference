@@ -132,7 +132,7 @@ namespace UnityEditor.Build.Profile
             {
                 var button = root.Q<Button>(k_SharedSettingsInfoHelpboxButton);
                 button.text = TrText.addBuildProfile;
-                button.clicked += DuplicateSelectedClassicProfile;
+                button.clicked += () => PlatformDiscoveryWindow.ShowWindowAndSelectPlatform(profile.platformId);
             }
 
             if (hasErrors)

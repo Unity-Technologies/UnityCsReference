@@ -86,6 +86,12 @@ namespace UnityEditor
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
             public static readonly GUIContent captureLogsTitle = EditorGUIUtility.TrTextContent("Capture Logs");
 
+            public static readonly GUIContent usePlayerLog = EditorGUIUtility.TrTextContent("Use Player Log");
+            public static readonly GUIContent resizableWindow = EditorGUIUtility.TrTextContent("Resizable Window");
+            public static readonly GUIContent forceSingleInstance = EditorGUIUtility.TrTextContent("Force Single Instance");
+            public static readonly GUIContent overrideDefaultApplicationIdentifier = EditorGUIUtility.TrTextContent("Override Default Bundle Identifier");
+            public static readonly GUIContent bundleIdentifier = EditorGUIUtility.TrTextContent("Bundle Identifier");
+
             public static readonly GUIContent shaderSectionTitle = EditorGUIUtility.TrTextContent("Shader Settings");
             public static readonly GUIContent shaderVariantLoadingTitle = EditorGUIUtility.TrTextContent("Shader Variant Loading Settings");
             public static readonly GUIContent defaultShaderChunkSize = EditorGUIUtility.TrTextContent("Default chunk size (MB)*", "Use this setting to control how much memory is used when loading shader variants.");
@@ -114,6 +120,7 @@ namespace UnityEditor
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
             public static readonly GUIContent runInBackground = EditorGUIUtility.TrTextContent("Run In Background*");
+            public static readonly GUIContent defaultIsNativeResolution = EditorGUIUtility.TrTextContent("Default Is Native Resolution");
             public static readonly GUIContent defaultScreenOrientation = EditorGUIUtility.TrTextContent("Default Orientation*");
             public static readonly GUIContent allowedAutoRotateToPortrait = EditorGUIUtility.TrTextContent("Portrait");
             public static readonly GUIContent allowedAutoRotateToPortraitUpsideDown = EditorGUIUtility.TrTextContent("Portrait Upside Down");
@@ -188,6 +195,12 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Allowed in development builds"),
                 EditorGUIUtility.TrTextContent("Always allowed"),
             };
+
+            public static readonly GUIContent autoGraphicsAPI = EditorGUIUtility.TrTextContent("Auto Graphics API");
+            public static readonly GUIContent autoGraphicsAPIForWindows = EditorGUIUtility.TrTextContent("Auto Graphics API for Windows");
+            public static readonly GUIContent autoGraphicsAPIForMac = EditorGUIUtility.TrTextContent("Auto Graphics API for Mac");
+            public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
+
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
             public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources and Prepare iOS for Recording are both off.");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
@@ -1258,7 +1271,7 @@ namespace UnityEditor
                         bool defaultIsFullScreen = fullscreenModeNew != FullScreenMode.Windowed;
                         m_ShowDefaultIsNativeResolution.target = defaultIsFullScreen;
                         if (EditorGUILayout.BeginFadeGroup(m_ShowDefaultIsNativeResolution.faded))
-                            EditorGUILayout.PropertyField(m_DefaultIsNativeResolution);
+                            EditorGUILayout.PropertyField(m_DefaultIsNativeResolution, SettingsContent.defaultIsNativeResolution);
                         EditorGUILayout.EndFadeGroup();
 
                         m_ShowResolution.target = !(defaultIsFullScreen && m_DefaultIsNativeResolution.boolValue);
@@ -1339,15 +1352,15 @@ namespace UnityEditor
                     {
                         GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
 
-                        EditorGUILayout.PropertyField(m_UsePlayerLog);
+                        EditorGUILayout.PropertyField(m_UsePlayerLog, SettingsContent.usePlayerLog);
 
-                        EditorGUILayout.PropertyField(m_ResizableWindow);
+                        EditorGUILayout.PropertyField(m_ResizableWindow, SettingsContent.resizableWindow);
 
                         EditorGUILayout.PropertyField(m_VisibleInBackground, SettingsContent.visibleInBackground);
 
                         EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, SettingsContent.allowFullscreenSwitch);
 
-                        EditorGUILayout.PropertyField(m_ForceSingleInstance);
+                        EditorGUILayout.PropertyField(m_ForceSingleInstance, SettingsContent.forceSingleInstance);
                         EditorGUILayout.PropertyField(m_UseFlipModelSwapchain, SettingsContent.useFlipModelSwapChain);
 
                         if (!PlayerSettings.useFlipModelSwapchain)
@@ -1693,7 +1706,7 @@ namespace UnityEditor
             }
         }
 
-        void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
+        void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, GUIContent platformTitleContent)
         {
             if (IsPreset())
                 return;
@@ -1707,7 +1720,7 @@ namespace UnityEditor
             // toggle for automatic API selection
             EditorGUI.BeginChangeCheck();
             var automatic = m_CurrentTarget.GetUseDefaultGraphicsAPIs_Internal(targetPlatform);
-            automatic = EditorGUILayout.Toggle(string.Format(L10n.Tr("Auto Graphics API {0}"), (platformTitle ?? string.Empty)), automatic);
+            automatic = EditorGUILayout.Toggle(platformTitleContent ?? GUIContent.none, automatic);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
@@ -1724,9 +1737,13 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
                 }
 
-                var displayTitle = "Graphics APIs";
-                if (platformTitle != null)
-                    displayTitle += platformTitle;
+                string displayTitle = String.Empty;
+                if (platformTitleContent != null)
+                {
+                    displayTitle = platformTitleContent.text;
+                    if (displayTitle.StartsWith("Auto "))
+                        displayTitle = displayTitle.Substring(5);
+                }
 
                 if (targetPlatform == BuildTarget.PS5)
                 {
@@ -1771,13 +1788,13 @@ namespace UnityEditor
             // split it into win/mac/linux manually
             if (targetGroup == BuildTargetGroup.Standalone)
             {
-                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneWindows, " for Windows");
-                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneOSX, " for Mac");
-                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneLinux64, " for Linux");
+                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneWindows, SettingsContent.autoGraphicsAPIForWindows);
+                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneOSX, SettingsContent.autoGraphicsAPIForMac);
+                GraphicsAPIsGUIOnePlatform(targetGroup, BuildTarget.StandaloneLinux64, SettingsContent.autoGraphicsAPIForLinux);
             }
             else
             {
-                GraphicsAPIsGUIOnePlatform(targetGroup, target, null);
+                GraphicsAPIsGUIOnePlatform(targetGroup, target, SettingsContent.autoGraphicsAPI);
             }
         }
 
@@ -2810,7 +2827,7 @@ namespace UnityEditor
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
                 GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
-                EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, EditorGUIUtility.TrTextContent("Override Default Bundle Identifier"));
+                EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, SettingsContent.overrideDefaultApplicationIdentifier);
 
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
@@ -2818,7 +2835,7 @@ namespace UnityEditor
                     {
                         using (new EditorGUI.IndentLevelScope())
                         {
-                            ShowApplicationIdentifierUI(BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'");
+                            ShowApplicationIdentifierUI(BuildTargetGroup.Standalone, SettingsContent.bundleIdentifier.text, "'CFBundleIdentifier'");
                         }
                     }
                 }
@@ -4094,9 +4111,15 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
+            var keywordsList = new List<string>();
+
+            keywordsList.AddRange(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
+            keywordsList.AddRange(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<PlayerSettingsSplashScreenEditor.Texts>());
+            keywordsList.AddRange(SettingsProvider.GetSearchKeywordsFromGUIContentProperties<PlayerSettingsIconsEditor.SettingsContent>());
+
             var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
                 "Project/Player", "ProjectSettings/ProjectSettings.asset",
-                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
+                keywordsList);
             provider.activateHandler = (searchContext, rootElement) =>
             {
                 var playerSettingsProvider = provider.settingsEditor as PlayerSettingsEditor;

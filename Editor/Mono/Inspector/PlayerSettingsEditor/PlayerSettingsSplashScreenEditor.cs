@@ -77,32 +77,31 @@ namespace UnityEditor
             }
         }
 
-        class Texts
+        internal class Texts
         {
-            public GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
-            public GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used. On Android, use this property to set static splash image background color.");
-            public GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).");
-            public GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
-            public GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
-            public GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
-            public GUIContent blurBackground = EditorGUIUtility.TrTextContent("Blur Background Image");
-            public GUIContent cancelPreviewSplash = EditorGUIUtility.TrTextContent("Cancel Preview");
-            public GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
-            public GUIContent configDialogBannerDeprecationWarning = EditorGUIUtility.TrTextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.");
-            public GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
-            public GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
-            public GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
-            public GUIContent logoZoom = EditorGUIUtility.TrTextContent("Logo Zoom");
-            public GUIContent overlayOpacity = EditorGUIUtility.TrTextContent("Overlay Opacity", "Overlay strength applied to improve logo visibility.");
-            public GUIContent previewSplash = EditorGUIUtility.TrTextContent("Preview", "Preview the splash screen in the game view.");
-            public GUIContent showLogo = EditorGUIUtility.TrTextContent("Show Unity Logo");
-            public GUIContent showSplash = EditorGUIUtility.TrTextContent("Show Splash Screen");
-            public GUIContent splashStyle = EditorGUIUtility.TrTextContent("Splash Style");
-            public GUIContent splashTitle = EditorGUIUtility.TrTextContent("Splash Screen");
-            public GUIContent title = EditorGUIUtility.TrTextContent("Splash Image");
-            public GUIContent vrSplashScreen = EditorGUIUtility.TrTextContent("Virtual Reality Splash Image");
+            public static readonly GUIContent animate = EditorGUIUtility.TrTextContent("Animation");
+            public static readonly GUIContent backgroundColor = EditorGUIUtility.TrTextContent("Background Color", "Background color when no background image is used. On Android, use this property to set static splash image background color.");
+            public static readonly GUIContent backgroundImage = EditorGUIUtility.TrTextContent("Background Image", "Image to be used in landscape and portrait (when portrait image is not set).");
+            public static readonly GUIContent backgroundPortraitImage = EditorGUIUtility.TrTextContent("Alternate Portrait Image*", "Optional image to be used in portrait mode.");
+            public static readonly GUIContent backgroundTitle = EditorGUIUtility.TrTextContent("Background*");
+            public static readonly GUIContent backgroundZoom = EditorGUIUtility.TrTextContent("Background Zoom");
+            public static readonly GUIContent blurBackground = EditorGUIUtility.TrTextContent("Blur Background Image");
+            public static readonly GUIContent cancelPreviewSplash = EditorGUIUtility.TrTextContent("Cancel Preview");
+            public static readonly GUIContent configDialogBanner = EditorGUIUtility.TrTextContent("Application Config Dialog Banner");
+            public static readonly GUIContent configDialogBannerDeprecationWarning = EditorGUIUtility.TrTextContent("Application Config Dialog Banner is deprecated and will be removed in future versions.");
+            public static readonly GUIContent drawMode = EditorGUIUtility.TrTextContent("Draw Mode");
+            public static readonly GUIContent logoDuration = EditorGUIUtility.TrTextContent("Logo Duration", "The time the logo will be shown for.");
+            public static readonly GUIContent logosTitle = EditorGUIUtility.TrTextContent("Logos*");
+            public static readonly GUIContent logoZoom = EditorGUIUtility.TrTextContent("Logo Zoom");
+            public static readonly GUIContent overlayOpacity = EditorGUIUtility.TrTextContent("Overlay Opacity", "Overlay strength applied to improve logo visibility.");
+            public static readonly GUIContent previewSplash = EditorGUIUtility.TrTextContent("Preview", "Preview the splash screen in the game view.");
+            public static readonly GUIContent showLogo = EditorGUIUtility.TrTextContent("Show Unity Logo");
+            public static readonly GUIContent showSplash = EditorGUIUtility.TrTextContent("Show Splash Screen");
+            public static readonly GUIContent splashStyle = EditorGUIUtility.TrTextContent("Splash Style");
+            public static readonly GUIContent splashTitle = EditorGUIUtility.TrTextContent("Splash Screen");
+            public static readonly GUIContent title = EditorGUIUtility.TrTextContent("Splash Image");
+            public static readonly GUIContent vrSplashScreen = EditorGUIUtility.TrTextContent("Virtual Reality Splash Image");
         }
-        static readonly Texts k_Texts = new Texts();
 
         public PlayerSettingsSplashScreenEditor(PlayerSettingsEditor owner)
         {
@@ -180,7 +179,7 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
             var propertyRect = new Rect(rect.x + logoWidth, rect.y + EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight, rect.width - logoWidth, EditorGUIUtility.singleLineHeight);
             EditorGUI.BeginChangeCheck();
-            var durationLabel = EditorGUI.BeginProperty(propertyRect, k_Texts.logoDuration, duration);
+            var durationLabel = EditorGUI.BeginProperty(propertyRect, Texts.logoDuration, duration);
             var newDurationVal = EditorGUI.Slider(propertyRect, durationLabel, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
             if (EditorGUI.EndChangeCheck())
                 duration.floatValue = newDurationVal;
@@ -218,7 +217,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = k_LogoListPropertyLabelWidth;
-            var newDurationVal = EditorGUI.Slider(propertyRect, k_Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
+            var newDurationVal = EditorGUI.Slider(propertyRect, Texts.logoDuration, duration.floatValue, k_MinLogoTime, k_MaxLogoTime);
             EditorGUIUtility.labelWidth = oldLabelWidth;
             if (EditorGUI.EndChangeCheck())
                 duration.floatValue = newDurationVal;
@@ -309,7 +308,7 @@ namespace UnityEditor
 
         public void SplashSectionGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension, int sectionIndex = 2)
         {
-            if (m_Owner.BeginSettingsBox(sectionIndex, k_Texts.title))
+            if (m_Owner.BeginSettingsBox(sectionIndex, Texts.title))
             {
                 if (platform.namedBuildTarget == NamedBuildTarget.Server)
                 {
@@ -321,7 +320,7 @@ namespace UnityEditor
                     bool VREnabled = BuildPipeline.IsFeatureSupported("ENABLE_VR", platform.defaultTarget);
 
                     if (VREnabled)
-                        ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, k_Texts.vrSplashScreen);
+                        ObjectReferencePropertyField<Texture2D>(m_VirtualRealitySplashScreen, Texts.vrSplashScreen);
 
                     if (TargetSupportsOptionalBuiltinSplashScreen(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension))
                         BuiltinCustomSplashScreenGUI(platform.namedBuildTarget.ToBuildTargetGroup(), settingsExtension);
@@ -330,7 +329,7 @@ namespace UnityEditor
                     {
                         settingsExtension.SplashSectionGUI();
                         if (!m_ShowUnitySplashScreen.boolValue && settingsExtension.SupportsStaticSplashScreenBackgroundColor())
-                            EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, k_Texts.backgroundColor);
+                            EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, Texts.backgroundColor);
                     }
 
                     if (m_ShowUnitySplashScreen.boolValue)
@@ -342,13 +341,13 @@ namespace UnityEditor
 
         private void BuiltinCustomSplashScreenGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
-            EditorGUILayout.LabelField(k_Texts.splashTitle, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Texts.splashTitle, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_ShowUnitySplashScreen, k_Texts.showSplash);
+            EditorGUILayout.PropertyField(m_ShowUnitySplashScreen, Texts.showSplash);
             if (!m_ShowUnitySplashScreen.boolValue)
                 return;
 
-            GUIContent buttonLabel = SplashScreen.isFinished ? k_Texts.previewSplash : k_Texts.cancelPreviewSplash;
+            GUIContent buttonLabel = SplashScreen.isFinished ? Texts.previewSplash : Texts.cancelPreviewSplash;
             Rect previewButtonRect = GUILayoutUtility.GetRect(buttonLabel, "button");
             previewButtonRect = EditorGUI.PrefixLabel(previewButtonRect, new GUIContent(" "));
             if (GUI.Button(previewButtonRect, buttonLabel))
@@ -374,7 +373,7 @@ namespace UnityEditor
             }
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_SplashScreenLogoStyle, k_Texts.splashStyle);
+            EditorGUILayout.PropertyField(m_SplashScreenLogoStyle, Texts.splashStyle);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_SplashScreenLogoStyle.intValue == (int)PlayerSettings.SplashScreen.UnityLogoStyle.DarkOnLight)
@@ -384,14 +383,14 @@ namespace UnityEditor
             }
 
             // Animation
-            EditorGUILayout.PropertyField(m_SplashScreenAnimation, k_Texts.animate);
+            EditorGUILayout.PropertyField(m_SplashScreenAnimation, Texts.animate);
             m_ShowAnimationControlsAnimator.target = m_SplashScreenAnimation.intValue == (int)PlayerSettings.SplashScreen.AnimationMode.Custom;
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowAnimationControlsAnimator.faded))
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.Slider(m_SplashScreenLogoAnimationZoom, 0.0f, 1.0f, k_Texts.logoZoom);
-                EditorGUILayout.Slider(m_SplashScreenBackgroundAnimationZoom, 0.0f, 1.0f, k_Texts.backgroundZoom);
+                EditorGUILayout.Slider(m_SplashScreenLogoAnimationZoom, 0.0f, 1.0f, Texts.logoZoom);
+                EditorGUILayout.Slider(m_SplashScreenBackgroundAnimationZoom, 0.0f, 1.0f, Texts.backgroundZoom);
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
@@ -399,10 +398,10 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Logos
-            EditorGUILayout.LabelField(k_Texts.logosTitle, EditorStyles.boldLabel);
+            EditorGUILayout.LabelField(Texts.logosTitle, EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_ShowUnitySplashLogo, k_Texts.showLogo);
+            EditorGUILayout.PropertyField(m_ShowUnitySplashLogo, Texts.showLogo);
             if (EditorGUI.EndChangeCheck())
             {
                 if (!m_ShowUnitySplashLogo.boolValue)
@@ -417,7 +416,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 var oldDrawmode = m_SplashScreenDrawMode.intValue;
-                EditorGUILayout.PropertyField(m_SplashScreenDrawMode, k_Texts.drawMode);
+                EditorGUILayout.PropertyField(m_SplashScreenDrawMode, Texts.drawMode);
                 if (oldDrawmode != m_SplashScreenDrawMode.intValue)
                 {
                     if (m_SplashScreenDrawMode.intValue == (int)PlayerSettings.SplashScreen.DrawMode.UnityLogoBelow)
@@ -438,23 +437,23 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             // Background
-            EditorGUILayout.LabelField(k_Texts.backgroundTitle, EditorStyles.boldLabel);
-            EditorGUILayout.Slider(m_SplashScreenOverlayOpacity, k_MinOverlayOpacity, 1.0f, k_Texts.overlayOpacity);
+            EditorGUILayout.LabelField(Texts.backgroundTitle, EditorStyles.boldLabel);
+            EditorGUILayout.Slider(m_SplashScreenOverlayOpacity, k_MinOverlayOpacity, 1.0f, Texts.overlayOpacity);
             m_ShowBackgroundColorAnimator.target = m_SplashScreenBackgroundLandscape.objectReferenceValue == null ||
                 (settingsExtension?.SupportsStaticSplashScreenBackgroundColor() ?? false);
             if (EditorGUILayout.BeginFadeGroup(m_ShowBackgroundColorAnimator.faded))
-                EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, k_Texts.backgroundColor);
+                EditorGUILayout.PropertyField(m_SplashScreenBackgroundColor, Texts.backgroundColor);
             EditorGUILayout.EndFadeGroup();
 
-            EditorGUILayout.PropertyField(m_SplashScreenBlurBackground, k_Texts.blurBackground);
+            EditorGUILayout.PropertyField(m_SplashScreenBlurBackground, Texts.blurBackground);
             EditorGUI.BeginChangeCheck();
-            ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundLandscape, k_Texts.backgroundImage);
+            ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundLandscape, Texts.backgroundImage);
             if (EditorGUI.EndChangeCheck() && m_SplashScreenBackgroundLandscape.objectReferenceValue == null)
                 m_SplashScreenBackgroundPortrait.objectReferenceValue = null;
 
             using (new EditorGUI.DisabledScope(m_SplashScreenBackgroundLandscape.objectReferenceValue == null))
             {
-                ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundPortrait, k_Texts.backgroundPortraitImage);
+                ObjectReferencePropertyField<Sprite>(m_SplashScreenBackgroundPortrait, Texts.backgroundPortraitImage);
             }
         }
 

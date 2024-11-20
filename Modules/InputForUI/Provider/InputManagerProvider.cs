@@ -144,7 +144,9 @@ namespace UnityEngine.InputForUI
                     _touchFingerIdToFingerIndex.Add(touch.fingerId, fingerIndex);
                 }
 
+                // Flip Y Coordinates.
                 var position = MultiDisplayBottomLeftToPanelPosition(touch.position, out var targetDisplay);
+                var deltaPosition = ScreenBottomLeftToPanelDelta(touch.deltaPosition);
 
                 var type = PointerEvent.Type.PointerMoved;
                 var button = PointerEvent.Button.None;
@@ -185,7 +187,7 @@ namespace UnityEngine.InputForUI
                     type = type,
                     pointerIndex = fingerIndex,
                     position = position,
-                    deltaPosition = touch.deltaPosition,
+                    deltaPosition = deltaPosition,
                     scroll = Vector2.zero,
                     displayIndex = targetDisplay,
                     tilt = AzimuthAndAlitutudeToTilt(touch.altitudeAngle, touch.azimuthAngle),
@@ -803,6 +805,14 @@ namespace UnityEngine.InputForUI
                 screenHeight = Display.displays[targetDisplay].systemHeight;
             position.y = screenHeight - position.y;
             return position;
+        }
+
+        // copied from UIElementsRuntimeUtility.cs
+        private static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
+        {
+            // Flip deltas Y axis between input and UITK
+            delta.y = -delta.y;
+            return delta;
         }
 
         private struct ButtonEventsIterator : IEnumerator

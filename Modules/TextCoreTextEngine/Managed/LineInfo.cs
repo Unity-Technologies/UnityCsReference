@@ -34,6 +34,7 @@ namespace UnityEngine.TextCore.Text
 
         public int characterCount;
         public int visibleCharacterCount;
+        public int visibleSpaceCount;
         public int spaceCount;
         public int wordCount;
         public int firstCharacterIndex;

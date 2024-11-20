@@ -106,19 +106,19 @@ namespace UnityEditor.ShortcutManagement
         {
             // Load mouse icons.
             s_MouseIcons[0] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}.png", k_IconsParentPath, KeyCode.Mouse0));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}.png", k_IconsParentPath, "Right"));
             s_MouseIcons[1] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}.png", k_IconsParentPath, KeyCode.Mouse1));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}.png", k_IconsParentPath, "Left"));
             s_MouseIcons[2] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}.png", k_IconsParentPath, KeyCode.Mouse2));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}.png", k_IconsParentPath, "Middle"));
 
             // Load mouse drag icons.
             s_MouseDragIcons[0] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}-Drag.png", k_IconsParentPath, KeyCode.Mouse0));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}-Drag.png", k_IconsParentPath, "Right"));
             s_MouseDragIcons[1] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}-Drag.png", k_IconsParentPath, KeyCode.Mouse1));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}-Drag.png", k_IconsParentPath, "Left"));
             s_MouseDragIcons[2] =
-                EditorGUIUtility.LoadIconRequired(string.Format("{0}{1}-Drag.png", k_IconsParentPath, KeyCode.Mouse2));
+                EditorGUIUtility.LoadIconRequired(string.Format("{0}Mouse{1}-Drag.png", k_IconsParentPath, "Middle"));
 
             // Initialize Mouse3 to Mouse6 text content.
             s_ExtraMouseButtons[0] = "M3";

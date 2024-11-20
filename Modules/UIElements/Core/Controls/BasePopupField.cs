@@ -136,6 +136,7 @@ namespace UnityEngine.UIElements
             choices = new List<TValueChoice>();
 
             RegisterCallback<PointerDownEvent>(OnPointerDownEvent);
+            RegisterCallback<PointerUpEvent>(OnPointerUpEvent);
             RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             RegisterCallback<MouseDownEvent>(e =>
             {
@@ -148,6 +149,15 @@ namespace UnityEngine.UIElements
         void OnPointerDownEvent(PointerDownEvent evt)
         {
             ProcessPointerDown(evt);
+        }
+
+        void OnPointerUpEvent(PointerUpEvent evt)
+        {
+            if (evt.button == (int)MouseButton.LeftMouse)
+            {
+                // Prevent propagation to other elements (UUM-85620)
+                evt.StopPropagation();
+            }
         }
 
         void OnPointerMoveEvent(PointerMoveEvent evt)
