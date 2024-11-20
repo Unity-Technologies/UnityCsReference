@@ -214,6 +214,7 @@ namespace UnityEditor
         GameActivity = 1 << 1
     }
 
+    [Obsolete("AndroidDeviceFilterData is obsolete. Use UnityEngine.VulkanDeviceFilterData instead.")]
     public struct AndroidDeviceFilterData
     {
         public string vendorName;
@@ -710,32 +711,57 @@ namespace UnityEditor
             [NativeProperty("AndroidPredictiveBackSupport", TargetType.Function)]
             public static extern bool predictiveBackSupport { get; set; }
 
+            [Obsolete("GetAndroidVulkanDenyFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern AndroidDeviceFilterData[] GetAndroidVulkanDenyFilterListImpl();
+
+            [Obsolete("SetAndroidVulkanDenyFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern void SetAndroidVulkanDenyFilterListImpl(AndroidDeviceFilterData[] filterData);
+
+            [Obsolete("GetAndroidVulkanAllowFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern AndroidDeviceFilterData[] GetAndroidVulkanAllowFilterListImpl();
+
+            [Obsolete("SetAndroidVulkanAllowFilterListImpl is deprecated. Use the androidVulkanDeviceFilterListAsset instead.")]
             internal static extern void SetAndroidVulkanAllowFilterListImpl(AndroidDeviceFilterData[] filterData);
 
+            public static extern VulkanDeviceFilterLists androidVulkanDeviceFilterListAsset { get; set; }
+
+
+            [Obsolete("vendorNameString is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string vendorNameString = "vendorName";
+
+            [Obsolete("deviceNameString is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string deviceNameString = "deviceName";
+
+            [Obsolete("brandNameString is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string brandNameString = "brandName";
+
+            [Obsolete("productNameString is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string productNameString = "productName";
+
+            [Obsolete("vulkanApiVersionStringValue is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string vulkanApiVersionStringValue = "vulkanApiVersionString";
+
+            [Obsolete("driverVersionStringValue is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string driverVersionStringValue = "driverVersionString";
 
-            // Keep in sync with same error message in AndroidDeviceFile.cs
+            // Keep in sync with same error message in VulkanDeviceFilterLists.Bindings.cs
+            [Obsolete("versionErrorMessage is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly string versionErrorMessage = "Version information should be formatted as:" +
                 "\n1. 'MajorVersion.MinorVersion.PatchVersion' where MinorVersion and PatchVersion are optional and must only " +
                 "contain numbers, or \n2. Hex number beginning with '0x' (max 4-bytes)";
 
-            // Keep in sync with m_ValidVersionString in AndroidDeviceFile.cs
+            // Keep in sync with validVersionString in VulkanDeviceFilterLists.Bindings.cs
+            [Obsolete("validVersionString is obsolete. Use VulkanDeviceFilterLists api instead.")]
             private static readonly Regex validVersionString = new Regex(@"(^[0-9]+(\.[0-9]+){0,2}$)|(^0(x|X)([A-Fa-f0-9]{1,8})$)", RegexOptions.Compiled);
 
+            [Obsolete("CheckVersion is obsolete. Use VulkanDeviceFilterLists api instead.")]
             internal static void CheckVersion(string value, string filterName, string fieldName)
             {
                 if (!validVersionString.IsMatch(value))
                     throw new ArgumentException($"Invalid version string in {filterName} for {fieldName}=\"{value}\": {versionErrorMessage}");
             }
 
+            [Obsolete("CheckRegex is obsolete. Use VulkanDeviceFilterLists api instead.")]
             internal static void CheckRegex(string value, string filterName, string fieldName)
             {
                 try
@@ -749,7 +775,8 @@ namespace UnityEditor
                 }
             }
 
-            private static void CheckAllFilterData(AndroidDeviceFilterData[] filterDataList, string filterName)
+            [Obsolete("CheckAllFilterData is obsolete. Use VulkanDeviceFilterLists api instead.")]
+            internal static void CheckAllFilterData(AndroidDeviceFilterData[] filterDataList, string filterName)
             {
                 // The check will throw an exception if there's an issue with the data.
                 // We need to check the data here, as an invalid regex on the native side, can crash the game.
@@ -771,6 +798,8 @@ namespace UnityEditor
                 }
             }
 
+            // Note: Deprecation will be immediate in Unity 7. But this field will exist in Unity 6.
+            [Obsolete("androidVulkanDenyFilterList is deprecated, and is replaced by androidVulkanDeviceFilterListAsset.")]
             public static AndroidDeviceFilterData[] androidVulkanDenyFilterList
             {
                 get
@@ -787,6 +816,8 @@ namespace UnityEditor
                 }
             }
 
+            // Note: Deprecation will be immediate in Unity 7. But this field will exist in Unity 6.
+            [Obsolete("androidVulkanAllowFilterList is deprecated, and is replaced by androidVulkanDeviceFilterListAsset.")]
             public static AndroidDeviceFilterData[] androidVulkanAllowFilterList
             {
                 get

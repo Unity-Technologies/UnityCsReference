@@ -1551,6 +1551,7 @@ namespace UnityEngine.TextCore.Text
 
                     textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
                     textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
+                    textInfo.lineInfo[m_LineNumber].visibleSpaceCount = (textInfo.lineInfo[m_LineNumber].lastVisibleCharacterIndex + 1 - textInfo.lineInfo[m_LineNumber].firstCharacterIndex) - m_LineVisibleCharacterCount;
                     textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[firstCharacterIndex].bottomLeft.x, lineDescender);
                     textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[lastCharacterIndex].topRight.x, lineAscender);
                     // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility
@@ -1761,6 +1762,7 @@ namespace UnityEngine.TextCore.Text
 
             textInfo.lineInfo[m_LineNumber].characterCount = textInfo.lineInfo[m_LineNumber].lastCharacterIndex - textInfo.lineInfo[m_LineNumber].firstCharacterIndex + 1;
             textInfo.lineInfo[m_LineNumber].visibleCharacterCount = m_LineVisibleCharacterCount;
+            textInfo.lineInfo[m_LineNumber].visibleSpaceCount = (textInfo.lineInfo[m_LineNumber].lastVisibleCharacterIndex + 1 - textInfo.lineInfo[m_LineNumber].firstCharacterIndex) - m_LineVisibleCharacterCount;
             textInfo.lineInfo[m_LineNumber].lineExtents.min = new Vector2(textInfo.textElementInfo[m_FirstVisibleCharacterOfLine].bottomLeft.x, lineDescender);
             textInfo.lineInfo[m_LineNumber].lineExtents.max = new Vector2(textInfo.textElementInfo[m_LastVisibleCharacterOfLine].topRight.x, lineAscender);
             // UUM-46147: For IMGUI line length should include xAdvance for backward compatibility

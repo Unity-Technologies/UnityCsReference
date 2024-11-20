@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEditor.Modules
@@ -50,6 +51,15 @@ namespace UnityEditor.Modules
             return baseBuildPostprocessor;
         }
 
+        internal ISettingEditorExtension CreateSettingsEditorExtension(GUID buildTarget, ISettingEditorExtension baseSettingEditorExtension)
+        {
+            if (m_DerivedBuildTargetExtensions.TryGetValue(buildTarget, out var derivedBuildTargetExtensions))
+            {
+                return derivedBuildTargetExtensions.SettingEditorExtension ?? baseSettingEditorExtension;
+            }
+            return baseSettingEditorExtension;
+        }
+
         internal IBuildProfileExtension CreateBuildProfileExtension(GUID buildTarget, IBuildProfileExtension baseBuildProfileExtension)
         {
             if (m_DerivedBuildTargetExtensions.TryGetValue(buildTarget, out var derivedBuildTargetExtensions))
@@ -83,12 +93,13 @@ namespace UnityEditor.Modules
         {
             var derivedBuildTargetExtensions = new T();
             var guid = derivedBuildTargetExtensions.DerivedBuildTarget.Guid;
-            if (EditorPrefs.HasKey(guid.ToString()) && (EditorPrefs.GetInt(guid.ToString()) == 1))
+            var guidStr = guid.ToString();
+            var platformEnabled = EditorPrefs.HasKey(guidStr) && (EditorPrefs.GetInt(guidStr) == 1);
+            if (platformEnabled || ForceEnablePlatform())
             {
                 m_DerivedBuildTargetExtensions.Add(guid, derivedBuildTargetExtensions);
             }
         }
-
         internal void LoadAndEnableDerivedPlatformPlugin<T>() where T : IDerivedBuildTargetExtensions, new()
         {
             var derivedBuildTargetExtensions = new T();
@@ -98,6 +109,18 @@ namespace UnityEditor.Modules
                 EditorPrefs.SetInt(guid.ToString(), 1);
             }
             LoadDerivedPlatformPlugin<T>();
+        }
+
+        bool ForceEnablePlatform()
+        {
+            foreach (var arg in Environment.GetCommandLineArgs())
+            {
+                if (arg == "-enableAllDerivedPlatforms")
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         void LoadDiscoveredTargetInfo()

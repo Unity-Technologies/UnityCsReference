@@ -113,10 +113,15 @@ namespace UnityEditor
                 sortedTypes = types.OrderBy(x => Array.IndexOf(m_topologicallySortedAssemblies, x.Assembly));
             }
 
+            using var scope = new ProgressScope("Process InitializeOnLoad Attributes", "", forceShow: true);
+
             foreach (Type type in sortedTypes)
             {
-                using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes, () => type.AssemblyQualifiedName))
+                using (_profilerMarkerProcessInitializeOnLoadAttributes.Auto(reportTimes,
+                           () => type.AssemblyQualifiedName))
                 {
+                    var typeFullName = type?.FullName;
+                    scope.SetText($"{typeFullName}.{typeFullName}", true);
                     try
                     {
                         RuntimeHelpers.RunClassConstructor(type.TypeHandle);
@@ -137,10 +142,13 @@ namespace UnityEditor
         private static void ProcessInitializeOnLoadMethodAttributes()
         {
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
+            using var scope = new ProgressScope("Process InitializeOnLoadMethod Attributes", "", forceShow: true);
             foreach (var method in TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
             {
-                using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes, () => $"{method.DeclaringType?.FullName}::{method.Name}"))
+                using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes,
+                           () => $"{method.DeclaringType?.FullName}::{method.Name}"))
                 {
+                    scope.SetText($"${method.DeclaringType?.FullName}.{method?.Name}", true);
                     try
                     {
                         method.Invoke(null, null);

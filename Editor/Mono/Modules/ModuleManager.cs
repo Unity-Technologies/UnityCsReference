@@ -366,6 +366,21 @@ namespace UnityEditor.Modules
             return null;
         }
 
+        internal static ISettingEditorExtension GetEditorSettingsExtension(GUID target)
+        {
+            if (platformSupportModulesByGuid.TryGetValue(target, out var module))
+            {
+                if (module is IDerivedBuildTargetProvider derivedBuildTargetProvider)
+                {
+                    return derivedBuildTargetProvider.CreateSettingsEditorExtension(target);
+                }
+                
+                return module.CreateSettingsEditorExtension();
+            }
+
+            return null;
+        }
+
         internal static IAdaptiveVsyncSetting GetAdaptiveSettingEditorExtension(string target)
         {
             if (string.IsNullOrEmpty(target))

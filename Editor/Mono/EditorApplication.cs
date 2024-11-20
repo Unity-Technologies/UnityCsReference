@@ -284,7 +284,6 @@ namespace UnityEditor
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
 
         public static event Action<bool> focusChanged;
-        public static bool isFocused { get; private set; }
 
         // Windows were reordered
         internal static CallbackFunction windowsReordered;
@@ -477,8 +476,12 @@ namespace UnityEditor
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
 
+            using var scope = new ProgressScope($"PauseStateChanged Callback", "" , forceShow: true);
             foreach (var evt in m_PauseStateChangedEvent)
+            {
+                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt(state);
+            }
         }
 
         [RequiredByNativeCode]
@@ -487,9 +490,28 @@ namespace UnityEditor
             #pragma warning disable 618
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
+            if (!m_PlayModeStateChangedEvent.hasSubscribers) return;
+            var stateName = state.ToString();
 
+            // Without this workaround, you will fail Editor.GameViewTests.Playmode_PlayUnfocused_IsUnfocused_WhenGameViewFocused
+            // You can still trigger UUM-74498 by showing a ProgressScope in EnteredPlayMode (including in usercode with EditorUtility.DisplayProgressBar)
+            // This is because a progress bar going away will cause the previously focused window to be refocused
+            // The underlying issue is being tracked in UUM-86918 and this workaround should be undone as part of the fix there
+            if (PlayModeView.GetMainPlayModeView() is GameView { enterPlayModeBehavior: PlayModeView.EnterPlayModeBehavior.PlayUnfocused }
+                && state == PlayModeStateChange.EnteredPlayMode)
+            {
+                foreach (var evt in m_PlayModeStateChangedEvent)
+                {
+                    evt(state);
+                }
+                return;
+            }
+            using var scope = new ProgressScope($"PlayModeStateChanged Callback ({stateName})", "", forceShow: true);
             foreach (var evt in m_PlayModeStateChangedEvent)
+            {
+                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt(state);
+            }
         }
 
         [RequiredByNativeCode]

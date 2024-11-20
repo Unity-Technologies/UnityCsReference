@@ -1662,6 +1662,9 @@
     <Compile Include="..\..\Editor\Mono\Graphics\StaticBatchingEditorHelper.cs">
       <Link>Editor\Mono\Graphics\StaticBatchingEditorHelper.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Graphics\VulkanDeviceFilterListsEditor.cs">
+      <Link>Editor\Mono\Graphics\VulkanDeviceFilterListsEditor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Grids\EditorSnap.cs">
       <Link>Editor\Mono\Grids\EditorSnap.cs</Link>
     </Compile>
@@ -3029,6 +3032,12 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs">
       <Link>Editor\Mono\PresetLibraries\ScriptableObjectSaveLoadHelper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProgressScope.bindings.cs">
+      <Link>Editor\Mono\ProgressScope.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\ProgressScope.cs">
+      <Link>Editor\Mono\ProgressScope.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\Progress\Progress.bindings.cs">
       <Link>Editor\Mono\Progress\Progress.bindings.cs</Link>

@@ -10,5 +10,6 @@ namespace UnityEditor.Modules
         IBuildPostprocessor BuildPostprocessor { get; }
         IBuildProfileExtension BuildProfileExtension { get; }
         IDerivedBuildTarget DerivedBuildTarget { get; }
+        ISettingEditorExtension SettingEditorExtension { get; }
     }
 }

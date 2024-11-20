@@ -145,7 +145,8 @@ namespace UnityEditor.Build.Profile
                     m_Profile.moduleName,
                     m_Profile.subtarget == StandaloneBuildSubtarget.Server,
                     isActiveProfile,
-                    OnPlayerSettingsEditorChanged);
+                    OnPlayerSettingsEditorChanged,
+                    m_Profile.platformGuid);
             }
 
             if (m_PlayerSettingsInspector == null)

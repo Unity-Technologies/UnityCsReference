@@ -383,12 +383,6 @@ namespace UnityEngine.Accessibility
                 {
                     var curNode = nodes[i];
 
-                    // If the node is disabled then ignore it and its children as they are also considered disabled.
-                    // Unlike the disabled state, a node can be inactive while its children are active. This is why we
-                    // still seek for children of a node regardless of its active state.
-                    if (curNode.state.HasFlag(AccessibilityState.Disabled))
-                        continue;
-
                     var childNodeContainingPoint = FindNodeContainingPoint(curNode.childList, pos);
 
                     if (childNodeContainingPoint != null)

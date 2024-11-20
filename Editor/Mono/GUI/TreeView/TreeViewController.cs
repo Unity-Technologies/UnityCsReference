@@ -743,7 +743,7 @@ namespace UnityEditor.IMGUI.Controls
             KeyboardGUI();
 
             if (m_UseScrollView)
-                GUI.EndScrollView(showingVerticalScrollBar);
+                GUI.EndScrollView(showingVerticalScrollBar || showingHorizontalScrollBar);
             else
                 GUI.EndClip();
 

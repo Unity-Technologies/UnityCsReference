@@ -82,6 +82,9 @@ namespace UnityEditorInternal
                 case "curves": case "curvesnormalized": case "particlecurves": case "particlecurvessigned": case "particledoublecurves": case "particledoublecurvessigned":
                     return EditorGUIUtility.FindTexture(typeof(ScriptableObject));
 
+                case "vulkandevicefilter":
+                    return EditorGUIUtility.FindTexture(typeof(EditorSettings));
+
                 default: return null;
             }
         }

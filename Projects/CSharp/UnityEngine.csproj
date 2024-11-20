@@ -3741,6 +3741,9 @@
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsFormatUtility.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsFormatUtility.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\GraphicsJobsFilterModes.bindings.cs">
+      <Link>Runtime\Export\Graphics\GraphicsJobsFilterModes.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\GraphicsManagers.bindings.cs">
       <Link>Runtime\Export\Graphics\GraphicsManagers.bindings.cs</Link>
     </Compile>
@@ -3854,6 +3857,9 @@
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Texture.deprecated.cs">
       <Link>Runtime\Export\Graphics\Texture.deprecated.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\VulkanDeviceFilterLists.bindings.cs">
+      <Link>Runtime\Export\Graphics\VulkanDeviceFilterLists.bindings.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Watermark.bindings.cs">
       <Link>Runtime\Export\Graphics\Watermark.bindings.cs</Link>

@@ -234,7 +234,7 @@ namespace UnityEditor.EditorTools
         {
             if (obj == null)
                 return GetIcon(typeof(T));
-            if (obj is EditorTool tool && tool.toolbarIcon != null)
+            if (obj is EditorTool tool && tool.toolbarIcon != null && tool.toolbarIcon.image != null)
                 return tool.toolbarIcon;
             return GetIcon(obj.GetType());
         }

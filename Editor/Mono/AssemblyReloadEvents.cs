@@ -27,15 +27,23 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void OnBeforeAssemblyReload()
         {
+            using var scope = new ProgressScope("OnBeforeAssemblyReload Callback", "", forceShow: true);
             foreach (var evt in m_BeforeAssemblyReloadEvent)
+            {
+                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt();
+            }
         }
 
         [RequiredByNativeCode]
         static void OnAfterAssemblyReload()
         {
+            using var scope = new ProgressScope("OnAfterAssemblyReload Callback", "", forceShow: true);
             foreach (var evt in m_AfterAssemblyReloadEvent)
+            {
+                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt();
+            }
         }
     }
 }

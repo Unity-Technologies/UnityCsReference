@@ -195,6 +195,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Always allowed"),
             };
 
+            public static readonly GUIContent autoGraphicsAPI = EditorGUIUtility.TrTextContent("Auto Graphics API");
             public static readonly GUIContent autoGraphicsAPIForWindows = EditorGUIUtility.TrTextContent("Auto Graphics API for Windows");
             public static readonly GUIContent autoGraphicsAPIForMac = EditorGUIUtility.TrTextContent("Auto Graphics API for Mac");
             public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
@@ -792,7 +793,8 @@ namespace UnityEditor
             string buildProfileModuleName,
             bool isServerBuildProfile,
             bool isActiveBuildProfile,
-            Action<SerializedObject> onTrackSerializedObjectChanged)
+            Action<SerializedObject> onTrackSerializedObjectChanged,
+            GUID buildTarget)
         {
             m_OnTrackSerializedObjectValueChanged = onTrackSerializedObjectChanged;
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
@@ -819,7 +821,7 @@ namespace UnityEditor
 
             Array.Resize(ref validPlatforms, 1);
             m_SettingsExtensions = new ISettingEditorExtension[1];
-            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(platformModuleName);
+            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(buildTarget);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
         }
@@ -1815,7 +1817,7 @@ namespace UnityEditor
             }
             else
             {
-                GraphicsAPIsGUIOnePlatform(targetGroup, target, null);
+                GraphicsAPIsGUIOnePlatform(targetGroup, target, SettingsContent.autoGraphicsAPI);
             }
         }
 
