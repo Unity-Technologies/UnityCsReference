@@ -25,8 +25,8 @@ namespace UnityEditor
         SerializedProperty m_DistanceScale;
 
         static readonly AnimBool m_ShowDampingRollout = new AnimBool();
-        SerializedProperty m_Drag;
-        SerializedProperty m_AngularDrag;
+        SerializedProperty m_LinearDamping;
+        SerializedProperty m_AngularDamping;
 
         public override void OnEnable()
         {
@@ -42,8 +42,8 @@ namespace UnityEditor
             m_DistanceScale = serializedObject.FindProperty("m_DistanceScale");
 
             m_ShowDampingRollout.valueChanged.AddListener(Repaint);
-            m_Drag = serializedObject.FindProperty("m_Drag");
-            m_AngularDrag = serializedObject.FindProperty("m_AngularDrag");
+            m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
+            m_AngularDamping = serializedObject.FindProperty("m_AngularDamping");
         }
 
         public override void OnDisable()
@@ -74,12 +74,12 @@ namespace UnityEditor
             }
             EditorGUILayout.EndFadeGroup();
 
-            // Drag.
+            // Damping.
             m_ShowDampingRollout.target = EditorGUILayout.Foldout(m_ShowDampingRollout.target, "Damping", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowDampingRollout.faded))
             {
-                EditorGUILayout.PropertyField(m_Drag);
-                EditorGUILayout.PropertyField(m_AngularDrag);
+                EditorGUILayout.PropertyField(m_LinearDamping);
+                EditorGUILayout.PropertyField(m_AngularDamping);
             }
             EditorGUILayout.EndFadeGroup();
 

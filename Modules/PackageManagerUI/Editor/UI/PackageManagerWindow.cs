@@ -82,7 +82,7 @@ namespace UnityEditor.PackageManager.UI
             var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
             var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
             var delayedSelectionHandler = container.Resolve<IDelayedSelectionHandler>();
-            
+
             // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
             m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, operationDispatcher, delayedSelectionHandler);
             try
@@ -293,18 +293,24 @@ namespace UnityEditor.PackageManager.UI
 
         private static void SelectPackageStatic(string packageToSelect = null, string pageId = null)
         {
+            // We want to make sure the window is shown first, otherwise our package and page selection
+            // might get overriden by page selection in the window initialization code
+            ShowWindow();
+
             // We use DelayedSelectionHandler to handle the case where the package is not yet available when the
             // selection is set. That could happen when we want to open Package Manager and select a package, but
             // the refresh call is not yet finished. It could also happen when we create a package and the newly
             // crated package is not yet in the database until after package resolution.
             ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPackage(packageToSelect, pageId);
-            ShowWindow();
         }
 
         private static void SelectPageStatic(string pageId = null, string searchText = "")
         {
-            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText);
+            // We want to make sure the window is shown first, otherwise our package and page selection
+            // might get overriden by page selection in the window initialization code
             ShowWindow();
+
+            ServicesContainer.instance.Resolve<IDelayedSelectionHandler>().SelectPage(pageId, searchText);
         }
 
         private static void ShowWindow()

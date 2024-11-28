@@ -17,6 +17,8 @@ using RayTracingMode = UnityEngine.Experimental.Rendering.RayTracingMode;
 
 namespace UnityEngine.Rendering
 {
+#pragma warning disable CS0618 // Type or member is obsolete
+
     [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/RayTracing/RayTracingAccelerationStructure.h")]
     [NativeHeader("Runtime/Export/Graphics/RayTracingAccelerationStructure.bindings.h")]
@@ -150,6 +152,7 @@ namespace UnityEngine.Rendering
             subMeshIndex = 0;
             material = null;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            rayTracingMode = RayTracingMode.Static;
             dynamicGeometry = false;
             materialProperties = null;
             enableTriangleCulling = true;
@@ -170,6 +173,7 @@ namespace UnityEngine.Rendering
             this.subMeshIndex = subMeshIndex;
             this.material = material;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            rayTracingMode = RayTracingMode.Static;
             dynamicGeometry = false;
             materialProperties = null;
             enableTriangleCulling = true;
@@ -187,7 +191,8 @@ namespace UnityEngine.Rendering
         public Mesh mesh;
         public uint subMeshIndex;
         public RayTracingSubMeshFlags subMeshFlags;
-        public bool dynamicGeometry;
+        public RayTracingMode rayTracingMode { get; set; }
+        [Obsolete("dynamicGeometry has been deprecated and will be removed in the future. Use rayTracingMode instead.", false)] public bool dynamicGeometry { get; set; }
         public Material material;
         public MaterialPropertyBlock materialProperties;
         public bool enableTriangleCulling;
@@ -259,6 +264,7 @@ namespace UnityEngine.Rendering
             vertexCount = -1;
             indexCount = -1;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            rayTracingMode = RayTracingMode.Static;
             dynamicGeometry = false;
             materialProperties = null;
             enableTriangleCulling = true;
@@ -284,6 +290,7 @@ namespace UnityEngine.Rendering
             vertexCount = -1;
             indexCount = -1;
             subMeshFlags = RayTracingSubMeshFlags.Enabled | RayTracingSubMeshFlags.ClosestHitOnly;
+            rayTracingMode = RayTracingMode.Static;
             dynamicGeometry = false;
             materialProperties = null;
             enableTriangleCulling = true;
@@ -306,7 +313,8 @@ namespace UnityEngine.Rendering
         public uint indexStart { get; set; }
         public int indexCount { get; set; }
         public RayTracingSubMeshFlags subMeshFlags { get; set; }
-        public bool dynamicGeometry {  get; set; }
+        public RayTracingMode rayTracingMode { get; set; }
+        [Obsolete("dynamicGeometry has been deprecated and will be removed in the future. Use rayTracingMode instead.", false)] public bool dynamicGeometry { get; set; }
         public Material material { get; set; }
         public MaterialPropertyBlock materialProperties { get; set; }
         public bool enableTriangleCulling { get; set; }
@@ -327,11 +335,12 @@ namespace UnityEngine.Rendering
         [Flags]
         public enum RayTracingModeMask
         {
-            Nothing             = 0,
-            Static              = (1 << RayTracingMode.Static),
-            DynamicTransform    = (1 << RayTracingMode.DynamicTransform),
-            DynamicGeometry     = (1 << RayTracingMode.DynamicGeometry),
-            Everything          = (Static | DynamicTransform | DynamicGeometry)
+            Nothing                     = 0,
+            Static                      = (1 << RayTracingMode.Static),
+            DynamicTransform            = (1 << RayTracingMode.DynamicTransform),
+            DynamicGeometry             = (1 << RayTracingMode.DynamicGeometry),
+            DynamicGeometryManualUpdate = (1 << RayTracingMode.DynamicGeometryManualUpdate),
+            Everything                  = (Static | DynamicTransform | DynamicGeometry | DynamicGeometryManualUpdate)
         }
 
         public enum ManagementMode
@@ -849,7 +858,17 @@ namespace UnityEngine.Rendering
             RemoveInstance_InstanceID(handle);
         }
 
-        public void UpdateInstanceTransform(Renderer renderer)
+        public void UpdateInstanceGeometry(Renderer renderer)
+        {
+            UpdateInstanceGeometry_Renderer(renderer);
+        }
+
+        public void UpdateInstanceGeometry(int handle)
+        {
+            UpdateInstanceGeometry_Handle(handle);
+        }
+
+public void UpdateInstanceTransform(Renderer renderer)
         {
             UpdateInstanceTransform_Renderer(renderer);
         }
@@ -923,6 +942,12 @@ namespace UnityEngine.Rendering
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceTransform", HasExplicitThis = true)]
         extern private void UpdateInstanceTransform_Handle(int handle, Matrix4x4 matrix);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceGeometry", HasExplicitThis = true)]
+        extern private void UpdateInstanceGeometry_Renderer([NotNull] Renderer renderer);
+
+        [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceGeometry", HasExplicitThis = true)]
+        extern private void UpdateInstanceGeometry_Handle(int handle);
 
         [FreeFunction(Name = "RayTracingAccelerationStructure_Bindings::UpdateInstanceMask", HasExplicitThis = true)]
         extern private void UpdateInstanceMask_Renderer([NotNull] Renderer renderer, uint mask);

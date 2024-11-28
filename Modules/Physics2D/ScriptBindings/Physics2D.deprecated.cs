@@ -101,6 +101,36 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("AreaEffector2D.forceDirection has been deprecated. Use AreaEffector2D.forceAngle instead (UnityUpgradable) -> forceAngle", true)]
         public float forceDirection { get { return forceAngle; } set { forceAngle = value; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("AreaEffector2D.drag has been deprecated. Use AreaEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => linearDamping; set => linearDamping = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("AreaEffector2D.angularDrag has been deprecated. Use AreaEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+    }
+
+    partial class BuoyancyEffector2D
+    {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("BuoyancyEffector2D.drag has been deprecated. Use BuoyancyEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => linearDamping; set => linearDamping = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("BuoyancyEffector2D.angularDrag has been deprecated. Use BuoyancyEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+    }
+
+    partial class PointEffector2D
+    {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("PointEffector2D.drag has been deprecated. Use PointEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => linearDamping; set => linearDamping = value; }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("PointEffector2D.angularDrag has been deprecated. Use PointEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => angularDamping; set => angularDamping = value; }
     }
 
     partial class PlatformEffector2D

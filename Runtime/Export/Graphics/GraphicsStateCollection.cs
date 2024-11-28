@@ -19,6 +19,9 @@ namespace UnityEngine.Experimental.Rendering
             public RenderStateBlock renderState;
             public MeshTopology topology;
             public CullMode forceCullMode;
+            public ShadingRateCombiner shadingRateCombinerPrimitive;
+            public ShadingRateCombiner shadingRateCombinerFragment;
+            public ShadingRateFragmentSize baseShadingRate;
             public float depthBias;
             public float slopeDepthBias;
             public int depthAttachmentIndex;

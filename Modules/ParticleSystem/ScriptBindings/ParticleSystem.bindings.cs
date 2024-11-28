@@ -148,8 +148,16 @@ namespace UnityEngine
             return trailData.positions.Count;
         }
 
-        [FreeFunction(Name = "ParticleSystemScriptBindings::SetTrailData", HasExplicitThis = true)]
-        extern public void SetTrails(Trails trailData);
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesAndTrailData", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData, int size, int offset);
+        public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData, int size) { SetParticlesAndTrails(particles, trailData, size, 0); }
+        public void SetParticlesAndTrails([Out] Particle[] particles, Trails trailData) { SetParticlesAndTrails(particles, trailData, -1); }       
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticlesAndTrailDataWithNativeArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetParticlesAndTrailsWithNativeArray(IntPtr particles, Trails trailData, int particlesLength, int size, int offset);
+        public void SetParticlesAndTrails([Out] NativeArray<Particle> particles, Trails trailData, int size, int offset) { unsafe { SetParticlesAndTrailsWithNativeArray((IntPtr)particles.GetUnsafeReadOnlyPtr(), trailData, particles.Length, size, offset); } }
+        public void SetParticlesAndTrails([Out] NativeArray<Particle> particles, Trails trailData, int size) { SetParticlesAndTrails(particles, trailData, size, 0); }
+        public void SetParticlesAndTrails([Out] NativeArray<Particle> particles, Trails trailData) { SetParticlesAndTrails(particles, trailData, -1); }         
 
         // Playback
         [FreeFunction(Name = "ParticleSystemScriptBindings::Simulate", HasExplicitThis = true)]

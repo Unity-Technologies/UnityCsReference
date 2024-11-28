@@ -114,6 +114,7 @@ namespace UnityEditor.DeviceSimulation
         public RenderingThreadingMode renderingThreadingMode;
         public FoveatedRenderingCaps foveatedRenderingCaps;
         public bool supportsVariableRateShading;
+        public bool hasTiledGPU;
         public bool hasHiddenSurfaceRemovalOnGPU;
         public bool hasDynamicUniformArrayIndexingInFragmentShaders;
         public bool supportsShadows;

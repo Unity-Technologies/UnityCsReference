@@ -4978,16 +4978,15 @@ namespace UnityEngine
         // The variation of the magnitude of the force to be applied.
         extern public float forceVariation { get; set; }
 
-        // The linear drag to apply to rigid-bodies.
-        extern public float drag { get; set; }
+        // The linear damping to apply to rigid-bodies.
+        extern public float linearDamping { get; set; }
 
-        // The angular drag to apply to rigid-bodies.
-        extern public float angularDrag { get; set; }
+        // The angular damping to apply to rigid-bodies.
+        extern public float angularDamping { get; set; }
 
         // The target for where the effector applies any force.
         extern public EffectorSelection2D forceTarget { get; set; }
     }
-
 
     // Applies buoyancy forces within an area.
     [NativeHeader("Modules/Physics2D/BuoyancyEffector2D.h")]
@@ -4999,11 +4998,11 @@ namespace UnityEngine
         // The density of the fluid.
         extern public float density { get; set; }
 
-        // The linear drag when touching the fluid.
-        extern public float linearDrag { get; set; }
+        // The linear damping when touching the fluid.
+        extern public float linearDamping { get; set; }
 
-        // The angular drag when touching the fluid.
-        extern public float angularDrag { get; set; }
+        // The angular damping when touching the fluid.
+        extern public float angularDamping { get; set; }
 
         // The angle of the flow force to be applied.
         extern public float flowAngle { get; set; }
@@ -5014,7 +5013,6 @@ namespace UnityEngine
         // The variation added to the magnitude of the flow to be applied.
         extern public float flowVariation { get; set; }
     }
-
 
     // Applies forces to attract/repulse against a point.
     [NativeHeader("Modules/Physics2D/PointEffector2D.h")]
@@ -5029,11 +5027,11 @@ namespace UnityEngine
         // The scale applied to the distance between the source and target.
         extern public float distanceScale { get; set; }
 
-        // The linear drag to apply to rigid-bodies.
-        extern public float drag { get; set; }
+        // The linear damping to apply to rigid-bodies.
+        extern public float linearDamping { get; set; }
 
-        // The angular drag to apply to rigid-bodies.
-        extern public float angularDrag { get; set; }
+        // The angular damping to apply to rigid-bodies.
+        extern public float angularDamping { get; set; }
 
         // The source for where the effector calculates any force.
         extern public EffectorSelection2D forceSource { get; set; }
@@ -5070,7 +5068,6 @@ namespace UnityEngine
         // The rotational offset angle from the local 'up'
         extern public float rotationalOffset { get; set; }
     }
-
 
     // Applies tangent forces along the surfaces of colliders.
     [NativeHeader("Modules/Physics2D/SurfaceEffector2D.h")]

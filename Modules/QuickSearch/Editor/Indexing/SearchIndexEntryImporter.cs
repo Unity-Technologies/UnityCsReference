@@ -57,7 +57,7 @@ namespace UnityEditor.Search
         public override void OnImportAsset(AssetImportContext ctx)
         {
             var settings = new SearchDatabase.Settings { type = "asset", options = GetOptions() };
-            var indexer = SearchDatabase.CreateIndexer(settings);
+            using var indexer = SearchDatabase.CreateIndexer(settings);
             try
             {
                 indexer.IndexDocument(ctx.assetPath, false);

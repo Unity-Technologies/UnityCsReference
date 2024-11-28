@@ -20,8 +20,8 @@ namespace UnityEditor
         SerializedProperty m_SurfaceLevel;
 
         static readonly AnimBool m_ShowDampingRollout = new AnimBool();
-        SerializedProperty m_LinearDrag;
-        SerializedProperty m_AngularDrag;
+        SerializedProperty m_LinearDamping;
+        SerializedProperty m_AngularDamping;
 
         static readonly AnimBool m_ShowFlowRollout = new AnimBool();
         SerializedProperty m_FlowAngle;
@@ -36,8 +36,8 @@ namespace UnityEditor
             m_SurfaceLevel = serializedObject.FindProperty("m_SurfaceLevel");
 
             m_ShowDampingRollout.valueChanged.AddListener(Repaint);
-            m_LinearDrag = serializedObject.FindProperty("m_LinearDrag");
-            m_AngularDrag = serializedObject.FindProperty("m_AngularDrag");
+            m_LinearDamping = serializedObject.FindProperty("m_LinearDamping");
+            m_AngularDamping = serializedObject.FindProperty("m_AngularDamping");
 
             m_ShowFlowRollout.valueChanged.AddListener(Repaint);
             m_FlowAngle = serializedObject.FindProperty("m_FlowAngle");
@@ -66,8 +66,8 @@ namespace UnityEditor
             m_ShowDampingRollout.target = EditorGUILayout.Foldout(m_ShowDampingRollout.target, "Damping", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowDampingRollout.faded))
             {
-                EditorGUILayout.PropertyField(m_LinearDrag);
-                EditorGUILayout.PropertyField(m_AngularDrag);
+                EditorGUILayout.PropertyField(m_LinearDamping);
+                EditorGUILayout.PropertyField(m_AngularDamping);
                 EditorGUILayout.Space();
             }
             EditorGUILayout.EndFadeGroup();

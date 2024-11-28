@@ -38,7 +38,7 @@ namespace UnityEditor
     {
         private static RecycledTextEditor activeEditor;
 
-        private static DelayedTextEditor s_DelayedTextEditorInternal;
+        internal static DelayedTextEditor s_DelayedTextEditorInternal;
         internal static DelayedTextEditor s_DelayedTextEditor => s_DelayedTextEditorInternal ??= new();
 
         internal static RecycledTextEditor s_RecycledEditorInternal;

@@ -76,6 +76,8 @@ namespace UnityEngine
 
         public virtual bool supportsVariableRateShading => UnityEngine.SystemInfo.supportsVariableRateShading;
 
+        public virtual bool hasTiledGPU => UnityEngine.SystemInfo.hasTiledGPU;
+
         public virtual bool hasHiddenSurfaceRemovalOnGPU => UnityEngine.SystemInfo.hasHiddenSurfaceRemovalOnGPU;
 
         public virtual bool hasDynamicUniformArrayIndexingInFragmentShaders =>

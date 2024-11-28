@@ -11,29 +11,16 @@ namespace UnityEngine.TextCore.Text
     [InitializeOnLoad]
     internal class ICUDataAssetUtilities
     {
-        private static string k_ICUDataAssetPath = "Assets/UI Toolkit/icudt73l.bytes";
-
-        internal static void CreateAsset()
-        {
-            var directory = Path.GetDirectoryName(k_ICUDataAssetPath);
-            if (!Directory.Exists(directory))
-            {
-                Directory.CreateDirectory(directory);
-            }
-
-            var filePath = Path.Combine(EditorApplication.applicationContentsPath, "Resources/icudt73l.dat");
-            File.Copy(filePath, k_ICUDataAssetPath, true);
-            AssetDatabase.ImportAsset(k_ICUDataAssetPath, ImportAssetOptions.ForceSynchronousImport);
-        }
+        private static string k_ICUDataAssetPath = "icudt73l.bytes";
 
         static ICUDataAssetUtilities()
         {
-            TextLib.GetICUAssetEditorDelegate = GetICUAsset;
+            TextLib.GetICUAssetEditorDelegate = GetEditorICUAsset;
         }
 
-        internal static UnityEngine.TextAsset GetICUAsset()
+        internal static UnityEngine.TextAsset GetEditorICUAsset()
         {
-            return AssetDatabase.LoadAssetAtPath<UnityEngine.TextAsset>(k_ICUDataAssetPath);
+            return AssetDatabase.GetBuiltinExtraResource<UnityEngine.TextAsset>(k_ICUDataAssetPath);
         }
     }
 }

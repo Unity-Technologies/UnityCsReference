@@ -260,7 +260,7 @@ namespace UnityEngine.UIElements
         public Event repaintEvent { get; set; }
     }
 
-    internal delegate void HierarchyEvent(VisualElement ve, HierarchyChangeType changeType);
+    internal delegate void HierarchyEvent(VisualElement ve, HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null);
 
     internal interface IGlobalPanelDebugger
     {
@@ -662,9 +662,9 @@ namespace UnityEngine.UIElements
 
         internal event HierarchyEvent hierarchyChanged;
 
-        internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType)
+        internal void InvokeHierarchyChanged(VisualElement ve, HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null)
         {
-            if (hierarchyChanged != null) hierarchyChanged(ve, changeType);
+            if (hierarchyChanged != null) hierarchyChanged(ve, changeType, additionalContext);
         }
 
         internal event Action<IPanel> beforeUpdate;
@@ -1067,7 +1067,7 @@ namespace UnityEngine.UIElements
 
             CreateMarkers();
 
-            InvokeHierarchyChanged(visualTree, HierarchyChangeType.Add);
+            InvokeHierarchyChanged(visualTree, HierarchyChangeType.AddedToParent);
             atlas = new DynamicAtlas();
         }
 

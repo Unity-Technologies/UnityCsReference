@@ -871,6 +871,7 @@ namespace UnityEngine
                 Static = 1,
                 DynamicTransform = 2,
                 DynamicGeometry = 3,
+                DynamicGeometryManualUpdate = 4,
             }
         }//namespace Rendering
     }//namespace Experimental

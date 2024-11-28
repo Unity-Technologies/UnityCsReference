@@ -63,7 +63,7 @@ namespace UnityEditor
 
                 if ((FogMode)m_FogMode.intValue != FogMode.Linear)
                 {
-                    EditorGUILayout.PropertyField(m_FogDensity, Styles.FogDensity);
+                    EditorGUILayout.Slider(m_FogDensity, 0.0f, 1.0f, Styles.FogDensity);
                 }
                 else
                 {

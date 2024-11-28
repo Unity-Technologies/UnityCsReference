@@ -182,7 +182,10 @@ namespace UnityEditor.Search
             if (root.results == null)
                 return new List<T>();
             else
+            {
+                // TODO SearchIndexer Memory: is it needed to return a Distinct here? Should we use a local HashSet instead of having Distinct allocate a new set each time?
                 return root.results.Distinct();
+            }
         }
 
         public bool Eval(T element)

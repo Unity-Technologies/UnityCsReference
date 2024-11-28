@@ -75,6 +75,8 @@ namespace UnityEngine.Device
 
         public static bool supportsVariableRateShading => ShimManager.systemInfoShim.supportsVariableRateShading;
 
+        public static bool hasTiledGPU => ShimManager.systemInfoShim.hasTiledGPU;
+
         public static bool hasHiddenSurfaceRemovalOnGPU => ShimManager.systemInfoShim.hasHiddenSurfaceRemovalOnGPU;
 
         public static bool hasDynamicUniformArrayIndexingInFragmentShaders =>
