@@ -30,6 +30,7 @@ namespace UnityEditor
             public static readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
             public static readonly GUIContent clearFlags = EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.");
             public static readonly GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
+            public static readonly GUIContent cullingMask = EditorGUIUtility.TrTextContent("Culling Mask");
             public static readonly GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
             public static readonly GUIContent size = EditorGUIUtility.TrTextContent("Size", "The vertical size of the camera view.");
             public static readonly GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The camera's view angle measured in degrees along the selected axis.");
@@ -972,7 +973,7 @@ namespace UnityEditor
 
             var clearFlags = ExtendedQuery<PropertyField>(editor, Styles.k_ClearFlagsElementName, Styles.clearFlags);
             var backgroundColor = ExtendedQuery<PropertyField>(editor, Styles.k_BackgroundElementName, Styles.background);
-            ExtendedQuery<PropertyField>(editor, Styles.k_CullingMaskElementName, Styles.allowOcclusionCulling);
+            ExtendedQuery<PropertyField>(editor, Styles.k_CullingMaskElementName, Styles.cullingMask);
 
             var backgroundCheck = UIElementsEditorUtility.CreateDynamicVisibilityCallback(backgroundColor, () => showBackgroundColorOptions);
             clearFlags.RegisterValueChangeCallback(e => backgroundCheck.Invoke());

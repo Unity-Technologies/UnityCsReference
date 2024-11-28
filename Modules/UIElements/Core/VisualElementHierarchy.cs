@@ -507,7 +507,7 @@ namespace UnityEngine.UIElements
                 if (child.languageDirection == LanguageDirection.Inherit)
                     child.localLanguageDirection = m_Owner.localLanguageDirection;
 
-                child.InvokeHierarchyChanged(HierarchyChangeType.Add);
+                child.InvokeHierarchyChanged(HierarchyChangeType.AddedToParent);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.elementAdded?.Invoke(child);
@@ -549,7 +549,7 @@ namespace UnityEngine.UIElements
                     throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
                 var child = m_Owner.m_Children[index];
-                child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
+                child.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
                 RemoveChildAtIndex(index);
 
                 int imguiContainerCount = child.imguiContainerDescendantCount + (child.isIMGUIContainer ? 1 : 0);
@@ -597,7 +597,7 @@ namespace UnityEngine.UIElements
 
                     foreach (VisualElement e in elements)
                     {
-                        e.InvokeHierarchyChanged(HierarchyChangeType.Remove);
+                        e.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
                         e.hierarchy.SetParent(null);
                         e.m_LogicalParent = null;
                         m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
@@ -688,10 +688,10 @@ namespace UnityEngine.UIElements
                 if (m_Owner.elementPanel != null && m_Owner.elementPanel.duringLayoutPhase)
                     throw new InvalidOperationException(k_InvalidHierarchyChangeMsg);
 
-                child.InvokeHierarchyChanged(HierarchyChangeType.Remove);
+                child.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
                 RemoveChildAtIndex(currentIndex);
                 PutChildAtIndex(child, nextIndex);
-                child.InvokeHierarchyChanged(HierarchyChangeType.Add);
+                child.InvokeHierarchyChanged(HierarchyChangeType.AddedToParent);
 
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
@@ -776,7 +776,7 @@ namespace UnityEngine.UIElements
                     {
                         m_Owner.layoutNode.Insert(i, m_Owner.m_Children[i].layoutNode);
                     }
-                    m_Owner.InvokeHierarchyChanged(HierarchyChangeType.Move);
+                    m_Owner.InvokeHierarchyChanged(HierarchyChangeType.ChildrenReordered);
                     m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }
             }

@@ -167,9 +167,9 @@ namespace UnityEngine
                 minMaxCurve.m_Mode = minMaxCurveBlittable.m_Mode;
                 minMaxCurve.m_CurveMultiplier = minMaxCurveBlittable.m_CurveMultiplier;
                 if (minMaxCurveBlittable.m_CurveMin != IntPtr.Zero)
-                    minMaxCurve.m_CurveMin = new AnimationCurve(minMaxCurveBlittable.m_CurveMin);
+                    minMaxCurve.m_CurveMin = new AnimationCurve(minMaxCurveBlittable.m_CurveMin, false);
                 if (minMaxCurveBlittable.m_CurveMax != IntPtr.Zero)
-                    minMaxCurve.m_CurveMax = new AnimationCurve(minMaxCurveBlittable.m_CurveMax);
+                    minMaxCurve.m_CurveMax = new AnimationCurve(minMaxCurveBlittable.m_CurveMax, false);
                 minMaxCurve.m_ConstantMin = minMaxCurveBlittable.m_ConstantMin;
                 minMaxCurve.m_ConstantMax = minMaxCurveBlittable.m_ConstantMax;
 

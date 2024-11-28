@@ -26,6 +26,7 @@ namespace UnityEditor
     internal sealed class ScriptReloadProperties : ScriptableObject
     {
         public bool EditorGUI_IsActuallEditing;
+        public bool EditorGUI_TextEditor_needBackup;
         public int EditorGUI_TextEditor_cursorIndex;
         public int EditorGUI_TextEditor_selectIndex;
         public int EditorGUI_TextEditor_controlID;
@@ -35,7 +36,7 @@ namespace UnityEditor
         public Vector2 EditorGUI_TextEditor_graphicalCursorPos;
         public string EditorGUI_TextEditor_content;
         public string EditorGUI_Current_Editing_String;
-
+        private bool EditorGUI_DelayedTextEditor_needBackup;
         public int EditorGUI_DelayedTextEditor_cursorIndex;
         public int EditorGUI_DelayedTextEditor_selectIndex;
         public int EditorGUI_DelayedTextEditor_controlID;
@@ -64,47 +65,64 @@ namespace UnityEditor
         private void ManagedStore()
         {
             EditorGUI_IsActuallEditing = EditorGUI.RecycledTextEditor.s_ActuallyEditing;
-            EditorGUI_TextEditor_cursorIndex = EditorGUI.s_RecycledEditor.cursorIndex;
-            EditorGUI_TextEditor_selectIndex = EditorGUI.s_RecycledEditor.selectIndex;
-            EditorGUI_TextEditor_controlID = EditorGUI.s_RecycledEditor.controlID;
-            EditorGUI_TextEditor_hasHorizontalCursorPos = EditorGUI.s_RecycledEditor.hasHorizontalCursor;
-            EditorGUI_TextEditor_scrollOffset = EditorGUI.s_RecycledEditor.scrollOffset;
-            EditorGUI_TextEditor_hasFocus = EditorGUI.s_RecycledEditor.m_HasFocus;
-            EditorGUI_TextEditor_graphicalCursorPos = EditorGUI.s_RecycledEditor.graphicalCursorPos;
-            EditorGUI_TextEditor_content = EditorGUI.s_RecycledEditor.text;
+
+            EditorGUI_TextEditor_needBackup = EditorGUI.s_RecycledEditorInternal != null;
+            if (EditorGUI_TextEditor_needBackup)
+            {
+                EditorGUI_TextEditor_cursorIndex = EditorGUI.s_RecycledEditor.cursorIndex;
+                EditorGUI_TextEditor_selectIndex = EditorGUI.s_RecycledEditor.selectIndex;
+                EditorGUI_TextEditor_controlID = EditorGUI.s_RecycledEditor.controlID;
+                EditorGUI_TextEditor_hasHorizontalCursorPos = EditorGUI.s_RecycledEditor.hasHorizontalCursor;
+                EditorGUI_TextEditor_scrollOffset = EditorGUI.s_RecycledEditor.scrollOffset;
+                EditorGUI_TextEditor_hasFocus = EditorGUI.s_RecycledEditor.m_HasFocus;
+                EditorGUI_TextEditor_graphicalCursorPos = EditorGUI.s_RecycledEditor.graphicalCursorPos;
+                EditorGUI_TextEditor_content = EditorGUI.s_RecycledEditor.text;
+            }
             EditorGUI_Current_Editing_String = EditorGUI.s_RecycledCurrentEditingString;
-            EditorGUI_DelayedTextEditor_cursorIndex = EditorGUI.s_DelayedTextEditor.cursorIndex;
-            EditorGUI_DelayedTextEditor_selectIndex = EditorGUI.s_DelayedTextEditor.selectIndex;
-            EditorGUI_DelayedTextEditor_controlID = EditorGUI.s_DelayedTextEditor.controlID;
-            EditorGUI_DelayedTextEditor_hasHorizontalCursorPos = EditorGUI.s_DelayedTextEditor.hasHorizontalCursor;
-            EditorGUI_DelayedTextEditor_scrollOffset = EditorGUI.s_DelayedTextEditor.scrollOffset;
-            EditorGUI_DelayedTextEditor_hasFocus = EditorGUI.s_DelayedTextEditor.m_HasFocus;
-            EditorGUI_DelayedTextEditor_graphicalCursorPos = EditorGUI.s_DelayedTextEditor.graphicalCursorPos;
-            EditorGUI_DelayedTextEditor_content = EditorGUI.s_DelayedTextEditor.text;
-            EditorGUI_DelayedControlThatHadFocusValue = EditorGUI.s_DelayedTextEditor.controlThatHadFocusValue;
+
+            EditorGUI_DelayedTextEditor_needBackup = EditorGUI.s_DelayedTextEditorInternal != null;
+            if(EditorGUI_DelayedTextEditor_needBackup)
+            {
+                EditorGUI_DelayedTextEditor_cursorIndex = EditorGUI.s_DelayedTextEditor.cursorIndex;
+                EditorGUI_DelayedTextEditor_selectIndex = EditorGUI.s_DelayedTextEditor.selectIndex;
+                EditorGUI_DelayedTextEditor_controlID = EditorGUI.s_DelayedTextEditor.controlID;
+                EditorGUI_DelayedTextEditor_hasHorizontalCursorPos = EditorGUI.s_DelayedTextEditor.hasHorizontalCursor;
+                EditorGUI_DelayedTextEditor_scrollOffset = EditorGUI.s_DelayedTextEditor.scrollOffset;
+                EditorGUI_DelayedTextEditor_hasFocus = EditorGUI.s_DelayedTextEditor.m_HasFocus;
+                EditorGUI_DelayedTextEditor_graphicalCursorPos = EditorGUI.s_DelayedTextEditor.graphicalCursorPos;
+                EditorGUI_DelayedTextEditor_content = EditorGUI.s_DelayedTextEditor.text;
+                EditorGUI_DelayedControlThatHadFocusValue = EditorGUI.s_DelayedTextEditor.controlThatHadFocusValue;
+            }
         }
 
         private void ManagedLoad()
         {
-            EditorGUI.s_RecycledEditor.text = EditorGUI_TextEditor_content;
             EditorGUI.s_RecycledCurrentEditingString = EditorGUI_Current_Editing_String;
             EditorGUI.RecycledTextEditor.s_ActuallyEditing = EditorGUI_IsActuallEditing;
-            EditorGUI.s_RecycledEditor.cursorIndex = EditorGUI_TextEditor_cursorIndex;
-            EditorGUI.s_RecycledEditor.selectIndex = EditorGUI_TextEditor_selectIndex;
-            EditorGUI.s_RecycledEditor.controlID = EditorGUI_TextEditor_controlID;
-            EditorGUI.s_RecycledEditor.hasHorizontalCursor = EditorGUI_TextEditor_hasHorizontalCursorPos;
-            EditorGUI.s_RecycledEditor.scrollOffset = EditorGUI_TextEditor_scrollOffset;
-            EditorGUI.s_RecycledEditor.m_HasFocus = EditorGUI_TextEditor_hasFocus;
-            EditorGUI.s_RecycledEditor.graphicalCursorPos = EditorGUI_TextEditor_graphicalCursorPos;
-            EditorGUI.s_DelayedTextEditor.text = EditorGUI_DelayedTextEditor_content;
-            EditorGUI.s_DelayedTextEditor.cursorIndex = EditorGUI_DelayedTextEditor_cursorIndex;
-            EditorGUI.s_DelayedTextEditor.selectIndex = EditorGUI_DelayedTextEditor_selectIndex;
-            EditorGUI.s_DelayedTextEditor.controlID = EditorGUI_DelayedTextEditor_controlID;
-            EditorGUI.s_DelayedTextEditor.hasHorizontalCursor = EditorGUI_DelayedTextEditor_hasHorizontalCursorPos;
-            EditorGUI.s_DelayedTextEditor.scrollOffset = EditorGUI_DelayedTextEditor_scrollOffset;
-            EditorGUI.s_DelayedTextEditor.m_HasFocus = EditorGUI_DelayedTextEditor_hasFocus;
-            EditorGUI.s_DelayedTextEditor.graphicalCursorPos = EditorGUI_DelayedTextEditor_graphicalCursorPos;
-            EditorGUI.s_DelayedTextEditor.controlThatHadFocusValue = EditorGUI_DelayedControlThatHadFocusValue;
+            if (EditorGUI_TextEditor_needBackup)
+            {
+                EditorGUI.s_RecycledEditor.text = EditorGUI_TextEditor_content;
+                EditorGUI.s_RecycledEditor.cursorIndex = EditorGUI_TextEditor_cursorIndex;
+                EditorGUI.s_RecycledEditor.selectIndex = EditorGUI_TextEditor_selectIndex;
+                EditorGUI.s_RecycledEditor.controlID = EditorGUI_TextEditor_controlID;
+                EditorGUI.s_RecycledEditor.hasHorizontalCursor = EditorGUI_TextEditor_hasHorizontalCursorPos;
+                EditorGUI.s_RecycledEditor.scrollOffset = EditorGUI_TextEditor_scrollOffset;
+                EditorGUI.s_RecycledEditor.m_HasFocus = EditorGUI_TextEditor_hasFocus;
+                EditorGUI.s_RecycledEditor.graphicalCursorPos = EditorGUI_TextEditor_graphicalCursorPos;
+            }
+
+            if (EditorGUI_DelayedTextEditor_needBackup)
+            {
+                EditorGUI.s_DelayedTextEditor.text = EditorGUI_DelayedTextEditor_content;
+                EditorGUI.s_DelayedTextEditor.cursorIndex = EditorGUI_DelayedTextEditor_cursorIndex;
+                EditorGUI.s_DelayedTextEditor.selectIndex = EditorGUI_DelayedTextEditor_selectIndex;
+                EditorGUI.s_DelayedTextEditor.controlID = EditorGUI_DelayedTextEditor_controlID;
+                EditorGUI.s_DelayedTextEditor.hasHorizontalCursor = EditorGUI_DelayedTextEditor_hasHorizontalCursorPos;
+                EditorGUI.s_DelayedTextEditor.scrollOffset = EditorGUI_DelayedTextEditor_scrollOffset;
+                EditorGUI.s_DelayedTextEditor.m_HasFocus = EditorGUI_DelayedTextEditor_hasFocus;
+                EditorGUI.s_DelayedTextEditor.graphicalCursorPos = EditorGUI_DelayedTextEditor_graphicalCursorPos;
+                EditorGUI.s_DelayedTextEditor.controlThatHadFocusValue = EditorGUI_DelayedControlThatHadFocusValue;
+            }
         }
     }
 }

@@ -726,14 +726,11 @@ namespace UnityEngine.UIElements
             m_OldThemeUss = themeUss;
         }
 
-        bool AssignICUData()
+        internal bool AssignICUData()
         {
-            if (m_ICUDataAsset == null)
-            {
-                s_AssignICUData?.Invoke(this);
-                return true;
-            }
-            return false;
+            var old = m_ICUDataAsset;
+            s_AssignICUData?.Invoke(this);
+            return old != m_ICUDataAsset;
         }
 
         void InitializeShaders()

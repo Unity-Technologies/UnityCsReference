@@ -71,6 +71,7 @@ namespace UnityEditor.UIElements
 
             PanelSettings settings = ScriptableObject.CreateInstance<PanelSettings>();
             settings.themeStyleSheet = defaultTssAsset;
+            settings.AssignICUData();
             ProjectWindowUtil.CreateAsset(settings, "New Panel Settings.asset");
         }
     }

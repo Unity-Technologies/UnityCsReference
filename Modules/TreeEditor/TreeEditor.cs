@@ -1138,7 +1138,7 @@ namespace TreeEditor
                                     s_SelectedGroup.Lock();
                                     s_SelectedPoint = pointIndex;
 
-                                    Undo.RecordObject(this, "Rotate branch");
+                                    Undo.RegisterCompleteObjectUndo(treeData, "Rotate branch");
 
                                     //Move all points after the rotation pivot accordingly to the rotation
                                     for (int i = s_SelectedPoint + 1; i < spline.nodes.Length; i++)

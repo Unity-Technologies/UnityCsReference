@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
 
             // Filter out event where button is released outside the window.
             var element = evt.elementTarget;
-            if (element != null && ContainsPointer(element, pe.position))
+            if (element != null && ContainsPointer(element, pe))
             {
                 if (clickStatus.m_Target != null && clickStatus.m_ClickCount > 0)
                 {
@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
                         using (var clickEvent = ClickEvent.GetPooled(pe, clickStatus.m_ClickCount))
                         {
                             clickEvent.elementTarget = target;
-                            target.SendEvent(clickEvent);
+                            target.SendEvent(clickEvent, DispatchMode.Immediate);
                         }
                     }
                 }
@@ -161,13 +161,12 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static bool ContainsPointer(VisualElement element, Vector2 position)
+        private static bool ContainsPointer(VisualElement element, IPointerEvent pe)
         {
-            if (!element.worldBound.Contains(position) || element.panel == null)
+            if (!element.worldBound.Contains(pe.position) || element.panel == null)
                 return false;
 
-            // We need to use Pick(position) because PointerUpEvent sometimes calls ClearCachedElementUnderPointer
-            var elementUnderPointer = element.panel.Pick(position);
+            var elementUnderPointer = element.elementPanel.GetTopElementUnderPointer(pe.pointerId);
             return element == elementUnderPointer || element.Contains(elementUnderPointer);
         }
 

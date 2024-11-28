@@ -131,28 +131,13 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        static TextLib s_TextLib;
 
-        internal protected static TextLib TextLib
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                if (s_TextLib == null)
-                {
-                    s_TextLib = new TextLib();
-                }
-                return s_TextLib;
-            }
-        }
 
         public virtual void AddTextInfoToPermanentCache()
         {
             if (useAdvancedText)
             {
-                if (textGenerationInfo == IntPtr.Zero)
-                    textGenerationInfo = TextGenerationInfo.Create();
-                TextLib.GenerateText(nativeSettings, textGenerationInfo);
+                throw new InvalidOperationException("Method is virtual and should be overriden in ATGTextHanle, the only valid handle for ATG");
             }
             else
             {

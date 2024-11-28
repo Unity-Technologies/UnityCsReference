@@ -78,12 +78,8 @@ namespace UnityEditor.UIElements
             Debug.Assert(target != null, "target PanelSetting is null");
             if (UIToolkitProjectSettings.enableAdvancedText)
             {
-                var asset = ICUDataAssetUtilities.GetICUAsset();
-                if (asset == null)
-                {
-                    ICUDataAssetUtilities.CreateAsset();
-                    asset = ICUDataAssetUtilities.GetICUAsset();
-                }
+                var asset = ICUDataAssetUtilities.GetEditorICUAsset();
+                Debug.Assert(asset != null, "ICU data in the default resources is not found");
 
                 if (asset != null && target.m_ICUDataAsset != asset)
                 {

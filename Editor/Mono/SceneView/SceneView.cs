@@ -1357,7 +1357,9 @@ namespace UnityEditor
 
             rootVisualElement.RegisterCallback<MouseEnterEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
-
+            rootVisualElement.RegisterCallback<MouseEnterWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
+            rootVisualElement.RegisterCallback<MouseLeaveWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
+            
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();

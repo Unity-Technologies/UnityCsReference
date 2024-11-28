@@ -15,6 +15,9 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using System.Threading;
 
+using NotNullWhenAttribute = System.Diagnostics.CodeAnalysis.NotNullWhenAttribute;
+using MaybeNullWhenAttribute = System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute;
+
 namespace UnityEngine
 {
     // Bit mask that controls object destruction and visibility in inspectors
@@ -116,7 +119,7 @@ namespace UnityEngine
         }
 
         // Does the object exist?
-        public static implicit operator bool(Object exists)
+        public static implicit operator bool([NotNullWhen(true)] [MaybeNullWhen(false)] Object exists)
         {
             return !CompareBaseObjects(exists, null);
         }

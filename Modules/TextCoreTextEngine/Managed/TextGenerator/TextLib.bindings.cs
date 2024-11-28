@@ -12,21 +12,19 @@ namespace UnityEngine.TextCore.Text
 {
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/TextCoreTextEngine/Native/TextLib.h")]
-    [VisibleToOtherModules("UnityEngine.UIElementsModule","Unity.UIElements.PlayModeTests")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements.PlayModeTests")]
     internal class TextLib
     {
         private readonly IntPtr m_Ptr;
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal TextLib()
+        public TextLib(byte[] icuData)
         {
-            m_Ptr = GetInstance();
+            m_Ptr = GetInstance(icuData);
         }
 
-        private static extern IntPtr GetInstance();
+        private static extern IntPtr GetInstance(byte[] icuData);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo)
+        public NativeTextInfo GenerateText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo)
         {
             Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
             var textInfo = GenerateTextInternal(settings, textGenerationInfo);
@@ -78,65 +76,18 @@ namespace UnityEngine.TextCore.Text
         [NativeMethod(Name = "TextLib::GenerateTextMesh")]
         private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextLib::MeasureText")]
-        internal extern Vector2 MeasureText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
+        public extern Vector2 MeasureText(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [NativeMethod(Name = "TextLib::FindIntersectingLink")]
-        static internal extern int FindIntersectingLink(Vector2 point, IntPtr textGenerationInfo);
+        static public extern int FindIntersectingLink(Vector2 point, IntPtr textGenerationInfo);
 
         internal static class BindingsMarshaller
         {
             public static IntPtr ConvertToNative(TextLib textLib) => textLib.m_Ptr;
         }
 
-        static byte[] s_ICUData = null;
-        internal static Func<UnityEngine.TextAsset> GetICUAssetEditorDelegate;
-        private static UnityEngine.TextAsset GetICUAsset()
-        {
-            if (GetICUAssetEditorDelegate != null)
-            {
-                //Editor will load the ICU library before the scene, so we need to check in the asset database as the asset may not be loaded yet.
-                var asset = GetICUAssetEditorDelegate();
-                if (asset != null)
-                    return asset;
-            }
-            else
-            {
-                Debug.LogError("GetICUAssetEditorDelegate is null");
-            }
-            // Dont know about the panelSettings class existence here so we must filter by name
-            foreach( var t in Resources.FindObjectsOfTypeAll<UnityEngine.TextAsset>())
-            {
-                if (t.name == "icudt73l")
-                    return t;
-            }
-
-            return null;
-        }
-
-        [RequiredByNativeCode]
-        internal static int LoadAndCountICUdata()
-        {
-            s_ICUData = GetICUAsset()?.bytes;
-            return s_ICUData?.Length ?? 0;
-        }
-
-        [VisibleToOtherModules("Unity.UIElements.PlayModeTests")]
-        [RequiredByNativeCode]
-        internal static bool GetICUdata(Span<byte> data,  int maxSize)
-        {
-            if (s_ICUData == null)
-                LoadAndCountICUdata();
-
-            Debug.Assert(s_ICUData != null, "s_ICUData not initialized");
-            Debug.Assert(maxSize == s_ICUData.Length);
-
-            s_ICUData.CopyTo(data);
-            s_ICUData = null;
-            return true;
-        }
+        public static Func<UnityEngine.TextAsset> GetICUAssetEditorDelegate;
     }
 
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -144,7 +95,7 @@ namespace UnityEngine.TextCore.Text
     {
         public static extern IntPtr Create();
 
-        [FreeFunction("TextGenerationInfo::Destroy")]
+        [FreeFunction("TextGenerationInfo::Destroy",IsThreadSafe = true)]
         public static extern void Destroy(IntPtr ptr);
     }
 }

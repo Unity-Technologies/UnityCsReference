@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.UIElements.UIR;
 
@@ -230,22 +231,22 @@ namespace UnityEngine.UIElements
             DestroyRenderChain();
         }
 
-        void OnPanelHierarchyChanged(VisualElement ve, HierarchyChangeType changeType)
+        void OnPanelHierarchyChanged(VisualElement ve, HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null)
         {
             if (renderChain == null)
                 return;
 
             switch (changeType)
             {
-                case HierarchyChangeType.Add:
+                case HierarchyChangeType.AddedToParent:
                     renderChain.UIEOnChildAdded(ve);
                     break;
 
-                case HierarchyChangeType.Remove:
+                case HierarchyChangeType.RemovedFromParent:
                     renderChain.UIEOnChildRemoving(ve);
                     break;
 
-                case HierarchyChangeType.Move:
+                case HierarchyChangeType.ChildrenReordered:
                     renderChain.UIEOnChildrenReordered(ve);
                     break;
             }

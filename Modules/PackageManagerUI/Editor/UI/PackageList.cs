@@ -49,7 +49,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             root.StretchToParentSize();
             cache = new VisualElementCache(root);
 
-            emptyAreaButton.clickable.clicked += OnButtonClicked;
+            messageAreaButton.clickable.clicked += OnButtonClicked;
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChange);
             RegisterCallback<AttachToPanelEvent>(OnEnterPanel);
@@ -163,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void OnCheckUpdateProgress()
         {
-            UpdateListVisibility(true);
+            UpdateListVisibility();
         }
 
         private void OnUserLoginStateChange(bool userInfoReady, bool loggedIn)
@@ -173,68 +173,26 @@ namespace UnityEditor.PackageManager.UI.Internal
                 page.UpdateSelectionIfCurrentSelectionIsInvalid();
         }
 
-        private void HideListShowMessage(bool isRefreshInProgress, bool isCheckUpdateInProgress)
-        {
-            string message;
-            if (isRefreshInProgress)
-            {
-                message = L10n.Tr("Refreshing list...");
-            }
-            else if (isCheckUpdateInProgress)
-            {
-                message = string.Format(L10n.Tr("Checking for updates {0}%..."), m_BackgroundFetchHandler.checkUpdatePercentage);
-                HideListShowEmptyArea(message, L10n.Tr("Cancel"), () =>
-                {
-                    m_PageManager.activePage.ClearFilters();
-                    m_BackgroundFetchHandler.CancelCheckUpdates();
-                });
-                return;
-            }
-            else
-            {
-                var page = m_PageManager.activePage;
-                var searchText = page.searchText;
-                if (string.IsNullOrEmpty(searchText))
-                    message = page.filters.isFilterSet ? L10n.Tr("No results for the specified filters.") : L10n.Tr("No items to display.");
-                else
-                {
-                    const int maxSearchTextToDisplay = 64;
-                    if (searchText?.Length > maxSearchTextToDisplay)
-                        searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
-                    message = string.Format(L10n.Tr("No results for \"{0}\""), searchText);
-                }
-            }
-            HideListShowEmptyArea(message);
-        }
-
-        private void HideListShowLogin()
-        {
-            if (!m_UnityConnect.isUserInfoReady)
-                HideListShowEmptyArea(string.Empty);
-            else
-                HideListShowEmptyArea(L10n.Tr("Sign in to access your assets"), L10n.Tr("Sign in"), m_UnityConnect.ShowLogin);
-        }
-
-        public void HideListShowEmptyArea(string message, string buttonText = null, Action buttonAction = null)
+        public void HideListShowMessage(string message, string buttonText = null, Action buttonAction = null)
         {
             UIUtils.SetElementDisplay(listContainer, false);
             UIUtils.SetElementDisplay(packageLoadBar, false);
-            UIUtils.SetElementDisplay(emptyArea, true);
+            UIUtils.SetElementDisplay(messageArea, true);
 
-            emptyAreaMessage.text = message ?? string.Empty;
+            messageAreaLabel.text = message ?? string.Empty;
 
-            emptyAreaButton.text = buttonText ?? string.Empty;
+            messageAreaButton.text = buttonText ?? string.Empty;
             m_ButtonAction = buttonAction;
-            UIUtils.SetElementDisplay(emptyAreaButton, buttonAction != null);
+            UIUtils.SetElementDisplay(messageAreaButton, buttonAction != null);
 
             m_PageManager.activePage.SetNewSelection(Enumerable.Empty<string>());
         }
 
-        private void HideEmptyAreaShowList(bool skipListRebuild)
+        private void HideMessageShowList(bool skipListRebuild)
         {
             var rebuild = !skipListRebuild && !UIUtils.IsElementVisible(listContainer);
             UIUtils.SetElementDisplay(listContainer, true);
-            UIUtils.SetElementDisplay(emptyArea, false);
+            UIUtils.SetElementDisplay(messageArea, false);
 
             var currentView = this.currentView;
             UIUtils.SetElementDisplay(listView, listView == currentView);
@@ -255,23 +213,51 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool UpdateListVisibility(bool skipListRebuild = false)
         {
             var page = m_PageManager.activePage;
-            if (page.id == MyAssetsPage.k_Id && !m_UnityConnect.isUserLoggedIn)
+            if (page.id == MyAssetsPage.k_Id)
             {
-                HideListShowLogin();
-                return false;
+                if (!m_UnityConnect.isUserLoggedIn)
+                {
+                    if (m_UnityConnect.isUserInfoReady)
+                        HideListShowMessage(L10n.Tr("Sign in to access your assets"), L10n.Tr("Sign in"), m_UnityConnect.ShowLogin);
+                    else
+                        HideListShowMessage(string.Empty);
+                    return false;
+                }
+
+                if (m_BackgroundFetchHandler.isCheckUpdateInProgress && page.filters.status == PageFilters.Status.UpdateAvailable)
+                {
+                    HideListShowMessage(string.Format(L10n.Tr("Checking for updates {0}%..."), m_BackgroundFetchHandler.checkUpdatePercentage), L10n.Tr("Cancel"), () =>
+                    {
+                        m_PageManager.activePage.ClearFilters();
+                        m_BackgroundFetchHandler.CancelCheckUpdates();
+                    });
+                    return false;
+                }
             }
 
             var isListEmpty = !page.visualStates.Any(v => v.visible);
             var isInitialFetchingDone = m_PageRefreshHandler.IsInitialFetchingDone(page);
-            var isCheckUpdateInProgress = page.id == MyAssetsPage.k_Id &&
-                                          m_BackgroundFetchHandler.isCheckUpdateInProgress && page.filters.status == PageFilters.Status.UpdateAvailable;
-            if (isListEmpty || !isInitialFetchingDone || isCheckUpdateInProgress)
+            if (isListEmpty || !isInitialFetchingDone)
             {
-                HideListShowMessage(m_PageRefreshHandler.IsRefreshInProgress(page), isCheckUpdateInProgress);
+                if (m_PageRefreshHandler.IsRefreshInProgress(page))
+                    HideListShowMessage(L10n.Tr("Refreshing list..."));
+                else
+                {
+                    var searchText = page.searchText;
+                    if (string.IsNullOrEmpty(searchText))
+                        HideListShowMessage(page.filters.isFilterSet ? L10n.Tr("No results for the specified filters.") : L10n.Tr("No items to display."));
+                    else
+                    {
+                        const int maxSearchTextToDisplay = 64;
+                        if (searchText.Length > maxSearchTextToDisplay)
+                            searchText = searchText.Substring(0, maxSearchTextToDisplay) + "...";
+                        HideListShowMessage(string.Format(L10n.Tr("No results for \"{0}\""), searchText));
+                    }
+                }
                 return false;
             }
 
-            HideEmptyAreaShowList(skipListRebuild);
+            HideMessageShowList(skipListRebuild);
             return true;
         }
 
@@ -335,8 +321,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         private PackageListScrollView scrollView => cache.Get<PackageListScrollView>("scrollView");
         private VisualElement listContainer => cache.Get<VisualElement>("listContainer");
         private PackageLoadBar packageLoadBar => cache.Get<PackageLoadBar>("packageLoadBar");
-        private VisualElement emptyArea => cache.Get<VisualElement>("emptyArea");
-        private Label emptyAreaMessage => cache.Get<Label>("emptyAreaMessage");
-        private Button emptyAreaButton => cache.Get<Button>("emptyAreaButton");
+        private VisualElement messageArea => cache.Get<VisualElement>("messageArea");
+        private Label messageAreaLabel => cache.Get<Label>("messageAreaLabel");
+        private Button messageAreaButton => cache.Get<Button>("messageAreaButton");
     }
 }

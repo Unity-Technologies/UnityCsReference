@@ -204,10 +204,10 @@ namespace UnityEngine.UIElements
         {
             switch (type)
             {
-                case HierarchyChangeType.Add:
+                case HierarchyChangeType.AddedToParent:
                     StartTrackingRecursive(ve);
                     break;
-                case HierarchyChangeType.Remove:
+                case HierarchyChangeType.RemovedFromParent:
                     StopTrackingRecursive(ve);
                     break;
                 default:
