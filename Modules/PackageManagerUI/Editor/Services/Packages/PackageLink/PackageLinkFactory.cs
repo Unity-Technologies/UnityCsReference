@@ -97,7 +97,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string GetQuickStartUrl(PackageInfo packageInfo)
         {
             var upmReserved = m_UpmCache.ParseUpmReserved(packageInfo);
-            return upmReserved?.GetString("quickstart") ?? string.Empty;
+            var url = upmReserved?.GetString("quickstart") ?? string.Empty;
+
+            // The quick start url that is specified in the package.json file does not contain the Unity short version
+            // which means it will not point to the quick start doc for the right version if the user is using a Unity
+            // version that is not the latest stable release. We manually add the unity short version back to the quick
+            // start url so it always points to the right version of the document
+            return url.Replace(ApplicationProxy.k_UnityDocsUrl, m_Application.docsUrlWithShortUnityVersion);
         }
 
         private string GetOfflineDocumentationPath(PackageInfo packageInfo)

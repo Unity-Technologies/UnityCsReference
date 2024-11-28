@@ -9,9 +9,11 @@ namespace UnityEngine.UIElements
     //Keep in sync with HierarchyChangeType in HierarchyChangeType.h
     internal enum HierarchyChangeType
     {
-        Add, // TODO: Rename to AddedToParent
-        Remove, // TODO: Rename to RemovedFromParent
-        Move // TODO: Rename to ChildrenReordered
+        AddedToParent,
+        RemovedFromParent,
+        ChildrenReordered,
+        AttachedToPanel,
+        DetachedFromPanel,
     }
 
     internal abstract class BaseVisualTreeHierarchyTrackerUpdater : BaseVisualTreeUpdater
@@ -58,7 +60,7 @@ namespace UnityEngine.UIElements
             {
                 // Still waiting for a parent add change
                 // which means that last change was a move
-                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.Move);
+                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.ChildrenReordered);
                 m_State = State.Waiting;
             }
 
@@ -75,7 +77,7 @@ namespace UnityEngine.UIElements
             if (m_CurrentChangeParent == null && ve.panel != null)
             {
                 // The changed element is the VisualTree root so it has to be a move.
-                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.Move);
+                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.ChildrenReordered);
                 m_State = State.Waiting;
             }
             else
@@ -89,20 +91,20 @@ namespace UnityEngine.UIElements
             Debug.Assert(m_CurrentChangeParent != null);
             if (m_CurrentChangeParent == ve)
             {
-                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.Add);
+                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.AddedToParent);
                 m_State = State.Waiting;
             }
             else
             {
                 // This is a new change, last change was a move
-                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.Move);
+                OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.ChildrenReordered);
                 ProcessNewChange(ve);
             }
         }
 
         private void ProcessRemove(VisualElement ve)
         {
-            OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.Remove);
+            OnHierarchyChange(m_CurrentChangeElement, HierarchyChangeType.RemovedFromParent);
             if (ve.panel != null)
             {
                 // This is the parent (or VisualTree root) of the removed children

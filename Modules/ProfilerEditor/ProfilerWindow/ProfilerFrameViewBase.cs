@@ -125,16 +125,20 @@ namespace UnityEditorInternal.Profiling
             return pm != null;
         }
 
-        static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
+        internal static GUIContent GetCPUProfilerViewTypeName(ProfilerViewType viewType)
         {
             switch (viewType)
             {
                 case ProfilerViewType.Hierarchy:
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[1];
                 case ProfilerViewType.Timeline:
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[0];
                 case ProfilerViewType.TimelineV2:
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[4];
                 case ProfilerViewType.RawHierarchy:
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[3];
                 case ProfilerViewType.InvertedHierarchy:
-                    return kCPUProfilerViewTypeNamesWithNewTimeline[(int) viewType];
+                    return kCPUProfilerViewTypeNamesWithNewTimeline[2];
                 default:
                     throw new NotImplementedException($"Lookup Not Implemented for {viewType}");
             }

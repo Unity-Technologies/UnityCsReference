@@ -344,6 +344,16 @@ namespace UnityEditor
         WindowsGamepadBackendHintWindowsGamingInput = 2
     }
 
+    // Set of player settings that require an editor restart
+    // Keep in sync with PlayerSettingsRequiringRestart in PlayerSettings.bindings.h
+    internal enum PlayerSettingsRequiringRestart
+    {
+        IncrementalGC = 0,
+        ActiveInputHandling = 1,
+        GraphicsJobs = 2,
+        VirtualTexturing = 3,
+    }
+
     // Player Settings is where you define various parameters for the final game that you will build in Unity. Some of these values are used in the Resolution Dialog that launches when you open a standalone game.
     [NativeClass(null)]
     [NativeHeader("Editor/Mono/PlayerSettings.bindings.h")]
@@ -1863,6 +1873,12 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SyncShaderPrecisionModel();
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SyncVirtualTexturingState(PlayerSettings settings);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern PlayerSettingsRequiringRestart[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);
+
         /*
          * Internal non-static getter/setters referenced when reading/writing to non-active player settings object.
          */
@@ -1890,9 +1906,6 @@ namespace UnityEditor
 
         [NativeMethod("SetHDRCubemapEncodingQuality")]
         internal extern void SetHDRCubemapEncodingQualityForPlatform_Internal(BuildTarget platform, HDRCubemapEncodingQuality encodingQuality);
-
-        [StaticAccessor("PlayerSettings", StaticAccessorType.DoubleColon)]
-        internal static extern string[] GetSettingsRequiringRestart(PlayerSettings prevSettings, PlayerSettings newSettings, BuildTarget prevBuildTarget, BuildTarget newBuildTarget);
 
         // Load / Store
         [NativeMethod("GetLoadStoreDebugModeEnabled")]

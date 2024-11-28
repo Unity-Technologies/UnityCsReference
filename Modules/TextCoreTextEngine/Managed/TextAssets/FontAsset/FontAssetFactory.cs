@@ -177,6 +177,10 @@ internal class FontAssetFactory
                     SetupFontAssetSettings(boldItalicFontAsset, shader);
                 }
             }
+            else
+            {
+                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
+            }
         }
         else
         {

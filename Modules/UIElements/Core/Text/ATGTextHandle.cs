@@ -176,6 +176,21 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            if (textSettings != null && textSettings.fallbackOSFontAssets != null)
+            {
+                foreach (var fallback in textSettings.fallbackOSFontAssets)
+                {
+                    if (fallback == null)
+                        continue;
+                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
+                    {
+                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                        continue;
+                    }
+                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+                }
+            }
+
             if (textSettings != null && textSettings.emojiFallbackTextAssets != null)
             {
                 foreach (FontAsset fallback in textSettings.emojiFallbackTextAssets)
@@ -218,5 +233,68 @@ namespace UnityEngine.UIElements
 
             return true;
         }
+
+
+        private TextAsset GetICUAsset()
+        {
+            if (m_TextElement.panel is null)
+                throw new InvalidOperationException("Text cannot be processed on elements not in a panel");
+
+            if (m_TextElement.panel.contextType == ContextType.Editor)
+                return GetICUAssetStaticFalback();
+            var asset = ((PanelSettings)(((RuntimePanel)m_TextElement.panel).ownerObject)).m_ICUDataAsset;
+
+            if (asset != null)
+                return asset;
+
+            asset = GetICUAssetStaticFalback();
+
+            if (asset != null)
+                return asset;
+
+            Debug.LogError("ICU Data not available. The data should be automatically assigned to the PanelSettings in the editor if the advanced text option is enable in the project settings. It will not be present on PanelSettings created at runtime, so make sure the build contains at least one PanelSettings asset");
+            return null;
+        }
+                
+        //This method uses the asset in the editor if avialable, or try to find any asset that would be included in the resource folder for builds
+        internal static TextAsset GetICUAssetStaticFalback()
+        {
+            if (TextLib.GetICUAssetEditorDelegate != null)
+            {
+                //Editor will load the ICU library before the scene, so we need to check in the asset database as the asset may not be loaded yet.
+                var asset = TextLib.GetICUAssetEditorDelegate();
+                if (asset != null)
+                    return asset;
+            }
+            else
+            {
+                Debug.LogError("GetICUAssetEditorDelegate is null");
+            }
+            // Dont know about the panelSettings class existence here so we must filter by name
+            foreach (var t in Resources.FindObjectsOfTypeAll<UnityEngine.TextAsset>())
+            {
+                if (t.name == "icudt73l")
+                    return t;
+            }
+
+            return null;
+        }
+
+        static TextLib s_TextLib;
+
+        internal protected TextLib TextLib
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                if (s_TextLib == null)
+                {
+                    s_TextLib = new TextLib(GetICUAsset().bytes);
+                }
+                return s_TextLib;
+            }
+        }
+
+
     }
 }

@@ -1182,8 +1182,6 @@ namespace UnityEngine.UIElements
 
             ((EventBase) ((IPointerEventInternal) this).compatibilityMouseEvent)?.PostDispatch(panel);
 
-            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
-
             base.PostDispatch(panel);
         }
 
@@ -1322,6 +1320,7 @@ namespace UnityEngine.UIElements
         protected internal override void PostDispatch(IPanel panel)
         {
             panel.focusController.SwitchFocusOnEvent(panel.focusController.GetLeafFocusedElement(), this);
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
 
             base.PostDispatch(panel);
         }
@@ -1405,6 +1404,12 @@ namespace UnityEngine.UIElements
                     ((IPointerEventInternal) this).compatibilityMouseEvent = MouseMoveEvent.GetPooled(this);
                 }
             }
+        }
+
+        protected internal override void PostDispatch(IPanel panel)
+        {
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+            base.PostDispatch(panel);
         }
     }
 
@@ -1508,6 +1513,9 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
+            // UUM-54208: Process ClickEvent before releasing the pointer
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+
             if (PointerType.IsDirectManipulationDevice(pointerType))
             {
                 panel.ReleasePointer(pointerId);
@@ -1574,6 +1582,9 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
+            // UUM-54208: Process ClickEvent before releasing the pointer
+            panel.dispatcher.m_ClickDetector.ProcessEvent(this);
+
             if (PointerType.IsDirectManipulationDevice(pointerType))
             {
                 panel.ReleasePointer(pointerId);
@@ -1638,9 +1649,6 @@ namespace UnityEngine.UIElements
             evt.clickCount = clickCount;
             return evt;
         }
-
-        // Note that ClickDetector always sends ClickEvents with an assigned target. However, we're not assuming we can
-        // dispatch directly to target because users may send their own ClickEvents with a position and no target.
     }
 
     /// <summary>

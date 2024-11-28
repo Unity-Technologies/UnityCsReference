@@ -297,10 +297,10 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.ParticleSystemModule")]
-        internal AnimationCurve(IntPtr ptr)
+        internal AnimationCurve(IntPtr ptr, bool ownMemory)
         {
             m_Ptr = ptr;
-            m_RequiresNativeCleanup = false;
+            m_RequiresNativeCleanup = ownMemory;
         }
 
         public override bool Equals(object o)
@@ -340,7 +340,7 @@ namespace UnityEngine
 
         internal static class BindingsMarshaller
         {
-            public static AnimationCurve ConvertToManaged(IntPtr ptr) => new AnimationCurve(ptr);
+            public static AnimationCurve ConvertToManaged(IntPtr ptr) => new AnimationCurve(ptr, true);
             public static IntPtr ConvertToNative(AnimationCurve animationCurve) => animationCurve.m_Ptr;
         }
     }

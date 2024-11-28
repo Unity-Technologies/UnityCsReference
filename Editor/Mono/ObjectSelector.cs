@@ -230,6 +230,8 @@ namespace UnityEditor
         void ListAreaItemSelectedCallback(bool doubleClicked)
         {
             m_LastSelectedInstanceId = GetInternalSelectedInstanceID();
+            m_ListArea.m_SelectedObjectIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(m_LastSelectedInstanceId));
+
             if (doubleClicked)
             {
                 ItemWasDoubleClicked();
@@ -941,7 +943,7 @@ namespace UnityEditor
                 size = icon.width * 2;
 
             FilterMode temp = icon.filterMode;
-            icon.filterMode = FilterMode.Point;
+            icon.filterMode = FilterMode.Bilinear;
             GUI.DrawTexture(new Rect(position.x + ((int)position.width - size) / 2, position.y + ((int)position.height - size) / 2, size, size), icon, ScaleMode.ScaleToFit);
             icon.filterMode = temp;
         }

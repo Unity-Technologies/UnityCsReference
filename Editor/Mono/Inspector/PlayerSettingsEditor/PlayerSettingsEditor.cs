@@ -2681,15 +2681,20 @@ namespace UnityEditor
                     m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        if (PlayerSettings.OnVirtualTexturingChanged())
+                        if (IsActivePlayerSettingsEditor())
                         {
-                            PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled.boolValue);
-                            EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
-                            GUIUtility.ExitGUI();
-                        }
-                        else
-                        {
-                            m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                             if (PlayerSettings.OnVirtualTexturingChanged())
+                            {
+                                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled
+                                    .boolValue);
+                                m_VirtualTexturingSupportEnabled.serializedObject.ApplyModifiedProperties();
+                                EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
+                                GUIUtility.ExitGUI();
+                            }
+                            else
+                            {
+                                m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
+                            }
                         }
                     }
                 }
@@ -3243,7 +3248,7 @@ namespace UnityEditor
                         if (ShouldRestartEditorToApplySetting())
                         {
                             m_GCIncremental.serializedObject.ApplyModifiedProperties();
-                            EditorApplication.OpenProject(Environment.CurrentDirectory);
+                            EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                         }
                         else
                             m_GCIncremental.boolValue = oldValue;
@@ -3333,7 +3338,7 @@ namespace UnityEditor
                         if (ShouldRestartEditorToApplySetting())
                         {
                             m_ActiveInputHandler.serializedObject.ApplyModifiedProperties();
-                            EditorApplication.RestartEditorAndRecompileScripts();
+                            EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
                         }
                         else
                             m_ActiveInputHandler.intValue = currValue;

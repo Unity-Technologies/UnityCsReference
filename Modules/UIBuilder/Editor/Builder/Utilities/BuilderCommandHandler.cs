@@ -351,8 +351,8 @@ namespace Unity.UI.Builder
                 Undo.RegisterCompleteObjectUndo(
                     styleSheet, BuilderConstants.DeleteSelectorUndoMessage);
 
-                var selectorStr = BuilderSharedStyles.GetSelectorString(element);
-                styleSheet.RemoveSelector(selectorStr);
+                var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
+                styleSheet.RemoveSelector(complexSelector);
 
                 // If we are deleting multiple items then its possible that a previous
                 // delete recreated the explorer panel and this element is no longer valid.

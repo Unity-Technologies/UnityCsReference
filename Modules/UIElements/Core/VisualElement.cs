@@ -1593,12 +1593,14 @@ namespace UnityEngine.UIElements
 
                     VisualElementFlags flagToAdd = p != null ? VisualElementFlags.NeedsAttachToPanelEvent : 0;
 
+                    InvokeHierarchyChanged(HierarchyChangeType.DetachedFromPanel, elements);
                     foreach (var e in elements)
                     {
                         e.elementPanel = p;
                         e.m_Flags |= flagToAdd;
                         e.m_CachedNextParentWithEventInterests = null;
                     }
+                    InvokeHierarchyChanged(HierarchyChangeType.AttachedToPanel, elements);
 
                     foreach (var e in elements)
                     {
@@ -1718,7 +1720,7 @@ namespace UnityEngine.UIElements
             elementPanel?.OnVersionChanged(this, changeType);
         }
 
-        internal void InvokeHierarchyChanged(HierarchyChangeType changeType) { elementPanel?.InvokeHierarchyChanged(this, changeType); }
+        internal void InvokeHierarchyChanged(HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null) { elementPanel?.InvokeHierarchyChanged(this, changeType, additionalContext); }
 
         [Obsolete("SetEnabledFromHierarchy is deprecated and will be removed in a future release. Please use SetEnabled instead.")]
         protected internal bool SetEnabledFromHierarchy(bool state)

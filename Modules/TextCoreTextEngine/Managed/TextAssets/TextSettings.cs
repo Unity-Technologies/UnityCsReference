@@ -60,6 +60,7 @@ namespace UnityEngine.TextCore.Text
 
         internal List<FontAsset> fallbackOSFontAssets
         {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
                 if (GetStaticFallbackOSFontAsset() == null)
