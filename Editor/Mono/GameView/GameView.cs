@@ -83,6 +83,7 @@ namespace UnityEditor
         [SerializeField] bool[] m_LowResolutionForAspectRatios = new bool[0];
         [SerializeField] int m_XRRenderMode = 0;
         [SerializeField] RenderTexture m_RenderTexture;
+        [SerializeField] bool m_showToolbar = true;
 
         int m_SizeChangeID = int.MinValue;
 
@@ -201,7 +202,10 @@ namespace UnityEditor
 
         Rect GetViewInWindow(Rect pos)
         {
-            return new Rect(0, EditorGUI.kWindowToolbarHeight, pos.width, pos.height - EditorGUI.kWindowToolbarHeight);
+            if (showToolbar)
+                return new Rect(0, EditorGUI.kWindowToolbarHeight, pos.width, pos.height - EditorGUI.kWindowToolbarHeight);
+            
+            return new Rect(0, 0, pos.width, pos.height);
         }
 
         Rect GetViewPixelRect(Rect viewRectInWindow)
@@ -296,6 +300,12 @@ namespace UnityEditor
         Vector2 gameMouseOffset { get { return -viewInWindow.position - targetInView.position; } }
 
         float gameMouseScale { get { return EditorGUIUtility.pixelsPerPoint / m_ZoomArea.scale.y; } }
+        
+        private bool showToolbar
+        {
+            get => m_showToolbar;
+            set => m_showToolbar = value;
+        }
 
         internal bool drawGizmos
         {
@@ -319,6 +329,7 @@ namespace UnityEditor
             prevSizeGroupType = (int)currentSizeGroupType;
             titleContent = GetLocalizedTitleContent();
             UpdateZoomAreaAndParent();
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
 
             ModeService.modeChanged += OnEditorModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -864,6 +875,7 @@ namespace UnityEditor
 
         private void OnEditorModeChanged(ModeService.ModeChangedArgs args)
         {
+            showToolbar = ModeService.HasCapability(ModeCapability.GameViewToolbar, true);
             Repaint();
         }
 
@@ -902,7 +914,8 @@ namespace UnityEditor
                 UpdateZoomAreaAndParent();
             }
 
-            DoToolbarGUI();
+            if (showToolbar)
+                DoToolbarGUI();
 
             if (type == EventType.MouseDown || type == EventType.MouseUp)
                 EditorApplication.globalEventHandler?.Invoke();
