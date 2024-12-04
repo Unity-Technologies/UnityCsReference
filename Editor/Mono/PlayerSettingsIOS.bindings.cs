@@ -19,6 +19,7 @@ namespace UnityEditor
 {
     // AppleMobile CPU architecture.
     // Matches enum in EditorOnlyPlayerSettings.h.
+    // For Device
     [Flags]
     public enum AppleMobileArchitecture : uint
     {
@@ -26,6 +27,14 @@ namespace UnityEditor
         [Obsolete("ARMv7 is no longer supported", true)]
         ARMv7 = 0,
 
+        ARM64 = 1 << 0,
+        Universal = 1 << 1
+    }
+
+    // For Simulator
+    public enum AppleMobileArchitectureSimulator
+    {
+        X86_64 = 0,
         ARM64 = 1 << 0,
         Universal = 1 << 1
     }
@@ -254,12 +263,13 @@ namespace UnityEditor
                 [NativeMethod("SetiPhoneScriptCallOptimization")]
                 set;
             }
-
             public static ScriptCallOptimizationLevel scriptCallOptimization
             {
                 get { return (ScriptCallOptimizationLevel)scriptCallOptimizationInternal; }
                 set { scriptCallOptimizationInternal = (int)value; }
             }
+
+            // Active iOS SDK version used for build
             private extern static int sdkVersionInternal
             {
                 [NativeMethod("GetiPhoneSdkVersion")]
@@ -267,12 +277,24 @@ namespace UnityEditor
                 [NativeMethod("SetiPhoneSdkVersion")]
                 set;
             }
-
-            // Active iOS SDK version used for build
             public static iOSSdkVersion sdkVersion
             {
                 get { return (iOSSdkVersion)sdkVersionInternal; }
                 set { sdkVersionInternal = (int)value; }
+            }
+
+            // Simulator Architectures
+            private extern static int simulatorSdkArchitectureInternal
+            {
+                [NativeMethod("GetiOSSimulatorArchitecture")]
+                get;
+                [NativeMethod("SetiOSSimulatorArchitecture")]
+                set;
+            }
+            public static AppleMobileArchitectureSimulator simulatorSdkArchitecture
+            {
+                get { return (AppleMobileArchitectureSimulator)simulatorSdkArchitectureInternal; }
+                set { simulatorSdkArchitectureInternal = (int)value; }
             }
 
             [FreeFunction]

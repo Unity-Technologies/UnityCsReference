@@ -807,18 +807,6 @@ namespace UnityEditor.Networking.PlayerConnection
             // *begin-nonstandard-formatting*
             connectionItems ??= new List<ConnectionDropDownItem>();
             // *end-nonstandard-formatting*
-            // this is a hack to show switch connected over ethernet in devices
-            if (connectionDropDownItem.IP == "127.0.0.1" && ProfilerDriver.GetConnectionIdentifier(connectionDropDownItem.m_ConnectionId).StartsWith("Switch"))
-            {
-                connectionDropDownItem.m_TopLevelGroup = ConnectionDropDownItem.ConnectionMajorGroup.Local;
-                connectionDropDownItem.m_SubGroup = "Devices";
-                connectionDropDownItem.IsDevice = true;
-                connectionDropDownItem.IconContent = ConnectionUIHelper.GetIcon("Switch");
-                var fullName = ProfilerDriver.GetConnectionIdentifier(connectionDropDownItem.m_ConnectionId);
-                var start = fullName.IndexOf('-') + 1;
-                var end = fullName.IndexOf('(');
-                connectionDropDownItem.DisplayName = $"{fullName.Substring(start, end - start)} - {ProfilerDriver.GetProjectName(connectionDropDownItem.m_ConnectionId)}";
-            }
 
             var dupes = connectionItems.FirstOrDefault(x => x.DisplayName == connectionDropDownItem.DisplayName && x.IP == connectionDropDownItem.IP && x.Port == connectionDropDownItem.Port);
             if (dupes != null)

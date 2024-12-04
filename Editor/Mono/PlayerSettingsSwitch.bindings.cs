@@ -625,6 +625,10 @@ namespace UnityEditor
             [NativeProperty("switchNetworkInterfaceManagerInitializeEnabled", TargetType.Field)]
             extern public static bool networkInterfaceManagerInitializeEnabled { get; set; }
 
+            // HTCS for player connection
+            [NativeProperty("switchDisableHTCSPlayerConnection", TargetType.Field)]
+            extern public static bool disableHTCSPlayerConnection { get; set; }
+
             // Using the new path style system
             [NativeProperty("switchUseNewStyleFilepaths", TargetType.Field)]
             extern public static bool useNewStyleFilepaths { get; set; }
