@@ -7026,6 +7026,12 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchIndexerQuery.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchIndexerQuery.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchNativeList.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchNativeList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchNativeReadOnlyArray.cs">
+      <Link>Modules\QuickSearch\Editor\Indexing\SearchNativeReadOnlyArray.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Indexing\SearchResultCollection.cs">
       <Link>Modules\QuickSearch\Editor\Indexing\SearchResultCollection.cs</Link>
     </Compile>
@@ -8285,6 +8291,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderBindingsCache.cs">
       <Link>Modules\UIBuilder\Editor\Builder\BuilderBindingsCache.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderEditorInitialization.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\BuilderEditorInitialization.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderExternalPackages.cs">
       <Link>Modules\UIBuilder\Editor\Builder\BuilderExternalPackages.cs</Link>

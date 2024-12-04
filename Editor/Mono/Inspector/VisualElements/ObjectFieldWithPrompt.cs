@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using System.Text;
 using Unity.Properties;
 using UnityEngine;
@@ -21,6 +22,20 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Object>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(allowSceneObjects), "allow-scene-objects"),
+                    new (nameof(objectType), "type", typeof(Object)),
+                    new (nameof(title), "title"),
+                    new (nameof(message), "message"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool allowSceneObjects;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;

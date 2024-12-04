@@ -110,7 +110,6 @@ namespace Unity.UI.Builder
             }
 
             var shownTypes = new HashSet<Type>();
-            UxmlSerializedDataRegistry.Register();
 
             var sortedEntries = UxmlSerializedDataRegistry.SerializedDataTypes.Values.OrderBy(o => o.FullName);
             foreach (var type in sortedEntries)
@@ -147,9 +146,6 @@ namespace Unity.UI.Builder
                     if (shownTypes.Contains(type))
                         continue;
 
-                    var description = UxmlSerializedDataRegistry.GetDescription(elementType.FullName);
-                    Debug.AssertFormat(description != null, "Expected to find a description for {0}", elementType.FullName);
-
                     shownTypes.Add(type);
 
                     string name;
@@ -165,6 +161,7 @@ namespace Unity.UI.Builder
 
                     var newItem = BuilderLibraryContent.CreateItem(name, "CustomCSharpElement", elementType, () =>
                     {
+                        var description = UxmlSerializedDataRegistry.GetDescription(elementType.FullName);
                         var data = description.CreateDefaultSerializedData();
                         var instance = data.CreateInstance();
 

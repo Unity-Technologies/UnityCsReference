@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -20,6 +21,19 @@ namespace UnityEditor.UIElements.ProjectSettings
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(shaderMode), "shader-mode"),
+                    new (nameof(customShader), "custom-shader"),
+                    new (nameof(shaderModeLabel), "shader-mode-label"),
+                    new (nameof(customShaderLabel), "custom-shader-label"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, UxmlAttribute("shader-mode")] string shaderMode;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags shaderMode_UxmlAttributeFlags;

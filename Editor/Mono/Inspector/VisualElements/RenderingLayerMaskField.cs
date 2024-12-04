@@ -4,6 +4,7 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -19,6 +20,17 @@ namespace UnityEditor.UIElements
         [ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<uint>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<uint>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(layerMask), "value")
+                });
+            }
+
 #pragma warning disable 649
             [UxmlAttribute("value")] [SerializeField]
             RenderingLayerMask layerMask;

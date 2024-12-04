@@ -3,19 +3,20 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A slider containing floating point values. 
+    /// A slider containing floating point values.
     /// </summary>
     /// <remarks>
     /// The Slider control is a horizontal or vertical bar with a handle that can be moved to select a value from a range.
-    /// The range is defined by the @@lowValue@@ and @@highValue@@ properties. 
+    /// The range is defined by the @@lowValue@@ and @@highValue@@ properties.
     ///\\
     ///\\
     /// The slider manages navigation events in a customized manner. When it detects <see cref="NavigationMoveEvent"/>.
-    /// that align with the slider's direction, it adjusts the slider's value. If it detects a 
+    /// that align with the slider's direction, it adjusts the slider's value. If it detects a
     /// <see cref="NavigationSubmitEvent"/>, it removes the BaseSlider_1::ref::movableUssClassName
     /// class from the dragger, causing all Navigation events to revert to their default behavior.
     /// A second navigation submit event re-enables the movableUssClassName class on the dragger and
@@ -32,6 +33,21 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseSlider<float>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseSlider<float>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(lowValue), "low-value"),
+                    new(nameof(highValue), "high-value"),
+                    new(nameof(pageSize), "page-size"),
+                    new(nameof(showInputField), "show-input-field"),
+                    new(nameof(direction), "direction"),
+                    new(nameof(inverted), "inverted"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] float lowValue;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;

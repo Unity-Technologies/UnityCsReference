@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +15,16 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(delay), "delay"),
+                    new (nameof(interval), "interval"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] long delay;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags delay_UxmlAttributeFlags;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -29,6 +30,20 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : Binding.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(dataSourcePathString), "data-source-path"),
+                    new (nameof(dataSource), "data-source"),
+                    new (nameof(dataSourceTypeString), "data-source-type", typeof(object)),
+                    new (nameof(bindingMode), "binding-mode"),
+                    new (nameof(sourceToUiConvertersString), "source-to-ui-converters"),
+                    new (nameof(uiToSourceConvertersString), "ui-to-source-converters"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, HideInInspector, UxmlAttribute("data-source-path")]
             [Tooltip(k_DataSourcePathTooltip)]

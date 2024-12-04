@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
@@ -18,6 +19,15 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(sortColumnDescriptions), "sort-column-descriptions"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeReference, UxmlObjectReference] List<SortColumnDescription.UxmlSerializedData> sortColumnDescriptions;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;

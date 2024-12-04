@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -13,6 +14,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<string>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<string>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new CategoryDropdownField();
         }
 

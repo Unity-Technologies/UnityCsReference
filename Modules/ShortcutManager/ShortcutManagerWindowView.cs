@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using UnityEditor.Experimental;
@@ -1627,6 +1628,13 @@ namespace UnityEditor.ShortcutManagement
         [Serializable]
         public new class UxmlSerializedData : SearchFieldBase<ShortcutTextField, List<KeyCombination>>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                SearchFieldBase<ShortcutTextField, List<KeyCombination>>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new ShortcutSearchField();
         }
 

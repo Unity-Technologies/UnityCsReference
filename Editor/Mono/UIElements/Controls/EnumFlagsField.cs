@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.UIElements
 {
@@ -25,6 +27,18 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Enum>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Enum>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(typeAsString), "type", typeof(Enum)),
+                    new (nameof(valueAsString), "value"),
+                    new (nameof(includeObsoleteValues), "include-obsolete-values"),
+                });
+            }
+
             #pragma warning disable 649
             [UxmlTypeReference(typeof(Enum))]
             [SerializeField, UxmlAttribute("type")] string typeAsString;

@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using System;
+using System.Diagnostics;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
@@ -90,6 +91,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<BuilderTranslate>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<BuilderTranslate>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new TranslateStyleField();
         }
 
@@ -173,7 +180,7 @@ namespace Unity.UI.Builder
 
             if (!isNewValue && (
                 stylePropertyValueCount < 2 ||
-                styleProperty.values[0].valueType != StyleValueType.Dimension || 
+                styleProperty.values[0].valueType != StyleValueType.Dimension ||
                 styleProperty.values[1].valueType != StyleValueType.Dimension))
             {
                 Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);

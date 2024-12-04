@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEngine.UIElements;
 using UnityEditor;
@@ -81,6 +82,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<BuilderRotate>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<BuilderRotate>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new RotateStyleField();
         }
 

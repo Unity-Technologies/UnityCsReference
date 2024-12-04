@@ -37,6 +37,10 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                BaseField<TValueType>.UxmlSerializedData.Register();
+            }
         }
 
         private VisualElement GetSpacer()

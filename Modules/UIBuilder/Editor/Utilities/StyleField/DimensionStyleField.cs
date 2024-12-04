@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using UnityEngine;
@@ -23,6 +24,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : StyleField<float>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                StyleField<float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new DimensionStyleField();
         }
 

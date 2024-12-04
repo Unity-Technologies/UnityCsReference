@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
@@ -34,6 +35,22 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(text), "text"),
+                    new(nameof(enableRichText), "enable-rich-text"),
+                    new(nameof(emojiFallbackSupport), "emoji-fallback-support"),
+                    new(nameof(parseEscapeSequences), "parse-escape-sequences"),
+                    new(nameof(isSelectable), "selectable", null, "selectable"),
+                    new(nameof(doubleClickSelectsWord), "double-click-selects-word", null,"selectWordByDoubleClick", "select-word-by-double-click"),
+                    new(nameof(tripleClickSelectsLine), "triple-click-selects-line", null, "selectLineByTripleClick", "select-line-by-triple-click"),
+                    new(nameof(displayTooltipWhenElided), "display-tooltip-when-elided"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string text;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;

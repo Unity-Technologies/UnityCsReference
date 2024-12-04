@@ -47,6 +47,30 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                BaseField<TValueType>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(maxLength), "max-length", null, "maxLength"),
+                    new (nameof(isPasswordField), "password"),
+                    new (nameof(maskChar), "mask-character", null, "maskCharacter"),
+                    new (nameof(placeholderText), "placeholder-text"),
+                    new (nameof(hidePlaceholderOnFocus), "hide-placeholder-on-focus"),
+                    new (nameof(isReadOnly), "readonly"),
+                    new (nameof(isDelayed), "is-delayed"),
+                    new (nameof(verticalScrollerVisibility), "vertical-scroller-visibility"),
+                    new (nameof(selectAllOnMouseUp), "select-all-on-mouse-up"),
+                    new (nameof(selectAllOnFocus), "select-all-on-focus"),
+                    new (nameof(doubleClickSelectsWord), "select-word-by-double-click"),
+                    new (nameof(tripleClickSelectsLine), "select-line-by-triple-click"),
+                    new (nameof(emojiFallbackSupport), "emoji-fallback-support"),
+                    new (nameof(hideMobileInput), "hide-mobile-input"),
+                    new (nameof(keyboardType), "keyboard-type"),
+                    new (nameof(autoCorrection), "auto-correction"),
+                });
+            }
+
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "maxLength" })]
             [SerializeField] int maxLength;

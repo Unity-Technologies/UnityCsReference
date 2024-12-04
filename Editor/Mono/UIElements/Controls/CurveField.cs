@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEditorInternal;
 using UnityEngine;
@@ -21,6 +22,12 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<AnimationCurve>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<AnimationCurve>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new CurveField();
         }
 

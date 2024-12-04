@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEngine.UIElements;
 
@@ -14,6 +15,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         [Serializable]
         public new class UxmlSerializedData : BaseTabView<PackageDetailsTabElement>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseTabView<PackageDetailsTabElement>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new PackageDetailsTabView();
         }
 
