@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -20,6 +21,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextValueField<float>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                TextValueField<float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new FloatField();
         }
 

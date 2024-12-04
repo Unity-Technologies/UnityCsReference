@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -56,6 +57,22 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(showFoldoutHeader), "show-foldout-header"),
+                    new (nameof(headerTitle), "header-title"),
+                    new (nameof(showAddRemoveFooter), "show-add-remove-footer"),
+                    new (nameof(allowAdd), "allow-add"),
+                    new (nameof(allowRemove), "allow-remove"),
+                    new (nameof(reorderMode), "reorder-mode"),
+                    new (nameof(showBoundCollectionSize), "show-bound-collection-size"),
+                    new (nameof(bindingSourceSelectionMode), "binding-source-selection-mode"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool showFoldoutHeader;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showFoldoutHeader_UxmlAttributeFlags;

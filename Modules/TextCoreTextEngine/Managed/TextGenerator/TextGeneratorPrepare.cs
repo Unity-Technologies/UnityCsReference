@@ -757,6 +757,7 @@ namespace UnityEngine.TextCore.Text
                             writeIndex += 1;
                             continue;
                         case 117: // \u0000 for UTF-16 Unicode
+                            if (!generationSettings.parseControlCharacters) break;
                             if (srcLength > readIndex + 5 && TextGeneratorUtilities.IsValidUTF16(m_TextBackingArray, readIndex + 2))
                             {
                                 m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 6, unicode = TextGeneratorUtilities.GetUTF16(m_TextBackingArray, readIndex + 2) };
@@ -767,6 +768,7 @@ namespace UnityEngine.TextCore.Text
                             }
                             break;
                         case 85: // \U00000000 for UTF-32 Unicode
+                            if (!generationSettings.parseControlCharacters) break;
                             if (srcLength > readIndex + 9 && TextGeneratorUtilities.IsValidUTF32(m_TextBackingArray, readIndex + 2))
                             {
                                 m_TextProcessingArray[writeIndex] = new TextProcessingElement { elementType = TextProcessingElementType.TextCharacterElement, stringIndex = readIndex, length = 10, unicode = TextGeneratorUtilities.GetUTF32(m_TextBackingArray, readIndex + 2) };

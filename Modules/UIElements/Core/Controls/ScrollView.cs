@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -120,6 +121,27 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(mode), "mode"),
+                    new (nameof(nestedInteractionKind), "nested-interaction-kind"),
+                    new (nameof(showHorizontal), "show-horizontal-scroller"),
+                    new (nameof(showVertical), "show-vertical-scroller"),
+                    new (nameof(horizontalScrollerVisibility), "horizontal-scroller-visibility"),
+                    new (nameof(verticalScrollerVisibility), "vertical-scroller-visibility"),
+                    new (nameof(horizontalPageSize), "horizontal-page-size"),
+                    new (nameof(verticalPageSize), "vertical-page-size"),
+                    new (nameof(mouseWheelScrollSize), "mouse-wheel-scroll-size"),
+                    new (nameof(touchScrollBehavior), "touch-scroll-type"),
+                    new (nameof(scrollDecelerationRate), "scroll-deceleration-rate"),
+                    new (nameof(elasticity), "elasticity"),
+                    new (nameof(elasticAnimationIntervalMs), "elastic-animation-interval-ms"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] ScrollViewMode mode;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;

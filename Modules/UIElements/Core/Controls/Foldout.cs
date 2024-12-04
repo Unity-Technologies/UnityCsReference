@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 
@@ -26,6 +27,17 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(text), "text"),
+                    new (nameof(toggleOnLabelClick), "toggle-on-label-click"),
+                    new (nameof(value), "value"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string text;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;

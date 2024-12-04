@@ -42,6 +42,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseField<TValueType>.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                BaseField<TValueType>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(fill), "fill"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool fill;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fill_UxmlAttributeFlags;

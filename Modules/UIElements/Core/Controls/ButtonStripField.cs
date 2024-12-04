@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -12,6 +13,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<int>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<int>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new ButtonStripField();
         }
 

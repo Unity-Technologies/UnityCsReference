@@ -11,6 +11,94 @@ using UnityEngine.Serialization;
 
 namespace UnityEngine.UIElements
 {
+    /// <summary>
+    /// Holds the description data of a UXML attribute.
+    /// </summary>
+    /// <remarks>
+    /// This is used by the code generator when a control is using <see cref="UxmlElementAttribute"/> and
+    /// <see cref="UxmlAttributeAttribute"/>.
+    /// </remarks>
+    public readonly struct UxmlAttributeNames
+    {
+        /// <summary>
+        /// The field name of the UXML attribute
+        /// </summary>
+        public readonly string fieldName;
+
+        /// <summary>
+        /// The uxml name of the UXML attribute.
+        /// </summary>
+        public readonly string uxmlName;
+
+        /// <summary>
+        /// The type reference of the UXML attribute.
+        /// </summary>
+        public readonly Type typeReference;
+
+        /// <summary>
+        /// The obsolete names of the UXML attribute.
+        /// </summary>
+        public readonly string[] obsoleteNames;
+
+        /// <summary>
+        /// Creates a new instance of <see cref="UxmlAttributeNames"/>.
+        /// </summary>
+        /// <param name="fieldName">The field name of the UXML attribute.</param>
+        /// <param name="uxmlName">The type reference of the UXML attribute.</param>
+        /// <param name="typeReference">The type reference of the UXML attribute.</param>
+        /// <param name="obsoleteNames">The obsolete names of the UXML attribute.</param>
+        public UxmlAttributeNames(string fieldName, string uxmlName, Type typeReference = null, params string[] obsoleteNames)
+        {
+            this.fieldName = fieldName;
+            this.uxmlName = uxmlName;
+            this.obsoleteNames = obsoleteNames ?? Array.Empty<string>();
+            this.typeReference = typeReference;
+        }
+    }
+
+    /// <summary>
+    /// Attribute allowing the UXML registry to more efficiently retrieve the UXML description data.
+    /// </summary>
+    /// <remarks>
+    /// This is used by the code generator when a control is using <see cref="UxmlElementAttribute"/> and
+    /// <see cref="UxmlAttributeAttribute"/>.
+    /// </remarks>
+    [AttributeUsage(AttributeTargets.Method)]
+    public class RegisterUxmlCacheAttribute : Attribute
+    {
+    }
+
+    /// <summary>
+    /// Contains pre-processed information about UXML attribute descriptions to avoid relying on reflection.
+    /// </summary>
+    /// <remarks>
+    /// This is used by the code generator when a control is using <see cref="UxmlElementAttribute"/> and
+    /// <see cref="UxmlAttributeAttribute"/>.
+    /// </remarks>
+    public static class UxmlDescriptionCache
+    {
+        private static readonly Dictionary<Type, UxmlAttributeNames[]> s_NamesPerType = new ();
+
+        /// <summary>
+        /// Registers pre-processed UXML attribute descriptions.
+        /// </summary>
+        /// <param name="type">The type to register.</param>
+        /// <param name="attributeNames">The pre-processed UXML attribute information.</param>
+        /// <remarks>
+        /// This is used by the code generator when a control is using <see cref="UxmlElementAttribute"/> and
+        /// <see cref="UxmlAttributeAttribute"/>.
+        /// </remarks>
+        public static void RegisterType(Type type, UxmlAttributeNames[] attributeNames)
+        {
+            s_NamesPerType[type] = attributeNames;
+        }
+
+        internal static bool TryGetCachedDescription(Type type, out UxmlAttributeNames[] attributes)
+        {
+            return s_NamesPerType.TryGetValue(type, out attributes);
+        }
+    }
+
     internal readonly struct UxmlDescription
     {
         public readonly string uxmlName;
@@ -33,10 +121,25 @@ namespace UnityEngine.UIElements
             fieldType = serializedField.GetCustomAttribute<UxmlTypeReferenceAttribute>() != null ? typeof(Type) : serializedField.FieldType;
             this.obsoleteNames = obsoleteNames;
         }
+
+        public UxmlDescription(FieldInfo serializedField, UxmlAttributeNames names, string overriddenCSharpName)
+        {
+            this.uxmlName = names.uxmlName;
+            this.cSharpName = names.fieldName;
+            this.overriddenCSharpName = overriddenCSharpName;
+            this.serializedField = serializedField;
+            serializedFieldAttributeFlags = serializedField.DeclaringType.GetField(serializedField.Name + UxmlSerializedData.AttributeFlagSuffix, BindingFlags.Instance | BindingFlags.NonPublic);
+
+            // Type are not serializable. They are serialized as string with a UxmlTypeReferenceAttribute.
+            fieldType = null != names.typeReference ? typeof(Type) : serializedField.FieldType;
+            this.obsoleteNames = names.obsoleteNames;
+        }
     }
 
     internal readonly struct UxmlTypeDescription
     {
+        private static readonly Type s_UxmlSerializedDataType = typeof(UxmlSerializedData);
+
         public readonly Type type;
         public readonly List<UxmlDescription> attributeDescriptions;
         public readonly Dictionary<string, int> uxmlNameToIndex;
@@ -56,52 +159,106 @@ namespace UnityEngine.UIElements
 
         private void GenerateAttributeDescription(Type t)
         {
-            if (t == typeof(UxmlSerializedData))
-                return;
-
-            GenerateAttributeDescription(t.BaseType);
-            var serializedFields = t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-            // Some type don't define Uxml attributes and only inherit them
-            if (serializedFields.Length == 0)
-                return;
-
-            foreach (var fieldInfo in serializedFields)
+            // Retrieve the base classes' attributes instead of recomputing them.
+            if (t.BaseType != null && t.BaseType != s_UxmlSerializedDataType)
             {
-                if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
-                {
-                    continue;
-                }
+                var parentDesc = UxmlDescriptionRegistry.GetDescription(t.BaseType);
+                attributeDescriptions.AddRange(parentDesc.attributeDescriptions);
+                foreach (var kvp in parentDesc.uxmlNameToIndex)
+                    uxmlNameToIndex[kvp.Key] = kvp.Value;
+                foreach (var kvp in parentDesc.cSharpNameToIndex)
+                    cSharpNameToIndex[kvp.Key] = kvp.Value;
+            }
 
-                var cSharpName = fieldInfo.Name;
-                var uxmlNames = GetUxmlNames(fieldInfo);
-                if (!uxmlNames.valid)
+            if (UxmlDescriptionCache.TryGetCachedDescription(t, out var attributes))
+            {
+                foreach (var attribute in attributes)
                 {
-                    continue;
-                }
+                    var fieldInfo = t.GetField(attribute.fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+                    if (null == fieldInfo)
+                    {
+                        Debug.Log($"{t.DeclaringType.Name}: {attribute.fieldName} not found.");
+                    }
 
-                var attributeName = uxmlNames.uxmlName;
-                var attributeIsOverridden = uxmlNameToIndex.TryGetValue(attributeName, out var index);
-                string overriddenCSharpName = null;
-                if (attributeIsOverridden)
+                    var nameValidationError = UxmlUtility.ValidateUxmlName(attribute.uxmlName);
+                    if (nameValidationError != null)
+                    {
+                        Debug.LogError($"Invalid UXML name '{attribute.uxmlName}' for attribute '{fieldInfo.Name}' in type '{fieldInfo.DeclaringType.DeclaringType}'. {nameValidationError}");
+                        continue;
+                    }
+
+                    var attributeIsOverridden = uxmlNameToIndex.TryGetValue(attribute.uxmlName, out var index);
+                    string overriddenCSharpName = null;
+                    if (attributeIsOverridden)
+                    {
+                        overriddenCSharpName = attributeDescriptions[index].overriddenCSharpName ??
+                                               attributeDescriptions[index].cSharpName;
+                    }
+
+                    var description = new UxmlDescription(fieldInfo, attribute, overriddenCSharpName);
+
+                    if (attributeIsOverridden)
+                    {
+                        // Override base class attribute
+                        attributeDescriptions[index] = description;
+                    }
+                    else
+                    {
+                        attributeDescriptions.Add(description);
+                        index = attributeDescriptions.Count - 1;
+                        uxmlNameToIndex[attribute.uxmlName] = index;
+                    }
+
+                    cSharpNameToIndex[fieldInfo.Name] = index;
+                }
+            }
+            else
+            {
+                var serializedFields = t.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+                // Some type don't define Uxml attributes and only inherit them
+                if (serializedFields.Length == 0)
+                    return;
+
+                foreach (var fieldInfo in serializedFields)
                 {
-                    overriddenCSharpName = attributeDescriptions[index].overriddenCSharpName ?? attributeDescriptions[index].cSharpName;
-                }
+                    if (fieldInfo.GetCustomAttribute<UxmlIgnoreAttribute>() != null)
+                    {
+                        continue;
+                    }
 
-                var description = new UxmlDescription(uxmlNames.uxmlName, cSharpName, overriddenCSharpName, fieldInfo, uxmlNames.obsoleteNames);
+                    var cSharpName = fieldInfo.Name;
+                    var uxmlNames = GetUxmlNames(fieldInfo);
+                    if (!uxmlNames.valid)
+                    {
+                        continue;
+                    }
 
-                if (attributeIsOverridden)
-                {
-                    // Override base class attribute
-                    attributeDescriptions[index] = description;
-                }
-                else
-                {
-                    attributeDescriptions.Add(description);
-                    index = attributeDescriptions.Count - 1;
-                    uxmlNameToIndex[attributeName] = index;
-                }
+                    var attributeName = uxmlNames.uxmlName;
+                    var attributeIsOverridden = uxmlNameToIndex.TryGetValue(attributeName, out var index);
+                    string overriddenCSharpName = null;
+                    if (attributeIsOverridden)
+                    {
+                        overriddenCSharpName = attributeDescriptions[index].overriddenCSharpName ??
+                                               attributeDescriptions[index].cSharpName;
+                    }
 
-                cSharpNameToIndex[fieldInfo.Name] = index;
+                    var description = new UxmlDescription(uxmlNames.uxmlName, cSharpName, overriddenCSharpName,
+                        fieldInfo, uxmlNames.obsoleteNames);
+
+                    if (attributeIsOverridden)
+                    {
+                        // Override base class attribute
+                        attributeDescriptions[index] = description;
+                    }
+                    else
+                    {
+                        attributeDescriptions.Add(description);
+                        index = attributeDescriptions.Count - 1;
+                        uxmlNameToIndex[attributeName] = index;
+                    }
+
+                    cSharpNameToIndex[fieldInfo.Name] = index;
+                }
             }
         }
 

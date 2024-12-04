@@ -21,6 +21,13 @@ namespace UnityEngine.UIElements
     [Serializable]
     public abstract class UxmlSerializedData
     {
+        /// <summary>
+        /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
+        /// </summary>
+        public static void Register()
+        {
+        }
+
         internal const string AttributeFlagSuffix = "_UxmlAttributeFlags";
         const UxmlAttributeFlags k_DefaultFlags = UxmlAttributeFlags.OverriddenInUxml;
 

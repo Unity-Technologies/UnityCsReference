@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Accessibility;
@@ -24,6 +25,20 @@ namespace UnityEditor.Accessibility
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(isRoot), "is-root"),
+                    new (nameof(id), "id"),
+                    new (nameof(label), "label"),
+                    new (nameof(role), "role"),
+                    new (nameof(isActive), "is-active"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool isRoot;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isRoot_UxmlAttributeFlags;

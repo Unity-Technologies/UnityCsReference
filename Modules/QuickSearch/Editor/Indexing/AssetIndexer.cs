@@ -318,7 +318,9 @@ namespace UnityEditor.Search
                         IndexPropertyComponents(documentIndex, "t", v.GetType().Name);
 
                         if (settings.options.properties)
+                        {
                             IndexObject(documentIndex, v, dependencies: settings.options.dependencies);
+                        }
                     }
                 }
 
@@ -328,7 +330,12 @@ namespace UnityEditor.Search
             }
 
             if (hasCustomIndexers)
-                IndexCustomProperties(path, documentIndex, mainAsset);
+            {
+                if (mainAsset is GameObject go)
+                    IndexCustomGameObjectProperties(path, documentIndex, go);
+                else
+                    IndexCustomProperties(path, documentIndex, mainAsset);
+            }
 
             if (!wasLoaded)
             {

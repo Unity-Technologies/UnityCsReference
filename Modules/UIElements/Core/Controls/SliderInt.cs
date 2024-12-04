@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +15,21 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseSlider<int>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseSlider<int>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(lowValue), "low-value"),
+                    new(nameof(highValue), "high-value"),
+                    new(nameof(pageSize), "page-size"),
+                    new(nameof(showInputField), "show-input-field"),
+                    new(nameof(direction), "direction"),
+                    new(nameof(inverted), "inverted"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] int lowValue;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;

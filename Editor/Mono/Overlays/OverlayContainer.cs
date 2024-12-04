@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -22,6 +23,17 @@ namespace UnityEditor.Overlays
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(horizontal), "horizontal"),
+                    new(nameof(supportedOverlayLayout), "supported-overlay-layout"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool horizontal;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontal_UxmlAttributeFlags;

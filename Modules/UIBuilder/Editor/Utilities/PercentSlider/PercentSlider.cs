@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -12,7 +13,7 @@ namespace Unity.UI.Builder
     {
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/PercentSlider/PercentSlider.uss";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/PercentSlider/PercentSlider.uxml";
-        
+
         static readonly string k_DraggerFieldUssClassName = "unity-style-field__dragger-field";
 
         static readonly string s_UssClassName = "unity-percent-slider";
@@ -22,6 +23,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<float>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new PercentSlider();
         }
 

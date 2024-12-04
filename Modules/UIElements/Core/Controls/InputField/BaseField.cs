@@ -56,6 +56,15 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(label), "label"),
+                    new (nameof(value), "value"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string label;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;

@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.UIElements
 {
@@ -17,6 +19,16 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : MaskField.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(layerMask), "value"),
+                    new(nameof(layerChoices), "choices"),
+                });
+            }
+
             #pragma warning disable 649
             [UxmlAttribute("value")]
             [SerializeField] LayerMask layerMask;

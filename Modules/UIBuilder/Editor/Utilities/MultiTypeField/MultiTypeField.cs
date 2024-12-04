@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -18,6 +19,11 @@ namespace Unity.UI.Builder
         [Serializable]
         public new abstract class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Object>.UxmlSerializedData.Register();
+            }
         }
 
         static readonly string k_UssPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uss";

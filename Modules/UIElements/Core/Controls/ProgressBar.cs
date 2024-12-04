@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -47,6 +48,18 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(lowValue), "low-value"),
+                    new(nameof(highValue), "high-value"),
+                    new(nameof(value), "value"),
+                    new(nameof(title), "title"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] float lowValue;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;

@@ -4,13 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Unity.Properties;
 using UnityEngine.Internal;
 using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements.UIR;
-using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -198,7 +198,32 @@ namespace UnityEngine.UIElements
         [Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
-            #pragma warning disable 649
+            /// <summary>
+            /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>. You should not need to call it.
+            /// </summary>
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                    {
+                        new(nameof(name), "name"),
+                        new(nameof(enabledSelf), "enabled"),
+                        new(nameof(viewDataKey), "view-data-key"),
+                        new(nameof(pickingMode), "picking-mode", null, "pickingMode"),
+                        new(nameof(tooltip), "tooltip"),
+                        new(nameof(usageHints), "usage-hints"),
+                        new(nameof(tabIndex), "tabindex"),
+                        new(nameof(focusable), "focusable"),
+                        new(nameof(languageDirection), "language-direction"),
+                        new(nameof(dataSourceUnityObject), "data-source"),
+                        new(nameof(dataSourcePathString), "data-source-path"),
+                        new(nameof(dataSourceTypeString), "data-source-type", typeof(object)),
+                        new(nameof(bindings), "Bindings"),
+                    }
+                );
+            }
+
+#pragma warning disable 649
             [SerializeField, HideInInspector] string name;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
             [UxmlAttribute("enabled")]

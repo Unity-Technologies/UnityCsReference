@@ -87,6 +87,14 @@ namespace UnityEditor.UIElements
         [Serializable, ExcludeFromDocs]
         public abstract new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(placeholderText), "placeholder-text")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] private string placeholderText;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;

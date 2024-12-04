@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using System;
+using System.Diagnostics;
 
 namespace UnityEditor.Inspector
 {
@@ -14,6 +15,13 @@ namespace UnityEditor.Inspector
         [Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new ClippingPlanes();
         }
 
@@ -76,6 +84,7 @@ namespace UnityEditor.Inspector
                     field.RemoveFromClassList(k_CompositeFieldStyle);
                     field.RemoveFromClassList(BaseField<bool>.alignedFieldUssClassName);
                     field.style.marginLeft = field.style.marginRight = 0;
+                    field.isDelayed = true;
 
                     var label = field.Q<Label>();
                     label.style.flexBasis = label.style.minWidth = new StyleLength(k_NearFarLabelsWidth);

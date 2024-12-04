@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -58,7 +59,7 @@ namespace UnityEngine.UIElements
     /// To enable horizontal scrolling when the displayed element is wider than the visible area, set the
     ///     <c>horizontal-scrolling-enabled</c> property in UXML or the <see cref="ListView.horizontalScrollingEnabled"/>
     ///     to <c>true</c>.
-    ///     
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-ListView|ListView]].
     /// </remarks>
     /// <example>
@@ -76,6 +77,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseListView.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new ("itemTemplate", "item-template")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] VisualTreeAsset itemTemplate;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;

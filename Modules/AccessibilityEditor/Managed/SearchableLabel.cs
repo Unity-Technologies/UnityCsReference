@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -14,6 +15,16 @@ namespace UnityEditor.Accessibility
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(text), "text")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] string text;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;

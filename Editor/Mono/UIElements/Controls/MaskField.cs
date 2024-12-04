@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using Unity.Properties;
 using UnityEngine;
@@ -505,6 +506,16 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseMaskField<int>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseMaskField<int>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(choices), "choices"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] List<string> choices;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;

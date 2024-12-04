@@ -365,7 +365,6 @@ namespace UnityEditor.UIElements
             var deferredFactories = new List<SerializedDataSchemaInfo>();
 
             // Convert the UxmlSerializedData into schemas info.
-            UxmlSerializedDataRegistry.Register();
             foreach (var serializedDataType in UxmlSerializedDataRegistry.SerializedDataTypes)
             {
                 var schemaInfo = new SerializedDataSchemaInfo(serializedDataType.Key, serializedDataType.Value.DeclaringType);

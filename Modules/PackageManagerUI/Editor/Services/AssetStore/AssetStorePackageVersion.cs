@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
@@ -86,7 +87,15 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ImportedPackage = importedPackage;
 
             var publishDateString = localInfo?.publishedDate ?? productInfo?.publishedDate ?? string.Empty;
-            m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString).Ticks : 0;
+            try
+            {
+                m_PublishedDateTicks = !string.IsNullOrEmpty(publishDateString) ? DateTime.Parse(publishDateString, CultureInfo.CreateSpecificCulture("en-US")).Ticks : 0;
+            }
+            catch (Exception)
+            {
+                m_PublishedDateTicks = 0;
+            }
+
             m_DisplayName = !string.IsNullOrEmpty(productInfo?.displayName) ? productInfo.displayName : importedPackage?.displayName ?? string.Empty;
 
             m_SupportedUnityVersions = new List<SemVersion>();

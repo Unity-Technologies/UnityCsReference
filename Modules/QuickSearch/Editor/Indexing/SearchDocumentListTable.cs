@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Unity.Collections;
 
 namespace UnityEditor.Search
 {
@@ -53,7 +54,7 @@ namespace UnityEditor.Search
         }
     }
 
-    class SearchDocumentListTable
+    class SearchDocumentListTable : IDisposable
     {
         public const int tableFullSymbol = -1;
         public const int emptyTableSymbol = 0;
@@ -84,12 +85,12 @@ namespace UnityEditor.Search
                 this.hash = hash;
             }
 
-            public static ContentLengthAndHash Read(int[] buffer, int index)
+            public static ContentLengthAndHash Read(ReadOnlySpan<int> buffer, int index)
             {
                 return new ContentLengthAndHash(buffer[index], buffer[index + 1], buffer[index + 2]);
             }
 
-            public void Write(int[] buffer, int index)
+            public void Write(Span<int> buffer, int index)
             {
                 buffer[index] = length;
                 buffer[index + 1] = allocated;
@@ -98,7 +99,7 @@ namespace UnityEditor.Search
         }
 
         SearchDocumentListTableHeader m_Header;
-        int[] m_Buffer;
+        SearchNativeReadOnlyArray<int> m_Buffer;
 
         public bool autoGrow { get; }
 
@@ -112,7 +113,7 @@ namespace UnityEditor.Search
 
         public int usedContentBlocks => m_Header.usedBlocks;
 
-        public int totalAllocatedBytes => (m_Buffer?.Length ?? 0) * sizeof(int);
+        public int totalAllocatedBytes => m_Header.totalAllocatedBytes;
 
         public SearchDocumentListTable(int contentCount, int averageContentLength = defaultAverageContentSize, bool autoGrow = true, bool doCreate = true)
         {
@@ -127,6 +128,24 @@ namespace UnityEditor.Search
             : this(defaultContentCount, defaultAverageContentSize, autoGrow, doCreate)
         { }
 
+        ~SearchDocumentListTable()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        void Dispose(bool disposing)
+        {
+            if (disposing)
+                m_Header = new SearchDocumentListTableHeader(defaultVersion, 0, 0, 0, 0, 0);
+            m_Buffer.Dispose();
+        }
+
         public void Create(int contentCount, int averageContentLength)
         {
             m_Header = new SearchDocumentListTableHeader(defaultVersion, 0, contentCount * hashFactor, 0, 0, 0);
@@ -139,8 +158,8 @@ namespace UnityEditor.Search
             m_Header.usedBlocks = ContentLengthAndHash.size; // Add the empty array
 
             var size = GetNextBufferSize(GetSymbolsBlockSize(m_Header.symbolSlots) + m_Header.allocatedBlocks);
-            m_Buffer = new int[size];
-            m_Header.totalAllocatedBytes = size * sizeof(int);
+            m_Buffer = new SearchNativeReadOnlyArray<int>(size, Allocator.Persistent);
+            m_Header.totalAllocatedBytes = size * SearchDocumentListTableHeader.blockSize;
         }
 
         public int ToSymbol(IReadOnlyCollection<int> sortedDocumentList)
@@ -160,7 +179,7 @@ namespace UnityEditor.Search
                 while (symbol != 0)
                 {
                     var fetchedContent = GetContent(symbol);
-                    if (CompareContent(sortedDocumentList, fetchedContent.Span))
+                    if (CompareContent(sortedDocumentList, fetchedContent))
                         return symbol;
                     symbolIndex = (symbolIndex + 1) % m_Header.symbolSlots;
                     symbol = GetSymbol(symbolIndex);
@@ -218,7 +237,7 @@ namespace UnityEditor.Search
             while (symbol != 0)
             {
                 var fetchedContent = GetContent(symbol);
-                if (CompareContent(sortedDocumentList, fetchedContent.Span))
+                if (CompareContent(sortedDocumentList, fetchedContent))
                     return symbol;
                 symbolIndex = (symbolIndex + 1) % m_Header.symbolSlots;
                 symbol = GetSymbol(symbolIndex);
@@ -227,7 +246,7 @@ namespace UnityEditor.Search
             return tableFullSymbol;
         }
 
-        public ReadOnlyMemory<int> GetContent(int symbol)
+        public ReadOnlySpan<int> GetContent(int symbol)
         {
             if (symbol == emptyTableSymbol)
                 return Array.Empty<int>();
@@ -237,19 +256,19 @@ namespace UnityEditor.Search
             if (symbol >= m_Header.usedBlocks)
                 return null;
             var byteOffset = GetContentOffset() + symbol;
-            if (byteOffset > m_Buffer.Length - ContentLengthAndHash.size)
+            if (byteOffset > m_Buffer.Count - ContentLengthAndHash.size)
                 return null;
 
-            var lengthAndHash = ReadContentLengthAndHash(m_Buffer, symbol);
+            var lengthAndHash = ReadContentLengthAndHash(m_Buffer.AsSpan(), symbol);
 
             if (lengthAndHash.length == 0)
                 return Array.Empty<int>();
             if (lengthAndHash.length < 0)
                 return null;
-            if (byteOffset + ContentLengthAndHash.size + lengthAndHash.length > m_Buffer.Length)
+            if (byteOffset + ContentLengthAndHash.size + lengthAndHash.length > m_Buffer.Count)
                 return null;
 
-            return new ReadOnlyMemory<int>(m_Buffer, byteOffset + ContentLengthAndHash.size, lengthAndHash.length);
+            return m_Buffer.AsReadOnlySpan().Slice(byteOffset + ContentLengthAndHash.size, lengthAndHash.length);
         }
 
         // This method grows the size of the table, including the number of content that can be stored.
@@ -281,22 +300,26 @@ namespace UnityEditor.Search
             // Resize buffer
             var oldBuffer = m_Buffer;
             var newBuffer = m_Buffer;
-            if (newBufferSize > m_Buffer.Length)
-                newBuffer = new int[newBufferSize];
+            var doDispose = false;
+            if (newBufferSize > m_Buffer.Count)
+            {
+                newBuffer = new SearchNativeReadOnlyArray<int>(newBufferSize, Allocator.Persistent);
+                doDispose = true;
+            }
 
             // Move content
-            Buffer.BlockCopy(oldBuffer, oldContentOffset * sizeof(int), newBuffer, newContentOffset * sizeof(int), oldAllocatedBlocks * sizeof(int));
+            NativeArray<int>.Copy(oldBuffer.BackingArray, oldContentOffset, newBuffer.BackingArray, newContentOffset, oldAllocatedBlocks);
 
             // Rebuild symbol table
             var bufferIndex = GetSymbolsOffset();
-            var span = new Span<int>(newBuffer, bufferIndex, newSymbolsBlockSize);
+            var span = newBuffer.AsSpan().Slice(bufferIndex, newSymbolsBlockSize);
             span.Fill(0);
 
             // Start byteOffset at first content by skipping symbol 0
             var byteOffset = ContentLengthAndHash.size;
             for (var i = 0; i < m_Header.count; ++i)
             {
-                var currentLengthAndHash = ReadContentLengthAndHash(newBuffer, byteOffset);
+                var currentLengthAndHash = ReadContentLengthAndHash(newBuffer.AsSpan(), byteOffset);
                 if (currentLengthAndHash.length == 0)
                 {
                     byteOffset += ContentLengthAndHash.size;
@@ -317,7 +340,10 @@ namespace UnityEditor.Search
                 byteOffset += ContentLengthAndHash.size + currentLengthAndHash.length;
             }
 
+            if (doDispose)
+                m_Buffer.Dispose();
             m_Buffer = newBuffer;
+            m_Header.totalAllocatedBytes = m_Buffer.Count * SearchDocumentListTableHeader.blockSize;
         }
 
         public void ToBinary(BinaryWriter bw)
@@ -326,7 +352,6 @@ namespace UnityEditor.Search
             var realAllocatedBytes = realAllocatedBlocks * SearchDocumentListTableHeader.blockSize;
             var newHeader = new SearchDocumentListTableHeader(version, count, symbolSlots, allocatedContentBlocks, usedContentBlocks, realAllocatedBytes);
             newHeader.ToBinary(bw);
-            if (m_Buffer != null)
             {
                 for (var i = 0; i < realAllocatedBlocks; ++i)
                     bw.Write(m_Buffer[i]);
@@ -340,8 +365,8 @@ namespace UnityEditor.Search
             if (docTable.m_Header.totalAllocatedBytes > 0)
             {
                 var size = docTable.m_Header.totalAllocatedBytes / SearchDocumentListTableHeader.blockSize;
-                docTable.m_Buffer = new int[size];
-                for (var i = 0; i < docTable.m_Buffer.Length; ++i)
+                docTable.m_Buffer = new SearchNativeReadOnlyArray<int>(size, Allocator.Persistent);
+                for (var i = 0; i < docTable.m_Buffer.Count; ++i)
                     docTable.m_Buffer[i] = br.ReadInt32();
             }
             return docTable;
@@ -353,14 +378,14 @@ namespace UnityEditor.Search
             var index = GetContentOffset() + ContentLengthAndHash.size; // Skip empty array.
             while (index < totalUsedSize)
             {
-                var currentLengthAndHash = ContentLengthAndHash.Read(m_Buffer, index);
+                var currentLengthAndHash = ContentLengthAndHash.Read(m_Buffer.AsSpan(), index);
                 if (currentLengthAndHash.length == 0)
                 {
                     index += currentLengthAndHash.totalContentSize;
                     continue;
                 }
 
-                var docs = new Span<int>(m_Buffer, index + ContentLengthAndHash.size, currentLengthAndHash.length);
+                var docs = m_Buffer.AsSpan().Slice(index + ContentLengthAndHash.size, currentLengthAndHash.length);
                 for (var i = 0; i < docs.Length; ++i)
                 {
                     if (updatedDocIndexes.TryGetValue(docs[i], out var newIndex))
@@ -371,7 +396,7 @@ namespace UnityEditor.Search
                     QuickSort(docs, 0, docs.Length - 1);
 
                 currentLengthAndHash = Hash(docs, currentLengthAndHash.allocated);
-                currentLengthAndHash.Write(m_Buffer, index);
+                currentLengthAndHash.Write(m_Buffer.AsSpan(), index);
 
                 index += currentLengthAndHash.totalContentSize;
             }
@@ -383,7 +408,7 @@ namespace UnityEditor.Search
             var index = GetContentOffset() + ContentLengthAndHash.size; // Skip empty array.
             while (index < totalUsedSize)
             {
-                var currentLengthAndHash = ContentLengthAndHash.Read(m_Buffer, index);
+                var currentLengthAndHash = ContentLengthAndHash.Read(m_Buffer.AsSpan(), index);
                 if (currentLengthAndHash.length == 0)
                 {
                     index += currentLengthAndHash.totalContentSize;
@@ -393,7 +418,7 @@ namespace UnityEditor.Search
                 var realAllocatedLength = currentLengthAndHash.allocated;
                 var originalLength = currentLengthAndHash.length;
                 var newLength = originalLength;
-                var docs = new Span<int>(m_Buffer, index + ContentLengthAndHash.size, currentLengthAndHash.length);
+                var docs = m_Buffer.AsSpan().Slice(index + ContentLengthAndHash.size, currentLengthAndHash.length);
                 for (var i = 0; i < docs.Length; ++i)
                 {
                     if (removedDocuments.Contains(docs[i]))
@@ -412,7 +437,7 @@ namespace UnityEditor.Search
                 Compress(docs);
                 docs = docs.Slice(0, newLength);
                 currentLengthAndHash = Hash(docs, realAllocatedLength);
-                currentLengthAndHash.Write(m_Buffer, index);
+                currentLengthAndHash.Write(m_Buffer.AsSpan(), index);
 
                 index += currentLengthAndHash.totalContentSize;
             }
@@ -433,12 +458,14 @@ namespace UnityEditor.Search
 
             m_Header.allocatedBlocks = newAllocatedBlockSize;
             var newBufferSize = GetNextBufferSize(GetSymbolsBlockSize(m_Header.symbolSlots) + newAllocatedBlockSize);
-            if (newBufferSize <= m_Buffer.Length)
+            if (newBufferSize <= m_Buffer.Count)
                 return;
 
-            var newBuffer = new int[newBufferSize];
-            Buffer.BlockCopy(m_Buffer, 0, newBuffer, 0, m_Buffer.Length * sizeof(int));
+            var newBuffer = new SearchNativeReadOnlyArray<int>(newBufferSize, Allocator.Persistent);
+            NativeArray<int>.Copy(m_Buffer.BackingArray, newBuffer.BackingArray, m_Buffer.Count);
+            m_Buffer.Dispose();
             m_Buffer = newBuffer;
+            m_Header.totalAllocatedBytes = m_Buffer.Count * SearchDocumentListTableHeader.blockSize;
         }
 
         int GetSymbol(int symbolIndex)
@@ -458,7 +485,7 @@ namespace UnityEditor.Search
             WriteSymbol(symbolIndex, symbol);
             var bufferIndex = GetContentOffset() + symbol;
 
-            WriteContentLengthAndHash(m_Buffer, symbol, lengthAndHash);
+            WriteContentLengthAndHash(m_Buffer.AsSpan(), symbol, lengthAndHash);
             bufferIndex += ContentLengthAndHash.size;
 
             foreach (var doc in documentList)
@@ -492,13 +519,13 @@ namespace UnityEditor.Search
             return GetSymbolsOffset() + m_Header.symbolSlots;
         }
 
-        ContentLengthAndHash ReadContentLengthAndHash(int[] buffer, int symbol)
+        ContentLengthAndHash ReadContentLengthAndHash(Span<int> buffer, int symbol)
         {
             var index = GetContentOffset() + symbol;
             return ContentLengthAndHash.Read(buffer, index);
         }
 
-        void WriteContentLengthAndHash(int[] buffer, int symbol, ContentLengthAndHash lengthAndHash)
+        void WriteContentLengthAndHash(Span<int> buffer, int symbol, ContentLengthAndHash lengthAndHash)
         {
             var index = GetContentOffset() + symbol;
             lengthAndHash.Write(buffer, index);

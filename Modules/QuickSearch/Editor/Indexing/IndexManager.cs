@@ -1035,7 +1035,7 @@ namespace UnityEditor.Search
         {
             if (m_IndexSettingsExists[index] && m_IndexSettingsAssets[index])
             {
-                element.Q<Label>("IndexSize").text = "Size: " + EditorUtility.FormatBytes(m_IndexSettingsAssets[index].bytes?.Length ?? 0);
+                element.Q<Label>("IndexSize").text = "Size: " + EditorUtility.FormatBytes(m_IndexSettingsAssets[index].indexSize);
                 element.Q<Label>("IndexNumber").text = m_IndexSettingsAssets[index].index.indexCount.ToString() + " elements";
             }
         }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -44,6 +45,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseTreeView.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(itemTemplate), "item-template")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] VisualTreeAsset itemTemplate;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags itemTemplate_UxmlAttributeFlags;

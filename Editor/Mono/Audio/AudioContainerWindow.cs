@@ -965,6 +965,11 @@ sealed class AudioContainerWindow : EditorWindow
         // Force a list rebuild when the list has changed or it will not always render correctly
         m_ClipsListView.Rebuild();
 
+        // This function is the first entry-point in `AudioContainerWindow` after an undo-event that alters the
+        // audio clip list has been triggered. And, whenever the list is altered, we need to make sure the state is stopped.
+        State.Stop();
+        ClearClipFieldProgressBars();
+
         UpdateTransportButtonStates();
         SetTitle();
     }

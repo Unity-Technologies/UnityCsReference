@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.UIElements;
@@ -15,6 +16,17 @@ namespace UnityEditor.Experimental.GraphView
         [ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(highlighted), "highlighted"),
+                    new(nameof(text), "text"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool highlighted;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highlighted_UxmlAttributeFlags;

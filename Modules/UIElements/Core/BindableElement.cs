@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -16,6 +17,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(bindingPath), "binding-path")
+                });
+            }
+
             #pragma warning disable 649
             [Tooltip(k_BindingPathTooltip)]
             [SerializeField, BindingPathDrawer] string bindingPath;

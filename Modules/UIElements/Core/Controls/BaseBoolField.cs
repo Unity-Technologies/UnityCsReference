@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
@@ -20,6 +21,16 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseField<bool>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<bool>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(toggleOnLabelClick), "toggle-on-label-click")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool toggleOnLabelClick;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags toggleOnLabelClick_UxmlAttributeFlags;

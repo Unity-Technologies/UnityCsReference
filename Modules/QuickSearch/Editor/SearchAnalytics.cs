@@ -492,7 +492,7 @@ namespace UnityEditor.Search
             report.indexCount = allIndexes.Length;
             if (allIndexes.Length > 0)
             {
-                var maxSize = allIndexes.Max(index => index.bytes?.Length ?? 0);
+                var maxSize = allIndexes.Max(index => index.indexSize);
                 report.maxIndexSize = maxSize / 1048576f;
             }
             else

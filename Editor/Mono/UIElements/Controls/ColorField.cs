@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -22,6 +23,18 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Color>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Color>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(showEyeDropper), "show-eye-dropper"),
+                    new (nameof(showAlpha), "show-alpha"),
+                    new (nameof(hdr), "hdr"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool showEyeDropper;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showEyeDropper_UxmlAttributeFlags;

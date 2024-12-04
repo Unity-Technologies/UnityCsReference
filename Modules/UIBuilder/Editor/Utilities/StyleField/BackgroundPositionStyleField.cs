@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -32,6 +33,16 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<BackgroundPosition>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<BackgroundPosition>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(mode), "mode")
+                });
+            }
+
             public override object CreateInstance() => new BackgroundPositionStyleField();
 
 #pragma warning disable 649
