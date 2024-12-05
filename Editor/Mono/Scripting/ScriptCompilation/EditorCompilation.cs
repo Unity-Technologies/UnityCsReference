@@ -26,6 +26,7 @@ using CompilerMessageType = UnityEditor.Scripting.Compilers.CompilerMessageType;
 using Directory = System.IO.Directory;
 using File = System.IO.File;
 using UnityEditor.Build;
+using UnityEngine.Pool;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -1033,7 +1034,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var isCompiling = false;
 
-            var removeAssemblyBuilders = new HashSet<AssemblyBuilder>();
+            using var _ = HashSetPool<AssemblyBuilder>.Get(out var removeAssemblyBuilders);
 
             // Check status of compile tasks
             foreach (var assemblyBuilder in assemblyBuilders)
@@ -1056,7 +1057,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Remove all compile tasks that finished compiling.
             if (removeAssemblyBuilders.Count > 0)
             {
-                assemblyBuilders.RemoveAll(t => removeAssemblyBuilders.Contains(t));
+                foreach (var assemblyBuilder in removeAssemblyBuilders)
+                    assemblyBuilders.Remove(assemblyBuilder);
             }
 
             return isCompiling;

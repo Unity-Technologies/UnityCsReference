@@ -85,7 +85,7 @@ namespace UnityEngine.TextCore.Text
         public void GenerateText(TextGenerationSettings settings, TextInfo textInfo)
         {
             bool canWriteOnAsset = !IsExecutingJob;
-            if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
+            if (settings.fontAsset == null)
             {
                 Debug.LogWarning("Can't Generate Mesh, No Font Asset has been assigned.");
                 return;
@@ -291,7 +291,7 @@ namespace UnityEngine.TextCore.Text
         internal void GenerateTextMesh(TextGenerationSettings generationSettings, TextInfo textInfo)
         {
             // Early exit if no font asset was assigned. This should not be needed since LiberationSans SDF will be assigned by default.
-            if (generationSettings.fontAsset == null || generationSettings.fontAsset.characterLookupTable == null)
+            if (generationSettings.fontAsset == null)
             {
                 Debug.LogWarning("Can't Generate Mesh! No Font Asset has been assigned.");
                 return;

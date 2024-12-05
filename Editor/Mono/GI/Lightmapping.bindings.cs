@@ -528,6 +528,12 @@ namespace UnityEditor
         [NativeName("GetLightingSettingsForScene")]
         public static extern LightingSettings GetLightingSettingsForScene(Scene scene);
 
+        [FreeFunction]
+        public static extern LightingDataAsset GetLightingDataAssetForScene(Scene scene);
+
+        [FreeFunction(ThrowsException = true)]
+        public static extern void SetLightingDataAssetForScene(Scene scene, LightingDataAsset lda);
+
         public static void BakeMultipleScenes(string[] paths)
         {
             if (paths.Length == 0)

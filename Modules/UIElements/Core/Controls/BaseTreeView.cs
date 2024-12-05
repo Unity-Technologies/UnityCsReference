@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -97,6 +98,15 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BaseVerticalCollectionView.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(autoExpand), "auto-expand"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool autoExpand;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoExpand_UxmlAttributeFlags;

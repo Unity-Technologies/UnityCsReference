@@ -4,11 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 
@@ -32,6 +34,17 @@ namespace UnityEditor.Search
         [ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Object>.UxmlSerializedData
         {
+            [RegisterUxmlCache]
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Object>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(type), "type", typeof(Object)),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField, UxmlTypeReference(typeof(Object))] string type;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags type_UxmlAttributeFlags;

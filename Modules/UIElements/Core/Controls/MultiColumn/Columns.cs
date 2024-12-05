@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Internal;
 
@@ -69,6 +70,20 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public class UxmlSerializedData : UIElements.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(primaryColumnName), "primary-column-name"),
+                    new (nameof(stretchMode), "stretch-mode"),
+                    new (nameof(reorderable), "reorderable"),
+                    new (nameof(resizable), "resizable"),
+                    new (nameof(resizePreview), "resize-preview"),
+                    new (nameof(columns), "columns"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] string primaryColumnName;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags primaryColumnName_UxmlAttributeFlags;

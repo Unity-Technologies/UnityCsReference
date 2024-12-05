@@ -119,7 +119,14 @@ namespace UnityEditor
         internal static extern bool IsInitialized();
 
         // Is editor currently compiling scripts? (RO)
-        public static bool isCompiling => EditorCompilationInterface.IsCompiling();
+        public static bool isCompiling
+        {
+            get
+            {
+                EditorCompilationInterface.IsCompiling(out var isCompiling);
+                return isCompiling;
+            }
+        }
 
         // Is editor currently updating? (RO)
         public static extern bool isUpdating

@@ -6,31 +6,22 @@ using JetBrains.Annotations;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Unity.Jobs;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.UIElements;
+using HelpBox = UnityEngine.UIElements.HelpBox;
 
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlSerializedDataRegistry
     {
-        private static JobHandle? k_UxmlRegistryRegistrationHandle;
-
-        static bool s_Registered;
-
+        private static bool s_Initialized = false;
         static readonly Dictionary<string, Type> s_MovedTypes = new();
         static readonly Dictionary<string, UxmlSerializedDataDescription> s_DescriptionsCache = new();
 
         public static Dictionary<string, Type> SerializedDataTypes { get; } = new();
-
-        [UsedImplicitly]
-        internal static void GenerateUxmlRegistries()
-        {
-            k_UxmlRegistryRegistrationHandle = new InitializeUxmlRegistryDescriptions().Schedule();
-        }
 
         [UsedImplicitly]
         internal static void RegisterCustomDependencies()
@@ -39,22 +30,14 @@ namespace UnityEditor.UIElements
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
-            if (k_UxmlRegistryRegistrationHandle is { IsCompleted: false })
-            {
-                // Force the initialization to complete, calling all the "initialize on load" should
-                // give us enough time to process all the registry.
-                k_UxmlRegistryRegistrationHandle?.Complete();
-            }
-
             UxmlCodeDependencies.instance.RegisterUxmlSerializedDataDependencies(SerializedDataTypes);
         }
 
-        struct InitializeUxmlRegistryDescriptions : IJob
+        // Used for testing
+        public static void ResetCache()
         {
-            public void Execute()
-            {
-                Register();
-            }
+            ClearCache();
+            RegisterUxmlSerializedDataTypes();
         }
 
         // Used for testing
@@ -62,9 +45,6 @@ namespace UnityEditor.UIElements
         {
             SerializedDataTypes.Clear();
             s_MovedTypes.Clear();
-
-            s_Registered = false;
-
             ClearDescriptionCache();
         }
 
@@ -73,12 +53,11 @@ namespace UnityEditor.UIElements
         {
             s_DescriptionsCache.Clear();
             UxmlDescriptionRegistry.Clear();
+            s_Initialized = false;
         }
 
         public static UxmlSerializedDataDescription GetDescription(string typeName)
         {
-            ForceRegistrationCompletion();
-
             if (s_DescriptionsCache.TryGetValue(typeName, out var desc))
                 return desc;
 
@@ -92,27 +71,46 @@ namespace UnityEditor.UIElements
 
         public static Type GetDataType(string typeName)
         {
-            ForceRegistrationCompletion();
-
             if (!SerializedDataTypes.TryGetValue(typeName, out var type) && !s_MovedTypes.TryGetValue(typeName, out type))
                 return null;
 
             return type;
         }
 
-        public static void Register()
+        public static void RegisterUxmlSerializedDataTypes()
         {
-            if (s_Registered)
+            if (s_Initialized)
                 return;
 
-            var types = TypeCache.GetTypesDerivedFrom<UxmlSerializedData>();
-            foreach (var serializedDataType in types)
+            RegisterBuiltInTypes();
+
+            var registrationMethods = TypeCache.GetMethodsWithAttribute<RegisterUxmlCacheAttribute>();
+            foreach (var registrationMethod in registrationMethods)
             {
-                var attributes = serializedDataType.Attributes;
+                try
+                {
+                    if (registrationMethod.ContainsGenericParameters)
+                        continue;
+                    registrationMethod.Invoke(null, null);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(ex);
+                }
+            }
+
+            var uxmlSerializedDataTypes = TypeCache.GetTypesDerivedFrom<UxmlSerializedData>();
+
+            foreach (var uxmlSerializedDataType in uxmlSerializedDataTypes)
+            {
+                var attributes = uxmlSerializedDataType.Attributes;
                 if ((attributes & TypeAttributes.Abstract) != 0)
                     continue;
 
-                var declaringType = serializedDataType.DeclaringType;
+                var declaringType = uxmlSerializedDataType.DeclaringType;
+                // All "valid" UxmlSerializedData types need to be nested under a UxmlElement or UxmlObject type.
+                if (null == declaringType || declaringType.ContainsGenericParameters)
+                    continue;
 
                 var uxmlElementAttribute = declaringType.GetCustomAttribute<UxmlElementAttribute>();
                 if (uxmlElementAttribute != null && !string.IsNullOrEmpty(uxmlElementAttribute.name) &&
@@ -125,68 +123,129 @@ namespace UnityEditor.UIElements
                         continue;
                     }
 
-                    if (string.IsNullOrEmpty(declaringType.Namespace))
-                        RegisterType(uxmlElementAttribute.name, serializedDataType);
+                    RegisterSerializedType(
+                        string.IsNullOrEmpty(declaringType.Namespace)
+                            ? uxmlElementAttribute.name
+                            : $"{declaringType.Namespace}.{uxmlElementAttribute.name}", uxmlSerializedDataType, SerializedDataTypes);
+                }
+
+                RegisterSerializedType(declaringType.FullName, uxmlSerializedDataType, SerializedDataTypes);
+                RegisterMovedFromType(declaringType, uxmlSerializedDataType, s_MovedTypes);
+            }
+
+            s_Initialized = true;
+            return;
+
+            [Pure]
+            static void RegisterSerializedType(string typeName, Type serializedDataType, Dictionary<string, Type> cache)
+            {
+                if (string.IsNullOrEmpty(typeName))
+                    return;
+
+                if (cache.TryGetValue(typeName, out var cachedSerializedDataType))
+                {
+                    if (serializedDataType == cachedSerializedDataType)
+                    {
+                        Debug.LogWarning($"UxmlElement Registration: The UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered.");
+                        return;
+                    }
+
+                    if (serializedDataType.Assembly != cachedSerializedDataType.Assembly)
+                        Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered by a different assembly '{cachedSerializedDataType.Assembly.GetName().Name}.");
                     else
-                        RegisterType($"{declaringType.Namespace}.{uxmlElementAttribute.name}", serializedDataType);
+                        Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' is already registered with '{cachedSerializedDataType.Name}'. It cannot be registered again with '{serializedDataType.Name}'.");
                 }
-
-                RegisterType(declaringType.FullName, serializedDataType);
+                cache[typeName] = serializedDataType;
             }
 
-            s_Registered = true;
-            k_UxmlRegistryRegistrationHandle = null;
-        }
-
-        static void RegisterType(string typeName, Type serializedDataType)
-        {
-            if (SerializedDataTypes.TryGetValue(typeName, out var desc))
+            [Pure]
+            static void RegisterMovedFromType(Type declaringType, Type serializedDataType, Dictionary<string, Type> cache)
             {
-                if (serializedDataType == desc)
+                // Check for MovedFromAttribute
+                var movedFromAttribute = declaringType.GetCustomAttribute<MovedFromAttribute>();
+                if (movedFromAttribute != null)
                 {
-                    Debug.LogWarning($"UxmlElement Registration: The UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered.");
-                    return;
+                    var fullOldName = VisualElementFactoryRegistry.GetMovedUIControlTypeName(declaringType, movedFromAttribute);
+                    if (cache.TryGetValue(fullOldName, out var conflict))
+                    {
+                        Debug.LogError($"The UxmlElement for the type {declaringType.FullName} contains a MovedFromAttribute with the old name {fullOldName} which is already registered to {conflict.DeclaringType.FullName}.");
+                        return;
+                    }
+
+                    cache[fullOldName] = serializedDataType;
                 }
-
-                if (serializedDataType.Assembly != desc.Assembly)
-                    Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' in the assembly '{serializedDataType.Assembly.GetName().Name}' has already been registered by a different assembly '{desc.Assembly.GetName().Name}.");
-                else
-                    Debug.LogError($"UxmlElement Registration Error: A UxmlElement of type '{typeName}' is already registered with '{desc.Name}'. It cannot be registered again with '{serializedDataType.Name}'.");
-
-                return;
-            }
-
-            SerializedDataTypes[typeName] = serializedDataType;
-            // Force the generation of the uxml description so that it happens on the background thread.
-            UxmlDescriptionRegistry.GetDescription(serializedDataType);
-
-            // Check for MovedFromAttribute
-            var elementType = serializedDataType.DeclaringType;
-            var movedFromAttribute = elementType.GetCustomAttribute<MovedFromAttribute>();
-            if (movedFromAttribute != null)
-            {
-                var fullOldName = VisualElementFactoryRegistry.GetMovedUIControlTypeName(elementType, movedFromAttribute);
-                if (s_MovedTypes.TryGetValue(fullOldName, out var conflict))
-                {
-                    Debug.LogError($"The UxmlElement for the type {typeName} contains a MovedFromAttribute with the old name {fullOldName} which is already registered to {conflict.DeclaringType.FullName}.");
-                    return;
-                }
-
-                s_MovedTypes[fullOldName] = serializedDataType;
             }
         }
 
-        private static void ForceRegistrationCompletion()
+        private static void RegisterBuiltInTypes()
         {
-            if (s_Registered)
-                return;
-
-            // If this was called before the job was even started, run the registration in a synced manner, otherwise force
-            // the job to complete.
-            if (k_UxmlRegistryRegistrationHandle.HasValue)
-                k_UxmlRegistryRegistrationHandle?.Complete();
-            else
-                Register();
+            AbstractProgressBar.UxmlSerializedData.Register();
+            BaseBoolField.UxmlSerializedData.Register();
+            BaseListView.UxmlSerializedData.Register();
+            BaseTreeView.UxmlSerializedData.Register();
+            BaseVerticalCollectionView.UxmlSerializedData.Register();
+            BindableElement.UxmlSerializedData.Register();
+            Binding.UxmlSerializedData.Register();
+            BoundsField.UxmlSerializedData.Register();
+            BoundsIntField.UxmlSerializedData.Register();
+            Button.UxmlSerializedData.Register();
+            ButtonStripField.UxmlSerializedData.Register();
+            ColorField.UxmlSerializedData.Register();
+            Column.UxmlSerializedData.Register();
+            Columns.UxmlSerializedData.Register();
+            CurveField.UxmlSerializedData.Register();
+            DataBinding.UxmlSerializedData.Register();
+            DoubleField.UxmlSerializedData.Register();
+            DropdownField.UxmlSerializedData.Register();
+            EnumField.UxmlSerializedData.Register();
+            EnumFlagsField.UxmlSerializedData.Register();
+            FloatField.UxmlSerializedData.Register();
+            Foldout.UxmlSerializedData.Register();
+            GradientField.UxmlSerializedData.Register();
+            GroupBox.UxmlSerializedData.Register();
+            Hash128Field.UxmlSerializedData.Register();
+            HelpBox.UxmlSerializedData.Register();
+            IntegerField.UxmlSerializedData.Register();
+            LayerField.UxmlSerializedData.Register();
+            LayerMaskField.UxmlSerializedData.Register();
+            ListView.UxmlSerializedData.Register();
+            LongField.UxmlSerializedData.Register();
+            MaskField.UxmlSerializedData.Register();
+            MinMaxSlider.UxmlSerializedData.Register();
+            MultiColumnListView.UxmlSerializedData.Register();
+            MultiColumnTreeView.UxmlSerializedData.Register();
+            ObjectField.UxmlSerializedData.Register();
+            PropertyField.UxmlSerializedData.Register();
+            RadioButton.UxmlSerializedData.Register();
+            RadioButtonGroup.UxmlSerializedData.Register();
+            RectField.UxmlSerializedData.Register();
+            RectIntField.UxmlSerializedData.Register();
+            RepeatButton.UxmlSerializedData.Register();
+            ScrollView.UxmlSerializedData.Register();
+            Scroller.UxmlSerializedData.Register();
+            Slider.UxmlSerializedData.Register();
+            SliderInt.UxmlSerializedData.Register();
+            SortColumnDescription.UxmlSerializedData.Register();
+            SortColumnDescriptions.UxmlSerializedData.Register();
+            Tab.UxmlSerializedData.Register();
+            TabView.UxmlSerializedData.Register();
+            TagField.UxmlSerializedData.Register();
+            TemplateContainer.UxmlSerializedData.Register();
+            TextElement.UxmlSerializedData.Register();
+            TextField.UxmlSerializedData.Register();
+            Toggle.UxmlSerializedData.Register();
+            ToggleButtonGroup.UxmlSerializedData.Register();
+            ToolbarSearchField.UxmlSerializedData.Register();
+            TreeView.UxmlSerializedData.Register();
+            TwoPaneSplitView.UxmlSerializedData.Register();
+            UnsignedIntegerField.UxmlSerializedData.Register();
+            UnsignedLongField.UxmlSerializedData.Register();
+            Vector2Field.UxmlSerializedData.Register();
+            Vector2IntField.UxmlSerializedData.Register();
+            Vector3Field.UxmlSerializedData.Register();
+            Vector3IntField.UxmlSerializedData.Register();
+            Vector4Field.UxmlSerializedData.Register();
+            VisualElement.UxmlSerializedData.Register();
         }
     }
 }

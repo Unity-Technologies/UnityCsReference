@@ -5,6 +5,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Unity.Profiling;
 using UnityEngine.Pool;
@@ -100,8 +101,23 @@ namespace UnityEngine.UIElements
         [ExcludeFromDocs, Serializable]
         public new abstract class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(fixedItemHeight), "fixed-item-height", null, "itemHeight", "item-height"),
+                    new (nameof(virtualizationMethod), "virtualization-method"),
+                    new (nameof(showBorder), "show-border"),
+                    new (nameof(selectionType), "selection-type"),
+                    new (nameof(showAlternatingRowBackgrounds), "show-alternating-row-backgrounds"),
+                    new (nameof(reorderable), "reorderable"),
+                    new (nameof(horizontalScrollingEnabled), "horizontal-scrolling"),
+                });
+            }
+
             #pragma warning disable 649
-            [UxmlAttribute(obsoleteNames = new[] { "itemHeight, item-height" })]
+            [UxmlAttribute(obsoleteNames = new[] { "itemHeight", "item-height" })]
             [SerializeField, FixedItemHeightDecorator] float fixedItemHeight;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
             [SerializeField] CollectionVirtualizationMethod virtualizationMethod;
@@ -159,7 +175,7 @@ namespace UnityEngine.UIElements
         public new class UxmlTraits : BindableElement.UxmlTraits
         {
             private readonly UxmlEnumAttributeDescription<CollectionVirtualizationMethod> m_VirtualizationMethod = new UxmlEnumAttributeDescription<CollectionVirtualizationMethod> { name = "virtualization-method", defaultValue = CollectionVirtualizationMethod.FixedHeight };
-            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight, item-height" }, defaultValue = s_DefaultItemHeight };
+            private readonly UxmlIntAttributeDescription m_FixedItemHeight = new UxmlIntAttributeDescription { name = "fixed-item-height", obsoleteNames = new[] { "itemHeight", "item-height" }, defaultValue = s_DefaultItemHeight };
             private readonly UxmlBoolAttributeDescription m_ShowBorder = new UxmlBoolAttributeDescription { name = "show-border", defaultValue = false };
             private readonly UxmlEnumAttributeDescription<SelectionType> m_SelectionType = new UxmlEnumAttributeDescription<SelectionType> { name = "selection-type", defaultValue = SelectionType.Single };
             private readonly UxmlEnumAttributeDescription<AlternatingRowBackground> m_ShowAlternatingRowBackgrounds = new UxmlEnumAttributeDescription<AlternatingRowBackground> { name = "show-alternating-row-backgrounds", defaultValue = AlternatingRowBackground.None };

@@ -58,6 +58,9 @@ namespace UnityEngine.UIElements
             // Sort indices, store ids.
             m_SortedSelectedIds.Sort(CompareId);
 
+            if (!m_View.reorderable)
+                return new StartDragArgs(string.Empty, DragVisualMode.Rejected);
+
             return new StartDragArgs(title, DragVisualMode.Move);
         }
 

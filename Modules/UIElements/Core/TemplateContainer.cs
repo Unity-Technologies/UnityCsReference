@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.Serialization;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -28,6 +29,16 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(template), "template"),
+                    new (nameof(templateId), "template", null, "template"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] VisualTreeAsset template;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags template_UxmlAttributeFlags;

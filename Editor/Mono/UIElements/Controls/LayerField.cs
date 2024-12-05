@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditorInternal;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.UIElements
 {
@@ -18,6 +20,16 @@ namespace UnityEditor.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<int>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                PopupField<int>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(layer), "value"),
+                });
+            }
+
             #pragma warning disable 649
             [UxmlAttribute("value")]
             [SerializeField, LayerDecorator] int layer;

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -28,6 +29,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Rect, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Rect, FloatField, float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new RectField();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -141,6 +148,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<RectInt, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<RectInt, IntegerField, int>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new RectIntField();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -252,6 +265,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector2, FloatField, float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new Vector2Field();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -357,6 +376,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector3, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector3, FloatField, float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new Vector3Field();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -467,6 +492,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector4, FloatField, float>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector4, FloatField, float>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new Vector4Field();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -577,6 +608,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector2Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector2Int, IntegerField, int>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new Vector2IntField();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)
@@ -683,6 +720,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseCompositeField<Vector3Int, IntegerField, int>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseCompositeField<Vector3Int, IntegerField, int>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new Vector3IntField();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace UnityEngine.UIElements
 {
@@ -15,6 +16,18 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : PopupField<string>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                PopupField<string>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(index), "index"),
+                    new (nameof(choices), "choices"),
+                    new (nameof(valueOverride), "value"),
+                });
+            }
+
             #pragma warning disable 649
             // The index field is responsible for applying validation to the value entered by users.
             // In order to ensure that users are able to enter the complete value without interruption,

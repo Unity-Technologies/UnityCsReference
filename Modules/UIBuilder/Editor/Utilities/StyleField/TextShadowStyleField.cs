@@ -9,6 +9,7 @@ using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 using System;
+using System.Diagnostics;
 
 namespace Unity.UI.Builder
 {
@@ -49,6 +50,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<BuilderTextShadow>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<BuilderTextShadow>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new TextShadowStyleField();
         }
 

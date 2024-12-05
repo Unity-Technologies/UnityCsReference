@@ -1347,7 +1347,7 @@ namespace UnityEngine.UIElements
                     return new()
                     {};
                 default:
-                    Debug.LogAssertion($"Cannot get valid keyword value for property id {id}"); return  null ;
+                    Debug.LogAssertion($"Cannot get valid keyword value for property id {id}"); return  null ; 
             }
         }
 

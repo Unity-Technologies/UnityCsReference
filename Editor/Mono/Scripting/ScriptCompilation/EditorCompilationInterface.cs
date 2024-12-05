@@ -214,9 +214,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool IsCompiling()
+        public static void IsCompiling(out bool isCompiling)
         {
-            return Instance.IsCompiling();
+            isCompiling = Instance.IsCompiling();
         }
 
         [RequiredByNativeCode]

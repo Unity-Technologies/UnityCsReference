@@ -32,6 +32,15 @@ namespace Unity.UI.Builder
         [Serializable]
         public new abstract class UxmlSerializedData : BaseField<string>.UxmlSerializedData
         {
+            public new static void Register()
+            {
+                BaseField<string>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(showOptions), "show-options")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool showOptions;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showOptions_UxmlAttributeFlags;

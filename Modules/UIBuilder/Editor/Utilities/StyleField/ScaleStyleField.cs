@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using System;
+using System.Diagnostics;
 using System.Globalization;
 using UnityEditor;
 using UnityEditor.UIElements;
@@ -79,6 +80,12 @@ namespace Unity.UI.Builder
         [Serializable]
         public new class UxmlSerializedData : BaseField<BuilderScale>.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<BuilderScale>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new ScaleStyleField();
         }
 
@@ -152,7 +159,7 @@ namespace Unity.UI.Builder
 
             if (!isNewValue && (
                 stylePropertyValueCount < 2 ||
-                styleProperty.values[0].valueType != StyleValueType.Dimension || 
+                styleProperty.values[0].valueType != StyleValueType.Dimension ||
                 styleProperty.values[1].valueType != StyleValueType.Dimension))
             {
                 Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);

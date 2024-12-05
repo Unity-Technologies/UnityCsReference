@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -14,12 +15,12 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// The MinMaxSlider manages navigation events in a customized manner.
     /// The MinMaxSlider has four navigation states:
-    /// 
+    ///
     ///- Min thumb: adjusts the slider's minimum value if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
     ///- Max thumb: adjusts the slider's maximum value if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
     ///- Middle thumb: adjusts the slider's minimum and maximum values if the <see cref="NavigationMoveEvent"/> aligns with the slider's direction.
     ///- Default navigation: <see cref="NavigationMoveEvent"/> are ignored and handled by the default systems.
-    /// 
+    ///
     /// The MinMaxSlider cycles through the navigation states when a <see cref="NavigationSubmitEvent"/> is received.
     /// </remarks>
     /// <remarks>
@@ -36,6 +37,17 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Vector2>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Vector2>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(lowLimit), "low-limit"),
+                    new (nameof(highLimit), "high-limit"),
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] float lowLimit;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;

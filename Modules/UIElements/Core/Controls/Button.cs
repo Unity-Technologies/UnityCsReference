@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -32,6 +33,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : TextElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(iconImageReference), "icon-image")
+                });
+            }
+
             #pragma warning disable 649
             [ImageFieldValueDecorator]
             [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;

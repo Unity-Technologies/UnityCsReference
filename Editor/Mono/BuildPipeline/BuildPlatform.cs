@@ -73,23 +73,22 @@ namespace UnityEditor.Build
         Texture2D GetCompoundSmallIcon()
         {
             GenerateCompoundData();
-            return m_CompoundSmallIcon ?? smallIcon;
+            return m_CompoundSmallIcon == null ? smallIcon : m_CompoundSmallIcon;
         }
 
         Texture2D GetCompoundSmallIconForQualitySettings()
         {
             GenerateCompoundData();
-            return m_CompoundSmallIconForQualitySettings ?? smallIcon;
+            return m_CompoundSmallIconForQualitySettings == null ? smallIcon : m_CompoundSmallIconForQualitySettings;
         }
 
         void GenerateCompoundData()
         {
-            if (m_DerivedPlatforms != null)
+            if (m_DerivedPlatforms != null && (m_CompoundSmallIcon == null || m_CompoundSmallIconForQualitySettings == null))
             {
                 GenerateCompoundTooltip(m_DerivedPlatforms);
                 GenerateCompoundTitle(m_DerivedPlatforms);
                 GenerateCompoundIconTexture(m_DerivedPlatforms);
-                m_DerivedPlatforms = null;
             }
         }
 

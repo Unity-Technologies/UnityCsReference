@@ -36,6 +36,11 @@ namespace UnityEngine
         public extern void SetPopMaterial(Material material, int index);
         public extern Material GetPopMaterial(int index);
         public extern void SetTexture(Texture texture);
+        public extern int GetSecondaryTextureCount();
+        public extern void SetSecondaryTextureCount(int size);
+        public extern string GetSecondaryTextureName(int index);
+        public extern Texture2D GetSecondaryTexture(int index);
+        public extern void SetSecondaryTexture(int index, string name, Texture2D texture);
         public extern void SetAlphaTexture(Texture texture);
         public extern void SetMesh(Mesh mesh);
         public extern Mesh GetMesh();

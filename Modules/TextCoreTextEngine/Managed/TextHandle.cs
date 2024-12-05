@@ -266,7 +266,7 @@ namespace UnityEngine.TextCore.Text
             if (!IsDirty(hashCode))
                 return textInfo;
 
-            if (settings.fontAsset == null || settings.fontAsset.characterLookupTable == null)
+            if (settings.fontAsset == null)
             {
                 Debug.LogWarning("Can't Generate Mesh, No Font Asset has been assigned.");
                 return textInfo;

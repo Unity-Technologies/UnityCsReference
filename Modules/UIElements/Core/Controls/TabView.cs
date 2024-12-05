@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Unity.Properties;
 
 namespace UnityEngine.UIElements
@@ -19,7 +20,7 @@ namespace UnityEngine.UIElements
     /// For reorderable tabs, it is important to keep the view-data-key unique for the TabView and Tab elements inside
     /// of it. The view-data-key helps store the state of the tabs such as the order and state. By having an empty
     /// view-data-key, which is the default value, the state of the tabs will not persist when reloading the document.
-    /// 
+    ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TabView|UXML element TabView]].
     /// </remarks>
     public class TabView : VisualElement
@@ -29,6 +30,15 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new(nameof(reorderable), "reorderable")
+                });
+            }
+
             #pragma warning disable 649
             [SerializeField] bool reorderable;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;

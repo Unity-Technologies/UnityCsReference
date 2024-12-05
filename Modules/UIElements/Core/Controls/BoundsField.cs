@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -17,6 +18,12 @@ namespace UnityEngine.UIElements
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BaseField<Bounds>.UxmlSerializedData, IUxmlSerializedDataCustomAttributeHandler
         {
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                BaseField<Bounds>.UxmlSerializedData.Register();
+            }
+
             public override object CreateInstance() => new BoundsField();
 
             void IUxmlSerializedDataCustomAttributeHandler.SerializeCustomAttributes(IUxmlAttributes bag, HashSet<string> handledAttributes)

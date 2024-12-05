@@ -8319,6 +8319,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderBindingsCache.cs">
       <Link>Modules\UIBuilder\Editor\Builder\BuilderBindingsCache.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderEditorInitialization.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\BuilderEditorInitialization.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderExternalPackages.cs">
       <Link>Modules\UIBuilder\Editor\Builder\BuilderExternalPackages.cs</Link>
     </Compile>

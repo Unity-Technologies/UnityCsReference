@@ -453,9 +453,14 @@ namespace UnityEditor
                new PlatformInfo
                {
                     displayName = "Facebook Instant Games",
+                    description = L10n.Tr(
+                        "Build for Facebook Instant Games to take advantage of the extensive user base and social features within the Facebook and Messenger app. " +
+                        "This platform offers default settings for both mobile and desktop builds, along with optimization tools and a streamlined publishing process."
+                    ),
                     buildTarget = BuildTarget.WebGL,
                     link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.Facebook",
+                    requiredPackage = new string[]{"com.unity.meta-instant-games-sdk"},
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -524,7 +529,7 @@ namespace UnityEditor
                     description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances."),
                     buildTarget = BuildTarget.EmbeddedLinux,
                     iconName = "BuildSettings.EmbeddedLinux",
-                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
             {
@@ -536,7 +541,7 @@ namespace UnityEditor
                     description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system."),
                     buildTarget = BuildTarget.QNX,
                     iconName = "BuildSettings.QNX",
-                    flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
             {
