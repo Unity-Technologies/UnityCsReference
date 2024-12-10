@@ -440,8 +440,8 @@ namespace UnityEngine.UIElements
             var sliderMinWidth = sliderRightBorder + sliderLeftBorder;
 
             var thumbFullWidth = dragMinThumb.resolvedStyle.width + dragMaxThumb.resolvedStyle.width + sliderMinWidth;
-            var newPositionLeft = Mathf.Round(SliderLerpUnclamped(dragMinThumb.resolvedStyle.width, visualInput.layout.width - dragMaxThumb.resolvedStyle.width - sliderMinWidth, SliderNormalizeValue(minValue, lowLimit, highLimit)));
-            var newPositionRight = Mathf.Round(SliderLerpUnclamped(dragMinThumb.resolvedStyle.width + sliderMinWidth, visualInput.layout.width - dragMaxThumb.resolvedStyle.width, SliderNormalizeValue(maxValue, lowLimit, highLimit)));
+            var newPositionLeft = AlignmentUtils.RoundToPanelPixelSize(this, SliderLerpUnclamped(dragMinThumb.resolvedStyle.width, visualInput.layout.width - dragMaxThumb.resolvedStyle.width - sliderMinWidth, SliderNormalizeValue(minValue, lowLimit, highLimit)));
+            var newPositionRight = AlignmentUtils.RoundToPanelPixelSize(this, SliderLerpUnclamped(dragMinThumb.resolvedStyle.width + sliderMinWidth, visualInput.layout.width - dragMaxThumb.resolvedStyle.width, SliderNormalizeValue(maxValue, lowLimit, highLimit)));
 
             dragElement.style.width = newPositionRight - newPositionLeft;
             dragElement.style.left = newPositionLeft;

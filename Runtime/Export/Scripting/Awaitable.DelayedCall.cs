@@ -15,8 +15,18 @@ namespace UnityEngine
     public partial class Awaitable
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void ThrowIfNotMainThread()
+        {
+            if (Thread.CurrentThread.ManagedThreadId != _mainThreadId)
+            {
+                throw new InvalidOperationException("This operation can only be performed on the main thread.");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Awaitable NextFrameAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfNotMainThread();
             cancellationToken.ThrowIfCancellationRequested();
 
             EnsureDelayedCallWiredUp();
@@ -33,6 +43,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Awaitable WaitForSecondsAsync(float seconds, CancellationToken cancellationToken = default)
         {
+            ThrowIfNotMainThread();
             cancellationToken.ThrowIfCancellationRequested();
             var ptr = WaitForScondsInternal(seconds);
             return FromNativeAwaitableHandle(ptr, cancellationToken);
@@ -41,6 +52,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Awaitable FixedUpdateAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfNotMainThread();
             cancellationToken.ThrowIfCancellationRequested();
             var ptr = FixedUpdateInternal();
             return FromNativeAwaitableHandle(ptr, cancellationToken);
@@ -49,6 +61,7 @@ namespace UnityEngine
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Awaitable EndOfFrameAsync(CancellationToken cancellationToken = default)
         {
+            ThrowIfNotMainThread();
             cancellationToken.ThrowIfCancellationRequested();
 
             EnsureDelayedCallWiredUp();

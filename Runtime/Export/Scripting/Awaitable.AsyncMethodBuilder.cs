@@ -12,6 +12,13 @@ namespace UnityEngine
 {
     public partial class Awaitable
     {
+        internal enum AwaiterCompletionThreadAffinity
+        {
+            None,
+            MainThread,
+            BackgroundThread
+        }
+
         [ExcludeFromDocs]
         public struct AwaitableAsyncMethodBuilder
         {
@@ -20,6 +27,7 @@ namespace UnityEngine
                 Awaitable ResultingCoroutine { get; set; }
                 Action MoveNext { get; }
             }
+
             private class StateMachineBox<TStateMachine> : IStateMachineBox where TStateMachine : IAsyncStateMachine
             {
                 static readonly ThreadLocal<ObjectPool<StateMachineBox<TStateMachine>>> _pool =
@@ -84,10 +92,15 @@ namespace UnityEngine
             public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : IAsyncStateMachine
             {
                 var box = EnsureStateMachineBox<TStateMachine>();
-                ((StateMachineBox<TStateMachine>)box).StateMachine = stateMachine;
-                stateMachine.MoveNext();
-            }
+                var typedBox = (StateMachineBox<TStateMachine>)box;
 
+                // Makes the returned Awaitable complete according to the following rules:
+                // - If called from main thread : enforce completion to happen on main thread
+                // - If called from background thread : enforce completion to happen on background thread
+                Task.CompletionThreadAffinity = Thread.CurrentThread.ManagedThreadId == _mainThreadId ? AwaiterCompletionThreadAffinity.MainThread : AwaiterCompletionThreadAffinity.BackgroundThread;
+                typedBox.StateMachine = stateMachine;
+                typedBox.MoveNext();
+            }
 
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public void SetStateMachine(IAsyncStateMachine stateMachine)
@@ -100,7 +113,8 @@ namespace UnityEngine
         where TStateMachine : IAsyncStateMachine
             {
                 var box = EnsureStateMachineBox<TStateMachine>();
-                ((StateMachineBox<TStateMachine>)box).StateMachine = stateMachine;
+                var typedBox = (StateMachineBox<TStateMachine>)box;
+                typedBox.StateMachine = stateMachine;
                 awaiter.OnCompleted(box.MoveNext);
             }
 
@@ -110,7 +124,8 @@ namespace UnityEngine
                 where TStateMachine : IAsyncStateMachine
             {
                 var box = EnsureStateMachineBox<TStateMachine>();
-                ((StateMachineBox<TStateMachine>)box).StateMachine = stateMachine;
+                var typedBox = (StateMachineBox<TStateMachine>)box;
+                typedBox.StateMachine = stateMachine;
                 awaiter.UnsafeOnCompleted(box.MoveNext);
             }
 

@@ -90,7 +90,7 @@ namespace UnityEngine.UIElements
         {
             var startDragArgs = base.SetupDragAndDrop(itemIds, skipText);
             m_DropData.draggedIds = GetSortedSelectedIds().ToArray();
-            return startDragArgs;
+            return m_TreeView.reorderable ? startDragArgs : new StartDragArgs(string.Empty, DragVisualMode.Rejected);
         }
 
         public override DragVisualMode HandleDragAndDrop(IListDragAndDropArgs args)
@@ -100,6 +100,9 @@ namespace UnityEngine.UIElements
 
         public override void OnDrop(IListDragAndDropArgs args)
         {
+            if (!m_TreeView.reorderable)
+                return;
+
             var insertAtParentId = args.parentId;
             var insertAtChildIndex = args.childIndex;
             var insertIndexShift = 0;

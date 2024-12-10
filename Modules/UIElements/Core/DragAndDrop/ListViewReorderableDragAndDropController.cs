@@ -29,6 +29,9 @@ namespace UnityEngine.UIElements
 
         public override void OnDrop(IListDragAndDropArgs args)
         {
+            if (!m_ListView.reorderable)
+                return;
+
             var insertIndex = args.insertAtIndex;
 
             var insertIndexShift = 0;

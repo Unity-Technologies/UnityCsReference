@@ -32,7 +32,8 @@ namespace UnityEditor
                 return;
             }
 
-            List<Object> loadedAssets = new List<Object>();
+            const int kSizeBeforeUnload = 100;
+            List<Object> loadedAssets = new List<Object>(kSizeBeforeUnload * 2); // Some extra to reduce reallocations
             bool oneFound = false;
             try
             {
@@ -58,6 +59,14 @@ namespace UnityEditor
                             BumpMapSettings.PerformBumpMapCheck(material);
                         }
                     }
+
+                    // Periodically unload loaded assets to avoid high memory watermark
+                    if (loadedAssets.Count >= kSizeBeforeUnload)
+                    {
+                        foreach (var o in loadedAssets)
+                            Resources.UnloadAsset(o);
+                        loadedAssets.Clear();
+                    }
                 }
             }
             finally
@@ -68,10 +77,9 @@ namespace UnityEditor
                     // and will destroy the window when doing so. So lets wait for the first frame to open it.
                     EditorApplication.update += OpenBumpMapCheckWindow;
                 }
+
                 foreach (var o in loadedAssets)
-                {
                     Resources.UnloadAsset(o);
-                }
             }
         }
 

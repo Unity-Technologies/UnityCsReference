@@ -153,7 +153,7 @@ namespace UnityEngine.UIElements
 
         void OnPointerUpEvent(PointerUpEvent evt)
         {
-            if (evt.button == (int)MouseButton.LeftMouse)
+            if (evt.button == (int)MouseButton.LeftMouse && ContainsPointer(evt.pointerId))
             {
                 // Prevent propagation to other elements (UUM-85620)
                 evt.StopPropagation();
