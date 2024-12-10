@@ -128,7 +128,7 @@ namespace UnityEditor.MPE
         }
 
         [UsedImplicitly, RequiredByNativeCode]
-        private static bool HasHandlers(int channelId)
+        private static bool ChannelServiceHasHandlers(int channelId)
         {
             return s_Handlers.TryGetValue(channelId, out var handlers) && handlers.Count > 0;
         }

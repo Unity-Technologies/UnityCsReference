@@ -505,7 +505,7 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileModuleUtil.SwitchLegacySelectedBuildTargets(profile);
 
-            BuildProfileModuleUtil.CallInternalBuildMethods(m_ShouldAskForBuildLocation, optionFlags);
+            EditorApplication.delayCall += () => BuildProfileModuleUtil.CallInternalBuildMethods(m_ShouldAskForBuildLocation, optionFlags);
         }
 
         void UpdateFormButtonState(BuildProfile profile)

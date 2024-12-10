@@ -56,7 +56,13 @@ namespace UnityEditor.Build.Profile
         /// event after an asset is created by AssetDatabase.CreateAsset.
         /// </summary>
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
-        internal static void CreateInstance(GUID platformId, string assetPath, int preconfiguredSettingsVariant = -1)
+        internal static void CreateInstance(GUID platformId, string assetPath)
+        {
+            CreateInstance(platformId, assetPath, -1, Array.Empty<string>());
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal static void CreateInstance(GUID platformId, string assetPath, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var buildProfile = CreateInstance<BuildProfile>();
@@ -66,8 +72,8 @@ namespace UnityEditor.Build.Profile
             AssetDatabase.CreateAsset(
                 buildProfile,
                 AssetDatabase.GenerateUniqueAssetPath(assetPath));
+            BuildProfileContext.instance.AddPackageAddInfo(buildProfile, packagesToAdd, preconfiguredSettingsVariant);
             buildProfile.OnEnable();
-            buildProfile.NotifyBuildProfileExtensionOfCreation(preconfiguredSettingsVariant);
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
         }
@@ -78,7 +84,10 @@ namespace UnityEditor.Build.Profile
             if (buildProfileExtension != null)
             {
                 buildProfileExtension.OnBuildProfileCreated(this, preconfiguredSettingsVariant);
+                SerializePlayerSettings();
+                AssetDatabase.SaveAssetIfDirty(this);
             }
+            BuildProfileContext.instance.ClearPackageAddInfo(this);
         }
 
         void TryCreatePlatformSettings()

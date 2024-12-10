@@ -475,8 +475,7 @@ namespace UnityEditor
             #pragma warning disable 618
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
-
-            using var scope = new ProgressScope($"PauseStateChanged Callback", "" , forceShow: true);
+            using var scope = new ProgressScope($"PauseStateChanged Callback", "" , forceUpdate: true);
             foreach (var evt in m_PauseStateChangedEvent)
             {
                 scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
@@ -506,7 +505,7 @@ namespace UnityEditor
                 }
                 return;
             }
-            using var scope = new ProgressScope($"PlayModeStateChanged Callback ({stateName})", "", forceShow: true);
+            using var scope = new ProgressScope($"PlayModeStateChanged Callback ({stateName})", "", forceUpdate: true);
             foreach (var evt in m_PlayModeStateChangedEvent)
             {
                 scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);

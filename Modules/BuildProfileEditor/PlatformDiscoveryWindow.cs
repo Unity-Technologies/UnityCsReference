@@ -275,11 +275,11 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         void OnAddBuildProfileClicked(BuildProfileCard card)
         {
-            AddSelectedBuildProfiles(card);
-            InstallSelectedPackages();
+            var packagesToAdd = DeterminePackagesToAdd();
+            AddSelectedBuildProfiles(card, packagesToAdd);
         }
 
-        void InstallSelectedPackages()
+        string[] DeterminePackagesToAdd()
         {
             List<string> packagesToAdd = new();
             foreach (PlatformPackageEntry item in m_PackagesListView.itemsSource)
@@ -289,13 +289,10 @@ namespace UnityEditor.Build.Profile
                     packagesToAdd.Add(item.packageName);
                 }
             }
-            if (packagesToAdd.Count > 0)
-            {
-                PackageManager.Client.AddAndRemove(packagesToAdd.ToArray());
-            }
+            return packagesToAdd.ToArray();
         }
 
-        void AddSelectedBuildProfiles(BuildProfileCard card)
+        void AddSelectedBuildProfiles(BuildProfileCard card, string[] packagesToAdd)
         {
             bool noneSelected = true;
             for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
@@ -303,19 +300,19 @@ namespace UnityEditor.Build.Profile
                 var variant = card.preconfiguredSettingsVariants[ii];
                 if (variant.Selected)
                 {
-                    AddSingleBuildProfile(card, variant.Name, ii);
+                    AddSingleBuildProfile(card, variant.Name, ii, packagesToAdd);
                     noneSelected = false;
                 }
             }
             if (noneSelected)
             {
-                AddSingleBuildProfile(card, null, -1);
+                AddSingleBuildProfile(card, null, -1, packagesToAdd);
             }
         }
 
-        void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant)
+        void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAsset(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant);
+            BuildProfileDataSource.CreateNewAsset(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,

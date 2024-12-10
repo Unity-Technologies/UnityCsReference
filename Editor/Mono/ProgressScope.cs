@@ -10,14 +10,14 @@ internal partial struct ProgressScope : IDisposable
 {
     private UIntPtr scope;
 
-    public ProgressScope(string title, string text, float length = 1f, bool cancellable = false, bool skippable = false, bool forceShow = false)
+    public ProgressScope(string title, string text, float length = 1f, bool cancellable = false, bool skippable = false, bool forceUpdate = false, bool forceDisplay = false)
     {
-        scope = ProgressBarPushScope(title, text, length, cancellable, skippable, forceShow);
+        scope = ProgressBarPushScope(title, text, length, cancellable, skippable, forceUpdate, forceDisplay);
     }
 
-    public void SetText(string text, bool forceShow = false)
+    public void SetText(string text, bool forceUpdate = false, bool forceDisplay = false)
     {
-        ProgressBarSetText(text, forceShow);
+        ProgressBarSetText(text, forceUpdate, forceDisplay);
     }
 
     public void Dispose()

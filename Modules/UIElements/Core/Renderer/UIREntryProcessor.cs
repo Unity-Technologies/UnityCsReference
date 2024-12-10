@@ -135,6 +135,23 @@ namespace UnityEngine.UIElements.UIR
             m_IsDrawingMask = false;
         }
 
+        // Clear important references to prevent memory retention
+        public void ClearReferences()
+        {
+            m_PreProcessor.ClearReferences();
+
+            m_RenderChain = null;
+            m_CurrentElement = null;
+            m_Mesh = null;
+
+            m_FirstCommand = null;
+            m_LastCommand = null;
+            firstHeadCommand = null;
+            lastHeadCommand = null;
+            firstTailCommand = null;
+            lastTailCommand = null;
+        }
+
         public void ProcessHead()
         {
             m_IsTail = false;

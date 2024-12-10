@@ -334,6 +334,9 @@ namespace UnityEngine.UIElements
                 AddRootVisualElementToTree();
             }
 
+            if (TryGetComponent<UIRenderer>(out var renderer))
+                renderer.enabled = true;
+
             ResolveRuntimePanel();
         }
 
@@ -394,19 +397,20 @@ namespace UnityEngine.UIElements
 
             Debug.Assert(rtp.drawsInCameras);
 
-            float ppu = m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
-            if (ppu < UIRUtility.k_Epsilon)
-                ppu = Panel.k_DefaultPixelsPerUnit;
+            var localBounds = rootVisualElement.localBounds3D;
+            VisualElement.TransformAlignedBounds(ref rootVisualElement.worldTransformRef, ref localBounds);
 
-            float ppuScale = 1.0f / ppu;
-
-            // TODO: Compute actual aabb by accounting for 3D transforms.
-            var rect = rootVisualElement.boundingBox;
-            var center = rect.center;
-            center.y = -center.y;
-            renderer.localBounds = new Bounds(center * ppuScale, new Vector3(rect.width * ppuScale, rect.height * ppuScale, 0.0f));
+            renderer.localBounds = SanitizeRendererBounds(localBounds);
 
             UpdateCutRenderChainFlag();
+        }
+
+        Bounds SanitizeRendererBounds(Bounds b)
+        {
+            // The bounds may be invalid if the element is not layed out yet
+            if (float.IsNaN(b.size.x) || float.IsNaN(b.size.y) || float.IsNaN(b.size.z))
+                return new Bounds(Vector3.zero, Vector3.zero);
+            return b;
         }
 
         void AddOrRemoveRendererComponent()
@@ -693,7 +697,7 @@ namespace UnityEngine.UIElements
             }
             else
             {
-                m_RootVisualElement.style.position = Position.Relative;
+                m_RootVisualElement.style.position = Position.Absolute;
                 m_RootVisualElement.style.width = StyleKeyword.Null;
                 m_RootVisualElement.style.height = StyleKeyword.Null;
             }
@@ -737,6 +741,9 @@ namespace UnityEngine.UIElements
                     m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 m_RootVisualElement = null;
             }
+
+            if (TryGetComponent<UIRenderer>(out var renderer))
+                renderer.enabled = false;
         }
 
         private void OnTransformChildrenChanged()

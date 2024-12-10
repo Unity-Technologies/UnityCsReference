@@ -33,6 +33,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool has3DTransform => has3DTranslation || has3DRotation;
+
+        private bool has3DTranslation => computedStyle.translate.z != 0;
+        private bool has3DRotation
+        {
+            get
+            {
+                var r = computedStyle.rotate;
+                return r.angle != 0 && r.axis != Vector3.forward;
+            }
+        }
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static float Min(float a, float b, float c, float d)
         {
@@ -43,6 +55,20 @@ namespace UnityEngine.UIElements
         internal static float Max(float a, float b, float c, float d)
         {
             return Mathf.Max(Mathf.Max(a, b), Mathf.Max(c, d));
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal void TransformAlignedBoundsToParentSpace(ref Bounds bounds)
+        {
+            if (hasDefaultRotationAndScale)
+            {
+                bounds.center += positionWithLayout;
+            }
+            else
+            {
+                GetPivotedMatrixWithLayout(out var m);
+                bounds = CalculateConservativeBounds(ref m, bounds);
+            }
         }
 
         // Returns the same result as TransformAlignedRect(pivotedMatrixWithLayout, rec), but will try to use
@@ -94,10 +120,52 @@ namespace UnityEngine.UIElements
             return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
         }
 
+        internal static Bounds CalculateConservativeBounds(ref Matrix4x4 matrix, Bounds bounds)
+        {
+            bool IsNaN(Vector3 v) => float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z);
+
+            //Mathf.Min does not check for NAN
+            if (IsNaN(bounds.center) | IsNaN(bounds.extents))
+            {
+                //fall back to old algorithm
+                bounds = new Bounds(matrix.MultiplyPoint3x4(bounds.center), matrix.MultiplyVector(bounds.size));
+                OrderMinMaxBounds(ref bounds);
+                return bounds;
+            }
+
+            var bMin = bounds.min;
+            var bMax = bounds.max;
+            var rMin = Vector3.zero;
+            var rMax = Vector3.zero;
+
+            // For all 8 vertices of the cube
+            for (var i = 0; i < 8; i++)
+            {
+                var vertex = new Vector3(
+                    (i & 1) != 0 ? bMax.x : bMin.x,
+                    (i & 2) != 0 ? bMax.y : bMin.y,
+                    (i & 4) != 0 ? bMax.z : bMin.z
+                );
+
+                vertex = matrix.MultiplyPoint3x4(vertex);
+                rMin = i == 0 ? vertex : Vector3.Min(rMin, vertex);
+                rMax = i == 0 ? vertex : Vector3.Max(rMax, vertex);
+            }
+
+            bounds.SetMinMax(rMin, rMax);
+            return bounds;
+        }
+
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static void TransformAlignedRect(ref Matrix4x4 matrix, ref Rect rect)
         {
             rect =  CalculateConservativeRect(ref matrix, rect);
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static void TransformAlignedBounds(ref Matrix4x4 matrix, ref Bounds bounds)
+        {
+            bounds = CalculateConservativeBounds(ref matrix, bounds);
         }
 
         internal static void OrderMinMaxRect(ref Rect rect)
@@ -112,6 +180,12 @@ namespace UnityEngine.UIElements
                 rect.y += rect.height;
                 rect.height = -rect.height;
             }
+        }
+
+        internal static void OrderMinMaxBounds(ref Bounds bounds)
+        {
+            var e = bounds.extents;
+            bounds.extents = new Vector3(Mathf.Abs(e.x), Mathf.Abs(e.y), Mathf.Abs(e.z));
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

@@ -56,8 +56,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Resets the dynamic atlas of the panel. Textured elements will be repainted.
+        /// Resets the dynamic atlas of the panel.
         /// </summary>
+        /// <remarks>Call this method to force a defragmentation of the atlas, which might reduce GPU memory usage.
+        /// Use sparingly: the meshes and rendering commands of all textured elements will be released and will need to be regenerated.</remarks>
         public static void ResetDynamicAtlas(this IPanel panel)
         {
             var p = panel as BaseVisualElementPanel;
@@ -66,6 +68,21 @@ namespace UnityEngine.UIElements
 
             var atlas = p.atlas as DynamicAtlas;
             atlas?.Reset();
+        }
+
+        /// <summary>
+        /// Resets the renderer of the panel. Releases all meshes, rendering commands, and pools owned by the renderer.
+        /// </summary>
+        /// <remarks>Call this method to force a defragmentation and reordering of mesh memory. This can potentially
+        /// reduce draw calls and memory usage. Use sparingly, such as during Scene loading or for testing.</remarks>
+        public static void ResetRenderer(this IPanel panel)
+        {
+            var p = panel as BaseVisualElementPanel;
+            if (p == null)
+                return;
+
+            var renderer = p.panelRenderer;
+            renderer?.Reset();
         }
 
         /// <summary>

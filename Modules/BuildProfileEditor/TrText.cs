@@ -82,6 +82,17 @@ namespace UnityEditor.Build.Profile
         public static readonly string resetQualitySettingsDialogTitle = L10n.Tr("Reset Quality Settings to Globals");
         public static readonly string resetQualitySettingsDialogMessage = L10n.Tr("This will reset all Quality Settings overrides to the original globals.");
 
+        // Build Profile Bootstrap View
+        public static readonly string bootstrapHeader = L10n.Tr("Your build profile is being configured:");
+        public static readonly string packageAddStateUnknown = L10n.Tr(" - Package {0} in unknown state...");
+        public static readonly string packageAddPending = L10n.Tr(" - Package {0} pending...");
+        public static readonly string packageAddDownloading = L10n.Tr(" - Downloading package {0}...");
+        public static readonly string packageAddInstalling = L10n.Tr(" - Installing package {0}...");
+        public static readonly string packageAddReady = L10n.Tr(" - Package {0} ready.");
+        public static readonly string packageAddError = L10n.Tr(" - Error adding package {0}!");
+        public static readonly string configurationPending = L10n.Tr(" - Configuration pending...");
+        public static readonly string configurationRunning = L10n.Tr(" - Configuring settings...");
+
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");
         public static readonly string noModuleFoundWarning = L10n.Tr("No module found for the selected profile.");

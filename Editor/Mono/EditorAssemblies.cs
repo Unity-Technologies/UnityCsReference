@@ -102,6 +102,8 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static void ProcessInitializeOnLoadAttributes(Type[] types)
         {
+            if (types.Length == 0)
+                return;
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
 
             IEnumerable<Type> sortedTypes;
@@ -113,7 +115,9 @@ namespace UnityEditor
                 sortedTypes = types.OrderBy(x => Array.IndexOf(m_topologicallySortedAssemblies, x.Assembly));
             }
 
-            using var scope = new ProgressScope("Process InitializeOnLoad Attributes", "", forceShow: true);
+            bool detailedProgress = types.Length <= (uint) Debug.GetDiagnosticSwitch("MaxInitializeAttributeDetailOnProgressBar").value;
+
+            using var scope = new ProgressScope(detailedProgress ? "Processing InitializeOnLoad Attributes" : "Processing many InitializeOnLoad Attributes", "Hold on...", forceUpdate: true);
 
             foreach (Type type in sortedTypes)
             {
@@ -121,7 +125,8 @@ namespace UnityEditor
                            () => type.AssemblyQualifiedName))
                 {
                     var typeFullName = type?.FullName;
-                    scope.SetText($"{typeFullName}.{typeFullName}", true);
+                    if (detailedProgress)
+                        scope.SetText($"{typeFullName}.{typeFullName}", true);
                     try
                     {
                         RuntimeHelpers.RunClassConstructor(type.TypeHandle);
@@ -142,13 +147,18 @@ namespace UnityEditor
         private static void ProcessInitializeOnLoadMethodAttributes()
         {
             bool reportTimes = (bool)Debug.GetDiagnosticSwitch("EnableDomainReloadTimings").value;
-            using var scope = new ProgressScope("Process InitializeOnLoadMethod Attributes", "", forceShow: true);
-            foreach (var method in TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
+            var methods = TypeCache.GetMethodsWithAttribute<InitializeOnLoadMethodAttribute>();
+            if (methods.Count == 0) return;
+            bool showDetail = methods.Count <= (uint) Debug.GetDiagnosticSwitch("MaxInitializeAttributeDetailOnProgressBar").value;
+
+            using var scope = new ProgressScope(showDetail ? "Processing InitializeOnLoadMethod Attributes" : "Processing many InitializeOnLoadMethods", "Hold on...", forceUpdate: true);
+            foreach (var method in methods)
             {
                 using (_profilerMarkerProcessInitializeOnLoadMethodAttributes.Auto(reportTimes,
                            () => $"{method.DeclaringType?.FullName}::{method.Name}"))
                 {
-                    scope.SetText($"${method.DeclaringType?.FullName}.{method?.Name}", true);
+                    if (showDetail)
+                        scope.SetText($"{method.DeclaringType?.FullName}.{method?.Name}", true);
                     try
                     {
                         method.Invoke(null, null);

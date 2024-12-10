@@ -12,7 +12,6 @@ using System.Collections.Generic;
 
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.GPUDriven.Runtime")]
 [assembly: InternalsVisibleTo("Unity.ObjectDispatcher.Tests")]
-[assembly: InternalsVisibleTo("Unity.PathTracing.Runtime")]
 
 namespace UnityEngine
 {

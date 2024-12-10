@@ -42,13 +42,19 @@ namespace UnityEngine
 
         internal void SetResultAndRaiseContinuation(T result)
         {
-            _result = result;
-            _awaitable.RaiseManagedCompletion(null);
+            _result = result; // no need to lock here as the call to RaiseManagedCompletion actually acts as a barrier between there and the call to GetResult
+            _awaitable.RaiseManagedCompletion();
         }
 
         internal void SetExceptionAndRaiseContinuation(Exception exception)
         {
             _awaitable.RaiseManagedCompletion(exception);
+        }
+
+        internal Awaitable.AwaiterCompletionThreadAffinity CompletionThreadAffinity
+        {
+            get => _awaitable.CompletionThreadAffinity;
+            set => _awaitable.CompletionThreadAffinity = value;
         }
 
         public void Cancel()

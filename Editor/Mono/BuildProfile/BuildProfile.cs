@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -138,6 +137,9 @@ namespace UnityEditor.Build.Profile
             set => m_ScriptingDefines = value;
         }
 
+        [VisibleToOtherModules]
+        internal Action OnPackageAddProgress;
+
         [SerializeField]
         PlayerSettingsYaml m_PlayerSettingsYaml = new();
 
@@ -197,6 +199,10 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal bool CanBuildLocally()
         {
+            // Note: If the build profile is still being configured (package add info is present)
+            // we do not want it to be buildable.
+            if (BuildProfileContext.instance.TryGetPackageAddInfo(this, out _))
+                return false;
             // Note: A platform build profile may have a non-null value even if its module is not installed.
             // This scenario is true for server platform profiles, which are the same type as the standalone one.
             return platformBuildProfile != null && BuildProfileModuleUtil.IsModuleInstalled(platformGuid);
@@ -245,6 +251,19 @@ namespace UnityEditor.Build.Profile
 
             TryLoadGraphicsSettings();
             TryLoadQualitySettings();
+
+            if (BuildProfileContext.instance.TryGetPackageAddInfo(this, out var packageAddInfo))
+            {
+                packageAddInfo.OnPackageAddProgress = () =>
+                {
+                    OnPackageAddProgress?.Invoke();
+                };
+                packageAddInfo.OnPackageAddComplete = () =>
+                {
+                    NotifyBuildProfileExtensionOfCreation(packageAddInfo.preconfiguredSettingsVariant);
+                };
+                packageAddInfo.RequestPackageInstallation();
+            }
 
             if (!EditorUserBuildSettings.isBuildProfileAvailable
                 || BuildProfileContext.activeProfile != this)
@@ -306,7 +325,9 @@ namespace UnityEditor.Build.Profile
             // OnDisable is called when entering play mode, during domain reloads, or when the object is destroyed.
             // Avoid removing player settings for the first two cases to prevent slow syncs (e.g., color space) caused by global manager updates.
             if (!EditorApplication.isUpdating)
+            {
                 RemovePlayerSettings();
+            }
         }
 
         [MenuItem("CONTEXT/BuildProfile/Reset", false)]

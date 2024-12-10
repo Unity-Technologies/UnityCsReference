@@ -102,10 +102,10 @@ namespace UnityEditor.Build.Profile.Handlers
         /// Create a new custom build profile asset with the default name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        internal static void CreateNewAsset(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant)
+        internal static void CreateNewAsset(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
             EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant);
+            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
         }
 
         /// <summary>

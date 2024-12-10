@@ -27,7 +27,7 @@ namespace UnityEditor.LightBaking
         [RequiredByNativeCode]
         internal static bool Bake(string bakeInputPath, string lightmapRequestsPath, string lightProbeRequestsPath, string bakeOutputFolderPath, BakeProgressState progressState)
         {
-            Type strangler = Type.GetType("UnityEngine.PathTracing.LightBakerBridge.LightBakerStrangler, Unity.PathTracing.Runtime");
+            Type strangler = Type.GetType("UnityEditor.PathTracing.LightBakerBridge.LightBakerStrangler, Unity.PathTracing.Editor");
             if (strangler == null)
                 return false;
 

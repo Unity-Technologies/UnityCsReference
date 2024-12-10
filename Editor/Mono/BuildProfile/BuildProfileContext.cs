@@ -114,6 +114,57 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        [SerializeField]
+        List<BuildProfilePackageAddInfo> m_PackageAddInfos = new();
+
+        [VisibleToOtherModules]
+        internal bool TryGetPackageAddInfo(BuildProfile profile, out BuildProfilePackageAddInfo result)
+        {
+            var profileGuid = GetProfileGUID(profile);
+            foreach (var packageAddInfo in m_PackageAddInfos)
+            {
+                if (packageAddInfo.profileGuid == profileGuid)
+                {
+                    result = packageAddInfo;
+                    return true;
+                }
+            }
+            result = null;
+            return false;
+        }
+
+        [VisibleToOtherModules]
+        internal void AddPackageAddInfo(BuildProfile profile, string[] packagesToAdd, int preconfiguredSettingsVariant)
+        {
+            if ((packagesToAdd.Length == 0) && (preconfiguredSettingsVariant == BuildProfilePackageAddInfo.preconfiguredSettingsVariantNotSet))
+                return;
+
+            var profileGuid = GetProfileGUID(profile);
+            var packageAddInfo = new BuildProfilePackageAddInfo()
+            {
+                profileGuid = profileGuid,
+                packagesToAdd = packagesToAdd,
+                preconfiguredSettingsVariant = preconfiguredSettingsVariant
+            };
+            m_PackageAddInfos.Add(packageAddInfo);
+        }
+
+        [VisibleToOtherModules]
+        internal void ClearPackageAddInfo(BuildProfile profile)
+        {
+            if (TryGetPackageAddInfo(profile, out BuildProfilePackageAddInfo packageAddInfo))
+            {
+                m_PackageAddInfos.Remove(packageAddInfo);
+            }
+        }
+
+        string GetProfileGUID(BuildProfile profile)
+        {
+            var profilePath = AssetDatabase.GetAssetPath(profile);
+            var profileGuid = AssetDatabase.AssetPathToGUID(profilePath);
+            return profileGuid;
+        }
+
         static void OnActiveProfileChangedForSettingExtension(BuildProfile previous, BuildProfile newProfile)
         {
             BuildTargetDiscovery.TryGetBuildTarget(EditorUserBuildSettings.activeBuildTarget, out IBuildTarget iBuildTarget);

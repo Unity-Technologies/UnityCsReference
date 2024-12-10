@@ -3030,6 +3030,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\VisualTreeViewDataUpdater.cs">
       <Link>Modules\UIElements\Core\VisualTreeViewDataUpdater.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\WorldSpaceData.cs">
+      <Link>Modules\UIElements\Core\WorldSpaceData.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\InputSystem\InputSystemEventSystem.cs">
       <Link>Modules\UIElements\InputSystem\InputSystemEventSystem.cs</Link>
     </Compile>

@@ -16,6 +16,7 @@ namespace UnityEngine
         private readonly List<WorkRequest> m_AsyncWorkQueue;
         private readonly List<WorkRequest> m_CurrentFrameWork = new List<WorkRequest>(kAwqInitialCapacity);
         private readonly int m_MainThreadID;
+        internal int MainThreadId => m_MainThreadID;
         private int m_TrackedCount = 0;
 
         private UnitySynchronizationContext(int mainThreadID)

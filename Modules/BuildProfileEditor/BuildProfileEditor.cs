@@ -92,6 +92,11 @@ namespace UnityEditor.Build.Profile
 
             CleanupEventHandlers();
 
+            if (BuildProfileContext.instance.TryGetPackageAddInfo(profile, out var packageAddInfo))
+            {
+                return CreateBootstrapGUI(packageAddInfo);
+            }
+
             var root = new VisualElement();
             var visualTree = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
             var windowUss = EditorGUIUtility.LoadRequired(Util.k_StyleSheet) as StyleSheet;
@@ -154,6 +159,16 @@ namespace UnityEditor.Build.Profile
             ShowPlatformSettings(profile, platformSettingsBaseRoot, platformBuildWarningsRoot);
             root.Bind(serializedObject);
             return root;
+        }
+
+        VisualElement CreateBootstrapGUI(BuildProfilePackageAddInfo packageAddInfo)
+        {
+            var bootstrapView = new BuildProfileBootstrapView();
+            m_Profile.OnPackageAddProgress = () =>
+            {
+                bootstrapView.Set(packageAddInfo.GetPackageAddProgressInfo());
+            };
+            return bootstrapView;
         }
 
         /// <summary>
@@ -347,6 +362,9 @@ namespace UnityEditor.Build.Profile
 
         void CleanupEventHandlers()
         {
+            if (m_Profile is not null)
+                m_Profile.OnPackageAddProgress = null;
+
             if (m_SceneList is not null)
                 Undo.undoRedoEvent -= m_SceneList.OnUndoRedo;
 

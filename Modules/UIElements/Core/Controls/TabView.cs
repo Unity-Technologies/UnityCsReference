@@ -184,9 +184,29 @@ namespace UnityEngine.UIElements
         public static readonly string verticalUssClassName = ussClassName + "__vertical";
 
         /// <summary>
+        /// USS class name for the content viewport of this type.
+        /// </summary>
+        public static readonly string viewportUssClassName = ussClassName + "__content-viewport";
+
+        /// <summary>
+        /// USS class name for the scroll next button of this type.
+        /// </summary>
+        public static readonly string nextButtonUssClassName = ussClassName + "__next-button";
+
+        /// <summary>
+        /// USS class name for the scroll previous button of this type.
+        /// </summary>
+        public static readonly string previousButtonUssClassName = ussClassName + "__previous-button";
+
+        /// <summary>
         /// The container for the content of the <see cref="TabView"/>.
         /// </summary>
         public override VisualElement contentContainer => m_ContentContainer;
+
+        /// <summary>
+        /// Represents the visible part of contentContainer.
+        /// </summary>
+        public VisualElement contentViewport { get; }
 
         VisualElement m_HeaderContainer;
         VisualElement m_ContentContainer;
@@ -200,6 +220,16 @@ namespace UnityEngine.UIElements
         internal List<Tab> tabs => m_Tabs;
         internal List<VisualElement> tabHeaders => m_TabHeaders;
         internal VisualElement header => m_HeaderContainer;
+
+        internal RepeatButton nextButton { get; private set; }
+        internal RepeatButton previousButton { get; private set; }
+
+        const float k_SizeThreshold = 0.001f;
+        const float k_PixelThreshold = 50f;
+
+        internal float scrollableWidth => Mathf.Max(0, m_HeaderContainer.boundingBox.width - contentViewport.layout.width);
+
+        internal bool needsButtons => scrollableWidth > k_SizeThreshold;
 
         /// <summary>
         /// Called when the active tab is reassigned.
@@ -302,14 +332,30 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
+            contentViewport = new VisualElement();
+            contentViewport.AddToClassList(viewportUssClassName);
+            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.pickingMode = PickingMode.Ignore;
+
+            hierarchy.Add(contentViewport);
+
             m_HeaderContainer = new VisualElement() { name = headerContainerClassName, classList = { headerContainerClassName }};
-            hierarchy.Add(m_HeaderContainer);
+            header.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.Add(m_HeaderContainer);
 
             m_ContentContainer = new VisualElement() { name = contentContainerUssClassName, classList = { contentContainerUssClassName }};
             hierarchy.Add(m_ContentContainer);
 
+            nextButton = new RepeatButton(OnNextClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { nextButtonUssClassName } };
+            previousButton = new RepeatButton(OnPreviousClicked, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) { classList = { previousButtonUssClassName } };
+
+            contentViewport.Add(nextButton);
+            contentViewport.Add(previousButton);
+
             m_ContentContainer.elementAdded += OnElementAdded;
             m_ContentContainer.elementRemoved += OnElementRemoved;
+
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
 
         internal override void OnViewDataReady()
@@ -329,6 +375,95 @@ namespace UnityEngine.UIElements
             {
                 m_ApplyingViewState = false;
             }
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (evt.originPanel == null)
+                return;
+
+            header.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            contentViewport.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+        }
+
+        void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            // Only affected by dimension changes
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            // Store current and new positions
+            var currentPosition = m_HeaderContainer.transform.position;
+            var newPosition = currentPosition;
+
+            // Calculate new position based on the conditions provided
+            if ((!needsButtons || nextButton.resolvedStyle.display == DisplayStyle.None) && currentPosition.x < 0)
+            {
+                // The available space between the transform and the viewport
+                newPosition.x = Math.Min(0, currentPosition.x + (contentViewport.worldBound.xMax - m_HeaderContainer.worldBound.xMax));
+            }
+
+            // Update transform position to new position
+            if (newPosition != currentPosition)  // Only apply if there's a change
+            {
+                m_HeaderContainer.transform.position = newPosition;
+            }
+
+            UpdateButtons(newPosition);
+        }
+
+        void OnNextClicked()
+        {
+            var t = m_HeaderContainer.transform.position;
+            var nextHiddenTab = m_TabHeaders.Find(tab =>
+            {
+                // if it's not the last tab, check there's a 50px difference between the tab and the viewport
+                if (tab.worldBound.xMax - contentViewport.worldBound.xMax < k_PixelThreshold && m_TabHeaders.IndexOf(tab) != m_TabHeaders.Count - 1)
+                    return false;
+                return tab.worldBound.xMax >= contentViewport.worldBound.xMax;
+            });
+
+            if (nextHiddenTab != null)
+            {
+                // Move the position to align the end of the next hidden tab with the viewport
+                t.x = -(nextHiddenTab.layout.xMax + nextButton.layout.width - contentViewport.layout.xMax);
+                // Clamp the position to ensure we don't scroll past the content
+                t.x = Mathf.Max(t.x, -scrollableWidth);
+                m_HeaderContainer.transform.position = t;
+            }
+            // We need to pass the content transform because it takes a frame to update the transform position
+            UpdateButtons(t);
+        }
+
+        void OnPreviousClicked()
+        {
+            var t = m_HeaderContainer.transform.position;
+            var previousHiddenTab = m_TabHeaders.FindLast(tab =>
+            {
+                // if it's not the first tab, check there's a 50px difference between the tab and the viewport
+                if (contentViewport.worldBound.xMin - tab.worldBound.xMin < k_PixelThreshold && m_TabHeaders.IndexOf(tab) != 0)
+                    return false;
+                return tab.worldBound.xMin <= contentViewport.worldBound.xMin;
+            });
+
+            if (previousHiddenTab != null)
+            {
+                // Move the position to align the start of the previous hidden tab with the viewport
+                t.x = contentViewport.layout.xMin + previousButton.layout.width - previousHiddenTab.layout.xMin;
+                // Clamp the position to ensure we don't scroll past the content
+                t.x = Mathf.Min(t.x, 0);
+                m_HeaderContainer.transform.position = t;
+            }
+            // We need to pass the content transform because it takes a frame to update the transform position
+            UpdateButtons(t);
+        }
+
+        internal void UpdateButtons(Vector3 contentTransform)
+        {
+            nextButton.style.display = contentTransform.x > -scrollableWidth ? DisplayStyle.Flex : DisplayStyle.None;
+            previousButton.style.display = contentTransform.x < 0 ? DisplayStyle.Flex : DisplayStyle.None;
         }
 
         void SaveViewState()

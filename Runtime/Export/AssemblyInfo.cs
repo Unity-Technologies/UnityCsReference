@@ -59,6 +59,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
+[assembly: InternalsVisibleTo("Unity.PathTracing.Editor")]
 
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("UnityEditor.Modules.Animation.tests.AnimationWindow")]
@@ -84,6 +85,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Timeline")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework.Tests")]
+[assembly: InternalsVisibleTo("Unity.PathTracing.Runtime")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework.Tests")]

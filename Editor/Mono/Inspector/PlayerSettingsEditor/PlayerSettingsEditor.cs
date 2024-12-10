@@ -3954,69 +3954,6 @@ namespace UnityEditor
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
         }
 
-        public void BrowseablePathProperty(string propertyLabel, SerializedProperty property, string browsePanelTitle, string extension, string dir)
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.PrefixLabel(EditorGUIUtility.TextContent(propertyLabel));
-
-            GUIContent browseBtnLabel = EditorGUIUtility.TrTextContent("...");
-            Vector2 sizeOfLabel = GUI.skin.GetStyle("Button").CalcSize(browseBtnLabel);
-
-            if (GUILayout.Button(browseBtnLabel, EditorStyles.miniButton, GUILayout.MaxWidth(sizeOfLabel.x)))
-            {
-                GUI.FocusControl("");
-
-                string title = EditorGUIUtility.TempContent(browsePanelTitle).text;
-                string currDirectory = string.IsNullOrEmpty(dir) ? Directory.GetCurrentDirectory().Replace('\\', '/') + "/" : dir.Replace('\\', '/') + "/";
-                string newStringValue = "";
-
-                if (string.IsNullOrEmpty(extension))
-                    newStringValue = EditorUtility.OpenFolderPanel(title, currDirectory, "");
-                else
-                    newStringValue = EditorUtility.OpenFilePanel(title, currDirectory, extension);
-
-                if (newStringValue.StartsWith(currDirectory))
-                    newStringValue = newStringValue.Substring(currDirectory.Length);
-
-                if (!string.IsNullOrEmpty(newStringValue))
-                {
-                    property.stringValue = newStringValue;
-                    serializedObject.ApplyModifiedProperties();
-                }
-            }
-
-            GUIContent gc = null;
-            bool emptyString = string.IsNullOrEmpty(property.stringValue);
-            using (new EditorGUI.DisabledScope(emptyString))
-            {
-                if (emptyString)
-                {
-                    gc = EditorGUIUtility.TrTextContent("Not selected.");
-                }
-                else
-                {
-                    gc = EditorGUIUtility.TempContent(property.stringValue);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                GUILayoutOption[] options = { GUILayout.Width(32), GUILayout.ExpandWidth(true) };
-                string modifiedString = EditorGUILayout.TextArea(gc.text, options);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (string.IsNullOrEmpty(modifiedString))
-                    {
-                        property.stringValue = "";
-                        serializedObject.ApplyModifiedProperties();
-                        GUI.FocusControl("");
-                    }
-                }
-            }
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space();
-        }
-
         internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
         {
             BuildPathBoxButton(prop, uiString, directory, null, null);
@@ -4033,8 +3970,8 @@ namespace UnityEditor
             Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
             Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
 
-            string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
-            EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+            string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
+            EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
 
             bool changed = false;
             if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
@@ -4080,8 +4017,8 @@ namespace UnityEditor
                 Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
                 Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
 
-                string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
-                EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+                string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
+                EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
 
                 if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
                 {
