@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleBackgroundRepeat backgroundRepeat { get; set; }
         /// <summary>
-        /// Background image size value.
+        /// Background image size value. Transitions are fully supported only when using size in pixels or percentages, such as pixel-to-pixel or percentage-to-percentage transitions.
         /// </summary>
         StyleBackgroundSize backgroundSize { get; set; }
         /// <summary>

@@ -12,8 +12,8 @@ namespace UnityEditor.ShortcutManagement
 {
     class ShortcutManagerWindowViewController : IShortcutManagerWindowViewController, IKeyBindingStateProvider
     {
-        static readonly string k_AllUnityCommands = L10n.Tr("All Unity Commands");
-        static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
+        internal static readonly string k_AllUnityCommands = L10n.Tr("All Unity Commands");
+        internal static readonly string k_CommandsWithConflicts = L10n.Tr("Binding Conflicts");
         internal static readonly string k_MainMenu = L10n.Tr("Main Menu");
 
         static readonly string k_ProfileNameEmpty = L10n.Tr("Profile name is empty");
@@ -332,6 +332,11 @@ namespace UnityEditor.ShortcutManagement
 
         public int categorySeparatorIndex { get; } = k_MainMenuIndex;
 
+        public bool IsCategorySelected(string category)
+        {
+            return selectedCategory != null && selectedCategory.Equals(category);
+        }
+
         public void SetCategorySelected(string category)
         {
             selectedCategory = category;
@@ -454,9 +459,9 @@ namespace UnityEditor.ShortcutManagement
 
             var identifierList = m_CategoryToEntriesList[category];
 
-            foreach (var indentifier in identifierList)
+            foreach (var identifier in identifierList)
             {
-                var entry = indentifier;
+                var entry = identifier;
                 if (BelongsToSearch(entry))
                 {
                     m_SelectedCategoryShortcutList.Add(entry);

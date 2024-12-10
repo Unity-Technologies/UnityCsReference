@@ -69,6 +69,7 @@ namespace UnityEditor.ShortcutManagement
         bool CanExportProfile();
         void ExportProfile(string path);
 
+        bool IsCategorySelected(string category);
         void SetCategorySelected(string category);
         int selectedCategoryIndex
         {
@@ -216,12 +217,18 @@ namespace UnityEditor.ShortcutManagement
             if (m_View.deviceContainer is null)
                 return;
 
-            var displayKeyboard = position.width > k_MinSizeToShowKeyboard.x &&
-                                  position.height > k_MinSizeToShowKeyboard.y
+            var displayKeyboard = position.width >= k_MinSizeToShowKeyboard.x &&
+                                  position.height >= k_MinSizeToShowKeyboard.y
                 ? DisplayStyle.Flex
                 : DisplayStyle.None;
 
-            m_View.SetKeyboardDisplay(displayKeyboard);
+            SetKeyboardDisplay(displayKeyboard);
+        }
+
+        // Used by tests
+        internal void SetKeyboardDisplay(DisplayStyle style)
+        {
+            m_View.SetKeyboardDisplay(style);
         }
 
         public static void ShowConflicts()

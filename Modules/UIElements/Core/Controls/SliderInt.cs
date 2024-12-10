@@ -49,8 +49,6 @@ namespace UnityEngine.UIElements
 
             public override void Deserialize(object obj)
             {
-                base.Deserialize(obj);
-
                 var e = (SliderInt)obj;
                 if (ShouldWriteAttributeValue(lowValue_UxmlAttributeFlags))
                     e.lowValue = lowValue;
@@ -64,6 +62,9 @@ namespace UnityEngine.UIElements
                     e.showInputField = showInputField;
                 if (ShouldWriteAttributeValue(inverted_UxmlAttributeFlags))
                     e.inverted = inverted;
+
+                // We need to apply the lowValue and highValue before the value to avoid incorrect clamping.
+                base.Deserialize(obj);
             }
         }
 

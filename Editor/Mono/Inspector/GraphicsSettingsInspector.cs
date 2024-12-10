@@ -108,6 +108,7 @@ namespace UnityEditor
 
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Lightmap", ShaderUtil.CalculateLightmapStrippingFromCurrentScene);
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
+            BindEnumFieldToLightProbe(m_CurrentRoot);
 
             if (globalSettingsExist)
             {
@@ -274,10 +275,16 @@ namespace UnityEditor
             var enumMode = content.MandatoryQ<EnumField>($"{id}Modes");
             var enumModeGroup = content.MandatoryQ<VisualElement>($"{id}ModesGroup");
             var enumModeProperty = serializedObject.FindProperty($"m_{id}Stripping");
-            var lightmapModesUpdate = UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
+            UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
                 mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
-            lightmapModesUpdate?.Invoke();
             content.MandatoryQ<Button>($"Import{id}FromCurrentScene").clicked += buttonCallback;
+        }
+
+        void BindEnumFieldToLightProbe(VisualElement content)
+        {
+            var enumMode = content.MandatoryQ<EnumField>("LightProbe");
+            var enumModeProperty = serializedObject.FindProperty(enumMode.bindingPath);
+            UIElementsEditorUtility.BindSerializedProperty<LightProbeOutsideHullStrategy>(enumMode, enumModeProperty);
         }
 
         void SetupTransparencySortMode(VisualElement root)

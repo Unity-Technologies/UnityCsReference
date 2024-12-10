@@ -12,18 +12,20 @@ namespace UnityEngine
     partial class Awaitable
     {
         static SynchronizationContext _synchronizationContext;
-        internal static void SetSynchronizationContext(SynchronizationContext synchronizationContext) {
+        static int _mainThreadId;
+        internal static void SetSynchronizationContext(UnitySynchronizationContext synchronizationContext) {
             _synchronizationContext = synchronizationContext;
+            _mainThreadId = synchronizationContext.MainThreadId;
         }
 
         public static MainThreadAwaitable MainThreadAsync()
         {
-            return new MainThreadAwaitable(_synchronizationContext);
+            return new MainThreadAwaitable(_synchronizationContext, _mainThreadId);
         }
 
         public static BackgroundThreadAwaitable BackgroundThreadAsync()
         {
-            return new BackgroundThreadAwaitable(_synchronizationContext);
+            return new BackgroundThreadAwaitable(_synchronizationContext, _mainThreadId);
         }
     }
 
@@ -31,15 +33,19 @@ namespace UnityEngine
     public struct MainThreadAwaitable : INotifyCompletion
     {
         private readonly SynchronizationContext _synchronizationContext;
-        internal MainThreadAwaitable(SynchronizationContext syncContext)
+        private readonly int _mainThreadId;
+
+        internal MainThreadAwaitable(SynchronizationContext syncContext, int mainThreadId)
         {
             _synchronizationContext = syncContext;
+            _mainThreadId = mainThreadId;
         }
 
         public MainThreadAwaitable GetAwaiter() => this;
-        public bool IsCompleted => _synchronizationContext == SynchronizationContext.Current;
+        public bool IsCompleted => Thread.CurrentThread.ManagedThreadId == _mainThreadId;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void GetResult() { }
+        public void GetResult() {
+        }
 
         public void OnCompleted(Action continuation)
         {
@@ -56,15 +62,19 @@ namespace UnityEngine
     public struct BackgroundThreadAwaitable : INotifyCompletion
     {
         private readonly SynchronizationContext _synchronizationContext;
-        internal BackgroundThreadAwaitable(SynchronizationContext syncContext)
+        private readonly int _mainThreadId;
+
+        internal BackgroundThreadAwaitable(SynchronizationContext syncContext, int mainThreadId)
         {
             _synchronizationContext = syncContext;
+            _mainThreadId = mainThreadId;
         }
 
         public BackgroundThreadAwaitable GetAwaiter() => this;
-        public bool IsCompleted => _synchronizationContext != SynchronizationContext.Current;
+        public bool IsCompleted => Thread.CurrentThread.ManagedThreadId != _mainThreadId;
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void GetResult() { }
+        public void GetResult() {
+        }
 
         public void OnCompleted(Action continuation)
         {
