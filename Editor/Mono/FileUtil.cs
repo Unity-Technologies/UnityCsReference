@@ -77,9 +77,9 @@ namespace UnityEditor
             CopyDirectoryRecursive(source, target, overwrite: false, ignoreMeta: false);
         }
 
-        internal static void CopyDirectoryRecursivePreserveSymlinks(string source, string target)
+        internal static void CopyDirectoryRecursivePreserveSymlinksFiltered(string source, string target, string regExExcludeFilter)
         {
-            CopyDirectoryFiltered(source, target, false, regExExcludeFilter: null, true, true);
+            CopyDirectoryFiltered(source, target, false, regExExcludeFilter, true, true);
         }
 
         internal static void CopyDirectoryRecursive(string source, string target, bool overwrite)
