@@ -821,7 +821,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
             }
 
-            foreach (var projectRelativeImportPath in s_StyleSheetProjectRelativeImportPaths)
+            // Array copy to iterate over the paths. This avoids in-place editing in the recursive call
+            foreach (var projectRelativeImportPath in s_StyleSheetProjectRelativeImportPaths.ToArray())
             {
                 if (s_StyleSheetsUnsortedDependencies.Contains(projectRelativeImportPath))
                 {

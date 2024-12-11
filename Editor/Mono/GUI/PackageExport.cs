@@ -19,6 +19,7 @@ namespace UnityEditor
         [SerializeField] private bool m_IncludeDependencies = true;
         [SerializeField] private bool m_IncludeScripts = true;
         [SerializeField] private TreeViewState m_TreeViewState;
+        [SerializeField] private string[] m_ProjectBrowserSelection;
         [NonSerialized] private PackageExportTreeView m_Tree;
         [NonSerialized] private bool m_DidScheduleUpdate = false;
 
@@ -44,7 +45,7 @@ namespace UnityEditor
             minSize = new Vector2(350, 350);
         }
 
-        // Called from from menu
+        // Called from menu
         static internal void ShowExportPackage()
         {
             GetWindow<PackageExport>(true, "Exporting package");
@@ -275,7 +276,8 @@ namespace UnityEditor
         {
             UnscheduleBuildAssetList();
 
-            m_ExportPackageItems = GetAssetItemsForExport(Selection.assetGUIDsDeepSelection, m_IncludeDependencies, m_IncludeScripts).ToArray();
+            m_ProjectBrowserSelection ??= Selection.assetGUIDsDeepSelection;
+            m_ExportPackageItems = GetAssetItemsForExport(m_ProjectBrowserSelection, m_IncludeDependencies, m_IncludeScripts).ToArray();
 
             // GUI is reconstructed in OnGUI (when needed)
             m_Tree = null;
