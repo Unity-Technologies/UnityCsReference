@@ -807,6 +807,11 @@ namespace UnityEngine.Events
             }
         }
 
+        internal int GetCallsCount()
+        {
+            return m_Calls.Count;
+        }
+
         public int GetPersistentEventCount()
         {
             return m_PersistentCalls.Count;

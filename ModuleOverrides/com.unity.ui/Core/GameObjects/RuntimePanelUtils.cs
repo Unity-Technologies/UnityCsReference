@@ -56,8 +56,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Resets the dynamic atlas of the panel. Textured elements will be repainted.
+        /// Resets the dynamic atlas of the panel.
         /// </summary>
+        /// <remarks>Call this method to force a defragmentation of the atlas, which might reduce GPU memory usage.
+        /// Use sparingly: the meshes and rendering commands of all textured elements will be released and will need to be regenerated.</remarks>
         public static void ResetDynamicAtlas(this IPanel panel)
         {
             var p = panel as BaseVisualElementPanel;

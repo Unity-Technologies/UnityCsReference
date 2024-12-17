@@ -83,8 +83,19 @@ namespace UnityEditor.TerrainTools
             }
         }
 
+		private GUIContent globalMipmapWarning;
         public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
+            if (QualitySettings.globalTextureMipmapLimit != 0)
+            {
+                if (globalMipmapWarning == null)
+                {
+                    globalMipmapWarning = EditorGUIUtility.TrTextContent(
+                        "The Global Mipmap Limit is a non-zero value. This will result in poor painting performance and reduced paint quality. Unity recommends that you change the limit to zero in the project quality settings.",
+                        EditorGUIUtility.FindTexture("console.warnicon"));
+                }
+                EditorGUILayout.HelpBox(globalMipmapWarning);
+            }
             GUILayout.Label("Settings", EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();

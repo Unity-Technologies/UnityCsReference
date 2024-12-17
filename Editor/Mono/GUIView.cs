@@ -314,5 +314,14 @@ namespace UnityEditor
                 System.Diagnostics.Process.Start(System.IO.Path.GetDirectoryName(path));
             }
         }
+
+        [RequiredByNativeCode]
+        private void SetActiveWindowAsPresented()
+        {
+            if ((this is HostView h) && h.actualView)
+            {
+                h.actualView.m_IsPresented = true;
+            }
+        }
     }
 } //namespace
