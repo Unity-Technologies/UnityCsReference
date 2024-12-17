@@ -153,6 +153,8 @@ namespace UnityEditor
             m_ViewDataDictionary = null;
         }
 
+        [NonSerialized] internal bool m_IsPresented = false;
+
         // The GameView rect is in GUI space of the view
         Rect m_GameViewRect;
         Rect m_GameViewClippedRect;
@@ -244,6 +246,8 @@ namespace UnityEditor
             }
             Repaint();
         }
+
+        internal CustomYieldInstruction WaitUntilPresented() => new WaitUntil(() => m_IsPresented);
 
         internal GUIContent GetLocalizedTitleContent()
         {

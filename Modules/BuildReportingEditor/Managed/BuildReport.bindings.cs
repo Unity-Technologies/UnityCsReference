@@ -63,7 +63,7 @@ namespace UnityEditor.Build.Reporting
         internal extern void DeleteAllFileEntries();
 
         [FreeFunction("BuildReporting::SummarizeErrors", HasExplicitThis = true)]
-        internal extern string SummarizeErrors();
+        public extern string SummarizeErrors();
 
         internal extern void AddMessage(LogType messageType, string message, string exceptionType);
 
@@ -92,7 +92,7 @@ namespace UnityEditor.Build.Reporting
         internal extern Object[] GetAllAppendices();
 
         [FreeFunction("BuildReporting::GetLatestReport")]
-        internal static extern BuildReport GetLatestReport();
+        public static extern BuildReport GetLatestReport();
 
         internal extern void SetBuildGUID(GUID guid);
     }
