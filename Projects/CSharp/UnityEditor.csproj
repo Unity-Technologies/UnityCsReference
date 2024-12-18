@@ -690,6 +690,9 @@
     <Compile Include="..\..\Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs">
       <Link>Editor\Mono\BuildPipeline\DesktopStandaloneUserBuildSettings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\BuildPipeline\IPostprocessLaunch.cs">
+      <Link>Editor\Mono\BuildPipeline\IPostprocessLaunch.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs">
       <Link>Editor\Mono\BuildPipeline\Il2Cpp\IL2CPPUtils.cs</Link>
     </Compile>
@@ -3819,6 +3822,9 @@
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerMaskField.cs">
       <Link>Editor\Mono\UIElements\Controls\LayerMaskField.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UIElements\Controls\Mask64Field.cs">
+      <Link>Editor\Mono\UIElements\Controls\Mask64Field.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UIElements\Controls\MaskField.cs">
       <Link>Editor\Mono\UIElements\Controls\MaskField.cs</Link>
     </Compile>
@@ -4517,6 +4523,9 @@
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\AssetImportOverridesWindow.cs">
       <Link>Modules\BuildProfileEditor\AssetImportOverridesWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation.cs">
+      <Link>Modules\BuildProfileEditor\BuildAutomation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileEditor.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileEditor.cs</Link>
@@ -9335,6 +9344,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\LongFieldSnippet.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\Mask64FieldSnippet.cs">
+      <Link>Modules\UIElementsSamplesEditor\Snippets\Mask64FieldSnippet.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElementsSamplesEditor\Snippets\MaskFieldSnippet.cs">
       <Link>Modules\UIElementsSamplesEditor\Snippets\MaskFieldSnippet.cs</Link>

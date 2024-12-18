@@ -517,7 +517,7 @@ namespace UnityEditor.Search.Providers
                 if (GlobalObjectId.TryParse(searchQuery, out var gid))
                 {
                     var obj = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(gid);
-                    var objPath = SearchUtils.GetObjectPath(obj);
+                    var objPath = SearchUtils.GetObjectPath(obj, false);
                     var info = new AssetMetaInfo(objPath, gid,
                         gid.identifierType == (int)IdentifierType.kImportedAsset ? SearchDocumentFlags.Asset : SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
                     yield return provider.CreateItem(context, gid.ToString(), -1, objPath, null, null, info);

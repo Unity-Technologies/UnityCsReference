@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEngine;
 
@@ -63,6 +64,28 @@ namespace UnityEditor.DeploymentTargets
         public DeploymentTargetStatus status;
     }
 
+    internal interface IDeploymentLaunchResult
+    {
+        public bool Success { get; }
+        public string Errors { get; }
+    }
+
+    internal class DefaultDeploymentLaunchResult : IDeploymentLaunchResult
+    {
+        public bool Success { get; }
+        public string Errors { get; }
+
+        public DefaultDeploymentLaunchResult(bool success, string errors = null)
+        {
+            this.Success = success;
+
+            if (!success && string.IsNullOrEmpty(errors))
+                Debug.LogWarning("Deployment launch failed, but no error was provided.");
+
+            Errors = errors == null ? string.Empty : errors;
+        }
+    }
+
     [Flags]
     internal enum DeploymentTargetSupportFlags
     {
@@ -116,9 +139,20 @@ namespace UnityEditor.DeploymentTargets
     internal class DeploymentOperationFailedException : Exception
     {
         public readonly string title;
+        public IDeploymentLaunchResult launchResult { get; }
+
         public DeploymentOperationFailedException(string title, string message, Exception inner = null) : base(message, inner)
         {
             this.title = title;
+            this.launchResult = new DefaultDeploymentLaunchResult(false, message);
+        }
+
+        public DeploymentOperationFailedException(string title, string message, DefaultDeploymentLaunchResult result, Exception inner = null) : base(message, inner)
+        {
+            this.title = title;
+            this.launchResult = result;
+            if (result != null && !result.Success)
+                Debug.LogWarning($"Creating DeploymentOperationFailedException('{title}') , but launch result says it's succeeded?");
         }
     }
 
@@ -155,6 +189,6 @@ namespace UnityEditor.DeploymentTargets
         // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
         // Throws DeploymentOperationAbortedException if process is cancelled by the user.
         //  Can be called from a background thread
-        void LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
+        IDeploymentLaunchResult LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
     }
 }

@@ -17,8 +17,8 @@ internal class BuildProfileBootstrapView : VisualElement
 
     protected readonly Label m_PackageAddProgressLabel;
 
-    StringBuilder m_MessageBuilder = new();
-
+    private VisualElement m_Spinner;
+    private bool m_SpinnerHasStarted = false;
     internal BuildProfileBootstrapView()
     {
         var uxml = EditorGUIUtility.LoadRequired(k_Uxml) as VisualTreeAsset;
@@ -26,42 +26,41 @@ internal class BuildProfileBootstrapView : VisualElement
         styleSheets.Add(uss);
         uxml.CloneTree(this);
         m_PackageAddProgressLabel = this.Q<Label>("package-add-progress");
+        m_Spinner = this.Q<VisualElement>("spinner");
+    }
+    // This call is needed separately to have the animation running.
+    // Putting this in the construction somehow will not work.
+    internal void StartSpinner()
+    {
+        if (!m_SpinnerHasStarted)
+        {
+            m_PackageAddProgressLabel.text = TrText.buildProfilePreparation;
+            m_Spinner.AddToClassList("bp-spinner");
+            m_SpinnerHasStarted = true;
+        }
     }
 
-    internal void Set(IReadOnlyList<BuildProfilePackageAddInfo.ProgressEntry> info)
+    internal void Set(BuildProfilePackageAddInfo.ProgressEntry info)
     {
-        m_MessageBuilder.Clear();
-        m_MessageBuilder.AppendLine(TrText.bootstrapHeader);
-        foreach (var entry in info)
+        string message = "";
+        bool usePlural = info.packageCount > 1;
+        switch (info.state)
         {
-            switch (entry.state)
-            {
-                case BuildProfilePackageAddInfo.ProgressState.PackageStateUnknown:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddStateUnknown, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.PackagePending:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddPending, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.PackageDownloading:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddDownloading, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.PackageInstalling:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddInstalling, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.PackageReady:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddReady, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.PackageError:
-                    m_MessageBuilder.AppendLine(string.Format(TrText.packageAddError, entry.name));
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.ConfigurationPending:
-                    m_MessageBuilder.AppendLine(TrText.configurationPending);
-                    break;
-                case BuildProfilePackageAddInfo.ProgressState.ConfigurationRunning:
-                    m_MessageBuilder.AppendLine(TrText.configurationRunning);
-                    break;
-            }
+            case BuildProfilePackageAddInfo.ProgressState.PackageDownloading:
+                message = usePlural? TrText.packagesAddDownloading : TrText.packagesAddDownloading;
+                break;
+            case BuildProfilePackageAddInfo.ProgressState.PackageInstalling:
+                message = usePlural? TrText.packagesAddInstalling : TrText.packageAddInstalling;
+                break;
+            case BuildProfilePackageAddInfo.ProgressState.PackageError:
+                message = string.Format(usePlural? TrText.packagesAddError : TrText.packageAddError, info.name);
+                break;
+            case BuildProfilePackageAddInfo.ProgressState.ConfigurationRunning:
+                message = TrText.buildProfileConfiguration;
+                break;
         }
-        m_PackageAddProgressLabel.text = m_MessageBuilder.ToString();
+        
+        if(message != string.Empty)
+            m_PackageAddProgressLabel.text = message;
     }
 }

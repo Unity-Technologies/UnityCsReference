@@ -9,7 +9,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// This is a clickable button.
+    /// Represents an interactive UI button element.
     /// </summary>
     /// <remarks>
     /// A Button has a text label element that can respond to pointer and mouse events.
@@ -26,6 +26,14 @@ namespace UnityEngine.UIElements
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-Button|UXML element Button]].
     /// </remarks>
+    /// <example>
+    /// The following is a simple example of how to use a button. Using the clicked event to print a message to the console when the button is clicked.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Button_clicked.cs"/>
+    /// </example>
+    /// <remarks>
+    /// SA: [[Clickable]], [[Image]], [[ManipulatorActivationFilter]]
+    /// </remarks>
+
     public class Button : TextElement
     {
         internal static readonly BindingId iconImageProperty = nameof(iconImage);
@@ -186,7 +194,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete. Use <see cref="clicked"/> instead.
+        /// This method is obsolete. Use <see cref="Button.clicked"/> instead.
         /// </summary>
         [Obsolete("onClick is obsolete. Use clicked instead (UnityUpgradable) -> clicked", true)]
         public event Action onClick

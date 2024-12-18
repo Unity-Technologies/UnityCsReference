@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// Reading properties from this object will read from the inline style data for this element.
-    /// To read the style data computed for the element use <see cref="IComputedStyle"/> interface.
+    /// To read the style data computed for the element use <see cref="IStyle"/> interface.
     /// Writing to a property will mask the value coming from USS with the provided value however other properties will still match the values from USS.
     /// </remarks>
     public partial interface IStyle

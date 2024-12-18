@@ -2834,7 +2834,7 @@ namespace UnityEditor
                     return;
 
                 for (var i = 0; i < args.GetNumVisibleColumns(); ++i)
-                    CellGUI(args.GetCellRect(i), args.item, i, ref args);
+                    CellGUI(args.GetCellRect(i), args.item, args.GetColumn(i), ref args);
             }
 
             protected virtual void CellGUI(Rect cellRect, TreeViewItem item, int columnIndex, ref RowGUIArgs args)

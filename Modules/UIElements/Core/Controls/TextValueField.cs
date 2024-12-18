@@ -79,8 +79,23 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// The format string for the value.
+        /// The format string used to define how numeric values are displayed.
+        /// The string follows standard .NET formatting conventions.
         /// </summary>
+        /// <remarks>
+        /// The supported numeric formats string (using @@0@@ as an example) are:
+        ///\\
+        ///- <c>"0.#"</c>: Displays the numeric value with up to one decimal place,
+        ///     omitting trailing zeros. For example, <c>3.5</c> becomes <c>3.5</c> and
+        ///     <c>3.0</c> becomes <c>3</c>.
+        ///\\
+        ///-<c>"0.00"</c>: Ensures the numeric value is displayed with exactly two decimal
+        ///     places. For example, <c>3.5</c> is displayed as <c>3.50</c> and <c>3</c> as
+        ///     <c>3.00</c>.
+        ///\\
+        ///-<c>"0"</c>: Displays only the integer part of a numeric value, rounding if
+        ///     necessary. For example, <c>3.5</c> becomes <c>4</c> and <c>3.0</c> becomes <c>3</c>.
+        /// </remarks>
         [CreateProperty]
         public string formatString
         {

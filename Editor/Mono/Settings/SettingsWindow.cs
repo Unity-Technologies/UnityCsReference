@@ -533,7 +533,7 @@ namespace UnityEditor
             UpdateSearchHighlight(m_SettingsPanel, m_SearchText);
         }
 
-        [MenuItem("Edit/Project Settings...", false, 259, false)]
+        [MenuItem("Edit/Project Settings...", false, 20000, false)]
         internal static void OpenProjectSettings()
         {
             SendTopMenuProjectSettingsEvent();

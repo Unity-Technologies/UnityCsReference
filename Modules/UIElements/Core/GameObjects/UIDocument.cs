@@ -100,9 +100,15 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Defines a Component that connects VisualElements to GameObjects. This makes it
-    /// possible to render UI defined in UXML documents in the Game view.
+    /// Defines a Component that connects <see cref="VisualElement">VisualElements</see> to <see cref="GameObject">GameObjects</see>.
     /// </summary>
+    /// <remarks>
+    /// This makes it possible to render UI defined in UXML documents in the Game view.
+    /// </remarks>
+    /// <example>
+    /// The following example shows how to query a UIDocument component and interact with its elements.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UIDocument_Example.cs"/>
+    /// </example>
     [HelpURL("UIE-get-started-with-runtime-ui")]
     [AddComponentMenu("UI Toolkit/UI Document"), ExecuteAlways, DisallowMultipleComponent]
     [DefaultExecutionOrder(-100)] // UIDocument's OnEnable should run before user's OnEnable
@@ -191,8 +197,13 @@ namespace UnityEngine.UIElements
         /// the parent GameObject's UIDocument component automatically.
         /// </summary>
         /// <remarks>
-        /// If a UIDocument has a parent, you cannot add it directly to a panel. Unity adds it to
+        /// If a UIDocument has a parent, you cannot add it directly to a panel (PanelSettings). Unity adds it to
         /// the parent's root visual element instead.
+        ///
+        /// The advantage of placing UIDocument GameObjects under other UIDocument GameObjects is that you can
+        /// have many UIDocuments all drawing in the same panel (rootVisualElement) and therefore able to batch
+        /// together. A typical example is rendering health bars on top of characters, which would be more expensive to
+        /// render in their separate panels (and batches) compared to combining them to a single panel, one batch.
         /// </remarks>
         public UIDocument parentUI
         {
@@ -268,6 +279,13 @@ namespace UnityEngine.UIElements
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
         /// attached to the same PanelSettings, or with the same UIDocument parent.
         /// </summary>
+        /// <remarks>
+        /// A UIDocument with a higher sorting order is displayed above one with a lower sorting order. In the case of identical sorting order,
+        /// an older UIDocument is drawn first, appearing behind new ones.
+        ///\\
+        ///\\
+        /// SA: [[PanelSettings.sortingOrder]]
+        /// </remarks>
         public float sortingOrder
         {
             get => m_SortingOrder;

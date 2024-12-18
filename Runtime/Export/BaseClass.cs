@@ -152,8 +152,15 @@ namespace UnityEngine
         QNXArm64 = 47,
         QNXX64 = 48,
         QNXX86 = 49,
+
+        // VisionOS
         VisionOS = 50,
+
         ReservedCFE = 51,
+        
+        // Kepler
+        KeplerArm64 = 52,
+        KeplerX64 = 53,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

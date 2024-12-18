@@ -16,7 +16,8 @@ namespace UnityEditor.Build.Profile
     [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal class BuildProfileRenameOverlay
     {
-        static readonly string k_ErrorMessage = $"A file name can't contain any of the following characters:\t{BuildProfileModuleUtil.GetFilenameInvalidCharactersStr()}";
+        static readonly string k_InvalidChars = BuildProfileModuleUtil.GetFilenameInvalidCharactersStr();
+        static readonly string k_ErrorMessage = string.Format(L10n.Tr("A file name can't contain any of the following characters:\t{0}"), k_InvalidChars);
 
         TextField m_TextField;
         Rect? m_ErrorRect = null;
@@ -69,7 +70,7 @@ namespace UnityEditor.Build.Profile
 
         bool HasInvalidCharacterIndex(string value)
         {
-            return value.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0;
+            return value.IndexOfAny(k_InvalidChars.ToCharArray()) >= 0;
         }
     }
 }

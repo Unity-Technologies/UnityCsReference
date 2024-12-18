@@ -150,6 +150,8 @@ namespace UnityEditor
         // S3 texture compression, nonspecific to DXT variant. Supported on devices running Nvidia Tegra2 platform, including Motorala Xoom, Motorola Atrix, Droid Bionic, and others.
         DXT = 1,
         // PowerVR texture compression. Available in devices running PowerVR SGX530/540 GPU, such as Motorola DROID series; Samsung Galaxy S, Nexus S, and Galaxy Tab; and others.
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC = 2,
         [System.Obsolete("UnityEditor.MobileTextureSubtarget.ATC has been deprecated. Use UnityEditor.MobileTextureSubtarget.ETC instead (UnityUpgradable) -> UnityEditor.MobileTextureSubtarget.ETC", true)]
         ATC = 3,
@@ -1128,6 +1130,14 @@ namespace UnityEditor
             [NativeMethod("GetUseLegacyNvnPoolAllocatorForSwitch")]
             get;
             [NativeMethod("SetUseLegacyNvnPoolAllocatorForSwitch")]
+            set;
+        }
+
+        public static extern bool switchEnableUnpublishableErrors
+        {
+            [NativeMethod("GetEnableUnpublishableErrorsForSwitch")]
+            get;
+            [NativeMethod("SetEnableUnpublishableErrorsForSwitch")]
             set;
         }
 

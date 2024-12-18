@@ -8,8 +8,18 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// A button for the toolbar. For more information, refer to [[wiki:UIE-uxml-element-ToolbarButton|UXML element ToolbarButton]].
+    /// Editor-only control that serves as a button in a <see cref="Toolbar"/>.
     /// </summary>
+    /// <remarks>
+    /// For more information, refer to [[wiki:UIE-uxml-element-ToolbarButton|UXML element ToolbarButton]].
+    /// </remarks>
+    /// <example>
+    /// The following C# example creates a ToolbarButton with a label and click callback:
+    /// <code source="../../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Toolbar_button.cs"/>
+    /// </example>
+    /// <remarks>
+    /// SA: [[Button]], [[Toolbar]]
+    /// </remarks>
     public class ToolbarButton : Button
     {
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]

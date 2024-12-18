@@ -217,8 +217,17 @@ namespace UnityEngine.UIElements
             };
         }
 
-        public static TextCore.WhiteSpace toTextCore(this WhiteSpace whiteSpace)
+        public static TextCore.WhiteSpace toTextCore(this WhiteSpace whiteSpace, bool isInputField)
         {
+            if (isInputField)
+            {
+                return whiteSpace switch
+                {
+                    WhiteSpace.Normal or WhiteSpace.PreWrap => TextCore.WhiteSpace.PreWrap,
+                    WhiteSpace.NoWrap or WhiteSpace.Pre => TextCore.WhiteSpace.Pre,
+                    _ => TextCore.WhiteSpace.Pre
+                };
+            }
             return whiteSpace switch
             {
                 WhiteSpace.Normal => TextCore.WhiteSpace.Normal,

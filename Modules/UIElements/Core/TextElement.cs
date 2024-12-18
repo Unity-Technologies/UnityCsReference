@@ -198,6 +198,8 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)
         {
+            uitkTextHandle.RemoveTextInfoFromPermanentCache();
+            uitkTextHandle.RemoveTextInfoFromTemporaryCache();
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 
@@ -255,8 +257,14 @@ namespace UnityEngine.UIElements
         }
 
         bool m_ParseEscapeSequences;
+
         /// <summary>
-        /// Specifies whether escape sequences are displayed as is or if they are replaced by the character they represent.
+        /// Determines how escape sequences are displayed.
+        /// When set to <c>true</c>, escape sequences (such as `\n`, `\t`)
+        /// are parsed and transformed into their corresponding characters. For example,
+        /// '\n' will insert a new line.
+        /// When set to <c>false</c>, escape sequences are displayed as raw text
+        /// (for example, `\n` is shown as the characters '\' followed by 'n').
         /// </summary>
         [CreateProperty]
         public bool parseEscapeSequences

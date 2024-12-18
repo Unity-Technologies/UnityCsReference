@@ -522,6 +522,12 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoText")]
         extern public static string GetLicenseInfo();
 
+        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoTypeText")]
+        extern internal static string GetLicenseInfoType();
+
+        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoSerialText")]
+        extern internal static string GetLicenseInfoSerial();
+
         [Obsolete("GetLicenseFlags is no longer supported", error: true)]
         [FreeFunction("InternalEditorUtilityBindings::GetLicenseFlags")]
         extern public static int[] GetLicenseFlags();

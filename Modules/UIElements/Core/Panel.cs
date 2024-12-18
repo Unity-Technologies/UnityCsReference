@@ -327,18 +327,24 @@ namespace UnityEngine.UIElements
         /// </summary>
         FocusController focusController { get; }
         /// <summary>
-        /// Returns the top element at this position. Will not return elements with pickingMode set to <see cref="PickingMode.Ignore"/>.
+        /// Finds the top-most VisualElement overlapping the provided point.
         /// </summary>
+        /// <remarks>
+        /// Any VisualElement with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]] is ignored.
+        /// </remarks>
         /// <param name="point">World coordinates.</param>
-        /// <returns>Top VisualElement at the position. Null if none was found.</returns>
+        /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement Pick(Vector2 point);
 
         /// <summary>
-        /// Returns all elements at this position. Will not return elements with pickingMode set to <see cref="PickingMode.Ignore"/>.
+        /// Finds all VisualElements overlapping the provided point.
         /// </summary>
+        /// <remarks>
+        /// Any VisualElement with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]] is ignored.
+        /// </remarks>
         /// <param name="point">World coordinates.</param>
-        /// <param name="picked">All Visualelements overlapping this position.</param>
-        /// <returns>Top VisualElement at the position. Null if none was found.</returns>
+        /// <param name="picked">If not null, the list is cleared and filled with all VisualElements that overlap the specified point.</param>
+        /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
         /// <summary>

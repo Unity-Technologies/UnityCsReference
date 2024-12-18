@@ -9,32 +9,38 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for Manipulator objects.
     /// </summary>
+    /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
     public interface IManipulator
     {
         /// <summary>
         /// VisualElement being manipulated.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         VisualElement target { get; set; }
     }
 
     /// <summary>
-    /// Base class for all Manipulator implementations. For more information, refer to [[wiki:UIE-manipulators|Manipulators in User Manual]].
+    /// Base class for all Manipulator implementations.
     /// </summary>
+    /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
     public abstract class Manipulator : IManipulator
     {
         /// <summary>
         /// Called to register event callbacks on the target element.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         protected abstract void RegisterCallbacksOnTarget();
         /// <summary>
         /// Called to unregister event callbacks from the target element.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         protected abstract void UnregisterCallbacksFromTarget();
 
         VisualElement m_Target;
         /// <summary>
         /// VisualElement being manipulated.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         public VisualElement target
         {
             get { return m_Target; }

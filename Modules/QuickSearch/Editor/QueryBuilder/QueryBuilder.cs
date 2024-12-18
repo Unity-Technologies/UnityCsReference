@@ -94,6 +94,7 @@ namespace UnityEditor.Search
         {
             m_Context = searchContext;
             m_SearchField = searchField;
+            m_SearchText = m_Context.searchText;
             Build();
         }
 

@@ -65,6 +65,6 @@ abstract class TemplateLicenseEventWindow : EditorWindow
             k_ContentWidth,
             mainContainer.resolvedStyle.height + 1 // for some reason this 1 pixel fixes the resizing glitch
         );
-        maxSize = minSize;
+        rootVisualElement.schedule.Execute(() => { maxSize = minSize; });
     }
 }

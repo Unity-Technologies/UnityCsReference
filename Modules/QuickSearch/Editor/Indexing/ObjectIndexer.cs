@@ -640,7 +640,7 @@ namespace UnityEditor.Search
                 return;
             }
 
-            var assetPath = SearchUtils.GetObjectPath(objRef);
+            var assetPath = SearchUtils.GetObjectPath(objRef, false);
             if (string.IsNullOrEmpty(assetPath))
                 return;
 
@@ -649,7 +649,21 @@ namespace UnityEditor.Search
 
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(objRef);
             if (gid.identifierType != 0)
-                IndexProperty(documentIndex, "ref", gid.ToString(), saveKeyword: false, exact: true);
+            {
+                var gidStr = gid.ToString();
+                IndexProperty(documentIndex, propertyName, gidStr, saveKeyword: false, exact: true);
+                IndexProperty(documentIndex, "ref", gidStr, saveKeyword: false, exact: true);
+            }
+
+            if (AssetDatabase.IsSubAsset(objRef))
+            {
+                var mainInstanceId = AssetDatabase.GetMainAssetInstanceID(assetPath);
+                var mainGid = GlobalObjectId.GetGlobalObjectIdSlow(mainInstanceId);
+                if (mainGid.identifierType != 0)
+                {
+                    IndexProperty(documentIndex, "ref", mainGid.ToString(), saveKeyword: false, exact: true);
+                }
+            }
 
             if (settings.options.dependencies)
                 IndexProperty(documentIndex, "ref", assetPath, saveKeyword: false, exact: true);

@@ -39,7 +39,7 @@ namespace UnityEditor
 
         ListView m_HistoryListView;
 
-        [MenuItem("Edit/Undo History  %u", false, 2)]
+        [MenuItem("Window/General/Undo History  %u", false, 20)]
         public static void OpenUndoHistory()
         {
             // Opens the window, otherwise focuses it if it’s already open.

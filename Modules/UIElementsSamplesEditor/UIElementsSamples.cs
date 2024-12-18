@@ -132,6 +132,7 @@ namespace UnityEditor.UIElements.Samples
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("PopupField", PopupFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TagField", TagFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MaskField", MaskFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Mask64Field", Mask64FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("LayerField", LayerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("LayerMaskField", LayerMaskFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("DropdownField", DropdownFieldSnippet.Create)),
@@ -281,6 +282,7 @@ namespace UnityEditor.UIElements.Samples
             container.Add(new PopupField<string>("Popup", choices, 0));
             container.Add(new TagField("Tag", "Player"));
             container.Add(new MaskField("Mask", choices, 1));
+            container.Add(new Mask64Field("Mask64", choices, 1));
             container.Add(new LayerField("Layer"));
             container.Add(new LayerMaskField("LayerMask"));
 

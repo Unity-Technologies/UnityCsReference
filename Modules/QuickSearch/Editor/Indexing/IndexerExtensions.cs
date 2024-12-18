@@ -366,9 +366,7 @@ namespace UnityEditor.Search
 
                 if (indexer.settings.options.dependencies)
                 {
-                    var mp = AssetDatabase.GetAssetPath(m);
-                    if (!string.IsNullOrEmpty(mp))
-                        indexer.AddReference(context.documentIndex, mp);
+                    indexer.AddReference(context.documentIndex, "material", m);
                 }
 
                 if (m.shader != null)

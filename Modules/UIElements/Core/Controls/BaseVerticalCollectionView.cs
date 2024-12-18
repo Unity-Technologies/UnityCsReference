@@ -83,6 +83,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for controls that display virtualized vertical content inside a scroll view.
     /// </summary>
+    /// <remarks>
+    /// In BaseCollectionListView, the <c>id</c> represents a unique and stable identifier for each item.
+    /// It is essential for operations like saving and restoring the state, such as expansions and selections.
+    /// In contrast, the <c>index</c> indicates an item's position within the current view order,
+    /// which can change based on user actions like sorting and filtering.
+    /// You can use <c>id</c> to maintain distinct references, and use the <c>index</c> to handle rendering
+    /// and layout tasks based on the visible order of items.
+    /// </remarks>
     public abstract class BaseVerticalCollectionView : BindableElement, ISerializationCallbackReceiver
     {
         internal static readonly BindingId itemsSourceProperty = nameof(itemsSource);
@@ -309,32 +317,32 @@ namespace UnityEngine.UIElements
         /// use this event to update the binding events so the UI fits the new type.
         ///\\
         ///\\
-        /// This event isn't raised if the selection or the size of the data source changes. For size changes, such as adding 
-        /// or removing an item from a list view, listen to the [[BaseListViewController.itemsSourceSizeChanged]] event. 
+        /// This event isn't raised if the selection or the size of the data source changes. For size changes, such as adding
+        /// or removing an item from a list view, listen to the [[BaseListViewController.itemsSourceSizeChanged]] event.
         /// For selection changes, listen to the [[BaseVerticalCollectionView.selectionChanged]] event.
         /// </remarks>
         /// <example>
-        /// The following example illustrates that the @@itemsSourceChanged@@ event is only triggered when the [[BaseVerticalCollectionView.itemsSource|itemsSource]] property is changed, 
+        /// The following example illustrates that the @@itemsSourceChanged@@ event is only triggered when the [[BaseVerticalCollectionView.itemsSource|itemsSource]] property is changed,
         /// not when the contents of the data source are modified.
         /// <code lang="cs">
         /// <![CDATA[
         /// var changedCount = 0;
         /// var source = new List<string>();
         /// var listView = new ListView();
-        /// 
+        ///
         /// listView.itemsSourceChanged += () => changedCount++;
-        /// 
+        ///
         /// // Changing the data source of the list view triggers the event.
         /// listView.itemsSource = source;
-        /// 
-        /// // Adding an item to the source doesn't trigger itemsSourceChanged 
+        ///
+        /// // Adding an item to the source doesn't trigger itemsSourceChanged
         /// // because the data source reference remains the same.
-        /// source.Add("Hello World!"); 
-        /// 
-        /// // Adding an item to the ListView directly doesn't trigger itemsSourceChanged 
+        /// source.Add("Hello World!");
+        ///
+        /// // Adding an item to the ListView directly doesn't trigger itemsSourceChanged
         /// // because the data source reference remains the same.
-        /// listView.viewController.AddItems(1); 
-        /// 
+        /// listView.viewController.AddItems(1);
+        ///
         /// Debug.Log(changedCount); // Outputs 1.
         /// ]]>
         /// </code>
@@ -524,7 +532,7 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
-        /// first selected item's index. If multiple items are provided, sets them all as selected.
+        /// first selected item's index. If multiple items are provided, sets them all as selected. If no item is selected, returns -1.
         /// </summary>
         [CreateProperty]
         public int selectedIndex
@@ -1179,7 +1187,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Obsolete.  Use <see cref="ListView"> or <see cref="TreeView"> constructor directly.
+        /// Obsolete.  Use <see cref="ListView"/> or <see cref="TreeView"/> constructor directly.
         /// </summary>
         /// <param name="itemsSource">The list of items to use as a data source.</param>
         /// <param name="itemHeight">The height of each item, in pixels. For <c>FixedHeight</c> virtualization only.</param>

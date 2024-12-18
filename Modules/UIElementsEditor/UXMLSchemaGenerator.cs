@@ -55,7 +55,7 @@ namespace UnityEditor.UIElements
             "style",
         };
 
-        [MenuItem("Assets/Update UXML Schema", false, 800)]
+        [MenuItem("Assets/Update UXML Schema", false, secondaryPriority = 3)]
         static void UpdateUXMLSchema()
         {
             if (CommandService.Exists(nameof(UpdateUXMLSchema)))

@@ -12,6 +12,15 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// A vertical or horizontal scrollbar. For more information, refer to [[wiki:UIE-uxml-element-scroller|UXML element Scroller]].
     /// </summary>
+    /// <remarks>
+    /// Each ScrollView has a Scroller for each axis, controlled by <see cref="ScrollerVisibility"/>. For more information, refer to <see cref="ScrollView"/>.
+    /// If a Scroller is used in ScrollView, its <see cref="highValue"/> and <see cref="lowValue"/> are automatically overridden to match the ScrollView content size on <see cref="GeometryChangedEvent"/>.
+    /// A Scroller contains a <see cref="Slider"/> and two <see cref="RepeatButton"/>s for scrolling.
+    /// </remarks>
+    /// <example>
+    /// The following example creates a scroller independently from a ScrollView:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Scroller_Example.cs"/>
+    /// </example>
     public class Scroller : VisualElement
     {
         internal static readonly BindingId valueProperty = nameof(value);

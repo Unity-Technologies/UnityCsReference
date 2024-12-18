@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     // and make sure things like animation are smooth and time based.
     // a delayMs of 0 and intervalMs of 0 will be interpreted as "as often as possible" this should be used sparingly and the work done should be very small
     /// <summary>
-    /// Contains timing information of scheduler events.
+    /// Contains timing information of [[IVisualElementScheduler]] events.
     /// </summary>
     public struct TimerState : IEquatable<TimerState>
     {

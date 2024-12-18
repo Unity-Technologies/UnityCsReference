@@ -40,7 +40,7 @@ namespace UnityEditor.Search
                 stopEvent.Set();
             }
 
-            protected virtual void Dispose(bool disposing)
+            void Dispose(bool disposing)
             {
                 if (disposedValue)
                     return;

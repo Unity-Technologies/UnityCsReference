@@ -3083,11 +3083,32 @@ namespace UnityEditor.Search
         /// <summary>
         /// Set the default filter handler for filters that were not registered.
         /// </summary>
+        /// <param name="handler">Callback used to handle the filter. Takes an object of type TData, the filter identifier, the operator and the filter value, and returns a boolean indicating if the filter passed or not.</param>
+        /// <param name="onCreateFilter">Callback called when a default filter is generated. Can be used to setup type parsers and operator handlers specific for this filter.</param>
+        internal void SetDefaultFilter(Func<TData, string, string, string, bool> handler, Action<IFilter> onCreateFilter)
+        {
+            m_Impl.SetDefaultFilterHandler(new DefaultQueryFilterResolverHandler<TData, string>(handler, onCreateFilter));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for filters that were not registered.
+        /// </summary>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the current filter id and returns an object of type TFilter.</param>
         internal void SetDefaultFilter<TFilter>(Func<TData, string, TFilter> getDataFunc)
         {
             m_Impl.SetDefaultFilterHandler(new DefaultQueryFilterHandler<TData, TFilter>(getDataFunc));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the current filter id and returns an object of type TFilter.</param>
+        /// <param name="onCreateFilter">Callback called when a default filter is generated. Can be used to setup type parsers and operator handlers specific for this filter.</param>
+        internal void SetDefaultFilter<TFilter>(Func<TData, string, TFilter> getDataFunc, Action<IFilter> onCreateFilter)
+        {
+            m_Impl.SetDefaultFilterHandler(new DefaultQueryFilterHandler<TData, TFilter>(getDataFunc, onCreateFilter));
         }
 
         /// <summary>
@@ -3097,6 +3118,16 @@ namespace UnityEditor.Search
         public void SetDefaultParamFilter(Func<TData, string, string, string, string, bool> handler)
         {
             m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterResolverHandler<TData, string, string>(handler));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for function filters that were not registered.
+        /// </summary>
+        /// <param name="handler">Callback used to handle the function filter. Takes an object of type TData, the filter identifier, the parameter, the operator and the filter value, and returns a boolean indicating if the filter passed or not.</param>
+        /// <param name="onCreateFilter">Callback called when a default filter is generated. Can be used to setup type parsers and operator handlers specific for this filter.</param>
+        internal void SetDefaultParamFilter(Func<TData, string, string, string, string, bool> handler, Action<IFilter> onCreateFilter)
+        {
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterResolverHandler<TData, string, string>(handler, onCreateFilter));
         }
 
         /// <summary>
@@ -3116,10 +3147,35 @@ namespace UnityEditor.Search
         /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
         /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
         /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the filter id, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="onCreateFilter">Callback called when a default filter is generated. Can be used to setup type parsers and operator handlers specific for this filter.</param>
+        internal void SetDefaultParamFilter<TParam, TFilter>(Func<TData, string, TParam, TFilter> getDataFunc, Action<IFilter> onCreateFilter)
+        {
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterHandler<TData, TParam, TFilter>(getDataFunc, onCreateFilter));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for function filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the filter id, an object of type TParam, and returns an object of type TFilter.</param>
         /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
         internal void SetDefaultParamFilter<TParam, TFilter>(Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer)
         {
             m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterHandler<TData, TParam, TFilter>(getDataFunc, parameterTransformer));
+        }
+
+        /// <summary>
+        /// Set the default filter handler for function filters that were not registered.
+        /// </summary>
+        /// <typeparam name="TParam">The type of the constant parameter passed to the function.</typeparam>
+        /// <typeparam name="TFilter">The type of the data that is compared by the filter.</typeparam>
+        /// <param name="getDataFunc">Callback used to get the object that is used in the filter. Takes an object of type TData, a string representing the filter id, an object of type TParam, and returns an object of type TFilter.</param>
+        /// <param name="parameterTransformer">Callback used to convert a string to the type TParam. Used when parsing the query to convert what is passed to the function into the correct format.</param>
+        /// <param name="onCreateFilter">Callback called when a default filter is generated. Can be used to setup type parsers and operator handlers specific for this filter.</param>
+        internal void SetDefaultParamFilter<TParam, TFilter>(Func<TData, string, TParam, TFilter> getDataFunc, Func<string, TParam> parameterTransformer, Action<IFilter> onCreateFilter)
+        {
+            m_Impl.SetDefaultParamFilterHandler(new DefaultQueryParamFilterHandler<TData, TParam, TFilter>(getDataFunc, parameterTransformer, onCreateFilter));
         }
 
         /// <summary>

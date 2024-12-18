@@ -14,14 +14,16 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     /// <summary>
-    /// Base class implementing the shared functionality for editing bit mask values. For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
+    /// An Editor-only control that lets users one or more options from a list of options. 
     /// </summary>
-    public abstract class BaseMaskField<TChoice> : BasePopupField<TChoice, string>
+    /// <remarks> The difference between Mask64Field and [[UIElements.MarkField]] is that Mask64Field supports a 64-bit bitmask while [[UIElements.MarkField]] supports a 32-bit bitmask. For more information, refer to [[wiki:UIE-uxml-element-Mask64Field|UXML element Mask64Field]].
+    /// </remarks>
+    public abstract class BaseMask64Field : BasePopupField<UInt64, string>
     {
         internal static readonly BindingId choicesMasksProperty = nameof(choicesMasks);
 
-        internal abstract TChoice MaskToValue(int newMask);
-        internal abstract int ValueToMask(TChoice value);
+        internal abstract UInt64 MaskToValue(UInt64 newMask);
+        internal abstract UInt64 ValueToMask(UInt64 value);
 
         static readonly int s_NothingIndex = 0;
         static readonly int s_EverythingIndex = 1;
@@ -35,20 +37,14 @@ namespace UnityEditor.UIElements
         List<string> m_UserChoices;
 
         // This is the list of masks for every specific choice... if null, the mask will be computed with the default values
-        // More details about this :
-        //   In IMGUI, the MaskField is only allowing the creation of the field with an array of choices that will have a mask
-        //    based on power of 2 value starting from 1.
-        //   However, the LayerMaskField is created based on the Layers and do not necessarily has power of 2 consecutive masks.
-        //     Therefore, this specific internal field (in IMGUI...) is requiring a specific array to contain the mask value of the
-        //     actual list of choices.
-        List<int> m_UserChoicesMasks;
+        List<UInt64> m_UserChoicesMasks;
 
         // This is containing a mask to cover all the choices from the list. Computed with the help of m_UserChoicesMasks
         //     or based on the power of 2 mask values.
-        int m_FullChoiceMask;
-        internal int fullChoiceMask => m_FullChoiceMask;
+        UInt64 m_FullChoiceMask;
+        internal UInt64 fullChoiceMask => m_FullChoiceMask;
 
-        internal BaseMaskField(string label) : base(label)
+        internal BaseMask64Field(string label) : base(label)
         {
             textElement.RegisterCallback<GeometryChangedEvent>(OnTextElementGeometryChanged);
             m_AutoCloseMenu = false;
@@ -61,7 +57,7 @@ namespace UnityEditor.UIElements
             switch (mask)
             {
                 case 0:
-                case ~0:
+                case ~(UInt64)0:
                     // Don't do anything for Nothing or Everything
                     break;
                 default:
@@ -142,7 +138,7 @@ namespace UnityEditor.UIElements
         /// The list of list of masks for every specific choice to display in the popup menu.
         /// </summary>
         [CreateProperty]
-        public virtual List<int> choicesMasks
+        public virtual List<UInt64> choicesMasks
         {
             get { return m_UserChoicesMasks; }
             set
@@ -156,7 +152,7 @@ namespace UnityEditor.UIElements
                     // Keep the original list in a separate user list ...
                     if (m_UserChoicesMasks == null)
                     {
-                        m_UserChoicesMasks = new List<int>();
+                        m_UserChoicesMasks = new List<UInt64>();
                     }
                     else
                     {
@@ -182,16 +178,16 @@ namespace UnityEditor.UIElements
             {
                 if ((m_UserChoicesMasks != null) && (m_UserChoicesMasks.Count == m_UserChoices.Count))
                 {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
+                    if (m_UserChoices.Count >= (sizeof(UInt64) * 8))
                     {
-                        m_FullChoiceMask = ~0;
+                        m_FullChoiceMask = ~(UInt64)0;
                     }
                     else
                     {
                         m_FullChoiceMask = 0;
-                        foreach (int itemMask in m_UserChoicesMasks)
+                        foreach (UInt64 itemMask in m_UserChoicesMasks)
                         {
-                            if (itemMask == ~0)
+                            if (itemMask == ~(UInt64)0)
                             {
                                 continue;
                             }
@@ -202,13 +198,13 @@ namespace UnityEditor.UIElements
                 }
                 else
                 {
-                    if (m_UserChoices.Count >= (sizeof(int) * 8))
+                    if (m_UserChoices.Count >= (sizeof(UInt64) * 8))
                     {
-                        m_FullChoiceMask = ~0;
+                        m_FullChoiceMask = ~(UInt64)0;
                     }
                     else
                     {
-                        m_FullChoiceMask = (1 << m_UserChoices.Count) - 1;
+                        m_FullChoiceMask = ((UInt64)1 << m_UserChoices.Count) - 1;
                     }
                 }
             }
@@ -216,7 +212,7 @@ namespace UnityEditor.UIElements
 
         // Trick to get the number of selected values...
         // A power of 2 number means only 1 selected...
-        internal bool IsPowerOf2(int itemIndex)
+        internal bool IsPowerOf2(UInt64 itemIndex)
         {
             return ((itemIndex & (itemIndex - 1)) == 0);
         }
@@ -226,12 +222,12 @@ namespace UnityEditor.UIElements
             return GetDisplayedValue(ValueToMask(value));
         }
 
-        internal override string GetListItemToDisplay(TChoice item)
+        internal override string GetListItemToDisplay(UInt64 item)
         {
             return GetDisplayedValue(ValueToMask(item));
         }
 
-        internal string GetDisplayedValue(int itemIndex)
+        internal string GetDisplayedValue(UInt64 itemIndex)
         {
             var newValueToShowUser = "";
 
@@ -241,7 +237,7 @@ namespace UnityEditor.UIElements
                     newValueToShowUser = m_Choices[s_NothingIndex];
                     break;
 
-                case ~0:
+                case ~(UInt64)0:
                     newValueToShowUser = m_Choices[s_EverythingIndex];
                     break;
 
@@ -253,9 +249,9 @@ namespace UnityEditor.UIElements
                         if (m_UserChoicesMasks != null)
                         {
                             // Find the actual index of the selected choice...
-                            foreach (int itemMask in m_UserChoicesMasks)
+                            foreach (UInt64 itemMask in m_UserChoicesMasks)
                             {
-                                if (itemMask != ~0 && ((itemMask & itemIndex) == itemIndex))
+                                if (itemMask != ~(UInt64)0 && ((itemMask & itemIndex) == itemIndex))
                                 {
                                     indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
                                     break;
@@ -264,7 +260,7 @@ namespace UnityEditor.UIElements
                         }
                         else
                         {
-                            while ((1 << indexOfValue) != itemIndex)
+                            while (((UInt64)1 << indexOfValue) != itemIndex)
                             {
                                 indexOfValue++;
                             }
@@ -340,7 +336,7 @@ namespace UnityEditor.UIElements
             return mixedString;
         }
 
-        public override TChoice value
+        public override UInt64 value
         {
             get => base.value;
             set
@@ -351,7 +347,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        public override void SetValueWithoutNotify(TChoice newValue)
+        public override void SetValueWithoutNotify(UInt64 newValue)
         {
             base.SetValueWithoutNotify(MaskToValue(UpdateMaskIfEverything(ValueToMask(newValue))));
         }
@@ -372,9 +368,9 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private bool IsItemSelected(int maskOfItem)
+        private bool IsItemSelected(UInt64 maskOfItem)
         {
-            int valueMask = ValueToMask(value);
+            var valueMask = ValueToMask(value);
 
             if(maskOfItem == 0)
                 return valueMask == 0;
@@ -400,7 +396,7 @@ namespace UnityEditor.UIElements
 
         // Based on the current mask, this is updating the value of the actual mask to use vs the full mask.
         // This is returning ~0 if all the values are selected...
-        private protected virtual int UpdateMaskIfEverything(int currentMask)
+        private protected virtual UInt64 UpdateMaskIfEverything(UInt64 currentMask)
         {
             var newMask = currentMask;
             // If the mask is full, put back the Everything flag.
@@ -408,7 +404,7 @@ namespace UnityEditor.UIElements
             {
                 if ((currentMask & m_FullChoiceMask) == m_FullChoiceMask)
                 {
-                    newMask = ~0;
+                    newMask = ~(UInt64)0;
                 }
                 else
                 {
@@ -431,8 +427,8 @@ namespace UnityEditor.UIElements
                     break;
 
                 // Everything
-                case ~0:
-                    newMask = ~0;
+                case ~(UInt64)0:
+                    newMask = ~(UInt64)0;
                     break;
 
                 default:
@@ -459,9 +455,9 @@ namespace UnityEditor.UIElements
         }
 
         // Returns the mask to be used for the item...
-        int GetMaskValueOfItem(string item)
+        UInt64 GetMaskValueOfItem(string item)
         {
-            int maskValue;
+            UInt64 maskValue;
             var indexOfItem = m_Choices.IndexOf(item);
             switch (indexOfItem)
             {
@@ -469,7 +465,7 @@ namespace UnityEditor.UIElements
                     maskValue = 0;
                     break;
                 case 1: // Everything
-                    maskValue = ~0;
+                    maskValue = ~(UInt64)0;
                     break;
                 default: // All others
                     if (indexOfItem > 0)
@@ -480,7 +476,7 @@ namespace UnityEditor.UIElements
                         }
                         else
                         {
-                            maskValue = 1 << (indexOfItem - s_TotalIndex);
+                            maskValue = (UInt64)1 << (indexOfItem - s_TotalIndex);
                         }
                     }
                     else
@@ -496,21 +492,20 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// The MaskField is an Editor-only control that lets users select one or more options from a list of options.
-    /// For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
+    /// Make a field for 64-bit masks.
     /// </summary>
-    public class MaskField : BaseMaskField<int>
+    public class Mask64Field : BaseMask64Field
     {
-        internal override int MaskToValue(int newMask) => newMask;
-        internal override int ValueToMask(int value) => value;
+        internal override UInt64 MaskToValue(UInt64 newMask) => newMask;
+        internal override UInt64 ValueToMask(UInt64 value) => value;
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
-        public new class UxmlSerializedData : BaseMaskField<int>.UxmlSerializedData
+        public new class UxmlSerializedData : BaseMask64Field.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                BaseMaskField<int>.UxmlSerializedData.Register();
+                BaseMask64Field.UxmlSerializedData.Register();
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(choices), "choices"),
@@ -522,7 +517,7 @@ namespace UnityEditor.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags choices_UxmlAttributeFlags;
             #pragma warning restore 649
 
-            public override object CreateInstance() => new MaskField();
+            public override object CreateInstance() => new Mask64Field();
 
             public override void Deserialize(object obj)
             {
@@ -531,50 +526,9 @@ namespace UnityEditor.UIElements
                 // Assigning null value throws.
                 if (ShouldWriteAttributeValue(choices_UxmlAttributeFlags) && choices != null)
                 {
-                    var e = (MaskField)obj;
+                    var e = (Mask64Field)obj;
                     e.choices = choices;
                 }
-            }
-        }
-
-        /// <summary>
-        /// Instantiates a <see cref="MaskField"/> using the data read from a UXML file.
-        /// </summary>
-        [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<MaskField, UxmlTraits> {}
-
-        /// <summary>
-        /// Defines <see cref="UxmlTraits"/> for the <see cref="MaskField"/>.
-        /// </summary>
-        [Obsolete("UxmlTraits is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlTraits : BasePopupField<int, UxmlIntAttributeDescription>.UxmlTraits
-        {
-            UxmlStringAttributeDescription m_MaskChoices = new UxmlStringAttributeDescription { name = "choices" };
-            UxmlIntAttributeDescription m_MaskValue = new UxmlIntAttributeDescription { name = "value" };
-
-            /// <summary>
-            /// Initializes the <see cref="UxmlTraits"/> for <see cref="MaskField"/>.
-            /// </summary>
-            /// <param name="ve">The VisualElement that will be populated.</param>
-            /// <param name="bag">The bag from where the attributes are taken.</param>
-            /// <param name="cc">The creation context, unused.</param>
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                var f = (MaskField)ve;
-
-                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
-
-
-                var listOfChoices = UxmlUtility.ParseStringListAttribute(choicesFromBag);
-
-                if (listOfChoices != null && listOfChoices.Count > 0)
-                {
-                    f.choices = listOfChoices;
-                }
-                // The mask is simply an int
-                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
-
-                base.Init(ve, bag, cc);
             }
         }
 
@@ -600,7 +554,7 @@ namespace UnityEditor.UIElements
             set { m_FormatListItemCallback = value; }
         }
 
-        internal override string GetListItemToDisplay(int itemIndex)
+        internal override string GetListItemToDisplay(UInt64 itemIndex)
         {
             string displayedValue = GetDisplayedValue(itemIndex);
             if (ShouldFormatListItem(itemIndex))
@@ -617,20 +571,20 @@ namespace UnityEditor.UIElements
             return displayedValue;
         }
 
-        internal bool ShouldFormatListItem(int itemIndex)
+        internal bool ShouldFormatListItem(UInt64 itemIndex)
         {
-            return itemIndex != 0 && itemIndex != -1 && m_FormatListItemCallback != null;
+            return itemIndex != 0 && itemIndex != ~(UInt64)0 && m_FormatListItemCallback != null;
         }
 
         internal bool ShouldFormatSelectedValue()
         {
-            return rawValue != 0 && rawValue != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
+            return rawValue != 0 && rawValue != ~(UInt64)0 && m_FormatSelectedValueCallback != null && IsPowerOf2(rawValue);
         }
 
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>
-        public new static readonly string ussClassName = "unity-mask-field";
+        public new static readonly string ussClassName = "unity-mask64-field";
         /// <summary>
         /// USS class name of labels in elements of this type.
         /// </summary>
@@ -642,26 +596,26 @@ namespace UnityEditor.UIElements
 
 
         /// <summary>
-        /// Initializes and returns an instance of MaskField.
+        /// Initializes and returns an instance of Mask64Field.
         /// </summary>
         /// <param name="choices">A list of choices to populate the field.</param>
         /// <param name="defaultValue">The initial mask value for this field.</param>
-        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field..</param>
+        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field.</param>
         /// <param name="formatListItemCallback">The initial mask value this field should use. Unity calls this method automatically when displaying choices for the field.</param>
-        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+        public Mask64Field(List<string> choices, UInt64 defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(null, choices, defaultMask, formatSelectedValueCallback, formatListItemCallback)
         {
         }
 
         /// <summary>
-        /// Initializes and returns an instance of MaskField.
+        /// Initializes and returns an instance of Mask64Field.
         /// </summary>
         /// <param name="label">The text to use as a label for the field.</param>
         /// <param name="choices">A list of choices to populate the field.</param>
         /// <param name="defaultValue">The initial mask value for this field.</param>
-        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field..</param>
+        /// <param name="formatSelectedValueCallback">A callback to format the selected value. Unity calls this method automatically when a new value is selected in the field.</param>
         /// <param name="formatListItemCallback">The initial mask value this field should use. Unity calls this method automatically when displaying choices for the field.</param>
-        public MaskField(string label, List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
+        public Mask64Field(string label, List<string> choices, UInt64 defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
             : this(label)
         {
             this.choices = choices;
@@ -675,16 +629,16 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Initializes and returns an instance of MaskField.
+        /// Initializes and returns an instance of Mask64Field.
         /// </summary>
-        public MaskField()
+        public Mask64Field()
             : this(null) {}
 
         /// <summary>
-        /// Initializes and returns an instance of MaskField.
+        /// Initializes and returns an instance of Mask64Field.
         /// </summary>
         /// <param name="label">The text to use as a label for the field.</param>
-        public MaskField(string label)
+        public Mask64Field(string label)
             : base(label)
         {
             AddToClassList(ussClassName);

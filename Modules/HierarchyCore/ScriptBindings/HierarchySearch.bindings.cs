@@ -123,7 +123,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Converts a textual value to its operator value if possible. 
         /// </summary>
-        /// <param name="op">The textual operator. For example: =, <=, :, and .... </param>
+        /// <param name="op">The textual operator. For example: =, &lt;=, :, and .... </param>
         /// <returns>The `HierarchySearchFilterOperator` that matches the parsed string. For example, this function parses the string "=" and converts it to `HierarchySearchFilterOperator.Equal`. </returns>
         public static HierarchySearchFilterOperator ToOp(string op)
         {
@@ -151,7 +151,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Converts a filter to its full textual value: <FilerName><Filter operator><FilterValue>. The textual value is escaped with double quotation marks if it is necessary.
+        /// Converts a filter to its full textual value: &lt;FilerName&gt;&lt;Filter operator&gt;&lt;FilterValue&gt;. The textual value is escaped with double quotation marks if it is necessary.
         /// </summary>
         /// <returns></returns>
         public override string ToString()
@@ -300,7 +300,7 @@ namespace Unity.Hierarchy
         }
 
         /// <summary>
-        /// Converts the query to textual form. A textual query is of the form: <All system Filters> <All user filters> <All textual values>.
+        /// Converts the query to textual form. A textual query is of the form: &lt;All system Filters&gt; &lt;All user filters&gt; &lt;All textual values&gt;.
         /// </summary>
         /// <returns>return a text query.</returns>
         public override string ToString()

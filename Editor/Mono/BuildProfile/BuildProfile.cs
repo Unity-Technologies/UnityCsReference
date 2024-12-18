@@ -50,17 +50,6 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Module name used to fetch build profiles.
-        /// </summary>
-        string m_ModuleName;
-        [VisibleToOtherModules]
-        internal string moduleName
-        {
-            get => m_ModuleName;
-            set => m_ModuleName = value;
-        }
-
-        /// <summary>
         /// Platform ID of the build profile.
         /// Correspond to platform GUID in <see cref="BuildTargetDiscovery"/>
         /// </summary>
@@ -232,14 +221,15 @@ namespace UnityEditor.Build.Profile
             if (graphicsSettings != null)
                 duplicatedProfile.graphicsSettings = Instantiate(graphicsSettings);
 
+            if (qualitySettings != null)
+                duplicatedProfile.qualitySettings = Instantiate(qualitySettings);
+
             return duplicatedProfile;
         }
 
         void OnEnable()
         {
             ValidateDataConsistency();
-
-            moduleName = BuildProfileModuleUtil.GetModuleName(platformGuid);
 
             // Check if the platform support module has been installed,
             // and try to set an uninitialized platform settings.
@@ -351,8 +341,7 @@ namespace UnityEditor.Build.Profile
 
         void ValidateDataConsistency()
         {
-            // TODO: Remove migration code (https://jira.unity3d.com/browse/PLAT-8909)
-            // Set platform ID for build profiles created before it is introduced.
+            // Keep serialized platform GUID in sync with serialized build target and subtarget.
             if (platformGuid.Empty())
             {
                 platformGuid = BuildProfileContext.IsSharedProfile(buildTarget) ?

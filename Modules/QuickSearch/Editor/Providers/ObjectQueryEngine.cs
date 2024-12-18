@@ -117,20 +117,13 @@ namespace UnityEditor.Search.Providers
         {
             m_Objects = objects.ToList();
             m_QueryEngine.AddFilter<int>("id", GetId);
+            m_QueryEngine.GetFilter("id");
             m_QueryEngine.AddFilter("path", GetPath);
             m_QueryEngine.AddFilter<string>("is", OnIsFilter, new[] {":"});
             m_QueryEngine.AddFilter<MissingReferenceFilter>("missing", OnMissing, new[] { ":" });
             m_QueryEngine.AddFilter<string>("t", OnTypeFilter, new[] {"=", ":"});
-            m_QueryEngine.SetFilter<string>("ref", GetReferences, new[] {"=", ":"}).AddTypeParser(s =>
-            {
-                if (!s.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(s, out var gid))
-                    return ParseResult<string>.none;
-
-                if (gid.targetPrefabId == 0 && gid.identifierType != 2 && gid.identifierType != 4)
-                    return new ParseResult<string>(true, AssetDatabase.GUIDToAssetPath(gid.assetGUID));
-
-                return new ParseResult<string>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid).ToString());
-            });
+            var refFilter = m_QueryEngine.SetFilter<int>("ref", GetReferences, new[] { "=", ":" });
+            SetupReferenceFilterTypeParsers(refFilter);
 
             SearchValue.SetupEngine(m_QueryEngine);
 
@@ -393,7 +386,7 @@ namespace UnityEditor.Search.Providers
                 }
             }
 
-            refs.Remove(obj.GetHashCode());
+            refs.Remove(obj.GetInstanceID());
             god.refs = refs;
         }
 
@@ -454,13 +447,20 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<int> refs)
+        private static bool AddReference(UnityEngine.Object refObj, string refValue, ICollection<int> refs)
         {
             if (string.IsNullOrEmpty(refValue))
                 return false;
 
+            var isTransformPath = refValue.StartsWith("/");
+            if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
+            {
+                var mainInstanceId = AssetDatabase.GetMainAssetInstanceID(refValue);
+                refs.Add(mainInstanceId);
+            }
+
             refValue = refValue.ToLowerInvariant();
-            if (refValue[0] == '/')
+            if (isTransformPath)
             {
                 refs.Add(refValue.Substring(1).GetHashCode());
             }
@@ -473,7 +473,7 @@ namespace UnityEditor.Search.Providers
             return true;
         }
 
-        private bool GetReferences(T obj, QueryFilterOperator op, string value)
+        private bool GetReferences(T obj, QueryFilterOperator op, int value)
         {
             var god = GetGOD(obj);
 
@@ -485,16 +485,7 @@ namespace UnityEditor.Search.Providers
             if (god.refs.Count == 0)
                 return false;
 
-            // Account for legacy ref:<InstanceID>: query that can be emitted by the various Find Reference in Scene menu items.
-            var potentialId = value;
-            if (value.EndsWith(":"))
-            {
-                potentialId = value.TrimEnd(':');
-            }
-            if (Utils.TryParse(potentialId, out int instanceId))
-                return god.refs.Contains(instanceId);
-
-            return god.refs.Contains(value.ToLowerInvariant().GetHashCode());
+            return god.refs.Contains(value);
         }
 
         protected bool CompareWords(in QueryFilterOperator op, string value, in IEnumerable<string> words, StringComparison stringComparison = StringComparison.Ordinal)
@@ -545,6 +536,50 @@ namespace UnityEditor.Search.Providers
         private static string CleanName(string s)
         {
             return s.Replace("(", "").Replace(")", "");
+        }
+
+        static void SetupReferenceFilterTypeParsers(IQueryEngineFilter filter)
+        {
+            filter.AddTypeParser(GlobalObjectIdTypeParser);
+            filter.AddTypeParser(AssetPathTypeParser);
+            filter.AddTypeParser(InstanceIdTypeParser);
+            filter.AddTypeParser(DefaultRefTypeParser);
+        }
+
+        static ParseResult<int> GlobalObjectIdTypeParser(string filterValue)
+        {
+            if (!filterValue.StartsWith("GlobalObjectId", StringComparison.Ordinal) || !GlobalObjectId.TryParse(filterValue, out var gid))
+                return ParseResult<int>.none;
+
+            return new ParseResult<int>(true, GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(gid));
+        }
+
+        static ParseResult<int> AssetPathTypeParser(string filterValue)
+        {
+            if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
+            {
+                var instanceId = AssetDatabase.GetMainAssetInstanceID(filterValue);
+                return new ParseResult<int>(true, instanceId);
+            }
+            return ParseResult<int>.none;
+        }
+
+        static ParseResult<int> InstanceIdTypeParser(string filterValue)
+        {
+            // Account for legacy ref:<InstanceID>: query that can be emitted by the various Find Reference in Scene menu items.
+            var potentialId = filterValue;
+            if (filterValue.EndsWith(":"))
+            {
+                potentialId = filterValue.TrimEnd(':');
+            }
+            if (Utils.TryParse(potentialId, out int instanceId))
+                return new ParseResult<int>(true, instanceId);
+            return ParseResult<int>.none;
+        }
+
+        static ParseResult<int> DefaultRefTypeParser(string filterValue)
+        {
+            return new ParseResult<int>(true, filterValue.ToLowerInvariant().GetHashCode());
         }
     }
 }

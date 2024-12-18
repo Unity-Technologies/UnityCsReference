@@ -38,6 +38,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for a tree view, a vertically scrollable area that links to, and displays, a list of items organized in a tree.
     /// </summary>
+    /// <remarks>
+    /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
+    /// </remarks>
     public abstract class BaseTreeView : BaseVerticalCollectionView
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);

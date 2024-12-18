@@ -244,6 +244,7 @@ namespace UnityEditor
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
+            public static readonly GUIContent activeInputHandlingError = EditorGUIUtility.TrTextContent("The Active Input Handling is invalid. To use Input System Package (New) or Both, install the Input System package. Otherwise set the Active Input Handling to Input Manager (Old).");
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
             public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
@@ -790,23 +791,23 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal void ConfigurePlayerSettingsForBuildProfile(
             SerializedObject serializedProfile,
-            string buildProfileModuleName,
-            bool isServerBuildProfile,
+            GUID buildProfilePlatformGuid,
             bool isActiveBuildProfile,
-            Action<SerializedObject> onTrackSerializedObjectChanged,
-            GUID buildTarget)
+            Action<SerializedObject> onTrackSerializedObjectChanged)
         {
             m_OnTrackSerializedObjectValueChanged = onTrackSerializedObjectChanged;
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
             // We don't want to show other platform tabs that it's not the build profile one
-            bool gotValidPlatform = false;
-            string platformModuleName = string.Empty;
+            var gotValidPlatform = false;
+            var buildProfileBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(buildProfilePlatformGuid);
             for (int i = 0; i < validPlatforms.Length; i++)
             {
-                platformModuleName = ModuleManager.GetTargetStringFrom(validPlatforms[i].defaultTarget);
-                bool isServerPlatform = validPlatforms[i].namedBuildTarget == NamedBuildTarget.Server;
-                if (platformModuleName == buildProfileModuleName && isServerPlatform == isServerBuildProfile)
+                var buildTarget = validPlatforms[i].defaultTarget;
+                var namedBuildTarget = validPlatforms[i].namedBuildTarget;
+                var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(namedBuildTarget, buildTarget);
+
+                if (basePlatformGuid == buildProfileBasePlatformGuid)
                 {
                     var copy = (BuildPlatform)validPlatforms[i].Clone();
                     copy.tooltip = string.Empty;
@@ -821,7 +822,7 @@ namespace UnityEditor
 
             Array.Resize(ref validPlatforms, 1);
             m_SettingsExtensions = new ISettingEditorExtension[1];
-            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(buildTarget);
+            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(buildProfilePlatformGuid);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
         }
@@ -1769,7 +1770,7 @@ namespace UnityEditor
                     ExclusiveGraphicsAPIsGUI(targetPlatform, displayTitle);
                     return;
                 }
-                
+
                 GraphicsDeviceType[] devices = m_CurrentTarget.GetGraphicsAPIs_Internal(targetPlatform);
                 var devicesList = (devices != null) ? devices.ToList() : new List<GraphicsDeviceType>();
                 // create reorderable list for this target if needed
@@ -1791,9 +1792,9 @@ namespace UnityEditor
                 {
                     EditorGUILayout.HelpBox(SettingsContent.appleSiliconOpenGLWarning.text, MessageType.Warning, true);
                 }
-                
+
                 m_GraphicsDeviceLists[targetPlatform].DoLayoutList();
-                
+
                 bool containsDeprecatedAPIs = devicesList.Exists(device => IsGraphicsDeviceTypeDeprecated(targetPlatform, device));
                 if (containsDeprecatedAPIs)
                     EditorGUILayout.HelpBox(SettingsContent.graphicsAPIDeprecationMessage.text, MessageType.Info, true);
@@ -2698,25 +2699,31 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
                 {
                     EditorGUI.BeginChangeCheck();
-                    bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
-                    m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
+                    bool toggledValue =  EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                     if (EditorGUI.EndChangeCheck())
                     {
                         if (IsActivePlayerSettingsEditor())
                         {
                             if (PlayerSettings.OnVirtualTexturingChanged())
                             {
-                                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled
-                                    .boolValue);
+                                // updating the property only after the user agrees to restart the editor for an active build profile
+                                // because on Windows, the dialog gives control back to the editor *before* the user interacts with it
+                                // so if the property is updated at that point, the editor will call ApplyModifiedProperties
+                                // which will call PlayerSettings::AwakeFromLoad and then PlayerSettings::SyncCurrentVirtualTexturingState
+                                // and incorrectly check against a value in its intermediate state
+                                m_VirtualTexturingSupportEnabled.boolValue = toggledValue;
+                                PlayerSettings.SetVirtualTexturingSupportEnabled(toggledValue);
                                 m_VirtualTexturingSupportEnabled.serializedObject.ApplyModifiedProperties();
                                 EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
-                                GUIUtility.ExitGUI();
-                            }
-                            else
-                            {
-                                m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
                             }
                         }
+                        else
+                        {
+                            // updating the serialized property for an inactive build profile is fine because it won't show a restart prompt
+                            // and SyncCurrentVirtualTexturingState will only work for active build profiles
+                            m_VirtualTexturingSupportEnabled.boolValue = toggledValue;
+                        }
+                        GUIUtility.ExitGUI();
                     }
                 }
 
@@ -3079,6 +3086,9 @@ namespace UnityEditor
                 m_EditorAssembliesCompatibilityLevel.intValue = (int)editorAssembliesCompatibilityLevel;
         }
 
+        private const string kInputSystemPackageName = "com.unity.inputsystem";
+
+
         private void OtherSectionConfigurationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Configuration
@@ -3331,9 +3341,6 @@ namespace UnityEditor
             if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.VisionOS)
                 EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
 
-            if (settingsExtension != null)
-                settingsExtension.ConfigurationSectionGUI();
-
             // Active input handling
             if (platform.namedBuildTarget != NamedBuildTarget.Server)
             {
@@ -3361,9 +3368,17 @@ namespace UnityEditor
                         else
                             m_ActiveInputHandler.intValue = currValue;
                     }
+                    var isInputSystemPackageInstalled = UnityEditor.PackageManager.PackageInfo.IsPackageRegistered(kInputSystemPackageName);
+                    if(m_ActiveInputHandler.intValue != 0 && !isInputSystemPackageInstalled)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.activeInputHandlingError.text, MessageType.Error, true);
+                    }
                 }
             }
 
+            if (settingsExtension != null)
+                settingsExtension.ConfigurationSectionGUI();
+                
             EditorGUILayout.Space();
 
             if (platform.namedBuildTarget == NamedBuildTarget.Standalone && CanShowPlatformSettingsForHostPlatform(BuildTarget.StandaloneOSX, platform))

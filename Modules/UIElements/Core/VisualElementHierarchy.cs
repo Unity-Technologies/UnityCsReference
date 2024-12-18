@@ -9,13 +9,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
-    /// <summary>
-    /// Base class for objects that are part of the UIElements visual tree.
-    /// </summary>
-    /// <remarks>
-    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
-    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
-    /// </remarks>
     public partial class VisualElement
     {
         internal const string k_RootVisualContainerName = "rootVisualContainer";
@@ -111,7 +104,9 @@ namespace UnityEngine.UIElements
         // usually same as this element, but can be overridden by more complex types
         // see ScrollView.contentContainer for an example
         /// <summary>
-        /// Child elements are added to it, usually this is the same as the element itself.
+        /// Logical container where child elements are added.
+        /// Usually, this property is set to this element itself, but can be overridden by more complex types,
+        /// for example, <see cref="ScrollView.contentContainer"/>.
         /// </summary>
         public virtual VisualElement contentContainer
         {
@@ -130,10 +125,21 @@ namespace UnityEngine.UIElements
             internal set => m_VisualTreeAssetSource = value;
         }
 
-        // IVisualElementHierarchy container
         /// <summary>
-        /// Add an element to this element's contentContainer
+        /// Adds an element to the <see cref="VisualElement.contentContainer">contentContainer</see> of this element.
         /// </summary>
+        /// <remarks>
+        /// Adds the child element to the <see cref="VisualElement.hierarchy">hierarchy</see> if this element is the content container; otherwise, adds the child element to the content container of this element.
+        ///\\
+        /// Exits without performing any action if the child element is <see langword="null"/>.
+        ///\\
+        /// Throws an InvalidOperationException if the contentContainer is <see langword="null"/>.
+        /// </remarks>
+        /// <param name="child">The child element to add to the content container.</param>
+        /// <example>
+        /// The following example shows how to add a [[Button]] to a visual element.
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/VisualElement_Add.cs"/>
+        /// </example>
         public void Add(VisualElement child)
         {
             if (child == null)
@@ -196,8 +202,19 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Remove the child element located at this position from this element's contentContainer
+        /// Removes a child, at the provided index, from the list of children of the current element.
         /// </summary>
+        /// <remarks>
+        /// Removes the element from both the child list and the layout list. This also removes and invalidates the rendering data of the element at the index
+        /// and its descendants. As a result, this is an O(n) operation where n is the total number of
+        /// descendants.
+        ///\\
+        ///\\
+        /// If the index is out of range, it throws an exception.
+        ///\\
+        ///\\
+        /// __Note__: Avoid removing an element during a layout pass to prevent invalid operation exceptions and potential side effects.
+        /// </remarks>
         public void RemoveAt(int index)
         {
             if (contentContainer == this)
@@ -533,12 +550,18 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Remove the child element located at this position from this element's contentContainer
+            /// Removes a child, at the provided index, from the contentContainer of the current element.
             /// </summary>
             /// <remarks>
-            /// Removes the element from both the child list and the layout list.
+            /// Removes the element from both the child list and the layout list. This also releases the rendering data of the element at the index
+            /// and its descendants. As a result, this is an O(n) operation where n is the total number of
+            /// descendants.
+            ///\\
+            ///\\
             /// If the index is out of range, an exception will be thrown.
-            /// Trying to remove an element during a layout pass will trigger an invalid operation exception to prevent unintended consequences.
+            ///\\
+            ///\\
+            /// __Note__: Avoid removing an element during a layout pass to prevent invalid operation exceptions and potential side effects.
             /// </remarks>
             public void RemoveAt(int index)
             {

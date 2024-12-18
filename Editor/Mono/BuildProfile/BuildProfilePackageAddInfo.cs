@@ -26,7 +26,7 @@ internal class BuildProfilePackageAddInfo
         ConfigurationRunning
     }
 
-    public record struct ProgressEntry(ProgressState state, string name);
+    public record struct ProgressEntry(ProgressState state, string name, int packageCount);
 
     [SerializeField]
     public string profileGuid = string.Empty;
@@ -39,7 +39,7 @@ internal class BuildProfilePackageAddInfo
     public Action OnPackageAddComplete;
 
     PackageManager.Requests.AddAndRemoveRequest m_PackageAddRequest = null;
-    List<ProgressEntry> m_PackageAddProgressInfo = new();
+    ProgressEntry m_PackageAddProgressInfo = new();
 
     public void RequestPackageInstallation()
     {
@@ -54,7 +54,7 @@ internal class BuildProfilePackageAddInfo
         }
     }
 
-    public IReadOnlyList<ProgressEntry> GetPackageAddProgressInfo() => m_PackageAddProgressInfo;
+    public ProgressEntry GetPackageAddProgressInfo() => m_PackageAddProgressInfo;
 
     bool ContainsPackage(string name)
     {
@@ -68,40 +68,65 @@ internal class BuildProfilePackageAddInfo
 
     void HandlePackageAddProgress(PackageManager.ProgressUpdateEventArgs progress)
     {
-        bool done = true;
-        var info = new List<ProgressEntry>();
+        int readyPackageNum = 0;
+        bool done = false;
+        bool packageInstalling = false;
+        bool packageDownloading = false;
+        bool packageErr = false;
+        string packageNames = "";
+        int packagesDownloadingCnt = 0;
+        int packagesInstallingCnt = 0;
+        int packagesErrCnt = 0;
+
+
+        ProgressEntry info;
         foreach (var entry in progress.entries)
         {
             if (ContainsPackage(entry.name))
             {
+                if (packageNames.Length > 0)
+                    packageNames += " ";
                 switch (entry.state)
                 {
                     case PackageManager.ProgressState.Ready:
-                        info.Add(new ProgressEntry(ProgressState.PackageReady, entry.name));
+                        readyPackageNum += 1;
                         break;
                     case PackageManager.ProgressState.Error:
-                        info.Add(new ProgressEntry(ProgressState.PackageError, entry.name));
-                        break;
-                    case PackageManager.ProgressState.Pending:
-                        info.Add(new ProgressEntry(ProgressState.PackagePending, entry.name));
-                        done = false;
+                        packageErr = true;
+                        packagesErrCnt++;
                         break;
                     case PackageManager.ProgressState.Downloading:
-                        info.Add(new ProgressEntry(ProgressState.PackageDownloading, entry.name));
-                        done = false;
+                        packageDownloading = true;
+                        packagesDownloadingCnt++;
                         break;
                     case PackageManager.ProgressState.Installing:
-                        info.Add(new ProgressEntry(ProgressState.PackageInstalling, entry.name));
-                        done = false;
-                        break;
-                    default:
-                        info.Add(new ProgressEntry(ProgressState.PackageStateUnknown, entry.name));
-                        done = false;
+                        packageInstalling = true;
+                        packagesInstallingCnt++;
                         break;
                 }
+                packageNames += entry.name;
             }
         }
-        info.Add(new ProgressEntry(done ? ProgressState.ConfigurationRunning : ProgressState.ConfigurationPending, string.Empty));
+
+        done = (readyPackageNum == packagesToAdd.Length);
+
+        if (packageErr)
+        {
+            info = new ProgressEntry(ProgressState.PackageError, packageNames, packagesErrCnt);
+        }
+        else if (packageInstalling)
+        {
+            info = new ProgressEntry(ProgressState.PackageInstalling, packageNames, packagesInstallingCnt);
+        }
+        else if (packageDownloading)
+        {
+            info = new ProgressEntry(ProgressState.PackageDownloading, packageNames, packagesDownloadingCnt);
+        }
+        else
+        {
+            info = new ProgressEntry(done ? ProgressState.ConfigurationRunning : ProgressState.ConfigurationPending, packageNames, 0);
+        }
+
         m_PackageAddProgressInfo = info;
         OnPackageAddProgress?.Invoke();
         if (done)

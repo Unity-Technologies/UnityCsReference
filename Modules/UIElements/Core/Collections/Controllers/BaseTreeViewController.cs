@@ -148,7 +148,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Items for this tree. Contains items that are expanded in the tree.
+        /// Items for this tree.
         /// </summary>
         /// <remarks>It can only be accessed. Source is set when tree is rebuilt using <see cref="RebuildTree"/></remarks>
         public override IList itemsSource

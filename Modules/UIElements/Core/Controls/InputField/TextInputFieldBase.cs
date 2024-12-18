@@ -907,6 +907,7 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
+                textElement.isInputField = true;
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
                 textSelection.isSelectable = true;
@@ -921,7 +922,6 @@ namespace UnityEngine.UIElements
                 textEdition.UpdateTextFromValue += UpdateTextFromValue;
                 textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
                 textEdition.GetDefaultValueType = GetDefaultValueType;
-
 
                 AddToClassList(inputUssClassName);
                 name = TextField.textInputUssName;
@@ -1017,6 +1017,8 @@ namespace UnityEngine.UIElements
                    scrollOffset.y = 0;
                    UpdateScrollOffset();
                 }
+                if (textElement.hasFocus)
+                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
             }
 
             internal void SetMultiline()
@@ -1065,6 +1067,8 @@ namespace UnityEngine.UIElements
                     AddToClassList(multilineInputUssClassName);
                     textElement.AddToClassList(innerTextElementUssClassName);
                 }
+                if (textElement.hasFocus)
+                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
             }
 
             void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)

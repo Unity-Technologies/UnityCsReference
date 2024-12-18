@@ -137,10 +137,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 AssetDatabase.AddObjectToAsset(duplicatedProfile.graphicsSettings, duplicatedProfile);
 
             if (buildProfile.qualitySettings != null)
-            {
-                duplicatedProfile.qualitySettings = UnityEngine.Object.Instantiate(buildProfile.qualitySettings);
                 AssetDatabase.AddObjectToAsset(duplicatedProfile.qualitySettings, duplicatedProfile);
-            }
 
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
@@ -245,7 +242,7 @@ namespace UnityEditor.Build.Profile.Handlers
         void OnBuildProfileCreated(BuildProfile profile)
         {
             // Only track profiles stored in the assets folder.
-            if (profile.buildTarget == BuildTarget.NoTarget || string.IsNullOrEmpty(profile.name))
+            if (profile.platformGuid.Empty() || string.IsNullOrEmpty(profile.name))
                 return;
 
             if (BuildProfileContext.IsClassicPlatformProfile(profile))

@@ -44,8 +44,25 @@ namespace UnityEditor.Search
         {
             using (var context = new SearchContext(c.search.GetProviders(), queryText, c.search.options | SearchFlags.QueryString))
             using (var results = SearchService.Request(context))
-                foreach (var r in results)
-                    yield return r;
+            {
+                if (c.flags.HasFlag(SearchExpressionExecutionFlags.ThreadedEvaluation))
+                {
+                    foreach (var r in results)
+                        yield return r;
+                }
+                else
+                {
+                    foreach (var r in results)
+                    {
+                        if (r == null)
+                        {
+                            // Note: We are in EvaluateInMainThread, we need to tick providers and sessions to force processing of items.
+                            context.Tick(forceTick: true);
+                        }
+                        yield return r;
+                    }
+                }
+            }
         }
 
         readonly struct SpreadContext

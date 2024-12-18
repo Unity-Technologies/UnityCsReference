@@ -94,7 +94,7 @@ namespace UnityEditor.Search
                 IndexProperty(documentIndex, "t", objType.FullName, exact: true, saveKeyword: true);
         }
 
-        private void IndexSubAsset(Object subObj, string containerPath, bool checkIfDocumentExists, bool hasCustomIndexers)
+        private void IndexSubAsset(Object subObj, string containerPath, string containerGlobalObjectId, bool checkIfDocumentExists, bool hasCustomIndexers)
         {
             var gid = GlobalObjectId.GetGlobalObjectIdSlow(subObj);
             var id = gid.ToString();
@@ -112,7 +112,10 @@ namespace UnityEditor.Search
             IndexProperty(subObjDocumentIndex, "is", "nested", saveKeyword: true, exact: true);
             IndexProperty(subObjDocumentIndex, "is", "subasset", saveKeyword: true, exact: true);
             if (settings.options.dependencies)
+            {
                 AddProperty("ref", containerPath.ToLowerInvariant(), subObjDocumentIndex);
+                AddProperty("ref", containerGlobalObjectId, subObjDocumentIndex);
+            }
 
             IndexLabels(subObjDocumentIndex, subObj);
 
@@ -127,9 +130,10 @@ namespace UnityEditor.Search
 
         public override void IndexDocument(string path, bool checkIfDocumentExists)
         {
-            int assetInstanceId = Utils.GetMainAssetInstanceID(path);
+            var assetInstanceId = Utils.GetMainAssetInstanceID(path);
             var globalObjectId = GlobalObjectId.GetGlobalObjectIdSlow(assetInstanceId);
-            var documentIndex = AddDocument(globalObjectId.ToString(), null, path, checkIfDocumentExists, SearchDocumentFlags.Asset);
+            var globalObjectIdStr = globalObjectId.ToString();
+            var documentIndex = AddDocument(globalObjectIdStr, null, path, checkIfDocumentExists, SearchDocumentFlags.Asset);
             if (documentIndex < 0)
                 return;
 
@@ -187,7 +191,7 @@ namespace UnityEditor.Search
                         if (AssetDatabase.IsSubAsset(obj))
                         {
                             IndexTypes(obj.GetType(), documentIndex, isPrefab, "has", exact: true);
-                            IndexSubAsset(obj, path, checkIfDocumentExists, hasCustomIndexers);
+                            IndexSubAsset(obj, path, globalObjectIdStr, checkIfDocumentExists, hasCustomIndexers);
                         }
                         else if (!string.IsNullOrEmpty(obj.name))
                             IndexProperty(documentIndex, "name", obj.name, saveKeyword: true, exact: true);

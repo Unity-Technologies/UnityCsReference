@@ -15,7 +15,7 @@ namespace UnityEditor.Toolbars
         public UndoButton() : base(OpenUndoHistoryWindow)
         {
             name = "History";
-            
+
             this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
 
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
@@ -52,7 +52,7 @@ namespace UnityEditor.Toolbars
         {
             try
             {
-                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Edit/Undo History");
+                var searchShortcut = ShortcutManagement.ShortcutManager.instance.GetShortcutBinding("Main Menu/Window/General/Undo History");
                 return L10n.Tr($"Undo History ({searchShortcut})");
             }
             catch

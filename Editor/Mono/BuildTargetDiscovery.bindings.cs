@@ -236,7 +236,7 @@ namespace UnityEditor
             public string[] requiredPackage = new string[] {};
             public string[] recommendedPackage = new string[] {};
             public string description = L10n.Tr("");
-            public string link = L10n.Tr("");    
+            public string link = L10n.Tr("");
             public string instructions = L10n.Tr("*standard install form hub");
             public string iconName = "BuildSettings.Editor";
             public PlatformInfo(){}
@@ -249,7 +249,7 @@ namespace UnityEditor
 
         static Dictionary<BuildTarget, GUID> s_PlatformGUIDDataQuickLookup = new Dictionary<BuildTarget, GUID>();
 
-        // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead. 
+        // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead.
         // Changes here should be synced with the usage of
         // BuildTargetDiscovery::HideInUI flag in [Platform]BuildTarget.cpp
         // This list is ordered by the order in which platforms are displayed in the build profiles window (Do not change!)
@@ -461,6 +461,7 @@ namespace UnityEditor
                     link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.Facebook",
                     requiredPackage = new string[]{"com.unity.meta-instant-games-sdk"},
+                    recommendedPackage = new string[]{"com.unity.web.stripping-tool"},
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -566,6 +567,26 @@ namespace UnityEditor
         }
         public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
 
+        /// <summary>
+        /// Get the platform GUID corresponding to the NamedBuildTarget and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the platform GUID for.</param>
+        /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
+        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        {
+            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+                return value;
+
+            return GetGUIDFromBuildTarget(buildTarget);
+        }
+
+        /// <summary>
+        /// Get the platform GUID corresponding to the BuildTarget. Note this method does not work with the server platforms.
+        /// Use the namedBuildTarget overload of <see cref="BuildTargetDiscovery.GetGUIDFromBuildTarget"/> for server platforms.
+        /// </summary>
+        /// <param name="buildTarget">The BuildTarget to get the platform GUID for.</param>
+        /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
             if (buildTarget == BuildTarget.StandaloneWindows) //workaround for win64 and win having the same guid in new Build Target system
@@ -588,7 +609,7 @@ namespace UnityEditor
             result = EmptyGuid;
 
             if (namedBuildTarget == NamedBuildTarget.Server)
-            { 
+            {
                 foreach (var platform in allPlatforms)
                 {
                     if(platform.Value.subtarget == StandaloneBuildSubtarget.Server)
@@ -616,12 +637,23 @@ namespace UnityEditor
             return EmptyGuid;
         }
 
-        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        /// <summary>
+        /// Get the base platform GUID given a platform GUID.
+        /// </summary>
+        /// <param name="platformGuid">The platform GUID to get the base platform GUID for.</param>
+        /// <returns>The base platform GUID. If the platform is not a derived platform, the same GUID is returned.</returns>
+        internal static GUID GetBasePlatformGUID(GUID platformGuid)
         {
-            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
-                return value;
+            if (!allPlatforms.TryGetValue(platformGuid, out PlatformInfo platformInfo))
+                return EmptyGuid;
 
-            return GetGUIDFromBuildTarget(buildTarget);
+            if (!platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
+                return platformGuid;
+
+            if (s_PlatformGUIDDataQuickLookup.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
+                return basePlatformGuid;
+
+            return EmptyGuid;
         }
 
         public static (BuildTarget, StandaloneBuildSubtarget) GetBuildTargetAndSubtargetFromGUID(GUID guid)
@@ -640,7 +672,7 @@ namespace UnityEditor
                     && platform.Value.subtarget != StandaloneBuildSubtarget.Server
                     && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
                     ) //workaround for win64 and win having the same guid in new Build Target system and for derived build targets
-                { 
+                {
                     s_PlatformGUIDDataQuickLookup.Add(platform.Value.buildTarget, platform.Key);
                 }
 
@@ -748,7 +780,7 @@ namespace UnityEditor
                     return true;
                 else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux && platformInfo.HasFlag(PlatformAttributes.IsLinuxBuildTarget))
                     return true;
-            }   
+            }
 
             return false;
         }
@@ -800,6 +832,14 @@ namespace UnityEditor
         public static bool BuildPlatformIsHiddenInUI(GUID guid)
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsHidden))
+                return true;
+
+            return false;
+        }
+
+        internal static bool BuildPlatformIsDerivedPlatform(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 return true;
 
             return false;

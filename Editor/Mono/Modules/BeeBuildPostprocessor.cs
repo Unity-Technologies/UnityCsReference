@@ -32,7 +32,7 @@ namespace UnityEditor.Modules
         public static readonly string kBackupFolderPostfix = "_BackUpThisFolder_ButDontShipItWithYourGame";
 
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
-        public virtual void LaunchPlayer(BuildLaunchPlayerArgs args) => throw new NotSupportedException();
+        public virtual ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args) => throw new NotSupportedException();
 
         public virtual void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties)
         {

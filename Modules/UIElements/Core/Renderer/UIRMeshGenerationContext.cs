@@ -141,30 +141,6 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// When this method is called, it is not possible to use <see cref="SetNextVertex"/> to fill the vertices.
         /// </remarks>
-        /// <example>
-        /// <code>
-        /// public class MyVisualElement : VisualElement
-        /// {
-        ///     void MyGenerateVisualContent(MeshGenerationContext mgc)
-        ///     {
-        ///         var meshWriteData = mgc.Allocate(4, 6);
-        ///         // meshWriteData has been allocated with 6 indices for 2 triangles
-        ///
-        ///         // ... set the vertices
-        ///
-        ///         // Set indices for the first triangle
-        ///         meshWriteData.SetNextIndex(0);
-        ///         meshWriteData.SetNextIndex(1);
-        ///         meshWriteData.SetNextIndex(2);
-        ///
-        ///         // Set indices for the second triangle
-        ///         meshWriteData.SetNextIndex(2);
-        ///         meshWriteData.SetNextIndex(1);
-        ///         meshWriteData.SetNextIndex(3);
-        ///     }
-        /// }
-        /// </code>
-        /// </example>
         public void SetAllVertices(Vertex[] vertices)
         {
             if (currentVertex == 0)
@@ -301,8 +277,11 @@ namespace UnityEngine.UIElements
         public VisualElement visualElement { get; private set; }
 
         /// <summary>
-        /// The vector painter object used to issue drawing commands.
+        /// The painter object used to issue 2D drawing commands. Use this object to draw vector shapes such as lines, arcs and Bezier curves.
         /// </summary>
+        /// <example>
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Painter2DDrawing.cs"/>
+        /// </example>
         public Painter2D painter2D
         {
             get
@@ -364,10 +343,19 @@ namespace UnityEngine.UIElements
         /// <param name="vertexCount">The number of vertices to allocate. The maximum is 65535 (or UInt16.MaxValue).</param>
         /// <param name="indexCount">The number of triangle list indices to allocate. Each 3 indices represent one triangle, so this value should be multiples of 3.</param>
         /// <param name="texture">An optional texture to be applied on the triangles allocated. Pass null to rely on vertex colors only.</param>
+        /// <returns>An object that gives access to the newely allocated data. If the returned vertex count is 0, the allocation failed (the system ran out of memory).</returns>
         /// <remarks>
-        /// See <see cref="Vertex.position"/> for details on geometry generation conventions. If a valid texture was passed, then the returned <see cref="MeshWriteData"/> will also describe a rectangle for the UVs to use to sample the passed texture. This is needed because textures passed to this API can be internally copied into a larger atlas.
+        /// See <see cref="Vertex.position"/> for details on geometry generation conventions. When the vertices are indexed, the triangles described must follow clock-wise winding order given that Y+ goes down.
         /// </remarks>
-        /// <returns>An object that gives access to the newely allocated data. If the returned vertex count is 0, then allocation failed (the system ran out of memory).</returns>
+        /// <remarks>
+        /// If a valid texture was passed, then the <see cref="Vertex.uv"/> values should be used to map the texture to the geometry.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[MeshWriteData]]
+        /// </remarks>
+        /// <example>
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/TexturedElement.cs"/>
+        /// </example>
         public MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture = null)
         {
             using (k_AllocateMarker.Auto())

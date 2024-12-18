@@ -166,6 +166,7 @@ namespace UnityEditor.Build.Profile
             var bootstrapView = new BuildProfileBootstrapView();
             m_Profile.OnPackageAddProgress = () =>
             {
+                bootstrapView.StartSpinner();
                 bootstrapView.Set(packageAddInfo.GetPackageAddProgressInfo());
             };
             return bootstrapView;
@@ -243,7 +244,7 @@ namespace UnityEditor.Build.Profile
             if (!m_Profile.IsActiveBuildProfileOrPlatform())
                 return;
 
-            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.buildTarget);
+            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.platformGuid);
             bool isCompiling = EditorApplication.isCompiling || EditorApplication.isUpdating;
             UpdateHelpBoxVisibility(m_VirtualTexturingHelpBox, !isVirtualTexturingValid);
             UpdateHelpBoxVisibility(m_CompilingWarningHelpBox, isCompiling);

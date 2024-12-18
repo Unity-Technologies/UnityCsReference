@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Scripting;
-using System;
-using System.Diagnostics;
+using UnityEditor.Experimental;
 using UnityEditorInternal;
+using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
@@ -14,8 +15,8 @@ namespace UnityEditor
     {
         const int VersionBoxLineHeight = 13;
         const int VersionBoxHeight = VersionBoxLineHeight * 4;
-        static readonly Vector2 WindowSize = new Vector2(640, 265);
-        static readonly Vector2 WindowSizeExpanded = new Vector2(WindowSize.x, WindowSize.y + VersionBoxLineHeight * 2); // Adding 2 more lines to the version box
+        static readonly Vector2 WindowSize = new Vector2(573, 545);
+        private const string AboutTitle = "";
 
         [RequiredByNativeCode]
         internal static void ShowAboutWindow()
@@ -23,7 +24,7 @@ namespace UnityEditor
             var mainWindowRect = EditorGUIUtility.GetMainWindowPosition();
             var aboutRect = EditorGUIUtility.GetCenteredWindowPosition(mainWindowRect, WindowSize);
 
-            AboutWindow w = GetWindowWithRect<AboutWindow>(aboutRect, true, "About Unity");
+            AboutWindow w = GetWindowWithRect<AboutWindow>(aboutRect, true, AboutTitle);
             w.position = aboutRect;
             w.minSize = w.maxSize = WindowSize;
             w.m_Parent.window.m_DontSaveToLayout = true;
@@ -32,37 +33,84 @@ namespace UnityEditor
         bool m_ShowDetailedVersion = false;
         private int m_InternalCodeProgress;
 
-        static class Styles
+
+        private VisualElement buildDetailsContainer;
+        private Label versionLabel;
+        private const string darkClassname = "dark";
+
+        void CreateGUI()
         {
-            public static GUIContent thanksContent = new GUIContent("Special thanks to our beta users");
-            public static Uri thanksUri = new Uri($"https://unity.com/releases/{GetVersion()}/thanks");
+            rootVisualElement.AddToClassList("root-element");
 
-            public static readonly GUIStyle mainLayout = new GUIStyle() { margin = new RectOffset(40, 40, 30, 20) };
-            public static readonly GUIStyle versionLayout = new GUIStyle() { margin = new RectOffset(0, 0, 10, 15) };
-            public static readonly GUIStyle poweredLayout = new GUIStyle() { margin = new RectOffset(5, 5, 0, 15) };
-            public static readonly GUIStyle poweredSectionLayout = new GUIStyle() { margin = new RectOffset(2, 2, 2, 2) };
 
-            public static readonly GUIStyle aboutWindowLicenseLabel = new GUIStyle("AboutWindowLicenseLabel");
+            var layout = EditorResources.Load("UXML/About/AboutWindow.uxml", typeof(UnityEngine.Object)) as VisualTreeAsset;
 
-            public static GUIStyle versionStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Version-Label");
-            public static GUIStyle thanksStyle = EditorStyles.FromUSS(aboutWindowLicenseLabel, "About-Thanks-Label");
+            string extensionVersion = FormatExtensionVersionString();
+            int t = InternalEditorUtility.GetUnityVersionDate();
+            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            string branch = InternalEditorUtility.GetUnityBuildBranch();
 
-            public static readonly GUIContent HeaderLogo = EditorGUIUtility.IconContent("AboutWindow.MainHeader");
-            public static readonly GUIContent MonoLogo = EditorGUIUtility.IconContent("MonoLogo");
-            public static readonly GUIContent AgeiaLogo = EditorGUIUtility.IconContent("AgeiaLogo");
 
-            static readonly RectOffset NoRect = new RectOffset(0, 0, 0, 0);
-            static readonly RectOffset LogoMargin = new RectOffset(2, 0, 15, 15);
-            public static readonly GUIStyle LogoLayout = new GUIStyle() { fixedWidth = 0f, fixedHeight = 0, margin = LogoMargin, padding = NoRect, stretchHeight = false, stretchWidth = false };
-            public static readonly GUIStyle HeaderLayout = new GUIStyle(LogoLayout) { margin = NoRect };
-            public static readonly GUIStyle MonoLogoLayout = new GUIStyle(LogoLayout) { fixedHeight = 36.901f };
-            public static readonly GUIStyle AgeiaLogoLayout = new GUIStyle(LogoLayout) { fixedHeight = 22.807f };
-
-            private static string GetVersion()
+            if (layout == null)
             {
-                var version = InternalEditorUtility.GetUnityVersion();
-                return $"{version.Major}-{version.Minor}";
+                // We display a minimal layout just in case
+                rootVisualElement.Add(new Label("About Unity"));
+                versionLabel = new Label($"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}");
+                rootVisualElement.Add(versionLabel);
             }
+            else
+            {
+                layout.CloneTree(rootVisualElement);
+
+                versionLabel = rootVisualElement.Q<Label>("version");
+
+                buildDetailsContainer = rootVisualElement.Q("detail-info");
+                buildDetailsContainer.AddToClassList("hide-details");
+
+                if (EditorGUIUtility.isProSkin)
+                {
+                    rootVisualElement.AddToClassList(darkClassname);
+                    rootVisualElement.Query<VisualElement>(className: "logo")
+                        .ForEach((x) => x.AddToClassList(darkClassname));
+                }
+
+                SetLabelValue("product-name", InternalEditorUtility.GetUnityProductName());
+
+                SetLabelValue("version", $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}");
+                SetLabelValue("build-revision", $"{branch} {InternalEditorUtility.GetUnityBuildHash()}");
+                SetLabelValue("build-date", $"{dt.AddSeconds(t):r}");
+
+
+                SetLabelValue("license-type", InternalEditorUtility.GetLicenseInfoType());
+                SetLabelValue("serial-number", InternalEditorUtility.GetLicenseInfoSerial());
+                SetLabelValue("unity-copyright", InternalEditorUtility.GetUnityCopyright());
+            }
+
+            rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+            rootVisualElement.focusable = true;
+
+            UpdateVersionLabel();
+
+            rootVisualElement.Focus();
+        }
+
+        void SetLabelValue(string labelName, string text)
+        {
+            var lbl = rootVisualElement.Q<TextElement>(labelName);
+            lbl.text = text.Replace("(c)", "\u00A9");
+        }
+
+        void OnKeyDown(KeyDownEvent evt)
+        {
+            bool altPressed = ((int)evt.modifiers & (int)EventModifiers.Alt) == (int)EventModifiers.Alt;
+
+            if (altPressed != m_ShowDetailedVersion)
+            {
+                m_ShowDetailedVersion = altPressed;
+                UpdateVersionLabel();
+            }
+
+            ListenForSecretCodes(evt.character);
         }
 
         void OnEnable()
@@ -84,101 +132,43 @@ namespace UnityEditor
         public void OnGUI()
         {
             var evt = Event.current;
-            var mainLayoutWidth = position.width - Styles.mainLayout.margin.horizontal;
-            using (new GUILayout.VerticalScope(Styles.mainLayout))
+            if (m_ShowDetailedVersion != evt.alt)
             {
-                GUILayout.Label(Styles.HeaderLogo, Styles.HeaderLayout);
-
-                using (new GUILayout.HorizontalScope(Styles.versionLayout))
-                {
-                    ListenForSecretCodes();
-
-                    string extensionVersion = FormatExtensionVersionString();
-
-                    m_ShowDetailedVersion |= evt.alt;
-                    if (m_ShowDetailedVersion)
-                    {
-                        int t = InternalEditorUtility.GetUnityVersionDate();
-                        DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-                        string branch = InternalEditorUtility.GetUnityBuildBranch();
-                        EditorGUILayout.SelectableLabel(
-                            $"{InternalEditorUtility.GetUnityProductName()}\n" +
-                            $"{InternalEditorUtility.GetUnityDisplayVersionVerbose()}{extensionVersion}\n" +
-                            $"Revision: {branch} {InternalEditorUtility.GetUnityBuildHash()}\n" +
-                            $"Built: {dt.AddSeconds(t):r}",
-                            Styles.versionStyle,
-                            GUILayout.MaxWidth(mainLayoutWidth), GUILayout.Height(VersionBoxHeight));
-
-                        minSize = maxSize = WindowSizeExpanded;
-                    }
-                    else
-                    {
-                        GUILayout.Label(
-                            $"{InternalEditorUtility.GetUnityProductName()}\n" +
-                            $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}", Styles.versionStyle);
-                    }
-
-                    if (evt.type == EventType.ValidateCommand)
-                        return;
-                }
-
-                using (new GUILayout.HorizontalScope(Styles.poweredLayout))
-                {
-                    var poweredBySectionMaxWidth = (mainLayoutWidth - Styles.poweredSectionLayout.margin.horizontal * 2) / 2f;
-                    using (new GUILayout.VerticalScope(Styles.poweredSectionLayout, GUILayout.MaxWidth(poweredBySectionMaxWidth)))
-                    {
-                        GUILayout.Label("Scripting powered by The Mono Project.\n\u00A9 2011 Novell, Inc.", Styles.aboutWindowLicenseLabel);
-                        GUILayout.FlexibleSpace();
-                        GUILayout.Label(Styles.MonoLogo, Styles.MonoLogoLayout);
-                        GUILayout.FlexibleSpace();
-                        if (!InternalEditorUtility.IsUnityBeta())
-                        {
-                            var specialThanksRect = GUILayoutUtility.GetRect(Styles.thanksContent, Styles.thanksStyle);
-                            if (GUI.Button(specialThanksRect, Styles.thanksContent, Styles.thanksStyle))
-                                Process.Start(Styles.thanksUri.AbsoluteUri);
-                            EditorGUIUtility.AddCursorRect(specialThanksRect, MouseCursor.Link);
-                        }
-                        GUILayout.Label(InternalEditorUtility.GetUnityCopyright().Replace("(c)", "\u00A9"), Styles.aboutWindowLicenseLabel);
-                    }
-
-                    GUILayout.FlexibleSpace();
-
-                    using (new GUILayout.VerticalScope(Styles.poweredSectionLayout, GUILayout.MaxWidth(poweredBySectionMaxWidth)))
-                    {
-                        GUILayout.Label("Physics powered by PhysX.\n\u00A9 2019 NVIDIA Corporation.", Styles.aboutWindowLicenseLabel);
-                        GUILayout.FlexibleSpace();
-                        GUILayout.Label(Styles.AgeiaLogo, Styles.AgeiaLogoLayout);
-                        GUILayout.FlexibleSpace();
-                        GUILayout.Label(InternalEditorUtility.GetLicenseInfo().Replace("(c)", "\u00A9"), Styles.aboutWindowLicenseLabel);
-                    }
-                }
+                m_ShowDetailedVersion = evt.alt;
+                UpdateVersionLabel();
             }
         }
 
-        private void ListenForSecretCodes()
+        void UpdateVersionLabel()
         {
-            if (Event.current.type != EventType.KeyDown || (int)Event.current.character == 0)
+            versionLabel.isSelectable = m_ShowDetailedVersion;
+
+            if (buildDetailsContainer != null)
+            {
+                buildDetailsContainer.EnableInClassList("hide-details", !m_ShowDetailedVersion);
+                buildDetailsContainer.Query<VisualElement>()
+                    .ForEach((x) => x.EnableInClassList("hide-details", !m_ShowDetailedVersion));
+            }
+        }
+
+        private void ListenForSecretCodes(char current)
+        {
+            if (current == '\0')
                 return;
 
-            if (SecretCodeHasBeenTyped("internal", ref m_InternalCodeProgress))
+            if (SecretCodeHasBeenTyped("internal", current, ref m_InternalCodeProgress))
             {
-                bool enabled = !EditorPrefs.GetBool("DeveloperMode", false);
-                EditorPrefs.SetBool("DeveloperMode", enabled);
-                ShowNotification(new GUIContent(string.Format(L10n.Tr("Developer Mode {0}"), (enabled ? L10n.Tr("On") : L10n.Tr("Off")))));
-                EditorUtility.RequestScriptReload();
-
-                // Repaint all views to show/hide debug repaint indicator
-                InternalEditorUtility.RepaintAllViews();
+                ToggleInternalMode();
             }
         }
 
-        private bool SecretCodeHasBeenTyped(string code, ref int characterProgress)
+        private bool SecretCodeHasBeenTyped(string code, char current, ref int characterProgress)
         {
-            if (characterProgress < 0 || characterProgress >= code.Length || code[characterProgress] != Event.current.character)
+            if (characterProgress < 0 || characterProgress >= code.Length || code[characterProgress] != current)
                 characterProgress = 0;
 
             // Don't use else here. Even if key was mismatch, it should still be recognized as first key of sequence if it matches.
-            if (code[characterProgress] == Event.current.character)
+            if (code[characterProgress] == current)
             {
                 characterProgress++;
 
@@ -189,6 +179,17 @@ namespace UnityEditor
                 }
             }
             return false;
+        }
+
+        private void ToggleInternalMode()
+        {
+            bool enabled = !EditorPrefs.GetBool("DeveloperMode", false);
+            EditorPrefs.SetBool("DeveloperMode", enabled);
+            ShowNotification(new GUIContent(string.Format(L10n.Tr("Developer Mode {0}"), (enabled ? L10n.Tr("On") : L10n.Tr("Off")))));
+            EditorUtility.RequestScriptReload();
+
+            // Repaint all views to show/hide debug repaint indicator
+            InternalEditorUtility.RepaintAllViews();
         }
 
         private string FormatExtensionVersionString()

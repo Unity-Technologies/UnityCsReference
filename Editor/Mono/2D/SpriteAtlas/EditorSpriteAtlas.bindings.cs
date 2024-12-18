@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.U2D;
 using UnityEngine.Bindings;
 using System;
+using UnityEditor.AssetImporters;
 
 namespace UnityEditor.U2D
 {
@@ -100,6 +101,12 @@ namespace UnityEditor.U2D
         extern public static void Remove([NotNull] this SpriteAtlas spriteAtlas, UnityEngine.Object[] objects);
         extern internal static void RemoveAt([NotNull] this SpriteAtlas spriteAtlas, int index);
         extern public static UnityEngine.Object[] GetPackables([NotNull] this SpriteAtlas spriteAtlas);
+        extern internal static void SetV2([NotNull] this SpriteAtlas spriteAtlas);
+        internal static void RegisterAndPackAtlas(this SpriteAtlas spriteAtlas, AssetImportContext context, AssetImporter importer, U2D.ScriptablePacker scriptablePacker)
+        {
+            RegisterAndPackAtlasInternal(spriteAtlas, context, importer, scriptablePacker);
+        }
+        extern private static void RegisterAndPackAtlasInternal([NotNull] this SpriteAtlas spriteAtlas, [NotNull] AssetImportContext context, [NotNull] AssetImporter importer, UnityEngine.Object scriptablePacker);
         extern public static SpriteAtlasTextureSettings GetTextureSettings([NotNull] this SpriteAtlas spriteAtlas);
         extern public static void SetTextureSettings([NotNull] this SpriteAtlas spriteAtlas, SpriteAtlasTextureSettings src);
         extern public static SpriteAtlasPackingSettings GetPackingSettings([NotNull] this SpriteAtlas spriteAtlas);

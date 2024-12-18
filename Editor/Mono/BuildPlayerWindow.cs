@@ -698,6 +698,7 @@ namespace UnityEditor
 
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+            var platformGuid = BuildTargetDiscovery.GetGUIDFromBuildTarget(namedBuildTarget, buildTarget);
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTarget);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
@@ -712,13 +713,9 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
-            if (namedBuildTarget == NamedBuildTarget.Server)
-                moduleName = moduleName.Replace("Standalone", "DedicatedServer");
-
             if (IsModuleNotInstalled(namedBuildTarget, buildTarget))
             {
-                ShowNoModuleLabel(namedBuildTarget, buildTarget, moduleName,
+                ShowNoModuleLabel(platformGuid,
                     styles.noModuleLoaded,
                     styles.openDownloadPage,
                     styles.installModuleWithHub,
@@ -943,13 +940,7 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            var subtarget = StandaloneBuildSubtarget.Default;
-            if (namedBuildTarget == NamedBuildTarget.Standalone)
-                subtarget = StandaloneBuildSubtarget.Player;
-            else if (namedBuildTarget == NamedBuildTarget.Server)
-                subtarget = StandaloneBuildSubtarget.Server;
-
-            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(buildTarget, subtarget));
+            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(platformGuid));
 
             GUILayout.EndScrollView();
 
@@ -958,22 +949,23 @@ namespace UnityEditor
         }
 
         internal static void ShowNoModuleLabel(
-            NamedBuildTarget namedBuildTarget,
-            BuildTarget buildTarget,
-            string moduleName,
+            GUID platformGuid,
             string noModuleLoaded,
             GUIContent openDownloadPage,
             GUIContent installModuleWithHub,
             string editorWillNeedToBeReloaded)
         {
-#pragma warning disable CS0618 // Member is obsolete
-            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(namedBuildTarget, buildTarget);
-#pragma warning restore CS0618
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
             GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, displayName)));
-            string url = "";
-#pragma warning disable CS0618 // Member is obsolete
-            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))
-#pragma warning restore CS0618
+
+            var moduleName = BuildProfileModuleUtil.GetModuleName(platformGuid);
+            var (_, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformGuid);
+            if (subtarget == StandaloneBuildSubtarget.Server)
+                moduleName = moduleName.Replace("Standalone", "DedicatedServer");
+
+            var url = string.Empty;
+            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
             {
                 if (GUILayout.Button(openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {

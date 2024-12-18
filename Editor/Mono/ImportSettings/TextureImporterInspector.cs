@@ -127,10 +127,12 @@ namespace UnityEditor
             TextureImporterFormat.DXT5Crunched,
             TextureImporterFormat.ETC_RGB4Crunched,
             TextureImporterFormat.ETC2_RGBA8Crunched,
+#pragma warning disable CS0618 // TextureImporterFormat.PVRTC_* members are obsolete
             TextureImporterFormat.PVRTC_RGB2,
             TextureImporterFormat.PVRTC_RGB4,
             TextureImporterFormat.PVRTC_RGBA2,
             TextureImporterFormat.PVRTC_RGBA4,
+#pragma warning restore CS0618
             TextureImporterFormat.ETC_RGB4,
             TextureImporterFormat.ETC2_RGB4,
             TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,

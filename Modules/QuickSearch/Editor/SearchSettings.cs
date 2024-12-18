@@ -246,7 +246,7 @@ namespace UnityEditor.Search
             minIndexVariations = ReadSetting(settings, nameof(minIndexVariations), 2);
             findProviderIndexHelper = ReadSetting(settings, nameof(findProviderIndexHelper), true);
 
-            itemIconSize = EditorPrefs.GetFloat(itemIconSizePrefKey, (float)DisplayMode.List);
+            itemIconSize = ReadSetting(settings, nameof(itemIconSize), (float)DisplayMode.List);
 
 
             var searches = ReadSetting<object[]>(settings, nameof(recentSearches));
@@ -299,6 +299,7 @@ namespace UnityEditor.Search
                 [nameof(disabledIndexers)] = string.Join(";;;", disabledIndexers),
                 [nameof(minIndexVariations)] = minIndexVariations,
                 [nameof(findProviderIndexHelper)] = findProviderIndexHelper,
+                [nameof(itemIconSize)] = itemIconSize,
 
             };
 

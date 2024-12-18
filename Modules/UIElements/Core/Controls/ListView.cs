@@ -66,6 +66,9 @@ namespace UnityEngine.UIElements
     /// The following example creates an editor window with a list view of a thousand items.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ListView_Example.cs"/>
     /// </example>
+    /// <remarks>
+    /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
+    /// </remarks>
     public class ListView : BaseListView
     {
         internal static readonly BindingId itemTemplateProperty = nameof(itemTemplate);

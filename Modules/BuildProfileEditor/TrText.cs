@@ -83,15 +83,14 @@ namespace UnityEditor.Build.Profile
         public static readonly string resetQualitySettingsDialogMessage = L10n.Tr("This will reset all Quality Settings overrides to the original globals.");
 
         // Build Profile Bootstrap View
-        public static readonly string bootstrapHeader = L10n.Tr("Your build profile is being configured:");
-        public static readonly string packageAddStateUnknown = L10n.Tr(" - Package {0} in unknown state...");
-        public static readonly string packageAddPending = L10n.Tr(" - Package {0} pending...");
-        public static readonly string packageAddDownloading = L10n.Tr(" - Downloading package {0}...");
-        public static readonly string packageAddInstalling = L10n.Tr(" - Installing package {0}...");
-        public static readonly string packageAddReady = L10n.Tr(" - Package {0} ready.");
-        public static readonly string packageAddError = L10n.Tr(" - Error adding package {0}!");
-        public static readonly string configurationPending = L10n.Tr(" - Configuration pending...");
-        public static readonly string configurationRunning = L10n.Tr(" - Configuring settings...");
+        public static readonly string buildProfileConfiguration = L10n.Tr("Configuring Build Profile...");
+        public static readonly string buildProfilePreparation = L10n.Tr("Preparing Build Profile...");
+        public static readonly string packageAddDownloading = L10n.Tr("Downloading package...");
+        public static readonly string packageAddInstalling = L10n.Tr("Installing package...");
+        public static readonly string packageAddError = L10n.Tr("Error adding package {0}!");
+        public static readonly string packagesAddError = L10n.Tr("Error adding packages {0}!");
+        public static readonly string packagesAddDownloading = L10n.Tr("Downloading packages...");
+        public static readonly string packagesAddInstalling = L10n.Tr("Installing packages...");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");

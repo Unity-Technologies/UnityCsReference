@@ -34,6 +34,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The overflow is clipped, and the rest of the content will be invisible.
         /// </summary>
+        /// <remarks>
+        /// Refer to [[wiki:UIE-masking|Apply masking effects in UI Toolkit]] for implementation details.
+        /// </remarks>
         Hidden = LayoutOverflow.Hidden
     }
 
@@ -86,6 +89,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// By default, items will all try to fit onto one line. You can change that and allow the items to wrap as needed with this property.
     /// </summary>
+    /// <remarks>
+    /// SA: [[UIElements.WhiteSpace]]
+    /// </remarks>
     public enum Wrap
     {
         /// <summary>
@@ -93,7 +99,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         NoWrap = LayoutWrap.NoWrap,
         /// <summary>
-        /// All items will be on one line. Default Value.
+        /// Items will wrap onto multiple lines from top to bottom.
         /// </summary>
         Wrap = LayoutWrap.Wrap,
         /// <summary>

@@ -139,8 +139,7 @@ namespace UnityEditor.Search
         private void SetItemSize(float itemSize)
         {
             m_ViewModel.itemIconSize = itemSize;
-            if (!viewState.forceViewMode)
-                SearchSettings.itemIconSize = itemSize;
+            SearchSettings.itemIconSize = itemSize;
             UpdateItemSizeSlider(itemSize);
             UpdateSelectedItemSizeButton();
         }

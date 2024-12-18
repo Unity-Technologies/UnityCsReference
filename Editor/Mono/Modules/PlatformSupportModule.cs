@@ -151,7 +151,7 @@ namespace UnityEditor.Modules
 
     internal interface IBuildPostprocessor
     {
-        void LaunchPlayer(BuildLaunchPlayerArgs args);
+        ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args);
 
         void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties);
 
