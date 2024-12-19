@@ -1017,6 +1017,8 @@ namespace UnityEngine.UIElements
                    scrollOffset.y = 0;
                    UpdateScrollOffset();
                 }
+                if (textElement.hasFocus)
+                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
             }
 
             internal void SetMultiline()
@@ -1065,6 +1067,8 @@ namespace UnityEngine.UIElements
                     AddToClassList(multilineInputUssClassName);
                     textElement.AddToClassList(innerTextElementUssClassName);
                 }
+                if (textElement.hasFocus)
+                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
             }
 
             void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)

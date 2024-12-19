@@ -66,11 +66,15 @@ namespace UnityEngine.UIElements
         StyleInitialized = 1 << 13,
         // Element is not rendered, but we keep the generated geometry in case it is shown later
         DisableRendering = 1 << 14,
+        // Element uses 3-D transforms or contains children that do
+        Needs3DBounds = 1 << 15,
+        // Element's 3-D transform local bounds need to be recalculated
+        LocalBounds3DDirty = 1 << 16,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
-        DetachedDataSource = 1 << 15,
+        DetachedDataSource = 1 << 17,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | DetachedDataSource
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
     }
 
     /// <summary>
@@ -880,6 +884,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal bool needs3DBounds
+        {
+            get => (m_Flags & VisualElementFlags.Needs3DBounds) != 0;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.Needs3DBounds : m_Flags & ~VisualElementFlags.Needs3DBounds;
+        }
+
+        internal bool isLocalBounds3DDirty
+        {
+            get => (m_Flags & VisualElementFlags.LocalBounds3DDirty) != 0;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.LocalBounds3DDirty : m_Flags & ~VisualElementFlags.LocalBounds3DDirty;
+        }
+
         internal bool isBoundingBoxDirty
         {
             get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
@@ -972,6 +988,65 @@ namespace UnityEngine.UIElements
         {
             m_WorldBoundingBox = boundingBox;
             TransformAlignedRect(ref worldTransformRef, ref m_WorldBoundingBox);
+        }
+
+        internal Bounds localBounds3D
+        {
+            get
+            {
+                if (isLocalBounds3DDirty)
+                {
+                    UpdateLocalBoundsAndPickingBounds3D();
+                    isLocalBounds3DDirty = false;
+                }
+
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBounds3D;
+            }
+        }
+
+        void UpdateLocalBoundsAndPickingBounds3D()
+        {
+            if (!areAncestorsAndSelfDisplayed)
+            {
+                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
+                {
+                    localBounds3D = WorldSpaceData.k_Empty3DBounds
+                });
+                return;
+            }
+
+            if (!needs3DBounds)
+            {
+                // Fast path for elements that don't need 3D transforms
+                var bbox = boundingBox;
+                var localBounds = new Bounds(bbox.center, bbox.size);
+                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
+                {
+                    localBounds3D = localBounds
+                });
+                return;
+            }
+
+            var bounds = new Bounds(rect.center, rect.size);
+
+            if (!ShouldClip())
+            {
+                var childCount = hierarchy.childCount;
+                for (int i = 0; i < childCount; i++)
+                {
+                    var childBounds = hierarchy[i].localBounds3D;
+                    if (childBounds.extents.x >= 0)
+                    {
+                        hierarchy[i].TransformAlignedBoundsToParentSpace(ref childBounds);
+                        bounds.Encapsulate(childBounds);
+                    }
+                }
+            }
+
+            WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
+            {
+                localBounds3D = bounds
+            });
         }
 
         /// <summary>

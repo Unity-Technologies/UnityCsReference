@@ -878,8 +878,11 @@ namespace UnityEditor
                                     evt.Use();
                                     break;
                                 case 2:
-                                    Close(m_Panes[sel]);
-                                    evt.Use();
+                                    if (!s_HasStaticTabsCapability)
+                                    {
+                                        Close(m_Panes[sel]);
+                                        evt.Use();
+                                    }
                                     break;
                             }
                         }
