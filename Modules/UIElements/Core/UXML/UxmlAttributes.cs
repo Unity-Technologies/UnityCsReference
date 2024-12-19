@@ -21,6 +21,9 @@ namespace UnityEngine.UIElements
     /// Inspector window in  the UI Builder.
     /// By default, the custom control appears in the Library tab in UI Builder.
     /// To hide it from the Library tab, provide the <see cref="HideInInspector"/> attribute.
+    ///
+    /// For an example of migrating a custom control from `UxmlFactory` and `UxmlTraits` to the `UxmlElement` and `UxmlAttributes` system,
+    /// refer to [[wiki:UpgradeGuideUnity6#enhanced-custom-controls-creation-with-uxml|Enhanced custom controls creation with UXML]].
     /// </remarks>
     /// <example>
     /// The following example creates a custom control with multiple attributes:

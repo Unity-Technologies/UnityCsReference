@@ -284,7 +284,6 @@ namespace UnityEditor
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
 
         public static event Action<bool> focusChanged;
-        public static bool isFocused { get; private set; }
 
         // Windows were reordered
         internal static CallbackFunction windowsReordered;

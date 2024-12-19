@@ -17,6 +17,21 @@ namespace UnityEngine.UIElements
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
+        // According to the flags, what operations must be done?
+        private const VersionChangeType WorldTransformChanged = VersionChangeType.Transform;
+        private const VersionChangeType WorldClipChanged = VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.BorderWidth;
+        private const VersionChangeType EventParentCategoriesChanged = VersionChangeType.Hierarchy | VersionChangeType.EventCallbackCategories;
+        private const VersionChangeType BoundingBoxChanged = VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy;
+
+        protected const VersionChangeType ChildrenChanged = WorldTransformChanged | WorldClipChanged | EventParentCategoriesChanged;
+        protected const VersionChangeType ParentChanged = BoundingBoxChanged;
+        protected const VersionChangeType VersionChanged = WorldTransformChanged | WorldClipChanged | VersionChangeType.Hierarchy | VersionChangeType.Picking;
+
+        protected const VersionChangeType AnythingChanged = ChildrenChanged | ParentChanged | VersionChanged;
+
+        protected const VisualElementFlags BoundingBoxDirtyFlags =
+            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty;
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
             if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy | VersionChangeType.BorderWidth | VersionChangeType.EventCallbackCategories | VersionChangeType.Picking)) == 0)
@@ -43,7 +58,21 @@ namespace UnityEngine.UIElements
             ++m_Version;
         }
 
-        static void DirtyHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
+        protected static VisualElementFlags GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
+        {
+            VisualElementFlags mustDirty = 0;
+
+            if ((versionChangeType & WorldTransformChanged) != 0)
+                mustDirty |= VisualElementFlags.WorldTransformDirty | VisualElementFlags.WorldBoundingBoxDirty;
+            if ((versionChangeType & WorldClipChanged) != 0)
+                mustDirty |= VisualElementFlags.WorldClipDirty;
+            if ((versionChangeType & EventParentCategoriesChanged) != 0)
+                mustDirty |= VisualElementFlags.EventInterestParentCategoriesDirty;
+
+            return mustDirty;
+        }
+
+        protected static void DirtyHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
         {
             // We use VisualElementFlags to track changes across the hierarchy since all those values come from m_Flags.
             ve.m_Flags |= mustDirtyFlags;
@@ -75,6 +104,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        protected static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
+        {
+            while (ve != null && (ve.m_Flags & flags) != flags)
+            {
+                ve.m_Flags |= flags;
+                ve = ve.hierarchy.parent;
+            }
+        }
+
         public override void Update()
         {
             if (m_Version == m_LastVersion)
@@ -84,6 +122,51 @@ namespace UnityEngine.UIElements
 
             panel.UpdateElementUnderPointers();
             panel.visualTree.UpdateBoundingBox();
+        }
+    }
+
+    /// <summary>
+    /// We try to reduce the impact on the non-WorldSpace code path as much as possible by having no virtual calls
+    /// in the VisualTreeHierarchyFlagsUpdater base class.
+    /// Instead, we copy the logic in this derived class and we modify the flags and the operations to add the
+    /// Picking3D Bounds logic only where it's needed.
+    /// </summary>
+    internal class VisualTreeWorldSpaceHierarchyFlagsUpdater : VisualTreeHierarchyFlagsUpdater
+    {
+        public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
+        {
+            base.OnVersionChanged(ve, versionChangeType);
+
+            if ((versionChangeType & AnythingChanged) == 0)
+                return;
+
+            if ((versionChangeType & ChildrenChanged) != 0)
+            {
+                DirtyHierarchy(ve, GetChildrenMustDirtyFlags(ve, versionChangeType));
+            }
+
+            if ((versionChangeType & ParentChanged) != 0)
+            {
+                DirtyParentHierarchy(ve, GetParentMustDirtyFlags(ve));
+            }
+        }
+
+        private new const VisualElementFlags BoundingBoxDirtyFlags =
+            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementFlags.LocalBounds3DDirty;
+
+        VisualElementFlags GetParentMustDirtyFlags(VisualElement ve)
+        {
+            var mustDirty = BoundingBoxDirtyFlags;
+
+            if (ve.has3DTransform)
+                mustDirty |= VisualElementFlags.Needs3DBounds;
+
+            return mustDirty;
+        }
+
+        public override void Update()
+        {
+            // Nothing to update. Don't call UpdateElementUnderPointers for world-space panels.
         }
     }
 }

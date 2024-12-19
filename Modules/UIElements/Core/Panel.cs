@@ -647,7 +647,25 @@ namespace UnityEngine.UIElements
                     return;
 
                 m_IsFlat = value;
+                SetSpecializedHierarchyFlagsUpdater();
                 isFlatChanged?.Invoke();
+            }
+        }
+
+        internal void SetSpecializedHierarchyFlagsUpdater()
+        {
+            var updater = GetUpdater(VisualTreeUpdatePhase.TransformClip);
+            var isWorldSpaceUpdater = updater is VisualTreeWorldSpaceHierarchyFlagsUpdater;
+
+            if (isFlat)
+            {
+                if (isWorldSpaceUpdater)
+                    SetUpdater(new VisualTreeHierarchyFlagsUpdater(), VisualTreeUpdatePhase.TransformClip);
+            }
+            else
+            {
+                if (!isWorldSpaceUpdater)
+                    SetUpdater(new VisualTreeWorldSpaceHierarchyFlagsUpdater(), VisualTreeUpdatePhase.TransformClip);
             }
         }
 
@@ -1049,7 +1067,10 @@ namespace UnityEngine.UIElements
             cursorManager = new CursorManager();
             contextualMenuManager = null;
             dataBindingManager = new DataBindingManager(this);
+
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
+            SetSpecializedHierarchyFlagsUpdater();
+
             var initFunc = initEditorUpdater ?? initEditorUpdaterFunc;
             initFunc.Invoke(this, m_VisualTreeUpdater);
             m_RootContainer = contextType == ContextType.Editor ? new EditorPanelRootElement() : new PanelRootElement();

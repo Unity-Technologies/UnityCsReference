@@ -367,5 +367,14 @@ namespace UnityEditor
             [FreeFunction("GetBuildSettings().GetBuildSessionGUID")]
             get;
         }
+
+        public static extern bool isFocused
+        {
+            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+            get;
+
+            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+            private set;
+        }
     }
 }

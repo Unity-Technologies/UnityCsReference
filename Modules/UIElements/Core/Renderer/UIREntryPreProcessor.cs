@@ -50,6 +50,12 @@ namespace UnityEngine.UIElements.UIR
             Debug.Assert(m_Mask.Count == 0);
         }
 
+        // Clear important references to prevent memory retention
+        public void ClearReferences()
+        {
+            m_FlattenedEntries.Clear();
+        }
+
         void DoEvaluate(Entry entry)
         {
             while (entry != null)

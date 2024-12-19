@@ -195,6 +195,12 @@ namespace UnityEditor.MPE
                 }
             }
         }
+
+        [UsedImplicitly, RequiredByNativeCode]
+        private static bool ChannelClientHasHandlers(int clientId)
+        {
+            return s_Clients.TryGetValue(clientId, out var client) && (client.m_Handlers.Count > 0 || client.m_BinaryHandlers.Count > 0);
+        }
     }
 
     [MovedFrom("Unity.MPE")]

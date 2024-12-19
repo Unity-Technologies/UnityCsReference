@@ -198,6 +198,8 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)
         {
+            uitkTextHandle.RemoveTextInfoFromPermanentCache();
+            uitkTextHandle.RemoveTextInfoFromTemporaryCache();
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
         }
 

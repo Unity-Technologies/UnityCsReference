@@ -1249,7 +1249,7 @@ namespace UnityEngine.UIElements.UIR
 
         #region Internals
 
-        private static void ProcessDeviceFreeQueue()
+        public static void ProcessDeviceFreeQueue()
         {
             s_MarkerFree.Begin();
 

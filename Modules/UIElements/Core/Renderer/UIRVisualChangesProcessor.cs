@@ -190,6 +190,9 @@ namespace UnityEngine.UIElements.UIR
 
                 m_EntryProcessingList.Clear();
 
+                for (int i = 0; i < m_Processors.Count; ++i)
+                    m_Processors[i].ClearReferences();
+
                 k_ConvertEntriesToCommandsMarker.End();
             }
 
