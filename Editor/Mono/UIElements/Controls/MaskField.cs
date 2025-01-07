@@ -496,7 +496,8 @@ namespace UnityEditor.UIElements
     }
 
     /// <summary>
-    /// Make a field for masks.
+    /// The MaskField is an Editor-only control that lets users select one or more options from a list of options.
+    /// For more information, refer to [[wiki:UIE-uxml-element-MaskField|UXML element MaskField]].
     /// </summary>
     public class MaskField : BaseMaskField<int>
     {

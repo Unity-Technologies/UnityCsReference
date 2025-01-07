@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -119,13 +120,22 @@ namespace UnityEditor
         DXT5Crunched = 29,
 
         // PowerVR (iPhone) 2 bits/pixel compressed color texture format.
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGB2 = 30,
         // PowerVR (iPhone) 2 bits/pixel compressed with alpha channel texture format.
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGBA2 = 31,
         // PowerVR (iPhone) 4 bits/pixel compressed color texture format.
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGB4 = 32,
         // PowerVR (iPhone) 4 bits/pixel compressed with alpha channel texture format.
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGBA4 = 33,
+
         // ETC (GLES2.0) 4 bits/pixel compressed RGB texture format.
         ETC_RGB4 = 34,
 

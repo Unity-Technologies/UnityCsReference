@@ -296,7 +296,7 @@ namespace UnityEditor.Search
             var properties = MaterialEditor.GetMaterialProperties(new Material[] { material });
             foreach (var property in properties)
             {
-                var flags = (ShaderPropertyFlags)property.flags;
+                var flags = property.propertyFlags;
                 if ((flags & (ShaderPropertyFlags.HideInInspector | ShaderPropertyFlags.NonModifiableTextureData)) != 0)
                     continue;
 
@@ -315,32 +315,32 @@ namespace UnityEditor.Search
                     continue;
 
                 var shaderPropName = $"{shaderName}{property.displayName}";
-                switch (property.type)
+                switch (property.propertyType)
                 {
-                    case MaterialProperty.PropType.Color:
+                    case ShaderPropertyType.Color:
                         IndexColor(propertyName, property.colorValue, indexer, context.documentIndex, shaderPropName, ownerPropertyType);
                         break;
 
-                    case MaterialProperty.PropType.Vector:
+                    case ShaderPropertyType.Vector:
                         IndexVector(propertyName, property.vectorValue, indexer, context.documentIndex, shaderPropName, ownerPropertyType);
                         break;
 
-                    case MaterialProperty.PropType.Int:
+                    case ShaderPropertyType.Int:
                         indexer.AddNumber(propertyName, property.intValue, indexer.settings.baseScore, context.documentIndex);
                         indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
-                    case MaterialProperty.PropType.Float:
+                    case ShaderPropertyType.Float:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
                         indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
-                    case MaterialProperty.PropType.Range:
+                    case ShaderPropertyType.Range:
                         indexer.AddNumber(propertyName, property.floatValue, indexer.settings.baseScore, context.documentIndex);
                         indexer.MapProperty(propertyName, shaderPropName, null, "Number", ownerPropertyType.AssemblyQualifiedName);
                         break;
 
-                    case MaterialProperty.PropType.Texture:
+                    case ShaderPropertyType.Texture:
                         if (property.textureValue)
                             indexer.AddReference(context.documentIndex, propertyName, property.textureValue, shaderPropName, ownerPropertyType);
                         break;
@@ -366,9 +366,7 @@ namespace UnityEditor.Search
 
                 if (indexer.settings.options.dependencies)
                 {
-                    var mp = AssetDatabase.GetAssetPath(m);
-                    if (!string.IsNullOrEmpty(mp))
-                        indexer.AddReference(context.documentIndex, mp);
+                    indexer.AddReference(context.documentIndex, "material", m);
                 }
 
                 if (m.shader != null)

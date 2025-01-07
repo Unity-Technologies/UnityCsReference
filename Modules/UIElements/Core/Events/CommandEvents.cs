@@ -7,6 +7,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for Command events.
     /// </summary>
+    /// <remarks>
+    /// Command events are only available on Editor-type Panels.
+    ///
+    /// Refer to the [[wiki:UIE-Command-Events|Command events]] manual page for more information and examples.
+    /// </remarks>
+    /// <seealso cref="ValidateCommandEvent"/>
+    /// <seealso cref="ExecuteCommandEvent"/>
+    /// <seealso cref="IPanel.contextType"/>
     public interface ICommandEvent
     {
         /// <summary>
@@ -18,6 +26,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for command events.
     /// </summary>
+    /// <remarks>
+    /// Command events are only available on Editor-type Panels.
+    ///
+    /// Refer to the [[wiki:UIE-Command-Events|Command events]] manual page for more information and examples.
+    /// </remarks>
+    /// <seealso cref="ValidateCommandEvent"/>
+    /// <seealso cref="ExecuteCommandEvent"/>
+    /// <seealso cref="IPanel.contextType"/>
     [EventCategory(EventCategory.Command)]
     public abstract class CommandEventBase<T> : EventBase<T>, ICommandEvent where T : CommandEventBase<T>, new()
     {

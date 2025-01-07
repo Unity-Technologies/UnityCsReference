@@ -183,6 +183,11 @@ namespace UnityEditor.Search
         /// <returns>Returns the path of an object.</returns>
         public static string GetObjectPath(UnityEngine.Object obj)
         {
+            return GetObjectPath(obj, false);
+        }
+
+        internal static string GetObjectPath(UnityEngine.Object obj, bool pathAsGlobalObjectId)
+        {
             if (!obj)
                 return string.Empty;
             if (obj is Component c)
@@ -190,7 +195,7 @@ namespace UnityEditor.Search
             var assetPath = AssetDatabase.GetAssetPath(obj);
             if (!string.IsNullOrEmpty(assetPath))
             {
-                if (Utils.IsBuiltInResource(assetPath))
+                if (pathAsGlobalObjectId || Utils.IsBuiltInResource(assetPath))
                     return GlobalObjectId.GetGlobalObjectIdSlow(obj).ToString();
                 return assetPath;
             }
@@ -532,8 +537,9 @@ namespace UnityEditor.Search
         {
             if (category != null)
             {
+                // Note: since GameObject is NOT the same as prefab, we chose not to set any data and blocktype so the propsition must use the replacement text:
                 yield return new SearchProposition(category: category, label: "Prefabs", replacement: "t:prefab",
-                    icon: GetTypeIcon(typeof(GameObject)), data: typeof(GameObject), type: blockType, priority: priority, color: QueryColors.type);
+                    icon: GetTypeIcon(typeof(GameObject)), data: null, type: null, priority: priority, color: QueryColors.type);
             }
 
             if (string.Equals(category, "Types", StringComparison.Ordinal))
@@ -1273,7 +1279,7 @@ namespace UnityEditor.Search
 
         internal static string CreateFindObjectReferenceQuery(UnityEngine.Object obj)
         {
-            var objPath = GetObjectPath(obj);
+            var objPath = GetObjectPath(obj, pathAsGlobalObjectId: false);
             if (string.IsNullOrEmpty(objPath))
                 return null;
             var query = $"ref=\"{objPath}\"";
@@ -1405,13 +1411,20 @@ namespace UnityEditor.Search
                         if (value == null)
                             return "none";
 
-                        var path = GetObjectPath(value as UnityEngine.Object);
+                        var path = GetObjectPath(value as UnityEngine.Object, pathAsGlobalObjectId:false);
                         return $"\"{path}\"";
                     }
                 case SerializedPropertyType.String:
                     return $"\"{value}\"";
                 default:
-                    return value == null ? null : value.ToString();
+                    // TODO Number: When returning a numerical values used in a query, ensure the value uses an explicit formatter.
+                    return value switch
+                    {
+                        null => null,
+                        float f => Utils.FormatFloatString(f),
+                        double d => d.ToString(Utils.k_DoubleQueryFormatter),
+                        _ => value.ToString()
+                    };
             }
         }
 

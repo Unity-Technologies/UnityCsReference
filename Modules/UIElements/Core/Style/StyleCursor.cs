@@ -14,6 +14,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The <see cref="Cursor"/> value.
         /// </summary>
+        /// <remarks>
+        /// SA: [[IStyle.cursor]]
+        /// </remarks>
         public Cursor value
         {
             get { return m_Keyword == StyleKeyword.Undefined ? m_Value : default(Cursor); }

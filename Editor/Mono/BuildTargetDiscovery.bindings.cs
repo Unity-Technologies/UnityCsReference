@@ -18,6 +18,7 @@ namespace UnityEditor
     [StaticAccessor("BuildTargetDiscovery::GetInstance()", StaticAccessorType.Dot)]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetDiscovery.h")]
     [RequiredByNativeCode]
+    [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
     internal static class BuildTargetDiscovery
     {
         [Flags]
@@ -225,10 +226,12 @@ namespace UnityEditor
             IsVisibleInPlatformBrowserOnly = (1 << 12),
             IsDerivedBuildTarget = (1 << 13),
         }
+        public record struct NameAndLink(string name, string linkUrl);
 
         struct PlatformInfo
         {
             public string displayName = String.Empty;
+            public string downloadLinkName = String.Empty;
             public BuildTarget buildTarget = BuildTarget.NoTarget;
             public StandaloneBuildSubtarget subtarget = StandaloneBuildSubtarget.Default;
             public PlatformAttributes flags = PlatformAttributes.None;
@@ -236,10 +239,11 @@ namespace UnityEditor
             public string[] requiredPackage = new string[] {};
             public string[] recommendedPackage = new string[] {};
             public string description = L10n.Tr("");
-            public string link = L10n.Tr("");    
             public string instructions = L10n.Tr("*standard install form hub");
             public string iconName = "BuildSettings.Editor";
-            public PlatformInfo(){}
+            public string subtitle = "";
+            public List<NameAndLink> nameAndLinkToShowUnderTitle = null;
+            public PlatformInfo() {}
 
             public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
         }
@@ -249,7 +253,7 @@ namespace UnityEditor
 
         static Dictionary<BuildTarget, GUID> s_PlatformGUIDDataQuickLookup = new Dictionary<BuildTarget, GUID>();
 
-        // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead. 
+        // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead.
         // Changes here should be synced with the usage of
         // BuildTargetDiscovery::HideInUI flag in [Platform]BuildTarget.cpp
         // This list is ordered by the order in which platforms are displayed in the build profiles window (Do not change!)
@@ -263,6 +267,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Windows",
+                    downloadLinkName = "Windows-Mono",
                     description = L10n.Tr("Access an ecosystem of Unity-supported game development solutions to reach the vast PC gamer audience around the world. Leverage DirectX 12 and inline ray tracing support for cutting edge visual fidelity. Use the Microsoft GDK packages to further unlock the Microsoft gaming ecosystem."),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneWindows64,
@@ -275,6 +280,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "macOS",
+                    downloadLinkName = "Mac-Mono",
                     description = L10n.Tr("Take advantage of Unity’s support for the latest Mac devices with M series chips. The Mac Standalone platform also supports Intel-based Mac devices."),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneOSX,
@@ -287,6 +293,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Linux",
+                    downloadLinkName = "Linux-Mono",
                     description = L10n.Tr("Leverage Unity’s platform support for Linux, including an ecosystem of game development solutions for creators of all skill levels."),
                     subtarget = StandaloneBuildSubtarget.Player,
                     buildTarget = BuildTarget.StandaloneLinux64,
@@ -300,6 +307,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Windows Server",
+                    downloadLinkName = "Windows-Server",
                     description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Windows Server platform, including publishing multiplayer games."),
                     buildTarget = BuildTarget.StandaloneWindows64,
                     subtarget = StandaloneBuildSubtarget.Server,
@@ -313,6 +321,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "macOS Server",
+                    downloadLinkName = "Mac-Server",
                     description = L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Mac Server platform, including publishing multiplayer games."),
                     buildTarget = BuildTarget.StandaloneOSX,
                     subtarget = StandaloneBuildSubtarget.Server,
@@ -326,6 +335,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Linux Server",
+                    downloadLinkName = "Linux-Server",
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on the Dedicated Linux Server platform, including publishing multiplayer games."),
                     buildTarget = BuildTarget.StandaloneLinux64,
                     subtarget = StandaloneBuildSubtarget.Server,
@@ -340,9 +350,13 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Android™",
+                    downloadLinkName = "Android",
                     description = L10n.Tr("Android is a large and varied device ecosystem with over 3bn active devices. Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for Android games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
                     buildTarget = BuildTarget.Android,
-                    link = L10n.Tr("Unity Android Manual / https://docs.unity3d.com/Manual/android.html"),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                        new NameAndLink{name = L10n.Tr("Unity Android Manual"),  linkUrl = "https://docs.unity3d.com/Manual/android.html"},
+                    },
                     iconName = "BuildSettings.Android",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
@@ -352,6 +366,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "iOS",
+                    downloadLinkName = "iOS",
                     description =  L10n.Tr("Benefit from Unity’s longstanding and wide-ranging resources for the entire development lifecycle for iOS games. This includes tools and services for rapid iteration, performance optimization, player engagement, and revenue growth."),
                     buildTarget = BuildTarget.iOS,
                     iconName = "BuildSettings.iPhone",
@@ -364,10 +379,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "PlayStation®4",
+                    downloadLinkName = "PS4",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®4. Discover powerful creation tools to take your PlayStation game to the next level."),
                     buildTarget = BuildTarget.PS4,
-                    link = L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ "),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                        new NameAndLink{ name = L10n.Tr("Register as a PlayStation developer"), linkUrl = "https://partners.playstation.net/"}
+                    },
                     iconName = "BuildSettings.PS4",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
@@ -377,10 +396,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "PlayStation®5",
+                    downloadLinkName = "PS5",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description = L10n.Tr("Create your game with a comprehensive development platform for PlayStation®5. Discover powerful creation tools to take your PlayStation game to the next level."),
                     buildTarget = BuildTarget.PS5,
-                    link = L10n.Tr("Register as a PlayStation developer / https://partners.playstation.net/ "),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                        new NameAndLink{name = L10n.Tr("Register as a PlayStation developer"), linkUrl = "https://partners.playstation.net/"}
+                    },
                     iconName = "BuildSettings.PS5",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
@@ -390,10 +413,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Xbox Series X|S",
+                    downloadLinkName = "GameCoreScarlett",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description = L10n.Tr("Attract players around the world on the latest generation of Xbox: Xbox Series X|S. Push the graphical fidelity of your games with inline ray tracing, all while maintaining performance with the latest optimizations for DirectX 12."),
                     buildTarget = BuildTarget.GameCoreXboxSeries,
-                    link = L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id "),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                         new NameAndLink{name = L10n.Tr("Register as an Xbox developer"), linkUrl = "https://www.xbox.com/en-US/developers/id"}
+                    },
                     iconName = "BuildSettings.GameCoreScarlett",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
                 }
@@ -403,10 +430,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Xbox One",
+                    downloadLinkName = "GameCoreXboxOne",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description = L10n.Tr("Attract and engage over 50 million players around the world on Xbox One."),
                     buildTarget = BuildTarget.GameCoreXboxOne,
-                    link = L10n.Tr("Register as an Xbox developer / https://www.xbox.com/en-US/developers/id "),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                        new NameAndLink{name = L10n.Tr("Register as an Xbox developer"), linkUrl ="https://www.xbox.com/en-US/developers/id"}
+                    },
                     iconName = "BuildSettings.GameCoreXboxOne",
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget
                 }
@@ -416,10 +447,14 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Nintendo Switch™",
+                    downloadLinkName = "Switch",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description = L10n.Tr("Bring your game to Nintendo Switch™ with Unity’s optimized platform support as well as a dedicated forum."),
                     buildTarget = BuildTarget.Switch,
-                    link = L10n.Tr("Register as a Nintendo developer / http://developer.nintendo.com "),
+                    nameAndLinkToShowUnderTitle = new List<NameAndLink>
+                    {
+                        new NameAndLink{name = L10n.Tr("Register as a Nintendo developer"), linkUrl = "http://developer.nintendo.com"}
+                    },
                     iconName = "BuildSettings.Switch",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
@@ -432,7 +467,6 @@ namespace UnityEditor
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
                     buildTarget = BuildTarget.ReservedCFE,
-                    link = L10n.Tr("More details coming soon"),
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
             },
@@ -442,6 +476,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Web",
+                    downloadLinkName = "WebGL",
                     description =  L10n.Tr("Leverage Unity’s web solutions to offer your players near-instant access to their favorite games, no matter where they want to play. Our web platform includes support for desktop and mobile browsers."),
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.WebGL",
@@ -453,14 +488,16 @@ namespace UnityEditor
                new PlatformInfo
                {
                     displayName = "Facebook Instant Games",
+                    downloadLinkName = "WebGL",
                     description = L10n.Tr(
                         "Build for Facebook Instant Games to take advantage of the extensive user base and social features within the Facebook and Messenger app. " +
                         "This platform offers default settings for both mobile and desktop builds, along with optimization tools and a streamlined publishing process."
                     ),
+                    subtitle = "From <color=\"white\"><b>Meta</b></color>",
                     buildTarget = BuildTarget.WebGL,
-                    link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.Facebook",
                     requiredPackage = new string[]{"com.unity.meta-instant-games-sdk"},
+                    recommendedPackage = new string[]{"com.unity.web.stripping-tool"},
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -469,10 +506,21 @@ namespace UnityEditor
                new PlatformInfo
                {
                     displayName = "Meta Quest",
+                    downloadLinkName = "Android",
                     buildTarget = BuildTarget.Android,
-                    link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.Meta",
                     requiredPackage = new string[]{L10n.Tr("com.unity.xr.meta-openxr") },
+                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
+                }
+            },
+            {
+                new("a71389c8cc8e4edc99d30db86d62ee8f"),
+                new PlatformInfo
+                {
+                    displayName = "Android XR",
+                    buildTarget = BuildTarget.Android,
+                    iconName = "BuildSettings.Android",
+                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.androidxr-openxr") },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -481,6 +529,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Universal Windows Platform",
+                    downloadLinkName = "Universal-Windows-Platform",
                     description = L10n.Tr("Benefit from Unity’s runtime support for UWP, ensuring you’re able to reach as many users as possible in the Microsoft ecosystem. UWP is used for HoloLens and Windows 10 and 11 devices, among others."),
                     buildTarget = BuildTarget.WSAPlayer,
                     iconName = "BuildSettings.Metro",
@@ -492,6 +541,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "tvOS",
+                    downloadLinkName = "AppleTV",
                     description = L10n.Tr("Choose tvOS if you’re planning to develop applications for Apple TVs. tvOS is based on the iOS operating system and has many similar frameworks, technologies, and concepts."),
                     buildTarget = BuildTarget.tvOS,
                     iconName = "BuildSettings.tvOS",
@@ -503,6 +553,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "visionOS",
+                    downloadLinkName = "VisionOS",
                     description = L10n.Tr("Build for Apple Vision Pro today.\nBe among the first to create games, lifestyle experiences, and industry apps for Apple's all-new platform. Familiar frameworks and tools. Get ready to design and build an entirely new universe of apps and games for Apple Vision Pro."),
                     buildTarget = BuildTarget.VisionOS,
                     iconName = "BuildSettings.visionOS",
@@ -514,6 +565,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Linux Headless Simulation",
+                    downloadLinkName = "CloudRendering",
                     description = L10n.Tr("Utilize Unity’s headless Linux editor to deploy high-fidelity simulations at scale in cloud environments."),
                     buildTarget = BuildTarget.LinuxHeadlessSimulation,
                     iconName = "BuildSettings.LinuxHeadlessSimulation",
@@ -525,6 +577,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "Embedded Linux",
+                    downloadLinkName = "EmbeddedLinux",
                     instructions = L10n.Tr("As the Embedded Linux platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
                     description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances."),
                     buildTarget = BuildTarget.EmbeddedLinux,
@@ -537,6 +590,7 @@ namespace UnityEditor
                 new PlatformInfo
                 {
                     displayName = "QNX®",
+                    downloadLinkName = "QNX",
                     instructions = L10n.Tr("As the QNX platform for Unity is not yet available to download from the Unity website, contact your Account Manager or the Unity Sales team to get access."),
                     description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system."),
                     buildTarget = BuildTarget.QNX,
@@ -550,7 +604,6 @@ namespace UnityEditor
                {
                     displayName = "Kepler",
                     buildTarget = BuildTarget.Kepler,
-                    link = L10n.Tr("More details coming soon"),
                     iconName = "BuildSettings.EmbeddedLinux",
                     flags = PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsHidden
                 }
@@ -566,6 +619,26 @@ namespace UnityEditor
         }
         public static IEnumerable<GUID> GetAllPlatforms() => allPlatforms.Keys;
 
+        /// <summary>
+        /// Get the platform GUID corresponding to the NamedBuildTarget and BuildTarget.
+        /// </summary>
+        /// <param name="namedBuildTarget">The NamedBuildTarget to get the platform GUID for.</param>
+        /// <param name="buildTarget">The BuildTarget to get the platform GUID for.</param>
+        /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
+        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        {
+            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
+                return value;
+
+            return GetGUIDFromBuildTarget(buildTarget);
+        }
+
+        /// <summary>
+        /// Get the platform GUID corresponding to the BuildTarget. Note this method does not work with the server platforms.
+        /// Use the namedBuildTarget overload of <see cref="BuildTargetDiscovery.GetGUIDFromBuildTarget"/> for server platforms.
+        /// </summary>
+        /// <param name="buildTarget">The BuildTarget to get the platform GUID for.</param>
+        /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
             if (buildTarget == BuildTarget.StandaloneWindows) //workaround for win64 and win having the same guid in new Build Target system
@@ -588,7 +661,7 @@ namespace UnityEditor
             result = EmptyGuid;
 
             if (namedBuildTarget == NamedBuildTarget.Server)
-            { 
+            {
                 foreach (var platform in allPlatforms)
                 {
                     if(platform.Value.subtarget == StandaloneBuildSubtarget.Server)
@@ -616,12 +689,23 @@ namespace UnityEditor
             return EmptyGuid;
         }
 
-        public static GUID GetGUIDFromBuildTarget(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
+        /// <summary>
+        /// Get the base platform GUID given a platform GUID.
+        /// </summary>
+        /// <param name="platformGuid">The platform GUID to get the base platform GUID for.</param>
+        /// <returns>The base platform GUID. If the platform is not a derived platform, the same GUID is returned.</returns>
+        internal static GUID GetBasePlatformGUID(GUID platformGuid)
         {
-            if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
-                return value;
+            if (!allPlatforms.TryGetValue(platformGuid, out PlatformInfo platformInfo))
+                return EmptyGuid;
 
-            return GetGUIDFromBuildTarget(buildTarget);
+            if (!platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
+                return platformGuid;
+
+            if (s_PlatformGUIDDataQuickLookup.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
+                return basePlatformGuid;
+
+            return EmptyGuid;
         }
 
         public static (BuildTarget, StandaloneBuildSubtarget) GetBuildTargetAndSubtargetFromGUID(GUID guid)
@@ -640,7 +724,7 @@ namespace UnityEditor
                     && platform.Value.subtarget != StandaloneBuildSubtarget.Server
                     && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
                     ) //workaround for win64 and win having the same guid in new Build Target system and for derived build targets
-                { 
+                {
                     s_PlatformGUIDDataQuickLookup.Add(platform.Value.buildTarget, platform.Key);
                 }
 
@@ -748,7 +832,7 @@ namespace UnityEditor
                     return true;
                 else if (hostPlatform == UnityEngine.OperatingSystemFamily.Linux && platformInfo.HasFlag(PlatformAttributes.IsLinuxBuildTarget))
                     return true;
-            }   
+            }
 
             return false;
         }
@@ -805,6 +889,14 @@ namespace UnityEditor
             return false;
         }
 
+        internal static bool BuildPlatformIsDerivedPlatform(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo) && platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
+                return true;
+
+            return false;
+        }
+
         [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendedPackages(IBuildTarget) instead.", false)]
         public static string[] BuildPlatformRecommendedPackages(BuildTarget platform) => BuildPlatformRecommendedPackages(GetGUIDFromBuildTarget(platform));
 
@@ -842,17 +934,12 @@ namespace UnityEditor
             return string.Empty;
         }
 
-        [System.Obsolete("BuildPlatformDocumentationLink(BuildTarget) is obsolete. Use BuildPlatformDocumentationLink(IBuildTarget) instead.", false)]
-        public static string BuildPlatformDocumentationLink(BuildTarget platform) => BuildPlatformDocumentationLink(GetGUIDFromBuildTarget(platform));
-
-        public static string BuildPlatformDocumentationLink(IBuildTarget platform) => BuildPlatformDocumentationLink(platform.Guid);
-
-        public static string BuildPlatformDocumentationLink(GUID guid)
+        public static List<NameAndLink> BuildPlatformNameLinkList(GUID guid)
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
-                return platformInfo.link;
+                return platformInfo.nameAndLinkToShowUnderTitle;
 
-            return string.Empty;
+            return null;
         }
 
         [System.Obsolete("BuildPlatformOnboardingInstructions(BuildTarget) is obsolete. Use BuildPlatformOnboardingInstructions(IBuildTarget) instead.", false)]
@@ -884,6 +971,14 @@ namespace UnityEditor
         [System.Obsolete("BuildPlatformDisplayName(NamedBuildTarget, BuildTarget) is obsolete. Use BuildPlatformDisplayName(IBuildTarget) instead.", false)]
         public static string BuildPlatformDisplayName(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget) => BuildPlatformDisplayName(GetGUIDFromBuildTarget(namedBuildTarget, buildTarget));
 
+        public static string BuildPlatformDownloadLinkName(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.downloadLinkName;
+
+            return string.Empty;
+        }
+
         [System.Obsolete("BuildPlatformIconName(BuildTarget) is obsolete. Use BuildPlatformIconName(IBuildTarget) instead.", false)]
         public static string BuildPlatformIconName(BuildTarget platform) => BuildPlatformIconName(GetGUIDFromBuildTarget(platform));
 
@@ -903,6 +998,14 @@ namespace UnityEditor
                 return true;
 
             return false;
+        }
+
+        public static string BuildPlatformSubtitle(GUID guid)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+                return platformInfo.subtitle;
+
+            return string.Empty;
         }
     }
 }

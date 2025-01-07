@@ -70,9 +70,15 @@ namespace UnityEngine.UIElements
         internal EventCallbackRegistry m_CallbackRegistry;
 
         /// <summary>
-        /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
+        /// Adds an event handler to the instance.
         /// </summary>
-        /// <param name="callback">The event handler to add.</param>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp), this method has no effect.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Handling|Handle event callbacks and value changes]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -87,10 +93,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
+        /// Adds an event handler to the instance.
         /// The event handler is automatically unregistered after it has been invoked exactly once.
         /// </summary>
-        /// <param name="callback">The event handler to add.</param>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp)
+        /// and hasn't been invoked yet, this method has no effect.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase"/>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallbackOnce<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -113,10 +125,19 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
+        /// Adds an event handler to the instance.
         /// </summary>
-        /// <param name="callback">The event handler to add.</param>
-        /// <param name="userArgs">Data to pass to the callback.</param>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp), this method has no effect.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Handling|Handle event callbacks and value changes]] manual page for more information and examples.
+        /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/RegisterCallbackExample.cs"/>
+        /// </example>
+        /// <seealso cref="PropagationPhase"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
+        /// <param name="userArgs">Data to pass to the callback. Use this argument to avoid closing on local variables.</param>
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass @@TrickleDown.TrickleDown@@ to call this callback during the TrickleDown phase.</param>
         public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -131,11 +152,17 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Adds an event handler to the instance. If the event handler has already been registered for the same phase (either TrickleDown or BubbleUp) then this method has no effect.
+        /// Adds an event handler to the instance.
         /// The event handler is automatically unregistered after it has been invoked exactly once.
         /// </summary>
-        /// <param name="callback">The event handler to add.</param>
-        /// <param name="userArgs">Data to pass to the callback.</param>
+        /// <remarks>
+        /// If the event handler is already registered for the same phase (either TrickleDown or BubbleUp)
+        /// and hasn't been invoked yet, this method has no effect.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase"/>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
+        /// <param name="callback">The event handler to add. If the handler is null, this method throws an exception.</param>
+        /// <param name="userArgs">Data to pass to the callback. Use this argument to avoid closing on local variables.</param>
         /// <param name="useTrickleDown">By default, this callback is called during the BubbleUp phase. Pass TrickleDown.TrickleDown to call this callback during the TrickleDown phase.</param>
         public void RegisterCallbackOnce<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
@@ -161,6 +188,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
         /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -176,6 +204,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove callback from the instance.
         /// </summary>
+        /// <seealso cref="CallbackEventHandler.RegisterCallback"/>
         /// <param name="callback">The callback to remove. If this callback was never registered, nothing happens.</param>
         /// <param name="useTrickleDown">Set this parameter to true to remove the callback from the TrickleDown phase. Set this parameter to false to remove the callback from the BubbleUp phase.</param>
         public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
@@ -189,10 +218,10 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Sends an event to the event handler. 
+        /// Sends an event to the event handler.
         /// </summary>
         /// <remarks>
-        /// UI Toolkit sends events to visual elements through the panel. The event is sent to the event handler's registered callbacks. 
+        /// UI Toolkit sends events to visual elements through the panel. The event is sent to the event handler's registered callbacks.
         /// For more information, refer to [[wiki:UIE-Events-Synthesizing|Synthesize and send events]].
         /// </remarks>
         /// <remarks>
@@ -243,7 +272,25 @@ namespace UnityEngine.UIElements
         ///
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
         /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
+        ///
+        /// This method is obsolete. Use <see cref="CallbackEventHandler.HandleEventBubbleUp"/> and
+        /// <see cref="CallbackEventHandler.HandleEventTrickleDown"/> to handle events on an element without
+        /// registering callbacks.
+        /// Note that you might need to add a check if only the event's target processes it.
+        ///
+        /// Also, the execution order or ExecuteDefaultAction-type and HandleEvent-type methods might differ when
+        /// compared to other registered callbacks:
+        ///
+        ///- @@ExecuteDefaultAction@@ and @@ExecuteDefaultActionAtTarget@@ are executed during the obsolete @@DefaultAction@@ and @@DefaultActionAtTarget@@ propagation phases.
+        ///- @@HandleEventTrickleDown@@ and @@HandleEventBubbleUp@@ are executed during the @@TrickleDown@@ and @@BubbleUp@@ propagation phases.
+        ///- Registered callbacks are executed during the @@TrickleDown@@ and @@BubbleUp@@ propagation phases.
         /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/HandleEventExample.cs"/>
+        /// </example>
+        /// <seealso cref="CallbackEventHandler.HandleEventBubbleUp"/>
+        /// <seealso cref="CallbackEventHandler.HandleEventTrickleDown"/>
+        /// <seealso cref="PropagationPhase"/>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
         [Obsolete("Use HandleEventBubbleUp. Before proceeding, make sure you understand the latest changes to " +
@@ -263,6 +310,9 @@ namespace UnityEngine.UIElements
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
         /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
         /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/HandleEventExample.cs"/>
+        /// </example>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
         protected virtual void HandleEventBubbleUp(EventBase evt) {}
@@ -285,6 +335,9 @@ namespace UnityEngine.UIElements
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
         /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
         /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/HandleEventExample.cs"/>
+        /// </example>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
         protected virtual void HandleEventTrickleDown(EventBase evt) {}
@@ -308,7 +361,25 @@ namespace UnityEngine.UIElements
         ///
         /// Use <see cref="EventInterestAttribute"/> on this method to specify a range of event types that this
         /// method needs to receive. Events that don't fall into the specified types might not be sent to this method.
+        ///
+        /// This method is obsolete. Use <see cref="CallbackEventHandler.HandleEventBubbleUp"/> and
+        /// <see cref="CallbackEventHandler.HandleEventTrickleDown"/> to handle events on an element without
+        /// registering callbacks.
+        /// Note that an additional check may be required if only the target of the event should process it.
+        ///
+        /// Also, the execution order or ExecuteDefaultAction-type and HandleEvent-type methods might differ when
+        /// compared to other registered callbacks:
+        ///
+        ///- @@ExecuteDefaultAction@@ and @@ExecuteDefaultActionAtTarget@@ are executed during the obsolete @@DefaultAction@@ and @@DefaultActionAtTarget@@ propagation phases.
+        ///- @@HandleEventTrickleDown@@ and @@HandleEventBubbleUp@@ are executed during the @@TrickleDown@@ and @@BubbleUp@@ propagation phases.
+        ///- Registered callbacks are executed during the @@TrickleDown@@ and @@BubbleUp@@ propagation phases.
         /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/HandleEventExample.cs"/>
+        /// </example>
+        /// <seealso cref="CallbackEventHandler.HandleEventBubbleUp"/>
+        /// <seealso cref="CallbackEventHandler.HandleEventTrickleDown"/>
+        /// <seealso cref="PropagationPhase"/>
         /// <param name="evt">The event instance.</param>
         [EventInterest(EventInterestOptions.Inherit)]
         [Obsolete("Use HandleEventBubbleUp. Before proceeding, make sure you understand the latest changes to " +

@@ -571,22 +571,10 @@ namespace UnityEditor
         // Major.Minor.Micro followed by one of abxfp followed by an identifier, optionally suffixed with " (revisionhash)"
         static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
             RegexOptions.Compiled);
-        static Dictionary<string, string> s_ModuleNames = new Dictionary<string, string>()
+
+        internal static string GetPlaybackEngineDownloadURL(GUID platformGuid)
         {
-            { "tvOS", "AppleTV" },
-            { "OSXStandalone", "Mac-Mono" },
-            { "OSXDedicatedServer", "Mac-Server" },
-            { "WindowsStandalone", "Windows-Mono" },
-            { "WindowsDedicatedServer", "Windows-Server" },
-            { "LinuxStandalone", "Linux-Mono" },
-            { "LinuxDedicatedServer", "Linux-Server" },
-            { "UWP", "Universal-Windows-Platform"}
-        };
-        static public string GetPlaybackEngineDownloadURL(string moduleName)
-        {
-#pragma warning disable CS0618 // Member is obsolete
-            if (!BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(BuildTargetDiscovery.GetBuildTargetByName(moduleName)))
-#pragma warning restore CS0618
+            if (!BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
@@ -601,8 +589,7 @@ namespace UnityEditor
             if (versionMatch.Groups["revision"].Success)
                 revision = versionMatch.Groups["revision"].Value;
 
-            if (s_ModuleNames.ContainsKey(moduleName))
-                moduleName = s_ModuleNames[moduleName];
+            var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid);
 
             string prefix = "download";
             string suffix = "download_unity";
@@ -628,7 +615,7 @@ namespace UnityEditor
             }
             else if (Application.platform == RuntimePlatform.LinuxEditor)
             {
-                if (moduleName == "Android" || moduleName == "Mac-Mono" || moduleName == "Windows-Mono")
+                if (downloadLinkName == "Android" || downloadLinkName == "Mac-Mono" || downloadLinkName == "Windows-Mono")
                 {
                     folder = "MacEditorTargetInstaller";
                     extension = ".pkg";
@@ -640,10 +627,10 @@ namespace UnityEditor
                 }
             }
 
-            return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
+            return string.Format("https://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, downloadLinkName, shortVersion, extension);
         }
 
-        internal static string GetUnityHubModuleDownloadURL(string moduleName)
+        internal static string GetUnityHubModuleDownloadURL(GUID platformGuid)
         {
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();
             string revision = "";
@@ -657,10 +644,9 @@ namespace UnityEditor
             if (versionMatch.Groups["revision"].Success)
                 revision = versionMatch.Groups["revision"].Value;
 
-            if (s_ModuleNames.ContainsKey(moduleName))
-                moduleName = s_ModuleNames[moduleName];
+            var downloadLinkName = BuildTargetDiscovery.BuildPlatformDownloadLinkName(platformGuid);
 
-            return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, moduleName.ToLower());
+            return string.Format("unityhub://{0}/{1}/module={2}", shortVersion, revision, downloadLinkName.ToLower());
         }
 
         internal static bool IsModuleNotInstalled(NamedBuildTarget namedBuildTarget, BuildTarget buildTarget)
@@ -698,6 +684,7 @@ namespace UnityEditor
 
             BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
             NamedBuildTarget namedBuildTarget = EditorUserBuildSettingsUtils.CalculateSelectedNamedBuildTarget();
+            var platformGuid = BuildTargetDiscovery.GetGUIDFromBuildTarget(namedBuildTarget, buildTarget);
             BuildPlatform platform = BuildPlatforms.instance.BuildPlatformFromNamedBuildTarget(namedBuildTarget);
             IBuildPostprocessor postprocessor = ModuleManager.GetBuildPostProcessor(buildTarget);
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
@@ -712,13 +699,9 @@ namespace UnityEditor
 
             GUILayout.Space(10);
 
-            string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
-            if (namedBuildTarget == NamedBuildTarget.Server)
-                moduleName = moduleName.Replace("Standalone", "DedicatedServer");
-
             if (IsModuleNotInstalled(namedBuildTarget, buildTarget))
             {
-                ShowNoModuleLabel(namedBuildTarget, buildTarget, moduleName,
+                ShowNoModuleLabel(platformGuid,
                     styles.noModuleLoaded,
                     styles.openDownloadPage,
                     styles.installModuleWithHub,
@@ -943,13 +926,7 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            var subtarget = StandaloneBuildSubtarget.Default;
-            if (namedBuildTarget == NamedBuildTarget.Standalone)
-                subtarget = StandaloneBuildSubtarget.Player;
-            else if (namedBuildTarget == NamedBuildTarget.Server)
-                subtarget = StandaloneBuildSubtarget.Server;
-
-            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(buildTarget, subtarget));
+            drawingMultiplayerBuildOptions?.Invoke(BuildProfileContext.instance.GetForClassicPlatform(platformGuid));
 
             GUILayout.EndScrollView();
 
@@ -958,26 +935,22 @@ namespace UnityEditor
         }
 
         internal static void ShowNoModuleLabel(
-            NamedBuildTarget namedBuildTarget,
-            BuildTarget buildTarget,
-            string moduleName,
+            GUID platformGuid,
             string noModuleLoaded,
             GUIContent openDownloadPage,
             GUIContent installModuleWithHub,
             string editorWillNeedToBeReloaded)
         {
-#pragma warning disable CS0618 // Member is obsolete
-            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(namedBuildTarget, buildTarget);
-#pragma warning restore CS0618
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
             GUILayout.Label(EditorGUIUtility.TextContent(string.Format(noModuleLoaded, displayName)));
-            string url = "";
-#pragma warning disable CS0618 // Member is obsolete
-            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(buildTarget))
-#pragma warning restore CS0618
+
+            var url = string.Empty;
+            if (!isEditorinstalledWithHub || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
             {
                 if (GUILayout.Button(openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {
-                    url = GetPlaybackEngineDownloadURL(moduleName);
+                    url = GetPlaybackEngineDownloadURL(platformGuid);
                     Help.BrowseURL(url);
                 }
             }
@@ -985,7 +958,7 @@ namespace UnityEditor
             {
                 if (GUILayout.Button(installModuleWithHub, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                 {
-                    url = GetUnityHubModuleDownloadURL(moduleName);
+                    url = GetUnityHubModuleDownloadURL(platformGuid);
                     Help.BrowseURL(url);
                 }
             }

@@ -28,7 +28,6 @@ namespace UnityEditor.Search
         [SerializeField] internal string[] providerIds;
         [SerializeField] internal SearchFlags searchFlags;
         [SerializeField] internal string searchText; // Also used as the initial query when the view was created
-        [SerializeField] internal bool forceViewMode;
         [SerializeField] private SearchFunctor<Action<SearchItem, bool>> m_SelectHandler;
         [SerializeField] private SearchFunctor<Action<SearchItem>> m_TrackingHandler;
         [SerializeField] private SearchFunctor<Func<SearchItem, bool>> m_FilterHandler;
@@ -264,22 +263,18 @@ namespace UnityEditor.Search
             if (flags.HasAny(SearchViewFlags.CompactView))
             {
                 itemSize = 0;
-                forceViewMode = true;
             }
             if (flags.HasAny(SearchViewFlags.ListView))
             {
                 itemSize = (float)DisplayMode.List;
-                forceViewMode = true;
             }
             if (flags.HasAny(SearchViewFlags.GridView))
             {
                 itemSize = (float)DisplayMode.Grid;
-                forceViewMode = true;
             }
             if (flags.HasAny(SearchViewFlags.TableView))
             {
                 itemSize = (float)DisplayMode.Table;
-                forceViewMode = true;
             }
             if (flags.HasAny(SearchViewFlags.IgnoreSavedSearches))
             {
@@ -329,7 +324,6 @@ namespace UnityEditor.Search
             itemSize = state.itemSize;
             position = state.position;
             flags = state.flags;
-            forceViewMode = state.forceViewMode;
             group = state.group;
 
             queryBuilderEnabled = state.queryBuilderEnabled;
@@ -380,7 +374,8 @@ namespace UnityEditor.Search
             var runningTests = Utils.IsRunningTests();
             if (string.IsNullOrEmpty(title))
                 title = "Unity";
-            if (!forceViewMode && !runningTests)
+            // If we were init with a specific view, do not fetch item size from settings.
+            if (!flags.HasAny(SearchViewFlags.CompactView | SearchViewFlags.ListView | SearchViewFlags.GridView | SearchViewFlags.TableView) && !runningTests)
                 itemSize = SearchSettings.itemIconSize;
             hideTabs = SearchSettings.hideTabs;
 

@@ -59,6 +59,9 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.F10, "F10" },
             { KeyCode.F11, "F11" },
             { KeyCode.F12, "F12" },
+            { KeyCode.F13, "F13" },
+            { KeyCode.F14, "F14" },
+            { KeyCode.F15, "F15" },
 
             { KeyCode.Mouse0, "M0" },
             { KeyCode.Mouse1, "M1" },

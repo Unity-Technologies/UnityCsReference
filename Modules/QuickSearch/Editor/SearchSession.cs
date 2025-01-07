@@ -12,6 +12,13 @@ using UnityEngine;
 
 namespace UnityEditor.Search
 {
+    // TODO: Refactor the sessions so we have ONE overarching session handler that can be ticked
+    // or enumerated. The goals:
+    // 1. Allow more control on the time slicing, i.e. we only allow 16ms per frame, no matter how many providers are running.
+    // 2. Be able to iterate over the providers enumerator without relying on EditorApplication.tick or EditorApplication.update,
+    // allowing users to manually control the iteration when doing :
+    // ISearchList SearchService.Request()
+
     readonly struct SearchSessionContext
     {
         public readonly SearchContext searchContext;
@@ -42,22 +49,16 @@ namespace UnityEditor.Search
     {
         protected SearchEnumerator<T> m_ItemsEnumerator = new SearchEnumerator<T>();
 
+        // todo: Use TimeSpans
         protected const long k_MaxTimePerUpdate = 10; // milliseconds
         protected long maxFetchTimePerUpdate { get; set; } = k_MaxTimePerUpdate;
 
-        public BaseAsyncIEnumerableHandler()
-        {
-        }
-
-        public BaseAsyncIEnumerableHandler(object itemEnumerator)
-        {
-            Reset(itemEnumerator);
-        }
+        List<T> m_PerUpdateItems = new();
 
         public virtual void OnUpdate()
         {
-            var newItems = new List<T>();
-            Update(newItems);
+            m_PerUpdateItems.Clear();
+            Update(m_PerUpdateItems);
         }
 
         public virtual void Update(List<T> newItems)
@@ -75,14 +76,20 @@ namespace UnityEditor.Search
 
         public virtual void SendItems(IEnumerable<T> items) {}
 
-        internal virtual void Start() {}
+        internal virtual void Start()
+        {
+            Utils.tick += OnUpdate;
+        }
 
         public virtual void Stop()
         {
             Utils.tick -= OnUpdate;
 
             lock (this)
-                m_ItemsEnumerator.Dispose();
+            {
+                m_ItemsEnumerator?.Dispose();
+                m_ItemsEnumerator = null;
+            }
         }
 
         public virtual void Reset(object itemEnumerator, long maxFetchTimePerUpdate = k_MaxTimePerUpdate)
@@ -94,7 +101,6 @@ namespace UnityEditor.Search
             {
                 lock (this)
                     m_ItemsEnumerator = new SearchEnumerator<T>(itemEnumerator);
-                Utils.tick += OnUpdate;
             }
         }
 
@@ -107,7 +113,7 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, int quantity, bool doNotCountNull)
         {
-            if (m_ItemsEnumerator.Count == 0)
+            if (m_ItemsEnumerator == null || m_ItemsEnumerator.Count == 0)
                 return false;
 
             var atEnd = false;
@@ -136,7 +142,7 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, int quantity, bool doNotCountNull, long maxFetchTimeMs)
         {
-            if (m_ItemsEnumerator.Count == 0)
+            if (m_ItemsEnumerator == null || m_ItemsEnumerator.Count == 0)
                 return false;
 
             var atEnd = false;
@@ -164,7 +170,7 @@ namespace UnityEditor.Search
         /// <returns>Returns true if there is still some results to fetch later or false if we've fetched everything remaining.</returns>
         public bool FetchSome(List<T> items, long maxFetchTimeMs)
         {
-            if (m_ItemsEnumerator.Count == 0)
+            if (m_ItemsEnumerator == null || m_ItemsEnumerator.Count == 0)
                 return false;
 
             var atEnd = false;
@@ -205,6 +211,8 @@ namespace UnityEditor.Search
         private SearchSessionContext m_Context;
         private SearchProvider m_Provider;
         private Stopwatch m_SessionTimer = new Stopwatch();
+
+        // todo: Use TimeSpans
         private const long k_DefaultSessionTimeOut = k_InfiniteSession;
         private long m_SessionTimeOut = k_DefaultSessionTimeOut;
 
@@ -212,6 +220,8 @@ namespace UnityEditor.Search
         /// Checks if this async search session is active.
         /// </summary>
         public bool searchInProgress { get; set; } = false;
+
+        public SearchEnumerator<SearchItem> itemsEnumerator => m_ItemsEnumerator;
 
         public SearchSession(SearchSessionContext context, SearchProvider provider)
         {
@@ -238,7 +248,6 @@ namespace UnityEditor.Search
         {
             // Remove and add the event handler in case it was already removed.
             Stop();
-            searchInProgress = true;
             m_Context = context;
             maxFetchTimePerUpdate = maxFetchTimePerProviderMs;
             m_SessionTimeOut = sessionTimeOutMs;
@@ -247,12 +256,12 @@ namespace UnityEditor.Search
             {
                 lock (this)
                     m_ItemsEnumerator = new SearchEnumerator<SearchItem>(itemEnumerator);
-                Utils.tick += OnUpdate;
             }
         }
 
         internal override void Start()
         {
+            searchInProgress = true;
             sessionStarted?.Invoke(m_Context.searchContext);
             m_SessionTimer.Start();
             base.Start();
@@ -273,7 +282,16 @@ namespace UnityEditor.Search
 
         public override void Update(List<SearchItem> newItems)
         {
-            base.Update(newItems);
+            try
+            {
+                base.Update(newItems);
+            }
+            catch (Exception ex)
+            {
+                UnityEngine.Debug.LogException(new Exception($"Failed to fetch {m_Provider.name} items.", ex));
+                Stop();
+            }
+
             if (!searchInProgress)
                 return;
             if (newItems.Count > 0)
@@ -327,6 +345,7 @@ namespace UnityEditor.Search
     {
         private System.Threading.CancellationTokenSource m_CancelSource;
         private ConcurrentDictionary<string, SearchSession> m_SearchSessions = new ConcurrentDictionary<string, SearchSession>();
+        int m_SessionCounter;
 
         /// <summary>
         /// This event is used to receive any async search result.
@@ -377,12 +396,16 @@ namespace UnityEditor.Search
 
         private void OnProviderAsyncSessionStarted(SearchContext context)
         {
-            sessionStarted?.Invoke(context);
+            if (m_SessionCounter == 0)
+                CallSessionStarted(context);
+            ++m_SessionCounter;
         }
 
         private void OnProviderAsyncSessionEnded(SearchContext context)
         {
-            sessionEnded?.Invoke(context);
+            --m_SessionCounter;
+            if (m_SessionCounter == 0)
+                CallSessionEnded(context);
         }
 
         private void OnProviderAsyncItemReceived(SearchContext context, IEnumerable<SearchItem> items)
@@ -400,6 +423,7 @@ namespace UnityEditor.Search
             m_CancelSource = new System.Threading.CancellationTokenSource();
 
             currentSessionContext = new SearchSessionContext(context, sessionGuid);
+            m_SessionCounter = 0;
         }
 
         /// <summary>
@@ -436,6 +460,16 @@ namespace UnityEditor.Search
         {
             foreach (var searchSession in m_SearchSessions)
                 searchSession.Value.OnUpdate();
+        }
+
+        public void CallSessionStarted(SearchContext context)
+        {
+            sessionStarted?.Invoke(context);
+        }
+
+        public void CallSessionEnded(SearchContext context)
+        {
+            sessionEnded?.Invoke(context);
         }
     }
 }

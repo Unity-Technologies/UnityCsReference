@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 using UnityEngine.Scripting;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
 
 namespace UnityEditor
 {
@@ -280,7 +281,7 @@ namespace UnityEditor
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
-            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
+            return prop.propertyType == ShaderPropertyType.Float || prop.propertyType == ShaderPropertyType.Range || prop.propertyType == ShaderPropertyType.Int;
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
@@ -304,7 +305,7 @@ namespace UnityEditor
 
             MaterialEditor.BeginProperty(position, prop);
 
-            if (prop.type != MaterialProperty.PropType.Int)
+            if (prop.propertyType != ShaderPropertyType.Int)
             {
                 EditorGUI.BeginChangeCheck();
 
@@ -345,7 +346,7 @@ namespace UnityEditor
             if (prop.hasMixedValue)
                 return;
 
-            if (prop.type != MaterialProperty.PropType.Int)
+            if (prop.propertyType != ShaderPropertyType.Int)
                 SetKeyword(prop, (Math.Abs(prop.floatValue) > 0.001f));
             else
                 SetKeyword(prop, prop.intValue != 0);
@@ -414,7 +415,7 @@ namespace UnityEditor
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Range)
+            if (prop.propertyType != ShaderPropertyType.Range)
             {
                 return EditorGUI.kSingleLineHeight * 2.5f;
             }
@@ -423,7 +424,7 @@ namespace UnityEditor
 
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Range)
+            if (prop.propertyType != ShaderPropertyType.Range)
             {
                 GUIContent c = EditorGUIUtility.TempContent("PowerSlider used on a non-range property: " + prop.name,
                     EditorGUIUtility.GetHelpIcon(MessageType.Warning));
@@ -439,7 +440,7 @@ namespace UnityEditor
     {
         public override void OnGUI(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Range)
+            if (prop.propertyType != ShaderPropertyType.Range)
             {
                 GUIContent c = EditorGUIUtility.TempContent("IntRange used on a non-range property: " + prop.name,
                     EditorGUIUtility.GetHelpIcon(MessageType.Warning));
@@ -473,7 +474,7 @@ namespace UnityEditor
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
-            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
+            return prop.propertyType == ShaderPropertyType.Float || prop.propertyType == ShaderPropertyType.Range || prop.propertyType == ShaderPropertyType.Int;
         }
 
         void SetKeyword(MaterialProperty prop, int index)
@@ -512,7 +513,7 @@ namespace UnityEditor
 
             MaterialEditor.BeginProperty(position, prop);
 
-            if (prop.type != MaterialProperty.PropType.Int)
+            if (prop.propertyType != ShaderPropertyType.Int)
             {
                 EditorGUI.BeginChangeCheck();
 
@@ -553,7 +554,7 @@ namespace UnityEditor
             if (prop.hasMixedValue)
                 return;
 
-            if (prop.type != MaterialProperty.PropType.Int)
+            if (prop.propertyType != ShaderPropertyType.Int)
                 SetKeyword(prop, (int)prop.floatValue);
             else
                 SetKeyword(prop, prop.intValue);
@@ -619,12 +620,12 @@ namespace UnityEditor
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
-            return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range || prop.type == MaterialProperty.PropType.Int;
+            return prop.propertyType == ShaderPropertyType.Float || prop.propertyType == ShaderPropertyType.Range || prop.propertyType == ShaderPropertyType.Int;
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
         {
-            if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range && prop.type != MaterialProperty.PropType.Int)
+            if (prop.propertyType != ShaderPropertyType.Float && prop.propertyType != ShaderPropertyType.Range && prop.propertyType != ShaderPropertyType.Int)
             {
                 return EditorGUI.kSingleLineHeight * 2.5f;
             }
@@ -643,7 +644,7 @@ namespace UnityEditor
 
             MaterialEditor.BeginProperty(position, prop);
 
-            if (prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range)
+            if (prop.propertyType == ShaderPropertyType.Float || prop.propertyType == ShaderPropertyType.Range)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = prop.hasMixedValue;

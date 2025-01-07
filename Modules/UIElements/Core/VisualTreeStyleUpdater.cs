@@ -465,13 +465,19 @@ namespace UnityEngine.UIElements
 
             foreach (var record in matchingSelectors)
             {
+                // UUM-87950 Don't use rule.GetHashCode() as it isn't defined on the class and
+                // falls back on the base Object.GetHashCode() which have been seen to return the
+                // same value for different rules across scene changes. The rule index is a good
+                // alternate unique identifier for the rule.
+
                 var sheet = record.sheet;
-                var rule = record.complexSelector.rule;
+                var ruleIndex = record.complexSelector.ruleIndex;
                 var specificity = record.complexSelector.specificity;
                 matchingRulesHash = (matchingRulesHash * 397) ^ sheet.contentHash;
-                matchingRulesHash = (matchingRulesHash * 397) ^ rule.GetHashCode();
+                matchingRulesHash = (matchingRulesHash * 397) ^ ruleIndex;
                 matchingRulesHash = (matchingRulesHash * 397) ^ specificity;
 
+                var rule = record.complexSelector.rule;
                 if (rule.customPropertiesCount > 0)
                 {
                     ProcessMatchedVariables(record.sheet, rule);

@@ -9,6 +9,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for all transition events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Transition-Events|Transition events]] manual page for more information and examples.
+    /// </remarks>
     public interface ITransitionEvent
     {
         /// <summary>
@@ -108,7 +111,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Transition events abstract base class.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Transition-Events|Transition events]] manual page for more information and examples.
+    /// </remarks>
     [EventCategory(EventCategory.StyleTransition)]
     public abstract class TransitionEventBase<T> : EventBase<T>, ITransitionEvent
         where T : TransitionEventBase<T>, new()

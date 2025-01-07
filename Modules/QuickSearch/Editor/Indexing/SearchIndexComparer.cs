@@ -24,6 +24,7 @@ namespace UnityEditor.Search
 
     class SearchIndexComparer : IComparer<SearchIndexEntry>, IEqualityComparer<SearchIndexEntry>
     {
+        // todo: FIXME: Should not even use operator. SearchIndexOperator.DoNotCompareScore should be an option.
         public SearchIndexOperator op { get; private set; }
 
         public SearchIndexComparer(SearchIndexOperator op = SearchIndexOperator.Contains)
@@ -43,20 +44,11 @@ namespace UnityEditor.Search
 
             if (item1.type == SearchIndexEntry.Type.Number)
             {
-                double eps = 0.0;
-                if (op == SearchIndexOperator.Less)
-                    eps = -Utils.DOUBLE_EPSILON;
-                else if (op == SearchIndexOperator.Greater)
-                    eps = Utils.DOUBLE_EPSILON;
-                else if (op == SearchIndexOperator.Equal || op == SearchIndexOperator.Contains || op == SearchIndexOperator.GreaterOrEqual || op == SearchIndexOperator.LessOrEqual)
-                {
-                    if (Utils.Approximately(item1.number, item2.number))
-                        return 0;
-                }
-                c = item1.number.CompareTo(item2.number + eps);
+                c = item1.number.CompareTo(item2.number);
             }
             else
                 c = item1.key.CompareTo(item2.key);
+
             if (c != 0 || op == SearchIndexOperator.DoNotCompareScore)
                 return c;
 

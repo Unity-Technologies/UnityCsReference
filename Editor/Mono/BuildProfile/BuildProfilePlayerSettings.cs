@@ -12,7 +12,7 @@ namespace UnityEditor.Build.Profile
     public partial class BuildProfile
     {
         [Serializable]
-        class PlayerSettingsYaml
+        internal class PlayerSettingsYaml
         {
             [Serializable]
             class YamlSetting
@@ -42,8 +42,33 @@ namespace UnityEditor.Build.Profile
                 // Splitting the YAML single string into individual lines to better readability
                 // in the asset file
                 var settings = yamlStr.Split("\n");
+                string prevLine = "";
                 foreach (var setting in settings)
                 {
+                    // When the } is on the second line, we should join the two lines.
+                    // Otherwise, we will break the serialization for the object by adding
+                    // the '-line' in front of the second line that when deserialized, it does not
+                    // know how to parse it.
+                    if (setting.Contains("{") && !setting.Contains("}"))
+                    {
+                        prevLine = setting;
+                        continue;
+                    }
+
+                    if (!string.IsNullOrEmpty(prevLine))
+                    {
+                        if (setting.Contains("}"))
+                        {
+                            m_Settings.Add(new YamlSetting(prevLine + setting));
+                        }
+                        else
+                        {
+                            Debug.LogWarning("a { has no closing } on the second line. Invalid Serialization.");
+                        }
+                        prevLine = "";
+                        continue;
+                    }
+
                     var newSetting = new YamlSetting(setting);
                     m_Settings.Add(newSetting);
                 }
@@ -162,6 +187,8 @@ namespace UnityEditor.Build.Profile
             if (m_PlayerSettings == null)
                 return;
 
+            PlayerSettings.EnsureUnityConnectSettingsEqual(m_PlayerSettings, s_GlobalPlayerSettings);
+
             var yamlStr = PlayerSettings.SerializeAsYAMLString(m_PlayerSettings);
             m_PlayerSettingsYaml.SetSettingsFromYaml(yamlStr);
         }
@@ -176,6 +203,8 @@ namespace UnityEditor.Build.Profile
             else
                 UpdatePlayerSettingsObjectFromYAML();
             s_LoadedPlayerSettings.Add(m_PlayerSettings);
+
+            PlayerSettings.EnsureUnityConnectSettingsEqual(m_PlayerSettings, s_GlobalPlayerSettings);
             UpdateGlobalManagerPlayerSettings();
         }
 

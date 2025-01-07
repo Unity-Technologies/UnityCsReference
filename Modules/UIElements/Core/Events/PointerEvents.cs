@@ -112,6 +112,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This interface describes properties available to pointer events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Pointer-Events|Pointer events]] manual page for more information and examples.
+    /// </remarks>
     public interface IPointerEvent
     {
         /// <summary>
@@ -156,26 +159,64 @@ namespace UnityEngine.UIElements
         int pressedButtons { get; }
 
         /// <summary>
-        /// Gets the pointer position in the Screen or World coordinate system.
+        /// Gets the pointer position in the panel coordinate system.
         /// </summary>
         Vector3 position { get; }
         /// <summary>
         /// Gets the pointer position in the current target's coordinate system.
         /// </summary>
+        /// <remarks>
+        /// The value of this property changes during the propagation process for each element that receives the event along the propagation path.
+        /// </remarks>
+        /// <seealso cref="EventBase.currentTarget"/>
         Vector3 localPosition { get; }
         /// <summary>
-        /// Gets the difference between the pointer's position during the previous mouse event and its position during the
-        /// current mouse event.
+        /// Gets the difference between the pointer's position during the previous pointer event and its position during the
+        /// current pointer event.
         /// </summary>
+        /// <remarks>
+        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel world coordinates.
+        /// </remarks>
         Vector3 deltaPosition { get; }
         /// <summary>
         /// Gets the amount of time that has elapsed since the last recorded change in pointer values, in seconds.
         /// </summary>
         float deltaTime { get; }
+
         /// <summary>
-        /// Gets the number of times the button was pressed.
+        /// Gets the number of consecutive times a down-up sequence was executed in a short amount of time
+        /// with the same pointer ID and button.
         /// </summary>
+        /// <remarks>
+        /// There are two different formulas used to determine the value for clickCount.
+        ///
+        /// If the event is a <see cref="ClickEvent"/>, a special data structure tracks
+        /// click counts for each pointer ID, and will use that click count when initializing the next click event:
+        ///
+        ///- clickCount is incremented on <see cref="PointerDownEvent"/>.
+        ///- Time is measured between consecutive <see cref="PointerDownEvent"/>s.
+        ///- The time limit is 0.5 seconds by default but can vary on some platforms.
+        ///- clickCount is reset whenever an event with a different pointer ID or button than the previous one is sent.
+        ///- clickCount is reset on <see cref="PointerDownEvent"/> if its target is not the same as the previous
+        /// <see cref="PointerDownEvent"/>.
+        ///
+        /// If the event is not a <see cref="ClickEvent"/>, the value for clickCount does not follow a strict
+        /// formula, but rather it is determined by the active input framework and platform conventions.
+        /// The amount of time allowed and whether that time is measured between consecutive
+        /// <see cref="PointerDownEvent"/>s or between a <see cref="PointerUpEvent"/> and the next
+        /// <see cref="PointerDownEvent"/> varies.
+        ///
+        /// To remain consistent in your code, don't depend on clickCount for other events than
+        /// <see cref="ClickEvent"/> if possible. We recommend keeping track of click counts manually by
+        /// registering callbacks to <see cref="PointerDownEvent"/> and <see cref="PointerUpEvent"/> on the
+        /// <see cref="IPanel.visualTree"/> using the <see cref="TrickleDown.TrickleDown"/> phase to monitor all
+        /// incoming Panel events. The code below shows an example implementation.
+        /// </remarks>
+        /// <example>
+        /// <code source="../../Tests/UIElementsExamples/Assets/Examples/ClickCountMonitor.cs"/>
+        /// </example>
         int clickCount { get; }
+
         /// <summary>
         /// Gets the amount of pressure currently applied by a touch.
         /// </summary>
@@ -232,30 +273,45 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers"/> for more information.
+        /// </remarks>
         EventModifiers modifiers { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         bool shiftKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         bool ctrlKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
-        /// is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         bool commandKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         bool altKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
-        /// key is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed.
         /// </summary>
         /// <remarks>
         /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
@@ -299,13 +355,14 @@ namespace UnityEngine.UIElements
     /// back to the root.
     ///
     /// A cycle of pointer events occurs as follows:
-    /// 
+    ///
     ///- The user presses a mouse button, touches the screen, or otherwise causes a <see cref="PointerDownEvent"/> to be sent.
     ///- If the user changes the pointer's state, a <see cref="PointerMoveEvent"/> is sent. Multiple PointerMove events are sent if multiple properties of the pointer change.
     ///- If the user cancels the loop, a <see cref="PointerCancelEvent"/> is sent.
     ///- If the user doesn't cancel the loop, and either releases the last button pressed or releases the last touch, a <see cref="PointerUpEvent"/> is sent.
     ///- If the initial <see cref="PointerDownEvent"/> and the <see cref="PointerUpEvent"/> occur on the same visual element, a <see cref="ClickEvent"/> is sent.
     ///
+    /// Refer to the [[wiki:UIE-Pointer-Events|Pointer events]] manual page for more information and examples.
     /// </remarks>
     [EventCategory(EventCategory.Pointer)]
     public abstract class PointerEventBase<T> : EventBase<T>, IPointerEvent, IPointerEventInternal, IPointerOrMouseEvent
@@ -363,25 +420,34 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public int pressedButtons { get; protected set; }
         /// <summary>
-        /// Gets the pointer position in the Screen or World coordinate system.
+        /// Gets the pointer position in the panel coordinate system.
         /// </summary>
         public Vector3 position { get; protected set; }
         /// <summary>
         /// Gets the pointer position in the current target's coordinate system.
         /// </summary>
+        /// <remarks>
+        /// The value of this property changes throughout the propagation process for each element receiving the event along the propagation path.
+        /// </remarks>
+        /// <seealso cref="EventBase.currentTarget"/>
         public Vector3 localPosition { get; protected set; }
         /// <summary>
-        /// Gets the difference between the pointer's position during the previous mouse event and its position during the
-        /// current mouse event.
+        /// Gets the difference between the pointer's position during the previous pointer event and its position during the
+        /// current pointer event.
         /// </summary>
+        /// <remarks>
+        /// This value is based on <see cref="IPointerEvent.position"/> and is expressed in panel world coordinates.
+        /// </remarks>
         public Vector3 deltaPosition { get; protected set; }
         /// <summary>
         /// Gets the amount of time that has elapsed since the last recorded change in pointer values, in seconds.
         /// </summary>
         public float deltaTime { get; protected set; }
         /// <summary>
-        /// Gets the number of times the button was pressed.
+        /// Gets the number of consecutive times a down-up sequence was executed in a short amount of time
+        /// with the same pointer ID and button.
         /// </summary>
+        /// <remarks>See <see cref="IPointerEvent.clickCount"/></remarks>
         public int clickCount { get; protected set; }
         /// <summary>
         /// Gets the amount of pressure currently applied by a touch.
@@ -493,47 +559,57 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers"/> for more information.
+        /// </remarks>
         public EventModifiers modifiers { get; protected set; }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         public bool shiftKey
         {
             get { return (modifiers & EventModifiers.Shift) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         public bool ctrlKey
         {
             get { return (modifiers & EventModifiers.Control) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
-        /// is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         public bool commandKey
         {
             get { return (modifiers & EventModifiers.Command) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         public bool altKey
         {
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
-        /// key is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed.
         /// </summary>
         /// <remarks>
         /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.
@@ -1200,29 +1276,29 @@ namespace UnityEngine.UIElements
     /// Sends when a pointer is pressed inside a visual element.
     /// </summary>
     /// <remarks>
-    /// In a runtime UI, a @@PointerDownEvent@@ is sent each time a user touches the screen or presses a mouse button. 
+    /// In a runtime UI, a @@PointerDownEvent@@ is sent each time a user touches the screen or presses a mouse button.
     /// </remarks>
     /// <remarks>
-    /// In an Editor UI, a @@PointerDownEvent@@ is sent when a user initially touches the screen or presses a mouse button. However, 
-    /// If the user presses additional mouse buttons (right or middle) without releasing the initial one, the [[PointerMoveEvents]] is 
+    /// In an Editor UI, a @@PointerDownEvent@@ is sent when a user initially touches the screen or presses a mouse button. However,
+    /// If the user presses additional mouse buttons (right or middle) without releasing the initial one, the [[PointerMoveEvents]] is
     /// sent not the @@PointerDownEvent@@. Releasing all mouse buttons and pressing a mouse button again sends a new @@PointerDownEvent@@.
     /// </remarks>
     /// <remarks>
-    /// A @@PointerDownEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up, 
+    /// A @@PointerDownEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up,
     /// and is cancellable.
     /// </remarks>
     /// <remarks>
     /// Disabled elements don't receive this event.
     /// </remarks>
     /// <remarks>
-    /// For information about how the @@PointerDownEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/> 
+    /// For information about how the @@PointerDownEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/>
     /// and [[wiki:UIE-Pointer-Events|Pointer events]].
     /// </remarks>
     /// <example>
     /// <code lang="cs">
     /// <![CDATA[
     /// // This example creates a ClickDetector class to detect a click sequence.
-    /// 
+    ///
     /// namespace UnityEngine.UIElements
     /// {
     ///     public class ClickDetector : VisualElement
@@ -1330,18 +1406,18 @@ namespace UnityEngine.UIElements
     /// This event is sent when a pointer changes state.
     /// </summary>
     /// <remarks>
-    /// The state of a pointer changes when one or more of its properties change, such as the mouse button pressure changes, 
+    /// The state of a pointer changes when one or more of its properties change, such as the mouse button pressure changes,
     /// or a different mouse button is pressed.
     /// </remarks>
     /// <remarks>
-    /// A @@PointerMoveEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up, 
+    /// A @@PointerMoveEvent@@ follows the default pointer [[wiki:UIE-Events-Dispatching|event propagation path]]. It trickles down, bubbles up,
     /// and is cancellable.
     /// </remarks>
     /// <remarks>
     /// Disabled elements don't receive this event.
     /// </remarks>
     /// <remarks>
-    /// For information about how the @@PointerMoveEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/> 
+    /// For information about how the @@PointerMoveEvent@@ relates to other pointer events, refer to <see cref="UIElements.PointerEventBase{T}"/>
     /// and [[wiki:UIE-Pointer-Events|Pointer events]].
     /// </remarks>
     [EventCategory(EventCategory.PointerMove)]

@@ -33,6 +33,8 @@ namespace UnityEditor.Build.Profile
         const string k_PlatformBuildWarningsRoot = "platform-build-warning-root";
         const string k_PlayerScriptingDefinesFoldout = "scripting-defines-foldout";
         const string k_BuildSettingsFoldout = "build-settings-foldout";
+        const string k_AdditionalSettingsWrapper = "editor-additional-settings-wrapper";
+
         BuildProfileSceneList m_SceneList;
         HelpBox m_CompilingWarningHelpBox;
         HelpBox m_VirtualTexturingHelpBox;
@@ -110,6 +112,7 @@ namespace UnityEditor.Build.Profile
             var buildDataLabel = root.Q<Label>(k_BuildDataLabel);
             var sharedSettingsInfoHelpBox = root.Q<HelpBox>(k_SharedSettingsInfoHelpbox);
             var buildSettingsFoldout = root.Q<Foldout>(k_BuildSettingsFoldout);
+            var additionalSettingsWrapper = root.Q<VisualElement>(k_AdditionalSettingsWrapper);
             m_VirtualTexturingHelpBox = root.Q<HelpBox>(k_VirtualTextureWarningHelpBox);
             m_CompilingWarningHelpBox = root.Q<HelpBox>(k_CompilingWarningHelpBox);
 
@@ -140,6 +143,9 @@ namespace UnityEditor.Build.Profile
                 m_ProfilePlayerSettingsEditor = BuildProfilePlayerSettingsEditor
                     .CreatePlayerSettingsUI(root, hasErrors ? null : serializedObject);
                 ShowGraphicsSettingsSection(profile, root);
+
+                var buildAutomationEditor = BuildAutomationSettingsEditor.CreateBuildAutomationUI(profile);
+                additionalSettingsWrapper.Add(buildAutomationEditor);
             }
             else
             {
@@ -166,6 +172,7 @@ namespace UnityEditor.Build.Profile
             var bootstrapView = new BuildProfileBootstrapView();
             m_Profile.OnPackageAddProgress = () =>
             {
+                bootstrapView.StartSpinner();
                 bootstrapView.Set(packageAddInfo.GetPackageAddProgressInfo());
             };
             return bootstrapView;
@@ -243,7 +250,7 @@ namespace UnityEditor.Build.Profile
             if (!m_Profile.IsActiveBuildProfileOrPlatform())
                 return;
 
-            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.buildTarget);
+            bool isVirtualTexturingValid = BuildProfileModuleUtil.IsVirtualTexturingSettingsValid(m_Profile.platformGuid);
             bool isCompiling = EditorApplication.isCompiling || EditorApplication.isUpdating;
             UpdateHelpBoxVisibility(m_VirtualTexturingHelpBox, !isVirtualTexturingValid);
             UpdateHelpBoxVisibility(m_CompilingWarningHelpBox, isCompiling);

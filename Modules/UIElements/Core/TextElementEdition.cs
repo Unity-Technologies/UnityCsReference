@@ -148,6 +148,7 @@ namespace UnityEngine.UIElements
         internal ITextEdition edition => this;
 
         internal TextEditingManipulator editingManipulator { get; private set; }
+        internal bool isInputField = false;
 
         bool m_Multiline;
 

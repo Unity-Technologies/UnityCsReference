@@ -7,6 +7,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for focus events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Focus-Events|Focus events]] manual page for more information and examples.
+    /// </remarks>
     public interface IFocusEvent
     {
         /// <summary>
@@ -16,13 +19,31 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Direction of the focus change.
+        /// This corresponds to the FocusChangeDirection used by the focus ring.
         /// </summary>
+        /// <remarks>
+        /// The <see cref="IFocusRing"/> implementation determines what focus events are generated
+        /// as a consequence of other input events.
+        /// Focus events generally occur after any of the following situations:
+        ///
+        ///- A <see cref="NavigationMoveEvent"/>
+        ///- A <see cref="PointerDownEvent"/>
+        ///- Calling an element's <see cref="Focusable.Focus()"/> or <see cref="Focusable.Blur()"/> methods
+        ///
+        /// The direction of the focus change contains information about the cause of the Focus event.
+        /// It can be null if the focus change didn't happen as a consequence of another event.
+        /// </remarks>
+        /// <seealso cref="VisualElementFocusChangeDirection" />
+        /// <seealso cref="IFocusRing" />
         FocusChangeDirection direction { get; }
     }
 
     /// <summary>
     /// Base class for focus related events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Focus-Events|Focus events]] manual page for more information and examples.
+    /// </remarks>
     [EventCategory(EventCategory.Focus)]
     public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent where T : FocusEventBase<T>, new()
     {
@@ -32,7 +53,7 @@ namespace UnityEngine.UIElements
         public Focusable relatedTarget { get; private set; }
 
         /// <summary>
-        /// Direction of the focus change.
+        /// See <see cref="IFocusEvent.direction"/>.
         /// </summary>
         public FocusChangeDirection direction { get; private set; }
 
@@ -141,6 +162,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent immediately before an element gains focus. This event trickles down and bubbles up.
     /// </summary>
+    /// <example>
+    /// <code source="../../Tests/UIElementsExamples/Assets/Examples/FocusExample.cs"/>
+    /// </example>
     public class FocusInEvent : FocusEventBase<FocusInEvent>
     {
         static FocusInEvent()

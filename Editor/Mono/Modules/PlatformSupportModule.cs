@@ -151,7 +151,7 @@ namespace UnityEditor.Modules
 
     internal interface IBuildPostprocessor
     {
-        void LaunchPlayer(BuildLaunchPlayerArgs args);
+        ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args);
 
         void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties);
 
@@ -364,12 +364,13 @@ namespace UnityEditor.Modules
         public string Name { get; }
         public bool SelectedInitially { get; }
         public bool Selected { get; set; }
-
-        public PreconfiguredSettingsVariant(string name, bool selectedInitially)
+        public string Tooltip;
+        public PreconfiguredSettingsVariant(string name, bool selectedInitially, string tooltip = "")
         {
             Name = name;
             SelectedInitially = selectedInitially;
             Selected = selectedInitially;
+            Tooltip = tooltip;
         }
     }
 

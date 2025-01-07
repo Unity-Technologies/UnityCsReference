@@ -10,7 +10,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A list view with multi column support.
+    /// A list view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnListView|MultiColumnListView]].
     /// </summary>
     public class MultiColumnListView : BaseListView
     {

@@ -505,8 +505,20 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Utility Object that contructs a set of selection rules to be ran on a root visual element.
+    /// Utility Object that constructs a set of selection rules to be run on a root visual element.
     /// </summary>
+    /// <remarks>
+    /// A generic class that allows you to build queries for UI elements of type T.
+    /// You can refine queries using selectors like name, class, and other conditions.
+    /// It enables you to search for elements and execute the query on any VisualElement, making it easier to navigate
+    /// and filter the VisualElement tree in large UIs, by type, name, class, and hierarchy conditions.
+    ///
+    /// For more information, refer to the [[wiki:UIE-UQuery|UQuery manual page]].
+    /// </remarks>
+    /// <example>
+    /// The following example demonstrates how to use UQueryBuilder to find certain elements in a UI hierarchy and iterate over them:
+    /// <code source="../Tests/UIElementsExamples/Assets/Examples/UQueryBuilderExample.cs"/>
+    /// </example>
     public struct UQueryBuilder<T> : IEquatable<UQueryBuilder<T>> where T : VisualElement
     {
         private List<StyleSelector> m_StyleSelectors;
@@ -560,8 +572,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements that are descendants of currently matching ancestors.
+        /// Selects all elements, recursively, that are descendants of currently matching ancestors.
         /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have classes "health-button" or "unity-button".
+        /// var buttons = root.Query().Descendents<Button>(classNames: new[] { "health-button", "unity-button" });
+        /// ]]>
+        /// </code>
+        /// </example>
         public UQueryBuilder<T2> Descendents<T2>(string name = null, params string[] classNames) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -572,8 +592,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Selects all elements that are descendants of currently matching ancestors.
+        /// Selects all elements, recursively, that are descendants of currently matching ancestors.
         /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Descendents<Button>(classname: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
         public UQueryBuilder<T2> Descendents<T2>(string name = null, string classname = null) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -586,6 +614,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Selects all direct child elements of elements matching the previous rules.
         /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all direct children of root that are buttons and have classes "health-button" or "unity-button".
+        /// var buttons = root.Query().Children<Button>(classes: new[] { "health-button", "unity-button" });
+        /// ]]>
+        /// </code>
+        /// </example>
         public UQueryBuilder<T2> Children<T2>(string name = null, params string[] classes) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -598,6 +634,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Selects all direct child elements of elements matching the previous rules.
         /// </summary>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// // Get all children, recursively, of root that are buttons and have class "health-button".
+        /// var buttons = root.Query().Children<Button>(className: "health-button");
+        /// ]]>
+        /// </code>
+        /// </example>
         public UQueryBuilder<T2> Children<T2>(string name = null, string className = null) where T2 : VisualElement
         {
             FinishCurrentSelector();
@@ -611,7 +655,7 @@ namespace UnityEngine.UIElements
         /// Selects all elements of the specified Type (eg: Label, Button, ScrollView, etc).
         /// </summary>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If specified, will select elements with the given class (not to be confused with Type).</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public UQueryBuilder<T2> OfType<T2>(string name = null, params string[] classes) where T2 : VisualElement
         {
@@ -869,7 +913,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Compiles the selection rules into a QueryState object.
+        /// Compiles the selection rules into a [[UIElements.UQueryState_1]] object.
         /// </summary>
         public UQueryState<T> Build()
         {
@@ -1019,6 +1063,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// UQuery is a set of extension methods allowing you to select individual or collection of visualElements inside a complex hierarchy.
+    /// For more information, refer to [[wiki:UIE-UQuery|Find visual elements with UQuery]].
     /// </summary>
     public static class UQueryExtensions
     {
@@ -1034,11 +1079,11 @@ namespace UnityEngine.UIElements
         private static UQueryState<VisualElement> SingleElementTypeAndNameAndClassQuery = new UQueryBuilder<VisualElement>(null).SingleBaseType().Name(String.Empty).Class(String.Empty).Build();
 
         /// <summary>
-        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
+        /// Convenience overload, shorthand for `Query&lt;T&gt;().Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
@@ -1046,11 +1091,11 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
+        /// Convenience overload, shorthand for `Query&lt;T&gt;().Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static VisualElement Q(this VisualElement e, string name = null, params string[] classes)
         {
@@ -1058,7 +1103,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for <see cref="UQueryExtensions.Query(UnityEngine.UIElements.VisualElement,string,string[])">Query()</see>.<see cref="UQueryBuilder{T}.Build()">Build()</see>.<see cref="UQueryBuilder{T}.First()">First()</see>
+        /// Convenience overload, shorthand for `Query&lt;T&gt;().Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1116,7 +1161,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
+        /// Convenience overload, shorthand for `Query&lt;T&gt;().Build().First().`
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
         /// <param name="name">If specified, will select elements with this name.</param>
@@ -1166,8 +1211,8 @@ namespace UnityEngine.UIElements
         /// Initializes a QueryBuilder with the specified selection rules.
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
-        /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="name">If specified, will select elements with this name. The default value is @@null@@.</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, params string[] classes)
         {
@@ -1178,8 +1223,8 @@ namespace UnityEngine.UIElements
         /// Initializes a QueryBuilder with the specified selection rules.
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
-        /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="name">If specified, will select elements with this name. The default value is @@null@@.</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type). The default value is @@null@@.</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<VisualElement> Query(this VisualElement e, string name = null, string className = null)
         {
@@ -1190,8 +1235,8 @@ namespace UnityEngine.UIElements
         /// Initializes a QueryBuilder with the specified selection rules.
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
-        /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="classes">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="name">If specified, will select elements with this name. The default value is @@null@@.</param>
+        /// <param name="classes">If provided, it selects elements with all the specified classes (case sensitive, to be distinguished from Type).</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, params string[] classes) where T : VisualElement
         {
@@ -1206,8 +1251,8 @@ namespace UnityEngine.UIElements
         /// Initializes a QueryBuilder with the specified selection rules.
         /// </summary>
         /// <param name="e">Root VisualElement on which the selector will be applied.</param>
-        /// <param name="name">If specified, will select elements with this name.</param>
-        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type).</param>
+        /// <param name="name">If specified, will select elements with this name. The default value is @@null@@.</param>
+        /// <param name="className">If provided, it selects elements with the specified class (case sensitive, to be distinguished from Type). The default value is @@null@@.</param>
         /// <returns>QueryBuilder configured with the associated selection rules.</returns>
         public static UQueryBuilder<T> Query<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {

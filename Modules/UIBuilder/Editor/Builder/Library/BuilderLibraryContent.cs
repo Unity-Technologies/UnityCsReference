@@ -359,6 +359,7 @@ namespace Unity.UI.Builder
 
                 CreateItem("Tag", nameof(TagField), typeof(TagField), () => new TagField("Tag", "Player")),
                 CreateItem("Mask", nameof(MaskField), typeof(MaskField), () => new MaskField("Mask")),
+                CreateItem("Mask64", nameof(Mask64Field), typeof(Mask64Field), () => new Mask64Field("Mask64")),
                 CreateItem("Layer", nameof(LayerField), typeof(LayerField), () => new LayerField("Layer")),
                 CreateItem("Layer Mask", nameof(LayerMaskField), typeof(LayerMaskField), () => new LayerMaskField("LayerMask")),
                 CreateItem("Enum Flags", nameof(EnumFlagsField), typeof(EnumFlagsField), () => new EnumFlagsField("EnumFlags", UsageHints.DynamicTransform))

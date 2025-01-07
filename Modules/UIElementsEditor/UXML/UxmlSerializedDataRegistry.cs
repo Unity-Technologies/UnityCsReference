@@ -26,10 +26,6 @@ namespace UnityEditor.UIElements
         [UsedImplicitly]
         internal static void RegisterCustomDependencies()
         {
-            // No need to register custom dependencies when going to play mode
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-
             UxmlCodeDependencies.instance.RegisterUxmlSerializedDataDependencies(SerializedDataTypes);
         }
 
@@ -211,6 +207,7 @@ namespace UnityEditor.UIElements
             ListView.UxmlSerializedData.Register();
             LongField.UxmlSerializedData.Register();
             MaskField.UxmlSerializedData.Register();
+            Mask64Field.UxmlSerializedData.Register();
             MinMaxSlider.UxmlSerializedData.Register();
             MultiColumnListView.UxmlSerializedData.Register();
             MultiColumnTreeView.UxmlSerializedData.Register();

@@ -20,13 +20,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         void SetRenderedText(string renderedText);
     }
-
-    /// <summary>
-    /// Base class for a <see cref="VisualElement"/> that displays text.
-    /// </summary>
-    /// <summary>
-    /// Use this as the super class if you are declaring a custom VisualElement that displays text. For example, <see cref="Button"/> or <see cref="Label"/> use this as their base class.
-    /// </summary>
+    
     public partial class TextElement : ITextElementExperimentalFeatures
     {
         /// <summary>

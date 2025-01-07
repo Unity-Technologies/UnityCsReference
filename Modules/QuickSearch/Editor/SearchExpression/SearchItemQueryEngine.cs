@@ -235,7 +235,7 @@ namespace UnityEditor.Search
         internal SearchValue(UnityEngine.Object obj)
         {
             this.type = ValueType.Object;
-            this.text = SearchUtils.GetObjectPath(obj);
+            this.text = SearchUtils.GetObjectPath(obj, true);
             this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
@@ -244,7 +244,7 @@ namespace UnityEditor.Search
         internal SearchValue(UnityEngine.Object obj, in string path)
         {
             this.type = ValueType.Object;
-            this.text = obj ? SearchUtils.GetObjectPath(obj) : path;
+            this.text = obj ? SearchUtils.GetObjectPath(obj, true) : path;
             this.floatNumber = float.NaN;
             this.color = default;
             this.v4 = default;
@@ -304,7 +304,7 @@ namespace UnityEditor.Search
             else if (v is UnityEngine.Object obj)
             {
                 this.type = ValueType.Object;
-                this.text = SearchUtils.GetObjectPath(obj);
+                this.text = SearchUtils.GetObjectPath(obj, true);
             }
             else if (v != null)
             {
@@ -610,7 +610,7 @@ namespace UnityEditor.Search
                     }
 
                     var assetPath = AssetDatabase.GetAssetPath(obj);
-                    if (!string.IsNullOrEmpty(assetPath) && Utils.IsBuiltInResource(assetPath))
+                    if (!string.IsNullOrEmpty(assetPath))
                         return comparer(assetPath.GetStringView(), s);
 
                     if (obj is GameObject go)

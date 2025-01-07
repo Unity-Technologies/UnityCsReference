@@ -35,6 +35,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for a list view, a vertically scrollable area that links to, and displays, a list of items.
     /// </summary>
+    /// <remarks>
+    /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
+    /// </remarks>
     public abstract class BaseListView : BaseVerticalCollectionView
     {
         private static readonly string k_SizeFieldLabel = "Size";

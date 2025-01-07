@@ -7,6 +7,17 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for drag and drop events.
     /// </summary>
+    /// <remarks>
+    /// Drag and drop events are only available on Editor-type Panels.
+    ///
+    /// Refer to the [[wiki:UIE-Drag-Events|Drag-and-drop events]] manual page for more information and examples.
+    /// </remarks>
+    /// <seealso cref="DragEnterEvent"/>
+    /// <seealso cref="DragExitedEvent"/>
+    /// <seealso cref="DragLeaveEvent"/>
+    /// <seealso cref="DragPerformEvent"/>
+    /// <seealso cref="DragUpdatedEvent"/>
+    /// <seealso cref="IPanel.contextType"/>
     public interface IDragAndDropEvent
     {
     }
@@ -14,6 +25,17 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for drag and drop events.
     /// </summary>
+    /// <remarks>
+    /// Drag and drop events are only available on Editor-type Panels.
+    ///
+    /// Refer to the [[wiki:UIE-Drag-Events|Drag-and-drop events]] manual page for more information and examples.
+    /// </remarks>
+    /// <seealso cref="DragEnterEvent"/>
+    /// <seealso cref="DragExitedEvent"/>
+    /// <seealso cref="DragLeaveEvent"/>
+    /// <seealso cref="DragPerformEvent"/>
+    /// <seealso cref="DragUpdatedEvent"/>
+    /// <seealso cref="IPanel.contextType"/>
     [EventCategory(EventCategory.DragAndDrop)]
     public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent where T : DragAndDropEventBase<T>, new()
     {

@@ -4,6 +4,8 @@
 
 using System;
 using UnityEngine;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
+using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
 namespace UnityEditor
 {
@@ -26,12 +28,12 @@ namespace UnityEditor
             for (var i = 0; i < props.Length; i++)
             {
                 // dropdowns should have full width
-                if (props[i].type == MaterialProperty.PropType.Float)
+                if (props[i].propertyType == ShaderPropertyType.Float)
                     EditorGUIUtility.labelWidth = labelWidth;
                 else
                     materialEditor.SetDefaultGUIWidths();
 
-                if ((props[i].flags & MaterialProperty.PropFlags.HideInInspector) != 0)
+                if ((props[i].propertyFlags & ShaderPropertyFlags.HideInInspector) != 0)
                     continue;
 
                 //_SunSizeConvergence is only used with the HighQuality sun disk.

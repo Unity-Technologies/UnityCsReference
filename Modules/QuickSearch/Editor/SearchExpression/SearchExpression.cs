@@ -94,6 +94,7 @@ namespace UnityEditor.Search
         // Evaluation fields
         internal readonly SearchExpressionEvaluator evaluator;
         public readonly SearchExpression[] parameters;
+        internal const double k_ExpressionEvaluationTimeOutInSeconds = 5d;
 
         internal SearchExpression(SearchExpressionType types,
                                 StringView outerText, StringView innerText, StringView alias,
@@ -315,7 +316,7 @@ namespace UnityEditor.Search
                     }
                     else if (!skipNull)
                     {
-                        if (timeoutWatch.Elapsed.TotalSeconds > 3.0d)
+                        if (timeoutWatch.Elapsed.TotalSeconds > k_ExpressionEvaluationTimeOutInSeconds)
                         {
                             c.ThrowError("Timeout");
                         }

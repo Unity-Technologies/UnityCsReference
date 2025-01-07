@@ -1378,7 +1378,7 @@ namespace UnityEditor
             BeginProperty(position, prop);
 
             EditorGUI.BeginChangeCheck();
-            bool isHDR = ((prop.flags & MaterialProperty.PropFlags.HDR) != 0);
+            bool isHDR = ((prop.propertyFlags & ShaderPropertyFlags.HDR) != 0);
             bool showAlpha = true;
             Color newValue = EditorGUI.ColorField(position, label, prop.colorValue, true, showAlpha, isHDR);
             if (EditorGUI.EndChangeCheck())
@@ -1469,9 +1469,9 @@ namespace UnityEditor
 
         private Texture TexturePropertyBody(Rect position, MaterialProperty prop)
         {
-            if (prop.type != MaterialProperty.PropType.Texture)
+            if (prop.propertyType != ShaderPropertyType.Texture)
             {
-                throw new ArgumentException(string.Format("The MaterialProperty '{0}' should be of type 'Texture' (its type is '{1})'", prop.name, prop.type));
+                throw new ArgumentException(string.Format("The MaterialProperty '{0}' should be of type 'Texture' (its type is '{1})'", prop.name, prop.propertyType));
             }
 
             m_DesiredTexdim = prop.textureDimension;
@@ -1482,7 +1482,7 @@ namespace UnityEditor
             bool wasEnabled = GUI.enabled;
 
             EditorGUI.BeginChangeCheck();
-            if ((prop.flags & MaterialProperty.PropFlags.NonModifiableTextureData) != 0)
+            if ((prop.propertyFlags & ShaderPropertyFlags.NonModifiableTextureData) != 0)
                 GUI.enabled = false;
 
             EditorGUI.showMixedValue = prop.hasMixedValue;
@@ -1499,7 +1499,7 @@ namespace UnityEditor
 
         public Texture TextureProperty(MaterialProperty prop, string label)
         {
-            bool scaleOffset = ((prop.flags & MaterialProperty.PropFlags.NoScaleOffset) == 0);
+            bool scaleOffset = ((prop.propertyFlags & ShaderPropertyFlags.NoScaleOffset) == 0);
             return TextureProperty(prop, label, scaleOffset);
         }
 
@@ -1584,7 +1584,7 @@ namespace UnityEditor
 
         public Texture TextureProperty(Rect position, MaterialProperty prop, GUIContent label)
         {
-            bool scaleOffset = ((prop.flags & MaterialProperty.PropFlags.NoScaleOffset) == 0);
+            bool scaleOffset = ((prop.propertyFlags & ShaderPropertyFlags.NoScaleOffset) == 0);
             return TextureProperty(position, prop, label, scaleOffset);
         }
 
@@ -1708,10 +1708,10 @@ namespace UnityEditor
 
         public static float GetDefaultPropertyHeight(MaterialProperty prop)
         {
-            if (prop.type == MaterialProperty.PropType.Vector)
+            if (prop.propertyType == ShaderPropertyType.Vector)
                 return EditorGUI.kStructHeaderLineHeight + EditorGUI.kSingleLineHeight;
 
-            if (prop.type == MaterialProperty.PropType.Texture)
+            if (prop.propertyType == ShaderPropertyType.Texture)
                 return GetTextureFieldHeight() + kSpacingUnderTexture;
 
             return EditorGUI.kSingleLineHeight;
@@ -1825,7 +1825,7 @@ namespace UnityEditor
             EditorGUI.indentLevel += labelIndent;
 
             // [PerRendererData] material properties are read-only as they are meant to be set in code on a per-renderer basis.
-            using (new EditorGUI.DisabledScope((prop.flags & MaterialProperty.PropFlags.PerRendererData) != 0))
+            using (new EditorGUI.DisabledScope((prop.propertyFlags & ShaderPropertyFlags.PerRendererData) != 0))
             {
                 ShaderPropertyInternal(position, prop, label);
             }
@@ -2040,28 +2040,28 @@ namespace UnityEditor
 
         internal void DefaultShaderPropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
-            switch (prop.type)
+            switch (prop.propertyType)
             {
-                case MaterialProperty.PropType.Range: // float ranges
+                case ShaderPropertyType.Range: // float ranges
                     RangePropertyInternal(position, prop, label);
                     break;
-                case MaterialProperty.PropType.Float: // floats
+                case ShaderPropertyType.Float: // floats
                     FloatPropertyInternal(position, prop, label);
                     break;
-                case MaterialProperty.PropType.Int: // ints
+                case ShaderPropertyType.Int: // ints
                     IntegerPropertyInternal(position, prop, label);
                     break;
-                case MaterialProperty.PropType.Color: // colors
+                case ShaderPropertyType.Color: // colors
                     ColorPropertyInternal(position, prop, label);
                     break;
-                case MaterialProperty.PropType.Texture: // textures
+                case ShaderPropertyType.Texture: // textures
                     TextureProperty(position, prop, label);
                     break;
-                case MaterialProperty.PropType.Vector: // vectors
+                case ShaderPropertyType.Vector: // vectors
                     VectorProperty(position, prop, label);
                     break;
                 default:
-                    GUI.Label(position, "Unknown property type: " + prop.name + ": " + (int)prop.type);
+                    GUI.Label(position, "Unknown property type: " + prop.name + ": " + (int)prop.propertyType);
                     break;
             }
         }
@@ -2400,7 +2400,7 @@ namespace UnityEditor
 
             for (var i = 0; i < props.Length; i++)
             {
-                if ((props[i].flags & MaterialProperty.PropFlags.HideInInspector) != 0)
+                if ((props[i].propertyFlags & ShaderPropertyFlags.HideInInspector) != 0)
                     continue;
 
                 float h = GetPropertyHeight(props[i], props[i].displayName);

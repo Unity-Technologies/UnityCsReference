@@ -196,6 +196,8 @@ namespace UnityEditor.UIElements
     /// Fields marked with <see cref="UxmlAttributeAttribute"/> are represented in UXML by a single string attribute,
     /// however, to properly serialize these attributes, you must declare a UxmlAttributeConverter.
     /// This converter converts the string attribute value into the appropriate data type for the marked field.
+    /// Additionally, the data type must be serializable by the Unity serializer and adhere to
+    /// the [[wiki:script-serialization-rules|serialization rules]].
     ///
     ///
     /// __Note:__ The following types have native support and you can use them without declaring a UxmlAttributeConverter:
@@ -587,7 +589,8 @@ namespace UnityEditor.UIElements
                 if (string.IsNullOrEmpty(s))
                     continue;
 
-                result.Add((T)converter.FromString(s, cc));
+                var decoded = UxmlUtility.DecodeListItem(s);
+                result.Add((T)converter.FromString(decoded, cc));
             }
 
             return result;
@@ -603,7 +606,8 @@ namespace UnityEditor.UIElements
             for (int i = 0; i < list.Count; i++)
             {
                 var s = converter.ToString(list[i], visualTreeAsset);
-                sb.Append(s);
+                var encoded = UxmlUtility.EncodeListItem(s);
+                sb.Append(encoded);
                 if (i + 1 != list.Count)
                     sb.Append(",");
             }
@@ -635,7 +639,8 @@ namespace UnityEditor.UIElements
             for (int i = 0; i < array.Length; i++)
             {
                 var s = converter.ToString(array[i], visualTreeAsset);
-                sb.Append(s);
+                var encoded = UxmlUtility.EncodeListItem(s);
+                sb.Append(encoded);
                 if (i + 1 != array.Length)
                     sb.Append(",");
             }

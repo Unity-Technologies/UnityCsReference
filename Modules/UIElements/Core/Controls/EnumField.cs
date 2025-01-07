@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Makes a dropdown for switching between enum values. For more information, refer to [[wiki:|UIE-uxml-element EnumField|UXML element EnumField]].
+    /// Makes a dropdown for switching between enum values. For more information, refer to [[wiki:UIE-uxml-element-EnumField|UXML element EnumField]].
     /// </summary>
     [MovedFrom(true, UpgradeConstants.EditorNamespace, UpgradeConstants.EditorAssembly)]
     public class EnumField : BaseField<Enum>

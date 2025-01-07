@@ -392,9 +392,6 @@ namespace UnityEditor.Search
             : base(source, id, value, attr)
         {
             icon = Utils.LoadIcon("GUILayer Icon");
-
-            if (QueryMarker.TryParse(value, out var marker) && marker.valid && marker.args.Length >= 2)
-                this.value = marker.args[1].rawText.ToString();
         }
 
         public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)

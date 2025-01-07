@@ -479,6 +479,17 @@ namespace UnityEngine.Rendering
             Internal_DispatchRaysIndirect(rayTracingShader, rayGenName, argsBuffer, argsOffset, camera);
         }
 
+        // Machine Learning HW acceleration
+        internal void SetMachineLearningOperatorTensors(MachineLearningOperator op, ReadOnlySpan<IntPtr> inputs, ReadOnlySpan<IntPtr> outputs)
+        {
+            Internal_SetMachineLearningOperatorTensors(op.m_Ptr, inputs, outputs);
+        }
+
+        internal void DispatchMachineLearningOperator(MachineLearningOperator op)
+        {
+            Internal_DispatchMachineLearningOperator(op.m_Ptr);
+        }
+
         public void GenerateMips(RenderTargetIdentifier rt)
         {
             ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);

@@ -61,6 +61,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.CloudRendering.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.EmbeddedLinux.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.QNX.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Kepler.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WindowsStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Lumin.Extensions")]
@@ -175,4 +176,6 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.Automation.Players.EmbeddedLinux")]
 [assembly: InternalsVisibleTo("Unity.Automation.Players.QNX")]
+
+[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
 

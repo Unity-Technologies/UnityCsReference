@@ -206,6 +206,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Represents the visible part of contentContainer.
         /// </summary>
+        /// <remarks>It can only be accessed.</remarks>
         public VisualElement contentViewport { get; }
 
         VisualElement m_HeaderContainer;

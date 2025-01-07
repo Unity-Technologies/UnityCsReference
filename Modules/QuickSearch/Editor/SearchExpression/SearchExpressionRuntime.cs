@@ -76,8 +76,7 @@ namespace UnityEditor.Search
 
         public IDisposable Push(SearchExpression searchExpression, IEnumerable<SearchExpression> args)
         {
-            frames.Push(new SearchExpressionContext(this, searchExpression, args.ToArray(), SearchExpressionExecutionFlags.None));
-            return new PushPopScope<SearchExpressionContext>(frames);
+            return Push(searchExpression, args, SearchExpressionExecutionFlags.None);
         }
 
         internal IDisposable Push(SearchExpression searchExpression, IEnumerable<SearchExpression> args, SearchExpressionExecutionFlags flags)

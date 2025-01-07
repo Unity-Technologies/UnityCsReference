@@ -30,19 +30,22 @@ namespace UnityEditor.Build.Profile
 
         internal static BuildProfile CreateInstance(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
         {
-            string moduleName = ModuleManager.GetTargetStringFrom(buildTarget);
+            var platformGuid = BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
+            ValidatePlatform(platformGuid);
+
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
-            buildProfile.platformGuid = BuildProfileModuleUtil.GetPlatformId(buildTarget, subtarget);
+            buildProfile.platformGuid = platformGuid;
             buildProfile.OnEnable();
             return buildProfile;
         }
 
         internal static BuildProfile CreateInstance(GUID platformId)
         {
+            ValidatePlatform(platformId);
+
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
-            var moduleName = BuildProfileModuleUtil.GetModuleName(buildTarget);
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
             buildProfile.subtarget = subtarget;
@@ -64,6 +67,8 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal static void CreateInstance(GUID platformId, string assetPath, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
+            ValidatePlatform(platformId);
+
             var (buildTarget, subtarget) = BuildProfileModuleUtil.GetBuildTargetAndSubtarget(platformId);
             var buildProfile = CreateInstance<BuildProfile>();
             buildProfile.buildTarget = buildTarget;
@@ -76,6 +81,22 @@ namespace UnityEditor.Build.Profile
             buildProfile.OnEnable();
             // Notify the UI of creation so that the new build profile can be selected
             onBuildProfileCreated?.Invoke(buildProfile);
+        }
+
+        /// <summary>
+        /// Validates if the provided platform GUID is valid by checking against all supported platforms.
+        /// Throws an ArgumentException if the platform is not valid.
+        /// </summary>
+        /// <param name="platformGuid">The GUID of the platform to validate.</param>
+        static void ValidatePlatform(GUID platformGuid)
+        {
+            foreach (var guid in BuildTargetDiscovery.GetAllPlatforms())
+            {
+                if (guid == platformGuid)
+                    return;
+            }
+
+            throw new ArgumentException("A build profile must be created for a valid platform.");
         }
 
         internal void NotifyBuildProfileExtensionOfCreation(int preconfiguredSettingsVariant)
@@ -99,7 +120,7 @@ namespace UnityEditor.Build.Profile
             }
 
             IBuildProfileExtension buildProfileExtension = ModuleManager.GetBuildProfileExtension(platformGuid);
-            if (buildProfileExtension != null && ModuleManager.IsPlatformSupportLoaded(moduleName))
+            if (buildProfileExtension != null && ModuleManager.IsPlatformSupportLoadedByGuid(platformGuid))
             {
                 platformBuildProfile = buildProfileExtension.CreateBuildProfilePlatformSettings();
                 EditorUtility.SetDirty(this);

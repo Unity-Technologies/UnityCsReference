@@ -538,9 +538,9 @@ namespace UnityEditor.Search
 
         private object FormatObjectValue()
         {
-            if (formatValue == null && formatType != null)
-                return $"<$object:none,{formatType.FullName}$>";
-            return '"' + this.value + '"';
+            if (formatType != null)
+                return $"<$object:{(formatValue != null ? EscapeLiteralString(value) : "none")},{formatType.FullName}$>";
+            return EscapeLiteralString(value);
         }
 
         private string GetFormatMarkerArgs()
@@ -592,7 +592,7 @@ namespace UnityEditor.Search
             }
             else if (value is UnityEngine.Object obj)
             {
-                this.value = SearchUtils.GetObjectPath(obj) ?? string.Empty;
+                this.value = SearchUtils.GetObjectPath(obj, true) ?? string.Empty;
             }
             else if (value is Enum e)
             {

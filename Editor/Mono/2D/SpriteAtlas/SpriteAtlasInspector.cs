@@ -132,6 +132,7 @@ namespace UnityEditor.U2D
         private string m_Hash;
         private int m_PreviewPage = 0;
         private int m_TotalPages = 0;
+        const float kPrefixLabelWidth = 290f;
         private int[] m_OptionValues = null;
         private string[] m_OptionDisplays = null;
         private Texture2D[] m_PreviewTextures = null;
@@ -194,6 +195,17 @@ namespace UnityEditor.U2D
 
         void OnEnable()
         {
+            if (targets == null)
+                return;
+            var validCount = 0;
+            foreach (var so in targets)
+            {
+                if (so != null)
+                    validCount++;
+            }
+            if (validCount == 0)
+                return;
+
             m_FilterMode = serializedObject.FindProperty("m_EditorData.textureSettings.filterMode");
             m_AnisoLevel = serializedObject.FindProperty("m_EditorData.textureSettings.anisoLevel");
             m_GenerateMipMaps = serializedObject.FindProperty("m_EditorData.textureSettings.generateMipMaps");
@@ -353,6 +365,9 @@ namespace UnityEditor.U2D
 
             serializedObject.Update();
 
+            var oldWidth = EditorGUIUtility.labelWidth;
+            EditorGUIUtility.labelWidth = kPrefixLabelWidth;
+
             HandleCommonSettingUI();
 
             GUILayout.Space(EditorGUI.kSpacing);
@@ -374,22 +389,25 @@ namespace UnityEditor.U2D
             if (targets.Length == 1 && AllTargetsAreMaster())
                 HandlePackableListUI();
 
-            bool spriteAtlasPackignEnabled = (EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas
+            bool spriteAtlasPackingEnabled = (EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas
                 || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas || EditorSettings.spritePackerMode == SpritePackerMode.SpriteAtlasV2);
-            if (spriteAtlasPackignEnabled && !Application.isPlaying)
+            if (spriteAtlasPackingEnabled && !Application.isPlaying)
             {
-                if (GUILayout.Button(styles.packButton, GUILayout.ExpandWidth(false)))
+                using (new EditorGUI.DisabledScope(!Editor.IsPersistent(spriteAtlas)))
                 {
-                    SpriteAtlas[] spriteAtlases = new SpriteAtlas[targets.Length];
-                    for (int i = 0; i < spriteAtlases.Length; ++i)
-                        spriteAtlases[i] = (SpriteAtlas)targets[i];
+                    if (GUILayout.Button(styles.packButton, GUILayout.ExpandWidth(false)))
+                    {
+                        SpriteAtlas[] spriteAtlases = new SpriteAtlas[targets.Length];
+                        for (int i = 0; i < spriteAtlases.Length; ++i)
+                            spriteAtlases[i] = (SpriteAtlas)targets[i];
 
-                    SpriteAtlasUtility.PackAtlases(spriteAtlases, EditorUserBuildSettings.activeBuildTarget);
+                        SpriteAtlasUtility.PackAtlases(spriteAtlases, EditorUserBuildSettings.activeBuildTarget);
 
-                    // Packing an atlas might change platform settings in the process, reinitialize
-                    SyncPlatformSettings();
+                        // Packing an atlas might change platform settings in the process, reinitialize
+                        SyncPlatformSettings();
 
-                    GUIUtility.ExitGUI();
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
             else
@@ -400,6 +418,7 @@ namespace UnityEditor.U2D
                 }
             }
 
+            EditorGUIUtility.labelWidth = oldWidth;
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -413,7 +432,10 @@ namespace UnityEditor.U2D
 
             EditorGUI.BeginChangeCheck();
             EditorGUI.showMixedValue = atlasType == AtlasType.Undefined;
-            atlasType = (AtlasType)EditorGUILayout.IntPopup(styles.atlasTypeLabel, (int)atlasType, styles.atlasTypeOptions, styles.atlasTypeValues);
+            using (new EditorGUI.DisabledScope(!Editor.IsPersistent(spriteAtlas)))
+            {
+                atlasType = (AtlasType)EditorGUILayout.IntPopup(styles.atlasTypeLabel, (int)atlasType, styles.atlasTypeOptions, styles.atlasTypeValues);
+            }
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {

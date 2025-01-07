@@ -9,61 +9,57 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Accessibility
 {
-    /// <summary>
-    /// Role of an accessibility node.
-    /// </summary>
+    /// <summary>Describes the role of an accessibility node.</summary>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     [Flags]
     public enum AccessibilityRole : ushort
     {
-        /// The accessibility node has no roles.
+        /// <summary>The accessibility node has no roles.</summary>
         None                    = 0,
 
-        /// The accessibility node behaves like a button.
+        /// <summary>The accessibility node behaves like a button.</summary>
         Button                  = 1 << 0,
 
-        /// The accessibility node behaves like an image.
+        /// <summary>The accessibility node behaves like an image.</summary>
         Image                   = 1 << 1,
 
-        /// The accessibility node behaves like static text that can't change.
+        /// <summary>The accessibility node behaves like static text that can't change.</summary>
         StaticText              = 1 << 2,
 
-        /// The accessibility node behaves like a search field.
+        /// <summary>The accessibility node behaves like a search field.</summary>
         SearchField             = 1 << 3,
 
-        /// The accessibility node behaves like a keyboard key.
+        /// <summary>The accessibility node behaves like a keyboard key.</summary>
+        /// <remarks>For Android, this requires at least API level 29.</remarks>
         KeyboardKey             = 1 << 4,
 
-        /// The accessibility node is a header that divides content into
-        /// sections, such as the title of a navigation bar.
+        /// <summary>The accessibility node behaves like a header that divides content into sections (for example, the title of a navigation bar).</summary>
+        /// <remarks>For Android, this requires at least API level 28.</remarks>
         Header                  = 1 << 5,
 
-        /// The accessibility node behaves like a tab bar.
+        /// <summary>The accessibility node behaves like an ordered list of tabs.</summary>
         TabBar                  = 1 << 6,
 
-        /// The accessibility node behaves like a slider, allowing continuous
-        /// adjustment through a range of values.
+        /// <summary>The accessibility node behaves like a slider. The value of this node can be continuously adjusted through a range.</summary>
         Slider                  = 1 << 7,
 
-        /// The accessibility node behaves like a toggle.
+        /// <summary>The accessibility node behaves like a toggle.</summary>
+        /// <remarks>For iOS, this requires at least iOS 17.</remarks>
         Toggle                  = 1 << 8,
     }
 
-    /// <summary>
-    /// State of an accessibility node.
-    /// </summary>
+    /// <summary>Describes the state of an accessibility node.</summary>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     [Flags]
     public enum AccessibilityState : ushort
     {
-        /// The accessibility node is in none of the other states.
+        /// <summary>The accessibility node is in none of the other states.</summary>
         None            = 0,
 
-        /// The accessibility node is currently in a disabled state and does not
-        /// respond to user interaction.
+        /// <summary>The accessibility node is currently in a disabled state and does not respond to user interaction.</summary>
         Disabled        = 1 << 0,
 
-        /// The accessibility node is currently in a selected state.
+        /// <summary>The accessibility node is currently in a selected state (for example, a selected row in a table or a selected button within a segmented control).</summary>
         Selected        = 1 << 1,
     }
 

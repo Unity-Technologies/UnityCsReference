@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Modules;
-using UnityEditor.Build.Reporting;
 
 namespace UnityEditor.DeploymentTargets
 {
@@ -49,9 +48,9 @@ namespace UnityEditor.DeploymentTargets
             return m_Extension.GetTargetInfo(m_Context, targetId);
         }
 
-        public void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
+        public IDeploymentLaunchResult LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
-            m_Extension.LaunchBuildOnTarget(m_Context, buildProperties, targetId, progressHandler);
+            return m_Extension.LaunchBuildOnTarget(m_Context, buildProperties, targetId, progressHandler);
         }
 
         public List<DeploymentTargetIdAndStatus> GetKnownTargets()

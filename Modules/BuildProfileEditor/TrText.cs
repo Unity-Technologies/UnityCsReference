@@ -13,7 +13,6 @@ namespace UnityEditor.Build.Profile
     {
         public static readonly string forceSkipDataBuild = L10n.Tr("Force skip data build");
         public static readonly string cleanBuild = L10n.Tr("Clean Build...");
-        public static readonly string learnMoreUnityDevOps = L10n.Tr("Learn about Unity Dev Ops");
         public static readonly string assetImportOverrides = L10n.Tr("Asset Import Overrides");
         public static readonly string playerSettings = L10n.Tr("Player Settings");
         public static readonly string buildProfileWelcome = L10n.Tr("Welcome to Build Profiles."
@@ -25,6 +24,7 @@ namespace UnityEditor.Build.Profile
         public static readonly string buildProfilesName = L10n.Tr("Build Profiles");
         public static readonly string platforms = L10n.Tr("Platforms");
         public static readonly string build = L10n.Tr("Build");
+        public static readonly string cloudBuild = L10n.Tr("Cloud Build");
         public static readonly string buildAndRun = L10n.Tr("Build And Run");
         public static readonly string platformSettings = L10n.Tr("Platform Settings");
         public static readonly string buildData = L10n.Tr("Build Data");
@@ -83,15 +83,20 @@ namespace UnityEditor.Build.Profile
         public static readonly string resetQualitySettingsDialogMessage = L10n.Tr("This will reset all Quality Settings overrides to the original globals.");
 
         // Build Profile Bootstrap View
-        public static readonly string bootstrapHeader = L10n.Tr("Your build profile is being configured:");
-        public static readonly string packageAddStateUnknown = L10n.Tr(" - Package {0} in unknown state...");
-        public static readonly string packageAddPending = L10n.Tr(" - Package {0} pending...");
-        public static readonly string packageAddDownloading = L10n.Tr(" - Downloading package {0}...");
-        public static readonly string packageAddInstalling = L10n.Tr(" - Installing package {0}...");
-        public static readonly string packageAddReady = L10n.Tr(" - Package {0} ready.");
-        public static readonly string packageAddError = L10n.Tr(" - Error adding package {0}!");
-        public static readonly string configurationPending = L10n.Tr(" - Configuration pending...");
-        public static readonly string configurationRunning = L10n.Tr(" - Configuring settings...");
+        public static readonly string buildProfileConfiguration = L10n.Tr("Configuring Build Profile...");
+        public static readonly string buildProfilePreparation = L10n.Tr("Preparing Build Profile...");
+        public static readonly string packageAddDownloading = L10n.Tr("Downloading package...");
+        public static readonly string packageAddInstalling = L10n.Tr("Installing package...");
+        public static readonly string packageAddError = L10n.Tr("Error adding package {0}!");
+        public static readonly string packagesAddError = L10n.Tr("Error adding packages {0}!");
+        public static readonly string packagesAddDownloading = L10n.Tr("Downloading packages...");
+        public static readonly string packagesAddInstalling = L10n.Tr("Installing packages...");
+
+        // Package Installation Query
+        public static readonly string packageInstallationQueryTitle = L10n.Tr("{0} Package Requirement");
+        public static readonly string packageInstallationQueryMessage = L10n.Tr("The {0} platform requires the following package(s):\n{1}\n\nWould you like to install them into your project?");
+        public static readonly string packageInstallationQueryYes = L10n.Tr("Install");
+        public static readonly string packageInstallationQueryNo = L10n.Tr("Don't Install");
 
         // Platform Discovery Window
         public static readonly string platformDiscoveryTitle = L10n.Tr("Platform Browser");
@@ -100,12 +105,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string active = L10n.Tr("Active");
         public static readonly string description = L10n.Tr("Description");
         public static readonly string packageInstalled = L10n.Tr("Package already installed.");
+        public static readonly string packagesHeader = L10n.Tr("Packages");
         public static readonly string required = L10n.Tr("Required");
         public static readonly string selectAll = L10n.Tr("Select All");
         public static readonly string deselectAll = L10n.Tr("Deselect All");
-        public static readonly string packagesHeader = L10n.Tr("Packages");
-        public static readonly string descriptionHeader = L10n.Tr("Description");
-        public static readonly string preconfiguredSettingsHeader = L10n.Tr("Configurations");
 
         // Asset Import Overrides Window
         public static readonly string assetImportOverrideTitle = L10n.Tr("Asset Import Overrides");

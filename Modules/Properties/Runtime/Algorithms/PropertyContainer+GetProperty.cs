@@ -51,7 +51,7 @@ namespace Unity.Properties
         /// <remarks>
         /// While the container data is not actually read from or written to. The container itself is needed to resolve polymorphic fields and list elements.
         /// </remarks>
-        /// <param name="container">The container whose property will be returned.</param>
+        /// <param name="container">The container tree to search.</param>
         /// <param name="path">The property path to resolve.</param>
         /// <typeparam name="TContainer">The strongly typed container.</typeparam>
         /// <returns>The <see cref="IProperty"/> for the given path.</returns>

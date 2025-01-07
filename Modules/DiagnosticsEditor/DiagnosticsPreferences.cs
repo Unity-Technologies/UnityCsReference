@@ -41,7 +41,7 @@ namespace UnityEditor
         private bool m_HasAcceptedWarning;
 
         public DiagnosticSwitchPreferences()
-            : base("Preferences/Diagnostics", SettingsScope.User)
+            : base("Preferences/Diagnostics", SettingsScope.User, GetKeywords())
         {
         }
 
@@ -130,6 +130,14 @@ namespace UnityEditor
             var helpBox = GUILayoutUtility.GetRect(Styles.restartNeededWarning, EditorStyles.helpBox, GUILayout.MinHeight(40));
             if (m_Switches.Any(group => group.HasAnyUnappliedValues))
                 EditorGUI.HelpBox(helpBox, Styles.restartNeededWarning.text, MessageType.Warning);
+        }
+
+        private static IEnumerable<string> GetKeywords()
+        {
+            foreach(var diagSwitch in Debug.diagnosticSwitches)
+            {
+                yield return diagSwitch.name;
+            }
         }
 
         private static bool PassesFilter(DiagnosticSwitch diagnosticSwitch, string filterString)

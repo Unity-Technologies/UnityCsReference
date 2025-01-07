@@ -13,6 +13,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base collection view controller. View controllers are meant to take care of data virtualized by any <see cref="BaseVerticalCollectionView"/> inheritor.
     /// </summary>
+    /// <remarks>
+    /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
+    /// </remarks>
     public abstract class CollectionViewController : IDisposable
     {
         BaseVerticalCollectionView m_View;
@@ -119,7 +122,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the index for the specified id.
         /// </summary>
-        /// <param name="id">The item id..</param>
+        /// <param name="id">The item ID.</param>
         /// <returns>The item index.</returns>
         /// <remarks>For example, the index will be different from the id in a tree.</remarks>
         public virtual int GetIndexForId(int id)
@@ -131,7 +134,7 @@ namespace UnityEngine.UIElements
         /// Returns the id for the specified index.
         /// </summary>
         /// <param name="index">The item index.</param>
-        /// <returns>The item id.</returns>
+        /// <returns>The item ID.</returns>
         /// <remarks>For example, the index will be different from the id in a tree.</remarks>
         public virtual int GetIdForIndex(int index)
         {

@@ -136,6 +136,7 @@ namespace UnityEngine.TextCore
 
     /// <summary>
     /// A set of values that define the size, position and spacing of a glyph when performing text layout.
+    /// Units are specified in pixels.
     /// </summary>
     [Serializable]
     [UsedByNativeCode]
@@ -143,27 +144,27 @@ namespace UnityEngine.TextCore
     public struct GlyphMetrics : IEquatable<GlyphMetrics>
     {
         /// <summary>
-        /// The width of the glyph.
+        /// The width of the glyph, expressed in pixels.
         /// </summary>
         public float width { get { return m_Width; } set { m_Width = value; } }
 
         /// <summary>
-        /// The height of the glyph.
+        /// The height of the glyph, expressed in pixels.
         /// </summary>
         public float height { get { return m_Height; } set { m_Height = value; } }
 
         /// <summary>
-        /// The horizontal distance from the current drawing position (origin) relative to the element's left bounding box edge (bbox).
+        /// The horizontal distance, in pixels, from the current drawing position (origin) relative to the element's left bounding box edge (bbox).
         /// </summary>
         public float horizontalBearingX { get { return m_HorizontalBearingX; } set { m_HorizontalBearingX = value; } }
 
         /// <summary>
-        /// The vertical distance from the current baseline relative to the element's top bounding box edge (bbox).
+        /// The vertical distance, in pixel, from the current baseline relative to the element's top bounding box edge (bbox).
         /// </summary>
         public float horizontalBearingY { get { return m_HorizontalBearingY; } set { m_HorizontalBearingY = value; } }
 
         /// <summary>
-        /// The horizontal distance to increase (left to right) or decrease (right to left) the drawing position relative to the origin of the text element.
+        /// The horizontal distance, in pixels, to increase (left to right) or decrease (right to left) the drawing position relative to the origin of the text element.
         /// This determines the origin position of the next text element.
         /// </summary>
         public float horizontalAdvance { get { return m_HorizontalAdvance; } set { m_HorizontalAdvance = value; } }
@@ -194,6 +195,7 @@ namespace UnityEngine.TextCore
 
         /// <summary>
         /// Constructor for new glyph metrics.
+        /// Units for all parameters are in pixels.
         /// </summary>
         /// <param name="width">The width of the glyph.</param>
         /// <param name="height">The height of the glyph.</param>

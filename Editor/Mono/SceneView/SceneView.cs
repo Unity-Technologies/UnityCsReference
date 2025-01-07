@@ -1359,7 +1359,7 @@ namespace UnityEditor
             rootVisualElement.RegisterCallback<MouseLeaveEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
             rootVisualElement.RegisterCallback<MouseEnterWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = true);
             rootVisualElement.RegisterCallback<MouseLeaveWindowEvent>(e => m_SceneViewMotion.viewportsUnderMouse = false);
-            
+
             m_OrientationGizmo = overlayCanvas.overlays.FirstOrDefault(x => x is SceneOrientationGizmo) as SceneOrientationGizmo;
 
             titleContent = GetLocalizedTitleContent();
@@ -2266,9 +2266,9 @@ namespace UnityEditor
 
                 if (evt.type == EventType.Repaint)
                     RenderFilteredScene(groupSpaceCameraRect);
-              
+
                 DrawPingedObjectSubmeshOutlineIfNeeded();
-                
+
                 if (sceneRendersToRT)
                 {
                     GUIClip.Internal_PopParentClip();
@@ -3355,7 +3355,7 @@ namespace UnityEditor
 
             if (m_ViewIsLockedToObject && Selection.gameObjects.Length > 0)
             {
-                var bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot);
+                var bounds = InternalEditorUtility.CalculateSelectionBounds(false);
                 switch (draggingLocked)
                 {
                     case (DraggingLockedState.Dragging):
@@ -3946,7 +3946,7 @@ namespace UnityEditor
             Bounds bounds;
             if (!m_WasFocused)
             {
-                bounds = InternalEditorUtility.CalculateSelectionBounds(false, Tools.pivotMode == PivotMode.Pivot, true);
+                bounds = InternalEditorUtility.CalculateSelectionBounds(false, false, true);
             }
             else
             {

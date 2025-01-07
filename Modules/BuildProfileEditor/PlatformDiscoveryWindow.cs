@@ -10,6 +10,10 @@ using UnityEditor.Modules;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.Networking;
+using Application = UnityEngine.Device.Application;
+using UnityEditorInternal;
+using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.Build.Profile
 {
@@ -25,15 +29,22 @@ namespace UnityEditor.Build.Profile
         Image m_SelectedCardImage;
         Label m_SelectedDisplayNameLabel;
         Foldout m_SelectedDescriptionFoldout;
-        Label m_SelectedDescriptionLabel;
+
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
         ListView m_PackagesListView;
         Foldout m_PackagesFoldout;
 
-        ListView m_PreconfiguredSettingsListView;
-        Foldout m_PreconfiguredSettingsFoldout;
+        VisualElement m_PackageContainer;
+        VisualElement m_PlatformConfigs;
+        VisualElement m_NameLinks;
+
+        Label m_SelectedDescriptionLabel;
+        Label m_ConfigLabel;
+        Label m_AddtionalInfoLabel;
+
+        TextField m_BuildProfileNameTextField;
 
         /// <summary>
         /// Warning message displayed when the selected card's platform
@@ -41,6 +52,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         HelpBox m_CardWarningHelpBox;
         VisualElement m_HelpBoxWrapper;
+        private BuildProfileRenameOverlay m_RenameOverlay;
 
         public static void ShowWindow()
         {
@@ -54,6 +66,84 @@ namespace UnityEditor.Build.Profile
 
             if (platformGuid != null)
                 window.SelectPlatform(platformGuid.Value);
+        }
+
+        public static void AddBuildProfile(GUID platformId)
+        {
+            var platforms = FindAllVisiblePlatforms();
+            foreach (var card in platforms)
+            {
+                if (card.platformId != platformId)
+                {
+                    continue;
+                }
+
+                AddSelectedBuildProfiles(card, Array.Empty<string>());
+            }
+        }
+
+        static void AddSelectedBuildProfiles(BuildProfileCard card, string[] packagesToAdd)
+        {
+            bool noneSelected = true;
+            for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
+            {
+                var variant = card.preconfiguredSettingsVariants[ii];
+                if (variant.Selected)
+                {
+                    AddSingleBuildProfile(card, variant.Name, ii, packagesToAdd);
+                    noneSelected = false;
+                }
+            }
+            if (noneSelected)
+            {
+                AddSingleBuildProfile(card, null, -1, packagesToAdd);
+            }
+        }
+
+        static void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        {
+            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
+            {
+                creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
+                platformId = card.platformId,
+                platformDisplayName = card.displayName,
+            }));
+        }
+
+        static BuildProfileCard[] FindAllVisiblePlatforms()
+        {
+            var cards = new List<BuildProfileCard>();
+            foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
+            {
+                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
+                    continue;
+
+                var requiredPackageNames = BuildProfileModuleUtil.BuildPlatformRequiredPackages(platformId);
+                var recommendedPackageNames = BuildProfileModuleUtil.BuildPlatformRecommendedPackages(platformId);
+
+                var buildProfileExtension = BuildProfileModuleUtil.GetBuildProfileExtension(platformId);
+                var preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
+                if (buildProfileExtension != null)
+                {
+                    var variants = buildProfileExtension.GetPreconfiguredSettingsVariants();
+                    if (variants != null)
+                    {
+                        preconfiguredSettingsVariants = variants;
+                    }
+                }
+
+                cards.Add(new BuildProfileCard()
+                {
+                    displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
+                    platformId = platformId,
+                    description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
+                    recommendedPackages = recommendedPackageNames,
+                    requiredPackages = requiredPackageNames,
+                    preconfiguredSettingsVariants = preconfiguredSettingsVariants
+                });
+            }
+            return cards.ToArray();
         }
 
         public void OnDisable()
@@ -78,12 +168,30 @@ namespace UnityEditor.Build.Profile
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
             m_PackagesListView = rootVisualElement.Q<ListView>("packages-root-listview");
+            m_ConfigLabel = rootVisualElement.Q<Label>("config-text");
+            m_AddtionalInfoLabel = rootVisualElement.Q<Label>("additional-info");
+            m_AddtionalInfoLabel.text = "";
+
+            m_PackageContainer = rootVisualElement.Q<VisualElement>("package-container");
             m_PackagesFoldout = rootVisualElement.Q<Foldout>("packages-foldout");
             m_PackagesFoldout.text = TrText.packagesHeader;
-            m_PreconfiguredSettingsListView = rootVisualElement.Q<ListView>("preconfigured-settings-listview");
-            m_PreconfiguredSettingsFoldout = rootVisualElement.Q<Foldout>("preconfigured-settings-foldout");
-            m_PreconfiguredSettingsFoldout.text = TrText.preconfiguredSettingsHeader;
+            m_NameLinks = rootVisualElement.Q<VisualElement>("name-link-btn-container");
 
+            m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
+            m_BuildProfileNameTextField = rootVisualElement.Q<TextField>("build-profile-name");
+            m_RenameOverlay = new BuildProfileRenameOverlay(m_BuildProfileNameTextField);
+
+            m_BuildProfileNameTextField.RegisterValueChangedCallback(changeEvent =>
+            {
+                if (string.IsNullOrEmpty(changeEvent.newValue))
+                    return;
+                m_RenameOverlay.OnNameChanged(changeEvent.previousValue, changeEvent.newValue);
+            });
+            m_BuildProfileNameTextField.RegisterCallback<FocusOutEvent>(evt =>
+            {
+                m_SelectedCard.displayName = m_BuildProfileNameTextField.value;
+                m_RenameOverlay.OnRenameEnd();
+            });
             m_PackagesListView.itemsSource = Array.Empty<object>();
             m_PackagesListView.makeItem = PlatformPackageItem.Make;
             m_PackagesListView.bindItem = (VisualElement element, int index) =>
@@ -97,7 +205,7 @@ namespace UnityEditor.Build.Profile
                 var packageEntry = m_PackagesListView.itemsSource[index] as PlatformPackageEntry;
                 packageItem.Set(packageEntry);
             };
-            var packageSelectAll = m_PackagesFoldout.Q<Button>("package-select-all");
+            var packageSelectAll = m_PackageContainer.Q<Button>("package-select-all");
             packageSelectAll.text = TrText.selectAll;
             packageSelectAll.clicked += () =>
             {
@@ -111,7 +219,7 @@ namespace UnityEditor.Build.Profile
 
                 }
             };
-            var packageDeselectAll = m_PackagesFoldout.Q<Button>("package-deselect-all");
+            var packageDeselectAll = m_PackageContainer.Q<Button>("package-deselect-all");
             packageDeselectAll.text = TrText.deselectAll;
             packageDeselectAll.clicked += () =>
             {
@@ -172,9 +280,15 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         void OnCardSelected(BuildProfileCard card)
         {
+            m_PlatformConfigs.Clear();
+            m_NameLinks.Clear();
+            m_AddtionalInfoLabel.Clear();
+            m_BuildProfileNameTextField.value = "";
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
+            m_AddtionalInfoLabel.text = BuildProfileModuleUtil.GetSubtitle(card.platformId);
+
             if (Util.UpdatePlatformRequirementsWarningHelpBox(m_CardWarningHelpBox, card.platformId))
                 m_HelpBoxWrapper.Show();
             else
@@ -185,10 +299,12 @@ namespace UnityEditor.Build.Profile
                 m_PackagesListView.itemsSource = PlatformPackageItem
                     .CreateItemSource(card.requiredPackages, card.recommendedPackages);
                 m_PackagesListView.Rebuild();
-                m_PackagesFoldout.Show();
+                m_PackageContainer.Show();
             }
             else
-                m_PackagesFoldout.Hide();
+            {
+                m_PackageContainer.Hide();
+            }
 
             if (card.description.Length > 0)
             {
@@ -200,21 +316,42 @@ namespace UnityEditor.Build.Profile
 
             if (card.preconfiguredSettingsVariants.Length > 0)
             {
-                Func<VisualElement> makeItem = () => new PreconfiguredSettingsItem();
-                Action<VisualElement, int> bindItem = (e, i) => (e as PreconfiguredSettingsItem).Set(card.preconfiguredSettingsVariants[i], UpdateAddBuildProfileButton);
-
-                m_PreconfiguredSettingsListView.makeItem = makeItem;
-                m_PreconfiguredSettingsListView.bindItem = bindItem;
-                m_PreconfiguredSettingsListView.itemsSource = card.preconfiguredSettingsVariants;
-
-                m_PreconfiguredSettingsListView.selectionType = SelectionType.None;
-
-                m_PreconfiguredSettingsListView.Rebuild();
-                m_PreconfiguredSettingsFoldout.Show();
+                // Display preconfig items with tooltip.
+                for(int i = 0 ; i < card.preconfiguredSettingsVariants.Length; i++)
+                {
+                    var preconfigItem = new PreconfiguredSettingsItem();
+                    preconfigItem.Set(card.preconfiguredSettingsVariants[i], UpdateAddBuildProfileButton, card.preconfiguredSettingsVariants[i].Tooltip);
+                    preconfigItem.style.marginRight = 32;
+                    m_PlatformConfigs.Insert(i, preconfigItem);
+                }
+                m_ConfigLabel.Show();
             }
             else
             {
-                m_PreconfiguredSettingsFoldout.Hide();
+                m_ConfigLabel.Hide();
+            }
+
+            // Displays the buttons with url.
+            var nameAndLinkList = BuildProfileModuleUtil.GetPlatformNameLinkList(card.platformId);
+            if (nameAndLinkList != null)
+            {
+                for (int i = 0; i < nameAndLinkList.Count; i++)
+                {
+                    Button btn = new Button();
+                    btn.text = nameAndLinkList[i].name;
+                    string linkUrl = nameAndLinkList[i].linkUrl;
+                    btn.clicked += () => { Application.OpenURL(linkUrl); };
+                    btn.AddToClassList("link-button");
+                    btn.AddToClassList("ml-none");
+                    if (i > 0)
+                    {
+                        Label seperator = new Label("|");
+                        seperator.style.marginLeft = 2;
+                        seperator.style.marginRight = 2;
+                        m_NameLinks.Add(seperator);
+                    }
+                    m_NameLinks.Add(btn);
+                }
             }
 
             UpdateAddBuildProfileButton();
@@ -290,70 +427,6 @@ namespace UnityEditor.Build.Profile
                 }
             }
             return packagesToAdd.ToArray();
-        }
-
-        void AddSelectedBuildProfiles(BuildProfileCard card, string[] packagesToAdd)
-        {
-            bool noneSelected = true;
-            for (var ii = 0; ii < card.preconfiguredSettingsVariants.Length; ii++)
-            {
-                var variant = card.preconfiguredSettingsVariants[ii];
-                if (variant.Selected)
-                {
-                    AddSingleBuildProfile(card, variant.Name, ii, packagesToAdd);
-                    noneSelected = false;
-                }
-            }
-            if (noneSelected)
-            {
-                AddSingleBuildProfile(card, null, -1, packagesToAdd);
-            }
-        }
-
-        void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
-        {
-            BuildProfileDataSource.CreateNewAsset(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
-            EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
-            {
-                creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
-                platformId = card.platformId,
-                platformDisplayName = card.displayName,
-            }));
-        }
-
-        static BuildProfileCard[] FindAllVisiblePlatforms()
-        {
-            var cards = new List<BuildProfileCard>();
-            foreach (var platformId in BuildProfileModuleUtil.FindAllViewablePlatforms())
-            {
-                if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
-                    continue;
-
-                var requiredPackageNames = BuildProfileModuleUtil.BuildPlatformRequiredPackages(platformId);
-                var recommendedPackageNames = BuildProfileModuleUtil.BuildPlatformRecommendedPackages(platformId);
-
-                var buildProfileExtension = BuildProfileModuleUtil.GetBuildProfileExtension(platformId);
-                var preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
-                if (buildProfileExtension != null)
-                {
-                    var variants = buildProfileExtension.GetPreconfiguredSettingsVariants();
-                    if (variants != null)
-                    {
-                        preconfiguredSettingsVariants = variants;
-                    }
-                }
-
-                cards.Add(new BuildProfileCard()
-                {
-                    displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
-                    platformId = platformId,
-                    description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
-                    recommendedPackages = recommendedPackageNames,
-                    requiredPackages = requiredPackageNames,
-                    preconfiguredSettingsVariants = preconfiguredSettingsVariants
-                });
-            }
-            return cards.ToArray();
         }
     }
 }

@@ -203,7 +203,7 @@ namespace UnityEditor.Build.Profile
                     return false;
             }
 
-            var globalDefaultQualityLevelIndex = GetDefaultQualityForPlatform(buildTargetGroupString);
+            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(buildTargetGroupString);
             if (globalDefaultQualityLevelIndex != -1)
             {
                 var globalDefaultQualityLevel = allQualityLevels[globalDefaultQualityLevelIndex];
@@ -212,44 +212,6 @@ namespace UnityEditor.Build.Profile
             }
 
             return true;
-        }
-
-        public void ResetToGlobalQualitySettingsValues(BuildProfile profile)
-        {
-            var qualityLevels = serializedObject.FindProperty("m_QualityLevels");
-            var defaultQualityLevel = serializedObject.FindProperty("m_DefaultQualityLevel");
-            var buildTarget = profile.buildTarget;
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
-
-            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
-            qualityLevels.ClearArray();
-            foreach (var level in globalQualityLevels)
-            {
-                qualityLevels.InsertArrayElementAtIndex(qualityLevels.arraySize);
-                qualityLevels.GetArrayElementAtIndex(qualityLevels.arraySize - 1).stringValue = QualitySettings.names[level];
-            }
-
-            var globalDefaultQualityLevelIndex = GetDefaultQualityForPlatform(buildTargetGroupString);
-            if (globalDefaultQualityLevelIndex != -1)
-                defaultQualityLevel.stringValue = QualitySettings.names[globalDefaultQualityLevelIndex];
-            else
-                defaultQualityLevel.stringValue = qualityLevels.arraySize > 0 ? QualitySettings.names[globalQualityLevels[0]] : string.Empty;
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        int GetDefaultQualityForPlatform(string buildTargetGroupName)
-        {
-            var qualitySettings = QualitySettings.GetQualitySettings();
-            var qualitySettingsSO = new SerializedObject(qualitySettings);
-            var perPlatformDefaultQualityProperty = qualitySettingsSO.FindProperty("m_PerPlatformDefaultQuality");
-
-            foreach (SerializedProperty prop in perPlatformDefaultQualityProperty)
-            {
-                if (prop.FindPropertyRelative("first").stringValue == buildTargetGroupName)
-                    return prop.FindPropertyRelative("second").intValue;
-            }
-            return -1;
         }
 
         class QualityLevelItem : VisualElement

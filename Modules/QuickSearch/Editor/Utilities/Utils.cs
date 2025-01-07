@@ -818,19 +818,73 @@ namespace UnityEditor.Search
             return TryParse(Convert.ToString(value), out number);
         }
 
-        internal const double DOUBLE_EPSILON = 0.0001;
+        // TODO Number: this is used when geenrating a query to have enough precision to find the asset.
+        // On U7 ToString("G") has different value than U6 hence why we use an explicit G8.
+        internal const string k_FloatQueryFormatter = "G8";
+        internal const string k_DoubleQueryFormatter = "G8";
+
+        // TODO Number: due to conversion from float to double, we need this epsilon. It is smaller than float epsilon for a reason.
+        internal const double k_DoubleEpsilon = 1E-7;
+        internal const float k_FloatEpsilon = 1E-8f;
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static float GetEpsilon(float a, float b)
+        {
+            // TODO Number: Dynamic epsilon: float have 7 significant digits. If we want to be able to do proper float comparison we need a dynamic epsilon that scales.
+            var max = Mathf.Max(Mathf.Abs(a), Mathf.Abs(b));
+            if (max < 1)
+                return k_FloatEpsilon;
+            if (max < 10)
+                return 1E-7f;
+            if (max < 100)
+                return 1E-6f;
+            if (max < 1000)
+                return 1E-5f;
+            if (max < 10000)
+                return 1E-4f;
+            if (max < 100000)
+                return 1E-3f;
+            if (max < 1000000)
+                return 1E-2f;
+            if (max < 10000000)
+                return 1E-1f;
+            return k_FloatEpsilon;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static double GetEpsilon(double a, double b)
+        {
+            // TODO Number: All our comparisons are against float converted to double. Use an epsilon that accomodates this conversion
+            var max = Math.Max(Math.Abs(a), Math.Abs(b));
+            if (max < 1)
+                return k_DoubleEpsilon;
+            if (max < 10)
+                return 1E-7;
+            if (max < 100)
+                return 1E-6;
+            if (max < 1000)
+                return 1E-5;
+            if (max < 10000)
+                return 1E-4;
+            if (max < 100000)
+                return 1E-3;
+            if (max < 1000000)
+                return 1E-2;
+            if (max < 10000000)
+                return 1E-1;
+            return k_DoubleEpsilon;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public static bool Approximately(float a, float b)
+        {
+            return Mathf.Abs(b - a) < GetEpsilon(a, b);
+        }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         internal static bool Approximately(double a, double b)
         {
-            // If a or b is zero, compare that the other is less or equal to epsilon.
-            // If neither a or b are 0, then find an epsilon that is good for
-            // comparing numbers at the maximum magnitude of a and b.
-            // Floating points have about 7 significant digits, so
-            // 1.000001f can be represented while 1.0000001f is rounded to zero,
-            // thus we could use an epsilon of 0.000001f for comparing values close to 1.
-            // We multiply this epsilon by the biggest magnitude of a and b.
-            return Math.Abs(b - a) < Math.Max(0.000001 * Math.Max(Math.Abs(a), Math.Abs(b)), double.Epsilon * 8);
+            return Math.Abs(a - b) < GetEpsilon(a, b);
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -845,11 +899,11 @@ namespace UnityEditor.Search
                 case SearchIndexOperator.NotEqual:
                     return !Approximately(d1, d2);
                 case SearchIndexOperator.Greater:
-                    return d1 > d2;
+                    return d1 > d2 && !Approximately(d1, d2);
                 case SearchIndexOperator.GreaterOrEqual:
                     return d1 > d2 || Approximately(d1, d2);
                 case SearchIndexOperator.Less:
-                    return d1 < d2;
+                    return d1 < d2 && !Approximately(d1, d2);
                 case SearchIndexOperator.LessOrEqual:
                     return d1 < d2 || Approximately(d1, d2);
             }
@@ -862,19 +916,19 @@ namespace UnityEditor.Search
             switch (op)
             {
                 case SearchIndexOperator.Equal:
-                    return Mathf.Approximately(d1, d2);
+                    return Approximately(d1, d2);
                 case SearchIndexOperator.Contains:
-                    return Mathf.Approximately(d1, d2);
+                    return Approximately(d1, d2);
                 case SearchIndexOperator.NotEqual:
-                    return !Mathf.Approximately(d1, d2);
+                    return !Approximately(d1, d2);
                 case SearchIndexOperator.Greater:
-                    return d1 > d2;
+                    return d1 > d2 && !Approximately(d1, d2);
                 case SearchIndexOperator.GreaterOrEqual:
-                    return d1 > d2 || Mathf.Approximately(d1, d2);
+                    return d1 > d2 || Approximately(d1, d2);
                 case SearchIndexOperator.Less:
-                    return d1 < d2;
+                    return d1 < d2 && !Approximately(d1, d2);
                 case SearchIndexOperator.LessOrEqual:
-                    return d1 < d2 || Mathf.Approximately(d1, d2);
+                    return d1 < d2 || Approximately(d1, d2);
             }
             return false;
         }
@@ -1077,7 +1131,7 @@ namespace UnityEditor.Search
         {
             if (float.IsNaN(f))
                 return string.Empty;
-            return f.ToString(CultureInfo.InvariantCulture);
+            return f.ToString(Utils.k_FloatQueryFormatter);
         }
 
         internal static string FormatIntString(in int i)
@@ -1342,7 +1396,7 @@ namespace UnityEditor.Search
 
         public static bool IsEditingTextField()
         {
-            return GUIUtility.textFieldInput || EditorGUI.IsEditingTextField();
+            return EditorGUI.IsEditingTextField();
         }
 
         static readonly Regex trimmer = new Regex(@"(\s\s+)|(\r\n|\r|\n)+");

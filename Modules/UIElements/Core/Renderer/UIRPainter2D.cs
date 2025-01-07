@@ -305,7 +305,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Begins a new sub-path at the provied coordinate.
         /// </summary>
-        /// <param name="pos">The position of the new sub-path.</param>
+        /// <param name="pos">The position of the new sub-path in the local space of the VisualElement or the VectorImage.</param>
         public void MoveTo(Vector2 pos)
         {
             if (!ValidateState())
@@ -347,7 +347,7 @@ namespace UnityEngine.UIElements
         /// <param name="radius">The radius of the arc.</param>
         /// <param name="startAngle">The starting angle the arc.</param>
         /// <param name="endAngle">The ending angle of the arc.</param>
-        /// <param name="antiClockwise">Whether the arc should draw in the anti-clockwise direction (default=false).</param>
+        /// <param name="direction">The direction of the arc (default=clock-wise).</param>
         public void Arc(Vector2 center, float radius, Angle startAngle, Angle endAngle, ArcDirection direction = ArcDirection.Clockwise)
         {
             if (!ValidateState())

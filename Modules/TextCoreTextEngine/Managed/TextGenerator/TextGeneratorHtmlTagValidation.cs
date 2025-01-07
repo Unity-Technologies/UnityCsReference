@@ -808,8 +808,16 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
 
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
+                                // For IMGUI we may have multiple arguments in a single tag. We combine them in a single tag
+                                int lastIndex = m_XmlAttribute[1].valueLength;
+                                for (int i = 2; i <= attributeIndex; i++)
+                                {
+                                    if (m_XmlAttribute[i].valueLength > 0)
+                                        lastIndex = (m_XmlAttribute[i].valueLength + m_XmlAttribute[i].valueStartIndex);
+                                        
+                                }
                                 if (m_XmlAttribute[1].valueLength > 0)
-                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 1);
+                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueStartIndex + lastIndex - 1);
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {

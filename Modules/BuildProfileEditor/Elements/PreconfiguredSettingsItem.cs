@@ -4,6 +4,8 @@
 
 using UnityEngine.UIElements;
 using UnityEditor.Modules;
+using UnityEngine;
+using System.IO;
 
 namespace UnityEditor.Build.Profile
 {
@@ -14,6 +16,8 @@ namespace UnityEditor.Build.Profile
         readonly Toggle m_Toggle;
         readonly Label m_Label;
         PreconfiguredSettingsVariant m_Variant;
+        private readonly Image m_InfoToolTip;
+        private VisualElement m_VisualElement;
 
         internal delegate void OnPreconfiguredSettingsChanged();
         OnPreconfiguredSettingsChanged m_Changed;
@@ -27,16 +31,23 @@ namespace UnityEditor.Build.Profile
 
             m_Toggle = this.Q<Toggle>("settings-list-toggle");
             m_Label = this.Q<Label>("settings-list-label");
+            m_Label = this.Q<Label>("settings-list-label");
+            m_VisualElement = this.Q<VisualElement>("VisualElement");
+            m_InfoToolTip = new Image();
 
             m_Toggle.RegisterValueChangedCallback(OnValueChanged);
         }
 
-        internal void Set(PreconfiguredSettingsVariant variant, OnPreconfiguredSettingsChanged changed)
+        internal void Set(PreconfiguredSettingsVariant variant, OnPreconfiguredSettingsChanged changed, string tooltip)
         {
             m_Variant = variant;
             m_Label.text = variant.Name;
             m_Toggle.SetValueWithoutNotify(variant.Selected);
             m_Changed = changed;
+            Texture2D image = BuildProfileModuleUtil.GetHelpIcon();
+            m_InfoToolTip.image = image;
+            m_InfoToolTip.tooltip = tooltip;
+            m_VisualElement.Add(m_InfoToolTip);
         }
 
         internal void Select()
@@ -60,12 +71,6 @@ namespace UnityEditor.Build.Profile
                 m_Variant.Selected = evt.newValue;
             if (m_Changed != null)
                 m_Changed.Invoke();
-        }
-
-        public static PreconfiguredSettingsItem Make()
-        {
-            var item = new PreconfiguredSettingsItem();
-            return item;
         }
     }
 }

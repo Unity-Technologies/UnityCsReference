@@ -101,8 +101,15 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Displays its contents inside a scrollable frame. For more information, see [[wiki:UIE-uxml-element-ScrollView|ScrollView]].
+    /// Displays its contents inside a scrollable frame. For more information, refer to the [[wiki:UIE-uxml-element-ScrollView|ScrollView]] user manual page.
     /// </summary>
+    /// <remarks>
+    /// Both the <see cref="ListView"/> and the <see cref="TreeView"/> contain a ScrollView that you can  manipulate through C# code.
+    /// </remarks>
+    /// <example>
+    /// This example creates a ScrollView that contains multiple labels and uses a Button to scroll to a selected label.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_ScrollTo.cs"/>
+    /// </example>
     public class ScrollView : VisualElement
     {
         internal static readonly BindingId horizontalScrollerVisibilityProperty = nameof(horizontalScrollerVisibility);
@@ -462,8 +469,9 @@ namespace UnityEngine.UIElements
         /// This property controls the speed of the horizontal scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
         /// <remarks>
-        /// When scrolling the page size will be applied to the offset for each scroll step, so the final offset will be the page size multiplied by the number of steps.
-        /// SA: BaseSlider_1::ref::pageSize.
+        /// When scrolling, the page size is applied to the offset for each scroll step, so the final offset will be the page size multiplied by the number of steps.
+        ///\\
+        /// SA: [[UIElements.BaseSlider_1.pageSize]]
         /// </remarks>
         [CreateProperty]
         public float horizontalPageSize
@@ -486,7 +494,8 @@ namespace UnityEngine.UIElements
         /// This property controls the speed of the vertical scrolling when using a keyboard or the on-screen scrollbar buttons (arrows and handle), based on the size of the page.
         /// </summary>
         /// <remarks>
-        /// The speed is calculated by multiplying the page size by the specified value. For example, a value of `2` means that each scroll movement covers a distance equal to twice the width of the page.
+        /// The speed is calculated by multiplying the page size by the specified value. For example, a value of `2` means that each scroll movement covers a distance equal to twice the width of the page.\\
+        /// SA: [[UIElements.BaseSlider_1.pageSize]]
         /// </remarks>
         [CreateProperty]
         public float verticalPageSize
@@ -506,8 +515,17 @@ namespace UnityEngine.UIElements
         private float m_MouseWheelScrollSize = k_MouseWheelScrollSizeDefaultValue;
 
         /// <summary>
-        /// This property controls the scrolling speed only when using a mouse scroll wheel, based on the size of the page. It takes precedence over the --unity-metrics-single_line-height USS variable.
+        /// This property controls the scrolling speed only when using a mouse scroll wheel, based on the size of the page.
         /// </summary>
+        /// <remarks>
+        /// This property takes precedence over the @@--unity-metrics-single_line-height@@ USS variable. If both the property and the variable
+        /// are set, the property value is used.
+        /// </remarks>
+        /// <example>
+        /// The following example demonstrates how to use the @@mouseWheelScrollSize@@ property to control the "speed" of a scroll
+        /// when using the mouse wheel. Notice the difference in feel when selecting different values:
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_MouseWheelScrollSize.cs"/>
+        /// </example>
         [CreateProperty]
         public float mouseWheelScrollSize
         {
@@ -635,6 +653,13 @@ namespace UnityEngine.UIElements
         /// Options for controlling how nested <see cref="ScrollView"/> handles scrolling when reaching
         /// the limits of the scrollable area.
         /// </summary>
+        /// <remarks>
+        /// This Enum is only relevant when used for a ScrollView that is nested inside another ScrollView.
+        /// </remarks>
+        /// <example>
+        /// The following example demonstrates how to use the NestedInteractionKind enum to control the behavior of a nested ScrollView.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/ScrollView_NestedInteraction_Example.cs"/>
+        /// </example>
         public enum NestedInteractionKind
         {
             /// <summary>
@@ -847,7 +872,8 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Represents the visible part of contentContainer.
         /// </summary>
-        public VisualElement contentViewport { get; } // Represents the visible part of contentContainer
+        /// <remarks>It can only be accessed.</remarks>
+        public VisualElement contentViewport { get; }
 
         /// <summary>
         /// Horizontal scrollbar.

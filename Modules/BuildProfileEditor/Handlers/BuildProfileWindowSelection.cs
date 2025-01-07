@@ -118,22 +118,27 @@ namespace UnityEditor.Build.Profile.Handlers
                 case ListViewSelectionType.ClassicAndCustom:
                     m_PlatformListViews.ClearProfileSelection();
                     m_PlatformListViews.ClearPlatformSelection();
+                    m_PlatformListViews.ClearSharedSceneListSelection();
                     break;
                 case ListViewSelectionType.Classic:
                     m_PlatformListViews.ClearPlatformSelection();
+                    m_PlatformListViews.ClearSharedSceneListSelection();
                     break;
 
                 case ListViewSelectionType.Custom:
                     m_PlatformListViews.ClearProfileSelection();
+                    m_PlatformListViews.ClearSharedSceneListSelection();
                     break;
 
                 case ListViewSelectionType.MissingClassic:
                     m_PlatformListViews.ClearPlatformSelection();
+                    m_PlatformListViews.ClearSharedSceneListSelection();
                     break;
 
                 case ListViewSelectionType.All:
                     m_PlatformListViews.ClearPlatformSelection();
                     m_PlatformListViews.ClearProfileSelection();
+                    m_PlatformListViews.ClearSharedSceneListSelection();
                     break;
 
                 default:

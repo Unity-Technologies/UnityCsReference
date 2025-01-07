@@ -317,6 +317,8 @@ namespace UnityEditor
         ETC = 1,
         ETC2 = 2,
         ASTC = 3,
+        [Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC = 4,
         DXTC = 5,
         BPTC = 6,
@@ -1963,5 +1965,8 @@ namespace UnityEditor
 
         [NativeMethod("SetColorGamuts")]
         internal extern void SetColorGamuts_Internal(ColorGamut[] colorSpaces);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void EnsureUnityConnectSettingsEqual(PlayerSettings target, PlayerSettings source);
     }
 }

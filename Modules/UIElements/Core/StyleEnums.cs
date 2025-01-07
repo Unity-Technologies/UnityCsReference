@@ -34,6 +34,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The overflow is clipped, and the rest of the content will be invisible.
         /// </summary>
+        /// <remarks>
+        /// Refer to [[wiki:UIE-masking|Apply masking effects in UI Toolkit]] for implementation details.
+        /// </remarks>
         Hidden = LayoutOverflow.Hidden
     }
 
@@ -86,6 +89,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// By default, items will all try to fit onto one line. You can change that and allow the items to wrap as needed with this property.
     /// </summary>
+    /// <remarks>
+    /// SA: [[UIElements.WhiteSpace]]
+    /// </remarks>
     public enum Wrap
     {
         /// <summary>
@@ -93,7 +99,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         NoWrap = LayoutWrap.NoWrap,
         /// <summary>
-        /// All items will be on one line. Default Value.
+        /// Items will wrap onto multiple lines from top to bottom.
         /// </summary>
         Wrap = LayoutWrap.Wrap,
         /// <summary>
@@ -243,16 +249,21 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Controls how white space and line breaks within an element's text are handled.
+    /// Controls how whitespace and line breaks within an element's text are handled, similar to the CSS white-space property.
+    /// Unlike the CSS property, only trailing whitespaces are collapsed, and whitespaces within the text are preserved.
+    /// See <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/white-space">white-space</a> for more details.
     /// </summary>
+    /// <remarks>
+    /// Whitespaces within TextFields are not collapsed.
+    /// </remarks>
     public enum WhiteSpace
     {
         /// <summary>
-        /// Sequences of whitespace will collapse into a single whitespace. Text will wrap when necessary. This is the default behavior.
+        /// Trailing sequences of whitespace are collapsed into a single whitespace. Text will wrap when necessary. This is the default behavior.
         /// </summary>
         Normal = 0,
         /// <summary>
-        /// Sequences of whitespace will collapse into a single whitespace. Text will never wrap to the next line.
+        /// Trailing sequences of whitespace are collapsed into a single whitespace. Text will never wrap to the next line.
         /// </summary>
         NoWrap = 1,
         /// <summary>

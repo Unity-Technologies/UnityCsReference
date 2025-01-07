@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
-    class SearchGroupTab : VisualElement, IGroup
+    class SearchGroupTab : SearchElement, IGroup
     {
         public static readonly string TabStyleClassName = SearchGroupBar.ussClassName.WithUssElement("tab");
         public static readonly string EmptyTabStyleClassName = TabStyleClassName.WithUssModifier("empty");
@@ -32,7 +32,8 @@ namespace UnityEditor.Search
 
         public IEnumerable<SearchItem> items => m_Group.items;
 
-        internal SearchGroupTab(SearchGroupBar groupBar, IGroup group)
+        internal SearchGroupTab(SearchGroupBar groupBar, IGroup group, ISearchView viewModel)
+            : base(viewModel)
         {
             m_Group = group;
             m_GroupBar = groupBar;
@@ -69,7 +70,6 @@ namespace UnityEditor.Search
             else if (evt.button == 1)
                 m_GroupBar.ShowVisibilityFilters();
         }
-        
 
         SearchItem IGroup.ElementAt(int index) => m_Group.ElementAt(index);
         public int IndexOf(SearchItem item) => m_Group.IndexOf(item);
@@ -146,7 +146,7 @@ namespace UnityEditor.Search
         private void AttachTabs(AttachToPanelEvent evt)
         {
             BuildGroups();
-            
+
             m_SearchEventOffs.AddRange(new []
             {
                 On(SearchEvent.DisplayModeChanged, UpdateResultViewButton),
@@ -157,7 +157,7 @@ namespace UnityEditor.Search
         }
 
         private void DetachTabs(DetachFromPanelEvent evt)
-        {            
+        {
             m_SearchEventOffs?.ForEach(off => off());
 
             // Make sure to remove callbacks when Detaching from panel
@@ -169,7 +169,7 @@ namespace UnityEditor.Search
             m_TabsContainer.Clear();
 
             foreach (var g in m_ViewModel.EnumerateGroups())
-                m_TabsContainer.Add(new SearchGroupTab(this, g));
+                m_TabsContainer.Add(new SearchGroupTab(this, g, ViewModel));
             m_TabsContainer.Add(m_ShowMoreGroup);
 
             AdjustTabs();
@@ -296,7 +296,7 @@ namespace UnityEditor.Search
             if (showMore && m_HiddenGroups.Count > 0)
             {
                 var moreSelectedGroup = hiddenSelectedGroup ?? m_HiddenGroups.FirstOrDefault();
-                var expandedTab = new SearchGroupTab(this, moreSelectedGroup);
+                var expandedTab = new SearchGroupTab(this, moreSelectedGroup, ViewModel);
 
                 expandedTab.groupNameLabel.text = expandedTab.name;
                 if (!context.empty)
@@ -355,7 +355,7 @@ namespace UnityEditor.Search
                 var sortButton = CreateButton("SearchSortGroup", m_SortButtonTooltip, ShowSortOptions, groupBarButtonClassName, groupBarSortButtonClassName);
                 Add(sortButton);
             }
-            
+
 
             var visButton = CreateButton("SearchVisibilityOptions", m_VisibilityFiltersTooltip, ShowVisibilityFilters, groupBarButtonClassName, groupBarVisButtonClassName);
             Add(visButton);

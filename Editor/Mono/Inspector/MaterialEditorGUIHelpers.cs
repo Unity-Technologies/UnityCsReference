@@ -227,7 +227,7 @@ namespace UnityEditor
             }
             else // Two extra properties
             {
-                if (extraProperty1.type == MaterialProperty.PropType.Color)
+                if (extraProperty1.propertyType == ShaderPropertyType.Color)
                 {
                     ExtraPropertyAfterTexture(GetFlexibleRectBetweenFieldAndRightEdge(r), extraProperty2);
                     ExtraPropertyAfterTexture(GetLeftAlignedFieldRect(r), extraProperty1);
@@ -259,7 +259,7 @@ namespace UnityEditor
         {
             Rect r = GetControlRectForSingleLine();
 
-            bool isColorProperty = colorProperty.type == MaterialProperty.PropType.Color;
+            bool isColorProperty = colorProperty.propertyType == ShaderPropertyType.Color;
             if (isColorProperty)
             {
                 BeginProperty(r, textureProp);
@@ -270,7 +270,7 @@ namespace UnityEditor
 
             if (!isColorProperty)
             {
-                Debug.LogError("Assuming MaterialProperty.PropType.Color (was " + colorProperty.type + ")");
+                Debug.LogError("Assuming ShaderPropertyType.Color (was " + colorProperty.propertyType + ")");
                 return r;
             }
 
@@ -323,7 +323,7 @@ namespace UnityEditor
 
             // First extra control on the same line as the texture
             Rect r1 = GetRectAfterLabelWidth(r);
-            if (extraProperty1.type == MaterialProperty.PropType.Color)
+            if (extraProperty1.propertyType == ShaderPropertyType.Color)
                 r1 = GetLeftAlignedFieldRect(r);
             ExtraPropertyAfterTexture(r1, extraProperty1);
 
@@ -350,7 +350,7 @@ namespace UnityEditor
 
         void ExtraPropertyAfterTexture(Rect r, MaterialProperty property, bool adjustLabelWidth = true)
         {
-            if (adjustLabelWidth && (property.type == MaterialProperty.PropType.Float || property.type == MaterialProperty.PropType.Color) && r.width > EditorGUIUtility.fieldWidth)
+            if (adjustLabelWidth && (property.propertyType == ShaderPropertyType.Float || property.propertyType == ShaderPropertyType.Color) && r.width > EditorGUIUtility.fieldWidth)
             {
                 // We want color fields and float fields to have same width as EditorGUIUtility.fieldWidth
                 // so controls aligns vertically.

@@ -154,7 +154,12 @@ namespace UnityEditor
                 args.options = options;
                 args.report = buildReport;
 
-                postprocessor.LaunchPlayer(args);
+                var launchResult = postprocessor.LaunchPlayer(args);
+                // If platform didn't provide any platform specific results, at the very least provide default implementation
+                if (launchResult == null)
+                    launchResult = new DefaultLaunchReport(NamedBuildTarget.FromActiveSettings(buildTarget), LaunchResult.Unknown);
+
+                BuildPipelineInterfaces.OnPostprocessLaunch(launchResult);
             }
             else
             {
@@ -163,8 +168,25 @@ namespace UnityEditor
             }
         }
 
-        static public void LaunchOnTargets(BuildTarget buildTarget, BuildReport buildReport, List<DeploymentTargetId> launchTargets)
+        public static LaunchResult GetLaunchResult(IReadOnlyList<IDeploymentLaunchResult> deploymentLaunchResults)
         {
+            var successLaunches = 0;
+            foreach (var r in deploymentLaunchResults)
+            {
+                if (r.Success)
+                    successLaunches++;
+            }
+
+            if (successLaunches == 0)
+                return LaunchResult.Failed;
+            if (successLaunches == deploymentLaunchResults.Count)
+                return LaunchResult.Succeeded;
+            return LaunchResult.PartiallySucceeded;
+        }
+
+        static public IReadOnlyList<IDeploymentLaunchResult> LaunchOnTargets(BuildTarget buildTarget, BuildReport buildReport, List<DeploymentTargetId> launchTargets)
+        {
+            var launches = new List<IDeploymentLaunchResult>();
             try
             {
                 // Early out so as not to show/update progressbars unnecessarily
@@ -187,17 +209,22 @@ namespace UnityEditor
                     var exceptions = new List<DeploymentOperationFailedException>();
                     foreach (var target in launchTargets)
                     {
+                        IDeploymentLaunchResult launchResult;
                         try
                         {
                             var manager = DeploymentTargetManager.CreateInstance(buildReport.summary.platform);
                             var buildProperties = BuildProperties.GetFromBuildReport(buildReport);
-                            manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
-                            successfulLaunches++;
+                            launchResult = manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
+                            if (launchResult != null && launchResult.Success)
+                                successfulLaunches++;
                         }
                         catch (DeploymentOperationFailedException e)
                         {
-                            exceptions.Add(e);
+                            launchResult = e.launchResult;
+                            exceptions.Add(e);     
                         }
+
+                        launches.Add(launchResult);
                     }
 
                     foreach (var e in exceptions)
@@ -225,6 +252,8 @@ namespace UnityEditor
             {
                 throw new UnityException(string.Format("Could not find any valid targets to launch on for {0}", buildTarget));
             }
+
+            return launches;
         }
 
         [RequiredByNativeCode]

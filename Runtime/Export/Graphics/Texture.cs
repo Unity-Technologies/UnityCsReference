@@ -777,7 +777,9 @@ namespace UnityEngine
             bool isValid = ValidateFormat(format);
             if (isValid)
             {
+#pragma warning disable CS0618 // TextureFormat.PVRTC_* members are obsolete
                 bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+#pragma warning restore CS0618
                 if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
                     throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
             }
@@ -1232,7 +1234,9 @@ namespace UnityEngine
             bool isValid = ValidateFormat(format);
             if (isValid)
             {
+#pragma warning disable CS0618 // TextureFormat.PVRTC_* members are obsolete
                 bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+#pragma warning restore CS0618
                 if (requireSquarePOT && !Mathf.IsPowerOfTwo(width))
                     throw new UnityException(String.Format("'{0}' demands texture to have power-of-two dimensions", format.ToString()));
             }
@@ -1629,7 +1633,9 @@ namespace UnityEngine
             bool isValid = ValidateFormat(format);
             if (isValid)
             {
+#pragma warning disable CS0618 // TextureFormat.PVRTC_* members are obsolete
                 bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+#pragma warning restore CS0618
                 if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
                     throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
             }
@@ -1968,7 +1974,9 @@ namespace UnityEngine
             bool isValid = ValidateFormat(format);
             if (isValid)
             {
+#pragma warning disable CS0618 // TextureFormat.PVRTC_* members are obsolete
                 bool requireSquarePOT = (TextureFormat.PVRTC_RGB2 <= format && format <= TextureFormat.PVRTC_RGBA4);
+#pragma warning restore CS0618
                 if (requireSquarePOT && !(width == height && Mathf.IsPowerOfTwo(width)))
                     throw new UnityException(String.Format("'{0}' demands texture to be square and have power-of-two dimensions", format.ToString()));
             }

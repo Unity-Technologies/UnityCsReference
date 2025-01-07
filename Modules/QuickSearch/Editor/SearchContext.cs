@@ -725,10 +725,11 @@ namespace UnityEditor.Search
             return $"[{GetProviders().Count}, {options}] {searchText.Replace("\n", "")}";
         }
 
-        internal bool Tick()
+        internal bool Tick(bool forceTick = false)
         {
             CheckDisposed();
-            if (!options.HasAny(SearchFlags.Synchronous))
+            
+            if (!forceTick && !options.HasAny(SearchFlags.Synchronous))
                 return true;
             sessions.Tick();
             return Dispatcher.ProcessOne();

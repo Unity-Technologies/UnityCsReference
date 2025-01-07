@@ -118,7 +118,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Unlike the visibility property, this property affects the layout of the element.
-        /// This is a convenient way to hide an element without removing it from the hierarchy (when using the <see cref="DisplayStyle.None"/>).
+        /// To hide an element without removing it from the hierarchy,
+        /// you can use <see cref="DisplayStyle.None"/>.
+        /// 
+        /// Elements with a display style of <see cref="DisplayStyle.None"/> are ignored by pointer events
+        /// and by <see cref="IPanel.Pick"/>.
         /// </remarks>
         DisplayStyle display { get; }
         /// <summary>
@@ -142,7 +146,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         Wrap flexWrap { get; }
         /// <summary>
-        /// Font size to draw the element's text.
+        /// Font size to draw the element's text, specified in point size.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.

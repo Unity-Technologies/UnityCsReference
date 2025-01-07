@@ -8,7 +8,21 @@ namespace UnityEditor.Search
 {
     abstract class DefaultQueryFilterHandlerBase<TData>
     {
-        public abstract IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp);
+        Action<IFilter> m_OnCreateFilter;
+
+        protected DefaultQueryFilterHandlerBase(Action<IFilter> onCreateFilter)
+        {
+            m_OnCreateFilter = onCreateFilter;
+        }
+
+        public IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp)
+        {
+            var filter = CreateFilter_Internal(filterToken, engineImp);
+            m_OnCreateFilter?.Invoke(filter);
+            return filter;
+        }
+
+        protected abstract IFilter CreateFilter_Internal(string filterToken, QueryEngineImpl<TData> engineImp);
     }
 
     class DefaultQueryFilterHandler<TData, TFilter> : DefaultQueryFilterHandlerBase<TData>
@@ -16,11 +30,18 @@ namespace UnityEditor.Search
         Func<TData, string, TFilter> m_GetDataFunc;
 
         public DefaultQueryFilterHandler(Func<TData, string, TFilter> defaultGetDataFunc)
+            : base(null)
         {
             m_GetDataFunc = defaultGetDataFunc;
         }
 
-        public override IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp)
+        public DefaultQueryFilterHandler(Func<TData, string, TFilter> defaultGetDataFunc, Action<IFilter> onCreateFilter)
+            : base(onCreateFilter)
+        {
+            m_GetDataFunc = defaultGetDataFunc;
+        }
+
+        protected override IFilter CreateFilter_Internal(string filterToken, QueryEngineImpl<TData> engineImp)
         {
             return new DefaultFilter<TData, TFilter>(filterToken, m_GetDataFunc, engineImp);
         }
@@ -31,11 +52,18 @@ namespace UnityEditor.Search
         Func<TData, string, string, TFilter, bool> m_FilterResolver;
 
         public DefaultQueryFilterResolverHandler(Func<TData, string, string, TFilter, bool> defaultFilterResolver)
+        : base(null)
         {
             m_FilterResolver = defaultFilterResolver;
         }
 
-        public override IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp)
+        public DefaultQueryFilterResolverHandler(Func<TData, string, string, TFilter, bool> defaultFilterResolver, Action<IFilter> onCreateFilter)
+            : base(onCreateFilter)
+        {
+            m_FilterResolver = defaultFilterResolver;
+        }
+
+        protected override IFilter CreateFilter_Internal(string filterToken, QueryEngineImpl<TData> engineImp)
         {
             return new DefaultFilterResolver<TData, TFilter>(filterToken, m_FilterResolver, engineImp);
         }
@@ -47,6 +75,13 @@ namespace UnityEditor.Search
         Func<string, TParam> m_ParamTransformer;
 
         public DefaultQueryParamFilterHandler(Func<TData, string, TParam, TFilter> defaultGetDataFunc)
+            : base(null)
+        {
+            m_GetDataFunc = defaultGetDataFunc;
+        }
+
+        public DefaultQueryParamFilterHandler(Func<TData, string, TParam, TFilter> defaultGetDataFunc, Action<IFilter> onCreateFilter)
+            : base(onCreateFilter)
         {
             m_GetDataFunc = defaultGetDataFunc;
         }
@@ -57,7 +92,13 @@ namespace UnityEditor.Search
             m_ParamTransformer = paramTransformer;
         }
 
-        public override IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp)
+        public DefaultQueryParamFilterHandler(Func<TData, string, TParam, TFilter> defaultGetDataFunc, Func<string, TParam> paramTransformer, Action<IFilter> onCreateFilter)
+            : this(defaultGetDataFunc, onCreateFilter)
+        {
+            m_ParamTransformer = paramTransformer;
+        }
+
+        protected override IFilter CreateFilter_Internal(string filterToken, QueryEngineImpl<TData> engineImp)
         {
             return new DefaultParamFilter<TData, TParam, TFilter>(filterToken, m_GetDataFunc, m_ParamTransformer, engineImp);
         }
@@ -69,6 +110,13 @@ namespace UnityEditor.Search
         Func<string, TParam> m_ParamTransformer;
 
         public DefaultQueryParamFilterResolverHandler(Func<TData, string, TParam, string, TFilter, bool> defaultFilterResolver)
+            : base(null)
+        {
+            m_FilterResolver = defaultFilterResolver;
+        }
+
+        public DefaultQueryParamFilterResolverHandler(Func<TData, string, TParam, string, TFilter, bool> defaultFilterResolver, Action<IFilter> onCreateFilter)
+            : base(onCreateFilter)
         {
             m_FilterResolver = defaultFilterResolver;
         }
@@ -79,7 +127,13 @@ namespace UnityEditor.Search
             m_ParamTransformer = paramTransformer;
         }
 
-        public override IFilter CreateFilter(string filterToken, QueryEngineImpl<TData> engineImp)
+        public DefaultQueryParamFilterResolverHandler(Func<TData, string, TParam, string, TFilter, bool> defaultFilterResolver, Func<string, TParam> paramTransformer, Action<IFilter> onCreateFilter)
+            : this(defaultFilterResolver, onCreateFilter)
+        {
+            m_ParamTransformer = paramTransformer;
+        }
+
+        protected override IFilter CreateFilter_Internal(string filterToken, QueryEngineImpl<TData> engineImp)
         {
             return new DefaultParamFilterResolver<TData, TParam, TFilter>(filterToken, m_FilterResolver, m_ParamTransformer, engineImp);
         }

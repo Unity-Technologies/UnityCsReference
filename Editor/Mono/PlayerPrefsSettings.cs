@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     internal class PlayerPrefsSettings
     {
-        [MenuItem("Edit/Clear All PlayerPrefs", false, 270, false)]
+        [MenuItem("Edit/Clear All PlayerPrefs", false, 15000, false)]
         static void ClearPlayerPrefs()
         {
             if (EditorUtility.DisplayDialog("Clear All PlayerPrefs",

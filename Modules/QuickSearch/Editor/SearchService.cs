@@ -37,7 +37,10 @@ namespace UnityEditor.Search
     /// </summary>
     public static class SearchService
     {
-        private const int k_MaxFetchTimeMs = 50;
+        // TODO: This MaxFetchTime should be revisited. First, 50ms is very long for one frame.
+        // Second, this is PER PROVIDER! Which means if you have 3 providers running, each can take up to 50ms
+        // for a total of 150ms per frame!
+        internal const int k_MaxFetchTimeMs = 50;
         private const int k_MaxSessionTimeMs = SearchSession.k_InfiniteSession;
         static SearchProvider s_SearchServiceProvider;
 
@@ -354,33 +357,40 @@ namespace UnityEditor.Search
             if (TryParseExpression(context, out var expression))
             {
                 var iterator = EvaluateExpression(expression, context);
-                HandleItemsIteratorSession(iterator, allItems, s_SearchServiceProvider, context);
+                PrepareProviderSession(s_SearchServiceProvider, iterator, context);
+                HandleItemsIteratorSession(allItems, s_SearchServiceProvider, context);
                 fetchProviderCount++;
             }
             else
             {
+                // We have to start all providers first otherwise we can get in a situation where
+                // each provider triggers a session ended because they all finish in the first batch,
+                // leading to SessionStarted-SessionEnded-SessionStarted-SessionEnded...
+                fetchProviderCount = PrepareProviderSessions(context.providers, context, allItems);
                 foreach (var provider in context.providers)
                 {
                     try
                     {
                         var watch = new System.Diagnostics.Stopwatch();
                         watch.Start();
-                        fetchProviderCount++;
-                        var iterator = provider.fetchItems(context, allItems, provider);
-                        HandleItemsIteratorSession(iterator, allItems, provider, context);
+                        HandleItemsIteratorSession(allItems, provider, context);
                         provider.RecordFetchTime(watch.Elapsed.TotalMilliseconds);
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogException(new Exception($"Failed to get fetch {provider.name} provider items.", ex));
+                        Debug.LogException(new Exception($"Failed to fetch {provider.name} items.", ex));
+                        var session = context.sessions.GetProviderSession(provider);
+                        session.Stop();
                     }
                 }
             }
 
             if (fetchProviderCount == 0)
             {
+                context.sessions.CallSessionStarted(context);
                 OnSearchEnded(context);
                 context.sessions.StopAllAsyncSearchSessions();
+                context.sessions.CallSessionEnded(context);
             }
 
             if (!context.options.HasAny(SearchFlags.Sorted))
@@ -390,32 +400,52 @@ namespace UnityEditor.Search
             return allItems.GroupBy(i => i.id).Select(i => i.First()).ToList();
         }
 
-        static void HandleItemsIteratorSession(object iterator, List<SearchItem> allItems, SearchProvider provider, SearchContext context)
+        static int PrepareProviderSessions(IEnumerable<SearchProvider> providers, SearchContext context, List<SearchItem> allItems)
         {
-            if (iterator != null && context.options.HasAny(SearchFlags.Synchronous))
+            var fetchProviderCount = 0;
+            foreach (var provider in providers)
             {
-                var session = context.sessions.GetProviderSession(provider);
-                session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
-                session.Start();
-
-                using (var stackedEnumerator = new SearchEnumerator<SearchItem>(iterator))
+                try
                 {
-                    while (stackedEnumerator.MoveNext())
-                    {
-                        if (stackedEnumerator.Current != null)
-                            allItems.Add(stackedEnumerator.Current);
-                    }
+                    var iterator = provider.fetchItems(context, allItems, provider);
+                    PrepareProviderSession(provider, iterator, context);
+                    ++fetchProviderCount;
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogException(new Exception($"Failed to get fetch {provider.name} provider items.", ex));
+                    var session = context.sessions.GetProviderSession(provider);
+                    session.Stop();
+                }
+            }
+            return fetchProviderCount;
+        }
+
+        static void PrepareProviderSession(SearchProvider provider, object iterator, SearchContext context)
+        {
+            var session = context.sessions.GetProviderSession(provider);
+            session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
+            session.Start();
+        }
+
+        static void HandleItemsIteratorSession(List<SearchItem> allItems, SearchProvider provider, SearchContext context)
+        {
+            var session = context.sessions.GetProviderSession(provider);
+            if (session.itemsEnumerator != null && context.options.HasAny(SearchFlags.Synchronous))
+            {
+                var stackedEnumerator = session.itemsEnumerator;
+                while (stackedEnumerator.MoveNext())
+                {
+                    if (stackedEnumerator.Current != null)
+                        allItems.Add(stackedEnumerator.Current);
                 }
 
                 session.Stop();
             }
             else
             {
-                var session = context.sessions.GetProviderSession(provider);
-                session.Reset(context.sessions.currentSessionContext, iterator, k_MaxFetchTimeMs, k_MaxSessionTimeMs);
-                session.Start();
                 var sessionEnded = !session.FetchSome(allItems, k_MaxFetchTimeMs);
-                if (context.options.HasAny(SearchFlags.FirstBatchAsync))
+                if (context.options.HasAny(SearchFlags.FirstBatchAsync) && allItems.Count > 0)
                 {
                     session.SendItems(allItems);
                     allItems.Clear();
@@ -522,13 +552,24 @@ namespace UnityEditor.Search
             Action<SearchContext> onSearchCompleted,
             SearchFlags options = SearchFlags.None)
         {
+            // TODO: Clean up this method. Those callbacks will allocate new objects each time this is called.
+            // We rely on some requestId to avoid issues with previous sessions. This could be improved.
+
+            // If we are in a thread, defer the execution to the main thread to avoid
+            // potential synchronization issues with the code below.
+            if (!InternalEditorUtility.CurrentThreadIsMainThread())
+            {
+                Dispatcher.Enqueue(() =>
+                {
+                    Request(context, onIncomingItems, onSearchCompleted, options);
+                });
+                return;
+            }
+
             var requestId = GetNewSessionGuid();
             context.options |= options;
             if (context.options.HasAny(SearchFlags.Debug))
                 Debug.Log($"{requestId} Request started {context.searchText} ({context.options})");
-            var sessionCount = 0;
-            var firstBatchResolved = false;
-            var completed = false;
             var batchCount = 1;
 
             void ReceiveItems(SearchContext c, IEnumerable<SearchItem> items)
@@ -542,7 +583,6 @@ namespace UnityEditor.Search
             {
                 if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session begin {context.searchText}");
-                ++sessionCount;
             }
 
             void OnSessionEnded(SearchContext c)
@@ -551,34 +591,30 @@ namespace UnityEditor.Search
                     return;
                 if (context.options.HasAny(SearchFlags.Debug))
                     Debug.Log($"{requestId} Request session ended {context.searchText}");
-                --sessionCount;
-                if (sessionCount == 0 && firstBatchResolved)
-                {
-                    if (context.options.HasAny(SearchFlags.Debug))
-                        Debug.Log($"{requestId} Request async ended {context.searchText}");
-                    context.asyncItemReceived -= ReceiveItems;
-                    context.sessionStarted -= OnSessionStarted;
-                    context.sessionEnded -= OnSessionEnded;
-                    onSearchCompleted?.Invoke(c);
-                    completed = true;
-                }
+
+                if (context.options.HasAny(SearchFlags.Debug))
+                    Debug.Log($"{requestId} Request async ended {context.searchText}");
+                context.asyncItemReceived -= ReceiveItems;
+                context.sessionStarted -= OnSessionStarted;
+                context.sessionEnded -= OnSessionEnded;
+                onSearchCompleted?.Invoke(c);
             }
 
             context.asyncItemReceived += ReceiveItems;
             context.sessionStarted += OnSessionStarted;
-            context.sessionEnded += OnSessionEnded;
             var firstResults = GetItems(context, requestId, context.options);
             if (firstResults.Count > 0)
                 ReceiveItems(context, firstResults);
-            firstBatchResolved = true;
-            if (sessionCount == 0 && !completed)
+
+            // When search is completed in the first batch, sessionEnded is called before
+            // we get here. To avoid OnSessionEnded being called before ReceiveItems,
+            // we need to make sure that OnSessionEnded is registered only after the call to GetItems.
+            // However, we can only do this if the call to GetItems and the sessions are done in the main thread.
+            if (context.searchInProgress)
+                context.sessionEnded += OnSessionEnded;
+            else
             {
-                if (context.options.HasAny(SearchFlags.Debug))
-                    Debug.Log($"{requestId} Request sync ended {context.searchText}");
-                context.asyncItemReceived -= ReceiveItems;
-                context.sessionStarted -= OnSessionStarted;
-                context.sessionEnded -= OnSessionEnded;
-                onSearchCompleted?.Invoke(context);
+                OnSessionEnded(context);
             }
         }
 
@@ -729,10 +765,8 @@ namespace UnityEditor.Search
             float defaultWidth = 850, float defaultHeight = 539,
             SearchFlags flags = SearchFlags.None)
         {
-            var context = CreateContext(GetObjectProviders(), searchText, flags | SearchFlags.OpenPicker);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchText, "object", "api");
-            var state = SearchViewState.CreatePickerState("Select object", context, selectHandler, trackingHandler, typeName, filterType);
-            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
+            var state = CreateObjectPickerState(selectHandler, trackingHandler, searchText, typeName, filterType, defaultWidth, defaultHeight, flags);
             return ShowPicker(state);
         }
 
@@ -744,11 +778,8 @@ namespace UnityEditor.Search
             IEnumerable<SearchItem> subset = null,
             string title = null, float itemSize = 64f, float defaultWidth = 650f, float defaultHeight = 539f, SearchFlags flags = SearchFlags.None)
         {
-            context.options |= flags | SearchFlags.OpenPicker;
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, context.searchText, "item", "api");
-            var state = SearchViewState.CreatePickerState(title, context, selectHandler, trackingHandler, filterHandler);
-            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
-            state.itemSize = itemSize;
+            var state = CreatePickerState(context, selectHandler, trackingHandler, filterHandler, subset, title, itemSize, defaultWidth, defaultHeight, flags);
             return SearchPickerWindow.ShowPicker(state);
         }
 
@@ -965,6 +996,33 @@ namespace UnityEditor.Search
                 context.AddSearchQueryError(queryError);
                 return false;
             }
+        }
+
+        internal static SearchViewState CreateObjectPickerState(Action<UnityEngine.Object, bool> selectHandler,
+            Action<UnityEngine.Object> trackingHandler,
+            string searchText, string typeName, Type filterType,
+            float defaultWidth = 850, float defaultHeight = 539,
+            SearchFlags flags = SearchFlags.None)
+        {
+            var context = CreateContext(GetObjectProviders(), searchText, flags | SearchFlags.OpenPicker);
+            var state = SearchViewState.CreatePickerState("Select object", context, selectHandler, trackingHandler, typeName, filterType);
+            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
+            return state;
+        }
+
+        internal static SearchViewState CreatePickerState(
+            SearchContext context,
+            Action<SearchItem, bool> selectHandler,
+            Action<SearchItem> trackingHandler = null,
+            Func<SearchItem, bool> filterHandler = null,
+            IEnumerable<SearchItem> subset = null,
+            string title = null, float itemSize = 64f, float defaultWidth = 650f, float defaultHeight = 539f, SearchFlags flags = SearchFlags.None)
+        {
+            context.options |= flags | SearchFlags.OpenPicker;
+            var state = SearchViewState.CreatePickerState(title, context, selectHandler, trackingHandler, filterHandler);
+            state.position = new Rect(0, 0, defaultWidth, defaultHeight);
+            state.itemSize = itemSize;
+            return state;
         }
     }
 }

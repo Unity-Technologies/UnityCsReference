@@ -204,8 +204,14 @@ namespace UnityEngine.UIElements
         float m_Value;
 
         /// <summary>
-        /// Sets the progress value. If the value has changed, dispatches an <see cref="ChangeEvent{T}"/> of type float.
+        /// Sets the progress value. The value is clamped between lowValue and highValue.
         /// </summary>
+        /// <remarks>
+        /// The progress percentage is calculated as @@100 * (value - lowValue) / (highValue - lowValue)@@.
+        /// </remarks>
+        /// <remarks>
+        /// If the value has changed, dispatches an <see cref="ChangeEvent{T}"/> of type float.
+        /// </remarks>
         [CreateProperty]
         public virtual float value
         {

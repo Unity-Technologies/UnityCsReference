@@ -7,7 +7,10 @@ using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Rendering;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+
+[assembly: InternalsVisibleTo("UnityEditor.ShaderUtil.Tests")]
 
 namespace UnityEngine
 {
@@ -29,6 +32,8 @@ namespace UnityEngine
     {
         public static Shader Find(string name) => ResourcesAPI.ActiveAPI.FindShaderByName(name);
         [FreeFunction("GetBuiltinResource<Shader>")] extern internal static Shader FindBuiltin(string name);
+
+        [FreeFunction("ShaderScripting::CreateFromCompiledData")] extern internal static Shader CreateFromCompiledData(byte[] compiledData);
 
         [NativeProperty("MaxChunksRuntimeOverride")] extern public static int maximumChunksOverride { get; set; }
 

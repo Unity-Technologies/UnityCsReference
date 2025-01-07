@@ -13,6 +13,7 @@ using UnityEditor.Rendering;
 using UnityEngine.Scripting;
 using UnityEditor.AssetImporters;
 using UnityEngine.SceneManagement;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor.Build
 {
@@ -161,6 +162,7 @@ namespace UnityEditor.Build
 
             public List<IPreprocessBuildWithReport> buildPreprocessorsWithReport;
             public List<IPostprocessBuildWithReport> buildPostprocessorsWithReport;
+            public List<IPostprocessLaunch> launchPostprocessors;
             public List<IProcessSceneWithReport> sceneProcessorsWithReport;
 
             public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
@@ -506,6 +508,14 @@ namespace UnityEditor.Build
                 processors.buildPreprocessorsWithReport, bpp => bpp.OnPreprocessBuild(report),
                 (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
 #pragma warning restore 618
+
+            // NOTE: This is a workaround for PLAT-11795.
+            // Sometimes, when a player settings override is modified in one of the callbacks, its internal
+            // serialized version is not updated prior to the build. As a result it will be restored to the
+            // serialized values. To avoid that situation we force the update here.
+            var profile = BuildProfile.GetActiveBuildProfile();
+            if (profile != null)
+                profile.SerializePlayerSettings();
         }
 
         [RequiredByNativeCode]
@@ -570,6 +580,50 @@ namespace UnityEditor.Build
                 processors.buildPostprocessorsWithReport, bpp => bpp.OnPostprocessBuild(report),
                 (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
 #pragma warning restore 618
+        }
+
+
+        // Some platforms like Desktop, instead of launching the app via C#, perform their launch in C++
+        // See BuildPlayer.cpp LaunchPlayerIfSupported, which calls native LaunchApplication
+        // Internal_OnPostprocessLaunch is used by this code path
+        [RequiredByNativeCode]
+        internal static void Internal_OnPostprocessLaunch(BuildTarget buildTarget, bool success)
+        {
+            OnPostprocessLaunch(new DefaultLaunchReport(NamedBuildTarget.FromActiveSettings(buildTarget), success ? LaunchResult.Succeeded : LaunchResult.Failed));
+        }
+
+        internal static void OnPostprocessLaunch(ILaunchReport launchReport)
+        {
+            // Domain reload happens after player build, so anything collected in InitializeBuildCallbacks gets invalidated
+            // Thus collect callbacks here as necessary
+            if (processors.launchPostprocessors == null)
+            {
+                foreach (var t in TypeCache.GetTypesDerivedFrom<IPostprocessLaunch>())
+                {
+                    if (t.IsAbstract || t.IsInterface)
+                        continue;
+
+                    object instance = null;
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.launchPostprocessors);
+                }
+
+                processors?.launchPostprocessors?.Sort(CompareICallbackOrder);
+            }
+
+            if (processors.launchPostprocessors == null)
+                return;
+
+            foreach (var run in processors.launchPostprocessors)
+            {
+                try
+                {
+                    run.OnPostprocessLaunch(launchReport);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         [RequiredByNativeCode]

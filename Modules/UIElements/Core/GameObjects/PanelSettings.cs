@@ -60,6 +60,14 @@ namespace UnityEngine.UIElements
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
     /// </summary>
+    /// <remarks>
+    /// The UIDocument component contains a reference to a PanelSettings object.
+    /// The PanelSettings contains the rendering settings for the UI, including the scale mode and the sort order.
+    /// Multiple UIDocument components can point to the same PanelSettings object, which optimizes performance when
+    /// using multiple UI screens in the same scene.
+    ///\\
+    /// For more information on the different properties of the PanelSettings object, refer to [[wiki:UIE-Runtime-Panel-Settings|Panel Settings properties reference]].
+    /// </remarks>
     [HelpURL("UIE-Runtime-Panel-Settings")]
     public class PanelSettings : ScriptableObject
     {
@@ -446,6 +454,28 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Determines whether the depth/stencil buffer is cleared before the panel is rendered.
         /// </summary>
+        /// <remarks>
+        /// Only the first panel (according to the sorting order) must clear the depth/stencil buffer.
+        /// Subsequent panels should not clear it. Unnecessary clearing can significantly degrade performance.
+        ///\\
+        ///\\
+        /// UI Toolkit uses the depth/stencil buffer to perform masking operations, refer to [[Overflow.Hidden]] for more inforamtion.
+        /// The renderer strategically positions masking shapes to intentionally fail the depth test.
+        /// This failure triggers efficient push/pop operations within the stencil buffer, enabling effective masking. 
+        ///\\ 
+        /// To ensure this process functions correctly, the depth buffer values
+        /// must be within a predetermined range. When UI Toolkit clears the depth buffer, it leaves
+        /// a gap (controlled by [[PanelSettings.depthClearValue]]) where masks can be positioned to fail
+        /// the test. Additionally, UI Toolkit clears the stencil because the bits are used to store data
+        /// representing the stack of masking shapes.
+        ///\\
+        ///\\
+        /// An incorrect depth/stencil buffer clearing can cause malfunctions with the masking system. Such
+        /// as:
+        ///- Masking shapes might become visible
+        ///- Normal meshes might become invisible
+        ///- Complete masking failure
+        /// </remarks>
         public bool clearDepthStencil
         {
             get => m_ClearDepthStencil;
@@ -466,6 +496,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Determines whether the color buffer is cleared before the panel is rendered.
         /// </summary>
+        /// <remarks>
+        /// This is typically used when a RenderTexture is assigned to [[PanelSettings.targetTexture]].
+        /// Otherwise, if a camera already clears the color of the render target, avoid redundant clearing to optimize performance.
+        /// </remarks>
         public bool clearColor
         {
             get => m_ClearColor;
@@ -591,12 +625,13 @@ namespace UnityEngine.UIElements
         ///
         /// You can use this feature to combine the SRGB Render Texture from your camera with the UNORM Render Texture of the UI.
         /// In an on-screen UI panel, use an ImmediateModeElement to draw a full-screen quad with a custom shader that blends both.
+        ///\\
+        ///\\
+        /// Additional notes:
         ///
-        /// * Note 1: Render Texture read/write operations require additional bandwidth. This could negatively impact performance.
-        /// * Note 2: When a texture is sampled in the fragment shader, the shader will perform a linear-to-gamma color space conversion
-        ///           on the RGB channels. This could negatively impact performance.
-        /// * Note 3: When sampling from a texture, the interpolation between texels or mip levels is still performed in linear color space.
-        ///           This might lead to some visual differences between this mode and the same UI in a gamma project.
+        ///- Render Texture read/write operations require additional bandwidth. This could negatively impact performance.
+        ///- When a texture is sampled in the fragment shader, the shader will perform a linear-to-gamma color space conversion on the RGB channels. This could negatively impact performance.
+        ///- When sampling from a texture, the interpolation between texels or mip levels is still performed in linear color space. This might lead to some visual differences between this mode and the same UI in a gamma project.
         /// </remarks>
         [SerializeField]
         public bool forceGammaRendering;
@@ -677,7 +712,7 @@ namespace UnityEngine.UIElements
         ///
         /// As this is called at every change marked on any visual element of the panel, the overhead is not negligible.
         /// The callback will not be called in release builds as the method is stripped.
-        /// 
+        ///
         /// The following example uses the panelChangeReceiver in a game.
         /// To test it, add the component to a GameObject and the Panel Setting asset linked in the component fields.
         /// </remarks>
@@ -808,11 +843,15 @@ namespace UnityEngine.UIElements
         /// this function returns the input value.
         /// </summary>
         /// <remarks>
-        /// If the panel's targetTexture is applied to 3D objects, one approach is to use a function that raycasts against
-        /// MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits has a
-        /// MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
-        /// @@RaycastHit.textureCoord@@ in the texture's pixel space.
+        /// If the panel's targetTexture is applied to 3D objects, use a function that raycasts
+        /// against MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits
+        /// has a MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
+        /// @@RaycastHit.textureCoord@@ in the texture's pixel space. Return a coordinate outside the panel to
+        /// skip incoming pointer events if the ray doesn't hit a valid target or location.
         /// </remarks>
+        /// <example>
+        /// <code source="../../../../Tests/EditModeAndPlayModeTests/UIElementsSamples/Assets/Runtime/Rendering/UITextureProjection.cs"/>
+        /// </example>
         /// <param name="screentoPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
         public void SetScreenToPanelSpaceFunction(Func<Vector2, Vector2> screentoPanelSpaceFunction)
         {

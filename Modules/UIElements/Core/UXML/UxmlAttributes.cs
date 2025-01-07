@@ -21,6 +21,9 @@ namespace UnityEngine.UIElements
     /// Inspector window in  the UI Builder.
     /// By default, the custom control appears in the Library tab in UI Builder.
     /// To hide it from the Library tab, provide the <see cref="HideInInspector"/> attribute.
+    ///
+    /// For an example of migrating a custom control from `UxmlFactory` and `UxmlTraits` to the `UxmlElement` and `UxmlAttributes` system,
+    /// refer to [[wiki:UpgradeGuideUnity6#enhanced-custom-controls-creation-with-uxml|Enhanced custom controls creation with UXML]].
     /// </remarks>
     /// <example>
     /// The following example creates a custom control with multiple attributes:
@@ -31,11 +34,13 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_ExampleElement.uxml"/>
     /// </example>
     /// <example>
-    /// <para>When you create a custom control, the default name used in UXML and UI Builder is the element type name (C# class name).
-    /// However, you can customize the name to make it easier to refer to the element.</para>
-    /// <para>__Note__: You are still required to reference the classes' namespace in UXML.</para>
-    /// <para>To create a custom name for an element, provide a value to the @@name@@ property.
-    /// For example, if you create the following custom button:</para>
+    /// When you create a custom control, the default name used in UXML and UI Builder is the element type name (C# class name).
+    /// However, you can customize the name to make it easier to refer to the element.
+    ///\\
+    ///\\
+    ///__Note__: You are still required to reference the classes' namespace in UXML.
+    /// To create a custom name for an element, provide a value to the @@name@@ property.
+    /// For example, if you create the following custom button:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CustomButtonElement.cs"/>
     /// </example>
     /// <example>
@@ -68,6 +73,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// Declares that a field or property is associated with a UXML attribute.
+    /// Convenience overload, shorthand for `Query&lt;T&gt;.Build().First().`
     /// </summary>
     /// <remarks>
     /// You can use the UxmlAttribute attribute to declare that a property or field is associated with a UXML attribute.
@@ -135,8 +141,7 @@ namespace UnityEngine.UIElements
     ///
     /// You can use struct or class instances as attributes and even lists of struct or class instances in UXML.
     /// However, they must be convertible to and from a string and you must declare a [[UIElements.UxmlAttributeConverter_1]] to support this conversion.
-    /// When using the class in a list, ensure that its string representation does not contain any commas (",") as this character is used by
-    /// the list to separate the items. Refer to [[UIElements.UxmlObjectReferenceAttribute]] for an example of a field that supports more complex data.
+    /// For an example of a field that supports more complex data, refer to [[UIElements.UxmlObjectReferenceAttribute]].
     /// The following example shows how a class instance can support a property and list:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyClassWithData.cs"/>
     /// </example>
@@ -145,6 +150,16 @@ namespace UnityEngine.UIElements
     /// </example>
     /// <example>
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_MyClassWithDataConverter.uxml"/>
+    /// </example>
+    /// <example>
+    /// Strings can contain commas, encoded as @@%2C@@ in the UXML.
+    /// When you authoring UXML directly, use the encoded form @@%2C@@ to ensure commas are not mistaken for list separators.
+    /// The following C# code defines a custom control, MyStringListElement, with a @@my-string@@ attribute which represents a List of strings.
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_StringList.cs"/>
+    /// </example>
+    /// <example>
+    /// The following UXML example uses @@%2C@@ to separate words in the string list:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlAttribute_StringList.uxml"/>
     /// </example>
     /// <example>
     /// When an attribute shares the same UXML name as an attribute from a child class,

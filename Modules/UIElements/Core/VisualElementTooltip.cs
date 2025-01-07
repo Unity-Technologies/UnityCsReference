@@ -7,13 +7,6 @@ using Unity.Properties;
 
 namespace UnityEngine.UIElements
 {
-    /// <summary>
-    /// Base class for objects that are part of the UIElements visual tree.
-    /// </summary>
-    /// <remarks>
-    /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
-    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
-    /// </remarks>
     public partial class VisualElement
     {
         //PropertyName to store in property bag.

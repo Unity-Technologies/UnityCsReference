@@ -11,17 +11,35 @@ using UnityEngine.Pool;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Use this enum to specify during which phases the event handler is executed.
+    /// Use this enum to specify during which propagation phase the event handler is executed.
     /// </summary>
+    /// <seealso cref="PropagationPhase"/>
+    /// <seealso cref="CallbackEventHandler.RegisterCallback{T}(EventCallback{T}, TrickleDown)"/>
     public enum TrickleDown
     {
         /// <summary>
-        /// The event handler should be executed during the AtTarget and BubbleUp phases.
+        /// Execute the event handler during the BubbleUp propagation phase
+        /// if the event bubbles and the element is a parent of the event's target,
+        /// or if the callback is registered directly on the event's target.
         /// </summary>
+        /// <remarks>
+        /// Handlers that use <see cref="TrickleDown.TrickleDown"/> are executed before those that 
+        /// use <see cref="TrickleDown.NoTrickleDown"/>.
+        /// </remarks>
+        /// <seealso cref="EventBase.bubbles"/>
+        /// <seealso cref="PropagationPhase.BubbleUp"/>
         NoTrickleDown = 0,
         /// <summary>
-        /// The event handler should be executed during the AtTarget and TrickleDown phases.
+        /// Execute the event handler during the TrickleDown propagation phase
+        /// if the event tricklesDown and the element is a parent of the event's target,
+        /// or if the callback is registered directly on the event's target.
         /// </summary>
+        /// <remarks>
+        /// Handlers that use <see cref="TrickleDown.TrickleDown"/> are executed before those
+        /// that use <see cref="TrickleDown.NoTrickleDown"/>.
+        /// </remarks>
+        /// <seealso cref="EventBase.tricklesDown"/>
+        /// <seealso cref="PropagationPhase.TrickleDown"/>
         TrickleDown = 1
     }
 

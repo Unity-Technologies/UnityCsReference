@@ -10,7 +10,7 @@ namespace UnityEditor
 {
     internal static class SelectionCommands
     {
-        private const int SelectionMenuPriority = 80;
+        private const int SelectionMenuPriority = 150;
 
         [MenuItem("Edit/Deselect All #d", false, SelectionMenuPriority + 1)]
         internal static void DeselectAll()

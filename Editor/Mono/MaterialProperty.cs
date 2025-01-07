@@ -30,12 +30,15 @@ namespace UnityEditor
         private UnityEngine.Rendering.TextureDimension m_TextureDimension;
         private int m_MixedValueMask;
 
-
         public Object[] targets { get { return m_Targets; } }
+        //[Obsolete("The 'type' property is deprated. Please use 'propertyType' instead", false)]
         public PropType type { get { return (PropType)m_Type; } }
+        public ShaderPropertyType propertyType { get { return m_Type; } }
         public string name { get { return m_Name; } }
         public string displayName { get { return m_DisplayName; } }
+        //[Obsolete("The 'flags' property is deprated. Please use 'propertyFlags' instead", false)]
         public PropFlags flags { get { return (PropFlags)m_Flags; } }
+        public ShaderPropertyFlags propertyFlags { get { return m_Flags; } }
         public UnityEngine.Rendering.TextureDimension textureDimension { get { return m_TextureDimension; } }
         public Vector2 rangeLimits { get { return m_RangeLimits; } }
         public bool hasMixedValue { get { return (m_MixedValueMask & 1) != 0; } }
@@ -404,22 +407,22 @@ namespace UnityEditor
                     // fetch default value from shader
                     var shader = (property.targets[0] as Material).shader;
                     int nameId = shader.FindPropertyIndex(property.name);
-                    switch (property.type)
+                    switch (property.propertyType)
                     {
-                        case PropType.Float:
-                        case PropType.Range:
+                        case ShaderPropertyType.Float:
+                        case ShaderPropertyType.Range:
                             property.floatValue = shader.GetPropertyDefaultFloatValue(nameId);
                             break;
-                        case PropType.Vector:
+                        case ShaderPropertyType.Vector:
                             property.vectorValue = shader.GetPropertyDefaultVectorValue(nameId);
                             break;
-                        case PropType.Color:
+                        case ShaderPropertyType.Color:
                             property.colorValue = shader.GetPropertyDefaultVectorValue(nameId);
                             break;
-                        case PropType.Int:
+                        case ShaderPropertyType.Int:
                             property.intValue = shader.GetPropertyDefaultIntValue(nameId);
                             break;
-                        case PropType.Texture:
+                        case ShaderPropertyType.Texture:
                             Texture texture = null;
                             var importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(shader)) as ShaderImporter;
                             if (importer != null)
@@ -544,26 +547,26 @@ namespace UnityEditor
 
                 copyAction = null;
                 pasteAction = null;
-                switch (prop.type)
+                switch (prop.propertyType)
                 {
-                    case PropType.Float:
-                    case PropType.Range:
+                    case ShaderPropertyType.Float:
+                    case ShaderPropertyType.Range:
                         if (canCopy) copyAction = () => Clipboard.floatValue = prop.floatValue;
                         if (canPaste && Clipboard.hasFloat) pasteAction = () => prop.floatValue = Clipboard.floatValue;
                         break;
-                    case PropType.Int:
+                    case ShaderPropertyType.Int:
                         if (canCopy) copyAction = () => Clipboard.integerValue = prop.intValue;
                         if (canPaste && Clipboard.hasInteger) pasteAction = () => prop.intValue = Clipboard.integerValue;
                         break;
-                    case PropType.Color:
+                    case ShaderPropertyType.Color:
                         if (canCopy) copyAction = () => Clipboard.colorValue = prop.colorValue;
                         if (canPaste && Clipboard.hasColor) pasteAction = () => prop.colorValue = Clipboard.colorValue;
                         break;
-                    case PropType.Vector:
+                    case ShaderPropertyType.Vector:
                         if (canCopy) copyAction = () => Clipboard.vector4Value = prop.vectorValue;
                         if (canPaste && Clipboard.hasVector4) pasteAction = () => prop.vectorValue = Clipboard.vector4Value;
                         break;
-                    case PropType.Texture:
+                    case ShaderPropertyType.Texture:
                         if (canCopy) copyAction = () => Clipboard.guidValue = AssetDatabase.GUIDFromAssetPath(AssetDatabase.GetAssetPath(prop.textureValue));
                         if (canPaste && Clipboard.hasGuid) pasteAction = () => prop.textureValue = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(Clipboard.guidValue)) as Texture;
                         break;
@@ -801,7 +804,7 @@ namespace UnityEditor
         {
             // [PerRendererData] material properties are read-only as they are meant to be set in code on a per-renderer basis.
             // Don't show override UI for them
-            if (prop != null && (prop.flags & PropFlags.PerRendererData) != 0)
+            if (prop != null && (prop.propertyFlags & ShaderPropertyFlags.PerRendererData) != 0)
                 return true;
             for (int i = 0; i < s_PropertyStack.Count; i++)
             {

@@ -65,6 +65,13 @@ namespace UnityEngine
         Include = 1
     }
 
+    public struct InstantiateParameters
+    {
+        public Transform parent;
+        public Scene scene;
+        public bool worldSpace;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode(GenerateProxy = true)]
     [NativeHeader("Runtime/Export/Scripting/UnityEngineObject.bindings.h")]
@@ -184,75 +191,92 @@ namespace UnityEngine
         // Clones the object /original/ and returns the clone.
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, 1, null, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+            return InstantiateAsync(original, new InstantiateParameters{ worldSpace = true });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Transform parent) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, 1, parent, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+            return InstantiateAsync(original, new InstantiateParameters{ worldSpace = true, parent = parent });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
         {
-            unsafe
-            {
-                return InstantiateAsync(original, 1, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
-            }
+            return InstantiateAsync(original, position, rotation, new InstantiateParameters{ worldSpace = true });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Transform parent, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
         {
-            unsafe
-            {
-                return InstantiateAsync(original, 1, parent, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
-            }
+            return InstantiateAsync(original, position, rotation, new InstantiateParameters{ worldSpace = true, parent = parent });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, count, null, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+            return InstantiateAsync(original, count, new InstantiateParameters{ worldSpace = true });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, count, parent, ReadOnlySpan<Vector3>.Empty, ReadOnlySpan<Quaternion>.Empty);
+            return InstantiateAsync(original, count, new InstantiateParameters{ worldSpace = true, parent = parent });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
         {
-            unsafe
-            {
-                return InstantiateAsync(original, count, null, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
-            }
+            return InstantiateAsync(original, count, position, rotation, new InstantiateParameters{ worldSpace = true });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, count, null, positions, rotations);
+            return InstantiateAsync(original, count, positions, rotations, new InstantiateParameters{ worldSpace = true });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, Vector3 position, Quaternion rotation) where T : UnityEngine.Object
         {
-            unsafe
-            {
-                return InstantiateAsync(original, count, parent, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1));
-            }
+            return InstantiateAsync(original, count, position, rotation, new InstantiateParameters{ worldSpace = true, parent = parent });
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, Vector3 position, Quaternion rotation, CancellationToken cancellationToken) where T : UnityEngine.Object
         {
-            unsafe
-            {
-                return InstantiateAsync(original, count, parent, new ReadOnlySpan<Vector3>(&position, 1), new ReadOnlySpan<Quaternion>(&rotation, 1), cancellationToken);
-            }
+            return InstantiateAsync(original, count, position, rotation, new InstantiateParameters{ worldSpace = true, parent = parent }, cancellationToken);
         }
 
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations) where T : UnityEngine.Object
         {
-            return InstantiateAsync(original, count, parent, positions, rotations, CancellationToken.None);
+            return InstantiateAsync(original, count, positions, rotations, new InstantiateParameters{ worldSpace = true, parent = parent });
         }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+
         public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Transform parent, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations, CancellationToken cancellationToken) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, count, positions, rotations, new InstantiateParameters{ worldSpace = true, parent = parent }, cancellationToken);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, 1, parameters, cancellationToken);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, count, ReadOnlySpan<Vector3>.Empty,  ReadOnlySpan<Quaternion>.Empty, parameters, cancellationToken);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, Vector3 position, Quaternion rotation, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
+        {
+            return InstantiateAsync(original, 1, position, rotation, parameters, cancellationToken);
+        }
+
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, Vector3 position, Quaternion rotation, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
+        {
+            unsafe
+            {
+                return InstantiateAsync(original, count, new ReadOnlySpan<Vector3>(&position, 1),  new ReadOnlySpan<Quaternion>(&rotation, 1), parameters, cancellationToken);
+            }
+        }
+
+        // Use the value directly to support netstandard
+        // MethodImplOptions.AggressiveInlining = 256
+        // MethodImplOptions.AggressiveOptimization = 512
+        [MethodImpl(256 | 512)]
+        public static AsyncInstantiateOperation<T> InstantiateAsync<T>(T original, int count, ReadOnlySpan<Vector3> positions, ReadOnlySpan<Quaternion> rotations, InstantiateParameters parameters, CancellationToken cancellationToken = default) where T : UnityEngine.Object
         {
             CheckNullArgument(original, objectIsNullMessage);
 
@@ -269,7 +293,7 @@ namespace UnityEngine
                 fixed(Vector3* positionsPtr = positions)
                 fixed(Quaternion* rotationsPtr = rotations)
                 {                    
-                    return new AsyncInstantiateOperation<T>(Internal_InstantiateAsyncWithParent(original, count, parent, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length, cancellationToken.CanBeCanceled), cancellationToken);
+                    return new AsyncInstantiateOperation<T>(Internal_InstantiateAsyncWithParams(original, count, parameters, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length, cancellationToken.CanBeCanceled), cancellationToken);
                 }
             }            
         }
@@ -327,6 +351,28 @@ namespace UnityEngine
         {
             CheckNullArgument(original, objectIsNullMessage);
             var obj = Internal_CloneSingleWithScene(original, scene);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
+        }
+
+        public static T Instantiate<T>(T original, InstantiateParameters parameters) where T : UnityEngine.Object
+        {
+            CheckNullArgument(original, objectIsNullMessage);
+            var obj = (T)Internal_CloneSingleWithParams(original, parameters);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
+        }
+
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, InstantiateParameters parameters) where T : UnityEngine.Object
+        {
+            CheckNullArgument(original, objectIsNullMessage);
+            var obj = (T)Internal_InstantiateSingleWithParams(original, position, rotation, parameters);
 
             if (obj == null)
                 throw new UnityException(cloneDestroyedMessage);
@@ -632,11 +678,16 @@ namespace UnityEngine
         [FreeFunction("CloneObjectToScene")]
         extern static Object Internal_CloneSingleWithScene([NotNull] Object data, Scene scene);
 
+        [FreeFunction("CloneObjectWithParams")]
+        extern static Object Internal_CloneSingleWithParams([NotNull] Object data, InstantiateParameters parameters);
+        [FreeFunction("InstantiateObjectWithParams")]
+        extern static Object Internal_InstantiateSingleWithParams([NotNull] Object data, Vector3 position, Quaternion rotation, InstantiateParameters parameters);
+
         [FreeFunction("CloneObject")]
         extern static Object Internal_CloneSingleWithParent([NotNull] Object data, [NotNull] Transform parent, bool worldPositionStays);
 
         [FreeFunction("InstantiateAsyncObjects")]
-        extern static IntPtr Internal_InstantiateAsyncWithParent([NotNull] Object original, int count, Transform parent, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount, bool hasManagedCancellationToken);
+        extern static IntPtr Internal_InstantiateAsyncWithParams([NotNull] Object original, int count, InstantiateParameters parameters, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount, bool hasManagedCancellationToken);
 
         [FreeFunction("InstantiateObject")]
         extern static Object Internal_InstantiateSingle([NotNull] Object data, Vector3 pos, Quaternion rot);

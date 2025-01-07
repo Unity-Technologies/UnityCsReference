@@ -13,6 +13,8 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class UxmlUtility
     {
+        const string s_CommaEncoded = "%2C";
+
         public static List<string> ParseStringListAttribute(string itemList)
         {
             if (string.IsNullOrEmpty(itemList?.Trim()))
@@ -33,6 +35,16 @@ namespace UnityEngine.UIElements
             }
 
             return null;
+        }
+
+        public static string EncodeListItem(string item)
+        {
+            return item.Replace(",", s_CommaEncoded);
+        }
+
+        public static string DecodeListItem(string item)
+        {
+            return item.Replace(s_CommaEncoded, ",");
         }
 
         public static void MoveListItem(IList list, int src, int dst)

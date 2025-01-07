@@ -95,6 +95,11 @@ namespace UnityEditor.Search
             }
         }
 
+        public void UpdateView()
+        {
+            BuildView();
+        }
+
         private SearchEmptyViewMode GetDisplayMode()
         {
             if (searchViewFlags.HasFlag(SearchViewFlags.DisableQueryHelpers))
@@ -126,7 +131,7 @@ namespace UnityEditor.Search
             var displayMode = GetDisplayMode();
             if (!forceBuild && displayMode == m_DisplayMode)
             {
-                UpdateView();
+                UpdateViewMinimal();
                 return;
             }
             m_DisplayMode = displayMode;
@@ -156,7 +161,7 @@ namespace UnityEditor.Search
             EnableInClassList(helperBackgroundClassName, m_DisplayMode == SearchEmptyViewMode.HideHelpersNoResult || QueryEmpty());
         }
 
-        void UpdateView()
+        void UpdateViewMinimal()
         {
             if (m_DisplayMode != SearchEmptyViewMode.NoResultWithTips)
                 return;

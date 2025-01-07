@@ -182,9 +182,8 @@ namespace UnityEngine.Tilemaps
                 if (tileId != 0)
                 {
                     TileBase tile = (TileBase)Object.ForceLoadFromInstanceID(tileId);
-                    tile.GetTileData(positions[i], tilemap, ref tileData);
+                    tile.GetTileData(positions[i], tilemap, ref UnsafeUtility.ArrayElementAsRef<TileData>(tileDataArray.GetUnsafePtr(), i));
                 }
-                tileDataArray[i] = tileData;
             }
 
             AtomicSafetyHandle.Release(ash1);

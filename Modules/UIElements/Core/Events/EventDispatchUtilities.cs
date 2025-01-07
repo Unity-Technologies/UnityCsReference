@@ -10,8 +10,8 @@ using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
 {
-    // determines in which event phase an event handler wants to handle events
-    // the handler always gets called if it is the target VisualElement
+    // Determines in which event phase an event handler wants to handle events.
+    // The handler always gets called if it is the target VisualElement.
     /// <summary>
     /// The propagation phases of an event.
     /// </summary>
@@ -21,6 +21,8 @@ namespace UnityEngine.UIElements
     /// In the TrickleDown phase, the event is sent from the panel's root element to the target element.
     ///
     /// In the BubbleUp phase, the event is sent from the target element back to the panel's root element.
+    ///
+    /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
     /// </remarks>
     public enum PropagationPhase
     {
@@ -34,12 +36,18 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The event is sent from the panel's root element to the target element.
         /// </summary>
+        /// <remarks>
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
         TrickleDown = 1,
 
         // After the target has gotten the chance to handle the event, the event walks up the hierarchy back to root.
         /// <summary>
         /// The event is sent from the target element back to the panel's root element.
         /// </summary>
+        /// <remarks>
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
         BubbleUp = 3,
 
         [Obsolete("PropagationPhase.AtTarget has been removed as part of an event propagation simplification. Events now propagate through the TrickleDown phase followed immediately by the BubbleUp phase. Please use TrickleDown or BubbleUp. You can check if the event target is the current element by testing event.target == this in your local callback.", false)]

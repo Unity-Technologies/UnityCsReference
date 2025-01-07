@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -383,10 +384,19 @@ namespace UnityEngine
         DXT1Crunched = 28,
         DXT5Crunched = 29,
 
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGB2  = 30,
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGBA2 = 31,
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGB4  = 32,
+        [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         PVRTC_RGBA4 = 33,
+
         ETC_RGB4    = 34,
 
         EAC_R = 41,
@@ -811,13 +821,29 @@ namespace UnityEngine
                 RGBA_BC7_SRGB = 108,
                 RGBA_BC7_UNorm = 109,
 
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGB_PVRTC_2Bpp_SRGB = 110,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGB_PVRTC_2Bpp_UNorm = 111,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGB_PVRTC_4Bpp_SRGB = 112,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGB_PVRTC_4Bpp_UNorm = 113,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGBA_PVRTC_2Bpp_SRGB = 114,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGBA_PVRTC_2Bpp_UNorm = 115,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGBA_PVRTC_4Bpp_SRGB = 116,
+                [System.Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release")]
+                [EditorBrowsable(EditorBrowsableState.Never)]
                 RGBA_PVRTC_4Bpp_UNorm = 117,
 
                 RGB_ETC_UNorm = 118,

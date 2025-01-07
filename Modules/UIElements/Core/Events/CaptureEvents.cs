@@ -9,6 +9,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for pointer capture events and mouse capture events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Capture-Events|Capture events]] manual page for more information and examples.
+    /// </remarks>
     public interface IPointerCaptureEvent
     {
     }
@@ -21,6 +24,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Base class for pointer capture events and mouse capture events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Capture-Events|Capture events]] manual page for more information and examples.
+    /// </remarks>
     [EventCategory(EventCategory.Pointer)]
     public abstract class PointerCaptureEventBase<T> : EventBase<T>, IPointerCaptureEvent, IPointerCaptureEventInternal where T : PointerCaptureEventBase<T>, new()
     {
@@ -115,6 +121,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for mouse capture events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Capture-Events|Capture events]] manual page for more information and examples.
+    /// </remarks>
     public interface IMouseCaptureEvent
     {
     }
@@ -122,6 +131,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Event sent when the handler capturing the mouse changes.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Capture-Events|Capture events]] manual page for more information and examples.
+    /// </remarks>
     public abstract class MouseCaptureEventBase<T> : PointerCaptureEventBase<T>, IMouseCaptureEvent where T : MouseCaptureEventBase<T>, new()
     {
         /// <summary>

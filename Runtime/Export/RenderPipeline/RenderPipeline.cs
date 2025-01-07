@@ -9,10 +9,12 @@ namespace UnityEngine.Rendering
 {
     public abstract class RenderPipeline
     {
-        protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
+        [Obsolete("Render with an array parameter is deprecated. Use Render with a list parameter instead. If you're extending the RenderPipeline class, override the Render method with a List parameter to perform rendering in order to avoid unnecessary allocations and copies. #from 6000.1", false)]
+        protected virtual void Render(ScriptableRenderContext context, Camera[] cameras) { }
         protected virtual void ProcessRenderRequests<RequestData>(ScriptableRenderContext context, Camera camera, RequestData renderRequest) { }
         protected internal virtual bool IsRenderRequestSupported<RequestData>(Camera camera, RequestData data) { return false; }
 
+        [Obsolete("BeginFrameRendering is deprecated. Use BeginContextRendering instead. #from 6000.1", false)]
         protected static void BeginFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
             RenderPipelineManager.BeginContextRendering(context, new List<Camera>(cameras));
@@ -33,6 +35,7 @@ namespace UnityEngine.Rendering
             RenderPipelineManager.EndContextRendering(context, cameras);
         }
 
+        [Obsolete("EndFrameRendering is deprecated. Use EndContextRendering instead. #from 6000.1", false)]
         protected static void EndFrameRendering(ScriptableRenderContext context, Camera[] cameras)
         {
             RenderPipelineManager.EndContextRendering(context, new List<Camera>(cameras));
@@ -45,7 +48,10 @@ namespace UnityEngine.Rendering
 
         protected virtual void Render(ScriptableRenderContext context, List<Camera> cameras)
         {
+            //To do: Remove when the array version will be removed
+#pragma warning disable CS0618 // Type or member is obsolete
             Render(context, cameras.ToArray());
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         internal void InternalRender(ScriptableRenderContext context, List<Camera> cameras)

@@ -367,91 +367,14 @@ namespace UnityEngine
             return RenderToCubemapEyeImpl(cubemap, faceMask, stereoEye);
         }
 
-        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
-        public enum RenderRequestMode
-        {
-            None = 0,
-            ObjectId = 1,
-            Depth = 2,
-            VertexNormal = 3,
-            WorldPosition = 4,
-            EntityId = 5,
-            BaseColor = 6,
-            SpecularColor = 7,
-            Metallic = 8,
-            Emission = 9,
-            Normal = 10,
-            Smoothness = 11,
-            Occlusion = 12,
-            DiffuseColor = 13
-        }
-
-        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
-        public enum RenderRequestOutputSpace
-        {
-            ScreenSpace = -1,
-            UV0 = 0,
-            UV1 = 1,
-            UV2 = 2,
-            UV3 = 3,
-            UV4 = 4,
-            UV5 = 5,
-            UV6 = 6,
-            UV7 = 7,
-            UV8 = 8,
-        }
-
-        [Obsolete("The RenderRequest struct is obsolete, use the function overload with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
-        public struct RenderRequest
-        {
-            readonly RenderRequestMode m_CameraRenderMode;
-            readonly RenderTexture m_ResultRT;
-
-            private readonly RenderRequestOutputSpace m_OutputSpace;
-
-            public RenderRequest(RenderRequestMode mode, RenderTexture rt)
-            {
-                m_CameraRenderMode = mode;
-                m_ResultRT = rt;
-                m_OutputSpace = RenderRequestOutputSpace.ScreenSpace;
-            }
-
-            public RenderRequest(RenderRequestMode mode, RenderRequestOutputSpace space, RenderTexture rt)
-            {
-                m_CameraRenderMode = mode;
-                m_ResultRT = rt;
-                m_OutputSpace = space;
-            }
-
-            public bool isValid => m_CameraRenderMode != 0 && m_ResultRT != null;
-
-            public RenderRequestMode mode => m_CameraRenderMode;
-            public RenderTexture result => m_ResultRT;
-            public RenderRequestOutputSpace outputSpace => m_OutputSpace;
-        }
-
         [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();
         [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
         [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
 
-        [Obsolete("SubmitRenderRequests is obsolete, use SubmitRenderRequest with RequestData of supported types such as RenderPipeline.StandardRequest", true)]
-        public void SubmitRenderRequests(List<RenderRequest> renderRequests)
-        {
-            if (renderRequests == null || renderRequests.Count == 0)
-                throw new ArgumentException($"{nameof(SubmitRenderRequests)} has been invoked with invalid renderRequests");
-
-            if (GraphicsSettings.currentRenderPipeline == null)
-            {
-                Debug.LogWarning("Trying to invoke 'SubmitRenderRequests' when no SRP is set. A scriptable render pipeline is needed for this function call");
-                return;
-            }
-            SubmitRenderRequestsInternal(renderRequests);
-        }
-
         public void SubmitRenderRequest<RequestData>(RequestData renderRequest)
         {
             if (renderRequest == null)
-                throw new ArgumentException($"{nameof(SubmitRenderRequests)} is invoked with invalid renderRequests");
+                throw new ArgumentException($"{nameof(SubmitRenderRequest)} is invoked with invalid renderRequests");
 
             if (renderRequest is ObjectIdRequest objectIdRequest)
             {

@@ -349,10 +349,12 @@ namespace UnityEngine.UIElements
                 case TextureFormat.BC5:                 // Source is 2 components per color, 8 bits per component
                 case TextureFormat.DXT1Crunched:        // See DXT1
                 case TextureFormat.DXT5Crunched:        // See DXT5
+#pragma warning disable CS0618 // TextureFormat.PVRTC_* members are obsolete
                 case TextureFormat.PVRTC_RGB2:          // Source is 8 bits per component or less
                 case TextureFormat.PVRTC_RGBA2:         // Source is 8 bits per component or less
                 case TextureFormat.PVRTC_RGB4:          // Source is 8 bits per component or less
                 case TextureFormat.PVRTC_RGBA4:         // Source is 8 bits per component or less
+#pragma warning restore CS0618
                 case TextureFormat.ETC_RGB4:            // Source is 8 bits per component
                 case TextureFormat.EAC_R:               // Source is 8 bits per component
                 case TextureFormat.EAC_R_SIGNED:        // Source is 8 bits per component

@@ -50,7 +50,8 @@ namespace UnityEditor.Search
         // 29- Add component prefix + m_Enabled property
         // 30- Use SearchDocumentList
         // 31- Update custom indexers with prefabs.
-        internal const int version = 0x031;
+        // 32- Property references also index GlobalObjectId with PropertyName.
+        internal const int version = 0x032;
 
         public enum Type : byte
         {
@@ -2225,12 +2226,54 @@ namespace UnityEditor.Search
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         private bool Lower(ref int foundIndex, in SearchIndexEntry term, SearchIndexOperator op)
         {
-            if (op == SearchIndexOperator.Less || op == SearchIndexOperator.LessOrEqual)
+            if (op == SearchIndexOperator.Less)
             {
                 var cont = !Advance(foundIndex, term, op);
                 if (cont)
                     foundIndex--;
                 return IsIndexValid(foundIndex, term.crc, term.type) && cont;
+            }
+            else if (op == SearchIndexOperator.LessOrEqual)
+            {
+                if (!Advance(foundIndex, term, op))
+                {
+                    foundIndex = -1;
+                    return false;
+                }
+
+                var cont = Advance(foundIndex + 1, term, op);
+                if (cont)
+                    foundIndex++;
+                return IsIndexValid(foundIndex, term.crc, term.type) && cont;
+            }
+            else if (op == SearchIndexOperator.Greater)
+            {
+                var cont = !Advance(foundIndex, term, op);
+                if (cont)
+                    foundIndex++;
+                return IsIndexValid(foundIndex, term.crc, term.type) && cont;
+            }
+            else if (op == SearchIndexOperator.Equal || op == SearchIndexOperator.Contains)
+            {
+                if (!IsIndexValid(foundIndex, term.crc, term.type))
+                {
+                    var cont = Rewind(foundIndex, term, op);
+                    if (cont)
+                    {
+                        foundIndex--;
+                        return true;
+                    }
+                    else
+                    {
+                        foundIndex = -1;
+                        return false;
+                    }
+                }
+                if (!Advance(foundIndex, term, op) && !Rewind(foundIndex, term, op))
+                {
+                    foundIndex = -1;
+                    return false;
+                }
             }
 
             {
@@ -2263,19 +2306,16 @@ namespace UnityEditor.Search
 
         private IEnumerable<SearchResult> SearchRange(int foundIndex, SearchIndexEntry term, SearchIndexComparer comparer, SearchResultCollection subset)
         {
-            if (foundIndex < 0 && comparer.op != SearchIndexOperator.Contains && comparer.op != SearchIndexOperator.Equal)
+            if (foundIndex < 0)
             {
                 // Potential range insertion, only used for not exact matches
                 foundIndex = (-foundIndex) - 1;
 
-                if (comparer.op == SearchIndexOperator.Less || comparer.op == SearchIndexOperator.LessOrEqual && foundIndex > 0)
+                if ((comparer.op == SearchIndexOperator.Less || comparer.op == SearchIndexOperator.LessOrEqual) && foundIndex > 0)
                 {
                     foundIndex--;
                 }
             }
-
-            if (!IsIndexValid(foundIndex, term.crc, term.type))
-                yield break;
 
             // Rewind to first element
             while (Lower(ref foundIndex, term, comparer.op))

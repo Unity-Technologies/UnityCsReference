@@ -17,7 +17,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Texture2D texture { get; set; }
         /// <summary>
-        /// The offset from the top left of the texture to use as the target point (must be within the bounds of the cursor).
+        /// The offset from the top left of the texture to use as the active point of the cursor. The offset must be within the bounds of the cursor.
         /// </summary>
         public Vector2 hotspot { get; set; }
         // Used to support default cursor in the editor (map to MouseCursor enum)

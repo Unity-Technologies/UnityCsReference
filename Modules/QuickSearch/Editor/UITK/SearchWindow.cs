@@ -91,7 +91,7 @@ namespace UnityEditor.Search
         Func<SearchItem, bool> ISearchView.filterCallback { get => (item) => m_ViewState.filterHandler?.Invoke(item) ?? true; }
         Action<SearchItem> ISearchView.trackingCallback => m_ViewState.trackingHandler;
 
-        public bool searchInProgress => (m_SearchView?.searchInProgress ?? context?.searchInProgress ?? false) || m_DebounceOff != null;
+        public bool searchInProgress => (m_SearchView?.searchInProgress ?? context?.searchInProgress ?? false) || !guiCreated;
         public string currentGroup { get => m_SearchView?.currentGroup ?? viewState.group; set => SelectGroup(value); }
 
         public SearchViewState state => m_ViewState;
@@ -108,8 +108,10 @@ namespace UnityEditor.Search
         public SearchContext context => m_ViewState.context;
         public ISearchList results => m_SearchView.results;
         public DisplayMode displayMode => m_SearchView.displayMode;
-        public float itemIconSize { get => m_SearchView?.itemSize ?? 0; set { if (m_SearchView != null) m_SearchView.itemSize = value; } }
+        public float itemIconSize { get => m_SearchView?.itemSize ?? 0; set => m_SearchView.itemSize = value; }
+
         public bool multiselect { get => m_SearchView.multiselect; set => m_SearchView.multiselect = value; }
+        public bool guiCreated { get; private set; } = false;
 
         internal string windowId => m_ViewState.sessionId;
         int ISearchView.totalCount => m_SearchView.totalCount;
@@ -132,8 +134,12 @@ namespace UnityEditor.Search
             body.Add(CreateContent(m_SearchView));
             body.Add(new SearchStatusBar("SearchStatusBar", this));
 
+            m_SearchView?.Refresh(); // Call Refresh after it is attached.
+
             // Don't add it to the body, the SearchAutoCompleteWindow will take care of it when shown.
             m_SearchAutoCompleteWindow = new SearchAutoCompleteWindow(this, body);
+
+            guiCreated = true;
         }
 
         int ISearchView.GetViewId()
@@ -179,9 +185,6 @@ namespace UnityEditor.Search
             if (evt.modifiers > 0)
                 return false;
 
-            if (GUIUtility.textFieldInput)
-                return false;
-
             if (selection.Count != 0 || results.Count == 0)
                 return false;
 
@@ -215,7 +218,7 @@ namespace UnityEditor.Search
             if (imguiEvt != null && HandleDefaultPressEnter(imguiEvt))
                 return true;
 
-            if (evt is KeyDownEvent && !GUIUtility.textFieldInput)
+            if (evt is KeyDownEvent)
             {
                 var groupNavModifier = Application.platform == RuntimePlatform.OSXEditor ? (EventModifiers.Command | EventModifiers.Alt) : EventModifiers.Alt;
 
@@ -576,6 +579,7 @@ namespace UnityEditor.Search
 
             m_SearchView.syncSearch = false;
             m_SearchView?.Dispose();
+            guiCreated = false;
 
             m_SearchMonitorView.Dispose();
 
@@ -626,6 +630,8 @@ namespace UnityEditor.Search
         {
             if (evt.sourceViewState != viewState)
                 return;
+
+            // This debounce can be kept since it is only used to update the UI
             m_DebounceOff?.Invoke();
             m_DebounceOff = Utils.CallDelayed(UpdateAsyncResults, 0.1d);
         }
@@ -1105,6 +1111,9 @@ namespace UnityEditor.Search
                 loadGroup = context.providers.First().id;
             }
 
+            // Apply Package and WantsMore visbility global flags.
+            SearchSettings.ApplyContextOptions(m_ViewState.context);
+
             m_ViewState.group = m_ViewState.hideTabs ? null : (loadGroup ?? m_ViewState.group);
             UpdateViewState(m_ViewState);
         }
@@ -1120,7 +1129,6 @@ namespace UnityEditor.Search
                 if (m_ViewState.context != null)
                 {
                     m_ViewState.context.searchText = m_ViewState.searchText;
-                    SearchSettings.ApplyContextOptions(m_ViewState.context);
                 }
             }
         }
@@ -1136,6 +1144,8 @@ namespace UnityEditor.Search
 
             if (m_SearchView != null)
                 SearchSettings.SetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, viewState.group);
+
+            SearchSettings.itemIconSize = viewState.itemSize;
 
             SearchSettings.Save();
         }

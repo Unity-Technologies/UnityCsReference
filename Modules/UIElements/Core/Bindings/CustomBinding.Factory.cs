@@ -7,9 +7,6 @@ using UnityEngine.Internal;
 
 namespace UnityEngine.UIElements
 {
-    /// <summary>
-    /// Base class for general purpose binding extensibility.
-    /// </summary>
     public abstract partial class CustomBinding
     {
         [ExcludeFromDocs, Serializable]

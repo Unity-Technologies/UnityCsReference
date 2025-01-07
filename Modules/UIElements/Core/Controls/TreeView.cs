@@ -18,7 +18,7 @@ namespace UnityEngine.UIElements
     /// data-source list can contain elements of any type. \\
     /// \\
     /// The logic required to create VisualElements, and to bind them to or unbind them from the data source, varies depending
-    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the ListView to function
+    /// on the intended result. It's up to you to implement logic that is appropriate to your use case. For the TreeView to function
     /// correctly, you must supply at least the following:
     ///
     ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>
@@ -27,12 +27,14 @@ namespace UnityEngine.UIElements
     ///
     ///- <see cref="TreeView.makeItem"/>
     ///- <see cref="TreeView.bindItem"/>
-    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>, in the case of <c>FixedHeight</c> ListView
+    ///- <see cref="BaseVerticalCollectionView.fixedItemHeight"/>, in the case of <c>FixedHeight</c> TreeView
     ///
     /// The TreeView creates VisualElements for the visible items, and supports binding many more. As the user scrolls, the TreeView
     /// recycles VisualElements and re-binds them to new data items.
     ///
     /// For more information, refer to [[wiki:UIE-uxml-element-TreeView|UXML element TreeView]].
+    ///
+    /// For the difference between IDs and indices, refer to <see cref="BaseVerticalCollectionView"/>.
     /// </remarks>
     public class TreeView : BaseTreeView
     {

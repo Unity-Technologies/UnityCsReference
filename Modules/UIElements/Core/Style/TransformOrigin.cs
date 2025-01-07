@@ -8,8 +8,17 @@ using System.Globalization;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Represents the point of origin where the (<see cref="Scale"/>, <see cref="Translate"/>, <see cref="Rotate"/>) transformations are applied.
+    /// Represents the point of origin where the transformations (<see cref="Scale"/>, <see cref="Translate"/>, and <see cref="Rotate"/>) are applied.
     /// </summary>
+    /// <remarks>
+    /// By default, transform-origin is set in percentages relative to the element's size.
+    /// For example, 50% 50% sets the origin to the center of the element.
+    /// These percentages are calculated based on the element’s resulting layout size (resolvedStyle.height and resolvedStyle.width).
+    /// You can also specify transform-origin in pixels.
+    /// The origin is determined based on the local coordinate system of the element, where the top-left corner is considered the origin point (0,0)
+    /// regardless of whether you use percentages or pixels.
+    /// Negative values and values larger than 100% are valid and move the transform-origin outside the element.
+    /// </remarks>
     public partial struct TransformOrigin : IEquatable<TransformOrigin>
     {
         /// <undoc/>

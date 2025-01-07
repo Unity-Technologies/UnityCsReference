@@ -278,11 +278,21 @@ namespace UnityEditor.Search
 
         void InitFileStream(string filePath)
         {
-            using (LockRead())
+            using (LockWrite())
             {
                 m_Fs = File.Open(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.ReadWrite | FileShare.Delete);
                 m_Br = new BinaryReader(m_Fs, PropertyStringTable.encoding, true);
                 m_Bw = new BinaryWriter(m_Fs, PropertyStringTable.encoding, true);
+            }
+        }
+
+        void CloseFileStream()
+        {
+            using (LockWrite())
+            {
+                m_Br.Dispose();
+                m_Bw.Dispose();
+                m_Fs.Dispose();
             }
         }
 
@@ -585,7 +595,14 @@ namespace UnityEditor.Search
         void HandleStringTableChanged(PropertyStringTableHeader newHeader)
         {
             using (LockWrite())
+            {
+                RetriableOperation<IOException>.Execute(() =>
+                {
+                    CloseFileStream();
+                    InitFileStream(m_StringTable.filePath);
+                }, 10, TimeSpan.FromMilliseconds(100));
                 m_Header = newHeader;
+            }
         }
 
         void NotifyStringTableChanged(PropertyStringTableHeader newHeader)

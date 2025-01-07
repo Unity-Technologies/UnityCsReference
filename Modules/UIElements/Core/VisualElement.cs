@@ -78,19 +78,26 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes the picking behavior.
+    /// Describes the picking behavior. See <see cref="VisualElement.pickingMode"/>.
     /// </summary>
     public enum PickingMode
     {
         /// <summary>
-        /// Picking enabled. Default Value. Performs picking based on the position rectangle. In the VisualElement tree hierarchy,
-        /// the picking process works using a similar logic as the rendering but in reverse order: it starts with the front-most
-        /// elements and proceeds step by step towards background elements. Thus, the child elements are picked before parents,
-        /// and the sibling elements further down the list are picked before their predecessors.
+        /// Picking enabled. Performs picking based on the position rectangle.
         /// </summary>
+        /// <remarks>
+        /// This is the default Value.
+        ///
+        /// In the VisualElement tree hierarchy, the picking process works in reverse order to rendering:
+        /// it starts with the front-most elements and proceeds step by step toward background elements.
+        /// Thus, the child elements are picked before parents, and the sibling elements further down the list are
+        /// picked before their predecessors.
+        /// </remarks>
         Position, // todo better name
+
         /// <summary>
-        /// Prevents picking as the result of a mouse event.
+        /// Prevents this element from being the target of pointer events or
+        /// from being returned by <see cref="IPanel.Pick"/> and <see cref="IPanel.PickAll"/>.
         /// </summary>
         Ignore
     }
@@ -192,7 +199,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
-    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    /// Several other classes derive from it to implement custom rendering and define behaviour for controls.\\
+    ///\\
+    /// To inherit from VisualElement and create a custom control, refer to [[wiki:UIB-structuring-ui-custom-elements|Creating a custom control]].\\
+    ///\\
+    /// SA: [[wiki:UIE-uxml-element-VisualElement|UXML element VisualElement]], [[VisualElementExtensions]], [[UQueryExtensions]].
     /// </remarks>
     public partial class VisualElement : Focusable, ITransform
     {
@@ -668,11 +679,12 @@ namespace UnityEngine.UIElements
         internal UIRenderer uiRenderer; // Null for non-world panels
 
         /// <summary>
-        /// Returns a transform object for this VisualElement.
+        /// Returns a transform styles object for this VisualElement.
         /// <seealso cref="ITransform"/>
         /// </summary>
         /// <remarks>
-        /// The transform object implements changes to the VisualElement object.
+        /// The transform styles object contains the position, rotation, scale style properties of this VisualElement.
+        /// __Note__: This transform object is different and separate from the GameObject Transform MonoBehaviour.
         /// </remarks>
         public ITransform transform
         {
@@ -1443,8 +1455,19 @@ namespace UnityEngine.UIElements
         private PickingMode m_PickingMode;
 
         /// <summary>
-        /// Determines if this element can be pick during mouseEvents or <see cref="IPanel.Pick"/> queries.
+        /// Determines if this element can be the target of pointer events or
+        /// picked by <see cref="IPanel.Pick"/> queries.
         /// </summary>
+        /// <remarks>
+        /// Elements can not be picked if:
+        ///
+        ///- They are invisible
+        ///- Their @@style.display@@ is set to @@DisplayStyle.None@@
+        ///
+        /// Elements with a picking mode of <see cref="PickingMode.Ignore"/> never receive the hover pseudo-state.
+        /// </remarks>
+        /// <seealso cref="VisualElement.visible"/>
+        /// <seealso cref="IStyle.display"/>
         [CreateProperty]
         public PickingMode pickingMode
         {
@@ -1932,12 +1955,14 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Changes the <see cref="VisualElement"/> enabled state. A disabled VisualElement does not receive most events.
+        /// Changes the <see cref="VisualElement"/> enabled state. A disabled visual element does not receive most events.
         /// </summary>
         /// <param name="value">New enabled state</param>
         /// <remarks>
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
+        ///\\
+        /// A disabled visual element does not receive most input events, such as mouse and keyboard events. However, it can still respond to Attach or Detach events, and geometry change events.
         /// <seealso cref="enabledSelf"/>
         /// </remarks>
         public void SetEnabled(bool value)
@@ -2012,9 +2037,11 @@ namespace UnityEngine.UIElements
         /// The value of this property reflects the value of <see cref="IResolvedStyle.visibility"/> for this element.
         /// The value is true for <see cref="Visibility.Visible"/> and false for <see cref="Visibility.Hidden"/>.
         /// Writing to this property writes to <see cref="IStyle.visibility"/>.
-        /// <seealso cref="resolvedStyle"/>
-        /// <seealso cref="style"/>
+        ///
+        /// Invisible elements are ignored by pointer events and by <see cref="IPanel.Pick"/>.
         /// </remarks>
+        /// <seealso cref="VisualElement.resolvedStyle"/>
+        /// <seealso cref="VisualElement.style"/>
         [CreateProperty]
         public bool visible
         {
@@ -2035,11 +2062,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Triggers a repaint of the <see cref="VisualElement"/> on the next frame.
-        /// This method is called internally when a change occurs that requires a repaint, such as when UIElements.BaseField_1::ref::value is changed or the text in a <see cref="Label"/>.
-        /// If you are implementing a custom control, you can call this method to trigger a repaint when a change occurs that requires a repaint such as when using
-        /// ::ref::generateVisualContent to render a mesh and the mesh data has now changed.
+        /// Marks that the <see cref="VisualElement"/> requires a repaint.
         /// </summary>
+        /// <remarks>
+        /// Don't call this method when you change the styles or properties of built-in controls, as this is automatically called when necessary.
+        /// However, you might need to call this method when your element has a custom ::ref::generateVisualContent that needs to be triggered, such as after you change a custom style or property.
+        /// </remarks>
         public void MarkDirtyRepaint()
         {
             IncrementVersion(VersionChangeType.Repaint);
@@ -2050,6 +2078,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Use this delegate to generate custom geometry in the content region of the <see cref="VisualElement"/>.
+        /// You can use the <see cref="MeshGenerationContext.painter2D"/> object to generate visual content,
+        /// or use the <see cref="MeshGenerationContext.Allocate"/> method to manually allocate a mesh and then fill in the vertices and indices.
         ///\\
         ///\\
         /// This delegate is called during the initial creation of the <see cref="VisualElement"/> and whenever a repaint is needed.
@@ -2060,9 +2090,6 @@ namespace UnityEngine.UIElements
         /// alter the generated content and cause unwanted side effects, such as lagging or missed updates. To avoid this, treat the <see cref="VisualElement"/>
         /// as read-only within the delegate.
         /// </remarks>
-        /// <example>
-        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/TexturedElement.cs"/>
-        /// </example>
         /// <remarks>
         /// SA: [[MeshGenerationContext]]
         /// </remarks>
@@ -2755,6 +2782,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Add a manipulator associated to a VisualElement.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         /// <param name="ele">VisualElement associated to the manipulator.</param>
         /// <param name="manipulator">Manipulator to be added to the VisualElement.</param>
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
@@ -2768,6 +2796,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Remove a manipulator associated to a VisualElement.
         /// </summary>
+        /// <remarks>For more information, refer to [[wiki:UIE-manipulators|Manipulators]] in the User Manual.</remarks>
         /// <param name="ele">VisualElement associated to the manipulator.</param>
         /// <param name="manipulator">Manipulator to be removed from the VisualElement.</param>
         public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)

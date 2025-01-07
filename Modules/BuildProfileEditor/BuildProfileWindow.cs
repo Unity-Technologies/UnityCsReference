@@ -44,6 +44,7 @@ namespace UnityEditor.Build.Profile
         VisualElement m_WelcomeMessageElement;
 
         VisualElement m_SelectionHeader;
+        VisualElement m_SelectionFooter;
 
         /// <summary>
         /// Build Profile inspector for the selected classic platform or profile,
@@ -58,6 +59,7 @@ namespace UnityEditor.Build.Profile
         ToolbarButton m_AssetImportButton;
         Button m_BuildAndRunButton;
         Button m_ActivateButton;
+        Button m_BuildInCloudPackageButton;
         AssetImportOverridesWindow m_AssetImportWindow;
         Background m_WarningIcon;
 
@@ -77,7 +79,6 @@ namespace UnityEditor.Build.Profile
             windowUxml.CloneTree(rootVisualElement);
             var listViewAddProfileButton = rootVisualElement.Q<Button>("fallback-add-profile-button");
             var addBuildProfileButton = rootVisualElement.Q<ToolbarButton>("add-build-profile-button");
-            var unityDevOpsButton = rootVisualElement.Q<ToolbarButton>("learn-more-unity-dev-ops-button");
             var playerSettingsButton = rootVisualElement.Q<ToolbarButton>("player-settings-button");
             m_AssetImportButton = rootVisualElement.Q<ToolbarButton>("asset-import-overrides-button");
 
@@ -89,19 +90,21 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorHeaderElement = rootVisualElement.Q<VisualElement>(buildProfileInspectorHeaderVisualElement);
             m_BuildAndRunButton = rootVisualElement.Q<Button>("build-and-run-button");
             m_ActivateButton = rootVisualElement.Q<Button>("activate-button");
+            m_BuildInCloudPackageButton = rootVisualElement.Q<Button>("build-cloud-build-pkg");
             m_WelcomeMessageElement = rootVisualElement.Q<VisualElement>("fallback-no-custom-build-profiles");
             m_SelectionHeader = rootVisualElement.Q<VisualElement>("build-profile-editor-header");
+            m_SelectionFooter = rootVisualElement.Q<VisualElement>("build-profile-editor-footer");
 
             // Apply localized text to static elements.
             rootVisualElement.Q<Label>("platforms-label").text = TrText.platforms;
             rootVisualElement.Q<Label>("build-profiles-label").text = TrText.buildProfilesName;
             rootVisualElement.Q<Label>("fallback-welcome-label").text = TrText.buildProfileWelcome;
             addBuildProfileButton.text = TrText.addBuildProfile;
-            unityDevOpsButton.text = TrText.learnMoreUnityDevOps;
             playerSettingsButton.text = TrText.playerSettings;
             listViewAddProfileButton.text = TrText.addBuildProfile;
             m_ActivateButton.text = TrText.activate;
             m_BuildAndRunButton.text = TrText.buildAndRun;
+            m_BuildInCloudPackageButton.text = TrText.cloudBuild;
 
             UpdateToolbarButtonState();
 
@@ -131,6 +134,7 @@ namespace UnityEditor.Build.Profile
                 OnBuildButtonClicked(BuildOptions.AutoRunPlayer | BuildOptions.StrictMode);
             };
             m_ActivateButton.clicked += OnActivateButtonClicked;
+            m_BuildInCloudPackageButton.clicked += OnCloudBuildClicked;
             addBuildProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
             listViewAddProfileButton.clicked += PlatformDiscoveryWindow.ShowWindow;
             playerSettingsButton.clicked += () =>
@@ -143,10 +147,6 @@ namespace UnityEditor.Build.Profile
                     m_AssetImportWindow = ScriptableObject.CreateInstance<AssetImportOverridesWindow>();
 
                 m_AssetImportWindow.ShowUtilityWindow(UpdateToolbarButtonState);
-            };
-            unityDevOpsButton.clicked += () =>
-            {
-                Application.OpenURL(k_DevOpsUrl);
             };
 
             BuildProfileContext.activeProfileChanged -= OnActiveProfileChanged;
@@ -193,8 +193,9 @@ namespace UnityEditor.Build.Profile
             }
 
             m_ActivateButton.text = TrText.activate;
-            m_ProfileListViews.ClearPlatformSelection();
+            m_ProfileListViews.CleanupSelection(ListViewSelectionType.Custom);
             m_SelectionHeader.Show();
+            m_SelectionFooter.Show();
             m_BuildProfileSelection.SelectItems(selectedItems);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
 
@@ -226,8 +227,9 @@ namespace UnityEditor.Build.Profile
             }
 
             m_ActivateButton.text = TrText.activatePlatform;
-            m_ProfileListViews.ClearProfileSelection();
+            m_ProfileListViews.CleanupSelection(ListViewSelectionType.Classic);
             m_SelectionHeader.Show();
+            m_SelectionFooter.Show();
             m_BuildProfileSelection.SelectItem(profile);
             m_BuildProfileSelection.UpdateSelectionGUI(profile);
 
@@ -245,7 +247,8 @@ namespace UnityEditor.Build.Profile
         internal void OnMissingClassicPlatformSelected(GUID platformId)
         {
             m_SelectionHeader.Show();
-            m_ProfileListViews.ClearProfileSelection();
+            m_SelectionFooter.Show();
+            m_ProfileListViews.CleanupSelection(ListViewSelectionType.MissingClassic);
             UpdateFormButtonState(null);
 
             // Render platform requirement helpbox instead of default inspector.
@@ -279,6 +282,7 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorHeaderElement.Clear();
             m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateLegacyGUI());
             m_SelectionHeader.Hide();
+            m_SelectionFooter.Hide();
         }
 
         /// <summary>
@@ -354,6 +358,14 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileInspectorHeaderElement.Add(element);
         }
 
+        internal void RepaintBuildProfileInspector()
+        {
+            if (!m_BuildProfileSelection.IsSingleSelection())
+                return;
+
+            RebuildBuildProfileEditor(m_BuildProfileSelection.Get(0));
+        }
+
         void Update()
         {
             // We need to detect when a build profile asset that is selected in inspector
@@ -401,6 +413,17 @@ namespace UnityEditor.Build.Profile
 
             m_BuildAndRunButton.text = child.buildAndRunButtonDisplayName;
             m_BuildButton.SetText(child.buildButtonDisplayName);
+
+            // Unity Build Automation button available only for build profiles.
+            if (m_BuildProfileSelection.IsSingleSelection()
+                && !BuildProfileContext.IsClassicPlatformProfile(m_BuildProfileSelection.Get(0)))
+            {
+                m_BuildInCloudPackageButton.Show();
+            }
+            else
+            {
+                m_BuildInCloudPackageButton.Hide();
+            }
 
             // Additional actions are always directly applied to the parent window state.
             parent.additionalActions = child.additionalActions;
@@ -461,25 +484,24 @@ namespace UnityEditor.Build.Profile
             // because certain player settings changed that will require it
             var currentBuildProfile = BuildProfileContext.activeProfile;
 
-            // we'll default to the EUBS build target in case we're dealing with an active classic platform
-            BuildTarget currentBuildTarget = EditorUserBuildSettings.activeBuildTarget;
-            if (currentBuildProfile != null)
-            {
-                currentBuildTarget = currentBuildProfile.buildTarget;
-            }
-
-            var nextBuildTarget = activateProfile.buildTarget;
             // success here is handling the player settings, failure is the user cancels handling the restart.
-            var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(currentBuildProfile, activateProfile,
-                currentBuildTarget, nextBuildTarget);
-            if (!isSuccess) {
+            var isSuccess = BuildProfileModuleUtil.HandlePlayerSettingsChanged(currentBuildProfile, activateProfile);
+            if (!isSuccess)
                 return;
-            }
 
             // Classic profiles should not be set as active, they are identified
             // by the state of EditorUserBuildSettings active build target.
             BuildProfileContext.activeProfile = !BuildProfileContext.IsClassicPlatformProfile(activateProfile)
                 ? activateProfile : null;
+
+            BuildProfileModuleUtil.InstallRequiredPackagesForClassicProfileIfRequired(activateProfile,
+                (string platformName, string packages) =>
+                {
+                    return EditorUtility.DisplayDialog(
+                            string.Format(TrText.packageInstallationQueryTitle, platformName),
+                            string.Format(TrText.packageInstallationQueryMessage, platformName, packages),
+                            TrText.packageInstallationQueryYes, TrText.packageInstallationQueryNo);
+                });
 
             buildProfileEditor.OnActivateClicked();
 
@@ -541,6 +563,18 @@ namespace UnityEditor.Build.Profile
         {
             RebuildProfileListViews();
             UpdateFormButtonState(m_BuildProfileSelection.Get(0));
+        }
+
+        /// <summary>
+        /// Cloud Build callback defers to Cloud Build package workflow.
+        /// </summary>
+        void OnCloudBuildClicked()
+        {
+            var profile = m_BuildProfileSelection.Get(0);
+            if (profile == null) 
+                return;
+
+            BuildAutomationModalWindow.OnCloudBuildClicked(profile, this);
         }
 
         /// <summary>

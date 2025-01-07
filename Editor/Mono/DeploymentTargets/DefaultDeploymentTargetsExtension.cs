@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEditor.Build;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 
@@ -75,7 +76,7 @@ namespace UnityEditor.DeploymentTargets
             return new DefaultDeploymentTargetLogger();
         }
 
-        public virtual void LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
+        public virtual IDeploymentLaunchResult LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
             throw new NotSupportedException();
         }

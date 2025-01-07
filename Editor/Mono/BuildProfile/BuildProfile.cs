@@ -50,17 +50,6 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// Module name used to fetch build profiles.
-        /// </summary>
-        string m_ModuleName;
-        [VisibleToOtherModules]
-        internal string moduleName
-        {
-            get => m_ModuleName;
-            set => m_ModuleName = value;
-        }
-
-        /// <summary>
         /// Platform ID of the build profile.
         /// Correspond to platform GUID in <see cref="BuildTargetDiscovery"/>
         /// </summary>
@@ -93,11 +82,13 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// When set, this build profiles <see cref="scenes"/> used when building.
+        /// Boolean flag for overriding global scene list.
+        /// When true, the scene list <see cref="scenes"/> in the build profile is used
+        /// when building. Otherwise, the global scene list is used.
         /// </summary>
         /// <seealso cref="EditorBuildSettings"/>
         [SerializeField] private bool m_OverrideGlobalSceneList = false;
-        internal bool overrideGlobalSceneList
+        public bool overrideGlobalScenes
         {
             get => m_OverrideGlobalSceneList;
             set => m_OverrideGlobalSceneList = value;
@@ -122,7 +113,7 @@ namespace UnityEditor.Build.Profile
                 m_Scenes = value;
                 CheckSceneListConsistency();
 
-                if (this == BuildProfileContext.activeProfile && m_OverrideGlobalSceneList)
+                if (this == BuildProfileContext.activeProfile && overrideGlobalScenes)
                     EditorBuildSettings.SceneListChanged();
             }
         }
@@ -180,6 +171,21 @@ namespace UnityEditor.Build.Profile
         internal IBuildTarget GetIBuildTarget() => ModuleManager.GetIBuildTarget(platformGuid);
 
         /// <summary>
+        /// Get the list of scenes that is used when building with the build profile.
+        /// </summary>
+        /// <returns>
+        /// Returns the build profile's scene list when it's overriding global scenes. Otherwise,
+        /// returns the global scene list.
+        /// </returns>
+        public EditorBuildSettingsScene[] GetScenesForBuild()
+        {
+            if (overrideGlobalScenes)
+                return scenes;
+
+            return EditorBuildSettings.globalScenes;
+        }
+
+        /// <summary>
         /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic
         /// profile for the EditorUserBuildSettings active build target.
         /// </summary>
@@ -232,14 +238,40 @@ namespace UnityEditor.Build.Profile
             if (graphicsSettings != null)
                 duplicatedProfile.graphicsSettings = Instantiate(graphicsSettings);
 
+            if (qualitySettings != null)
+                duplicatedProfile.qualitySettings = Instantiate(qualitySettings);
+
             return duplicatedProfile;
+        }
+
+        [VisibleToOtherModules]
+        internal void ResetToGlobalQualitySettingsValues()
+        {
+            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
+
+            var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];
+
+            // populates newBuildProfileQualityLevels array with global quality levels in their existing order
+            for (int i = 0; i < globalQualityLevels.Length; i++)
+            {
+                newBuildProfileQualityLevels[i] = QualitySettings.names[globalQualityLevels[i]];
+            }
+
+            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(buildTargetGroupString);
+            if (globalDefaultQualityLevelIndex != -1)
+                qualitySettings.defaultQualityLevel = QualitySettings.names[globalDefaultQualityLevelIndex];
+            else
+                qualitySettings.defaultQualityLevel = newBuildProfileQualityLevels.Length > 0 ? QualitySettings.names[globalQualityLevels[0]] : string.Empty;
+
+            qualitySettings.qualityLevels = newBuildProfileQualityLevels;
+
+            EditorUtility.SetDirty(qualitySettings);
         }
 
         void OnEnable()
         {
             ValidateDataConsistency();
-
-            moduleName = BuildProfileModuleUtil.GetModuleName(platformGuid);
 
             // Check if the platform support module has been installed,
             // and try to set an uninitialized platform settings.
@@ -351,8 +383,7 @@ namespace UnityEditor.Build.Profile
 
         void ValidateDataConsistency()
         {
-            // TODO: Remove migration code (https://jira.unity3d.com/browse/PLAT-8909)
-            // Set platform ID for build profiles created before it is introduced.
+            // Keep serialized platform GUID in sync with serialized build target and subtarget.
             if (platformGuid.Empty())
             {
                 platformGuid = BuildProfileContext.IsSharedProfile(buildTarget) ?

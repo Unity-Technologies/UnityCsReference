@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
 
 namespace UnityEditor.Search
 {
@@ -42,13 +43,13 @@ namespace UnityEditor.Search
             if (p == null || p.name == null)
                 return null;
 
-            switch (p.type)
+            switch (p.propertyType)
             {
-                case MaterialProperty.PropType.Color: return p.colorValue;
-                case MaterialProperty.PropType.Vector: return p.vectorValue;
-                case MaterialProperty.PropType.Float: return p.floatValue;
-                case MaterialProperty.PropType.Range: return p.floatValue;
-                case MaterialProperty.PropType.Texture: return p.textureValue;
+                case ShaderPropertyType.Color: return p.colorValue;
+                case ShaderPropertyType.Vector: return p.vectorValue;
+                case ShaderPropertyType.Float: return p.floatValue;
+                case ShaderPropertyType.Range: return p.floatValue;
+                case ShaderPropertyType.Texture: return p.textureValue;
             }
             return null;
         }
@@ -86,7 +87,7 @@ namespace UnityEditor.Search
                     var m = materialProperties[i];
                     var propName = m.name;
                     var propPath = shaderPath + "/" + propName;
-                    var col = new SearchColumn(propPath, "#" + propName, provider: $"{m.type}",
+                    var col = new SearchColumn(propPath, "#" + propName, provider: $"{m.propertyType}",
                         new GUIContent(m.displayName, shaderIcon, m.name));
                     descriptors.Add(col);
                 }
@@ -102,7 +103,7 @@ namespace UnityEditor.Search
         {
             private readonly SearchColumn m_SearchColumn;
             private VisualElement m_ValueElement;
-            private MaterialProperty.PropType? m_CurrentBindedType;
+            private ShaderPropertyType? m_CurrentBindedType;
 
             IBinding IBindable.binding { get => (m_ValueElement as IBindable)?.binding; set { if (m_ValueElement is IBindable b) b.binding = value; } }
             string IBindable.bindingPath { get => (m_ValueElement as IBindable)?.bindingPath; set { if (m_ValueElement is IBindable b) b.bindingPath = value; } }
@@ -117,25 +118,25 @@ namespace UnityEditor.Search
                 Clear();
 
                 m_ValueElement = null;
-                switch (property.type)
+                switch (property.propertyType)
                 {
-                    case MaterialProperty.PropType.Color: m_ValueElement = new UIElements.ColorField(); break;
-                    case MaterialProperty.PropType.Float:
+                    case ShaderPropertyType.Color: m_ValueElement = new UIElements.ColorField(); break;
+                    case ShaderPropertyType.Float:
                         m_ValueElement = new FloatField() { label = "\u2022", style = { flexDirection = FlexDirection.Row } };
                         break;
-                    case MaterialProperty.PropType.Range:
+                    case ShaderPropertyType.Range:
                         var slider = new Slider(0f, 1f);
                         slider.showInputField = true;
                         m_ValueElement = slider;
                         break;
-                    case MaterialProperty.PropType.Vector: m_ValueElement = new Vector4Field(); break;
-                    case MaterialProperty.PropType.Texture:
+                    case ShaderPropertyType.Vector: m_ValueElement = new Vector4Field(); break;
+                    case ShaderPropertyType.Texture:
                         m_ValueElement = new ObjectField() { objectType = typeof(Texture) };
                         break;
                 }
 
                 visible = true;
-                m_CurrentBindedType = property.type;
+                m_CurrentBindedType = property.propertyType;
                 if (m_ValueElement != null)
                 {
                     Add(m_ValueElement);
@@ -152,40 +153,40 @@ namespace UnityEditor.Search
                     return;
                 }
 
-                if (!m_CurrentBindedType.HasValue || m_CurrentBindedType != matProp.type)
+                if (!m_CurrentBindedType.HasValue || m_CurrentBindedType != matProp.propertyType)
                     Create(matProp, args);
 
-                switch (matProp.type)
+                switch (matProp.propertyType)
                 {
-                    case MaterialProperty.PropType.Color:
+                    case ShaderPropertyType.Color:
                         {
                             if (m_ValueElement is INotifyValueChanged<Color> v)
                                 v.SetValueWithoutNotify(matProp.colorValue);
                         }
                         break;
-                    case MaterialProperty.PropType.Vector:
+                    case ShaderPropertyType.Vector:
                         {
                             if (m_ValueElement is INotifyValueChanged<Vector4> v)
                                 v.SetValueWithoutNotify(matProp.vectorValue);
                         }
                         break;
-                    case MaterialProperty.PropType.Float:
+                    case ShaderPropertyType.Float:
                         {
                             if (m_ValueElement is INotifyValueChanged<float> v)
                                 v.SetValueWithoutNotify(matProp.floatValue);
                         }
                         break;
-                    case MaterialProperty.PropType.Range:
+                    case ShaderPropertyType.Range:
                         {
                             if (m_ValueElement is Slider s)
-                            { 
+                            {
                                 s.SetValueWithoutNotify(matProp.floatValue);
                                 s.lowValue = matProp.rangeLimits.x;
                                 s.SetHighValueWithoutNotify(matProp.rangeLimits.y);
                             }
                         }
                         break;
-                    case MaterialProperty.PropType.Texture:
+                    case ShaderPropertyType.Texture:
                         {
                             if (m_ValueElement is INotifyValueChanged<Object> v)
                                 v.SetValueWithoutNotify(matProp.textureValue);
@@ -257,33 +258,33 @@ namespace UnityEditor.Search
             if (matProp == null)
                 return;
 
-            switch (matProp.type)
+            switch (matProp.propertyType)
             {
-                case MaterialProperty.PropType.Color:
+                case ShaderPropertyType.Color:
                     if (newValue is Color c && matProp.colorValue != c)
                         matProp.colorValue = c;
                     break;
 
-                case MaterialProperty.PropType.Vector:
+                case ShaderPropertyType.Vector:
                     if (newValue is Vector4 v && matProp.vectorValue != v)
                         matProp.vectorValue = v;
                     break;
 
-                case MaterialProperty.PropType.Float:
+                case ShaderPropertyType.Float:
                     {
                         if (newValue is float f && matProp.floatValue != f)
                             matProp.floatValue = f;
                     }
                     break;
 
-                case MaterialProperty.PropType.Range:
+                case ShaderPropertyType.Range:
                     {
                         if (newValue is float f && matProp.floatValue != f)
                             matProp.floatValue = f;
                     }
                     break;
 
-                case MaterialProperty.PropType.Texture:
+                case ShaderPropertyType.Texture:
                     {
                         var texValue = newValue as Texture;
                         if ((newValue == null || texValue != null) && matProp.textureValue != texValue)
@@ -292,7 +293,7 @@ namespace UnityEditor.Search
                         }
                         break;
                     }
-                    
+
             }
         }
 
@@ -301,17 +302,17 @@ namespace UnityEditor.Search
             if (!(prop is MaterialProperty matProp))
                 return null;
 
-            switch (matProp.type)
+            switch (matProp.propertyType)
             {
-                case MaterialProperty.PropType.Color:
+                case ShaderPropertyType.Color:
                     return MaterialEditor.ColorPropertyInternal(r, matProp, GUIContent.none);
-                case MaterialProperty.PropType.Float:
+                case ShaderPropertyType.Float:
                     return MaterialEditor.FloatPropertyInternal(r, matProp, GUIContent.none);
-                case MaterialProperty.PropType.Range:
+                case ShaderPropertyType.Range:
                     return MaterialEditor.RangePropertyInternal(r, matProp, GUIContent.none);
-                case MaterialProperty.PropType.Vector:
+                case ShaderPropertyType.Vector:
                     return MaterialEditor.VectorPropertyInternal(r, matProp, GUIContent.none);
-                case MaterialProperty.PropType.Texture:
+                case ShaderPropertyType.Texture:
                     return EditorGUI.DoObjectField(r, r, GUIUtility.GetControlID(FocusType.Passive), matProp.textureValue, matProp.targets[0], typeof(Texture), null, true);
             }
 
@@ -320,24 +321,24 @@ namespace UnityEditor.Search
 
         static int MaterialPropertyComparer(object lhsObj, object rhsObj, bool sortAscending)
         {
-            if (!(lhsObj is MaterialProperty lm) || !(rhsObj is MaterialProperty rm) || lm.type != rm.type)
+            if (!(lhsObj is MaterialProperty lm) || !(rhsObj is MaterialProperty rm) || lm.propertyType != rm.propertyType)
                 return 0;
 
-            switch (lm.type)
+            switch (lm.propertyType)
             {
-                case MaterialProperty.PropType.Color:
+                case ShaderPropertyType.Color:
                     Color.RGBToHSV(lm.colorValue, out float lh, out _, out _);
                     Color.RGBToHSV(rm.colorValue, out float rh, out _, out _);
                     return lh.CompareTo(rh);
 
-                case MaterialProperty.PropType.Range:
-                case MaterialProperty.PropType.Float:
+                case ShaderPropertyType.Range:
+                case ShaderPropertyType.Float:
                     return lm.floatValue.CompareTo(rm.floatValue);
 
-                case MaterialProperty.PropType.Texture:
+                case ShaderPropertyType.Texture:
                     return string.CompareOrdinal(lm.textureValue?.name, rm.textureValue?.name);
 
-                case MaterialProperty.PropType.Vector:
+                case ShaderPropertyType.Vector:
                     return lm.vectorValue.magnitude.CompareTo(rm.vectorValue.magnitude);
             }
 

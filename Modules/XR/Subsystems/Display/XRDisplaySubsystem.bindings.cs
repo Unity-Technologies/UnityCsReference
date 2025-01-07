@@ -50,6 +50,7 @@ namespace UnityEngine.XR
         extern public bool contentProtectionEnabled { get; set; }
         extern public float scaleOfAllViewports { get; set; }
         extern public float scaleOfAllRenderTargets { get; set; }
+        extern public float globalDynamicScale { get; }
         extern public float zNear { get; set; }
         extern public float zFar { get; set; }
         extern public bool  sRGB { get; set; }
@@ -94,6 +95,9 @@ namespace UnityEngine.XR
             None
         }
 
+        extern public int ScaledTextureWidth(RenderTexture renderTexture);
+        extern public int ScaledTextureHeight(RenderTexture renderTexture);
+        
         extern public ReprojectionMode reprojectionMode { get; set; }
 
         extern public void SetFocusPlane(Vector3 point, Vector3 normal, Vector3 velocity);
@@ -184,7 +188,9 @@ namespace UnityEngine.XR
 
             public RenderTargetIdentifier renderTarget;
             public RenderTextureDescriptor renderTargetDesc;
-
+            public int renderTargetScaledWidth;
+            public int renderTargetScaledHeight;
+                                          
             public bool hasMotionVectorPass;
             public RenderTargetIdentifier motionVectorRenderTarget;
             public RenderTextureDescriptor motionVectorRenderTargetDesc;

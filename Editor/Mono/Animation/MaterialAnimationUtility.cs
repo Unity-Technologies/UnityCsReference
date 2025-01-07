@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
 using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
@@ -81,21 +82,21 @@ namespace UnityEditorInternal
             var propertyPaths = new List<string>();
             string basePropertyPath = kMaterialPrefix + materialProp.name;
 
-            if (materialProp.type == MaterialProperty.PropType.Texture)
+            if (materialProp.propertyType == ShaderPropertyType.Texture)
             {
                 propertyPaths.Add(basePropertyPath + "_ST.x");
                 propertyPaths.Add(basePropertyPath + "_ST.y");
                 propertyPaths.Add(basePropertyPath + "_ST.z");
                 propertyPaths.Add(basePropertyPath + "_ST.w");
             }
-            else if (materialProp.type == MaterialProperty.PropType.Color)
+            else if (materialProp.propertyType == ShaderPropertyType.Color)
             {
                 propertyPaths.Add(basePropertyPath + ".r");
                 propertyPaths.Add(basePropertyPath + ".g");
                 propertyPaths.Add(basePropertyPath + ".b");
                 propertyPaths.Add(basePropertyPath + ".a");
             }
-            else if (materialProp.type == MaterialProperty.PropType.Vector)
+            else if (materialProp.propertyType == ShaderPropertyType.Vector)
             {
                 propertyPaths.Add(basePropertyPath + ".x");
                 propertyPaths.Add(basePropertyPath + ".y");
@@ -138,31 +139,31 @@ namespace UnityEditorInternal
         static public bool ApplyMaterialModificationToAnimationRecording(MaterialProperty materialProp, int changedMask, Renderer target, object oldValue)
         {
             bool applied = false;
-            switch (materialProp.type)
+            switch (materialProp.propertyType)
             {
-                case MaterialProperty.PropType.Color:
+                case ShaderPropertyType.Color:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
                     applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Color)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.colorValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
 
-                case MaterialProperty.PropType.Vector:
+                case ShaderPropertyType.Vector:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
                     applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (Vector4)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.vectorValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
 
-                case MaterialProperty.PropType.Float:
-                case MaterialProperty.PropType.Range:
+                case ShaderPropertyType.Float:
+                case ShaderPropertyType.Range:
                     SetupMaterialPropertyBlock(materialProp, changedMask, target);
                     applied = ApplyMaterialModificationToAnimationRecording(MaterialPropertyToPropertyModifications(materialProp, target, (float)oldValue), MaterialPropertyToPropertyModifications(materialProp, target, materialProp.floatValue));
                     if (!applied)
                         TearDownMaterialPropertyBlock(target);
                     return applied;
 
-                case MaterialProperty.PropType.Texture:
+                case ShaderPropertyType.Texture:
                 {
                     if (MaterialProperty.IsTextureOffsetAndScaleChangedMask(changedMask))
                     {
@@ -183,17 +184,17 @@ namespace UnityEditorInternal
 
         static public PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Renderer target)
         {
-            switch (materialProp.type)
+            switch (materialProp.propertyType)
             {
-                case MaterialProperty.PropType.Color:
+                case ShaderPropertyType.Color:
                     return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.colorValue);
-                case MaterialProperty.PropType.Vector:
+                case ShaderPropertyType.Vector:
                     return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.vectorValue);
-                case MaterialProperty.PropType.Float:
-                case MaterialProperty.PropType.Range:
+                case ShaderPropertyType.Float:
+                case ShaderPropertyType.Range:
                     return MaterialPropertyToPropertyModifications(materialProp, target, materialProp.floatValue);
 
-                case MaterialProperty.PropType.Texture:
+                case ShaderPropertyType.Texture:
                 {
                     string name = materialProp.name + "_ST";
                     return MaterialPropertyToPropertyModifications(name, target, materialProp.vectorValue);

@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Creates from either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
+        /// Creates the <see cref="Length"/> with the value @@v@@ in <see cref="LengthUnit.Pixel"/>.
         /// </summary>
         public StyleLength(float v)
             : this(new Length(v, LengthUnit.Pixel), StyleKeyword.Undefined)

@@ -7,24 +7,73 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Manipulator that tracks Mouse events on an element and callbacks when the elements is clicked.
+    /// Manipulator that tracks pointer events on an element and callbacks when the elements is clicked.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="Clickable.clicked"/> for more information on what it means for an element to be clicked
+    /// in the context of this manipulator.
+    /// </remarks>
     public class Clickable : PointerManipulator
     {
         /// <summary>
         /// Callback triggered when the target element is clicked, including event data.
         /// </summary>
         /// <remarks>
-        /// Encapsulates a method that has an <see cref="EventBase"/> parameter and does not return a value.
+        /// See <see cref="Clickable.clicked"/> for more information on when the @@clicked@@ and
+        /// @@clickedWithEventInfo@@ events are invoked.
+        /// The callback methods registered to this event should have an <see cref="EventBase"/> parameter and
+        /// return no value.
         /// </remarks>
-        public event System.Action<EventBase> clickedWithEventInfo;
+        /// <seealso cref="Clickable.clicked"/>
+        /// <example>
+        /// <code>
+        /// <![CDATA[
+        /// public VisualElement CreateButton()
+        /// {
+        ///     var button = new Button { text = "Press Me" };
+        ///     button.clickedWithEventInfo += (EventBase evt) =>
+        ///     {
+        ///         int clickCount = ((IPointerEvent)evt).clickCount;
+        ///         if (clickCount == 1)
+        ///             Debug.Log("Button was single-clicked.");
+        ///         else if (clickCount == 2)
+        ///             Debug.Log("Button was double-clicked.");
+        ///     };
+        ///     return button;
+        /// }
+        /// ]]>
+        /// </code>
+        /// </example>
+        public event Action<EventBase> clickedWithEventInfo;
 
         /// <summary>
         /// Callback triggered when the target element is clicked.
         /// </summary>
         /// <remarks>
-        /// Encapsulates a method that has no parameters and does not return a value.
+        /// The @@clicked@@ and @@clickedWithEventInfo@@ events are invoked when any of the following conditions occur:
+        ///
+        ///- The target receives a <see cref="NavigationSubmitEvent"/>.
+        ///- The target receives a <see cref="PointerDownEvent"/> followed by a <see cref="PointerUpEvent"/>.
+        ///
+        /// If the @@delay@@ and @@interval@@ optional constructor parameters are used, then the @@clicked@@ event is
+        /// considered repeatable and is instead invoked when any of the following conditions occur:
+        ///
+        ///- The target receives a <see cref="NavigationSubmitEvent"/>.
+        ///- The target just received a <see cref="PointerDownEvent"/>.
+        ///- The target has received a <see cref="PointerDownEvent"/> and the pointer button has been held down for a given period of time.
+        ///
+        /// If the @@clicked@@ event is repeatable, then the first repeated click occurs after an amount of time
+        /// corresponding to the @@delay@@ parameter, and subsequent clicks occur after amounts of time corresponding
+        /// to the @@interval@@ parameter.
+        ///
+        /// The callback methods registered to this event should have no parameters and return no value.
+        ///
+        /// This manipulator makes use of pointer capture.
         /// </remarks>
+        /// <seealso cref="Clickable.clickedWithEventInfo"/>
+        /// <seealso cref="NavigationSubmitEvent"/>
+        /// <seealso cref="PointerDownEvent"/>
+        /// <seealso cref="PointerCaptureEvent"/>
         /// <example>
         /// <code>
         /// <![CDATA[
@@ -40,7 +89,7 @@ namespace UnityEngine.UIElements
         /// ]]>
         /// </code>
         /// </example>
-        public event System.Action clicked;
+        public event Action clicked;
 
         private readonly long m_Delay; // in milliseconds
         private readonly long m_Interval; // in milliseconds
@@ -86,9 +135,15 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
+        /// <remarks>
+        /// When you use this constructor, a click event is invoked repeatedly at regular intervals
+        /// for as long as the pointer is held down on the target element.
+        /// </remarks>
+        /// <seealso cref="Clickable.clicked"/>
+        /// <param name="handler">The method to call when the clickable is clicked.</param>
         /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay is greater than @@0@@.</param>
         /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval is greater than @@0@@.</param>
-        public Clickable(System.Action handler, long delay, long interval) : this(handler)
+        public Clickable(Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;
             m_Interval = interval;
@@ -98,7 +153,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        public Clickable(System.Action<EventBase> handler)
+        /// <remarks>
+        /// When you use this constructor, the event (usually a <see cref="PointerUpEvent"/> or a <see cref="NavigationSubmitEvent"/>)
+        /// that triggered the click is passed as an argument to the handler method.
+        /// </remarks>
+        /// <seealso cref="Clickable.clickedWithEventInfo"/>
+        /// <seealso cref="Clickable.clicked"/>
+        /// <param name="handler">The method to call when the clickable is clicked.</param>
+        public Clickable(Action<EventBase> handler)
         {
             clickedWithEventInfo = handler;
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
@@ -108,7 +170,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        public Clickable(System.Action handler)
+        /// <seealso cref="Clickable.clicked"/>
+        /// <param name="handler">The method to call when the clickable is clicked.</param>
+        public Clickable(Action handler)
         {
             clicked = handler;
 

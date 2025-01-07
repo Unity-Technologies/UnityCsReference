@@ -48,9 +48,10 @@ internal abstract class DesktopStandalonePostProcessor : BeeBuildPostprocessor
             config.Set("capture-startup-logs", "1");
     }
 
-    public override void LaunchPlayer(BuildLaunchPlayerArgs args)
+    public override ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args)
     {
         // This happens directly from BuildPlayer.cpp
+        return null;
     }
 
     readonly bool m_HasMonoPlayers;

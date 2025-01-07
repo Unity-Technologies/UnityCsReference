@@ -16,7 +16,7 @@ namespace UnityEngine.UIElements
     /// </summary>
     /// <remarks>
     /// Reading properties from this object will read from the inline style data for this element.
-    /// To read the style data computed for the element use <see cref="IComputedStyle"/> interface.
+    /// To read the style data computed for the element use <see cref="IStyle"/> interface.
     /// Writing to a property will mask the value coming from USS with the provided value however other properties will still match the values from USS.
     /// </remarks>
     public partial interface IStyle
@@ -125,7 +125,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Unlike the visibility property, this property affects the layout of the element.
-        /// This is a convenient way to hide an element without removing it from the hierarchy (when using the <see cref="DisplayStyle.None"/>).
+        /// To hide an element without removing it from the hierarchy,
+        /// you can use <see cref="DisplayStyle.None"/>.
+        /// 
+        /// Elements with a display style of <see cref="DisplayStyle.None"/> are ignored by pointer events
+        /// and by <see cref="IPanel.Pick"/>.
         /// </remarks>
         StyleEnum<DisplayStyle> display { get; set; }
         /// <summary>
@@ -149,7 +153,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         StyleEnum<Wrap> flexWrap { get; set; }
         /// <summary>
-        /// Font size to draw the element's text.
+        /// Font size to draw the element's text, specified in point size.
         /// </summary>
         /// <remarks>
         /// This property is inherited by default.
