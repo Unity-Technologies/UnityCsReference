@@ -78,19 +78,26 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Describes the picking behavior.
+    /// Describes the picking behavior. See <see cref="VisualElement.pickingMode"/>.
     /// </summary>
     public enum PickingMode
     {
         /// <summary>
-        /// Picking enabled. Default Value. Performs picking based on the position rectangle. In the VisualElement tree hierarchy,
-        /// the picking process works using a similar logic as the rendering but in reverse order: it starts with the front-most
-        /// elements and proceeds step by step towards background elements. Thus, the child elements are picked before parents,
-        /// and the sibling elements further down the list are picked before their predecessors.
+        /// Picking enabled. Performs picking based on the position rectangle.
         /// </summary>
+        /// <remarks>
+        /// This is the default Value.
+        ///
+        /// In the VisualElement tree hierarchy, the picking process works in reverse order to rendering:
+        /// it starts with the front-most elements and proceeds step by step toward background elements.
+        /// Thus, the child elements are picked before parents, and the sibling elements further down the list are
+        /// picked before their predecessors.
+        /// </remarks>
         Position, // todo better name
+
         /// <summary>
-        /// Prevents picking as the result of a mouse event.
+        /// Prevents this element from being the target of pointer events or
+        /// from being returned by <see cref="IPanel.Pick"/> and <see cref="IPanel.PickAll"/>.
         /// </summary>
         Ignore
     }
@@ -1448,8 +1455,19 @@ namespace UnityEngine.UIElements
         private PickingMode m_PickingMode;
 
         /// <summary>
-        /// Determines if this element can be picked during mouseEvents or <see cref="IPanel.Pick"/> queries.
+        /// Determines if this element can be the target of pointer events or
+        /// picked by <see cref="IPanel.Pick"/> queries.
         /// </summary>
+        /// <remarks>
+        /// Elements can not be picked if:
+        ///
+        ///- They are invisible
+        ///- Their @@style.display@@ is set to @@DisplayStyle.None@@
+        ///
+        /// Elements with a picking mode of <see cref="PickingMode.Ignore"/> never receive the hover pseudo-state.
+        /// </remarks>
+        /// <seealso cref="VisualElement.visible"/>
+        /// <seealso cref="IStyle.display"/>
         [CreateProperty]
         public PickingMode pickingMode
         {
@@ -2019,9 +2037,11 @@ namespace UnityEngine.UIElements
         /// The value of this property reflects the value of <see cref="IResolvedStyle.visibility"/> for this element.
         /// The value is true for <see cref="Visibility.Visible"/> and false for <see cref="Visibility.Hidden"/>.
         /// Writing to this property writes to <see cref="IStyle.visibility"/>.
+        ///
+        /// Invisible elements are ignored by pointer events and by <see cref="IPanel.Pick"/>.
         /// </remarks>
-        /// <seealso cref="resolvedStyle"/>
-        /// <seealso cref="style"/>
+        /// <seealso cref="VisualElement.resolvedStyle"/>
+        /// <seealso cref="VisualElement.style"/>
         [CreateProperty]
         public bool visible
         {

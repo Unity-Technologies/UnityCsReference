@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Build.Content;
 using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -13,6 +14,7 @@ using ShaderPlatform = UnityEngine.Rendering.GraphicsDeviceType;
 using UnityEditor.AssetImporters;
 using System.Runtime.CompilerServices;
 
+[assembly: InternalsVisibleTo("UnityEditor.ShaderUtil.Tests")]
 [assembly: InternalsVisibleTo("UniversalEditorTests")]
 
 namespace UnityEditor
@@ -380,5 +382,9 @@ namespace UnityEditor
         {
             return PassStageHasKeywordForAPI(s, passIdentifier, keyword.m_Index, shaderType, shaderCompilerPlatform);
         }
+
+        [FreeFunction("ShaderUtil::GetCompiledData")] extern internal static byte[] GetCompiledData(
+            Shader s, BuildUsageTagSet buildUsageTags, BuildUsageTagGlobal globalUsageTag,
+            BuildTargetSelection buildTarget, bool shouldIncludeAllVariants);
     }
 }

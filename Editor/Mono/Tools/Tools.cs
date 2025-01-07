@@ -168,7 +168,7 @@ namespace UnityEditor
                                 .CalculateSelectionBoundsInSpace(Vector3.zero, handleRotation, rectBlueprintMode)
                                 .center + totalOffset;
                         else
-                            return InternalEditorUtility.CalculateSelectionBounds(true, false).center + totalOffset;
+                            return InternalEditorUtility.CalculateSelectionBounds(true).center + totalOffset;
                     }
                     case PivotMode.Pivot:
                     {

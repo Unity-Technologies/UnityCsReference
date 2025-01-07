@@ -249,16 +249,21 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Controls how white space and line breaks within an element's text are handled.
+    /// Controls how whitespace and line breaks within an element's text are handled, similar to the CSS white-space property.
+    /// Unlike the CSS property, only trailing whitespaces are collapsed, and whitespaces within the text are preserved.
+    /// See <a href="https://developer.mozilla.org/en-US/docs/Web/CSS/white-space">white-space</a> for more details.
     /// </summary>
+    /// <remarks>
+    /// Whitespaces within TextFields are not collapsed.
+    /// </remarks>
     public enum WhiteSpace
     {
         /// <summary>
-        /// Sequences of whitespace will collapse into a single whitespace. Text will wrap when necessary. This is the default behavior.
+        /// Trailing sequences of whitespace are collapsed into a single whitespace. Text will wrap when necessary. This is the default behavior.
         /// </summary>
         Normal = 0,
         /// <summary>
-        /// Sequences of whitespace will collapse into a single whitespace. Text will never wrap to the next line.
+        /// Trailing sequences of whitespace are collapsed into a single whitespace. Text will never wrap to the next line.
         /// </summary>
         NoWrap = 1,
         /// <summary>

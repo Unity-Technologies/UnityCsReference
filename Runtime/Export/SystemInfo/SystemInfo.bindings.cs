@@ -639,6 +639,11 @@ namespace UnityEngine
             get { return SupportsIndirectDispatchRays(); }
         }
 
+        public static bool supportsMachineLearning
+        {
+            get { return SupportsMachineLearning(); }
+        }
+
         public static bool supportsSetConstantBuffer
         {
             get { return SupportsSetConstantBuffer(); }
@@ -1006,6 +1011,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsIndirectDispatchRays")]
         static extern bool SupportsIndirectDispatchRays();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMachineLearning")]
+        static extern bool SupportsMachineLearning();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsSetConstantBuffer")]
         static extern bool SupportsSetConstantBuffer();

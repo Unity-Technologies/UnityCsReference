@@ -100,14 +100,33 @@ namespace UnityEngine.UIElements
         [CreateProperty(ReadOnly = true)]
         public IPanel panel { get { return elementPanel; } }
 
-        // Logical container where child elements are added.
-        // usually same as this element, but can be overridden by more complex types
-        // see ScrollView.contentContainer for an example
         /// <summary>
         /// Logical container where child elements are added.
-        /// Usually, this property is set to this element itself, but can be overridden by more complex types,
-        /// for example, <see cref="ScrollView.contentContainer"/>.
+        /// If a child is added to this element, the child is added to this element's content container instead.
         /// </summary>
+        /// <remarks>
+        /// When iterating over the  <see cref="VisualElement.Children">logical children</see> of an element, the
+        /// element's content container hierarchy is used instead of the element itself.
+        /// This can lead to unexpected results, such as <see cref="IFocusRing">elements being ignored by the navigation events</see>
+        /// if they are not directly in the content container's hierarchy.
+        ///\\
+        /// If the content container is the same as the element itself, child elements are added directly to the element.
+        /// This is true for most elements but can be overridden by more complex types.
+        /// 
+        /// The <see cref="ScrollView"/>, for example, has a content container that is different from itself.
+        /// In that case, child elements added to the scroll view are added to its content container element instead.
+        /// While the physical parent (<see cref="VisualElement.Hierarchy.parent"/>) of the child elements is the
+        /// scroll view's content container element, their logical parent (<see cref="VisualElement.parent"/>)
+        /// still refers to the scroll view itself.
+        /// Since some of the scroll view's focusable children are not part of its logical hierarchy, like its
+        /// <see cref="Scroller"/> elements, these focusable children are not considered by default when using
+        /// sequential navigation.
+        /// Refer to
+        /// [[wiki:UIE-faq-event-and-input-system|How can I change what element is focused next]]
+        /// for an example of a workaround solution if the default navigation rules don't correspond to your needs.
+        /// </remarks>
+        /// <seealso cref="VisualElement.hierarchy"/>
+        /// <seealso cref="VisualElement.Children"/>
         public virtual VisualElement contentContainer
         {
             get { return this; }
@@ -354,6 +373,15 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns the elements from its contentContainer.
         /// </summary>
+        /// <remarks>
+        /// The elements returned by this method are the logical children of the element.
+        /// This might differ from the physical children of the element if the element's contentContainer
+        /// property doesn't return the element itself. For more information, refer to <see cref="VisualElement.contentContainer"/>.
+        ///
+        /// To access the physical children of the element, use <see cref="VisualElement.Hierarchy.Children"/>.
+        /// </remarks>
+        /// <seealso cref="VisualElement.contentContainer"/>
+        /// <seealso cref="VisualElement.hierarchy"/>
         public IEnumerable<VisualElement> Children()
         {
             if (contentContainer == this)
@@ -766,8 +794,12 @@ namespace UnityEngine.UIElements
             }
 
             /// <summary>
-            /// Returns the elements from its contentContainer
+            /// Returns the physical children of the element.
             /// </summary>
+            /// <remarks>
+            /// This might differ from the logical children of the element if the element's contentContainer
+            /// property doesn't return the element itself. For more information, refer to <see cref="VisualElement.contentContainer"/>.
+            /// </remarks>
             public IEnumerable<VisualElement> Children()
             {
                 return m_Owner.m_Children;

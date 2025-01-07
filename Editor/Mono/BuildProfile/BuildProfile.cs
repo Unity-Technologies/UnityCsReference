@@ -82,11 +82,13 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// When set, this build profiles <see cref="scenes"/> used when building.
+        /// Boolean flag for overriding global scene list.
+        /// When true, the scene list <see cref="scenes"/> in the build profile is used
+        /// when building. Otherwise, the global scene list is used.
         /// </summary>
         /// <seealso cref="EditorBuildSettings"/>
         [SerializeField] private bool m_OverrideGlobalSceneList = false;
-        internal bool overrideGlobalSceneList
+        public bool overrideGlobalScenes
         {
             get => m_OverrideGlobalSceneList;
             set => m_OverrideGlobalSceneList = value;
@@ -111,7 +113,7 @@ namespace UnityEditor.Build.Profile
                 m_Scenes = value;
                 CheckSceneListConsistency();
 
-                if (this == BuildProfileContext.activeProfile && m_OverrideGlobalSceneList)
+                if (this == BuildProfileContext.activeProfile && overrideGlobalScenes)
                     EditorBuildSettings.SceneListChanged();
             }
         }
@@ -167,6 +169,21 @@ namespace UnityEditor.Build.Profile
         /// Get the IBuildTarget of the build profile.
         /// </summary>
         internal IBuildTarget GetIBuildTarget() => ModuleManager.GetIBuildTarget(platformGuid);
+
+        /// <summary>
+        /// Get the list of scenes that is used when building with the build profile.
+        /// </summary>
+        /// <returns>
+        /// Returns the build profile's scene list when it's overriding global scenes. Otherwise,
+        /// returns the global scene list.
+        /// </returns>
+        public EditorBuildSettingsScene[] GetScenesForBuild()
+        {
+            if (overrideGlobalScenes)
+                return scenes;
+
+            return EditorBuildSettings.globalScenes;
+        }
 
         /// <summary>
         /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic
@@ -225,6 +242,31 @@ namespace UnityEditor.Build.Profile
                 duplicatedProfile.qualitySettings = Instantiate(qualitySettings);
 
             return duplicatedProfile;
+        }
+
+        [VisibleToOtherModules]
+        internal void ResetToGlobalQualitySettingsValues()
+        {
+            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+            var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
+
+            var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];
+
+            // populates newBuildProfileQualityLevels array with global quality levels in their existing order
+            for (int i = 0; i < globalQualityLevels.Length; i++)
+            {
+                newBuildProfileQualityLevels[i] = QualitySettings.names[globalQualityLevels[i]];
+            }
+
+            var globalDefaultQualityLevelIndex = QualitySettings.GetDefaultQualityForPlatform(buildTargetGroupString);
+            if (globalDefaultQualityLevelIndex != -1)
+                qualitySettings.defaultQualityLevel = QualitySettings.names[globalDefaultQualityLevelIndex];
+            else
+                qualitySettings.defaultQualityLevel = newBuildProfileQualityLevels.Length > 0 ? QualitySettings.names[globalQualityLevels[0]] : string.Empty;
+
+            qualitySettings.qualityLevels = newBuildProfileQualityLevels;
+
+            EditorUtility.SetDirty(qualitySettings);
         }
 
         void OnEnable()

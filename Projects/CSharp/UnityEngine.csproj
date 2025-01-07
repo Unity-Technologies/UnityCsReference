@@ -3798,6 +3798,24 @@
     <Compile Include="..\..\Runtime\Export\Graphics\LineUtility.cs">
       <Link>Runtime\Export\Graphics\LineUtility.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningContext.bindings.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningContext.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningContext.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningContext.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningOperator.bindings.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningOperator.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningOperator.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningOperator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningTensor.bindings.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningTensor.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\Graphics\MachineLearningTensor.cs">
+      <Link>Runtime\Export\Graphics\MachineLearningTensor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\Graphics\Mesh.bindings.cs">
       <Link>Runtime\Export\Graphics\Mesh.bindings.cs</Link>
     </Compile>

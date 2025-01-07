@@ -301,6 +301,7 @@ namespace UnityEngine
 
         [NativeName("GetActiveQualityLevelsForPlatform")] extern public static int[] GetActiveQualityLevelsForPlatform(string buildTargetGroupName);
         [NativeName("GetActiveQualityLevelsForPlatformCount")] extern public static int GetActiveQualityLevelsForPlatformCount(string buildTargetGroupName);
+        [NativeName("GetDefaultQualityForPlatform")] extern internal static int GetDefaultQualityForPlatform(string platformName);
 
         [NativeName("GetRenderPipelineAssetsForPlatform")] extern internal static ScriptableObject[] InternalGetRenderPipelineAssetsForPlatform(string buildTargetGroupName);
         public static void GetRenderPipelineAssetsForPlatform<T>(string buildTargetGroupName, out HashSet<T> uniqueRenderPipelineAssets)

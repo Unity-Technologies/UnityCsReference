@@ -115,6 +115,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
 [assembly: InternalsVisibleTo("UnityEngine.UI")]
 
+[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalBridge")]
+
 // Needed for Baselib CSharp binding access.
 [assembly: InternalsVisibleTo("Unity.Networking.Transport")]
 [assembly: InternalsVisibleTo("Unity.ucg.QoS")] // TODO(andrews): Remove this when we fix transport

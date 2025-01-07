@@ -15,15 +15,17 @@ namespace UnityEngine.UIElements
         static readonly VisualElementFocusChangeDirection s_Left = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 1);
 
         /// <summary>
-        /// The focus is moving to the left.
+        /// The focus is moving to the left, or the next element in the focus ring.
         /// </summary>
+        /// <seealso cref="VisualElementFocusRing"/>
         public static FocusChangeDirection left => s_Left;
 
         static readonly VisualElementFocusChangeDirection s_Right = new VisualElementFocusChangeDirection(FocusChangeDirection.lastValue + 2);
 
         /// <summary>
-        /// The focus is moving to the right.
+        /// The focus is moving to the right, or the previous element in the focus ring.
         /// </summary>
+        /// <seealso cref="VisualElementFocusRing"/>
         public static FocusChangeDirection right => s_Right;
 
         /// <summary>

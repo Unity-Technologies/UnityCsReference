@@ -1965,5 +1965,8 @@ namespace UnityEditor
 
         [NativeMethod("SetColorGamuts")]
         internal extern void SetColorGamuts_Internal(ColorGamut[] colorSpaces);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void EnsureUnityConnectSettingsEqual(PlayerSettings target, PlayerSettings source);
     }
 }

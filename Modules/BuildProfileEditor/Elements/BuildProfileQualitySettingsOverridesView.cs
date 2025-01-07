@@ -66,7 +66,7 @@ namespace UnityEditor.Build.Profile.Elements
                 qualitySettings = profile.qualitySettings;
 
                 editor = Editor.CreateEditor(qualitySettings) as BuildProfileQualitySettingsEditor;
-                editor.ResetToGlobalQualitySettingsValues(profile);
+                profile.ResetToGlobalQualitySettingsValues();
 
                 var inspectorGUI = editor.CreateInspectorGUI();
                 editorVisualElement.Add(inspectorGUI);
@@ -110,7 +110,7 @@ namespace UnityEditor.Build.Profile.Elements
                 if (!resetQualitySettings)
                     return;
 
-                editor.ResetToGlobalQualitySettingsValues(profile);
+                profile.ResetToGlobalQualitySettingsValues();
 
                 editorVisualElement.Clear();
                 var inspectorGUI = editor.CreateInspectorGUI();

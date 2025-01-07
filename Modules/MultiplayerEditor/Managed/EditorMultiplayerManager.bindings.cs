@@ -8,7 +8,6 @@ using UnityEngine.Bindings;
 using UnityEngine.Multiplayer.Internal;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
-using UnityEditor.UIElements;
 using UnityEditor.Toolbars;
 using UnityEditor.Build;
 using UnityEditor.Build.Profile;
@@ -75,6 +74,16 @@ namespace UnityEditor.Multiplayer.Internal
         private static void InvokeEnableMultiplayerRolesChangeEvent()
         {
             enableMultiplayerRolesChanged?.Invoke();
+        }
+
+        public static string GetUniqueKeyForClassicTarget(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget)
+        {
+            var isStandalone = BuildPipeline.GetBuildTargetGroup(buildTarget) == BuildTargetGroup.Standalone;
+            var platformGuid = (isStandalone && subtarget == StandaloneBuildSubtarget.Server)
+                ? BuildTargetDiscovery.GetGUIDFromBuildTarget(NamedBuildTarget.Server, buildTarget)
+                : BuildTargetDiscovery.GetGUIDFromBuildTarget(buildTarget);
+
+            return platformGuid.ToString();
         }
     }
 }

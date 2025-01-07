@@ -136,6 +136,7 @@ namespace UnityEditor.DeviceSimulation
         public override bool supportsRayTracingShaders => m_GraphicsSystemInfoFields.Contains("supportsRayTracingShaders") ? m_GraphicsSystemInfo.supportsRayTracingShaders : base.supportsRayTracingShaders;
         public override bool supportsInlineRayTracing => m_GraphicsSystemInfoFields.Contains("supportsInlineRayTracing") ? m_GraphicsSystemInfo.supportsInlineRayTracing : base.supportsInlineRayTracing;
         public override bool supportsIndirectDispatchRays => m_GraphicsSystemInfoFields.Contains("supportsIndirectDispatchRays") ? m_GraphicsSystemInfo.supportsIndirectDispatchRays : base.supportsIndirectDispatchRays;
+        public override bool supportsMachineLearning => m_GraphicsSystemInfoFields.Contains("supportsMachineLearning") ? m_GraphicsSystemInfo.supportsMachineLearning : base.supportsMachineLearning;
         public override bool supportsSetConstantBuffer  =>  m_GraphicsSystemInfoFields.Contains("supportsSetConstantBuffer") ? m_GraphicsSystemInfo.supportsSetConstantBuffer : base.supportsSetConstantBuffer;
         public override bool hasMipMaxLevel  =>  m_GraphicsSystemInfoFields.Contains("hasMipMaxLevel") ? m_GraphicsSystemInfo.hasMipMaxLevel : base.hasMipMaxLevel;
         public override bool supportsMipStreaming  =>  m_GraphicsSystemInfoFields.Contains("supportsMipStreaming") ? m_GraphicsSystemInfo.supportsMipStreaming : base.supportsMipStreaming;

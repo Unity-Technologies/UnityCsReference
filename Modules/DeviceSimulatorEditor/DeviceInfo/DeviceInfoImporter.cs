@@ -257,6 +257,7 @@ namespace UnityEditor.DeviceSimulation
                 "supportsRayTracingShaders",
                 "supportsInlineRayTracing",
                 "supportsIndirectDispatchRays",
+                "supportsMachineLearning",
                 "supportsSetConstantBuffer",
                 "hasMipMaxLevel",
                 "supportsMipStreaming",

@@ -17,4 +17,8 @@ internal interface IBuildPlatformProperties : IPlatformProperties
     // The BuildPlayerWindow.BuildPlayerAndRun method uses this method to set the build location for those build targets
     // that require special handling.  Only the stand-alone Windows build targets implement this method.
     public string ValidateBuildLocation() => null;
+
+    // The BuildProfileWindow uses this property to determine if required packages should be installed
+    // when activating the classic platform for a given build target.
+    public bool ShouldInstallRequiredPackagesOnActivationOfClassicPlatform => false;
 }

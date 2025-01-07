@@ -358,6 +358,8 @@ namespace UnityEngine.UIElements
 
         protected override void Dispose(bool disposing)
         {
+            ProcessAllBindingRequests();
+            ProcessDataSourceChangedRequests();
             base.Dispose(disposing);
             bindingManager.Dispose();
         }

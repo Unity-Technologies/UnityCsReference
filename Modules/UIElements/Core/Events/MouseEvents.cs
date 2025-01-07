@@ -9,11 +9,17 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for mouse events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Mouse-Events|Mouse events]] manual page for more information and examples.
+    /// </remarks>
     public interface IMouseEvent
     {
         /// <summary>
         /// Flag set holding the pressed modifier keys (Alt, Ctrl, Shift, Windows/Command).
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers"/> for more information.
+        /// </remarks>
         EventModifiers modifiers { get; }
         /// <summary>
         /// The mouse position in the panel coordinate system.
@@ -22,14 +28,23 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The mouse position in the current target coordinate system.
         /// </summary>
+        /// <remarks>
+        /// The value of this property changes throughout the propagation process for each element receiving the event along the propagation path.
+        /// </remarks>
+        /// <seealso cref="EventBase.currentTarget"/>
         Vector2 localMousePosition { get; }
         /// <summary>
-        /// Mouse position difference between the last mouse event and this one.
+        /// Gets the difference between the mouse's position during the previous mouse event and its position during the
+        /// current mouse event.
         /// </summary>
+        /// <remarks>
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// </remarks>
         Vector2 mouseDelta { get; }
         /// <summary>
-        /// The number of times the button is pressed.
+        /// The number of times a button is pressed consecutively.
         /// </summary>
+        /// <remarks>See <see cref="IPointerEvent.clickCount"/></remarks>
         int clickCount { get; }
         /// <summary>
         /// A value that indicates which mouse button was pressed or released (if any) to cause this event:
@@ -48,22 +63,37 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Return true if the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         bool shiftKey { get; }
         /// <summary>
         /// Return true if the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         bool ctrlKey { get; }
         /// <summary>
         /// Return true if the Windows/Command key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         bool commandKey { get; }
         /// <summary>
         /// Return true if the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         bool altKey { get; }
         /// <summary>
-        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// Returns true if the platform-specific action key is pressed.
         /// </summary>
+        /// <remarks>
+        /// This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
         bool actionKey { get; }
     }
 
@@ -76,6 +106,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// The base class for mouse events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Mouse-Events|Mouse events]] manual page for more information and examples.
+    /// </remarks>
     [EventCategory(EventCategory.Pointer)]
     public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal, IPointerOrMouseEvent
         where T : MouseEventBase<T>, new()
@@ -83,22 +116,34 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Flags that hold pressed modifier keys (Alt, Ctrl, Shift, Windows/Cmd).
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers"/> for more information.
+        /// </remarks>
         public EventModifiers modifiers { get; protected set; }
         /// <summary>
-        /// The mouse position in the screen coordinate system.
+        /// The mouse position in the panel coordinate system.
         /// </summary>
         public Vector2 mousePosition { get; protected set; }
         /// <summary>
         /// The mouse position in the current target coordinate system.
         /// </summary>
+        /// <remarks>
+        /// The value of this property changes throughout the propagation process for each element receiving the event along the propagation path.
+        /// </remarks>
+        /// <seealso cref="EventBase.currentTarget"/>
         public Vector2 localMousePosition { get; internal set; }
         /// <summary>
-        /// The difference of the mouse position between the previous mouse event and the current mouse event.
+        /// Gets the difference between the mouse's position during the previous mouse event and its position during the
+        /// current mouse event.
         /// </summary>
+        /// <remarks>
+        /// This value is based on <see cref="IMouseEvent.mousePosition"/> and is expressed in panel world coordinates.
+        /// </remarks>
         public Vector2 mouseDelta { get; protected set; }
         /// <summary>
-        /// The number of times the button is pressed.
+        /// The number of times a button is pressed consecutively.
         /// </summary>
+        /// <remarks>See <see cref="IPointerEvent.clickCount"/></remarks>
         public int clickCount { get; protected set; }
         /// <summary>
         /// A value that indicates which mouse button was pressed or released (if any) to cause this event:
@@ -117,6 +162,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         public bool shiftKey
         {
             get { return (modifiers & EventModifiers.Shift) != 0; }
@@ -125,6 +173,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         public bool ctrlKey
         {
             get { return (modifiers & EventModifiers.Control) != 0; }
@@ -133,6 +184,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the Windows/Cmd key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         public bool commandKey
         {
             get { return (modifiers & EventModifiers.Command) != 0; }
@@ -141,14 +195,20 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns true if the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         public bool altKey
         {
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
         /// <summary>
-        /// Returns true if the platform-specific action key is pressed. This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// Returns true if the platform-specific action key is pressed.
         /// </summary>
+        /// <remarks>
+        /// This key is Cmd on macOS, and Ctrl on all other platforms.
+        /// </remarks>
         public bool actionKey
         {
             get

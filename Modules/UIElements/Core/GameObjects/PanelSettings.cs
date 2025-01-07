@@ -843,11 +843,15 @@ namespace UnityEngine.UIElements
         /// this function returns the input value.
         /// </summary>
         /// <remarks>
-        /// If the panel's targetTexture is applied to 3D objects, one approach is to use a function that raycasts against
-        /// MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits has a
-        /// MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
-        /// @@RaycastHit.textureCoord@@ in the texture's pixel space.
+        /// If the panel's targetTexture is applied to 3D objects, use a function that raycasts
+        /// against MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits
+        /// has a MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
+        /// @@RaycastHit.textureCoord@@ in the texture's pixel space. Return a coordinate outside the panel to
+        /// skip incoming pointer events if the ray doesn't hit a valid target or location.
         /// </remarks>
+        /// <example>
+        /// <code source="../../../../Tests/EditModeAndPlayModeTests/UIElementsSamples/Assets/Runtime/Rendering/UITextureProjection.cs"/>
+        /// </example>
         /// <param name="screentoPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
         public void SetScreenToPanelSpaceFunction(Func<Vector2, Vector2> screentoPanelSpaceFunction)
         {

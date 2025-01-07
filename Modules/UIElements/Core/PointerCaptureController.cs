@@ -33,7 +33,19 @@ namespace UnityEngine.UIElements
         /// <param name="handler">The VisualElement that captures the pointer.</param>
         /// <param name="pointerId">The pointer to capture.</param>
         /// <remarks>
-        /// When a VisualElement captures a pointer, all pointer events are sent to the element, regardless of which element is under the pointer.
+        /// When a VisualElement captures a pointer, all pointer events—except PointerOverEvent, PointerOutEvent, PointerEnterEvent, PointerLeaveEvent—
+        /// are sent to the element, regardless of which element is under the pointer.
+        ///
+        /// Pointer events that would normally bubble up or trickle down are instead sent exclusively
+        /// to the capturing element.
+        ///
+        /// If a pointer capture is requested during the propagation of an existing event, then the capture
+        /// only takes effect after the ongoing event has been fully dispatched and propagated.
+        ///\\
+        /// __Note__: Events determine their target and propagation path when they are dispatched,
+        /// not necessarily when they are sent. If an event is sent during another event's propagation,
+        /// then the new event is added to an event queue and processed after the current event and all other events
+        /// in the queue before it have been fully dispatched and propagated.
         /// </remarks>
         public static void CapturePointer(this IEventHandler handler, int pointerId)
         {
@@ -43,6 +55,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Tests whether an element captured a pointer and, if so, tells the element to release the pointer.
         /// </summary>
+        /// <remarks>
+        /// If a pointer release is requested during the propagation of an existing event, the release
+        /// takes effect only after the ongoing event has been fully dispatched and propagated.
+        /// </remarks>
         /// <param name="handler">The element which potentially captured the pointer.</param>
         /// <param name="pointerId">The captured pointer.</param>
         public static void ReleasePointer(this IEventHandler handler, int pointerId)
@@ -64,6 +80,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Releases the pointer.
         /// </summary>
+        /// <remarks>
+        /// If a pointer release is requested during the propagation of an existing event, the release
+        /// takes effect only after the ongoing event has been fully dispatched and propagated.
+        /// </remarks>
         /// <param name="panel">The panel that holds the element that captured the pointer.</param>
         /// <param name="pointerId">The captured pointer.</param>
         public static void ReleasePointer(this IPanel panel, int pointerId)

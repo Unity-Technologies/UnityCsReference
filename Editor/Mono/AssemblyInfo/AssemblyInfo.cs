@@ -177,3 +177,5 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Automation.Players.EmbeddedLinux")]
 [assembly: InternalsVisibleTo("Unity.Automation.Players.QNX")]
 
+[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
+

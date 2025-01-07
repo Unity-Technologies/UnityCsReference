@@ -27,6 +27,18 @@ namespace UnityEditor.Build.Profile.Handlers
             return $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile - {SanitizeFileName(variantName)}.asset";
         }
 
+        static string GetProfilePathWithProvidedName(string platformDisplayName, string variantName = null)
+        {
+            if (string.IsNullOrEmpty(platformDisplayName))
+            {
+                return GetDefaultNewProfilePath(platformDisplayName, variantName);
+            }
+            // A valid name should be provided already but do the sanity check anyways.
+            if (variantName == null)
+                return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)}.asset";
+            return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)}-{SanitizeFileName(variantName)}.asset";
+        }
+
         static string GetDefaultNewProfilePath(GUID platformGuid)
         {
             var platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformGuid);
@@ -99,13 +111,13 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Create a new custom build profile asset with the default name.
+        /// Create a new custom build profile asset with the user provided name.
         /// Ensure that custom build profile folders is created if it doesn't already exist.
         /// </summary>
-        internal static void CreateNewAsset(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
+        internal static void CreateNewAssetWithName(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
             EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetDefaultNewProfilePath(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
         }
 
         /// <summary>

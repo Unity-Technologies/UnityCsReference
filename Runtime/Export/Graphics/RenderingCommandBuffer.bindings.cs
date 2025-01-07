@@ -392,6 +392,7 @@ namespace UnityEngine.Rendering
         [FreeFunction("RenderingCommandBuffer_Bindings::CreateGPUFence_Internal", HasExplicitThis = true)]
         extern private IntPtr CreateGPUFence_Internal(GraphicsFenceType fenceType, SynchronisationStageFlags stage);
 
+
         [FreeFunction("RenderingCommandBuffer_Bindings::WaitOnGPUFence_Internal", HasExplicitThis = true)]
         extern private void WaitOnGPUFence_Internal(IntPtr fencePtr, SynchronisationStageFlags stage);
 
@@ -510,6 +511,15 @@ namespace UnityEngine.Rendering
 
         [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchRaysIndirect", HasExplicitThis = true, ThrowsException = true)]
         extern private void Internal_DispatchRaysIndirect([NotNull] RayTracingShader rayTracingShader, string rayGenShaderName, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset = 0, Camera camera = null);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_BuildMachineLearningOperator", HasExplicitThis = true)]
+        extern private void Internal_BuildMachineLearningOperator(IntPtr machineLearningOperator);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_SetMachineLearningOperatorTensors", HasExplicitThis = true)]
+        extern private void Internal_SetMachineLearningOperatorTensors(IntPtr machineLearningOperator, ReadOnlySpan<IntPtr> inputs, ReadOnlySpan<IntPtr> outputs);
+
+        [FreeFunction("RenderingCommandBuffer_Bindings::Internal_DispatchMachineLearningOperator", HasExplicitThis = true)]
+        extern private void Internal_DispatchMachineLearningOperator(IntPtr machineLearningOperator);
 
         [NativeMethod("AddGenerateMips")]
         extern private void Internal_GenerateMips(RenderTargetIdentifier rt);

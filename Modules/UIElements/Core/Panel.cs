@@ -11,7 +11,7 @@ using UnityEngine.UIElements.Layout;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Describes in which context a VisualElement hierarchy is being ran.
+    /// Describes in which context a VisualElement hierarchy is being run.
     /// </summary>
     public enum ContextType
     {
@@ -319,19 +319,33 @@ namespace UnityEngine.UIElements
         /// </summary>
         EventDispatcher dispatcher { get; }
         /// <summary>
-        /// Describes in which context a VisualElement hierarchy is being ran.
+        /// Describes in which context a VisualElement hierarchy is being run.
         /// </summary>
+        /// <remarks>
+        /// The context type of a Panel affects how it resolves certain styles and receives specific events.
+        /// For example, drag-and-drop and command events are only sent to Editor-type Panels.
+        /// </remarks>
+        /// <seealso cref="UIElements.DragAndDropEventBase{T}"/>
+        /// <seealso cref="UIElements.CommandEventBase{T}"/>
         ContextType contextType { get; }
         /// <summary>
         /// Return the focus controller for this panel.
         /// </summary>
         FocusController focusController { get; }
+
         /// <summary>
         /// Finds the top-most VisualElement overlapping the provided point.
         /// </summary>
         /// <remarks>
-        /// Any VisualElement with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]] is ignored.
+        /// It doesn't return the following:
+        ///
+        ///- Invisible elements
+        ///- Elements with display style set to [[DisplayStyle.None]]
+        ///- Elements with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]]
         /// </remarks>
+        /// <seealso cref="VisualElement.visible"/>
+        /// <seealso cref="IStyle.display"/>
+        /// <seealso cref="VisualElement.pickingMode"/>
         /// <param name="point">World coordinates.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
         VisualElement Pick(Vector2 point);
@@ -340,8 +354,15 @@ namespace UnityEngine.UIElements
         /// Finds all VisualElements overlapping the provided point.
         /// </summary>
         /// <remarks>
-        /// Any VisualElement with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]] is ignored.
+        /// It doesn't return the following:
+        ///
+        ///- Invisible elements
+        ///- Elements with display style set to [[DisplayStyle.None]]
+        ///- Elements with [[VisualElement.pickingMode|pickingMode]] set to [[PickingMode.Ignore]]
         /// </remarks>
+        /// <seealso cref="VisualElement.visible"/>
+        /// <seealso cref="IStyle.display"/>
+        /// <seealso cref="VisualElement.pickingMode"/>
         /// <param name="point">World coordinates.</param>
         /// <param name="picked">If not null, the list is cleared and filled with all VisualElements that overlap the specified point.</param>
         /// <returns>The top-most VisualElement overlapping the provided point. Null if none was found.</returns>
@@ -1106,6 +1127,7 @@ namespace UnityEngine.UIElements
             if (disposing)
             {
                 atlas = null;
+                visualTree.Clear();
                 m_VisualTreeUpdater.Dispose();
             }
 

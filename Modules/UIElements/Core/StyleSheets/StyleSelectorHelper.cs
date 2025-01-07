@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using UnityEngine.Pool;
 using Unity.Profiling;
@@ -206,10 +207,9 @@ namespace UnityEngine.UIElements.StyleSheets
             return false;
         }
 
-        static void FastLookup(IDictionary<string, StyleComplexSelector> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, ref SelectorMatchRecord record)
+        static void TestSelectorLinkedList(StyleComplexSelector currentComplexSelector,
+            List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, ref SelectorMatchRecord record)
         {
-            StyleComplexSelector currentComplexSelector;
-            if (table.TryGetValue(input, out currentComplexSelector))
             {
                 while (currentComplexSelector != null)
                 {
@@ -243,6 +243,14 @@ namespace UnityEngine.UIElements.StyleSheets
             }
         }
 
+        static void FastLookup(IDictionary<string, StyleComplexSelector> table, List<SelectorMatchRecord> matchedSelectors, StyleMatchingContext context, string input, ref SelectorMatchRecord record)
+        {
+            if (table.TryGetValue(input, out StyleComplexSelector currentComplexSelector))
+            {
+                TestSelectorLinkedList(currentComplexSelector, matchedSelectors, context, ref record);
+            }
+        }
+
         public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors)
         {
             // To support having the root pseudo states set for style sheets added onto an element
@@ -266,6 +274,18 @@ namespace UnityEngine.UIElements.StyleSheets
             FindMatches(context, matchedSelectors, parentSheetIndex);
         }
 
+        struct SelectorWorkItem
+        {
+            public StyleSheet.OrderedSelectorType type;
+            public string input;
+
+            public SelectorWorkItem(StyleSheet.OrderedSelectorType type, string input)
+            {
+                this.type = type;
+                this.input = input;
+            }
+        }
+
         public static void FindMatches(StyleMatchingContext context, List<SelectorMatchRecord> matchedSelectors, int parentSheetIndex)
         {
             Debug.Assert(matchedSelectors.Count == 0);
@@ -274,9 +294,22 @@ namespace UnityEngine.UIElements.StyleSheets
 
             var toggleRoot = false;
             var processedStyleSheets = HashSetPool<StyleSheet>.Get();
+            var workItems = ListPool<SelectorWorkItem>.Get();
+
             try
             {
                 var element = context.currentElement;
+                workItems.Add(new (StyleSheet.OrderedSelectorType.Type, element.typeName));
+
+                if (!string.IsNullOrEmpty(element.name))
+                    workItems.Add(new (StyleSheet.OrderedSelectorType.Name, element.name));
+                List<string> classList = element.GetClassesForIteration();
+                int classCount = classList.Count;
+                for (int i = 0; i < classCount; i++)
+                {
+                    workItems.Add(new (StyleSheet.OrderedSelectorType.Class, classList[i]));
+                }
+
                 for (var i = context.styleSheetCount - 1; i >= 0; --i)
                 {
                     var styleSheet = context.GetStyleSheetAt(i);
@@ -294,18 +327,24 @@ namespace UnityEngine.UIElements.StyleSheets
 
                     var record = new SelectorMatchRecord(styleSheet, i);
 
-                    FastLookup(styleSheet.orderedTypeSelectors, matchedSelectors, context, element.typeName, ref record);
-                    FastLookup(styleSheet.orderedTypeSelectors, matchedSelectors, context, "*", ref record);
-
-                    if (!string.IsNullOrEmpty(element.name))
+                    for (int j = 0; j < workItems.Count; j++)
                     {
-                        FastLookup(styleSheet.orderedNameSelectors, matchedSelectors, context, element.name, ref record);
+                        var item = workItems[j];
+
+                        if ((styleSheet.nonEmptyTablesMask & (1 << (int)item.type)) == 0)
+                            continue;
+
+                        var table = styleSheet.tables[(int)item.type];
+
+                        FastLookup(table, matchedSelectors, context, item.input, ref record);
                     }
 
-                    foreach (string @class in element.GetClassesForIteration())
+                    if (toggleRoot)
                     {
-                        FastLookup(styleSheet.orderedClassSelectors, matchedSelectors, context, @class, ref record);
+                        TestSelectorLinkedList(styleSheet.firstRootSelector, matchedSelectors, context, ref record);
                     }
+
+                    TestSelectorLinkedList(styleSheet.firstWildCardSelector, matchedSelectors, context, ref record);
                 }
 
                 if (toggleRoot)
@@ -313,6 +352,7 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             finally
             {
+                ListPool<SelectorWorkItem>.Release(workItems);
                 HashSetPool<StyleSheet>.Release(processedStyleSheets);
             }
         }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
 namespace UnityEditor
 {
@@ -153,7 +154,7 @@ namespace UnityEditor
             //---------------------------------------------------------------
             foreach (var prop in props)
             {
-                if ((prop.flags & MaterialProperty.PropFlags.HideInInspector) != 0)
+                if ((prop.propertyFlags & ShaderPropertyFlags.HideInInspector) != 0)
                     continue;
                 ShaderProperty(prop, prop.displayName);
             }

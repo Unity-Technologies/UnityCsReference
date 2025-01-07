@@ -7,6 +7,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for panel change events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Panel-Events|Panel events]] manual page for more information and examples.
+    /// </remarks>
     public interface IPanelChangedEvent
     {
     }
@@ -14,6 +17,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Abstract base class for events notifying of a panel change.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Panel-Events|Panel events]] manual page for more information and examples.
+    /// </remarks>
     [EventCategory(EventCategory.ChangePanel)]
     public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent where T : PanelChangedEventBase<T>, new()
     {

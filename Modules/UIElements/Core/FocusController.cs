@@ -14,8 +14,16 @@ namespace UnityEngine.UIElements
     /// Base class for objects that can get the focus.
     /// </summary>
     /// <remarks>
-    /// The focus is used to designate an element that will receive keyboard events.
+    /// The focus is used to designate an element that will receive keyboard and navigation events.
+    ///
+    /// A Panel's current focused element can be retrieved using its FocusController's focusedElement property.
     /// </remarks>
+    /// <example>
+    /// <code source="../Tests/UIElementsExamples/Assets/Examples/FocusExample.cs"/>
+    /// </example>
+    /// <seealso cref="UIElements.KeyboardEventBase{T}"/>
+    /// <seealso cref="UIElements.NavigationEventBase{T}"/>
+    /// <seealso cref="FocusController.focusedElement"/>
     public abstract class Focusable : CallbackEventHandler
     {
         internal static readonly BindingId focusableProperty = nameof(focusable);
@@ -38,8 +46,13 @@ namespace UnityEngine.UIElements
         private bool m_Focusable;
 
         /// <summary>
-        /// True if the element can be focused.
+        /// If false, this prevents the element from being focused.
         /// </summary>
+        /// <remarks>
+        /// The element can only be focused if its canGrabFocus property is true.
+        /// </remarks>
+        /// <seealso cref="Focusable.Focus"/>
+        /// <seealso cref="Focusable.canGrabFocus"/>
         [CreateProperty]
         public virtual bool focusable
         {
@@ -57,7 +70,7 @@ namespace UnityEngine.UIElements
 
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
         /// <summary>
-        /// An integer used to sort focusables in the focus ring. Must be greater than or equal to zero.
+        /// An integer used to sort focusable elements in the focus ring. Must be greater than or equal to zero.
         /// </summary>
         [CreateProperty]
         public int tabIndex
@@ -77,6 +90,22 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Whether the element should delegate the focus to its children.
         /// </summary>
+        /// <remarks>
+        /// If the element delegates its focus, when it would become focused, one of its child or recursive child
+        /// elements is selected to receive focus in its place.
+        /// The element that receives the focus cannot be chosen manually.
+        /// Instead, it is determined automatically using a set of internal rules.
+        ///
+        /// The chosen element will be the first child or recursive child that
+        ///
+        ///- can be focused (see <see cref="Focusable.canGrabFocus"/>,
+        ///- does not delegate its own focus,
+        ///- is not the child or recursive child of a content container or of another element that delegates focus, and
+        ///- is part of the focus ring navigation sequence (see <see cref="IFocusRing"/>).
+        /// </remarks>
+        /// <seealso cref="Focusable.canGrabFocus"/>
+        /// <seealso cref="VisualElement.contentContainer"/>
+        /// <seealso cref="IFocusRing"/>
         [CreateProperty]
         public bool delegatesFocus
         {
@@ -121,12 +150,48 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Return true if the element can be focused.
         /// </summary>
+        /// <remarks>
+        /// An element can be focused if it fulfills all the following conditions:
+        ///
+        ///- It's focusable. See <see cref="Focusable.focusable"/>.
+        ///- It's enabled. See <see cref="VisualElement.enabledInHierarchy"/>.
+        ///- It's visible. See <see cref="VisualElement.visible"/>.
+        ///- Its display style is not <see cref="DisplayStyle.None"/>.
+        ///- If it has a parent that delegates focus (see <see cref="Focusable.delegatesFocus"/>),
+        /// then that parent needs to also fulfill these conditions.
+        /// </remarks>
+        /// <seealso cref="Focusable.focusable"/>
+        /// <seealso cref="VisualElement.enabledInHierarchy"/>
+        /// <seealso cref="VisualElement.visible"/>
+        /// <seealso cref="IStyle.display"/>
+        /// <seealso cref="Focusable.delegatesFocus"/>
+        /// <seealso cref="Focusable.Focus"/>
         [CreateProperty(ReadOnly = true)]
         public virtual bool canGrabFocus => focusable;
 
         /// <summary>
         /// Attempt to give the focus to this element.
         /// </summary>
+        /// <remarks>
+        /// The element may not become focused if:
+        ///
+        ///- The element cannot be focused. See <see cref="Focusable.canGrabFocus"/>.
+        ///- The element delegates its focus. See <see cref="Focusable.delegatesFocus"/>.
+        ///
+        /// A Panel's current focused element can be retrieved using its FocusController's focusedElement property.
+        ///
+        /// As long as an element is focused, it receives all keyboard and navigation events sent to its Panel.
+        ///
+        /// If a focus change is requested during another event's propagation, the change is only applied
+        /// after all the events currently in the event queue have been fully dispatched and propagated.
+        /// </remarks>
+        /// <example>
+        /// <code source="../Tests/UIElementsExamples/Assets/Examples/FocusExample.cs"/>
+        /// </example>
+        /// <seealso cref="Focusable.canGrabFocus"/>
+        /// <seealso cref="Focusable.delegatesFocus"/>
+        /// <seealso cref="IFocusRing"/>
+        /// <seealso cref="FocusController.focusedElement"/>
         public virtual void Focus()
         {
             if (focusController != null)
@@ -134,7 +199,7 @@ namespace UnityEngine.UIElements
                 if (canGrabFocus)
                 {
                     var elementGettingFocused = GetFocusDelegate();
-                    focusController.SwitchFocus(elementGettingFocused , this != elementGettingFocused);
+                    focusController.SwitchFocus(elementGettingFocused, this != elementGettingFocused);
                 }
                 else
                 {
@@ -146,6 +211,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Tell the element to release the focus.
         /// </summary>
+        /// <remarks>
+        /// If the element is not currently focused, calling this method has no effect.
+        /// </remarks>
+        /// <seealso cref="Focusable.Focus"/>
         public virtual void Blur()
         {
             focusController?.Blur(this);
@@ -251,16 +320,66 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Interface for classes implementing focus rings.
     /// </summary>
+    /// <remarks>
+    /// When the <see cref="EventDispatcher"/> processes navigation and pointer events, it
+    /// automatically uses this interface to generate corresponding Focus events if applicable.
+    /// </remarks>
+    /// <remarks>
+    /// Each Panel's <see cref="FocusController"/> has a focus ring implementation automatically assigned to it.
+    /// The type of that focus ring depends on the associated Panel's <see cref="ContextType"/>.
+    ///
+    /// For Editor-type Panels, only <see cref="NavigationMoveEvent"/> events in the following directions are
+    /// considered:
+    ///
+    ///- <see cref="NavigationMoveEvent.Direction.Next"/>,
+    ///- <see cref="NavigationMoveEvent.Direction.Previous"/>.
+    ///
+    /// For Player-type Panels, the following directions are also considered:
+    ///
+    ///- <see cref="NavigationMoveEvent.Direction.Left"/>,
+    ///- <see cref="NavigationMoveEvent.Direction.Right"/>,
+    ///- <see cref="NavigationMoveEvent.Direction.Up"/>,
+    ///- <see cref="NavigationMoveEvent.Direction.Down"/>.
+    ///
+    /// See also
+    /// [[wiki:UIE-faq-event-and-input-system.html#directional-nav|How can I change what element is focused next]] for
+    /// an example of a workaround solution if the assigned focus ring navigation rules don't correspond to your needs.
+    /// </remarks>
+    /// <seealso cref="FocusController"/>
     public interface IFocusRing
     {
         /// <summary>
-        /// Get the direction of the focus change for the given event. For example, when the Tab key is pressed, focus should be given to the element to the right.
+        /// Get the direction of the focus change for the given event.
         /// </summary>
+        /// <remarks>
+        /// For example, in a <see cref="VisualElementFocusRing"/>, when the Tab key is pressed, the focus change
+        /// direction should be <see cref="VisualElementFocusChangeDirection.right"/>.
+        ///
+        /// When the <see cref="EventDispatcher"/> processes navigation and pointer events, it automatically calls
+        /// this method to generate Focus events.
+        ///
+        /// The Focus event's <see cref="IFocusEvent.direction"/> matches the value returned by this method to
+        /// generate it.
+        /// </remarks>
         FocusChangeDirection GetFocusChangeDirection(Focusable currentFocusable, EventBase e);
 
         /// <summary>
         /// Get the next element in the given direction.
         /// </summary>
+        /// <remarks>
+        /// For example, in a <see cref="VisualElementFocusRing"/>, the next element in the
+        /// <see cref="VisualElementFocusChangeDirection.right"/> by default is the element to the right of the current
+        /// element.
+        /// More precisely, the next element is the focusable element whose <see cref="Focusable.tabIndex"/> is the
+        /// closest to the current element in increasing order.
+        /// If no such element is found, the process wraps around and continues looking for a focusable element
+        /// starting at tabIndex=0 and proceeding in increasing order.
+        ///
+        /// When the <see cref="EventDispatcher"/> processes navigation and pointer events, it automatically calls
+        /// this method to generate Focus events.
+        ///
+        /// The Focus event's <see cref="EventBase.target"/> matches the value returned by this method to generate it.
+        /// </remarks>
         Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction);
     }
 
@@ -270,6 +389,7 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// Each Panel should have an instance of this class. The instance holds the currently focused VisualElement and is responsible for changing it.
     /// </remarks>
+    /// <seealso cref="IPanel"/>
     public class FocusController
     {
         // https://w3c.github.io/uievents/#interface-focusevent

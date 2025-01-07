@@ -64,7 +64,7 @@ namespace UnityEngine.UIElements
         internal int layoutPass {get; set; }
 
         /// <summary>
-        /// Constructor.
+        /// Constructor. Avoid creating new event instances. Instead, use GetPooled() to get an instance from a pool of reusable event instances.
         /// </summary>
         public GeometryChangedEvent()
         {

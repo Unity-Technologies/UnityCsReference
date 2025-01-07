@@ -11,5 +11,7 @@ namespace UnityEditor
     {
         [UnityEngine.InspectorName("Neutrino RTOS 7.1")]
         Neutrino71 = 1,
+        [UnityEngine.InspectorName("Neutrino RTOS 8.0")]
+        Neutrino80 = 2,
     }
 }

@@ -25,7 +25,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Retrieves the type ID for this event instance.
         /// </summary>
-        public virtual long eventTypeId => - 1;
+        /// <remarks>
+        /// This property provides an alternative to the `is` operator
+        /// for checking whether a given event is of the expected type
+        /// on platforms or build settings where that operator has performance overhead.
+        /// </remarks>
+        public virtual long eventTypeId => -1;
 
         [Flags]
         internal enum EventPropagation
@@ -78,7 +83,7 @@ namespace UnityEngine.UIElements
 
         LifeCycleStatus lifeCycleStatus { get; set; }
 
-       
+
         [Obsolete("Override PreDispatch(IPanel panel) instead.")]
         protected virtual void PreDispatch() {}
 
@@ -93,7 +98,7 @@ namespace UnityEngine.UIElements
 #pragma warning restore 618
         }
 
-        
+
         [Obsolete("Override PostDispatch(IPanel panel) instead.")]
         protected virtual void PostDispatch() {}
 
@@ -115,8 +120,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Returns whether this event type bubbles up in the event propagation path.
+        /// Returns whether this event type bubbles up in the event propagation path during the BubbleUp phase.
         /// </summary>
+        /// <remarks>
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase.BubbleUp"/>
         public bool bubbles
         {
             get { return (propagation & EventPropagation.Bubbles) != 0; }
@@ -136,6 +145,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Returns whether this event is sent down the event propagation path during the TrickleDown phase.
         /// </summary>
+        /// <remarks>
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="PropagationPhase.TrickleDown"/>
         public bool tricklesDown
         {
             get { return (propagation & EventPropagation.TricklesDown) != 0; }
@@ -188,7 +201,8 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Whether StopPropagation() was called for this event.
+        /// Returns true if <see cref="StopPropagation"/> or <see cref="StopImmediatePropagation"/>
+        /// was called for this event.
         /// </summary>
         public bool isPropagationStopped
         {
@@ -207,19 +221,37 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Stops propagating this event. The event is not sent to other elements along the propagation path.
-        /// This method does not prevent other event handlers from executing on the current target.
-        /// If this method is called during the TrickleDown propagation phase, it will prevent default actions
-        /// to be processed, such as an element getting focused as a result of a PointerDownEvent.
+        /// Stops the propagation of the event to other targets.
+        /// All subscribers to the event on this target still receive the event.
         /// </summary>
+        /// <remarks>
+        /// The event is not sent to other elements along the propagation path.
+        /// If the propagation is in the <see cref="PropagationPhase.TrickleDown"/> phase,
+        /// this prevents event handlers from executing on children of the <see cref="EventBase.currentTarget"/>,
+        /// including on the event's <see cref="EventBase.target"/> itself, and prevents all event handlers using the
+        /// <see cref="TrickleDown.NoTrickleDown"/> option from executing
+        /// (see [[CallbackEventHandler.RegisterCallback]]).
+        /// If the propagation is in the <see cref="PropagationPhase.BubbleUp"/> phase,
+        /// this prevents event handlers from executing on parents of the <see cref="EventBase.currentTarget"/>.
+        ///
+        /// This method has the same effect as <see cref="EventBase.StopImmediatePropagation"/>
+        /// except on execution of other event handlers on the <see cref="EventBase.currentTarget"/>.
+        ///
+        /// Calling this method does not prevent some internal actions to be processed,
+        /// such as an element getting focused as a result of a <see cref="PointerDownEvent"/>.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="EventBase.StopImmediatePropagation"/>
         public void StopPropagation()
         {
             isPropagationStopped = true;
         }
 
         /// <summary>
-        /// Indicates whether StopImmediatePropagation() was called for this event.
+        /// Indicates whether <see cref="StopImmediatePropagation"/> was called for this event.
         /// </summary>
+        /// <seealso cref="isPropagationStopped"/>
         public bool isImmediatePropagationStopped
         {
             get { return (lifeCycleStatus & LifeCycleStatus.ImmediatePropagationStopped) != LifeCycleStatus.None; }
@@ -237,8 +269,28 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Immediately stops the propagation of the event. The event isn't sent to other elements along the propagation path. This method prevents other event handlers from executing on the current target.
+        /// Stops the propagation of the event to other targets, and
+        /// prevents other subscribers to the event on this target to receive the event.
         /// </summary>
+        /// <remarks>
+        /// The event is not sent to other elements along the propagation path.
+        /// If the propagation is in the <see cref="PropagationPhase.TrickleDown"/> phase,
+        /// this prevents event handlers from executing on children of the <see cref="EventBase.currentTarget"/>,
+        /// including on the event's <see cref="EventBase.target"/> itself, and prevents all event handlers using the
+        /// <see cref="TrickleDown.NoTrickleDown"/> option from executing
+        /// (see [[CallbackEventHandler.RegisterCallback]]).
+        /// If the propagation is in the <see cref="PropagationPhase.BubbleUp"/> phase,
+        /// this prevents event handlers from executing on parents of the <see cref="EventBase.currentTarget"/>.
+        ///
+        /// This method has the same effect as <see cref="EventBase.StopPropagation"/>
+        /// except on execution of other event handlers on the <see cref="EventBase.currentTarget"/>.
+        ///
+        /// Calling this method does not prevent some internal actions to be processed,
+        /// such as an element getting focused as a result of a <see cref="PointerDownEvent"/>.
+        ///
+        /// Refer to the [[wiki:UIE-Events-Dispatching|Dispatch events]] manual page for more information and examples.
+        /// </remarks>
+        /// <seealso cref="EventBase.StopPropagation"/>
         public void StopImmediatePropagation()
         {
             isPropagationStopped = true;
@@ -627,7 +679,7 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Retrieves the type ID for this event instance.
+        /// See <see cref="EventBase.eventTypeId"/>.
         /// </summary>
         public override long eventTypeId => s_TypeId;
     }

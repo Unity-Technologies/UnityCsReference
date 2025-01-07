@@ -76,7 +76,6 @@ namespace UnityEditor
 
                 SetLabelValue("product-name", InternalEditorUtility.GetUnityProductName());
 
-                SetLabelValue("version", $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}");
                 SetLabelValue("build-revision", $"{branch} {InternalEditorUtility.GetUnityBuildHash()}");
                 SetLabelValue("build-date", $"{dt.AddSeconds(t):r}");
 
@@ -87,6 +86,14 @@ namespace UnityEditor
             }
 
             rootVisualElement.RegisterCallback<KeyDownEvent>(OnKeyDown, TrickleDown.TrickleDown);
+
+            var contextMenu = new ContextualMenuManipulator((evt) =>
+            {
+                evt.menu.AppendAction("Copy Version Info", (act) => CopyVersionInfoToClipboard());
+                evt.menu.AppendAction("Copy License Info", (act) => CopyLicenseInfoToClipboard());
+            });
+
+            rootVisualElement.AddManipulator(contextMenu);
             rootVisualElement.focusable = true;
 
             UpdateVersionLabel();
@@ -97,20 +104,32 @@ namespace UnityEditor
         void SetLabelValue(string labelName, string text)
         {
             var lbl = rootVisualElement.Q<TextElement>(labelName);
-            lbl.text = text.Replace("(c)", "\u00A9");
+            if(lbl != null)
+                lbl.text = text.Replace("(c)", "\u00A9");
         }
 
         void OnKeyDown(KeyDownEvent evt)
         {
             bool altPressed = ((int)evt.modifiers & (int)EventModifiers.Alt) == (int)EventModifiers.Alt;
 
-            if (altPressed != m_ShowDetailedVersion)
-            {
-                m_ShowDetailedVersion = altPressed;
-                UpdateVersionLabel();
-            }
+            UpdateOnAlt(altPressed);
 
             ListenForSecretCodes(evt.character);
+
+            if (evt.keyCode == KeyCode.C)
+            {
+                if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
+                {
+                    if (evt.modifiers == EventModifiers.Command)
+                    {
+                        CopyVersionInfoToClipboard();
+                    }
+                }
+                else if (evt.modifiers == EventModifiers.Control)
+                {
+                    CopyVersionInfoToClipboard();
+                }
+            }
         }
 
         void OnEnable()
@@ -132,23 +151,66 @@ namespace UnityEditor
         public void OnGUI()
         {
             var evt = Event.current;
-            if (m_ShowDetailedVersion != evt.alt)
+            UpdateOnAlt(evt.alt);
+        }
+
+        private void UpdateOnAlt(bool altPressed)
+        {
+            if (!m_ShowDetailedVersion && altPressed != m_ShowDetailedVersion)
             {
-                m_ShowDetailedVersion = evt.alt;
+                m_ShowDetailedVersion |= altPressed;
+
                 UpdateVersionLabel();
             }
         }
 
+        private void CopyVersionInfoToClipboard()
+        {
+            string extensionVersion = FormatExtensionVersionString();
+
+            if (m_ShowDetailedVersion)
+            {
+                int t = InternalEditorUtility.GetUnityVersionDate();
+                DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+                string branch = InternalEditorUtility.GetUnityBuildBranch();
+                Clipboard.stringValue = $"{InternalEditorUtility.GetUnityProductName()}\n" +
+                                        $"{InternalEditorUtility.GetUnityDisplayVersionVerbose()}{extensionVersion}\n" +
+                                        $"Revision: {branch} {InternalEditorUtility.GetUnityBuildHash()}\n" +
+                                        $"Built: {dt.AddSeconds(t):r}";
+            }
+            else
+            {
+                Clipboard.stringValue = $"{InternalEditorUtility.GetUnityProductName()}\n" +
+                                        $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}";
+            }
+        }
+
+        private void CopyLicenseInfoToClipboard()
+        {
+            Clipboard.stringValue = InternalEditorUtility.GetLicenseInfo().Replace("(c)", "\u00A9");
+        }
+
         void UpdateVersionLabel()
         {
-            versionLabel.isSelectable = m_ShowDetailedVersion;
-
             if (buildDetailsContainer != null)
             {
                 buildDetailsContainer.EnableInClassList("hide-details", !m_ShowDetailedVersion);
                 buildDetailsContainer.Query<VisualElement>()
                     .ForEach((x) => x.EnableInClassList("hide-details", !m_ShowDetailedVersion));
             }
+
+            string extensionVersion = FormatExtensionVersionString();
+
+            if (m_ShowDetailedVersion)
+            {
+                SetLabelValue("version", $"{InternalEditorUtility.GetUnityDisplayVersionVerbose()}{extensionVersion}");
+            }
+            else
+            {
+                // The non verbose version should be shorter on public builds
+                SetLabelValue("version", $"{InternalEditorUtility.GetUnityDisplayVersion()}{extensionVersion}");
+            }
+
         }
 
         private void ListenForSecretCodes(char current)

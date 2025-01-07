@@ -9,12 +9,21 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// This interface describes the data used by keyboard events.
     /// </summary>
+    /// <remarks>
+    /// Refer to the [[wiki:UIE-Keyboard-Events|Keyboard events]] manual page for more information and examples.
+    /// </remarks>
+    /// <seealso cref="KeyDownEvent"/>
+    /// <seealso cref="KeyUpEvent"/>
     public interface IKeyboardEvent
     {
         /// <summary>
         /// Gets flags that indicate whether modifier keys (Alt, Ctrl, Shift, Windows/Cmd) are pressed.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers"/> for more information.
+        /// </remarks>
         EventModifiers modifiers { get; }
+
         /// <summary>
         /// Gets the character entered.
         /// </summary>
@@ -25,6 +34,7 @@ namespace UnityEngine.UIElements
         /// an empty string.
         /// </remarks>
         char character { get; }
+
         /// <summary>
         /// The key code.
         /// </summary>
@@ -37,28 +47,39 @@ namespace UnityEngine.UIElements
         KeyCode keyCode { get; }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         bool shiftKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         bool ctrlKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
-        /// is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         bool commandKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         bool altKey { get; }
+
         /// <summary>
-        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
-        /// key is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed.
         /// </summary>
         /// <remarks>
         /// The platform-specific action key is Cmd on macOs, and Ctrl on all other platforms.
@@ -78,7 +99,10 @@ namespace UnityEngine.UIElements
     ///
     /// By default, keyboard events trickle down and bubble up. disabled elements won't receive these events.
     ///
+    /// Refer to the [[wiki:UIE-Keyboard-Events|Keyboard events]] manual page for more information and examples.
     /// </remarks>
+    /// <seealso cref="KeyDownEvent"/>
+    /// <seealso cref="KeyUpEvent"/>
     [EventCategory(EventCategory.Keyboard)]
     public abstract class KeyboardEventBase<T> : EventBase<T>, IKeyboardEvent where T : KeyboardEventBase<T>, new()
     {
@@ -108,53 +132,62 @@ namespace UnityEngine.UIElements
         public KeyCode keyCode { get; protected set; }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Shift key is pressed. True means the Shift key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Shift key is pressed.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers.Shift"/> for more information.
+        /// </remarks>
         public bool shiftKey
         {
             get { return (modifiers & EventModifiers.Shift) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Ctrl key is pressed. True means the Ctrl key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Ctrl key is pressed.
         /// </summary>
+        /// <remarks>
+        /// See <see cref="EventModifiers.Control"/> for more information.
+        /// </remarks>
         public bool ctrlKey
         {
             get { return (modifiers & EventModifiers.Control) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed. True means the Windows/Cmd key
-        /// is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the Windows/Cmd key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Command"/> for more information.
+        /// </remarks>
         public bool commandKey
         {
             get { return (modifiers & EventModifiers.Command) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Alt key is pressed. True means the Alt key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Alt key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.Alt"/> for more information.
+        /// </remarks>
         public bool altKey
         {
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the Function key is pressed. True means the Function key is pressed.
-        /// False means it isn't.
+        /// Gets a boolean value that indicates whether the Function key is pressed.
         /// </summary>
+        /// <remarks>
+        /// Refer to <see cref="EventModifiers.FunctionKey"/> for more information.
+        /// </remarks>
         internal bool functionKey
         {
             get { return (modifiers & EventModifiers.FunctionKey) != 0; }
         }
 
         /// <summary>
-        /// Gets a boolean value that indicates whether the platform-specific action key is pressed. True means the action
-        /// key is pressed. False means it isn't.
+        /// Gets a boolean value that indicates whether the platform-specific action key is pressed.
         /// </summary>
         /// <remarks>
         /// The platform-specific action key is Cmd on macOS, and Ctrl on all other platforms.

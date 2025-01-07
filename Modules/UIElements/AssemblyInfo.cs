@@ -56,8 +56,12 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")] // com.unity.2d.common: VisualElement.pseudoStates, PseudoStates
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")] // com.unity.entities: VisualElementBridge.cs, ListViewBridge.cs
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.003")] // com.unity.vectorgraphics: VectorImage, GradientSettings
-[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.015")] // com.unity.graphtoolsauthoringframework: TextUtilities
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.017")] // com.unity.motion: UIElementsUtility
+
+[assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.015")] // Eventually remove this line. Kept for earlier, unreleased versions of com.unity.graphtoolsfoundation, which is now com.unity.graphtoolsauthoringframework (line below).
+[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalBridge")] // com.unity.graphtoolsauthoringframework
 
 
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")] // com.unity.purchasing, VisualElement.AddStyleSheetPath
+[assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
+

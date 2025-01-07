@@ -302,7 +302,7 @@ namespace Unity.UI.Builder
             {"flex-grow", "Specifies how the item will grow relative to the rest of the flexible items inside the same container."},
             {"flex-shrink", "Specifies how the item will shrink relative to the rest of the flexible items inside the same container."},
             {"flex-wrap", "Placement of children over multiple lines if not enough space is available in this container."},
-            {"font-size", "Font size to draw the element's text."},
+            {"font-size", "Font size to draw the element's text, specified in point size."},
             {"height", "Fixed height of an element for the layout."},
             {"justify-content", "Justification of children on the main axis of this container."},
             {"left", "Left distance from the element's box during layout."},

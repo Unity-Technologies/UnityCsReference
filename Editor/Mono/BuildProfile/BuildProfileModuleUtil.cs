@@ -50,6 +50,27 @@ namespace UnityEditor.Build.Profile
             BuildTargetDiscovery.BuildPlatformDescription(platformGuid);
 
         /// <summary>
+        /// Get Platform list of name and link url pair.
+        /// </summary>
+        public static List<BuildTargetDiscovery.NameAndLink> GetPlatformNameLinkList(GUID platformGuid) =>
+            BuildTargetDiscovery.BuildPlatformNameLinkList(platformGuid);
+
+        /// <summary>
+        /// Fetch default editor platform icon texture.
+        /// </summary>
+        public static Texture2D GetHelpIcon()
+        {
+            return EditorGUIUtility.LoadIcon("_Help");
+        }
+        /// <summary>
+        /// Fetch subtitle used to show under the main platform name.
+        /// </summary>
+        public static string GetSubtitle(GUID platformGUID)
+        {
+            return BuildTargetDiscovery.BuildPlatformSubtitle(platformGUID);
+        }
+
+        /// <summary>
         /// Fetch default editor platform icon texture.
         /// </summary>
         public static Texture2D GetPlatformIcon(GUID platformId)
@@ -253,7 +274,7 @@ namespace UnityEditor.Build.Profile
             options.targetGroup = buildTargetGroup;
             options.locationPathName = buildLocation;
             options.assetBundleManifestPath = assetBundleManifestPath ?? PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
-            options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.scenes);
+            options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.GetScenesForBuild());
 
             return options;
         }
@@ -853,6 +874,44 @@ namespace UnityEditor.Build.Profile
                 settingsText.AppendLine(settingPromptText);
             }
             return settingsText;
+        }
+
+        public static void InstallRequiredPackagesForClassicProfileIfRequired(BuildProfile profile, Func<string, string, bool> doesUserApprove)
+        {
+            if (!BuildProfileContext.IsClassicPlatformProfile(profile))
+                return;
+
+            var buildTarget = profile.GetIBuildTarget();
+            if (buildTarget == null)
+                return;
+            if (!buildTarget.TryGetProperties<IBuildPlatformProperties>(out var properties))
+                return;
+
+            if (!properties.ShouldInstallRequiredPackagesOnActivationOfClassicPlatform)
+                return;
+
+            var packages = BuildTargetDiscovery.BuildPlatformRequiredPackages(profile.platformGuid);
+            if (packages.Length == 0)
+                return;
+
+            var packageStringBuilder = new StringBuilder();
+            var neededPackages = new List<string>();
+            foreach (var package in packages)
+            {
+                if (!PackageManager.PackageInfo.IsPackageRegistered(package))
+                {
+                    packageStringBuilder.AppendLine().Append(package);
+                    neededPackages.Add(package);
+                }
+            }
+
+            if (neededPackages.Count == 0)
+                return;
+
+            if (doesUserApprove != null && !doesUserApprove.Invoke(buildTarget.DisplayName, packageStringBuilder.ToString()))
+                return;
+
+            PackageManager.Client.AddAndRemove(neededPackages.ToArray());
         }
     }
 }

@@ -15,6 +15,8 @@ using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngine.SceneManagement;
+using ShaderPropertyType = UnityEngine.Rendering.ShaderPropertyType;
+using ShaderPropertyFlags = UnityEngine.Rendering.ShaderPropertyFlags;
 
 namespace UnityEditorInternal
 {
@@ -165,10 +167,10 @@ namespace UnityEditorInternal
 
         internal static bool BumpMapTextureNeedsFixing(MaterialProperty prop)
         {
-            if (prop.type != MaterialProperty.PropType.Texture)
+            if (prop.propertyType != ShaderPropertyType.Texture)
                 return false;
 
-            bool hintIfNormal = ((prop.flags & MaterialProperty.PropFlags.Normal) != 0);
+            bool hintIfNormal = ((prop.propertyFlags & ShaderPropertyFlags.Normal) != 0);
 
             foreach (Material material in prop.targets)
                 if (BumpMapTextureNeedsFixingInternal(material, prop.name, hintIfNormal))
@@ -709,6 +711,11 @@ namespace UnityEditorInternal
 
         [StaticAccessor("GetRenderManager()", StaticAccessorType.Dot)]
         extern public static bool HasFullscreenCamera();
+
+        public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles)
+        {
+            return CalculateSelectionBounds(usePivotOnlyForParticles, false, false);
+        }
 
         public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles, bool onlyUseActiveSelection)
         {

@@ -4524,8 +4524,17 @@
     <Compile Include="..\..\Modules\BuildProfileEditor\AssetImportOverridesWindow.cs">
       <Link>Modules\BuildProfileEditor\AssetImportOverridesWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation.cs">
-      <Link>Modules\BuildProfileEditor\BuildAutomation.cs</Link>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation\BuildAutomation.cs">
+      <Link>Modules\BuildProfileEditor\BuildAutomation\BuildAutomation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation\BuildAutomationModalWindow.cs">
+      <Link>Modules\BuildProfileEditor\BuildAutomation\BuildAutomationModalWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation\BuildAutomationSettings.cs">
+      <Link>Modules\BuildProfileEditor\BuildAutomation\BuildAutomationSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\BuildProfileEditor\BuildAutomation\BuildAutomationSettingsEditor.cs">
+      <Link>Modules\BuildProfileEditor\BuildAutomation\BuildAutomationSettingsEditor.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\BuildProfileEditor\BuildProfileEditor.cs">
       <Link>Modules\BuildProfileEditor\BuildProfileEditor.cs</Link>

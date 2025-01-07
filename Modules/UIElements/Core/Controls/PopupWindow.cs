@@ -11,6 +11,12 @@ namespace UnityEngine.UIElements
     /// Styled visual text element. This element doesn't have any functionality. It's just a container with a border and a title, rather than a window or popup. For more information, refer to [[wiki:UIE-uxml-element-PopupWindow|UXML element PopupWindow]].
     /// </summary>
     /// <example>
+    /// The following screenshot is a visual representation of the popup window:
+    ///
+    ///
+    /// {img Popup.png}
+    ///
+    /// The following code generates the previous popup window:
     /// <code>
     /// var popupWindow = new UnityEngine.UIElements.PopupWindow() { text = "Title" };
     /// popupWindow.Add(new Button());

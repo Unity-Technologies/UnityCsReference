@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEngine;
 using UnityEngine.UIElements;
+using static UnityEditor.Build.Profile.Handlers.BuildProfileWindowSelection;
 
 namespace UnityEditor.Build.Profile.Elements
 {
@@ -26,18 +27,20 @@ namespace UnityEditor.Build.Profile.Elements
 
         internal enum ListItemType
         {
-            SceneList,
             InstalledPlatform,
             MissingPlatform,
         }
 
         internal const string buildProfilesVisualElement = "custom-build-profiles";
         internal const string buildProfileClassicPlatformVisualElement = "build-profile-classic-platforms";
+        internal const string buildProfileSharedSceneListElement = "shared-scene-list-elem";
 
         readonly BuildProfileWindow m_Parent;
         readonly BuildProfileDataSource m_DataSource;
         readonly ListView m_PlatformListView;
         readonly ListView m_BuildProfilesListView;
+        readonly VisualElement m_SharedSceneListElement;
+        internal BuildProfileListEditableLabel m_SharedSceneListItem;
 
         public PlatformListView(BuildProfileWindow parent, BuildProfileDataSource dataSource)
         {
@@ -45,10 +48,21 @@ namespace UnityEditor.Build.Profile.Elements
             m_DataSource = dataSource;
             m_PlatformListView = parent.rootVisualElement.Q<ListView>(buildProfileClassicPlatformVisualElement);
             m_BuildProfilesListView = parent.rootVisualElement.Q<ListView>(buildProfilesVisualElement);
+            m_SharedSceneListElement = parent.rootVisualElement.Q<VisualElement>(buildProfileSharedSceneListElement);
         }
 
         internal void Create()
         {
+            m_SharedSceneListItem = m_Parent.CreateEditableLabelItem();
+            m_SharedSceneListItem.Set(TrText.sceneList, BuildProfileModuleUtil.GetSceneListIcon());
+            m_SharedSceneListItem.AddToClassList("unity-list-view__item");
+            m_SharedSceneListItem.AddToClassList("unity-collection-view__item");
+            m_SharedSceneListItem.AddManipulator(new Clickable(evt => {
+                m_SharedSceneListItem.AddToClassList("unity-collection-view__item--selected");
+                m_Parent.OnClassicSceneListSelected();
+            }));
+            m_SharedSceneListElement.Add(m_SharedSceneListItem);
+
             m_PlatformListView.Q<ScrollView>().verticalScrollerVisibility = ScrollerVisibility.Hidden;
             m_PlatformListView.selectionType = SelectionType.Single;
             m_PlatformListView.itemsSource = GetPlatformListData(m_DataSource);
@@ -85,9 +99,6 @@ namespace UnityEditor.Build.Profile.Elements
 
                 switch (data.type)
                 {
-                    case ListItemType.SceneList:
-                        m_Parent.OnClassicSceneListSelected();
-                        break;
                     case ListItemType.InstalledPlatform:
                         m_Parent.OnClassicPlatformSelected(data.data);
                         break;
@@ -134,6 +145,32 @@ namespace UnityEditor.Build.Profile.Elements
 
         internal void ClearProfileSelection() => m_BuildProfilesListView.ClearSelection();
 
+        internal void ClearSharedSceneListSelection() => m_SharedSceneListItem.RemoveFromClassList("unity-collection-view__item--selected");
+
+        internal void CleanupSelection(ListViewSelectionType listViewSelectionType)
+        {
+            switch (listViewSelectionType)
+            {
+                case ListViewSelectionType.Classic:
+                    ClearProfileSelection();
+                    ClearSharedSceneListSelection();
+                    break;
+
+                case ListViewSelectionType.Custom:
+                    ClearPlatformSelection();
+                    ClearSharedSceneListSelection();
+                    break;
+
+                case ListViewSelectionType.MissingClassic:
+                    ClearProfileSelection();
+                    ClearSharedSceneListSelection();
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
         internal void Unbind()
         {
             if (m_PlatformListView != null)
@@ -154,14 +191,17 @@ namespace UnityEditor.Build.Profile.Elements
             if (m_BuildProfilesListView.selectedIndex >= 0)
                 m_BuildProfilesListView.ClearSelection();
 
-            // Offset by 1 to account for the scene list item.
-            m_PlatformListView.SetSelection(index + 1);
+            ClearSharedSceneListSelection();
+
+            m_PlatformListView.SetSelection(index);
         }
 
         internal void SelectBuildProfile(int index)
         {
             if (m_PlatformListView.selectedIndex >= 0)
                 m_PlatformListView.ClearSelection();
+            
+            ClearSharedSceneListSelection();
 
             m_BuildProfilesListView.SetSelection(index);
         }
@@ -169,9 +209,12 @@ namespace UnityEditor.Build.Profile.Elements
         internal void SelectSharedSceneList()
         {
             if (m_PlatformListView.selectedIndex >= 0)
+                m_PlatformListView.ClearSelection();
+                
+            if (m_BuildProfilesListView.selectedIndex >= 0)
                 m_BuildProfilesListView.ClearSelection();
 
-            m_PlatformListView.SetSelection(0);
+            m_SharedSceneListItem.AddToClassList("unity-collection-view__item--selected");
         }
 
         internal void AppendBuildProfileSelection(int index) => m_BuildProfilesListView.AddToSelection(index);
@@ -204,7 +247,6 @@ namespace UnityEditor.Build.Profile.Elements
             {
                 if (search[i].IsActiveBuildProfileOrPlatform())
                 {
-                    // Consider scene list item occupies the first index.
                     SelectInstalledPlatform(i);
                     return true;
                 }
@@ -219,7 +261,6 @@ namespace UnityEditor.Build.Profile.Elements
             {
                 if (BuildProfileModuleUtil.IsBasePlatformOfActivePlatform(search[i].platformGuid))
                 {
-                    // Consider scene list item occupies the first index.
                     SelectInstalledPlatform(i);
                     BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(search[i]);
                     return true;
@@ -244,15 +285,7 @@ namespace UnityEditor.Build.Profile.Elements
 
         static List<ClassicItemData> GetPlatformListData(BuildProfileDataSource dataSource)
         {
-            var result = new List<ClassicItemData>
-            {
-                new()
-                {
-                    type = ListItemType.SceneList,
-                    text = TrText.sceneList,
-                    icon = BuildProfileModuleUtil.GetSceneListIcon()
-                }
-            };
+            var result = new List<ClassicItemData>();
 
             foreach (var profile in dataSource.classicPlatforms)
             {
