@@ -158,14 +158,12 @@ namespace UnityEditor
                     return helpTopic.Substring(dashIndex + 1);
                 }
 
-                if (obj is SceneAsset)
+                switch (obj)
                 {
-                    return nameof(SceneAsset);
-                }
-
-                if (obj is LightingDataAsset)
-                {
-                    return nameof(LightingDataAsset);
+                    case SceneAsset:
+                        return nameof(SceneAsset);
+                    case LightingDataAsset:
+                        return nameof(LightingDataAsset);
                 }
             }
             else
@@ -176,7 +174,7 @@ namespace UnityEditor
                 }
             }
 
-            return "";
+            return helpTopic;
         }
 
         internal static string GetHelpURLForObject(Object obj, bool defaultToMonoBehaviour)
@@ -334,45 +332,20 @@ namespace UnityEditor
                 return $"script-{obj.GetType().Name}";
             }
 
-            if (obj is Terrain)
+            return obj switch
             {
-                return "script-Terrain";
-            }
-
-            if (obj is AudioMixerController || obj is AudioMixerGroupController)
-            {
-                return "class-AudioMixer";
-            }
-
-            if (obj is EditorSettings)
-            {
-                return "class-EditorManager";
-            }
-
-            if (obj is SceneAsset)
-            {
-                return "CreatingScenes";
-            }
-
-            if (obj is LightingDataAsset)
-            {
-                return "LightmapSnapshot";
-            }
-
-            if (obj is PrefabImporter)
-            {
-                return "Prefabs";
-            }
-
-            if (obj is Preset)
-            {
-                return "Presets";
-            }
-
-            if (obj is DefaultAsset)
-                return "";
-
-            return $"class-{obj.GetType().Name}";
+                Terrain => "script-Terrain",
+                AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
+                EditorSettings => "class-EditorManager",
+                SceneAsset => "CreatingScenes",
+                LightingDataAsset => "LightmapSnapshot",
+                PrefabImporter => "Prefabs",
+                Preset => "Presets",
+                MonoImporter => "ScriptedImporters",
+                MonoScript => "class-TextAsset",
+                DefaultAsset => "",
+                _ => $"class-{obj.GetType().Name}",
+            };
         }
 
         [UnityEngine.Scripting.RequiredByNativeCode]

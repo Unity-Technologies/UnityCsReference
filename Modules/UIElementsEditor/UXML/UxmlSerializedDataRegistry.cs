@@ -26,10 +26,6 @@ namespace UnityEditor.UIElements
         [UsedImplicitly]
         internal static void RegisterCustomDependencies()
         {
-            // No need to register custom dependencies when going to play mode
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-
             UxmlCodeDependencies.instance.RegisterUxmlSerializedDataDependencies(SerializedDataTypes);
         }
 

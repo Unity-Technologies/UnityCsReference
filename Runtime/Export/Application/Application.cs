@@ -354,17 +354,22 @@ namespace UnityEngine
         public static CancellationToken exitCancellationToken => s_currentCancellationTokenSource.Token;
 
         [RequiredByNativeCode]
-        static void Internal_ApplicationInit()
+        static void Internal_InitializeExitCancellationToken()
         {
-            // Init cancellation token here in order to support no domain reload scenarios
-            s_currentCancellationTokenSource = new CancellationTokenSource();
+            // we can keep the same token source if it's not cancelled
+            if (s_currentCancellationTokenSource == null || s_currentCancellationTokenSource.IsCancellationRequested)
+                s_currentCancellationTokenSource = new CancellationTokenSource();
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_RaiseExitCancellationToken()
+        {
+            s_currentCancellationTokenSource?.Cancel();
         }
 
         [RequiredByNativeCode]
         static void Internal_ApplicationQuit()
         {
-            s_currentCancellationTokenSource.Cancel();
-
             if (quitting != null)
                 quitting();
         }

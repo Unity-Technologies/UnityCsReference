@@ -907,6 +907,7 @@ namespace UnityEngine.UIElements
                 delegatesFocus = true;
 
                 textElement = new TextElement();
+                textElement.isInputField = true;
                 textElement.selection.isSelectable = true;
                 textEdition.isReadOnly = false;
                 textSelection.isSelectable = true;
@@ -921,7 +922,6 @@ namespace UnityEngine.UIElements
                 textEdition.UpdateTextFromValue += UpdateTextFromValue;
                 textEdition.MoveFocusToCompositeRoot += MoveFocusToCompositeRoot;
                 textEdition.GetDefaultValueType = GetDefaultValueType;
-
 
                 AddToClassList(inputUssClassName);
                 name = TextField.textInputUssName;

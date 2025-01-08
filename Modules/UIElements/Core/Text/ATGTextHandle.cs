@@ -149,10 +149,13 @@ namespace UnityEngine.UIElements
             nativeSettings.fontSize = (int)(style.fontSize.value > 0
                 ? style.fontSize.value * 64.0f
                 : fa.faceInfo.pointSize * 64.0f);
-            nativeSettings.wordWrap = style.whiteSpace.toTextCore();
+            nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
             nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
             nativeSettings.verticalAlignment = TextGeneratorUtilities.GetVerticalAlignment(style.unityTextAlign);
+            nativeSettings.characterSpacing = (int)(style.letterSpacing.value * 64.0f);
+            nativeSettings.wordSpacing = (int)(style.wordSpacing.value * 64.0f);
+            nativeSettings.paragraphSpacing = (int)(style.unityParagraphSpacing.value * 64.0f);
 
             nativeSettings.color = style.color;
             nativeSettings.fontAsset = fa.nativeFontAsset;
@@ -255,7 +258,7 @@ namespace UnityEngine.UIElements
             Debug.LogError("ICU Data not available. The data should be automatically assigned to the PanelSettings in the editor if the advanced text option is enable in the project settings. It will not be present on PanelSettings created at runtime, so make sure the build contains at least one PanelSettings asset");
             return null;
         }
-                
+
         //This method uses the asset in the editor if avialable, or try to find any asset that would be included in the resource folder for builds
         internal static TextAsset GetICUAssetStaticFalback()
         {

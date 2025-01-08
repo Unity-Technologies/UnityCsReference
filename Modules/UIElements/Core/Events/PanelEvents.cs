@@ -62,8 +62,11 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent after an element is added to an element that is a descendent of a panel.
+    /// Event sent after an element is added to an element that is a descendant of a panel.
     /// </summary>
+    /// <remarks>
+    /// Don't modify the parent of the element in your registered callbacks.
+    /// </remarks>
     public class AttachToPanelEvent : PanelChangedEventBase<AttachToPanelEvent>
     {
         static AttachToPanelEvent()
@@ -73,8 +76,11 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Event sent just before an element is detach from its parent, if the parent is the descendant of a panel.
+    /// Event sent just before an element is detached from its parent, if the parent is the descendant of a panel.
     /// </summary>
+    /// <remarks>
+    /// Don't modify the parent of the element in your registered callbacks.
+    /// </remarks>
     public class DetachFromPanelEvent : PanelChangedEventBase<DetachFromPanelEvent>
     {
         static DetachFromPanelEvent()

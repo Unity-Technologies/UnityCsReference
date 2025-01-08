@@ -143,14 +143,24 @@ namespace UnityEngine.UIElements
         [SerializeField]
         internal ScalableImage[] scalableImages;
 
-        [NonSerialized]
-        internal TableType orderedNameSelectors;
+        // This enum is used to retrieve a given "TableType" at specific index in the related array
+        internal enum OrderedSelectorType
+        {
+            None = -1,
+            Name = 0,
+            Type = 1,
+            Class = 2,
+            Length = 3 // Used to initialize the array
+        }
 
         [NonSerialized]
-        internal TableType orderedTypeSelectors;
+        internal TableType[] tables;
 
-        [NonSerialized]
-        internal TableType orderedClassSelectors;
+        [NonSerialized] internal int nonEmptyTablesMask;
+
+        [NonSerialized] internal StyleComplexSelector firstRootSelector;
+
+        [NonSerialized] internal StyleComplexSelector firstWildCardSelector;
 
         [NonSerialized]
         private bool m_IsDefaultStyleSheet;
@@ -269,9 +279,15 @@ namespace UnityEngine.UIElements
                 complexSelectors[i].CachePseudoStateMasks();
             }
 
-            orderedClassSelectors = new TableType(StringComparer.Ordinal);
-            orderedNameSelectors = new TableType(StringComparer.Ordinal);
-            orderedTypeSelectors = new TableType(StringComparer.Ordinal);
+            tables = new TableType[(int)OrderedSelectorType.Length];
+            tables[(int)OrderedSelectorType.Name] = new TableType(StringComparer.Ordinal);
+            tables[(int)OrderedSelectorType.Type] = new TableType(StringComparer.Ordinal);
+            tables[(int)OrderedSelectorType.Class] = new TableType(StringComparer.Ordinal);
+
+            nonEmptyTablesMask = 0;
+
+            firstRootSelector = null;
+            firstWildCardSelector = null;
 
             for (int i = 0; i < complexSelectors.Length; i++)
             {
@@ -292,40 +308,59 @@ namespace UnityEngine.UIElements
 
                 string key = part.value;
 
-                TableType tableToUse = null;
+                OrderedSelectorType tableToUse = OrderedSelectorType.None;
 
                 switch (part.type)
                 {
                     case StyleSelectorType.Class:
-                        tableToUse = orderedClassSelectors;
+                        tableToUse = OrderedSelectorType.Class;
                         break;
                     case StyleSelectorType.ID:
-                        tableToUse = orderedNameSelectors;
+                        tableToUse = OrderedSelectorType.Name;
                         break;
                     case StyleSelectorType.Type:
-                    case StyleSelectorType.Wildcard:
-                        key = part.value ?? "*";
-                        tableToUse = orderedTypeSelectors;
+                        key = part.value;
+                        tableToUse = OrderedSelectorType.Type;
                         break;
-                    // in this case we assume a wildcard selector
-                    // since a selector such as ":selected" applies to all elements
+
+                    case StyleSelectorType.Wildcard:
+                        if (firstWildCardSelector != null)
+                            complexSel.nextInTable = firstWildCardSelector;
+                        firstWildCardSelector = complexSel;
+                        break;
+
                     case StyleSelectorType.PseudoClass:
-                        key = "*";
-                        tableToUse = orderedTypeSelectors;
+                        // :root selector are put separately because they apply to very few elements
+                        if ((lastSelector.pseudoStateMask & (int)PseudoStates.Root) != 0)
+                        {
+                            if (firstRootSelector != null)
+                                complexSel.nextInTable = firstRootSelector;
+                            firstRootSelector = complexSel;
+                        }
+                        // in this case we assume a wildcard selector
+                        // since a selector such as ":selected" applies to all elements
+                        else
+                        {
+                            if (firstWildCardSelector != null)
+                                complexSel.nextInTable = firstWildCardSelector;
+                            firstWildCardSelector = complexSel;
+                        }
                         break;
                     default:
                         Debug.LogError($"Invalid first part type {part.type}", this);
                         break;
                 }
 
-                if (tableToUse != null)
+                if (tableToUse != OrderedSelectorType.None)
                 {
                     StyleComplexSelector previous;
-                    if (tableToUse.TryGetValue(key, out previous))
+                    TableType table = tables[(int)tableToUse];
+                    if (table.TryGetValue(key, out previous))
                     {
                         complexSel.nextInTable = previous;
                     }
-                    tableToUse[key] = complexSel;
+                    nonEmptyTablesMask |= (1 << (int)tableToUse);
+                    table[key] = complexSel;
                 }
             }
         }

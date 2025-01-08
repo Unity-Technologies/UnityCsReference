@@ -16,6 +16,30 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Controls how a serialized class instance is copied to a UxmlAttribute field.
+    /// </summary>
+    /// <remarks>
+    /// By default, Unity creates a deep copy of the class instance by serializing it into a JSON string using <see cref="JsonUtility.ToJson(object)"/> 
+    /// and then deserializing it back to an instance with <see cref="JsonUtility.FromJson{T}(string)"/>. 
+    /// The default process involves the Unity serializer and triggers callbacks such as <see cref="ISerializationCallbackReceiver"/>, which can be inefficient, especially for large objects or frequent copying.
+    /// To optimize the process and performance, implement this interface which provides a more efficient copying mechanism.
+    /// </remarks>
+    internal interface IUxmlSerializedDataDeserializeReference
+    {
+        /// <summary>
+        /// Returns a copy of a serialized class instance during deserialization for use in a UxmlAttribute field.
+        /// </summary>
+        /// <remarks>
+        /// You can define the type of copy based on your usage scenarios:
+        ///- Deep Copy: Returns independent copies, ideal for scenarios where you need to modify the clone.
+        ///- Shallow Copy: For performance optimization when internal state changes are unnecessary. It creates a copy of some parts of an instance while sharing others. 
+        ///- Shared Instance: Returns the original instance for read-only scenarios with no modifications.
+        /// </remarks>
+        /// <returns>A clone of the instance.</returns>
+        object DeserializeReference();
+    }
+
+    /// <summary>
     /// Generates an instance of the declaring element when the <see cref="UxmlElementAttribute"/> is used in a custom control.
     /// </summary>
     [Serializable]
@@ -108,7 +132,7 @@ namespace UnityEngine.UIElements
     abstract class UxmlSerializableAdapterBase
     {
         public abstract object dataBoxed { get; set; }
-        public abstract object CopyBoxed(object value);
+        public abstract object CloneInstanceBoxed(object value);
     }
 
     [Serializable]
@@ -120,11 +144,14 @@ namespace UnityEngine.UIElements
 
         public override object dataBoxed { get => data; set => data = (T)value; }
 
-        public T CopyData(T value)
+        public T CloneInstance(T value)
         {
             UxmlSerializableAdapter<T> copy = null;
             try
             {
+                if (value is IUxmlSerializedDataDeserializeReference uxmlSerializedDataCopy)
+                    return (T)uxmlSerializedDataCopy.DeserializeReference();
+
                 data = (T)value;
                 var json = JsonUtility.ToJson(this);
                 copy = JsonUtility.FromJson<UxmlSerializableAdapter<T>>(json);
@@ -141,7 +168,7 @@ namespace UnityEngine.UIElements
             return copy != null ? copy.data : default;
         }
 
-        public override object CopyBoxed(object value) => CopyData((T)value);
+        public override object CloneInstanceBoxed(object value) => CloneInstance((T)value);
     }
 
     /// <summary>
@@ -164,7 +191,6 @@ namespace UnityEngine.UIElements
             object copy = null;
             try
             {
-
                 if (!s_Adapters.TryGetValue(value.GetType(), out var adapter))
                 {
                     var adapterType = typeof(UxmlSerializableAdapter<>).MakeGenericType(value.GetType());
@@ -173,7 +199,7 @@ namespace UnityEngine.UIElements
                     adapter = (UxmlSerializableAdapterBase)field.GetValue(null);
                     s_Adapters[value.GetType()] = adapter;
                 }
-                copy = adapter.CopyBoxed(value);
+                copy = adapter.CloneInstanceBoxed(value);
             }
             catch (Exception e)
             {
@@ -186,7 +212,7 @@ namespace UnityEngine.UIElements
         public static T CopySerialized<T>(object value)
         {
             var adapter = UxmlSerializableAdapter<T>.SharedInstance;
-            return adapter.CopyData((T)value);
+            return adapter.CloneInstance((T)value);
         }
     }
 }

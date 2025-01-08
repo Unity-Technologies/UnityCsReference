@@ -39,6 +39,10 @@ namespace UnityEngine.TextCore
         public TextSpan[] textSpans;
         public Color32 color;
 
+        public int characterSpacing;        // Encoded in Fixed Point.
+        public int wordSpacing;             // Encoded in Fixed Point.
+        public int paragraphSpacing;        // Encoded in Fixed Point.
+
         public bool hasLink => textSpans != null && Array.Exists(textSpans, span => span.linkID != -1);
 
         public readonly TextSpan CreateTextSpan()
@@ -103,6 +107,9 @@ namespace UnityEngine.TextCore
             vertexPadding = tgs.vertexPadding;
             overflow = tgs.overflow;
             textSpans = tgs.textSpans != null ? (TextSpan[])tgs.textSpans.Clone() : null;
+            characterSpacing = tgs.characterSpacing;
+            wordSpacing = tgs.wordSpacing;
+            paragraphSpacing = tgs.paragraphSpacing;
         }
 
         public override string ToString()
@@ -143,7 +150,10 @@ namespace UnityEngine.TextCore
                 $"{nameof(fontWeight)}: {fontWeight}\n" +
                 $"{nameof(vertexPadding)}: {vertexPadding}\n" +
                 $"{nameof(overflow)}: {overflow}\n" +
-                $"{nameof(textSpans)}: {textSpansString}";
+                $"{nameof(textSpans)}: {textSpansString}\n" +
+                $"{nameof(characterSpacing)}: {characterSpacing}\n" +
+                $"{nameof(paragraphSpacing)}: {paragraphSpacing}\n" +
+                $"{nameof(wordSpacing)}: {wordSpacing}\n";
         }
     }
 
