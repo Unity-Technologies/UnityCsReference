@@ -4,12 +4,16 @@
 
 using System;
 using System.Reflection;
+using UnityEditor.Inspector.GraphicsSettingsInspectors;
+using UnityEditor.Rendering.Settings;
 using UnityEngine.Rendering;
 
 namespace UnityEditor.Rendering
 {
     public static class RenderPipelineGraphicsSettingsEditorUtility
     {
+        internal const string undoRebindName = "Update IRenderPipelineGraphicsSettings: ";
+
         public static void ForEachFieldOfType<T>(this IRenderPipelineResources resource, Action<T> callback, BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance)
         {
             if (resource == null)
@@ -56,6 +60,35 @@ namespace UnityEditor.Rendering
         public static void RemoveRenderPipelineGraphicsSettingsWithMissingScript()
         {
             EditorGraphicsSettings.ForEachPipelineSettings((settings) => settings.CleanNullSettings());
+        }
+
+        public static void Rebind(IRenderPipelineGraphicsSettings settings, Type renderPipelineType)
+        {
+            if (settings == null || renderPipelineType == null || !typeof(RenderPipeline).IsAssignableFrom(renderPipelineType))
+                return;
+
+            var renderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineType);
+            var serializedGlobalSettings = new SerializedObject(renderPipelineGlobalSettings);
+            var settingsIterator = serializedGlobalSettings.FindProperty(RenderPipelineGraphicsSettingsManager.serializationPathToCollection);
+            var end = settingsIterator.GetEndProperty();
+            settingsIterator.NextVisible(true); //enter the collection
+            while (true)
+            {
+                if (SerializedProperty.EqualContents(settingsIterator, end))
+                    return;
+
+                if (settingsIterator.boxedValue?.GetType() == settings.GetType())
+                    break;
+
+                settingsIterator.NextVisible(false);
+            }
+            
+            using (var notifier = new Notifier.Scope(settingsIterator))
+            {
+                settingsIterator.boxedValue = settings;
+                if (serializedGlobalSettings.ApplyModifiedProperties())
+                    Undo.SetCurrentGroupName($"{undoRebindName}{settings.GetType().Name}");
+            }
         }
     }
 

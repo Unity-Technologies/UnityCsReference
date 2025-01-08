@@ -1109,6 +1109,14 @@ namespace UnityEditor
             set;
         }
 
+        public static extern bool switchEnableUnpublishableErrors
+        {
+            [NativeMethod("GetEnableUnpublishableErrorsForSwitch")]
+            get;
+            [NativeMethod("SetEnableUnpublishableErrorsForSwitch")]
+            set;
+        }
+
         internal static extern SwitchShaderCompilerConfig switchShaderCompilerConfig
         {
             [NativeMethod("GetSwitchShaderCompilerConfig")]

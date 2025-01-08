@@ -756,6 +756,8 @@ namespace UnityEngine.UIElements
                 m_Owner.m_LogicalParent = value;
                 m_Owner.DirtyNextParentWithEventInterests();
                 m_Owner.SetPanel(value?.elementPanel);
+                if (m_Owner.m_PhysicalParent != value)
+                    Debug.LogError("Modifying the parent of a VisualElement while it’s already being modified is not allowed and can cause undefined behavior. Did you change the hierarchy during an AttachToPanelEvent or DetachFromPanelEvent?");
             }
 
             /// <summary>
