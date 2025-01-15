@@ -698,7 +698,8 @@ namespace UnityEngine.UIElements
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
                 var lastItemViewportOffset = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
-                scrollOffset = lastItemViewportOffset;
+                scrollOffset = Mathf.Clamp(lastItemViewportOffset, 0, scrollableHeight);
+                m_ForcedLastVisibleItem = -1;
             }
 
             // Don't notify to avoid coming back in the scroll update for no reason.
@@ -767,7 +768,6 @@ namespace UnityEngine.UIElements
                 }
 
                 ScheduleScrollDirectionReset();
-                m_ForcedLastVisibleItem = -1;
                 m_CollectionView.SaveViewData();
             }
 
