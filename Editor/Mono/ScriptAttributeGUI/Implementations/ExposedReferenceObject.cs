@@ -16,6 +16,7 @@ namespace UnityEditor
         internal SerializedProperty exposedPropertyName { get; set; }
         internal BaseExposedPropertyDrawer.ExposedPropertyMode propertyMode { get; set; }
         internal IExposedPropertyTable exposedPropertyTable { get; set; }
+        internal bool isExposedReference = false;
 
         internal BaseExposedPropertyDrawer.OverrideState currentOverrideState
         {
@@ -33,6 +34,7 @@ namespace UnityEditor
             propertyMode = BaseExposedPropertyDrawer.GetExposedPropertyMode(exposedPropertyNameString);
             exposedPropertyTable = GetExposedPropertyTable(property);
             currentOverrideState = BaseExposedPropertyDrawer.OverrideState.DefaultValue;
+            isExposedReference = exposedPropertyTable != null;
             UpdateValue();
         }
 

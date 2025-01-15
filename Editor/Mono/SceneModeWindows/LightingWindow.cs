@@ -62,7 +62,7 @@ namespace UnityEditor
             BakedLightmaps
         }
 
-        const string kGlobalIlluminationUnityManualPage = "https://docs.unity3d.com/Manual/lighting-window.html";
+        string kGlobalIlluminationUnityManualPage = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/lighting-window.html";
 
         int m_SelectedModeIndex = 0;
         List<Mode> m_Modes = null;
