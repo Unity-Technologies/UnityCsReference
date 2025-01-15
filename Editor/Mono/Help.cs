@@ -170,7 +170,7 @@ namespace UnityEditor
                 }
             }
 
-            return "";
+            return helpTopic;
         }
 
         internal static string GetHelpURLForObject(Object obj, bool defaultToMonoBehaviour)
@@ -327,40 +327,19 @@ namespace UnityEditor
                 return $"script-{obj.GetType().Name}";
             }
 
-            if (obj is Terrain)
+            return obj switch
             {
-                return "script-Terrain";
-            }
-
-            if (obj is AudioMixerController || obj is AudioMixerGroupController)
-            {
-                return "class-AudioMixer";
-            }
-
-            if (obj is EditorSettings)
-            {
-                return "class-EditorManager";
-            }
-
-            if (obj is SceneAsset)
-            {
-                return "CreatingScenes";
-            }
-
-            if (obj is PrefabImporter)
-            {
-                return "-Prefab Asset";
-            }
-
-            if (obj is Preset)
-            {
-                return "Presets";
-            }
-
-            if (obj is DefaultAsset)
-                return "";
-
-            return $"class-{obj.GetType().Name}";
+                Terrain => "script-Terrain",
+                AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
+                EditorSettings => "class-EditorManager",
+                SceneAsset => "CreatingScenes",
+                PrefabImporter => "Prefabs",
+                Preset => "Presets",
+                MonoImporter => "ScriptedImporters",
+                MonoScript => "class-TextAsset",
+                DefaultAsset => "",
+                _ => $"class-{obj.GetType().Name}",
+            };
         }
 
         [UnityEngine.Scripting.RequiredByNativeCode]

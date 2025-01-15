@@ -19,7 +19,7 @@ namespace UnityEditor
         {
             public static GUIContent MeshesHeader = EditorGUIUtility.TrTextContent("Meshes");
             public static GUIContent UnitConversion = EditorGUIUtility.TrTextContent("Unit Conversion", "Select the unit conversion to apply to the imported SpeedTree asset");
-            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters");
+            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters. Must be positive.");
 
             public static GUIContent EnableColorVariation = EditorGUIUtility.TrTextContent("Color Variation", "Color is determined by linearly interpolating between the Main Color & Color Variation values based on the world position X, Y and Z values");
             public static GUIContent EnableBump = EditorGUIUtility.TrTextContent("Normal Map", "Enable normal mapping (aka Bump mapping).");
@@ -336,6 +336,14 @@ namespace UnityEditor
             if (bShowCustomScaleFactor)
             {
                 EditorGUILayout.PropertyField(m_ScaleFactor, Styles.ScaleFactor);
+                if (m_ScaleFactor.floatValue < 0f)
+                {
+                    m_ScaleFactor.floatValue = 0f;
+                }
+                if (m_ScaleFactor.floatValue == 0f)
+                {
+                    EditorGUILayout.HelpBox("Scale factor must be positive.", MessageType.Warning);
+                }
             }
 
             EditorGUILayout.Space();
