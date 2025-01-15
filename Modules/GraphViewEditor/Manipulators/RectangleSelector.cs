@@ -193,10 +193,6 @@ namespace UnityEditor.Experimental.GraphView
                 if (start == end)
                     return;
 
-                // Apply offset
-                screenStart += t.layout.position;
-                screenEnd += t.layout.position;
-
                 var r = new Rect
                 {
                     min = new Vector2(Math.Min(screenStart.x, screenEnd.x), Math.Min(screenStart.y, screenEnd.y)),

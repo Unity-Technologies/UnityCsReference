@@ -1094,6 +1094,7 @@ namespace UnityEngine.UIElements
             if (disposing)
             {
                 atlas = null;
+                visualTree.Clear();
                 m_VisualTreeUpdater.Dispose();
             }
 

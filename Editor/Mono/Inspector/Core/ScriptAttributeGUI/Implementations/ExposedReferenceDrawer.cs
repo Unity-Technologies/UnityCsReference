@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
+using Object = UnityEngine.Object;
 
 abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 {
@@ -167,6 +169,20 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         return obj;
     }
 
+    // Used for tests only
+
+    internal void InitForNamedGUIDTests(SerializedProperty prop)
+    {
+        m_Item = new ExposedReferenceObject(prop);
+        m_Item.propertyMode = ExposedPropertyMode.NamedGUID;
+    }
+    // Used for tests only
+
+    internal Object GetObjectReferenceValue()
+    {
+        return m_Item.exposedPropertyDefault.objectReferenceValue;
+    }
+
     void SetReference(ChangeEvent<Object> evt)
     {
         SetReference(evt.newValue);
@@ -181,16 +197,14 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
     internal void SetReference(Object newValue)
     {
-        if (m_Item.exposedPropertyTable == null)
-            return;
-
-        if (m_Item.propertyMode == ExposedPropertyMode.DefaultValue)
+        bool isDefaultValueMode = m_Item.propertyMode == ExposedPropertyMode.DefaultValue;
+        if (isDefaultValueMode || m_Item.propertyMode == ExposedPropertyMode.NamedGUID)
         {
             // We can directly assign to the exposed property default value if
             // * asset we are modifying is in the scene
             // * object we are assigning to the property is also an asset
-            if (!EditorUtility.IsPersistent(m_Item.exposedPropertyDefault.serializedObject.targetObject) ||
-                newValue == null || EditorUtility.IsPersistent(newValue))
+            if (isDefaultValueMode && (!EditorUtility.IsPersistent(m_Item.exposedPropertyDefault.serializedObject.targetObject) ||
+                newValue == null || EditorUtility.IsPersistent(newValue)))
             {
                 if (!EditorGUI.CheckForCrossSceneReferencing(
                         m_Item.exposedPropertyDefault.serializedObject.targetObject, newValue))
@@ -200,20 +214,43 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
             }
             else
             {
-                var str = UnityEditor.GUID.Generate().ToString();
-                m_Item.exposedPropertyNameString = str;
-                m_Item.exposedPropertyName.stringValue = str;
-                m_Item.propertyMode = ExposedPropertyMode.NamedGUID;
+                // If PropertyName already exists, re-use it UUM-25160
+                if (String.IsNullOrEmpty(m_Item.exposedPropertyNameString) || String.IsNullOrEmpty(m_Item.exposedPropertyName.stringValue))
+                {
+                    var str = UnityEditor.GUID.Generate().ToString();
+                    m_Item.exposedPropertyNameString = str;
+                    m_Item.exposedPropertyName.stringValue = str;
+                    m_Item.propertyMode = ExposedPropertyMode.NamedGUID;
+                }
 
-                Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
-                m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, newValue);
+                // Timeline uses ExposedReference to hold both exposed and regular references, make sure we handle them differently
+                if (m_Item.isExposedReference)
+                    SetAsExposedReference(newValue);
+                else
+                    SetAsRegularReference(newValue);
             }
         }
         else
         {
-            Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
-            m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, newValue);
+            if (m_Item.isExposedReference)
+                SetAsExposedReference(newValue);
+            else
+                SetAsRegularReference(newValue);
         }
+    }
+
+    void SetAsExposedReference(Object value)
+    {
+        Undo.RecordObject(m_Item.exposedPropertyTable as UnityEngine.Object, kSetExposedPropertyMsg);
+        m_Item.exposedPropertyTable.SetReferenceValue(m_Item.exposedPropertyNameString, value);
+    }
+
+    void SetAsRegularReference(Object value)
+    {
+        if (m_Item.currentReferenceValue)
+            Undo.RecordObject(m_Item.exposedPropertyDefault.serializedObject.targetObject, kSetExposedPropertyMsg);
+
+        m_Item.exposedPropertyDefault.objectReferenceValue = value;
     }
 
 

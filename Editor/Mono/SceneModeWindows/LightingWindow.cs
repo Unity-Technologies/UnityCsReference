@@ -95,7 +95,7 @@ namespace UnityEditor
             BakedLightmaps
         }
 
-        const string kGlobalIlluminationUnityManualPage = "https://docs.unity3d.com/Manual/lighting-window.html";
+        string kGlobalIlluminationUnityManualPage = $"https://docs.unity3d.com/{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/Manual/lighting-window.html";
 
         const string m_LightmappingDeviceIndexKey = "lightmappingDeviceIndex";
         const string m_BakingProfileKey = "lightmappingBakingProfile";
