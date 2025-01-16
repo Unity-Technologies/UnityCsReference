@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker("Update Runtime Bindings");
+        static readonly ProfilerMarker s_UpdateProfilerMarker = new ProfilerMarker("UIElements.UpdateRuntimeBindings");
         static readonly ProfilerMarker s_ProcessBindingRequestsProfilerMarker = new ProfilerMarker("Process Binding Requests");
         static readonly ProfilerMarker s_ProcessDataSourcesProfilerMarker = new ProfilerMarker("Process Data Sources");
         static readonly ProfilerMarker s_ShouldUpdateBindingProfilerMarker = new ProfilerMarker("Should Update Binding");

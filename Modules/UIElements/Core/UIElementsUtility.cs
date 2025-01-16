@@ -272,12 +272,7 @@ namespace UnityEngine.UIElements
             foreach (var panel in s_PanelsIterationList)
             {
                 // Dispatch all timer update messages to each scheduled item
-                panel.UpdateAssetTrackers();
-                panel.timerEventScheduler.UpdateScheduledEvents();
-                panel.ValidateFocus();
-                panel.UpdateDataBinding();
-                panel.UpdateAnimations();
-                panel.UpdateBindings();
+                panel.TickSchedulingUpdaters();
             }
         }
 

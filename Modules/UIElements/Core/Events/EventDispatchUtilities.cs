@@ -503,32 +503,6 @@ namespace UnityEngine.UIElements
         public static void DispatchToElementUnderPointerOrPanelRoot(EventBase evt,
             [NotNull] BaseVisualElementPanel panel, int pointerId, Vector2 position)
         {
-            // Important: don't inline this. We need to RecomputeTopElement even if it's not going to be used.
-            var topElement = panel.RecomputeTopElementUnderPointer(pointerId, position, evt);
-
-            bool propagateToIMGUI = false;
-            var target = evt.elementTarget;
-            if (target == null)
-            {
-                target = topElement;
-                if (target == null)
-                {
-                    target = panel.visualTree;
-                    propagateToIMGUI = true;
-                }
-
-                evt.elementTarget = target;
-            }
-
-            PropagateEvent(evt, panel, target, false);
-
-            if (propagateToIMGUI && evt.propagateToIMGUI)
-                PropagateToRemainingIMGUIContainers(evt, panel.visualTree);
-        }
-
-        public static void DispatchToCachedElementUnderPointerOrPanelRoot(EventBase evt,
-            [NotNull] BaseVisualElementPanel panel, int pointerId, Vector2 position)
-        {
             bool propagateToIMGUI = false;
             var target = evt.elementTarget;
             if (target == null)
@@ -577,16 +551,10 @@ namespace UnityEngine.UIElements
         public static void DispatchToCapturingElementOrElementUnderPointer(EventBase evt,
             [NotNull] BaseVisualElementPanel panel, int pointerId, Vector2 position)
         {
-            // Case 1353921: this will enforce PointerEnter/Out events even during pointer capture.
-            // According to the W3 standard (https://www.w3.org/TR/pointerevents3/#the-pointerout-event), these events
-            // are *not* supposed to occur, but we have been sending MouseEnter/Out events during mouse capture
-            // since the early days of UI Toolkit, and users have been relying on it.
-            panel.RecomputeTopElementUnderPointer(pointerId, position, evt);
-
             if (DispatchToCapturingElement(evt, panel, pointerId, position))
                 return;
 
-            DispatchToCachedElementUnderPointerOrPanelRoot(evt, panel, pointerId, position);
+            DispatchToElementUnderPointerOrPanelRoot(evt, panel, pointerId, position);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

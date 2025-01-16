@@ -802,7 +802,8 @@ namespace UnityEditor
             {
                 case EventType.Repaint:
                 {
-                    LODGroupGUI.Styles.m_LODStandardButton.Draw(position, GUIContent.none, false, false, false, false);
+                    bool isHovered = position.Contains(evt.mousePosition);
+                    LODGroupGUI.Styles.m_LODStandardButton.Draw(position, GUIContent.none, isHovered, false, false, false);
                     LODGroupGUI.Styles.m_LODRendererAddButton.Draw(new Rect(position.x - LODGroupGUI.kButtonPadding, position.y, position.width, position.height), "Add", false, false, false, false);
                     break;
                 }

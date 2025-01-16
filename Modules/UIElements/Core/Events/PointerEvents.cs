@@ -321,9 +321,9 @@ namespace UnityEngine.UIElements
 
     internal interface IPointerEventInternal
     {
-        bool triggeredByOS { get; set; }
-        IMouseEvent compatibilityMouseEvent { get; set; }
-        int displayIndex { get; set; }
+        IMouseEvent compatibilityMouseEvent { get; }
+        int displayIndex { get; }
+        bool recomputeTopElementUnderPointer { get; }
     }
 
     internal interface IPointerOrMouseEvent
@@ -630,9 +630,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool IPointerEventInternal.triggeredByOS { get; set; }
-        IMouseEvent IPointerEventInternal.compatibilityMouseEvent { get; set; }
-        int IPointerEventInternal.displayIndex { get; set; }
+        internal IMouseEvent compatibilityMouseEvent { get; set; }
+        internal int displayIndex { get; set; }
+        internal bool recomputeTopElementUnderPointer { get; set; }
+
+        IMouseEvent IPointerEventInternal.compatibilityMouseEvent => compatibilityMouseEvent;
+        int IPointerEventInternal.displayIndex => displayIndex;
+        bool IPointerEventInternal.recomputeTopElementUnderPointer => recomputeTopElementUnderPointer;
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -670,13 +674,10 @@ namespace UnityEngine.UIElements
 
             modifiers = EventModifiers.None;
 
-            ((IPointerEventInternal)this).triggeredByOS = false;
-
-            if (((IPointerEventInternal) this).compatibilityMouseEvent != null)
-            {
-                ((IDisposable) ((IPointerEventInternal) this).compatibilityMouseEvent).Dispose();
-                ((IPointerEventInternal) this).compatibilityMouseEvent = null;
-            }
+            ((IDisposable)compatibilityMouseEvent)?.Dispose();
+            compatibilityMouseEvent = null;
+            displayIndex = 0;
+            recomputeTopElementUnderPointer = false;
         }
 
         /// <summary>
@@ -866,8 +867,6 @@ namespace UnityEngine.UIElements
 
             e.tangentialPressure = 0;
 
-            ((IPointerEventInternal)e).triggeredByOS = true;
-
             return e;
         }
 
@@ -878,7 +877,7 @@ namespace UnityEngine.UIElements
             e.pointerId = PointerId.mousePointerId;
             e.pointerType = PointerType.mouse;
             e.isPrimary = true;
-            ((IPointerEventInternal) e).displayIndex = displayIndex;
+            e.displayIndex = displayIndex;
 
             if (eventType == EventType.MouseDown)
             {
@@ -902,7 +901,6 @@ namespace UnityEngine.UIElements
             e.clickCount = clickCount;
             e.modifiers = modifiers;
             e.pressure = e.pressedButtons == 0 ? 0f : k_DefaultButtonPressure;
-            ((IPointerEventInternal)e).triggeredByOS = true;
 
             return e;
         }
@@ -915,29 +913,21 @@ namespace UnityEngine.UIElements
         /// <param name="modifiers">The modifier keys held down during the event.</param>
         /// <returns>An initialized event.</returns>
         public static T GetPooled(Touch touch, EventModifiers modifiers = EventModifiers.None) =>
-            GetPooled(touch, modifiers, 0);
+            GetPooled(touch, touch.fingerId + PointerId.touchPointerIdBase, modifiers, 0);
 
-        internal static T GetPooled(Touch touch, EventModifiers modifiers, int displayIndex)
+        internal static T GetPooled(Touch touch, int pointerId, EventModifiers modifiers, int displayIndex)
         {
             T e = GetPooled();
 
-            e.pointerId = touch.fingerId + PointerId.touchPointerIdBase;
+            e.pointerId = pointerId;
             e.pointerType = PointerType.touch;
-            ((IPointerEventInternal) e).displayIndex = displayIndex;
+            e.displayIndex = displayIndex;
 
-            // TODO: Rethink this logic. When two fingers are down, PointerMoveEvents should still have 1 primary touch.
-            bool otherTouchDown = false;
-            for (var i = PointerId.touchPointerIdBase;
-                 i < PointerId.touchPointerIdBase + PointerId.touchPointerCount;
-                 i++)
-            {
-                if (i != e.pointerId && PointerDeviceState.GetPressedButtons(i) != 0)
-                {
-                    otherTouchDown = true;
-                    break;
-                }
-            }
-            e.isPrimary = !otherTouchDown;
+            // Assume first finger down has pointerId=touchPointerIdBase, then second has +1,
+            // then if the first finger gets lifted up and another finger is placed down, it will
+            // have touchPointerIdBase again, as we can't do better than assuming it was the same
+            // first finger.
+            e.isPrimary = pointerId == PointerId.touchPointerIdBase;
 
             if (touch.phase == TouchPhase.Began)
             {
@@ -973,8 +963,6 @@ namespace UnityEngine.UIElements
 
             e.modifiers = modifiers;
 
-            ((IPointerEventInternal)e).triggeredByOS = true;
-
             return e;
         }
 
@@ -994,7 +982,7 @@ namespace UnityEngine.UIElements
 
             e.pointerId = PointerId.penPointerIdBase;
             e.pointerType = PointerType.pen;
-            ((IPointerEventInternal) e).displayIndex = displayIndex;
+            e.displayIndex = displayIndex;
 
             e.isPrimary = true;
 
@@ -1039,8 +1027,6 @@ namespace UnityEngine.UIElements
 
             e.modifiers = modifiers;
 
-            ((IPointerEventInternal)e).triggeredByOS = true;
-
             return e;
         }
 
@@ -1054,7 +1040,7 @@ namespace UnityEngine.UIElements
             e.pointerId = pointerId;
             e.deltaTime = deltaTime;
 
-            ((IPointerEventInternal) e).displayIndex = pointerEvent.displayIndex;
+            e.displayIndex = pointerEvent.displayIndex;
 
             e.isPrimary = pointerEvent.isPrimaryPointer;
             e.button = -1;
@@ -1169,8 +1155,6 @@ namespace UnityEngine.UIElements
             // Also, Editor-side IMGUI Events of type MouseUp/Down/Move don't seem to set the other modifiers either.
             e.modifiers = modifiers;
 
-            ((IPointerEventInternal)e).triggeredByOS = true;
-
             return e;
         }
 
@@ -1222,12 +1206,6 @@ namespace UnityEngine.UIElements
                 e.radiusVariance = triggerEvent.radiusVariance;
 
                 e.modifiers = triggerEvent.modifiers;
-
-                IPointerEventInternal pointerEventInternal = triggerEvent as IPointerEventInternal;
-                if (pointerEventInternal != null)
-                {
-                    ((IPointerEventInternal)e).triggeredByOS |= pointerEventInternal.triggeredByOS;
-                }
             }
             return e;
         }
@@ -1236,12 +1214,18 @@ namespace UnityEngine.UIElements
         {
             base.PreDispatch(panel);
 
-            if (((IPointerEventInternal)this).triggeredByOS)
+            if (recomputeTopElementUnderPointer)
             {
                 PointerDeviceState.SavePointerPosition(pointerId, position, panel, panel.contextType);
+
+                // Case 1353921: this will enforce PointerEnter/Out events even during pointer capture.
+                // According to the W3 standard (https://www.w3.org/TR/pointerevents3/#the-pointerout-event), these events
+                // are *not* supposed to occur, but we have been sending MouseEnter/Out events during mouse capture
+                // since the early days of UI Toolkit, and users have been relying on it.
+                ((BaseVisualElementPanel)panel).RecomputeTopElementUnderPointer(pointerId, position, this);
             }
 
-            ((EventBase) ((IPointerEventInternal) this).compatibilityMouseEvent)?.PreDispatch(panel);
+            ((EventBase)compatibilityMouseEvent)?.PreDispatch(panel);
         }
 
         protected internal override void PostDispatch(IPanel panel)
@@ -1251,12 +1235,13 @@ namespace UnityEngine.UIElements
                 panel.ProcessPointerCapture(i);
             }
 
-            if (((IPointerEventInternal)this).triggeredByOS)
+            ((EventBase)compatibilityMouseEvent)?.PostDispatch(panel);
+
+            // Need to wait after MouseLeaveWindowEvent.PostDispatch to commit elements under pointer
+            if (recomputeTopElementUnderPointer)
             {
                 (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }
-
-            ((EventBase) ((IPointerEventInternal) this).compatibilityMouseEvent)?.PostDispatch(panel);
 
             base.PostDispatch(panel);
         }
@@ -1372,7 +1357,7 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                           EventPropagation.SkipDisabledElements;
-            ((IPointerEventInternal)this).triggeredByOS = true;
+            recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1389,7 +1374,7 @@ namespace UnityEngine.UIElements
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
             {
-                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
+                compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
             }
         }
 
@@ -1399,6 +1384,11 @@ namespace UnityEngine.UIElements
             panel.dispatcher.m_ClickDetector.ProcessEvent(this);
 
             base.PostDispatch(panel);
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
     }
 
@@ -1449,7 +1439,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
-            ((IPointerEventInternal)this).triggeredByOS = true;
+            recomputeTopElementUnderPointer = true;
             isHandledByDraggable = false;
         }
 
@@ -1469,15 +1459,15 @@ namespace UnityEngine.UIElements
             {
                 if (imguiEvent != null && imguiEvent.rawType == EventType.MouseDown)
                 {
-                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
+                    compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
                 }
                 else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
                 {
-                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
+                    compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
                 }
                 else
                 {
-                    ((IPointerEventInternal) this).compatibilityMouseEvent = MouseMoveEvent.GetPooled(this);
+                    compatibilityMouseEvent = MouseMoveEvent.GetPooled(this);
                 }
             }
         }
@@ -1486,6 +1476,11 @@ namespace UnityEngine.UIElements
         {
             panel.dispatcher.m_ClickDetector.ProcessEvent(this);
             base.PostDispatch(panel);
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
     }
 
@@ -1522,7 +1517,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
-            ((IPointerEventInternal)this).triggeredByOS = true;
+            recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1531,6 +1526,11 @@ namespace UnityEngine.UIElements
         public PointerStationaryEvent()
         {
             LocalInit();
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
     }
 
@@ -1566,7 +1566,7 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
-            ((IPointerEventInternal)this).triggeredByOS = true;
+            recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1583,7 +1583,7 @@ namespace UnityEngine.UIElements
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
             {
-                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
+                compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
             }
         }
 
@@ -1602,6 +1602,11 @@ namespace UnityEngine.UIElements
             base.PostDispatch(panel);
 
             panel.ActivateCompatibilityMouseEvents(pointerId);
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
     }
 
@@ -1634,7 +1639,7 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
-            ((IPointerEventInternal)this).triggeredByOS = true;
+            recomputeTopElementUnderPointer = true;
         }
 
         /// <summary>
@@ -1652,7 +1657,7 @@ namespace UnityEngine.UIElements
 
             if (panel.ShouldSendCompatibilityMouseEvents(this))
             {
-                ((IPointerEventInternal) this).compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
+                compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
             }
         }
 
@@ -1670,6 +1675,11 @@ namespace UnityEngine.UIElements
             base.PostDispatch(panel);
 
             panel.ActivateCompatibilityMouseEvents(pointerId);
+        }
+
+        internal override void Dispatch(BaseVisualElementPanel panel)
+        {
+            EventDispatchUtilities.DispatchToCapturingElementOrElementUnderPointer(this, panel, pointerId, position);
         }
     }
 

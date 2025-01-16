@@ -93,9 +93,6 @@ namespace UnityEngine.UIElements
 
         internal static int s_ResolvedSortingIndexMax = 0;
 
-        internal static readonly string s_RepaintProfilerMarkerName = "UIElementsRuntimeUtility.DoDispatch(Repaint Event)";
-        private static readonly ProfilerMarker s_RepaintProfilerMarker = new ProfilerMarker(s_RepaintProfilerMarkerName);
-
         public static void RenderOffscreenPanels()
         {
             var oldCam = Camera.current;
@@ -120,8 +117,7 @@ namespace UnityEngine.UIElements
             var oldCam = Camera.current;
             var oldRT = RenderTexture.active;
 
-            using (s_RepaintProfilerMarker.Auto())
-                panel.Repaint(Event.current);
+            panel.Repaint(Event.current);
 
             Camera.SetupCurrent(oldCam);
             RenderTexture.active = oldRT;

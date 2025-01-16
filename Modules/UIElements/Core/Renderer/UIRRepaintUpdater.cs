@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
             panelChanged += OnPanelChanged;
         }
 
-        private static readonly string s_Description = "Update Rendering";
+        private static readonly string s_Description = "UIElements.UpdateRenderData";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 

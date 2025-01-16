@@ -156,7 +156,17 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene);
+        extern private static GameObject LoadPrefabContentsIntoPreviewScene_Internal(string prefabPath, Scene scene);
+
+        public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene)
+        {
+            LoadPrefabContentsIntoPreviewScene_Internal(prefabPath, scene);
+        }
+
+        public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene, out GameObject rootGameObject)
+        {
+            rootGameObject = LoadPrefabContentsIntoPreviewScene_Internal(prefabPath, scene);
+        }
 
         [Obsolete("Use ConvertToPrefabInstance() or ReplacePrefabAssetOfPrefabInstance() which has settings for better control.")]
         public static GameObject ConnectGameObjectToPrefab(GameObject go, GameObject sourcePrefab)

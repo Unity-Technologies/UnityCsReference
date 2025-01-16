@@ -86,7 +86,7 @@ namespace UnityEditor.SpeedTree.Importer
             // Meshes labels
             public static GUIContent MeshesHeader = EditorGUIUtility.TrTextContent("Meshes");
             public static GUIContent UnitConversion = EditorGUIUtility.TrTextContent("Unit Conversion", "Select the unit conversion to apply to the imported SpeedTree asset.");
-            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters");
+            public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the tree model, interpreting the exported units as meters. Must be positive.");
             public static GUIContent[] UnitConversionNames =
             {
                   new GUIContent("Leave As Is")
@@ -181,6 +181,14 @@ namespace UnityEditor.SpeedTree.Importer
             if (bShowCustomScaleFactor)
             {
                 EditorGUILayout.PropertyField(scaleFactor, Styles.ScaleFactor);
+                if (scaleFactor.floatValue < 0f)
+                {
+                    scaleFactor.floatValue = 0f;
+                }
+                if (scaleFactor.floatValue == 0f)
+                {
+                    EditorGUILayout.HelpBox("Scale factor must be positive.", MessageType.Warning);
+                }
             }
         }
 

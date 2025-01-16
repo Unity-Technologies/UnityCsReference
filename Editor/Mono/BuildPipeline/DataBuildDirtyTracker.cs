@@ -51,12 +51,15 @@ namespace UnityEditor.Mono.BuildPipeline
                 BuildOptions.ConnectWithProfiler |
                 BuildOptions.UncompressedAssetBundle |
                 BuildOptions.CompressWithLz4HC;
+
+            public string[] assemblyNames;
         }
 
         private BuildData buildData;
         private string[] scenes;
         private NPath activeBuildProfilePath;
         public BuildOptions buildOptions;
+        private string[] assemblyNames;
 
         bool CheckAssetDirty(BuildDataInputFile file)
         {
@@ -106,6 +109,12 @@ namespace UnityEditor.Mono.BuildPipeline
                 return true;
             }
 
+            if (!assemblyNames.SequenceEqual(buildData.assemblyNames))
+            {
+                Console.WriteLine("Rebuilding Data files because the assembly list is dirty");
+                return true;
+            }
+
             if (buildData.inputFiles.Any(CheckAssetDirty))
                 return true;
 
@@ -148,7 +157,7 @@ namespace UnityEditor.Mono.BuildPipeline
         }
 
         [RequiredByNativeCode]
-        static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs, string activeBuildProfilePath)
+        static public void WriteBuildData(string buildDataPath, BuildReport report, string[] scenes, string[] prefabs, string activeBuildProfilePath, string[] assemblyNames)
         {
             var developmentBuild = report.summary.options.HasFlag(BuildOptions.Development);
             var inputScenes = new List<BuildDataInputFile>();
@@ -178,13 +187,14 @@ namespace UnityEditor.Mono.BuildPipeline
                 resourcePaths = ResourcesAPIInternal.GetAllPaths("").OrderBy(p => p).ToArray(),
                 enabledModules = ModuleMetadata.GetModuleNames()
                     .Where(m => ModuleMetadata.GetModuleIncludeSettingForModule(m) != ModuleIncludeSetting.ForceExclude)
-                    .ToArray()
+                    .ToArray(),
+                assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
             };
             buildDataPath.ToNPath().WriteAllText(JsonUtility.ToJson(buildData));
         }
 
         [RequiredByNativeCode]
-        static public bool CheckDirty(string buildDataPath, BuildOptions buildOptions, string[] scenes, string activeBuildProfilePath)
+        static public bool CheckDirty(string buildDataPath, BuildOptions buildOptions, string[] scenes, string activeBuildProfilePath, string[] assemblyNames)
         {
             NPath buildReportPath = buildDataPath;
             if (!buildReportPath.FileExists())
@@ -197,7 +207,8 @@ namespace UnityEditor.Mono.BuildPipeline
                     buildData = JsonUtility.FromJson<BuildData>(buildReportPath.ReadAllText()),
                     scenes = scenes,
                     activeBuildProfilePath = activeBuildProfilePath,
-                    buildOptions = buildOptions
+                    buildOptions = buildOptions,
+                    assemblyNames = assemblyNames.OrderBy(p => p).ToArray()
                 };
                 return tracker.DoCheckDirty();
             }

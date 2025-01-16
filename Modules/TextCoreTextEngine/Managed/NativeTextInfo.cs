@@ -14,5 +14,7 @@ namespace UnityEngine.TextCore.Text
     internal struct NativeTextInfo
     {
         public ATGMeshInfo[] meshInfos;
+        public int totalWidth;
+        public int totalHeight;
     }
 }

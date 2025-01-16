@@ -100,6 +100,14 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a menu action item.
     /// </summary>
+    /// <remarks>
+    /// A <see cref="DropdownMenu"/> contains one or more DropdownMenuAction instances.
+    /// Each DropdownMenuAction instance can have its own status and callback.
+    /// </remarks>
+    /// <example>
+    /// The following example shows how to create a dropdown menu with actions, sub-menu actions, and conditional actions.
+    /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/DropdownMenuExample.cs"/>
+    /// </example>
     public class DropdownMenuAction : DropdownMenuItem
     {
         /// <summary>
@@ -158,7 +166,7 @@ namespace UnityEngine.UIElements
         public DropdownMenuEventInfo eventInfo { get; private set; }
 
         /// <summary>
-        /// The userData object stored by the constructor.
+        /// The userData object stored by the constructor. You can use <see cref="AppendAction"/> to set it and use it in the status callbacks.
         /// </summary>
         public object userData { get; private set; }
 
@@ -168,10 +176,10 @@ namespace UnityEngine.UIElements
         readonly Func<DropdownMenuAction, Status> actionStatusCallback;
 
         /// <summary>
-        /// Creates a status callback that always returns <see cref="Status.Enabled"/>.
+        /// Creates a status callback that always returns <see cref="Status.Normal"/>.
         /// </summary>
         /// <param name="a">Unused parameter.</param>
-        /// <returns>Always returns <see cref="Status.Enabled"/> </returns>
+        /// <returns>Always returns <see cref="Status.Normal"/> </returns>
         public static Status AlwaysEnabled(DropdownMenuAction a)
         {
             return Status.Normal;
@@ -193,7 +201,7 @@ namespace UnityEngine.UIElements
         /// <param name="actionName">The path and name of the menu item. Use the path, delimited by forward slashes ('/'), to place the menu item within a submenu.</param>
         /// <param name="actionCallback">The action to execute when the menu item is selected.</param>
         /// <param name="actionStatusCallback">The function called to determine if the menu item is enabled.</param>
-        /// <param name="userData">The object to store in the <b>userData</b> property.</param>
+        /// <param name="userData">The object to store in the @@userData@@ property.</param>
         public DropdownMenuAction(string actionName, Action<DropdownMenuAction> actionCallback, Func<DropdownMenuAction, Status> actionStatusCallback, object userData = null)
         {
             name = actionName;
@@ -222,8 +230,19 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Represents a dropdown menu.
+    /// Represents a dropdown menu, similar to the menus seen in most Operating Systems (OS) and across the Unity Editor.
     /// </summary>
+    /// <remarks>
+    /// Use this class to set custom <see cref="DropdownMenuItem"/> that
+    /// executes a <see cref="DropdownMenuAction"/> based on its status.
+    ///
+    /// Use this class to create OS-like dropdown menus in the Unity Editor. For more generic
+    /// dropdown menus designed for both Editor and Runtime use, use <see cref="GenericDropdownMenu"/>.
+    /// </remarks>
+    /// <example>
+    /// The following example shows how to create a dropdown menu with submenus and conditional actions.
+    /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/DropdownMenuExample.cs"/>
+    /// </example>
     public class DropdownMenu
     {
         List<DropdownMenuItem> m_MenuItems = new List<DropdownMenuItem>();
@@ -249,7 +268,7 @@ namespace UnityEngine.UIElements
         /// <param name="actionName">The name of the item. This name is displayed in the dropdown menu.</param>
         /// <param name="action">The callback to execute when the user selects this item in the menu.</param>
         /// <param name="actionStatusCallback">The callback to execute to determine the status of this item.</param>
-        /// <param name="userData">The object to store in the <b>userData</b> property of the <see cref="DropdownMenuAction"/> item.</param>
+        /// <param name="userData">The object to store in the @@userData@@ property of the <see cref="DropdownMenuAction"/> item.</param>
         /// <example>
         /// <code>
         /// <![CDATA[
@@ -349,7 +368,7 @@ namespace UnityEngine.UIElements
         /// <param name="actionName">The name of the item. This name is displayed in the dropdown menu.</param>
         /// <param name="action">Callback to execute when the user selects this item in the menu.</param>
         /// <param name="actionStatusCallback">The callback to execute to determine the status of the item.</param>
-        /// <param name="userData">The object to store in the <b>userData</b> property of the <see cref="DropdownMenuAction"/> item. This object is accessible through the action callback.</param>
+        /// <param name="userData">The object to store in the @@userData@@ property of the <see cref="DropdownMenuAction"/> item. This object is accessible through the action callback.</param>
         /// <example>
         /// <code>
         /// <![CDATA[

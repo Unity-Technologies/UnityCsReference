@@ -2393,6 +2393,7 @@ namespace Unity.UI.Builder
                 builder.OnEnableAfterAllSerialization();
 
                 hierarchyView.SelectItemById(selectionId);
+                NotifyAttributesChanged();
             }
             else
             {
@@ -2549,6 +2550,7 @@ namespace Unity.UI.Builder
             if (m_IsInTemplateInstance)
             {
                 UnsetTemplateAttribute(result.attributeDescription.name, removeBinding);
+                NotifyAttributesChanged(result.attributeDescription.name);
             }
             else
             {
@@ -2573,6 +2575,7 @@ namespace Unity.UI.Builder
             if (m_IsInTemplateInstance)
             {
                 UnsetTemplateAttribute(attributeName, removeBinding);
+                NotifyAttributesChanged(attributeName);
             }
             else
             {

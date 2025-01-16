@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
          // Therefore, having a deep hierarchy of scroll views can require a fair amount of layout passes.
         public const int kMaxValidateLayoutCount = 10;
 
-        private static readonly string s_Description = "Update Layout";
+        private static readonly string s_Description = "UIElements.UpdateLayout";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 

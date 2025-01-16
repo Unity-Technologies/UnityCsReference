@@ -494,6 +494,7 @@ namespace UnityEngine.UIElements
         public abstract void Repaint(Event e);
         public abstract void ValidateFocus();
         public abstract void ValidateLayout();
+        public abstract void TickSchedulingUpdaters();
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
         public abstract void UpdateDataBinding();
@@ -611,7 +612,9 @@ namespace UnityEngine.UIElements
             set;
         }
         public abstract ContextType contextType { get; }
-        public abstract VisualElement Pick(Vector2 point);
+
+        public VisualElement Pick(Vector2 point) => Pick(point, PointerId.mousePointerId);
+        public abstract VisualElement Pick(Vector2 point, int pointerId);
         public abstract VisualElement PickAll(Vector2 point, List<VisualElement> picked);
 
         internal bool disposed { get; private set; }
@@ -640,16 +643,10 @@ namespace UnityEngine.UIElements
             if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
                 !PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
             {
-                element = Pick(pointerPos);
+                element = Pick(pointerPos, pointerId);
             }
 
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
-
-            if (triggerEvent is IPointerEventInternal pe && pe.compatibilityMouseEvent != null)
-            {
-                m_TopElementUnderPointers.SetElementUnderPointer(element, PointerId.mousePointerId,
-                    (EventBase) pe.compatibilityMouseEvent);
-            }
 
             return element;
         }
@@ -712,6 +709,7 @@ namespace UnityEngine.UIElements
             if (hierarchyChanged != null) hierarchyChanged(ve, changeType, additionalContext);
         }
 
+        [Obsolete("This exists only to support GraphView. Do not add new usage of this event.")]
         internal event Action<IPanel> beforeUpdate;
         internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
 
@@ -778,15 +776,14 @@ namespace UnityEngine.UIElements
         private uint m_RepaintVersion = 0;
         private uint m_HierarchyVersion = 0;
 
-        ProfilerMarker m_MarkerBeforeUpdate;
-        ProfilerMarker m_MarkerUpdate;
+        ProfilerMarker m_MarkerPrepareRepaint;
         ProfilerMarker m_MarkerRender;
-        ProfilerMarker m_MarkerLayout;
-        ProfilerMarker m_MarkerBindings;
-        ProfilerMarker m_MarkerDataBinding;
-        ProfilerMarker m_MarkerAnimations;
+        ProfilerMarker m_MarkerValidateLayout;
+        ProfilerMarker m_MarkerTickScheduledActions;
+        protected ProfilerMarker m_MarkerTickScheduledActionsPreLayout;
+        protected ProfilerMarker m_MarkerTickScheduledActionsPostLayout;
         ProfilerMarker m_MarkerPanelChangeReceiver;
-        static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("Panel.PickAll");
+        static ProfilerMarker s_MarkerPickAll = new ProfilerMarker("UIElements.PickAll");
 
         public sealed override VisualElement visualTree
         {
@@ -1046,15 +1043,14 @@ namespace UnityEngine.UIElements
 
         void CreateMarkers()
         {
-            string appendName = string.IsNullOrEmpty(m_PanelName) ? "" : $".{m_PanelName}";
-            m_MarkerBeforeUpdate = new ProfilerMarker($"Panel.BeforeUpdate{appendName}");
-            m_MarkerUpdate = new ProfilerMarker($"Panel.Update{appendName}");
-            m_MarkerRender = new ProfilerMarker($"Panel.Render{appendName}");
-            m_MarkerLayout = new ProfilerMarker($"Panel.Layout{appendName}");
-            m_MarkerBindings = new ProfilerMarker($"Panel.Bindings{appendName}");
-            m_MarkerDataBinding = new ProfilerMarker($"Panel.DataBinding{appendName}");
-            m_MarkerAnimations = new ProfilerMarker($"Panel.Animations{appendName}");
-            m_MarkerPanelChangeReceiver = new ProfilerMarker($"Panel.PanelChangeReceiver{appendName}");
+            string panelName = string.IsNullOrEmpty(m_PanelName) ? "Panel" : m_PanelName;
+            m_MarkerPrepareRepaint = new ProfilerMarker($"{panelName}.PrepareRepaint");
+            m_MarkerRender = new ProfilerMarker($"{panelName}.Render");
+            m_MarkerValidateLayout = new ProfilerMarker($"{panelName}.ValidateLayout");
+            m_MarkerTickScheduledActions = new ProfilerMarker($"{panelName}.TickScheduledActions");
+            m_MarkerTickScheduledActionsPreLayout = new ProfilerMarker($"{panelName}.TickScheduledActionsPreLayout");
+            m_MarkerTickScheduledActionsPostLayout = new ProfilerMarker($"{panelName}.TickScheduledActionsPostLayout");
+            m_MarkerPanelChangeReceiver = new ProfilerMarker($"{panelName}.ExecutePanelChangeReceiverCallback");
         }
 
         internal static TimeMsFunction TimeSinceStartup { private get; set; }
@@ -1228,16 +1224,16 @@ namespace UnityEngine.UIElements
             return PickAll(visualTree, point, picked);
         }
 
-        public override VisualElement Pick(Vector2 point)
+        public override VisualElement Pick(Vector2 point, int pointerId)
         {
             // The VisualTreeHierarchyFlagsUpdater updates the ElementUnderPointer after each validate layout.
             ValidateLayout();
-            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(PointerId.mousePointerId,
-                out Vector2 mousePos, out bool isTemporary);
+            var element = m_TopElementUnderPointers.GetTopElementUnderPointer(pointerId,
+                out Vector2 lastPosition, out bool isTemporary);
 
             // Assume same pixel means same element, given nothing has changed in the layout
             Vector2Int PixelOf(Vector2 p) => Vector2Int.FloorToInt(p);
-            if (!isTemporary && PixelOf(mousePos) == PixelOf(point))
+            if (!isTemporary && PixelOf(lastPosition) == PixelOf(point))
             {
                 return element;
             }
@@ -1256,11 +1252,11 @@ namespace UnityEngine.UIElements
             {
                 m_ValidatingLayout = true;
 
-                m_MarkerLayout.Begin();
+                m_MarkerValidateLayout.Begin();
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
                 m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
-                m_MarkerLayout.End();
+                m_MarkerValidateLayout.End();
 
                 m_ValidatingLayout = false;
             }
@@ -1268,24 +1264,31 @@ namespace UnityEngine.UIElements
 
         public override void UpdateAnimations()
         {
-            m_MarkerAnimations.Begin();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
-            m_MarkerAnimations.End();
         }
 
         public override void UpdateBindings()
         {
-            m_MarkerBindings.Begin();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
-            m_MarkerBindings.End();
         }
 
         public override void UpdateDataBinding()
         {
-            m_MarkerDataBinding.Begin();
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
-            m_MarkerDataBinding.End();
         }
+
+        public override void TickSchedulingUpdaters()
+        {
+            using var _ = m_MarkerTickScheduledActions.Auto();
+            // Dispatch all timer update messages to each scheduled item
+            UpdateAssetTrackers();
+            timerEventScheduler.UpdateScheduledEvents();
+            ValidateFocus();
+            UpdateDataBinding();
+            UpdateAnimations();
+            UpdateBindings();
+        }
+
 
         public override void ApplyStyles()
         {
@@ -1353,14 +1356,11 @@ namespace UnityEngine.UIElements
 
             repaintData.repaintEvent = e;
 
-            using (m_MarkerBeforeUpdate.Auto())
-            {
-                InvokeBeforeUpdate();
-            }
+            InvokeBeforeUpdate();
 
             beforeAnyRepaint?.Invoke(this);
 
-            using (m_MarkerUpdate.Auto())
+            using (m_MarkerPrepareRepaint.Auto())
             {
                 UpdateForRepaint();
             }
@@ -1511,13 +1511,21 @@ namespace UnityEngine.UIElements
 
         internal virtual void Update()
         {
-            scheduler.UpdateScheduledEvents();
-            // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
-            UpdateAssetTrackers();
-            ValidateFocus();
+            using (m_MarkerTickScheduledActionsPreLayout.Auto())
+            {
+                scheduler.UpdateScheduledEvents();
+                // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
+                UpdateAssetTrackers();
+                ValidateFocus();
+            }
+
             ValidateLayout();
-            UpdateAnimations();
-            UpdateBindings();
+
+            using (m_MarkerTickScheduledActionsPostLayout.Auto())
+            {
+                UpdateAnimations();
+                UpdateBindings();
+            }
         }
 
         // Expose common static method for getting the display/window resolution for calculation in the PanelSetting.

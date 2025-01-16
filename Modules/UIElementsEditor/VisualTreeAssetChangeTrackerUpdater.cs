@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
             public HashSet<ILiveReloadAssetTracker<VisualTreeAsset>> m_Trackers;
         }
 
-        private static readonly string s_Description = "Update UI Assets (Editor)";
+        private static readonly string s_Description = "UIElements.UpdateAssetsInEditor";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 

@@ -88,8 +88,8 @@ namespace UnityEditor
 
         /// <summary>
         /// Get the translation for the given argument.
-        /// <param name="str">The original string to be translated.</Param>
-        /// </Summary>
+        /// </summary>
+        /// <param name="str">The original string to be translated.</param>
         public static string Tr(string str)
         {
             return Tr(str, Assembly.GetCallingAssembly());
@@ -127,8 +127,8 @@ namespace UnityEditor
 
         /// <summary>
         /// Get the translation array for the given argument array.
-        /// <param name="str_list">The original strings to be translated.</Param>
-        /// </Summary>
+        /// </summary>
+        /// <param name="str_list">The original strings to be translated.</param>
         public static string[] Tr(string[] str_list)
         {
             var res = new string[str_list.Length];
@@ -139,9 +139,9 @@ namespace UnityEditor
 
         /// <summary>
         /// Get the translation for the given argument.
-        /// <param name="str">The original string to be translated.</Param>
-        /// <param name="groupName">The specified group name for the translation.</Param>
-        /// </Summary>
+        /// </summary>
+        /// <param name="str">The original string to be translated.</param>
+        /// <param name="groupName">The specified group name for the translation.</param>
         public static string Tr(string str, string groupName)
         {
             var new_str = LocalizationDatabase.GetLocalizedStringWithGroupName(str, groupName);

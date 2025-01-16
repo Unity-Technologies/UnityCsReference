@@ -593,14 +593,14 @@ namespace UnityEditor
         [Obsolete("androidUseLegacySdkTools has been deprecated. It does not have any effect.")]
         public static extern bool androidUseLegacySdkTools { get; set; }
 
-        [Obsolete("androidCreateSymbolsZip has been deprecated. Use UnityEditor.Android.DebugSymbols.level property")]
+        [Obsolete("androidCreateSymbolsZip has been deprecated. Use UnityEditor.Android.UserBuildSettings.DebugSymbols.level property")]
         public static bool androidCreateSymbolsZip
         {
             get => androidCreateSymbols != AndroidCreateSymbols.Disabled;
             set => androidCreateSymbols = value ? AndroidCreateSymbols.Public : AndroidCreateSymbols.Disabled;
         }
 
-        [Obsolete("androidCreateSymbols has been deprecated. Use UnityEditor.Android.DebugSymbols.level property")]
+        [Obsolete("androidCreateSymbols has been deprecated. Use UnityEditor.Android.UserBuildSettings.DebugSymbols.level property")]
         public static extern AndroidCreateSymbols androidCreateSymbols { get; set; }
 
         // *undocumented*

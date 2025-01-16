@@ -84,7 +84,7 @@ namespace UnityEditor.Overlays
                 overlayWorldBound.x -= marginLeft;
                 overlayWorldBound.y -= marginTop;
 
-                var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.windowRoot.worldBound, proposed);
+                var placement = OverlayCanvas.ClampRectToBounds(overlay.canvas.rootVisualElement.worldBound, proposed);
                 popup.HandleGeometryChangedEvent(overlay.canvas, placement, overlayWorldBound);
             });
 
@@ -101,7 +101,7 @@ namespace UnityEditor.Overlays
                 var proposed = new Rect(position, evt.newRect.size);
                 var overlayWorldBound = new Rect(position, Vector2.zero);
 
-                var placement = OverlayCanvas.ClampRectToBounds(canvas.windowRoot.worldBound, proposed);
+                var placement = OverlayCanvas.ClampRectToBounds(canvas.rootVisualElement.worldBound, proposed);
                 if (!Mathf.Approximately(proposed.position.x, placement.position.x))
                     popup.EnableInClassList(k_Clamped, true);
 
@@ -127,46 +127,46 @@ namespace UnityEditor.Overlays
             return popup;
         }
 
-        void HandleGeometryChangedEvent(OverlayCanvas canvas, Rect placement, Rect overlayWorldBound)
+        void HandleGeometryChangedEvent(OverlayCanvas canvas, Rect worldPlacement, Rect overlayWorldBound)
         {
             var canvasWorld = canvas.rootVisualElement.worldBound;
 
             var rightPlacement = overlayWorldBound.x + overlayWorldBound.width;
             var rightSideSpace = canvasWorld.xMax - rightPlacement;
 
-            var xAdjusted = placement.position.x;
-            if (rightSideSpace >= placement.width)
+            var xAdjusted = worldPlacement.position.x;
+            if (rightSideSpace >= worldPlacement.width)
             {
                 xAdjusted = rightPlacement;
             }
             else
             {
-                var leftSideSpace = placement.x - canvas.rootVisualElement.worldBound.x;
-                if (leftSideSpace >= placement.width)
+                var leftSideSpace = worldPlacement.x - canvas.rootVisualElement.worldBound.x;
+                if (leftSideSpace >= worldPlacement.width)
                 {
-                    xAdjusted = overlayWorldBound.x - placement.width;
+                    xAdjusted = overlayWorldBound.x - worldPlacement.width;
                 }
                 else // If neither side has enough space, show the popup on the widest one
                 {
                     if (rightSideSpace > leftSideSpace)
                         xAdjusted = overlayWorldBound.x + overlayWorldBound.width;
                     else
-                        xAdjusted = overlayWorldBound.x - placement.width;
+                        xAdjusted = overlayWorldBound.x - worldPlacement.width;
 
-                    placement.width = canvasWorld.xMax - xAdjusted;
+                    worldPlacement.width = canvasWorld.xMax - xAdjusted;
                 }
             }
 
-            var yAdjusted = placement.position.y;
+            var yAdjusted = worldPlacement.position.y;
             var bottomSpace = canvasWorld.yMax - yAdjusted;
 
-            if (bottomSpace < placement.height)
+            if (bottomSpace < worldPlacement.height)
             {
                 var upPlacement = overlayWorldBound.y + overlayWorldBound.height;
                 var upSpace = upPlacement - canvasWorld.y;
-                if (upSpace >= placement.height)
+                if (upSpace >= worldPlacement.height)
                 {
-                    yAdjusted = upPlacement - placement.height;
+                    yAdjusted = upPlacement - worldPlacement.height;
                 }
                 else // If neither side has enough space, show the popup on the widest one
                 {
@@ -176,18 +176,18 @@ namespace UnityEditor.Overlays
                     {
                         var oldY = yAdjusted;
                         yAdjusted = canvasWorld.yMin;
-                        placement.height = oldY - yAdjusted;
+                        worldPlacement.height = oldY - yAdjusted;
                     }
                     else
                     {
-                        placement.height = canvasWorld.yMax - yAdjusted;
+                        worldPlacement.height = canvasWorld.yMax - yAdjusted;
                     }
                 }
             }
 
-            placement.position = new Vector2(xAdjusted, yAdjusted) - canvasWorld.position;
+            worldPlacement.position = new Vector2(xAdjusted, yAdjusted) - canvasWorld.position;
 
-            Place(placement);
+            Place(worldPlacement);
         }
 
         void Place(Rect placement)

@@ -99,8 +99,8 @@ namespace UnityEngine.UIElements
 
     internal interface IMouseEventInternal
     {
-        bool triggeredByOS { get; set; }
-        IPointerEvent sourcePointerEvent { get; set; }
+        IPointerEvent sourcePointerEvent { get; }
+        bool recomputeTopElementUnderMouse { get; }
     }
 
     /// <summary>
@@ -224,9 +224,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        bool IMouseEventInternal.triggeredByOS { get; set; }
+        internal IPointerEvent sourcePointerEvent { get; set; }
+        internal bool recomputeTopElementUnderMouse { get; set; }
 
-        IPointerEvent IMouseEventInternal.sourcePointerEvent { get; set; }
+        IPointerEvent IMouseEventInternal.sourcePointerEvent => sourcePointerEvent;
+        bool IMouseEventInternal.recomputeTopElementUnderMouse => recomputeTopElementUnderMouse;
 
         int IPointerOrMouseEvent.pointerId => PointerId.mousePointerId;
         Vector3 IPointerOrMouseEvent.position => mousePosition;
@@ -250,8 +252,8 @@ namespace UnityEngine.UIElements
             clickCount = 0;
             button = 0;
             pressedButtons = 0;
-            ((IMouseEventInternal)this).triggeredByOS = false;
-            ((IMouseEventInternal)this).sourcePointerEvent = null;
+            sourcePointerEvent = null;
+            recomputeTopElementUnderMouse = false;
         }
 
         /// <summary>
@@ -281,16 +283,16 @@ namespace UnityEngine.UIElements
             base.PreDispatch(panel);
 
             // UUM-4156: save pointer position only for Mouse events that don't have an equivalent Pointer event.
-            if (((IMouseEventInternal)this).sourcePointerEvent == null && ((IMouseEventInternal)this).triggeredByOS)
+            if (sourcePointerEvent == null && recomputeTopElementUnderMouse)
             {
                 PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
+                ((BaseVisualElementPanel)panel).RecomputeTopElementUnderPointer(PointerId.mousePointerId, mousePosition, this);
             }
         }
 
         protected internal override void PostDispatch(IPanel panel)
         {
-            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
-            if (pointerEvent != null)
+            if (sourcePointerEvent is EventBase pointerEvent)
             {
                 // pointerEvent processing should not be done and it should not have returned to the pool.
                 Debug.Assert(!pointerEvent.processed, "!pointerEvent.processed");
@@ -305,6 +307,11 @@ namespace UnityEngine.UIElements
                     pointerEvent.StopImmediatePropagation();
                 }
                 pointerEvent.processedByFocusController |= processedByFocusController;
+            }
+            else if (recomputeTopElementUnderMouse)
+            {
+                // If pointerEvent != null, pointerEvent.PostDispatch() will take care of this.
+                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
             }
 
             base.PostDispatch(panel);
@@ -334,7 +341,6 @@ namespace UnityEngine.UIElements
                 e.button = systemEvent.button;
                 e.pressedButtons = PointerDeviceState.GetPressedButtons(PointerId.mousePointerId);
                 e.clickCount = systemEvent.clickCount;
-                ((IMouseEventInternal)e).triggeredByOS = true;
             }
             return e;
         }
@@ -351,12 +357,6 @@ namespace UnityEngine.UIElements
         public static T GetPooled(Vector2 position, int button, int clickCount, Vector2 delta,
             EventModifiers modifiers = EventModifiers.None)
         {
-            return GetPooled(position, button, clickCount, delta, modifiers, false);
-        }
-
-        internal static T GetPooled(Vector2 position, int button, int clickCount, Vector2 delta,
-            EventModifiers modifiers, bool fromOS)
-        {
             T e = GetPooled();
 
             e.modifiers = modifiers;
@@ -366,7 +366,6 @@ namespace UnityEngine.UIElements
             e.button = button;
             e.pressedButtons = PointerDeviceState.GetPressedButtons(PointerId.mousePointerId);
             e.clickCount = clickCount;
-            ((IMouseEventInternal)e).triggeredByOS = fromOS;
 
             return e;
         }
@@ -401,12 +400,6 @@ namespace UnityEngine.UIElements
                 e.button = triggerEvent.button;
                 e.pressedButtons = triggerEvent.pressedButtons;
                 e.clickCount = triggerEvent.clickCount;
-
-                IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
-                if (mouseEventInternal != null)
-                {
-                    ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
-                }
             }
             return e;
         }
@@ -436,11 +429,9 @@ namespace UnityEngine.UIElements
             IPointerEventInternal pointerEventInternal = pointerEvent as IPointerEventInternal;
             if (pointerEventInternal != null)
             {
-                ((IMouseEventInternal)e).triggeredByOS = pointerEventInternal.triggeredByOS;
-
                 // Link the mouse event and the pointer event so we can forward
                 // the propagation result (for tests and for IMGUI)
-                ((IMouseEventInternal)e).sourcePointerEvent = pointerEvent;
+                e.sourcePointerEvent = pointerEvent;
             }
 
             return e;
@@ -482,6 +473,7 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -547,6 +539,7 @@ namespace UnityEngine.UIElements
         {
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                 EventPropagation.SkipDisabledElements;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -622,6 +615,7 @@ namespace UnityEngine.UIElements
         {
             // Trickles down, bubbles up and can be cancelled. Disabled elements receive this event by default.
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -666,6 +660,27 @@ namespace UnityEngine.UIElements
         static ContextClickEvent()
         {
             SetCreateFunction(() => new ContextClickEvent());
+        }
+
+        /// <summary>
+        /// Constructor. Use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
+        public ContextClickEvent()
+        {
+            LocalInit();
+        }
+
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
         }
     }
 
@@ -743,6 +758,7 @@ namespace UnityEngine.UIElements
             propagation = EventPropagation.Bubbles | EventPropagation.TricklesDown |
                           EventPropagation.SkipDisabledElements;
             delta = Vector3.zero;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -918,6 +934,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -926,18 +943,6 @@ namespace UnityEngine.UIElements
         public MouseEnterWindowEvent()
         {
             LocalInit();
-        }
-
-        protected internal override void PostDispatch(IPanel panel)
-        {
-            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
-            if (pointerEvent == null)
-            {
-                // If pointerEvent != null, base.PostDispatch() will take care of this.
-                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
-            }
-
-            base.PostDispatch(panel);
         }
 
         internal override void Dispatch(BaseVisualElementPanel panel)
@@ -971,6 +976,7 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles;
+            recomputeTopElementUnderMouse = false;
         }
 
         /// <summary>
@@ -1006,18 +1012,12 @@ namespace UnityEngine.UIElements
                 (panel as BaseVisualElementPanel)?.ClearCachedElementUnderPointer(PointerId.mousePointerId, this);
             }
 
-            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
-            if (pointerEvent == null)
-            {
-                // If pointerEvent != null, base.PostDispatch() will take care of this.
-                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
-            }
             base.PostDispatch(panel);
         }
 
         internal override void Dispatch(BaseVisualElementPanel panel)
         {
-            EventDispatchUtilities.DispatchToCachedElementUnderPointerOrPanelRoot(this, panel, PointerId.mousePointerId,
+            EventDispatchUtilities.DispatchToElementUnderPointerOrPanelRoot(this, panel, PointerId.mousePointerId,
                 mousePosition);
         }
     }
@@ -1077,15 +1077,6 @@ namespace UnityEngine.UIElements
                     e.mouseDelta = pointerEvent.deltaPosition;
                     e.button = pointerEvent.button;
                     e.clickCount = pointerEvent.clickCount;
-                }
-
-                if (triggerEvent is IMouseEventInternal mouseEventInternal)
-                {
-                    ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
-                }
-                else if (triggerEvent is IPointerEventInternal pointerEventInternal)
-                {
-                    ((IMouseEventInternal) e).triggeredByOS = pointerEventInternal.triggeredByOS;
                 }
             }
 

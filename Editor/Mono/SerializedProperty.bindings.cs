@@ -894,7 +894,7 @@ namespace UnityEditor
         private extern bool IsReferencingAManagedReferenceFieldInternal();
 
         /// <summary>
-        /// Returns the FQN in the format "<assembly name> <full class name>" for the current dynamic managed reference.
+        /// Returns the FQN in the format "&lt;assembly name&gt; &lt;full class name&gt;" for the current dynamic managed reference.
         /// </summary>
         /// <returns></returns>
         // Useful in the same context as 'isReferencingAManagedReferenceField'.

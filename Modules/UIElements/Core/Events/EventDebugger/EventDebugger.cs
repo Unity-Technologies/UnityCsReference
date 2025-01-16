@@ -421,52 +421,37 @@ namespace UnityEngine.UIElements.Experimental
                     mousePosition = eventBase.mousePosition,
                 };
 
-                if (eventBase.eventTypeId == MouseMoveEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                if (eventBase.eventTypeId == PointerMoveEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseMove;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove));
                 }
-                else if (eventBase.eventTypeId == MouseDownEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == PointerDownEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseDown;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown));
                 }
-                else if (eventBase.eventTypeId == MouseUpEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == PointerUpEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseUp;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp));
                 }
-                else if (eventBase.eventTypeId == ContextClickEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == ContextClickEvent.TypeId())
                 {
                     newEvent.type = EventType.ContextClick;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.ContextClick));
                 }
-                else if (eventBase.eventTypeId == MouseEnterWindowEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == MouseEnterWindowEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseEnterWindow;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseEnterWindow));
                 }
-                else if (eventBase.eventTypeId == MouseLeaveWindowEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == MouseLeaveWindowEvent.TypeId())
                 {
                     newEvent.type = EventType.MouseLeaveWindow;
                     SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseLeaveWindow));
                 }
-                else if (eventBase.eventTypeId == PointerMoveEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
-                {
-                    newEvent.type = EventType.MouseMove;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseMove));
-                }
-                else if (eventBase.eventTypeId == PointerDownEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
-                {
-                    newEvent.type = EventType.MouseDown;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseDown));
-                }
-                else if (eventBase.eventTypeId == PointerUpEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
-                {
-                    newEvent.type = EventType.MouseUp;
-                    SendEvent(UIElementsUtility.CreateEvent(newEvent, EventType.MouseUp));
-                }
-                else if (eventBase.eventTypeId == WheelEvent.TypeId() && eventBase.hasUnderlyingPhysicalEvent)
+                else if (eventBase.eventTypeId == WheelEvent.TypeId())
                 {
                     newEvent.type = EventType.ScrollWheel;
                     newEvent.delta = eventBase.delta;

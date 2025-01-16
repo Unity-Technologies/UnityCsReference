@@ -24,12 +24,12 @@ namespace UnityEngine.UIElements
         bool m_HasNewAnimations = false;
         bool m_IterationListDirty = false;
 
-        private static readonly string s_Description = "Animation Update";
+        private static readonly string s_Description = "UIElements.UpdateAnimation";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         public override ProfilerMarker profilerMarker => s_ProfilerMarker;
 
 
-        private static readonly string s_StylePropertyAnimationDescription = "StylePropertyAnimation Update";
+        private static readonly string s_StylePropertyAnimationDescription = "UIElements.UpdateAnimationProperties";
         private static readonly ProfilerMarker s_StylePropertyAnimationProfilerMarker = new ProfilerMarker(s_StylePropertyAnimationDescription);
         private static ProfilerMarker stylePropertyAnimationProfilerMarker => s_StylePropertyAnimationProfilerMarker;
 
