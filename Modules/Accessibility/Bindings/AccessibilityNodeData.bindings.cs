@@ -9,7 +9,31 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.Accessibility
 {
-    /// <summary>Describes the role of an accessibility node.</summary>
+    /// <summary>
+    /// Options for defining the role of an <see cref="AccessibilityNode"/> to
+    /// assistive technologies.
+    /// </summary>
+    /// <remarks>
+    /// You can use values from this enum to set the
+    /// <see cref="AccessibilityNode.role"/>. This property helps inform
+    /// assistive technologies how to interact with your
+    /// <see cref="AccessibilityNode"/>. Setting accurate roles improves the
+    /// usability and user experience of your UI by enabling assistive
+    /// technologies to set clear expectations for users. A missing role can
+    /// block a user from interacting with your UI, and an incorrect role can
+    /// cause confusion and frustration. You can use the default value,
+    /// <see cref="AccessibilityRole.None"/>, for nodes whose role is not
+    /// described by any of the enum options. Some examples are container
+    /// elements and highly customized controls.
+    /// </remarks>
+    /// <example>
+    /// The following example demonstrates assigning an [[AccessibilityRole]] to a
+    /// UI element based on its [[UIElements.VisualElement]] type.
+    /// <code source="../Tests/AccessibilityExamples/Assets/Examples/AccessibilityManager.cs"/>
+    /// </example>
+    /// <remarks>
+    /// SA: [[wiki:mobile-accessibility]].
+    /// </remarks>
     [NativeHeader("Modules/Accessibility/Native/AccessibilityNodeData.h")]
     [Flags]
     public enum AccessibilityRole : ushort

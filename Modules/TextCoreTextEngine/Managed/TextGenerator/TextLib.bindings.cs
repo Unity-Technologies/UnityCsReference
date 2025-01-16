@@ -15,6 +15,7 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule", "Unity.UIElements.PlayModeTests")]
     internal class TextLib
     {
+        public const int k_unconstrainedScreenSize = -1;
         private readonly IntPtr m_Ptr;
 
         public TextLib(byte[] icuData)

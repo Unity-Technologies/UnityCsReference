@@ -22,7 +22,7 @@ namespace UnityEngine.UIElements
         private static readonly PropertyName s_BindingRequestObjectVEPropertyName = "__unity-binding-request-object";
         private static readonly PropertyName s_AdditionalBindingObjectVEPropertyName = "__unity-additional-binding-object";
 
-        private static readonly string s_Description = "Update Bindings";
+        private static readonly string s_Description = "UIElements.UpdateEditorBindings";
         private static readonly ProfilerMarker s_ProfilerMarker = new ProfilerMarker(s_Description);
         private static readonly ProfilerMarker s_ProfilerBindingRequestsMarker = new ProfilerMarker("Bindings.Requests");
         static ProfilerMarker s_MarkerUpdate = new ProfilerMarker("Bindings.Update");

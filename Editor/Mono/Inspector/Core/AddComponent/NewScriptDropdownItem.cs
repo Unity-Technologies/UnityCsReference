@@ -13,6 +13,8 @@ namespace UnityEditor.AddComponent
 {
     class NewScriptDropdownItem : ComponentDropdownItem
     {
+        private const string NewScriptDirectoryPref = "NewScriptDropdownItem.m_Directory";
+
         private readonly char[] kInvalidPathChars = new char[] {'<', '>', ':', '"', '|', '?', '*', (char)0};
         private readonly char[] kPathSepChars = new char[] {'/', '\\'};
         private static System.CodeDom.Compiler.CodeDomProvider s_CSharpDOMProvider;
@@ -23,24 +25,19 @@ namespace UnityEditor.AddComponent
 
         public string className
         {
-            set { m_ClassName = value; }
-            get { return m_ClassName; }
+            set => m_ClassName = value;
+            get => m_ClassName;
         }
 
-        public NewScriptDropdownItem()
-            : base("New Script", L10n.Tr("New Script"))
-        {
-        }
+        public NewScriptDropdownItem() : base("New Script", L10n.Tr("New Script")) {}
 
-        internal bool CanCreate()
-        {
-            return m_ClassName.Length > 0 &&
-                !ClassNameIsInvalidIdentifier() &&
-                !ClassNameIsInvalid() &&
-                !File.Exists(TargetPath()) &&
-                !ClassAlreadyExists() &&
-                !InvalidTargetPath();
-        }
+        internal bool CanCreate() =>
+            m_ClassName.Length > 0 &&
+            !ClassNameIsInvalidIdentifier() &&
+            !ClassNameIsInvalid() &&
+            !File.Exists(TargetPath()) &&
+            !ClassAlreadyExists() &&
+            !InvalidTargetPath();
 
         public string GetError()
         {
@@ -48,15 +45,14 @@ namespace UnityEditor.AddComponent
             var blockReason = string.Empty;
             if (m_ClassName != string.Empty)
             {
-
-                if (ClassNameIsInvalid())
-                    blockReason = "The script name may only consist of a-z, A-Z, 0-9, _.";
+                if (ClassNameIsInvalid() || m_ClassName.Contains('.'))
+                    blockReason = "The script name may only consist of a-z, A-Z, 0-9, _ characters.";
                 else if (ClassNameIsInvalidIdentifier())
                     blockReason = $"The script name is invalid in C#: {m_ClassName}.";
                 else if (File.Exists(TargetPath()))
-                    blockReason = "A script called \"" + m_ClassName + "\" already exists at that path.";
+                    blockReason = $"A script called \"{m_ClassName}\" already exists at that path.";
                 else if (ClassAlreadyExists())
-                    blockReason = "A class called \"" + m_ClassName + "\" already exists.";
+                    blockReason = $"A class called \"{m_ClassName}\" already exists.";
                 else if (InvalidTargetPath())
                     blockReason = "The folder path contains invalid characters.";
             }
@@ -65,10 +61,13 @@ namespace UnityEditor.AddComponent
 
         internal void Create(GameObject[] gameObjects, string searchString)
         {
+            m_Directory = EditorPrefs.GetString(NewScriptDirectoryPref);
+
             if (!CanCreate())
                 return;
 
-            CreateScript();
+            if (!CreateScript())
+                return;
 
             foreach (var go in gameObjects)
             {
@@ -87,40 +86,29 @@ namespace UnityEditor.AddComponent
             return false;
         }
 
-        private string TargetPath()
+        private string TargetPath() => Path.Combine(TargetDir(), m_ClassName + ".cs");
+
+        private string TargetDir() => Path.Combine("Assets", m_Directory.Trim(kPathSepChars));
+
+        private void SetDirectory(string newDir)
         {
-            return Path.Combine(TargetDir(), m_ClassName + ".cs");
+            m_Directory = newDir;
+            EditorPrefs.SetString(NewScriptDirectoryPref, newDir);
         }
 
-        private string TargetDir()
-        {
-            return Path.Combine("Assets", m_Directory.Trim(kPathSepChars));
-        }
+        private bool ClassNameIsInvalid() => !System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(m_ClassName);
 
-        private bool ClassNameIsInvalid()
-        {
-            return !System.CodeDom.Compiler.CodeGenerator.IsValidLanguageIndependentIdentifier(className);
-        }
-
-        private bool ClassNameIsInvalidIdentifier()
-        {
-            return !IsValidIdentifier(m_ClassName);
-        }
+        private bool ClassNameIsInvalidIdentifier() => !IsValidIdentifier(m_ClassName);
 
         internal static bool IsValidIdentifier(string className)
         {
             if (s_CSharpDOMProvider == null)
-            {
                 s_CSharpDOMProvider = new CSharpCodeProvider();
-            }
+
             return s_CSharpDOMProvider.IsValidIdentifier(className);
         }
 
-        private bool ClassExists(string className)
-        {
-            return AppDomain.CurrentDomain.GetAssemblies()
-                .Any(a => a.GetType(className, false) != null);
-        }
+        private bool ClassExists(string className) => AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetType(className, false) != null);
 
         private bool ClassAlreadyExists()
         {
@@ -141,10 +129,35 @@ namespace UnityEditor.AddComponent
 
             return scriptTemplatePath;
         }
-        private void CreateScript()
+        private bool CreateScript()
         {
+            var userPath = EditorUtility.SaveFilePanel("Create MonoBehaviour Script", TargetDir(), m_ClassName, "cs");
+            if (string.IsNullOrEmpty(userPath)) return false;
+
+            var indexToLocal = userPath.IndexOf(Application.dataPath);
+            if (indexToLocal == -1)
+            {
+                EditorUtility.DisplayDialog("Unable to Create MonoBehaviour Script", "You can't create a script outside of the project's Assets directory. Select a location in the Assets directory instead.", "Ok");
+                return false;
+            }
+
+            var localPathAndFile = userPath.Remove(indexToLocal, Application.dataPath.Length);
+            var lastPathSeperator = localPathAndFile.LastIndexOf('/');
+            var localPath = localPathAndFile.Substring(0, lastPathSeperator);
+            SetDirectory(localPath);
+
+            // we dont want to include the last seperator so we need a +1 & -1 here
+            var returnedFileName = localPathAndFile.Substring(lastPathSeperator + 1, localPathAndFile.Length - lastPathSeperator - 1);
+
+            var extensionIndex = returnedFileName.LastIndexOf(".cs");
+            if (extensionIndex != -1) returnedFileName = returnedFileName.Substring(0, extensionIndex);
+
+            if (returnedFileName != m_ClassName) m_ClassName = returnedFileName;
+
             ProjectWindowUtil.CreateScriptAssetFromTemplate(TargetPath(), GetTemplatePath());
             AssetDatabase.Refresh();
+
+            return true;
         }
     }
 }

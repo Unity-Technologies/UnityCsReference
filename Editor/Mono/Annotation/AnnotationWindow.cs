@@ -53,16 +53,16 @@ namespace UnityEditor
             Mixed = 2
         }
 
-        const float kWindowWidth = 270;
-        const float kLabelWidth = 150;
-        const float scrollBarWidth = 14;
-        const float listElementHeight = 18;
+        const float k_WindowWidth = 270;
+        const float k_ScrollBarWidth = 14;
+        const float k_ListElementHeight = 18;
+        const float k_JustClosedPeriod = 200;
+        const float k_FrameWidth = 1f;
         float iconSize = 16;
         float gizmoRightAlign;
         float gizmoTextRightAlign;
         float iconRightAlign;
         float iconTextRightAlign;
-        const float frameWidth = 1f;
 
         static AnnotationWindow s_AnnotationWindow = null;
         static long s_LastClosedTime;
@@ -171,7 +171,7 @@ namespace UnityEditor
         {
             // We could not use realtimeSinceStartUp since it is set to 0 when entering/exitting playmode, we assume an increasing time when comparing time.
             long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
-            bool justClosed = nowMilliSeconds < s_LastClosedTime + 50;
+            bool justClosed = nowMilliSeconds < s_LastClosedTime + k_JustClosedPeriod;
             if (!justClosed)
             {
                 Event.current.Use();
@@ -205,9 +205,9 @@ namespace UnityEditor
 
             SyncToState();
 
-            float windowHeight = 2 * frameWidth + GetTopSectionHeight() + DrawNormalList(false, 100, 0, 10000);
+            float windowHeight = 2 * k_FrameWidth + GetTopSectionHeight() + DrawNormalList(false, 100, 0, 10000);
             windowHeight = Mathf.Min(windowHeight, 900);
-            Vector2 windowSize = new Vector2(kWindowWidth, windowHeight);
+            Vector2 windowSize = new Vector2(k_WindowWidth, windowHeight);
 
             ShowAsDropDown(buttonRect, windowSize);
         }
@@ -314,7 +314,7 @@ namespace UnityEditor
         void DrawTopSection(float topSectionHeight)
         {
             // Bg
-            GUI.Label(new Rect(frameWidth, 0, position.width - 2 * frameWidth, topSectionHeight), "", EditorStyles.inspectorBig);
+            GUI.Label(new Rect(k_FrameWidth, 0, position.width - 2 * k_FrameWidth, topSectionHeight), "", EditorStyles.inspectorBig);
 
             float topmargin = 7;
             float margin = 11;
@@ -423,18 +423,18 @@ namespace UnityEditor
             Rect scrollViewRect = new Rect(0,
                 startY + barHeight,
                 position.width - 4,
-                height - barHeight - frameWidth);
+                height - barHeight - k_FrameWidth);
             float totalContentHeight = DrawNormalList(false, 0, 0, 100000);
             Rect contentRect = new Rect(0, 0, 1, totalContentHeight);
             bool isScrollbarVisible = totalContentHeight > scrollViewRect.height;
             float listElementWidth = scrollViewRect.width;
             if (isScrollbarVisible)
-                listElementWidth -= scrollBarWidth;
+                listElementWidth -= k_ScrollBarWidth;
 
             // Scrollview
             m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, EditorStyles.scrollViewAlt);
             {
-                DrawNormalList(true, listElementWidth, m_ScrollPosition.y - listElementHeight, m_ScrollPosition.y + totalContentHeight);
+                DrawNormalList(true, listElementWidth, m_ScrollPosition.y - k_ListElementHeight, m_ScrollPosition.y + totalContentHeight);
             }
             GUI.EndScrollView();
         }
@@ -514,11 +514,11 @@ namespace UnityEditor
                     Flip(ref even);
                     if (curY > startY && curY < endY)
                     {
-                        Rect rect = new Rect(1, curY, listElementWidth - 2, listElementHeight);
+                        Rect rect = new Rect(1, curY, listElementWidth - 2, k_ListElementHeight);
                         if (doDraw)
                             DrawListElement(rect, even, listElements[i]);
                     }
-                    curY += listElementHeight;
+                    curY += k_ListElementHeight;
                 }
 
                 if (useSeperator)

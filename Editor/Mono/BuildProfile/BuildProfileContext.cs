@@ -106,9 +106,9 @@ namespace UnityEditor.Build.Profile
 
                 EditorUserBuildSettings.activeBuildProfile = value;
 
-                activeProfileChanged?.Invoke(prev, value);
                 OnActiveProfileChangedForSettingExtension(prev, value);
                 value.UpdateGlobalManagerPlayerSettings();
+                activeProfileChanged?.Invoke(prev, value);
                 EditorGraphicsSettings.activeProfileHasGraphicsSettings = ActiveProfileHasGraphicsSettings();
                 BuildProfileModuleUtil.RequestScriptCompilation(value);
             }

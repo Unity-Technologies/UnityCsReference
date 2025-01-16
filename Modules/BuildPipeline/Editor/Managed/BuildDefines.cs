@@ -33,12 +33,6 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         public static string[] GetBuildProfileScriptDefines()
         {
-            // Profile scripting defines are cached when profile is first activated
-            // and when the domain is unloaded. Workaround for active build profile
-            // not reachable when AssetDatabase.IsReadOnly() is true.
-            if (!EditorUserBuildSettings.isBuildProfileAvailable)
-                return EditorUserBuildSettings.GetActiveProfileScriptingDefines();
-
             var profile = EditorUserBuildSettings.activeBuildProfile;
             if (profile == null)
                 return EditorUserBuildSettings.GetActiveProfileScriptingDefines();

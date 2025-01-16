@@ -27,8 +27,6 @@ namespace UnityEngine.UIElements.Experimental
         [field: SerializeField]
         internal long timestamp { get; private set; }
         public IEventHandler target { get; set; }
-        [field: SerializeField]
-        public bool hasUnderlyingPhysicalEvent { get; private set; }
         private bool isPropagationStopped { get; set; }
         private bool isImmediatePropagationStopped { get; set; }
         public PropagationPhase propagationPhase { get; private set; }
@@ -84,12 +82,6 @@ namespace UnityEngine.UIElements.Experimental
             isPropagationStopped = evt.isPropagationStopped;
             isImmediatePropagationStopped = evt.isImmediatePropagationStopped;
 
-            var mouseEvent = evt as IMouseEvent;
-            var mouseEventInternal = evt as IMouseEventInternal;
-            hasUnderlyingPhysicalEvent = mouseEvent != null &&
-                mouseEventInternal != null &&
-                mouseEventInternal.triggeredByOS;
-
             propagationPhase = evt.propagationPhase;
 
             originalMousePosition = evt.originalMousePosition;
@@ -97,7 +89,7 @@ namespace UnityEngine.UIElements.Experimental
 
             dispatch = evt.dispatch;
 
-            if (mouseEvent != null)
+            if (evt is IMouseEvent mouseEvent)
             {
                 modifiers = mouseEvent.modifiers;
                 mousePosition = mouseEvent.mousePosition;
@@ -105,21 +97,14 @@ namespace UnityEngine.UIElements.Experimental
                 pressedButtons = mouseEvent.pressedButtons;
                 clickCount = mouseEvent.clickCount;
 
-                var wheelEvent = mouseEvent as WheelEvent;
-                if (wheelEvent != null)
+                if (mouseEvent is WheelEvent wheelEvent)
                 {
                     delta = wheelEvent.delta;
                 }
             }
 
-            var pointerEvent = evt as IPointerEvent;
-            if (pointerEvent != null)
+            if (evt is IPointerEvent pointerEvent)
             {
-                var pointerEventInternal = evt as IPointerEventInternal;
-                hasUnderlyingPhysicalEvent = pointerEvent != null &&
-                    pointerEventInternal != null &&
-                    pointerEventInternal.triggeredByOS;
-
                 modifiers = pointerEvent.modifiers;
                 mousePosition = pointerEvent.position;
                 button = pointerEvent.button;
@@ -127,25 +112,23 @@ namespace UnityEngine.UIElements.Experimental
                 clickCount = pointerEvent.clickCount;
             }
 
-            IKeyboardEvent keyboardEvent = evt as IKeyboardEvent;
-            if (keyboardEvent != null)
+            if (evt is IKeyboardEvent keyboardEvent)
             {
                 modifiers = keyboardEvent.modifiers;
                 character = keyboardEvent.character;
                 keyCode = keyboardEvent.keyCode;
             }
 
-            ICommandEvent commandEvent = evt as ICommandEvent;
-            if (commandEvent != null)
+            if (evt is ICommandEvent commandEvent)
             {
                 commandName = commandEvent.commandName;
             }
 
-            INavigationEvent navigationEvent = evt as INavigationEvent;
-            if (navigationEvent != null)
+            if (evt is INavigationEvent navigationEvent)
             {
                 deviceType = navigationEvent.deviceType;
-                if (evt is NavigationMoveEvent nme)
+
+                if (navigationEvent is NavigationMoveEvent nme)
                 {
                     navigationDirection = nme.direction;
                 }

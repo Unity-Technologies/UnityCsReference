@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
@@ -815,7 +816,9 @@ namespace UnityEditor.Experimental.GraphView
                 if (ownerView != null && ownerView.actualView != null)
                     ownerView.actualView.antiAliasing = 4;
 
+#pragma warning disable CS0618 // Type or member is obsolete
                 p.beforeUpdate += OnBeforeUpdate;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
 
             // Force DefaultCommonDark.uss since GraphView only has a dark style at the moment
@@ -833,7 +836,9 @@ namespace UnityEditor.Experimental.GraphView
             var p = panel as BaseVisualElementPanel;
             if (p != null)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 p.beforeUpdate -= OnBeforeUpdate;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
         }
 
@@ -1496,9 +1501,12 @@ namespace UnityEditor.Experimental.GraphView
             GUI.matrix = m;
         }
 
+        static ProfilerMarker s_ProfilerMarker = new ProfilerMarker("GraphView.OnBeforeUpdate");
+
         void OnBeforeUpdate(IPanel panel)
         {
-            redrawn?.Invoke();
+            using (s_ProfilerMarker.Auto())
+                redrawn?.Invoke();
         }
 
         public virtual Blackboard GetBlackboard()

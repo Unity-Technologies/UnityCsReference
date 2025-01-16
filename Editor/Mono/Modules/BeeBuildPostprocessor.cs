@@ -659,6 +659,7 @@ namespace UnityEditor.Modules
             bool wroteSymbols = false;
             foreach (var processor in BuildPipelineInterfaces.processors.generateNativePluginsForAssembliesProcessors)
             {
+                using var _ = UnityBeeDriverProfilerSession.ProfilerInstance.Section(processor.GetType().ToString());
                 var result = processor.GenerateNativePluginsForAssemblies(generateArgs);
                 if (result.generatedPlugins?.Length > 0)
                 {

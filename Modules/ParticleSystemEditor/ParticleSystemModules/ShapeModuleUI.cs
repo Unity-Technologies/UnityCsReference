@@ -1053,6 +1053,9 @@ namespace UnityEditor
                             s_SpriteMesh.hideFlags |= HideFlags.HideAndDontSave;
                         }
 
+                        if(s_SpriteMesh.vertices.Length != sprite.vertices.Length || s_SpriteMesh.triangles.Length != sprite.triangles.Length)
+                            s_SpriteMesh.Clear();
+
                         s_SpriteMesh.vertices = Array.ConvertAll(sprite.vertices, i => (Vector3)i);
                         s_SpriteMesh.uv = sprite.uv;
                         s_SpriteMesh.triangles = Array.ConvertAll(sprite.triangles, i => (int)i);

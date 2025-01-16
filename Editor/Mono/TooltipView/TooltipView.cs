@@ -211,23 +211,19 @@ namespace UnityEditor
 
         public static void Show(string tooltip, Rect rect, GUIView hostView = null)
         {
-            if (s_guiView == null)
-            {
-                s_guiView = ScriptableObject.CreateInstance<TooltipView>();
-            }
-
-            if (s_guiView.window == null)
-            {
-                var newWindow = ScriptableObject.CreateInstance<ContainerWindow>();
-                newWindow.m_DontSaveToLayout = true;
-                newWindow.rootView = s_guiView;
-                newWindow.SetMinMaxSizes(new Vector2(10.0f, 10.0f), new Vector2(2000.0f, 2000.0f));
-                s_guiView.SetWindow(newWindow);
-            }
-
             CancelAutoClose();
 
-            if (s_guiView.m_tooltip.text == tooltip && rect == s_guiView.m_hoverRect) { return; }
+            if (s_guiView && s_guiView.m_tooltip.text == tooltip && rect == s_guiView.m_hoverRect)
+                return;
+
+            ForceClose();
+            s_guiView = ScriptableObject.CreateInstance<TooltipView>();
+
+            var newWindow = ScriptableObject.CreateInstance<ContainerWindow>();
+            newWindow.m_DontSaveToLayout = true;
+            newWindow.rootView = s_guiView;
+            newWindow.SetMinMaxSizes(new Vector2(10.0f, 10.0f), new Vector2(2000.0f, 2000.0f));
+            s_guiView.SetWindow(newWindow);
 
             s_guiView.Setup(tooltip, rect, hostView);
         }
@@ -250,7 +246,10 @@ namespace UnityEditor
 
         internal static void ForceClose()
         {
-            s_guiView?.window?.Close();
+            // Closing is not guaranteed to result in everything destroyed in one frame.
+            var temp = s_guiView?.window;
+            s_guiView = null;
+            temp?.Close();
         }
 
         [RequiredByNativeCode]

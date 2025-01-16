@@ -35,12 +35,13 @@ namespace UnityEditor
             }
         }
 
-        const float kScrollBarWidth = 14;
-        const float kFrameWidth = 1f;
-        const float kToggleSize = 17;
-        const float kSeparatorHeight = 6;
-        const string kLayerVisible = "Show/Hide Layer";
-        const string kLayerPickable = "Toggle Pickable status this Layer. Non-Pickable items cannot be selected in the Scene View.";
+        const float k_ScrollBarWidth = 14;
+        const float k_FrameWidth = 1f;
+        const float k_ToggleSize = 17;
+        const float k_SeparatorHeight = 6;
+        const float k_JustClosedPeriod = 200;
+        const string k_LayerVisible = "Show/Hide Layer";
+        const string k_LayerPickable = "Toggle Pickable status this Layer. Non-Pickable items cannot be selected in the Scene View.";
 
         private static LayerVisibilityWindow s_LayerVisibilityWindow;
         private static long s_LastClosedTime;
@@ -86,7 +87,7 @@ namespace UnityEditor
         {
             // We could not use realtimeSinceStartUp since it is set to 0 when entering/exitting playmode, we assume an increasing time when comparing time.
             long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
-            bool justClosed = nowMilliSeconds < s_LastClosedTime + 50;
+            bool justClosed = nowMilliSeconds < s_LastClosedTime + k_JustClosedPeriod;
             if (!justClosed)
             {
                 Event.current.Use();
@@ -107,16 +108,16 @@ namespace UnityEditor
 
             var rowCount = (s_LayerNames.Count + 2 + 1 + 1);
 
-            var windowHeight = rowCount * EditorGUI.kSingleLineHeight + kSeparatorHeight;
+            var windowHeight = rowCount * EditorGUI.kSingleLineHeight + k_SeparatorHeight;
 
             int sortingLayerCount = InternalEditorUtility.GetSortingLayerCount();
             if (sortingLayerCount > 1)
             {
-                windowHeight += kSeparatorHeight + EditorGUI.kSingleLineHeight;
+                windowHeight += k_SeparatorHeight + EditorGUI.kSingleLineHeight;
                 windowHeight += sortingLayerCount * EditorGUI.kSingleLineHeight;
             }
             m_ContentHeight = windowHeight;
-            windowHeight += 2 * kFrameWidth;
+            windowHeight += 2 * k_FrameWidth;
             windowHeight = Mathf.Min(windowHeight, 600);
 
             var windowSize = new Vector2(180, windowHeight);
@@ -132,12 +133,12 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            var scrollViewRect = new Rect(kFrameWidth, kFrameWidth, position.width - 2 * kFrameWidth, position.height - 2 * kFrameWidth);
+            var scrollViewRect = new Rect(k_FrameWidth, k_FrameWidth, position.width - 2 * k_FrameWidth, position.height - 2 * k_FrameWidth);
             var contentRect = new Rect(0, 0, 1, m_ContentHeight);
             bool isScrollbarVisible = m_ContentHeight > scrollViewRect.height;
             float listElementWidth = scrollViewRect.width;
             if (isScrollbarVisible)
-                listElementWidth -= kScrollBarWidth;
+                listElementWidth -= k_ScrollBarWidth;
 
             m_ScrollPosition = GUI.BeginScrollView(scrollViewRect, m_ScrollPosition, contentRect, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, EditorStyles.scrollViewAlt);
             Draw(listElementWidth);
@@ -174,9 +175,9 @@ namespace UnityEditor
 
         private void DrawSeparator(ref Rect rect, bool even)
         {
-            DrawListBackground(new Rect(rect.x + 1, rect.y, rect.width - 2, kSeparatorHeight), even);
+            DrawListBackground(new Rect(rect.x + 1, rect.y, rect.width - 2, k_SeparatorHeight), even);
             GUI.Label(new Rect(rect.x + 5, rect.y + 3, rect.width - 10, 3), GUIContent.none, s_Styles.separator);
-            rect.y += kSeparatorHeight;
+            rect.y += k_SeparatorHeight;
         }
 
         private void Draw(float listElementWidth)
@@ -279,16 +280,16 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             // text (works as visibility toggle as well)
             Rect textRect = rect;
-            textRect.width -= kToggleSize * 2;
+            textRect.width -= k_ToggleSize * 2;
             visible = GUI.Toggle(textRect, visible, EditorGUIUtility.TempContent(layerName), s_Styles.listTextStyle);
 
             // visible checkbox
-            var toggleRect = new Rect(rect.width - kToggleSize * 2, rect.y + (rect.height - kToggleSize) * 0.5f, kToggleSize, kToggleSize);
+            var toggleRect = new Rect(rect.width - k_ToggleSize * 2, rect.y + (rect.height - k_ToggleSize) * 0.5f, k_ToggleSize, k_ToggleSize);
             visibleChanged = false;
             if (showVisible)
             {
                 var iconRect = toggleRect;
-                var gc = new GUIContent(string.Empty, visible ? s_Styles.visibleOn : s_Styles.visibleOff, kLayerVisible);
+                var gc = new GUIContent(string.Empty, visible ? s_Styles.visibleOn : s_Styles.visibleOff, k_LayerVisible);
                 GUI.Toggle(iconRect, visible, gc, GUIStyle.none);
                 visibleChanged = EditorGUI.EndChangeCheck();
             }
@@ -297,9 +298,9 @@ namespace UnityEditor
             lockedChanged = false;
             if (showLock)
             {
-                toggleRect.x += kToggleSize;
+                toggleRect.x += k_ToggleSize;
                 EditorGUI.BeginChangeCheck();
-                var gc = new GUIContent(string.Empty, picked ? s_Styles.notpickable : s_Styles.pickable, kLayerPickable);
+                var gc = new GUIContent(string.Empty, picked ? s_Styles.notpickable : s_Styles.pickable, k_LayerPickable);
                 GUI.Toggle(toggleRect, picked, gc, GUIStyle.none);
                 lockedChanged = EditorGUI.EndChangeCheck();
             }

@@ -879,6 +879,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 extraScriptingDefines.ToArray()));
 
             var cts = new CancellationTokenSource();
+ 
+            ConsoleWindow.ClearConsoleOnRecompile();
 
             var activeBeeBuild = BeeDriver.BuildAsync(buildRequest, cts.Token);
 
@@ -1159,8 +1161,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         Console.WriteLine(msg.Output);
                     }
             }
-
-            ConsoleWindow.ClearConsoleOnRecompile();
 
             var messagesForNodeResults = ProcessCompilationResult(scriptCompilationState.ScriptAssemblies, result, scriptCompilationState.Settings.BuildingForEditor, scriptCompilationState.ActiveBuild);
             var compilerMessages = messagesForNodeResults.SelectMany(a => a).ToArray();

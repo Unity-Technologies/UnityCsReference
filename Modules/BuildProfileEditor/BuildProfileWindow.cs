@@ -183,7 +183,7 @@ namespace UnityEditor.Build.Profile
             if (!item.MoveNext())
                 return;
 
-            bool shouldRebuild = m_BuildProfileDataSource.ClearDeletedProfiles();
+            bool shouldRebuild = m_BuildProfileDataSource.DeleteNullProfiles();
             var profile = item.Current as BuildProfile;
             if (profile == null)
             {
@@ -235,7 +235,7 @@ namespace UnityEditor.Build.Profile
 
             RebuildBuildProfileEditor(profile);
 
-            if (m_BuildProfileDataSource.ClearDeletedProfiles())
+            if (m_BuildProfileDataSource.DeleteNullProfiles())
                 RebuildProfileListViews();
 
             BuildProfileModuleUtil.RepaintProjectSettingsWindow();
@@ -561,6 +561,8 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         void OnActiveProfileChanged(BuildProfile prev, BuildProfile cur)
         {
+            // Delete null build profile before rebuilding ProfileListView.
+            m_BuildProfileDataSource?.DeleteNullProfiles();
             RebuildProfileListViews();
             UpdateFormButtonState(m_BuildProfileSelection.Get(0));
         }

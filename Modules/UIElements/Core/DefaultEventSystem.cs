@@ -266,7 +266,7 @@ namespace UnityEngine.UIElements
                     if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
                     {
                         if (runtimePanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, out targetPanelDelta) &&
-                            runtimePanel.Pick(targetPanelPosition) != null)
+                            runtimePanel.Pick(targetPanelPosition, pointerId) != null)
                         {
                             targetPanel = runtimePanel;
                             break;
@@ -322,18 +322,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static EventBase MakeTouchEvent(Touch touch, EventModifiers modifiers, int targetDisplay)
+        private static EventBase MakeTouchEvent(Touch touch, int pointerId, EventModifiers modifiers, int targetDisplay)
         {
             switch (touch.phase)
             {
                 case TouchPhase.Began:
-                    return PointerDownEvent.GetPooled(touch, modifiers, targetDisplay);
+                    return PointerDownEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
                 case TouchPhase.Moved:
-                    return PointerMoveEvent.GetPooled(touch, modifiers, targetDisplay);
+                    return PointerMoveEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
                 case TouchPhase.Ended:
-                    return PointerUpEvent.GetPooled(touch, modifiers, targetDisplay);
+                    return PointerUpEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
                 case TouchPhase.Canceled:
-                    return PointerCancelEvent.GetPooled(touch, modifiers, targetDisplay);
+                    return PointerCancelEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
                 default:
                     return null;
             }

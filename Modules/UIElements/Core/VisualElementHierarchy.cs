@@ -206,8 +206,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Removes this child from the <see cref="contentContainer"/> <see cref="hierarchy"/>.
+        /// Removes this child from the <see cref="hierarchy"/> of its <see cref="contentContainer"/>.
         /// </summary>
+        /// <param name="element"> The child to be removed.</param>
+        /// <remarks>
+        /// If the child is not found in the hierarchy, an ArgumentException will be thrown.
+        /// </remarks>
         public void Remove(VisualElement element)
         {
             if (contentContainer == this)

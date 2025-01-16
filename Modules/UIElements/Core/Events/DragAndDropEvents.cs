@@ -78,8 +78,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            propagation = EventPropagation.TricklesDown | EventPropagation.Bubbles |
-                          EventPropagation.SkipDisabledElements;
+            recomputeTopElementUnderMouse = true;
         }
 
         /// <summary>
@@ -106,17 +105,6 @@ namespace UnityEngine.UIElements
             }
 
             return DragAndDropEventBase<DragExitedEvent>.GetPooled(systemEvent);
-        }
-
-        protected internal override void PostDispatch(IPanel panel)
-        {
-            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
-            if (pointerEvent == null)
-            {
-                // If pointerEvent != null, base.PostDispatch() will take care of this.
-                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
-            }
-            base.PostDispatch(panel);
         }
     }
 
@@ -197,6 +185,28 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Constructor. Use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
+        public DragUpdatedEvent()
+        {
+            LocalInit();
+        }
+
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
+            recomputeTopElementUnderMouse = true;
+        }
+
+        /// <summary>
         /// Gets an event from the event pool and initializes it with the given values. Use this function instead of creating new events. Events obtained using this method need to be released back to the pool. You can use `Dispose()` to release them.
         /// </summary>
         /// <param name="systemEvent">An IMGUI drag updated event.</param>
@@ -222,17 +232,6 @@ namespace UnityEngine.UIElements
         {
             return DragAndDropEventBase<DragUpdatedEvent>.GetPooled(pointerEvent);
         }
-
-        protected internal override void PostDispatch(IPanel panel)
-        {
-            EventBase pointerEvent = ((IMouseEventInternal)this).sourcePointerEvent as EventBase;
-            if (pointerEvent == null)
-            {
-                // If pointerEvent != null, base.PostDispatch() will take care of this.
-                (panel as BaseVisualElementPanel)?.CommitElementUnderPointers();
-            }
-            base.PostDispatch(panel);
-        }
     }
 
     /// <summary>
@@ -243,6 +242,27 @@ namespace UnityEngine.UIElements
         static DragPerformEvent()
         {
             SetCreateFunction(() => new DragPerformEvent());
+        }
+
+        /// <summary>
+        /// Constructor. Use GetPooled() to get an event from a pool of reusable events.
+        /// </summary>
+        public DragPerformEvent()
+        {
+            LocalInit();
+        }
+
+        /// <summary>
+        /// Resets the event members to their initial values.
+        /// </summary>
+        protected override void Init()
+        {
+            base.Init();
+            LocalInit();
+        }
+
+        void LocalInit()
+        {
         }
     }
 }

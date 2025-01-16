@@ -430,7 +430,7 @@ namespace UnityEditor
             if (!BeginLineDrawing(matrix, true, GL.LINES))
                 return;
             var dashSize = screenSpaceSize * EditorGUIUtility.pixelsPerPoint;
-            try 
+            try
             {
                 for (int i = 0; i < lineSegments.Length; i += 2)
                 {
@@ -677,7 +677,7 @@ namespace UnityEditor
             RectangleHandleCap(controlID, position, rotation, new Vector2(size, size), eventType);
         }
 
-        internal static void RectangleHandleCap(int controlID, Vector3 position, Quaternion rotation, Vector2 size, EventType eventType)
+        public static void RectangleHandleCap(int controlID, Vector3 position, Quaternion rotation, Vector2 size, EventType eventType)
         {
             switch (eventType)
             {

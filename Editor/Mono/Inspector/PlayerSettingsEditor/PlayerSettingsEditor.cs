@@ -244,6 +244,7 @@ namespace UnityEditor
             public static readonly GUIContent useDeterministicCompilation = EditorGUIUtility.TrTextContent("Use Deterministic Compilation", "Compile with -deterministic compilation flag");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager (Old)"), EditorGUIUtility.TrTextContent("Input System Package (New)"), EditorGUIUtility.TrTextContent("Both") };
+            public static readonly GUIContent activeInputHandlingDeprecationError = EditorGUIUtility.TrTextContent("The Input Manager is a legacy feature and not recommended for new projects. For new projects you should use the Input System Package.");
             public static readonly GUIContent activeInputHandlingError = EditorGUIUtility.TrTextContent("The Active Input Handling is invalid. To use Input System Package (New) or Both, install the Input System package. Otherwise set the Active Input Handling to Input Manager (Old).");
             public static readonly GUIContent normalMapEncodingLabel = EditorGUIUtility.TrTextContent("Normal Map Encoding");
             public static readonly GUIContent[] normalMapEncodingNames = { EditorGUIUtility.TrTextContent("XYZ"), EditorGUIUtility.TrTextContent("DXT5nm-style") };
@@ -3372,6 +3373,10 @@ namespace UnityEditor
                     if(m_ActiveInputHandler.intValue != 0 && !isInputSystemPackageInstalled)
                     {
                         EditorGUILayout.HelpBox(SettingsContent.activeInputHandlingError.text, MessageType.Error, true);
+                    }
+                    if(m_ActiveInputHandler.intValue != 1)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.activeInputHandlingDeprecationError.text, MessageType.Warning, true);
                     }
                 }
             }

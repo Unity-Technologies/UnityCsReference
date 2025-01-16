@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 ﻿using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.UIElements
 {
@@ -27,6 +28,9 @@ namespace UnityEngine.UIElements
             private int m_LastMouseClickCount = 0;
             private Vector2 m_LastMousePosition = Vector2.zero;
             private bool m_MouseProcessedAtLeastOnce;
+
+            private Dictionary<int, int> m_TouchFingerIdToFingerIndex = new();
+            private int m_TouchNextFingerIndex = 0;
 
             private IInput m_Input;
             public IInput input
@@ -79,6 +83,8 @@ namespace UnityEngine.UIElements
                 m_MouseProcessedAtLeastOnce = false;
                 m_ConsecutiveMoveCount = 0;
                 m_IsMoveFromKeyboard = false;
+                m_TouchFingerIdToFingerIndex.Clear();
+                m_TouchNextFingerIndex = 0;
             }
 
             public void ProcessLegacyInputEvents()
@@ -247,6 +253,7 @@ namespace UnityEngine.UIElements
 
             private bool ProcessTouchEvents()
             {
+                bool allAreReleased = true;
                 for (int i = 0; i < input.touchCount; ++i)
                 {
                     Touch touch = input.GetTouch(i);
@@ -255,17 +262,33 @@ namespace UnityEngine.UIElements
                     if (touch.type == TouchType.Indirect || touch.phase == TouchPhase.Stationary)
                         continue;
 
+                    if (touch.phase == TouchPhase.Began || touch.phase == TouchPhase.Moved)
+                        allAreReleased = false;
+
                     // Flip Y Coordinates.
                     touch.position = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(touch.position, out var targetDisplay);
                     touch.rawPosition = UIElementsRuntimeUtility.MultiDisplayBottomLeftToPanelPosition(touch.rawPosition, out _);
                     touch.deltaPosition = UIElementsRuntimeUtility.ScreenBottomLeftToPanelDelta(touch.deltaPosition);
 
-                    m_EventSystem.SendPositionBasedEvent(touch.position, touch.deltaPosition, PointerId.touchPointerIdBase + touch.fingerId, targetDisplay, (panelPosition, panelDelta, t) =>
+                    if (!m_TouchFingerIdToFingerIndex.TryGetValue(touch.fingerId, out var fingerIndex))
+                    {
+                        fingerIndex = m_TouchNextFingerIndex++;
+                        m_TouchFingerIdToFingerIndex.Add(touch.fingerId, fingerIndex);
+                    }
+                    int pointerId = PointerId.touchPointerIdBase + fingerIndex;
+
+                    m_EventSystem.SendPositionBasedEvent(touch.position, touch.deltaPosition, pointerId, targetDisplay, (panelPosition, panelDelta, t) =>
                     {
                         t.touch.position = panelPosition;
                         t.touch.deltaPosition = panelDelta;
-                        return MakeTouchEvent(t.touch, EventModifiers.None, t.targetDisplay ?? 0);
-                    }, (touch, targetDisplay));
+                        return MakeTouchEvent(t.touch, t.pointerId, EventModifiers.None, t.targetDisplay ?? 0);
+                    }, (touch, pointerId, targetDisplay));
+                }
+
+                if (allAreReleased)
+                {
+                    m_TouchNextFingerIndex = 0;
+                    m_TouchFingerIdToFingerIndex.Clear();
                 }
 
                 return input.touchCount > 0;

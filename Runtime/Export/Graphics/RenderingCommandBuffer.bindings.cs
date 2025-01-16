@@ -1512,7 +1512,7 @@ namespace UnityEngine.Rendering
         /// <summary>
         /// Set base shading rate fragment size.
         /// </summary>
-        /// <param name="shadingRateFragmentSize"><Shading rate fragment size/param>
+        /// <param name="shadingRateFragmentSize">Shading rate fragment size</param>
         public void SetShadingRateFragmentSize(ShadingRateFragmentSize shadingRateFragmentSize)
         {
             SetShadingRateFragmentSize_Impl(shadingRateFragmentSize);

@@ -3022,15 +3022,17 @@ namespace UnityEditor
             if (Path.GetExtension(assetPath) != ".prefab")
                 throw new ArgumentException(string.Format("Path: {0}, is not a prefab file", assetPath));
 
-            var previewScene = EditorSceneManager.OpenPreviewScene(assetPath, false);
-            var roots = previewScene.GetRootGameObjects();
-            if (roots.Length != 1)
+            var previewScene = EditorSceneManager.NewPreviewScene();
+            var rootGameObject = LoadPrefabContentsIntoPreviewScene_Internal(assetPath, previewScene);
+            previewScene.SetPathAndGuid(assetPath, AssetDatabase.AssetPathToGUID(assetPath));
+
+            if (rootGameObject == null)
             {
                 EditorSceneManager.ClosePreviewScene(previewScene);
-                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}. Prefabs should have exactly 1 root GameObject, {1} was found.", assetPath, roots.Length));
+                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}.", assetPath));
             }
 
-            return roots[0];
+            return rootGameObject;
         }
 
         public static void UnloadPrefabContents(GameObject contentsRoot)

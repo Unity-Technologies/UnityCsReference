@@ -21,8 +21,6 @@ namespace UnityEngine
         ///game code is built outside unity and imported as assemblies. As an alternative you should consider
         ///passing disable-assembly-updater as a command line argument (see Unity manual for more details.)
         ///</summary>
-        ///<params>
-        ///</param>
         public UnityAPICompatibilityVersionAttribute(string version, bool checkOnlyUnityVersion)
         {
             if (!checkOnlyUnityVersion)

@@ -2944,7 +2944,7 @@ namespace UnityEditor.Search
         }
 
         /// <summary>
-        /// Get all filters added on this <see cref="QueryEngine"/.>
+        /// Get all filters added on this <see cref="QueryEngine"/>.
         /// </summary>
         /// <returns>An enumerable of <see cref="IQueryEngineFilter"/>.</returns>
         public IEnumerable<IQueryEngineFilter> GetAllFilters()

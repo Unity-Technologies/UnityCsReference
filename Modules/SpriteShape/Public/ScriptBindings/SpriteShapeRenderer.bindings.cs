@@ -186,7 +186,7 @@ namespace UnityEngine.U2D
             texcoords = GetChannelDataArray<Vector2>(SpriteShapeDataType.ChannelTexCoord0, VertexAttribute.TexCoord0);
         }
 
-        // <summary>
+        /// <summary>
         /// Gets NativeArrays of SpriteShapeSegment.
         /// </summary>
         /// <param name="dataSize">Size of the NativeArray requested.</param>
@@ -220,7 +220,7 @@ namespace UnityEngine.U2D
             tangents = GetChannelDataArray<Vector4>(SpriteShapeDataType.ChannelTangent, VertexAttribute.Tangent);
         }
 
-        // <summary>
+        /// <summary>
         /// Gets NativeArrays of SpriteShapeSegment.
         /// </summary>
         /// <param name="dataSize">Size of the NativeArray requested.</param>
@@ -257,7 +257,7 @@ namespace UnityEngine.U2D
             normals = GetChannelDataArray<Vector3>(SpriteShapeDataType.ChannelNormal, VertexAttribute.Normal);
         }
 
-        // <summary>
+        /// <summary>
         /// Gets NativeArrays of SpriteShapeSegment.
         /// </summary>
         /// <param name="dataSize">Size of the NativeArray requested.</param>
