@@ -30,6 +30,7 @@ namespace UnityEditor
         private static int m_DefaultFontSize;
         private static List<MethodInfo> s_MethodsToHideInCallstack = null;
         private static Dictionary<MethodInfo, Regex> s_GenericMethodSignatureRegex = null;
+        private static bool m_ShouldSkipClearingConsoleAfterBuild = false;
 
         //TODO: move this out of here
         internal class Constants
@@ -1202,12 +1203,26 @@ namespace UnityEditor
 
         internal static void ClearConsoleOnRecompile()
         {
+            //After building a player, there's a recompilation happening as well
+            //And in order not to lose the log entries, we need to skip clearing the console one time
+            if (BuildPipeline.isBuildingPlayer)
+            {
+                m_ShouldSkipClearingConsoleAfterBuild = true;
+            }
+
             // During build process, there are multiple compilation events that can trigger console clearing
             // We don't want to lose the log entries during build process so we re-enable the flag only when editor is not building
             // For clearing on build we have a separate option
             if (HasFlag(ConsoleFlags.ClearOnRecompile) && !BuildPipeline.isBuildingPlayer)
             {
-                LogEntries.Clear();
+                if (!m_ShouldSkipClearingConsoleAfterBuild)
+                {
+                    LogEntries.Clear();
+                }
+                else
+                {
+                    m_ShouldSkipClearingConsoleAfterBuild = false;
+                }
             }
         }
 
