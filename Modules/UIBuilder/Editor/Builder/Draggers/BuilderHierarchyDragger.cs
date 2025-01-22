@@ -46,17 +46,11 @@ namespace Unity.UI.Builder
             if (pane == DestinationPane.Viewport && (!IsPickedElementValid(destination)))
                 return;
 
-            var newDestination = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(destination) ?? destination;
-
-            base.PerformAction(newDestination, pane, localMousePosition, index);
+            base.PerformAction(destination, pane, localMousePosition, index);
 
             m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
 
             var newParent = destination;
-            // Requires the root control when re-parenting the VEA therefore we make sure it's not the container, otherwise
-            // set newParent to be the control itself.
-            if (destination.parent is ToggleButtonGroup control)
-                newParent = control;
 
             // We already have the correct index from the preview element that is
             // already inserted in the hierarchy. The index we get from the arguments
@@ -68,10 +62,6 @@ namespace Unity.UI.Builder
             foreach (var elementToReparent in m_ElementsToReparent)
             {
                 var element = elementToReparent.element;
-                // Because ToggleButtonGroup does not override the contentContainer, we have to keep track of the index
-                // within the content ourselves.
-                if (destination is ToggleButtonGroup)
-                    index = newDestination.IndexOf(element);
 
                 if (newParent == element || newParent.HasAncestor(element))
                     continue;
@@ -80,6 +70,11 @@ namespace Unity.UI.Builder
                 if (newParent.IsActiveSubDocumentRoot(paneWindow.document))
                 {
                     newParent = null;
+                }
+
+                if (newParent is ToggleButtonGroup && element is not Button)
+                {
+                    continue;
                 }
 
                 BuilderAssetUtilities.ReparentElementInAsset(

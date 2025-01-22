@@ -101,11 +101,17 @@ namespace UnityEditor.Connect
             rootVisualElement.Add(m_GeneralTemplate.CloneTree().contentContainer);
 
             //If we haven't received new bound info, fetch them
-            var projectInfoOnBind = new ProjectInfoData(UnityConnect.instance.projectInfo.organizationId,
-                UnityConnect.instance.projectInfo.organizationName,
+            var projectInfoOnBind = new ProjectRequestResponse(UnityConnect.instance.projectInfo.projectId,
+                "",
                 UnityConnect.instance.projectInfo.projectName,
-                UnityConnect.instance.projectInfo.projectGUID,
-                UnityConnect.instance.projectInfo.projectId);
+                "",
+                UnityConnect.instance.projectInfo.organizationId,
+                UnityConnect.instance.projectInfo.organizationId,
+                UnityConnect.instance.projectInfo.organizationForeignKey)
+            {
+                OrganizationName = UnityConnect.instance.projectInfo.organizationName
+            };
+
             var generalTemplate = EditorGUIUtility.Load(k_TemplatePath) as VisualTreeAsset;
             var scrollContainer = rootVisualElement.Q(className: k_ScrollContainerClassName);
             scrollContainer.Clear();
@@ -118,9 +124,9 @@ namespace UnityEditor.Connect
             var projectIdFieldBlock = rootVisualElement.Q(k_ProjectIdBlockName);
             var dashboardFieldBlock = rootVisualElement.Q(k_DashboardBlockName);
 
-            InitializeFieldBlock(projectNameFieldBlock, projectInfoOnBind.name);
-            InitializeFieldBlock(organizationFieldBlock, projectInfoOnBind.organizationName);
-            InitializeFieldBlock(projectIdFieldBlock, projectInfoOnBind.guid);
+            InitializeFieldBlock(projectNameFieldBlock, projectInfoOnBind.Name);
+            InitializeFieldBlock(organizationFieldBlock, projectInfoOnBind.OrganizationName);
+            InitializeFieldBlock(projectIdFieldBlock, projectInfoOnBind.Id);
             InitializeFieldBlock(dashboardFieldBlock);
 
             //Setup dashboard link

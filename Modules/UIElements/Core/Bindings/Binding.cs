@@ -43,6 +43,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Gets the global log level for all binding failures.
+        /// </summary>
+        /// <returns>The global log level.</returns>
+        public static BindingLogLevel GetGlobalLogLevel()
+        {
+            return DataBindingManager.globalLogLevel;
+        }
+
+        /// <summary>
         /// Sets the log level for binding failures on a panel.
         /// </summary>
         /// <param name="panel">The panel to apply to.</param>
@@ -53,6 +62,20 @@ namespace UnityEngine.UIElements
             {
                 elementPanel.dataBindingManager.logLevel = logLevel;
             }
+        }
+
+        /// <summary>
+        /// Gets the log level for binding failures on a panel.
+        /// </summary>
+        /// <returns>The global log level.</returns>
+        public static BindingLogLevel GetPanelLogLevel(IPanel panel)
+        {
+            if (panel is BaseVisualElementPanel elementPanel)
+            {
+                return elementPanel.dataBindingManager.logLevel;
+            }
+
+            return BindingLogLevel.None;
         }
 
         /// <summary>

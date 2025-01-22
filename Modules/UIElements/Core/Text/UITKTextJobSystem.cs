@@ -125,6 +125,9 @@ namespace UnityEngine.UIElements
             TextHandle.InitThreadArrays();
             PanelTextSettings.InitializeDefaultPanelTextSettingsIfNull();
             TextHandle.UpdateCurrentFrame();
+            // Load the default editor text settings while on the  main thread
+            _ = TextUtilities.textSettings;
+
 
             k_PrepareMainThreadMarker.Begin();
 

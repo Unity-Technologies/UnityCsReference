@@ -38,7 +38,7 @@ namespace UnityEditor
                 ObjectFactory.AddComponent<RectTransform>(go);
         }
 
-        internal static void Place(GameObject go, GameObject parent, bool ignoreSceneViewPosition = true)
+        internal static void Place(GameObject go, GameObject parent, bool ignoreSceneViewPosition = true, bool alignWithSceneCamera = false)
         {
             Transform defaultObjectTransform = SceneView.GetDefaultParentObjectIfSet();
 
@@ -64,7 +64,21 @@ namespace UnityEditor
                 if (placeObjectsAtWorldOrigin)
                     go.transform.position = Vector3.zero;
                 else if (ignoreSceneViewPosition)
-                    SceneView.PlaceGameObjectInFrontOfSceneView(go);
+                {
+                    if(alignWithSceneCamera && go.TryGetComponent<Camera>(out var cam))
+                    {
+                        if (SceneView.lastActiveSceneView?.in2DMode == true)
+                        {
+                            // set 2D mode specific camera defaults
+                            cam.orthographic = true;
+                            cam.transform.position = new Vector3(0f, 0f, -10f);
+                        }
+
+                        SceneView.AlignCameraWithView(cam);
+                    }
+                    else
+                        SceneView.PlaceGameObjectInFrontOfSceneView(go);
+                }
 
                 StageUtility.PlaceGameObjectInCurrentStage(go); // may change parent
             }
@@ -455,7 +469,7 @@ namespace UnityEditor
         static void CreateCamera(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(ObjectFactory.CreateGameObject("Camera", typeof(Camera), typeof(AudioListener)), parent);
+            Place(ObjectFactory.CreateGameObject("Camera", typeof(Camera), typeof(AudioListener)), parent, alignWithSceneCamera: true);
         }
     }
 }

@@ -225,8 +225,6 @@ namespace UnityEditor.Connect
             // Also, we do not consider "projectInfo.valid" as a property to identify if the info changed.
             return
                 (m_CachedProjectInfo.buildAllowed != UnityConnect.instance.projectInfo.buildAllowed) ||
-                (m_CachedProjectInfo.coppaLock != UnityConnect.instance.projectInfo.coppaLock) ||
-                (m_CachedProjectInfo.moveLock != UnityConnect.instance.projectInfo.moveLock) ||
                 (m_CachedProjectInfo.projectBound != UnityConnect.instance.projectInfo.projectBound) ||
                 (m_CachedProjectInfo.organizationId != UnityConnect.instance.projectInfo.organizationId) ||
                 (m_CachedProjectInfo.organizationName != UnityConnect.instance.projectInfo.organizationName) ||
@@ -406,74 +404,18 @@ namespace UnityEditor.Connect
             Application.OpenURL(String.Format(dashboardUrl, orgSubUrl, projectSubUrl));
         }
 
-        void RefreshCurrentUserRole()
+        async void RefreshCurrentUserRole()
         {
-            ServicesConfiguration.instance.RequestCurrentProjectUsersApiUrl(currentProjectUsersApiUrl =>
+            try
             {
-                var getProjectUsersRequest = new UnityWebRequest(currentProjectUsersApiUrl,
-                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                getProjectUsersRequest.suppressErrorsToConsole = true;
-                getProjectUsersRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                var operation = getProjectUsersRequest.SendWebRequest();
-                operation.completed += op =>
-                {
-                    try
-                    {
-                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getProjectUsersRequest))
-                        {
-                            var jsonParser = new JSONParser(getProjectUsersRequest.downloadHandler.text);
-                            var json = jsonParser.Parse();
-                            try
-                            {
-                                var currentUserId = UnityConnect.instance.userInfo.userId;
-                                var users = json.AsDict()[k_JsonUsersNodeName].AsList();
-                                foreach (var rawUser in users)
-                                {
-                                    var user = rawUser.AsDict();
-                                    if (currentUserId.Equals(user[k_JsonUserIdNodeName].AsString()))
-                                    {
-                                        currentUserPermission = ConvertStringToUserRole(user[k_JsonRoleNodeName].AsString());
-                                        InternalToggleRestrictedVisualElementsAvailability(currentUserPermission == UserRole.User);
-                                        break;
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Debug.LogException(ex);
-                            }
-                        }
-                    }
-                    finally
-                    {
-                        getProjectUsersRequest.Dispose();
-                        getProjectUsersRequest = null;
-                    }
-                };
-            });
-        }
+                var userResponse = await UnityConnectRequests.GetCurrentUserRoleForProject(CloudProjectSettings.projectId);
 
-        UserRole ConvertStringToUserRole(string s)
-        {
-            if (string.IsNullOrEmpty(s))
-            {
-                throw new ArgumentNullException(nameof(s));
+                await AsyncUtils.RunNextActionOnMainThread(() => InternalToggleRestrictedVisualElementsAvailability(
+                    userResponse.OrganizationRole == UserRequestResponse.UserRole.User));
             }
-            if (s.ToUpper().Equals(UserRole.Manager.ToString().ToUpper()))
+            catch (Exception e)
             {
-                return UserRole.Manager;
-            }
-            else if (s.ToUpper().Equals(UserRole.Owner.ToString().ToUpper()))
-            {
-                return UserRole.Owner;
-            }
-            else if (s.ToUpper().Equals(UserRole.User.ToString().ToUpper()))
-            {
-                return UserRole.User;
-            }
-            else
-            {
-                throw new ArgumentException(string.Format(k_UnknownRoleMessage, s));
+                await AsyncUtils.RunNextActionOnMainThread(() => Debug.LogException(e));
             }
         }
 

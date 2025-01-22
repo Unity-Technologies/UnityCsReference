@@ -1606,6 +1606,36 @@ namespace UnityEditor
                     view.MoveToView(go.transform);
             }
         }
+        internal static void AlignCameraWithView(Camera camera)
+        {
+            if (s_SceneViews.Count >= 1)
+            {
+                var view = lastActiveSceneView;
+                if (view == null) return;
+
+                if (view.in2DMode)
+                {
+                    var sceneCamera = view.camera;
+
+                    var worldMiddle = sceneCamera.ScreenToWorldPoint(new Vector4(0f, 0f, 0f, 3f));
+                    var invMiddle = sceneCamera.transform.InverseTransformPoint(worldMiddle);
+
+                    var worldTop = sceneCamera.ScreenToWorldPoint(new Vector3(0f, sceneCamera.pixelHeight, 0.3f));
+                    var invTop = sceneCamera.transform.InverseTransformPoint(worldTop);
+
+                    var size = Mathf.Abs((invTop - invMiddle).y / 2f);
+
+                    camera.orthographicSize = size;
+
+                    var pos = sceneCamera.transform.position;
+
+                    // maintain current camera z pos as it is either a user set value, or the default from GOCreationCommands
+                    camera.transform.position = new Vector3(pos.x, pos.y, camera.transform.position.z);
+                }
+                else
+                    view.AlignWithView(camera.transform);
+            }
+        }
 
         internal static Camera GetLastActiveSceneViewCamera()
         {
@@ -3903,6 +3933,7 @@ namespace UnityEditor
         {
             FixNegativeSize();
             Vector3 dif = pivot - Tools.handlePosition;
+            if (m_2DMode) dif.z = 0f;
 
             Undo.RecordObjects(Selection.transforms, "Move to view");
 
@@ -3914,7 +3945,15 @@ namespace UnityEditor
 
         public void MoveToView(Transform target)
         {
-            target.position = pivot;
+            var pos = pivot;
+            if (m_2DMode) pos.z = target.position.z;
+            target.position = pos;
+        }
+
+        internal void AlignWithView(Transform target)
+        {
+            target.position = camera.transform.position;
+            target.rotation = camera.transform.rotation;
         }
 
         internal bool IsGameObjectInThisSceneView(GameObject gameObject)

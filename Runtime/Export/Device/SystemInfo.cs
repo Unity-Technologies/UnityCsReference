@@ -127,6 +127,8 @@ namespace UnityEngine.Device
         public static int supportsMultisampledTextures => ShimManager.systemInfoShim.supportsMultisampledTextures;
 
         public static bool supportsMultisampled2DArrayTextures => ShimManager.systemInfoShim.supportsMultisampled2DArrayTextures;
+        
+        public static bool supportsMultisampledBackBuffer => ShimManager.systemInfoShim.supportsMultisampledBackBuffer;
 
         public static bool supportsMultisampleAutoResolve => ShimManager.systemInfoShim.supportsMultisampleAutoResolve;
 

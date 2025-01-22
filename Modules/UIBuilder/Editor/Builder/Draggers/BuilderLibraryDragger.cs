@@ -93,7 +93,7 @@ namespace Unity.UI.Builder
             {
                 return;
             }
-            
+
             ResetDragPreviewElement();
 
             m_DragPreviewLastParent = pickedElement;
@@ -132,6 +132,12 @@ namespace Unity.UI.Builder
 
             // Add VisualElement to Canvas.
             m_DragPreviewElement.RemoveFromClassList(s_DragPreviewElementClassName);
+
+            if (m_DragPreviewLastParent is ToggleButtonGroup && m_DragPreviewElement is not Button)
+            {
+                return;
+            }
+
             if (index < 0)
                 m_DragPreviewLastParent.Add(m_DragPreviewElement);
             else

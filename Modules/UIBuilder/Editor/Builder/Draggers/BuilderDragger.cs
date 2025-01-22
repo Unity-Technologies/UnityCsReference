@@ -393,19 +393,11 @@ namespace Unity.UI.Builder
                     if (pickedElement == null)
                         return;
 
-                    var revisedPlacementIndex = index;
-                    var modifiedPickedElement = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(pickedElement);
-                    // Because we are treating a contentContainer, we are telling it to add to the end of the list if
-                    // let say an user drags and drops an accepted control into the main control as opposed to a
-                    // specific index within the contentContainer.
-                    if (modifiedPickedElement != null)
-                        revisedPlacementIndex = index == -1 ? modifiedPickedElement.childCount : index;
-
                     // Mirror final drag destination in the viewport using the placement indicator.
-                    m_PlacementIndicator?.Activate(modifiedPickedElement ?? pickedElement, revisedPlacementIndex);
+                    m_PlacementIndicator?.Activate(pickedElement, index);
 
                     m_Active = true;
-                    PerformDrag(target, modifiedPickedElement ?? pickedElement, index);
+                    PerformDrag(target, pickedElement, index);
                     return;
                 }
             }
@@ -617,9 +609,8 @@ namespace Unity.UI.Builder
 
                 pickedElement = sibling.parent;
 
-                var siblingParentElement = BuilderHierarchyUtilities.GetToggleButtonGroupContentContainer(sibling.parent) ?? pickedElement;
-                var siblingIndex = siblingParentElement.IndexOf(sibling);
-                index = siblingParentElement.childCount;
+                var siblingIndex = pickedElement.IndexOf(sibling);
+                index = pickedElement.childCount;
 
                 if (reorderZone.ClassListContains(BuilderConstants.ExplorerItemReorderZoneAboveClassName))
                 {

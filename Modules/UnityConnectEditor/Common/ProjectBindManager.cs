@@ -12,6 +12,9 @@ using UnityEngine.UIElements;
 using System;
 using System.Text;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace UnityEditor.Connect
 {
@@ -26,45 +29,20 @@ namespace UnityEditor.Connect
         const string k_ProjectBindLightStyleSheetPath = "StyleSheets/ServicesWindow/ProjectBindLight.uss";
         const string k_SelectOrganizationText = "Select organization";
         const string k_SelectProjectText = "Select project";
-        const long k_HttpStatusCodeUnprocessableEntity = 422;
         const string k_Yes = "Yes";
         const string k_No = "No";
-
-        static readonly List<string> k_AnyRoleFilter;
-        static readonly List<string> k_AtLeastManagerFilter;
-
         const string k_LinkProjectWindowTitle = "Link Project";
         const string k_DialogConfirmationMessage = "Are you sure you want to link to the project '{0}' in organization '{1}'?";
-        const string k_NetworkIssueWarningMessage = "This might be caused by network issues. Try using the refresh button.";
-        const string k_CouldNotCreateProjectMessage = "Could not create project.";
-        const string k_CouldNotObtainProjectMessage = "Could not obtain projects. " + k_NetworkIssueWarningMessage;
-        const string k_CouldNotObtainOrganizationsMessage = "Could not obtain organizations. " + k_NetworkIssueWarningMessage;
         const string k_ProjectLinkSuccessMessage = "Project was linked successfully.";
-
         const string k_RootDataKey = "rootKey";
         const string k_BindContainerDataKey = "bindContainerKey";
-
         const string k_RoleOwner = "owner";
         const string k_RoleManager = "manager";
-        const string k_RoleUser = "user";
 
-        const string k_JsonProjectsNodeName = "projects";
-        const string k_JsonArchivedNodeName = "archived";
-        const string k_JsonOrgIdNodeName = "org_id";
-        const string k_JsonIdNodeName = "id";
-        const string k_JsonNameNodeName = "name";
-        const string k_JsonGuidNodeName = "guid";
-        const string k_JsonOrgsNodeName = "orgs";
-        const string k_JsonRoleNodeName = "role";
-        const string k_JsonOrgNameNodeName = "org_name";
-        internal const string k_FakeSlashUnicode = "\uff0f";
+        static readonly List<string> k_AtLeastManagerFilter;
 
-        Dictionary<string, ProjectInfoData> m_ProjectInfoByName;
+        Dictionary<string, ProjectRequestResponse> m_ProjectInfoByName;
         internal ProjectNameSlashReplacer m_LastReuseBlockProject = new ProjectNameSlashReplacer();
-        UnityWebRequest m_CurrentRequest;
-        int m_CreateIteration;
-
-        private object m_ButtonsLock = new object();
 
         private VisualElement m_LinkOrCreateBlock;
         private VisualElement m_LinkCloudProjectTab;
@@ -79,86 +57,16 @@ namespace UnityEditor.Connect
         private Button m_CreateProjectButton;
         private Button m_RefreshButton;
 
-        private bool m_FetchingOrganizations;
-        private bool m_FetchingProjects;
+        private Task m_CurrentTask;
+        private readonly object m_CurrentTaskLock = new();
 
-        public static event Action<List<string>> OrganizationsFetched;
-        public static event Action<List<string>> ProjectsFetched;
-
-        class OrgData
-        {
-            public string Name;
-            public string Id;
-            public bool IsManager;
-        }
-
-        List<OrgData> m_OrgIdByName = new ();
+        List<OrganizationRequestResponse> m_OrgIdByName = new ();
 
         public CreateButtonCallback createButtonCallback { private get; set; }
         public LinkButtonCallback linkButtonCallback { private get; set; }
         public ExceptionCallback exceptionCallback { private get; set; }
 
         public VisualElement projectBindContainer { get; private set; }
-
-        /// <summary>
-        /// This class provides a method that replaces slashes in project names, keeps track of modified
-        /// project names, and encapsulates the last project name used.
-        /// </summary>
-        /// <remarks>
-        /// This is a hack to prevent UI display issues for UGS projects that contain a slash (to prevent the creation
-        /// of UI sub-menus). This hack could be removed in the future, if UGS dashboard prevents users from inputting
-        /// slashes in project names, or when UI team develops a feature to deactivate sub-menu creation on slashes.
-        /// </remarks>
-        internal class ProjectNameSlashReplacer
-        {
-            string m_LastProjectName;
-            internal List<string> m_ModifiedProjectNames = new List<string>();
-
-            internal string LastProjectName
-            {
-                get
-                {
-                    // Replaces a fake slash character by a real slash if the project name was modified. Slashes in
-                    // project names get replaced with fake slashes for the UI. Here, we revert that. This is because
-                    // in the code we want the true project names.
-                    if(m_ModifiedProjectNames.Contains(m_LastProjectName))
-                    {
-                        return m_LastProjectName.Replace(k_FakeSlashUnicode, "/");
-                    }
-                    else
-                    {
-                        return m_LastProjectName;
-                    }
-                }
-                set => m_LastProjectName = value;
-            }
-
-            /// <summary>
-            /// Replaces the regular slash character with a stylized slash for all strings in a list
-            /// </summary>
-            /// <param name="input">Strings to be modified</param>
-            /// <returns>List of modified strings if they contained a slash, original strings otherwise</returns>
-            internal List<string> ReplaceSlashForFakeSlash(List<string> input)
-            {
-                m_ModifiedProjectNames.Clear();
-
-                if (input == null)
-                {
-                    return null;
-                }
-
-                for (int i = 0; i < input.Count; i++)
-                {
-                    if (input[i].Contains("/"))
-                    {
-                        input[i] = input[i].Replace("/", k_FakeSlashUnicode);
-                        m_ModifiedProjectNames.Add(input[i]);
-                    }
-                }
-
-                return input;
-            }
-        }
 
         internal struct ProjectBindState
         {
@@ -168,7 +76,6 @@ namespace UnityEditor.Connect
 
         static ProjectBindManager()
         {
-            k_AnyRoleFilter = new List<string>(new[] { k_RoleOwner, k_RoleManager, k_RoleUser });
             k_AtLeastManagerFilter = new List<string>(new[] { k_RoleOwner, k_RoleManager });
         }
 
@@ -177,17 +84,7 @@ namespace UnityEditor.Connect
         /// </summary>
         /// <param name="rootVisualElement">visual element where the project bind content must be added</param>
         public ProjectBindManager(VisualElement rootVisualElement)
-        {
-            InitializeProjectBindManager(rootVisualElement);
-        }
-
-        void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                m_CurrentRequest?.Dispose();
-            }
-        }
+            => InitializeProjectBindManager(rootVisualElement);
 
         public void Dispose()
         {
@@ -195,10 +92,36 @@ namespace UnityEditor.Connect
             GC.SuppressFinalize(this);
         }
 
+        void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                m_CurrentTask?.Dispose();
+            }
+
+            GC.SuppressFinalize(this);
+        }
+
         ~ProjectBindManager()
         {
             Unsubscribe();
             Dispose(false);
+        }
+
+        void Subscribe()
+        {
+            m_CreateProjectButton.clicked += OnCreateProjectButtonClicked;
+            m_LinkCloudProjectButton.clicked += OnLinkProjectButtonClicked;
+            m_RefreshButton.clicked += OnRefreshButtonClicked;
+        }
+
+        void Unsubscribe()
+        {
+            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
+            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
+            m_CreateProjectButton.clicked -= OnCreateProjectButtonClicked;
+            m_LinkCloudProjectButton.clicked -= OnLinkProjectButtonClicked;
+            m_RefreshButton.clicked -= OnRefreshButtonClicked;
         }
 
         void InitializeProjectBindManager(VisualElement rootVisualElement)
@@ -210,19 +133,37 @@ namespace UnityEditor.Connect
             var projectBindTemplate = EditorGUIUtility.Load(k_ProjectBindTemplatePath) as VisualTreeAsset;
             rootVisualElement.Add(projectBindTemplate.CloneTree().contentContainer);
 
-            QueryAndPrepareUXMLElements(rootVisualElement);
+            QueryAndPrepareUxmlElements(rootVisualElement);
 
             Subscribe();
 
             InitializeOrganizationsDropdown();
             InitializeProjectsDropdown();
 
-            FetchOrganizations();
+            _ = RunUITask(FetchOrganizations());
 
             EditorGameServicesAnalytics.SendProjectBindDisplayEvent();
         }
 
-        void QueryAndPrepareUXMLElements(VisualElement rootVisualElement)
+        void InitializeOrganizationsDropdown()
+        {
+            m_OrganizationsDropdown.choices = new List<string>{L10n.Tr(k_SelectOrganizationText)};
+            m_OrganizationsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectOrganizationText));
+
+            m_OrganizationsDropdown.RegisterValueChangedCallback(
+                str => _ = RunUITask(OnOrganizationsDropdownSelectedValueChanged(str)));
+        }
+
+        void InitializeProjectsDropdown()
+        {
+            m_ProjectsDropdown.choices = new List<string>{L10n.Tr(k_SelectProjectText)};
+            m_ProjectsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
+
+            m_ProjectsDropdown.RegisterValueChangedCallback(
+                evt => _ = RunUITask(OnProjectsDropdownSelectedValueChanged(evt)));
+        }
+
+        void QueryAndPrepareUxmlElements(VisualElement rootVisualElement)
         {
             projectBindContainer = rootVisualElement.Q("ProjectBindContainer");
             projectBindContainer.viewDataKey = k_BindContainerDataKey;
@@ -258,139 +199,113 @@ namespace UnityEditor.Connect
             m_LinkOrCreateBlock.Remove(m_CreateCloudProjectTab);
         }
 
-        void Subscribe()
+        async Task OnOrganizationsFetched(List<string> organizationNames)
+            => await UpdateOrganizationsDropdown(organizationNames);
+
+        async Task OnProjectsFetched(List<string> projectNames)
+            => await UpdateProjectsDropdown(projectNames);
+
+        void OnRefreshButtonClicked()
+            => _ = RunUITask(FetchOrganizations());
+
+        void OnCreateProjectButtonClicked()
+            => _ = RunUITask(CreateProject());
+
+        void OnLinkProjectButtonClicked()
+            => _ = RunUITask(LinkProject());
+
+        /// <summary>
+        /// Deactivate all interactive elements
+        /// </summary>
+        async Task DeactivateDropdownsAndButtons()
         {
-            ProjectsFetched += OnProjectsFetched;
-            OrganizationsFetched += OnOrganizationsFetched;
-            m_CreateProjectButton.clicked += OnCreateProjectButtonClicked;
-            m_LinkCloudProjectButton.clicked += OnLinkProjectButtonClicked;
-            m_RefreshButton.clicked += OnRefreshButtonClicked;
-        }
-
-        void Unsubscribe()
-        {
-            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
-            UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
-            ProjectsFetched -= OnProjectsFetched;
-            OrganizationsFetched -= OnOrganizationsFetched;
-            m_CreateProjectButton.clicked -= OnCreateProjectButtonClicked;
-            m_LinkCloudProjectButton.clicked -= OnLinkProjectButtonClicked;
-            m_RefreshButton.clicked -= OnRefreshButtonClicked;
-        }
-
-        void InitializeOrganizationsDropdown()
-        {
-            m_OrganizationsDropdown.choices = new List<string>{L10n.Tr(k_SelectOrganizationText)};
-            m_OrganizationsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectOrganizationText));
-
-            m_OrganizationsDropdown.RegisterValueChangedCallback(OnOrganizationsDropdownSelectedValueChanged);
-        }
-
-        void InitializeProjectsDropdown()
-        {
-            m_ProjectsDropdown.choices = new List<string>{L10n.Tr(k_SelectProjectText)};
-            m_ProjectsDropdown.SetValueWithoutNotify(L10n.Tr(k_SelectProjectText));
-
-            m_ProjectsDropdown.RegisterValueChangedCallback(OnProjectsDropdownSelectedValueChanged);
-        }
-
-        void DeactivateDropdownsAndButtons()
-        {
-            m_OrganizationsDropdown.SetEnabled(false);
-            m_CreateProjectButton.SetEnabled(false);
-            m_ProjectsDropdown.SetEnabled(false);
-            m_LinkCloudProjectButton.SetEnabled(false);
-            m_RefreshButton.SetEnabled(false);
-        }
-
-        void RefreshDropdownAndButtonStates()
-        {
-            if (m_FetchingProjects || m_FetchingOrganizations)
-                return;
-
-            m_OrganizationsDropdown.SetEnabled(m_OrganizationsDropdown.choices !=
-                                               new List<string>() {L10n.Tr(k_SelectOrganizationText)});
-
-            var isManager = false;
-
-            foreach (var org in m_OrgIdByName)
+            await AsyncUtils.RunNextActionOnMainThread(() =>
             {
-                if (org.Name == m_OrganizationsDropdown.value)
+                m_OrganizationsDropdown.SetEnabled(false);
+                m_CreateProjectButton.SetEnabled(false);
+                m_ProjectsDropdown.SetEnabled(false);
+                m_LinkCloudProjectButton.SetEnabled(false);
+                m_RefreshButton.SetEnabled(false);
+            });
+        }
+
+        async Task RefreshDropdownAndButtonStates()
+        {
+            await AsyncUtils.RunNextActionOnMainThread(() =>
+            {
+                m_OrganizationsDropdown.SetEnabled(m_OrganizationsDropdown.choices !=
+                                                   new List<string>() {L10n.Tr(k_SelectOrganizationText)});
+
+                var isManager = false;
+
+                foreach (var org in m_OrgIdByName)
                 {
-                    isManager = org.IsManager;
+                    if (org.Name == m_OrganizationsDropdown.value)
+                    {
+                        isManager = k_AtLeastManagerFilter.Contains(org.Role);
+                    }
                 }
-            }
 
-            m_CreateProjectButton.SetEnabled(m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
-                                             isManager);
+                m_CreateProjectButton.SetEnabled(
+                    m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
+                    isManager);
 
-            m_ProjectsDropdown.SetEnabled(m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText));
+                m_ProjectsDropdown.SetEnabled(m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText));
 
-            m_LinkCloudProjectButton.SetEnabled(m_ProjectsDropdown.value != L10n.Tr(k_SelectProjectText));
+                m_LinkCloudProjectButton.SetEnabled(m_ProjectsDropdown.value != L10n.Tr(k_SelectProjectText));
 
-            m_RefreshButton.SetEnabled(true);
+                m_RefreshButton.SetEnabled(true);
 
-            if (m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
-                !isManager)
-            {
-                if (!m_CreateCloudProjectTab.Contains(m_CreatePermissionsHelpBox))
-                    m_CreateCloudProjectTab.Add(m_CreatePermissionsHelpBox);
-            }
-            else
-            {
-                if (m_CreateCloudProjectTab.Contains(m_CreatePermissionsHelpBox))
-                    m_CreateCloudProjectTab.Remove(m_CreatePermissionsHelpBox);
-            }
+                if (m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText) &&
+                    !isManager)
+                {
+                    if (!m_CreateCloudProjectTab.Contains(m_CreatePermissionsHelpBox))
+                        m_CreateCloudProjectTab.Add(m_CreatePermissionsHelpBox);
+                }
+                else
+                {
+                    if (m_CreateCloudProjectTab.Contains(m_CreatePermissionsHelpBox))
+                        m_CreateCloudProjectTab.Remove(m_CreatePermissionsHelpBox);
+                }
+            });
         }
 
-        void OnOrganizationsFetched(List<string> organizationNames)
-            => UpdateOrganizationsDropdown(organizationNames);
-
-        void OnProjectsFetched(List<string> projectNames)
-            => UpdateProjectsDropdown(projectNames);
-
-        void UpdateOrganizationsDropdown(List<string> organizationNames)
+        async Task UpdateOrganizationsDropdown(List<string> organizationNames)
         {
-            m_OrganizationsDropdown.choices = organizationNames;
-            m_FetchingOrganizations = false;
-            var savedOrg = m_OrganizationsDropdown.value;
-            m_OrganizationsDropdown.SetValueWithoutNotify("");
+            await AsyncUtils.RunNextActionOnMainThread(() =>
+            {
+                m_OrganizationsDropdown.choices = organizationNames;
+                var savedOrg = m_OrganizationsDropdown.value;
+                m_OrganizationsDropdown.SetValueWithoutNotify("");
 
-            if (m_OrganizationsDropdown.choices.Contains(savedOrg) &&
-                savedOrg != L10n.Tr(k_SelectOrganizationText))
-            {
-                m_OrganizationsDropdown.value = savedOrg;
-            }
-            else
-            {
-                m_OrganizationsDropdown.value = L10n.Tr(k_SelectOrganizationText);
-            }
-
-            lock (m_ButtonsLock)
-            {
-                RefreshDropdownAndButtonStates();
-            }
+                if (m_OrganizationsDropdown.choices.Contains(savedOrg) &&
+                    savedOrg != L10n.Tr(k_SelectOrganizationText))
+                {
+                    m_OrganizationsDropdown.value = savedOrg;
+                }
+                else
+                {
+                    m_OrganizationsDropdown.value = L10n.Tr(k_SelectOrganizationText);
+                }
+            });
         }
 
-        void UpdateProjectsDropdown(List<string> projectNames)
+        async Task UpdateProjectsDropdown(List<string> projectNames)
         {
-            m_ProjectsDropdown.choices = projectNames;
-            m_FetchingProjects = false;
-            m_ProjectsDropdown.SetValueWithoutNotify("");
+            await AsyncUtils.RunNextActionOnMainThread(() =>
+            {
+                m_ProjectsDropdown.choices = projectNames;
+                m_ProjectsDropdown.SetValueWithoutNotify("");
 
-            if (m_ProjectsDropdown.choices.Contains(m_LastReuseBlockProject.LastProjectName))
-            {
-                m_ProjectsDropdown.value = m_LastReuseBlockProject.LastProjectName;
-            }
-            else
-            {
-                m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText);
-            }
-
-            lock (m_ButtonsLock)
-            {
-                RefreshDropdownAndButtonStates();
-            }
+                if (m_ProjectsDropdown.choices.Contains(m_LastReuseBlockProject.LastProjectName))
+                {
+                    m_ProjectsDropdown.value = m_LastReuseBlockProject.LastProjectName;
+                }
+                else
+                {
+                    m_ProjectsDropdown.value = L10n.Tr(k_SelectProjectText);
+                }
+            });
         }
 
         void OnRadioButtonUseValueChanged(ChangeEvent<bool> evt)
@@ -418,7 +333,7 @@ namespace UnityEditor.Connect
             }
         }
 
-        void OnOrganizationsDropdownSelectedValueChanged(ChangeEvent<string> evt)
+        async Task OnOrganizationsDropdownSelectedValueChanged(ChangeEvent<string> evt)
         {
             if (m_OrganizationsDropdown.value == L10n.Tr(k_SelectOrganizationText))
             {
@@ -427,415 +342,39 @@ namespace UnityEditor.Connect
             }
             else
             {
-                FetchProjects();
-            }
-
-            lock (m_ButtonsLock)
-            {
-                RefreshDropdownAndButtonStates();
+                await FetchProjects();
             }
         }
 
-        void OnProjectsDropdownSelectedValueChanged(ChangeEvent<string> evt)
+        Task OnProjectsDropdownSelectedValueChanged(ChangeEvent<string> evt)
         {
             m_LastReuseBlockProject.LastProjectName = evt.newValue;
-
-            lock (m_ButtonsLock)
-            {
-                RefreshDropdownAndButtonStates();
-            }
+            return Task.CompletedTask;
         }
 
-        void OnRefreshButtonClicked()
-            => FetchOrganizations();
-
-        void OnCreateProjectButtonClicked()
+        Task LinkProject()
         {
-            if (m_OrganizationsDropdown.value != L10n.Tr(k_SelectOrganizationText))
-            {
-                m_CreateIteration = 0;
-                RequestCreateOperation();
-            }
-        }
-
-        void OnLinkProjectButtonClicked()
-        {
-            if (L10n.Tr(k_SelectProjectText) != m_LastReuseBlockProject.LastProjectName)
-            {
-                DeactivateDropdownsAndButtons();
-                var abort = false;
-                var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
-                if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
-                        string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.name, projectInfo.organizationName),
-                        L10n.Tr(k_Yes), L10n.Tr(k_No)))
-                {
-                    try
-                    {
-                        //Only register before creation. Remove first in case it was already added.
-                        //TODO: Review to avoid dependency on project refreshed
-                        UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
-                        UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterRebind;
-                        BindProject(projectInfo);
-                        Unsubscribe();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (exceptionCallback != null)
-                        {
-                            exceptionCallback.Invoke(ex);
-                            abort = true;
-                        }
-                        else
-                        {
-                            //If there is no exception callback, we have to at least log it
-                            Debug.LogException(ex);
-                        }
-                    }
-                    if (!abort)
-                    {
-                        linkButtonCallback?.Invoke(projectInfo);
-                    }
-                }
-                RefreshDropdownAndButtonStates();
-            }
-        }
-
-        /// <summary>
-        /// To attach a project an existing project, we must collect all orgs the current user is a member of.
-        /// In addition the current user may be a guest of a specific project, in which case we must also look at
-        /// all projects to find organizations.
-        /// </summary>
-        void FetchOrganizations()
-        {
-            DeactivateDropdownsAndButtons();
-            m_FetchingOrganizations = true;
-            ServicesConfiguration.instance.RequestCurrentUserApiUrl(currentUserApiUrl =>
-            {
-                var getOrganizationsRequest = new UnityWebRequest(currentUserApiUrl + "?include=orgs,projects",
-                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                getOrganizationsRequest.suppressErrorsToConsole = true;
-                getOrganizationsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                var operation = getOrganizationsRequest.SendWebRequest();
-                operation.completed += op =>
-                {
-                    try
-                    {
-                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getOrganizationsRequest))
-                        {
-                            var jsonParser = new JSONParser(getOrganizationsRequest.downloadHandler.text);
-                            var json = jsonParser.Parse();
-                            try
-                            {
-                                m_OrgIdByName.Clear();
-                                var sortedOrganizationNames = new List<string>();
-                                foreach (var rawOrg in json.AsDict()[k_JsonOrgsNodeName].AsList())
-                                {
-                                    var org = rawOrg.AsDict();
-                                    if (k_AnyRoleFilter.Contains(org[k_JsonRoleNodeName].AsString()))
-                                    {
-                                        sortedOrganizationNames.Add(org[k_JsonNameNodeName].AsString());
-                                        m_OrgIdByName.Add(new OrgData
-                                        {
-                                            Name = org[k_JsonNameNodeName].AsString(),
-                                            Id = org[k_JsonIdNodeName].AsString(),
-                                            IsManager = k_AtLeastManagerFilter.Contains(org[k_JsonRoleNodeName].AsString())
-                                        });
-
-                                    }
-                                }
-
-                                foreach (var rawProject in json.AsDict()[k_JsonProjectsNodeName].AsList())
-                                {
-                                    var project = rawProject.AsDict();
-                                    if (!project[k_JsonArchivedNodeName].AsBool()
-                                        && !sortedOrganizationNames.Contains(project[k_JsonOrgNameNodeName].AsString()))
-                                    {
-                                        sortedOrganizationNames.Add(project[k_JsonOrgNameNodeName].AsString());
-
-                                        m_OrgIdByName.Add(new OrgData()
-                                        {
-                                            Name = project[k_JsonOrgNameNodeName].AsString(),
-                                            Id = project[k_JsonOrgIdNodeName].AsString(),
-                                            IsManager = false
-                                        });
-                                    }
-                                }
-
-                                sortedOrganizationNames.Sort();
-                                var popUpChoices = new List<string> { L10n.Tr(k_SelectOrganizationText) };
-                                popUpChoices.AddRange(sortedOrganizationNames);
-
-                                OrganizationsFetched?.Invoke(popUpChoices);
-                            }
-                            catch (Exception ex)
-                            {
-                                m_FetchingOrganizations = false;
-                                RefreshDropdownAndButtonStates();
-                                if (exceptionCallback != null)
-                                {
-                                    exceptionCallback.Invoke(ex);
-                                }
-                                else
-                                {
-                                    //If there is no exception callback, we have to at least log it
-                                    Debug.LogException(ex);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainOrganizationsMessage))
-                            {
-                                error = getOrganizationsRequest.error,
-                                method = getOrganizationsRequest.method,
-                                timeout = getOrganizationsRequest.timeout,
-                                url = getOrganizationsRequest.url,
-                                responseHeaders = getOrganizationsRequest.GetResponseHeaders(),
-                                responseCode = getOrganizationsRequest.responseCode,
-                                isHttpError = (getOrganizationsRequest.result == UnityWebRequest.Result.ProtocolError),
-                                isNetworkError = (getOrganizationsRequest.result == UnityWebRequest.Result.ConnectionError),
-                            };
-                            if (exceptionCallback != null)
-                            {
-                                exceptionCallback.Invoke(ex);
-                            }
-                            else
-                            {
-                                //If there is no exception callback, we have to at least log it
-                                Debug.LogException(ex);
-                            }
-                            m_FetchingOrganizations = false;
-                            RefreshDropdownAndButtonStates();
-                        }
-                    }
-                    finally
-                    {
-                        getOrganizationsRequest.Dispose();
-                    }
-                };
-            });
-        }
-
-        void FetchProjects()
-        {
-            DeactivateDropdownsAndButtons();
-            m_FetchingProjects = true;
-            var orgId = "";
-
-            foreach (var org in m_OrgIdByName)
-            {
-                if (org.Name == m_OrganizationsDropdown.value)
-                {
-                    orgId = org.Id;
-                }
-            }
-
-            ServicesConfiguration.instance.RequestOrganizationProjectsApiUrl(orgId, organizationProjectsApiUrl =>
-            {
-                var getProjectsRequest = new UnityWebRequest(organizationProjectsApiUrl,
-                    UnityWebRequest.kHttpVerbGET) { downloadHandler = new DownloadHandlerBuffer() };
-                getProjectsRequest.suppressErrorsToConsole = true;
-                getProjectsRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                var operation = getProjectsRequest.SendWebRequest();
-                operation.completed += op =>
-                {
-                    try
-                    {
-                        if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(getProjectsRequest))
-                        {
-                            var jsonParser = new JSONParser(getProjectsRequest.downloadHandler.text);
-                            var json = jsonParser.Parse();
-                            try
-                            {
-                                m_ProjectInfoByName = new Dictionary<string, ProjectInfoData>();
-
-                                var jsonProjects = json.AsDict()[k_JsonProjectsNodeName].AsList();
-                                foreach (var jsonProject in jsonProjects)
-                                {
-                                    if (!jsonProject.AsDict()[k_JsonArchivedNodeName].AsBool())
-                                    {
-                                        var projectInfo = ExtractProjectInfoFromJson(jsonProject);
-                                        m_ProjectInfoByName.Add(projectInfo.name, projectInfo);
-                                    }
-                                }
-
-                                var projectNames = new List<string> { L10n.Tr(k_SelectProjectText) };
-                                var sortedProjectNames = new List<string>(m_ProjectInfoByName.Keys);
-
-                                // To work around the UI feature that creates sub-menus on slash characters, we
-                                // replaces slashes in project names by a fake stylized slash. This hack could be
-                                // removed in the future when we get a UI feature for it, or when dashboard will prevent
-                                // users from inputting slashes in their project names.
-                                sortedProjectNames =
-                                    m_LastReuseBlockProject.ReplaceSlashForFakeSlash(sortedProjectNames);
-
-                                sortedProjectNames.Sort();
-                                projectNames.AddRange(sortedProjectNames);
-
-                                ProjectsFetched?.Invoke(projectNames);
-                            }
-                            catch (Exception ex)
-                            {
-                                if (exceptionCallback != null)
-                                {
-                                    exceptionCallback.Invoke(ex);
-                                }
-                                else
-                                {
-                                    //If there is no exception callback, we have to at least log it
-                                    Debug.LogException(ex);
-                                }
-                                m_FetchingProjects = false;
-                                RefreshDropdownAndButtonStates();
-                            }
-                        }
-                        else
-                        {
-                            var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotObtainProjectMessage))
-                            {
-                                error = getProjectsRequest.error,
-                                method = getProjectsRequest.method,
-                                timeout = getProjectsRequest.timeout,
-                                url = getProjectsRequest.url,
-                                responseHeaders = getProjectsRequest.GetResponseHeaders(),
-                                responseCode = getProjectsRequest.responseCode,
-                                isHttpError = (getProjectsRequest.result == UnityWebRequest.Result.ProtocolError),
-                                isNetworkError = (getProjectsRequest.result == UnityWebRequest.Result.ConnectionError),
-                            };
-                            if (exceptionCallback != null)
-                            {
-                                exceptionCallback.Invoke(ex);
-                            }
-                            else
-                            {
-                                //If there is no exception callback, we have to at least log it
-                                Debug.LogException(ex);
-                            }
-
-                            m_FetchingProjects = false;
-                            RefreshDropdownAndButtonStates();
-                        }
-                    }
-                    finally
-                    {
-                        getProjectsRequest.Dispose();
-                    }
-                };
-            });
-
-        }
-
-        void RequestCreateOperation()
-        {
-            DeactivateDropdownsAndButtons();
-
-            var orgId = "";
-
-            foreach (var org in m_OrgIdByName)
-            {
-                if (org.Name == m_OrganizationsDropdown.value)
-                {
-                    orgId = org.Id;
-                }
-            }
-
-            ServicesConfiguration.instance.RequestOrganizationProjectsApiUrl(orgId, organizationProjectsApiUrl =>
-            {
-                var payload = $"{{\"name\":\"{Application.productName + GetProjectNameSuffix()}\", \"active\":true}}";
-                var uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(payload));
-                m_CurrentRequest = new UnityWebRequest(organizationProjectsApiUrl, UnityWebRequest.kHttpVerbPOST)
-                { downloadHandler = new DownloadHandlerBuffer(), uploadHandler = uploadHandler};
-                m_CurrentRequest.suppressErrorsToConsole = true;
-                m_CurrentRequest.SetRequestHeader("AUTHORIZATION", $"Bearer {UnityConnect.instance.GetUserInfo().accessToken}");
-                m_CurrentRequest.SetRequestHeader("Content-Type", "application/json;charset=UTF-8");
-                var operation = m_CurrentRequest.SendWebRequest();
-                operation.completed += CreateOperationOnCompleted;
-            });
-        }
-
-        string GetProjectNameSuffix()
-        {
-            return m_CreateIteration > 0 ? $" ({m_CreateIteration})" : string.Empty;
-        }
-
-        void CreateOperationOnCompleted(AsyncOperation obj)
-        {
-            if (m_CurrentRequest == null)
-            {
-                RefreshDropdownAndButtonStates();
-                //If we lost our m_CurrentRequest request reference, we can't risk doing anything.
-                return;
-            }
-
-            if (ServicesUtils.IsUnityWebRequestReadyForJsonExtract(m_CurrentRequest))
-            {
-                var jsonParser = new JSONParser(m_CurrentRequest.downloadHandler.text);
-                var json = jsonParser.Parse();
-                var abort = false;
-                try
-                {
-                    var projectInfo = ExtractProjectInfoFromJson(json);
-                    try
-                    {
-                        ServicesRepository.DisableAllServices(shouldUpdateApiFlag: false);
-                        //Only register before creation. Remove first in case it was already added.
-                        //TODO: Review to avoid dependency on project refreshed
-                        UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
-                        UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterCreation;
-                        BindProject(projectInfo);
-                        Unsubscribe();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (exceptionCallback != null)
-                        {
-                            exceptionCallback.Invoke(ex);
-                            abort = true;
-                        }
-                        else
-                        {
-                            //If there is no exception callback, we have to at least log it
-                            Debug.LogException(ex);
-                        }
-                    }
-                    if (!abort)
-                    {
-                        createButtonCallback?.Invoke(projectInfo);
-                    }
-                }
-                finally
-                {
-                    m_CurrentRequest?.Dispose();
-                    m_CurrentRequest = null;
-                }
-
-                RefreshDropdownAndButtonStates();
-            }
-            else if (m_CurrentRequest.responseCode == k_HttpStatusCodeUnprocessableEntity)
-            {
-                m_CurrentRequest?.Dispose();
-                m_CurrentRequest = null;
-                m_CreateIteration++;
-                RequestCreateOperation();
-            }
-            else
+            var abort = false;
+            var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
+            if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
+                    string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.Name, projectInfo.OrganizationName),
+                    L10n.Tr(k_Yes), L10n.Tr(k_No)))
             {
                 try
                 {
-                    var ex = new UnityConnectWebRequestException(L10n.Tr(k_CouldNotCreateProjectMessage))
-                    {
-                        error = m_CurrentRequest.error,
-                        method = m_CurrentRequest.method,
-                        timeout = m_CurrentRequest.timeout,
-                        url = m_CurrentRequest.url,
-                        responseHeaders = m_CurrentRequest.GetResponseHeaders(),
-                        responseCode = m_CurrentRequest.responseCode,
-                        isHttpError = (m_CurrentRequest.result == UnityWebRequest.Result.ProtocolError),
-                        isNetworkError = (m_CurrentRequest.result == UnityWebRequest.Result.ConnectionError),
-                    };
+                    //Only register before creation. Remove first in case it was already added.
+                    //TODO: Review to avoid dependency on project refreshed
+                    UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
+                    UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterRebind;
+                    BindProject(projectInfo);
+                    Unsubscribe();
+                }
+                catch (Exception ex)
+                {
                     if (exceptionCallback != null)
                     {
                         exceptionCallback.Invoke(ex);
+                        abort = true;
                     }
                     else
                     {
@@ -843,20 +382,131 @@ namespace UnityEditor.Connect
                         Debug.LogException(ex);
                     }
                 }
-                finally
+                if (!abort)
                 {
-                    m_CurrentRequest?.Dispose();
-                    m_CurrentRequest = null;
+                    linkButtonCallback?.Invoke(projectInfo);
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Get a list of all the organizations a user has access to
+        /// </summary>
+        async Task FetchOrganizations()
+        {
+            try
+            {
+                m_OrgIdByName.Clear();
+                var sortedOrganizationNames = new List<string>();
+
+                m_OrgIdByName = await UnityConnectRequests.GetOrganizationsAsync();
+
+                foreach (var org in m_OrgIdByName)
+                {
+                    sortedOrganizationNames.Add(org.Name);
                 }
 
-                RefreshDropdownAndButtonStates();
+                sortedOrganizationNames.Sort();
+
+                var popUpChoices = new List<string> {L10n.Tr(k_SelectOrganizationText)};
+                popUpChoices.AddRange(sortedOrganizationNames);
+
+                await OnOrganizationsFetched(popUpChoices);
+            }
+            catch (Exception ex)
+            {
+                if (exceptionCallback != null)
+                {
+                    exceptionCallback.Invoke(ex);
+                }
+                else
+                {
+                    //If there is no exception callback, we have to at least log it
+                    Debug.LogException(ex);
+                }
             }
         }
 
-        void BindProject(ProjectInfoData projectInfo)
+        /// <summary>
+        /// Get a list of all the projects a user has access to within an organization
+        /// </summary>
+        async Task FetchProjects()
         {
-            UnityConnect.instance.BindProject(projectInfo.guid, projectInfo.name, projectInfo.organizationId);
-            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.name });
+            try
+            {
+                var selectedOrg = GetSelectedOrganization();
+
+                var projects =
+                    await UnityConnectRequests.GetOrganizationProjectsAsync(selectedOrg.GenesisId);
+
+                m_ProjectInfoByName = new ();
+
+                foreach (var project in projects)
+                {
+                    project.OrganizationName = selectedOrg.Name;
+                    m_ProjectInfoByName.Add(project.Name, project);
+                }
+
+                var sortedProjectNames = new List<string>(m_ProjectInfoByName.Keys);
+
+                // To work around the UI feature that creates sub-menus on slash characters, we
+                // replaces slashes in project names by a fake stylized slash. This hack could be
+                // removed in the future when we get a UI feature for it, or when dashboard will prevent
+                // users from inputting slashes in their project names.
+                sortedProjectNames =
+                    m_LastReuseBlockProject.ReplaceSlashForFakeSlash(sortedProjectNames);
+                sortedProjectNames.Sort();
+                sortedProjectNames.Insert(0, L10n.Tr(k_SelectProjectText));
+
+                await OnProjectsFetched(sortedProjectNames);
+            }
+            catch (Exception ex)
+            {
+                if (exceptionCallback != null)
+                {
+                    exceptionCallback.Invoke(ex);
+                }
+                else
+                {
+                    //If there is no exception callback, we have to at least log it
+                    Debug.LogException(ex);
+                }
+            }
+        }
+
+        async Task CreateProject()
+        {
+            try
+            {
+                var selectedOrg = GetSelectedOrganization();
+
+                var createdProject = await UnityConnectRequests.CreateNewProjectInOrganizationAsync(selectedOrg.GenesisId);
+
+                ServicesRepository.DisableAllServices(shouldUpdateApiFlag: false);
+                UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterCreation;
+                UnityConnect.instance.ProjectStateChanged += OnProjectStateChangedAfterCreation;
+                BindProject(createdProject);
+            }
+            catch (Exception ex)
+            {
+                if (exceptionCallback != null)
+                {
+                    exceptionCallback.Invoke(ex);
+                }
+                else
+                {
+                    //If there is no exception callback, we have to at least log it
+                    Debug.LogException(ex);
+                }
+            }
+        }
+
+        static void BindProject(ProjectRequestResponse projectInfo)
+        {
+            UnityConnect.instance.BindProject(projectInfo.Id, projectInfo.Name, projectInfo.OrganizationLegacyId);
+            EditorAnalytics.SendProjectServiceBindingEvent(new ProjectBindState() { bound = true, projectName = projectInfo.Name });
             NotificationManager.instance.Publish(Notification.Topic.ProjectBind, Notification.Severity.Info, L10n.Tr(k_ProjectLinkSuccessMessage));
         }
 
@@ -884,44 +534,48 @@ namespace UnityEditor.Connect
             if (UnityConnect.instance.projectInfo.valid)
             {
                 UnityConnect.instance.ProjectStateChanged -= OnProjectStateChangedAfterRebind;
-                ServicesRepository.SyncServicesOnProjectRebind();
             }
         }
 
-        static ProjectInfoData ExtractProjectInfoFromJson(JSONValue jsonProject)
+        /// <summary>
+        /// Return the information of the currently selected organization
+        /// </summary>
+        OrganizationRequestResponse GetSelectedOrganization()
         {
-            return new ProjectInfoData(
-                jsonProject.AsDict()[k_JsonOrgIdNodeName].AsString(),
-                jsonProject.AsDict()[k_JsonOrgNameNodeName].AsString(),
-                jsonProject.AsDict()[k_JsonNameNodeName].AsString(),
-                jsonProject.AsDict()[k_JsonGuidNodeName].AsString(),
-                jsonProject.AsDict()[k_JsonIdNodeName].AsString()
-            );
+            foreach (var org in m_OrgIdByName)
+            {
+                if (org.Name == m_OrganizationsDropdown.value)
+                {
+                    return org;
+                }
+            }
+
+            throw new KeyNotFoundException($"Could not find organization {m_OrganizationsDropdown.value}.");
         }
 
-        public delegate void CreateButtonCallback(ProjectInfoData projectInfoData);
+        /// <summary>
+        /// Prevents users from triggering multiple different major operations at the same time from the UI
+        /// </summary>
+        /// <param name="task">Task to run if no other major task is running</param>
+        async Task RunUITask(Task task)
+        {
+            lock (m_CurrentTaskLock)
+            {
+                if (m_CurrentTask is {IsCompleted: false})
+                {
+                    return;
+                }
 
-        public delegate void LinkButtonCallback(ProjectInfoData projectInfoData);
+                m_CurrentTask = task;
+            }
 
+            await DeactivateDropdownsAndButtons();
+            await task;
+            await RefreshDropdownAndButtonStates();
+        }
+
+        public delegate void CreateButtonCallback(ProjectRequestResponse projectInfoData);
+        public delegate void LinkButtonCallback(ProjectRequestResponse projectInfoData);
         public delegate void ExceptionCallback(Exception exception);
-    }
-
-    internal class ProjectInfoData
-    {
-        public string organizationId { get; }
-        public string organizationName { get; }
-        public string name { get; }
-        public string guid { get; }
-
-        public string projectId { get; }
-
-        public ProjectInfoData(string organizationId, string organizationName, string name, string guid, string projectId)
-        {
-            this.guid = guid;
-            this.name = name;
-            this.organizationId = organizationId;
-            this.organizationName = organizationName;
-            this.projectId = projectId;
-        }
     }
 }

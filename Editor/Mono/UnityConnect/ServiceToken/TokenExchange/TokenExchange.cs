@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Net.Http;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -16,10 +17,6 @@ namespace UnityEditor.Connect
     class TokenExchange : ITokenExchange
     {
         const string k_RequestContentType = "application/json";
-        const string k_StagingServicesGatewayTokenExchangeUrl =
-            "https://staging.services.unity.com/api/auth/v1/genesis-token-exchange/unity";
-        const string k_ProductionServicesGatewayTokenExchangeUrl =
-            "https://services.unity.com/api/auth/v1/genesis-token-exchange/unity";
 
         const string k_SerializationFailureMessage =
             "Token Exchange failed due to an issue with serialization/deserialization. ";
@@ -29,13 +26,6 @@ namespace UnityEditor.Connect
             k_SerializationFailureMessage + "Payload that failed to deserialize: ";
         const string k_KeyMissingSerializationFailureMessage =
             k_SerializationFailureMessage + "Deserialized response does not contain the key: ";
-
-        readonly ICloudEnvironmentConfigProvider m_CloudEnvironmentConfigProvider;
-
-        internal TokenExchange(ICloudEnvironmentConfigProvider cloudEnvironmentConfigProvider)
-        {
-            m_CloudEnvironmentConfigProvider = cloudEnvironmentConfigProvider;
-        }
 
         public async Task<string> GetServiceTokenAsync(
             string genesisToken,
@@ -77,14 +67,28 @@ namespace UnityEditor.Connect
         {
             var jsonPayload = Json.Serialize(tokenExchangeRequest);
             var postBytes = Encoding.UTF8.GetBytes(jsonPayload);
-            var endpoint = GetEndpoint();
+            var endpoint = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.ServicesGateway)
+                + "/api/auth/v1/genesis-token-exchange/unity";
 
             using (var exchangeRequest = new UnityWebRequest(endpoint, UnityWebRequest.kHttpVerbPOST))
             {
-                exchangeRequest.uploadHandler = new UploadHandlerRaw(postBytes) {contentType = k_RequestContentType};
+                exchangeRequest.uploadHandler = new UploadHandlerRaw(postBytes) { contentType = k_RequestContentType };
                 exchangeRequest.downloadHandler = new DownloadHandlerBuffer();
 
-                await UnityConnectWebRequestUtils.SendWebRequestAsync(exchangeRequest, cancellationToken);
+                var exchangeTask = exchangeRequest.SendWebRequest();
+
+                while (!exchangeRequest.isDone)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        exchangeRequest.Abort();
+                        cancellationToken.ThrowIfCancellationRequested();
+                    }
+
+                    await Task.Yield();
+                }
+
+                await exchangeTask;
 
                 VerifyTokenExchangeResponse(exchangeRequest);
 
@@ -107,26 +111,6 @@ namespace UnityEditor.Connect
                 .CreateUnityWebRequestException(exchangeRequest, k_WebRequestFailureMessage);
         }
 
-        string GetEndpoint()
-        {
-            string endpoint = k_ProductionServicesGatewayTokenExchangeUrl;
-
-            try
-            {
-                if (m_CloudEnvironmentConfigProvider.IsStaging())
-                {
-                    endpoint = k_StagingServicesGatewayTokenExchangeUrl;
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError("Error while parsing the Unity build command" +
-                               " line environment argument, defaulting environment to production for token" +
-                               $" exchange. Details: '{e}'.");
-            }
-
-            return endpoint;
-        }
 
         bool TokenExchangeResponseContainsTokenKey(Dictionary<string, object> deserializedResponse)
             => deserializedResponse.ContainsKey(nameof(TokenExchangeResponse.token));

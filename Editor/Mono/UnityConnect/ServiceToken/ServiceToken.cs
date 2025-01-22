@@ -19,8 +19,7 @@ namespace UnityEditor.Connect
 
         static readonly Lazy<ServiceToken> k_LazyInstance = new Lazy<ServiceToken>(() =>
         {
-            var cloudEnvironmentConfigProvider = new CloudEnvironmentConfigProvider();
-            var tokenExchange = new TokenExchange(cloudEnvironmentConfigProvider);
+            var tokenExchange = new TokenExchange();
             var tokenCaching = new GenesisAndServiceTokenCaching();
             return new ServiceToken(tokenExchange, tokenCaching);
         });
@@ -36,8 +35,7 @@ namespace UnityEditor.Connect
 
         public async Task<string> GetServiceTokenAsync(string genesisToken, CancellationToken cancellationToken = default)
         {
-            Tokens cachedTokens = new();
-            await AsyncUtils.RunNextActionOnMainThread(() => cachedTokens = m_GenesisAndServiceTokenCaching.LoadCache());
+            var cachedTokens = m_GenesisAndServiceTokenCaching.LoadCache();
 
             var nextRefreshTime = m_GenesisAndServiceTokenCaching.GetNextRefreshTime(cachedTokens.GatewayToken);
 
@@ -64,7 +62,7 @@ namespace UnityEditor.Connect
                 cachedTokens.GenesisToken = genesisToken;
             }
 
-            await AsyncUtils.RunNextActionOnMainThread(() => m_GenesisAndServiceTokenCaching.SaveCache(cachedTokens));
+            m_GenesisAndServiceTokenCaching.SaveCache(cachedTokens);
             return cachedTokens.GatewayToken;
         }
     }

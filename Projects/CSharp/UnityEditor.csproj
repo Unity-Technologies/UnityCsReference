@@ -3966,11 +3966,23 @@
     <Compile Include="..\..\Editor\Mono\UnityConnect\CoppaCompliance.cs">
       <Link>Editor\Mono\UnityConnect\CoppaCompliance.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\OrganizationRequestResponse.cs">
+      <Link>Editor\Mono\UnityConnect\Network\OrganizationRequestResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\ProjectRequestResponse.cs">
+      <Link>Editor\Mono\UnityConnect\Network\ProjectRequestResponse.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UnityConnectRequests.cs">
+      <Link>Editor\Mono\UnityConnect\Network\UnityConnectRequests.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UnityConnectWebRequestException.cs">
       <Link>Editor\Mono\UnityConnect\Network\UnityConnectWebRequestException.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UnityConnectWebRequestUtils.cs">
       <Link>Editor\Mono\UnityConnect\Network\UnityConnectWebRequestUtils.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Network\UserRequestResponse.cs">
+      <Link>Editor\Mono\UnityConnect\Network\UserRequestResponse.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\GenesisAndServiceTokenCaching.cs">
       <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\GenesisAndServiceTokenCaching.cs</Link>
@@ -3983,12 +3995,6 @@
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\Caching\Tokens.cs">
       <Link>Editor\Mono\UnityConnect\ServiceToken\Caching\Tokens.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\CloudEnvironmentConfigProvider.cs">
-      <Link>Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\CloudEnvironmentConfigProvider.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\ICloudEnvironmentConfigProvider.cs">
-      <Link>Editor\Mono\UnityConnect\ServiceToken\ConfigurationProvider\ICloudEnvironmentConfigProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\ServiceToken\ServiceToken.cs">
       <Link>Editor\Mono\UnityConnect\ServiceToken\ServiceToken.cs</Link>
@@ -4008,8 +4014,20 @@
     <Compile Include="..\..\Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs">
       <Link>Editor\Mono\UnityConnect\Services\EditorProjectAccess.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Services\ServicesConfiguration.cs">
+      <Link>Editor\Mono\UnityConnect\Services\ServicesConfiguration.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Services\ServicesUtils.cs">
+      <Link>Editor\Mono\UnityConnect\Services\ServicesUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.bindings.cs">
       <Link>Editor\Mono\UnityConnect\UnityConnect.bindings.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Uri\IUnityConnectRequestUriProvider.cs">
+      <Link>Editor\Mono\UnityConnect\Uri\IUnityConnectRequestUriProvider.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Editor\Mono\UnityConnect\Uri\UnityConnectRequestUriProvider.cs">
+      <Link>Editor\Mono\UnityConnect\Uri\UnityConnectRequestUriProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Editor\Mono\UnityConnect\Utils\AsyncUtils.cs">
       <Link>Editor\Mono\UnityConnect\Utils\AsyncUtils.cs</Link>
@@ -9492,8 +9510,8 @@
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\ProjectBindManager.cs">
       <Link>Modules\UnityConnectEditor\Common\ProjectBindManager.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ServicesConfiguration.cs">
-      <Link>Modules\UnityConnectEditor\Common\ServicesConfiguration.cs</Link>
+    <Compile Include="..\..\Modules\UnityConnectEditor\Common\ProjectNameSlashReplacer.cs">
+      <Link>Modules\UnityConnectEditor\Common\ProjectNameSlashReplacer.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Common\ServicesConstants.cs">
       <Link>Modules\UnityConnectEditor\Common\ServicesConstants.cs</Link>
@@ -9569,9 +9587,6 @@
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Services\PurchasingService.cs">
       <Link>Modules\UnityConnectEditor\Services\PurchasingService.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UnityConnectEditor\Services\ServicesUtils.cs">
-      <Link>Modules\UnityConnectEditor\Services\ServicesUtils.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UnityConnectEditor\Services\SingleService.cs">
       <Link>Modules\UnityConnectEditor\Services\SingleService.cs</Link>

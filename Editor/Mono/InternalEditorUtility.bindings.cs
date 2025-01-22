@@ -292,8 +292,17 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
         extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
+        public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
+        {
+            // place at scene pivot unless we have Pref for placing at root or we dont have a scene view
+            Vector3 worldPosition = Vector3.zero;
+            if (!GOCreationCommands.s_PlaceObjectsAtWorldOrigin.value && SceneView.lastActiveSceneView != null)
+                worldPosition = SceneView.lastActiveSceneView.pivot;
+
+            return HierarchyWindowDragByID(dropTargetInstanceID, worldPosition, dropMode, parentForDraggedObjects, perform);
+        }
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
-        extern public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        extern internal static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
