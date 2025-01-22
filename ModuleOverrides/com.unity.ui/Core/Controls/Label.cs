@@ -28,13 +28,19 @@ namespace UnityEngine.UIElements
 
 
         /// <summary>
-        /// Constructs a label.
+        /// Constructs a Label with no initial text.
         /// </summary>
+        /// <remarks>
+        /// Use this constructor with no arguments to create an empty Label.
+        /// </remarks>
         public Label() : this(String.Empty) {}
         /// <summary>
-        /// Constructs a label.
+        /// Constructs a Label displaying the specified text.
         /// </summary>
-        /// <param name="text">The text to be displayed.</param>
+        /// <param name="text">The initial text to be displayed in the Label.</param>
+        /// <remarks>
+        /// Use the @@text@@ parameter to create a Label with the specified value as the initial text.
+        /// </remarks>
         public Label(string text)
         {
             AddToClassList(ussClassName);
