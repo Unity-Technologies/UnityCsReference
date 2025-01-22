@@ -5,7 +5,6 @@
 using System;
 using System.Linq;
 using UnityEditor.PackageManager.Requests;
-using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
@@ -171,13 +170,6 @@ namespace UnityEditor.PackageManager
         public static SearchRequest SearchAll()
         {
             return SearchAll(false);
-        }
-
-        internal static PerformSearchRequest Search(SearchOptions options)
-        {
-            long operationId;
-            var status = Search(out operationId, options);
-            return new PerformSearchRequest(operationId, status);
         }
 
         internal static SetCacheRootRequest SetCacheRoot(string newPath)

@@ -556,7 +556,18 @@ namespace UnityEditor.UIElements
                 if (vta != null)
                     return vta;
             }
-            return cc.visualTreeAsset.GetAsset(value, typeof(T));
+
+            var asset = cc.visualTreeAsset.GetAsset(value, typeof(T));
+            if (asset == null)
+            {
+                // When dealing with asset overriddes the asset may not be in the direct visualTreeAsset so we fallback to Asset Database. (UUM-91641)
+                var relativePath = AssetDatabase.GetAssetPath(cc.visualTreeAsset);
+                var result = URIHelpers.ValidateAssetURL(relativePath, value);
+                if (result.resolvedQueryAsset is T resolvedAsset)
+                    asset = resolvedAsset;
+            }
+
+            return asset;
         }
 
         public string ToString(object value, VisualTreeAsset visualTreeAsset)

@@ -2677,25 +2677,31 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || EditorApplication.isCompiling))
                 {
                     EditorGUI.BeginChangeCheck();
-                    bool selectedValue = m_VirtualTexturingSupportEnabled.boolValue;
-                    m_VirtualTexturingSupportEnabled.boolValue = EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
+                    bool toggledValue =  EditorGUILayout.Toggle(SettingsContent.virtualTexturingSupportEnabled, m_VirtualTexturingSupportEnabled.boolValue);
                     if (EditorGUI.EndChangeCheck())
                     {
                         if (IsActivePlayerSettingsEditor())
                         {
-                             if (PlayerSettings.OnVirtualTexturingChanged())
+                            if (PlayerSettings.OnVirtualTexturingChanged())
                             {
-                                PlayerSettings.SetVirtualTexturingSupportEnabled(m_VirtualTexturingSupportEnabled
-                                    .boolValue);
+                                // updating the property only after the user agrees to restart the editor for an active build profile
+                                // because on Windows, the dialog gives control back to the editor *before* the user interacts with it
+                                // so if the property is updated at that point, the editor will call ApplyModifiedProperties
+                                // which will call PlayerSettings::AwakeFromLoad and then PlayerSettings::SyncCurrentVirtualTexturingState
+                                // and incorrectly check against a value in its intermediate state
+                                m_VirtualTexturingSupportEnabled.boolValue = toggledValue;
+                                PlayerSettings.SetVirtualTexturingSupportEnabled(toggledValue);
                                 m_VirtualTexturingSupportEnabled.serializedObject.ApplyModifiedProperties();
                                 EditorApplication.delayCall += EditorApplication.RestartEditorAndRecompileScripts;
-                                GUIUtility.ExitGUI();
-                            }
-                            else
-                            {
-                                m_VirtualTexturingSupportEnabled.boolValue = selectedValue;
                             }
                         }
+                        else
+                        {
+                            // updating the serialized property for an inactive build profile is fine because it won't show a restart prompt
+                            // and SyncCurrentVirtualTexturingState will only work for active build profiles
+                            m_VirtualTexturingSupportEnabled.boolValue = toggledValue;
+                        }
+                        GUIUtility.ExitGUI();
                     }
                 }
 

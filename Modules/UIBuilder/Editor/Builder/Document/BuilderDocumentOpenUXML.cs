@@ -351,27 +351,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        // For the near to mid term, we have this code that cleans up any
-        // existing root element stylesheets.
-        void RemoveLegacyStyleSheetsFromRootAssets()
-        {
-            foreach (var asset in visualTreeAsset.visualElementAssets)
-            {
-                if (!visualTreeAsset.IsRootElement(asset))
-                    continue; // Not a root asset.
-
-                RemoveStyleSheetsFromRootAsset(asset);
-            }
-
-            foreach (var asset in visualTreeAsset.templateAssets)
-            {
-                if (!visualTreeAsset.IsRootElement(asset))
-                    continue; // Not a root asset.
-
-                RemoveStyleSheetsFromRootAsset(asset);
-            }
-        }
-
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
             var rootVEA = visualTreeAsset.GetRootUxmlElement();
@@ -680,10 +659,6 @@ namespace Unity.UI.Builder
             var styleSheetsUsed = visualTreeAsset.GetAllReferencedStyleSheets();
             for (int i = 0; i < styleSheetsUsed.Count; ++i)
                 AddStyleSheetToDocument(styleSheetsUsed[i], null);
-
-            // For the near to mid term, we have this code that cleans up any
-            // existing root element stylesheets.
-            RemoveLegacyStyleSheetsFromRootAssets();
 
             hasUnsavedChanges = false;
         }

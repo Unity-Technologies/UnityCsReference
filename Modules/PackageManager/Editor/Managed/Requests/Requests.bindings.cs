@@ -89,13 +89,6 @@ namespace UnityEditor.PackageManager.Requests
         private static extern PackOperationResult GetOperationData(long operationId);
     }
 
-    internal partial class PerformSearchRequest
-    {
-        [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]
-        [StaticAccessor("PackageManager::Search", StaticAccessorType.DoubleColon)]
-        private static extern SearchResults GetOperationData(long operationId);
-    }
-
     public sealed partial class SearchRequest
     {
         [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

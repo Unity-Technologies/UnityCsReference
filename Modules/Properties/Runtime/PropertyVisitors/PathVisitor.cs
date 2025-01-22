@@ -83,11 +83,29 @@ namespace Unity.Properties
 
                 case PropertyPathPartKind.Index:
                 {
-                    if (properties is IIndexedProperties<TContainer> indexable && indexable.TryGetProperty(ref container, part.Index, out property))
+                    if (properties is IIndexedProperties<TContainer> indexable)
                     {
-                        using ((property as Internal.IAttributes).CreateAttributesScope(Property as Internal.IAttributes))
+                        if (properties is IIndexedCollectionPropertyBagEnumerator<TContainer> enumerator &&
+                            part.Index < enumerator.GetCount(ref container))
                         {
-                            property.Accept(this, ref container);
+                            var previous = enumerator.GetSharedPropertyState();
+                            enumerator.SetSharedPropertyState(new IndexedCollectionSharedPropertyState
+                                { Index = part.Index, IsReadOnly = false });
+                            var p = enumerator.GetSharedProperty();
+
+                            using ((p as Internal.IAttributes)?.CreateAttributesScope(Property as Internal.IAttributes))
+                                p.Accept(this, ref container);
+
+                            enumerator.SetSharedPropertyState(previous);
+                        }
+                        else if (indexable.TryGetProperty(ref container, part.Index, out property))
+                        {
+                            using ((property as Internal.IAttributes)?.CreateAttributesScope(Property as Internal.IAttributes))
+                                property.Accept(this, ref container);
+                        }
+                        else
+                        {
+                            ReturnCode = VisitReturnCode.InvalidPath;
                         }
                     }
                     else
