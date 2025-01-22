@@ -128,6 +128,8 @@ namespace UnityEngine
         public virtual int supportsMultisampledTextures => UnityEngine.SystemInfo.supportsMultisampledTextures;
 
         public virtual bool supportsMultisampled2DArrayTextures => UnityEngine.SystemInfo.supportsMultisampled2DArrayTextures;
+        
+        public virtual bool supportsMultisampledBackBuffer => UnityEngine.SystemInfo.supportsMultisampledBackBuffer;
 
         public virtual bool supportsMultisampleAutoResolve => UnityEngine.SystemInfo.supportsMultisampleAutoResolve;
 

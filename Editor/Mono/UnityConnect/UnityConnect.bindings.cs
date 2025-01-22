@@ -4,8 +4,11 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using UnityEditor.Web;
 using UnityEditorInternal;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -27,7 +30,8 @@ namespace UnityEditor.Connect
         CloudServicesDashboard = 10,
         CloudPackagesApi = 11,
         CloudPackagesKey = 12,
-        CloudAssetStoreUrl = 13
+        CloudAssetStoreUrl = 13,
+        ServicesGateway = 20 // these get marshalled to native, and the native side has extra entries.
     }
 
     internal enum COPPACompliance
@@ -68,8 +72,6 @@ namespace UnityEditor.Connect
                 return COPPACompliance.COPPAUndefined.ToCoppaCompliance();
             }
         }
-        public bool coppaLock { get { return m_COPPALock != 0; } }
-        public bool moveLock { get { return m_MoveLock != 0; } }
 
         int m_Valid;
         int m_BuildAllowed;
@@ -81,8 +83,6 @@ namespace UnityEditor.Connect
         string m_OrganizationName;
         string m_OrganizationForeignKey;
         int m_COPPA;
-        int m_COPPALock;
-        int m_MoveLock;
     }
 
     [Serializable]
@@ -100,6 +100,7 @@ namespace UnityEditor.Connect
         public bool whitelisted { get { return m_Whitelisted != 0; } }
         public string organizationForeignKeys { get { return m_OrganizationForeignKeys; } }
         public string accessToken { get { return m_AccessToken; } }
+        public string serviceToken {get { return m_ServiceToken;} }
         public string[] organizationNames { get { return m_OrganizationNames;  } }
 
 
@@ -119,6 +120,8 @@ namespace UnityEditor.Connect
         string[] m_OrganizationNames;
         [NativeName("accessToken")]
         string m_AccessToken;
+        [NativeName("serviceToken")]
+        string m_ServiceToken;
 
         [Ignore]
         int m_Whitelisted = 1;
@@ -554,6 +557,26 @@ namespace UnityEditor.Connect
             }
         }
 
+        [RequiredByNativeCode]
+        static async void RequestNewServiceToken()
+        {
+            var serviceToken = string.Empty;
+            try
+            {
+                if (Online() && !WorkingOffline())
+                {
+                    serviceToken = await CloudProjectSettings.GetServiceTokenAsync();
+                }
+            }
+            finally
+            {
+                SetServiceToken_Internal(serviceToken);
+            }
+        }
+
+        [NativeMethod("SetServiceToken")]
+        private static extern void SetServiceToken_Internal(string serviceToken);
+
         [NativeMethod("GetProjectGUID")]
         private static extern string GetProjectGUID_Internal();
         public string GetProjectGUID()
@@ -568,19 +591,37 @@ namespace UnityEditor.Connect
             return GetProjectName_Internal();
         }
 
-        [NativeMethod("GetOrganizationId")]
-        private static extern string GetOrganizationId_Internal();
         public string GetOrganizationId()
         {
-            return GetOrganizationId_Internal();
+            return projectInfo.organizationId;
         }
 
-        [NativeMethod("GetOrganizationName")]
-        private static extern string GetOrganizationName_Internal();
         public string GetOrganizationName()
         {
-            return GetOrganizationName_Internal();
+            return projectInfo.organizationName;
         }
+
+        [RequiredByNativeCode]
+        static async void FetchMissingProjectInfos(string genesisOrganizationId)
+        {
+            OrganizationRequestResponse organization = new("", "", "", "");
+
+            try
+            {
+                organization = await UnityConnectRequests.LegacyGetOrganizationIdAsync(genesisOrganizationId);
+            }
+            catch (Exception e)
+            {
+                await AsyncUtils.RunNextActionOnMainThread(() => Debug.LogError(e.Message));
+            }
+            finally
+            {
+                OnMissingProjectInfosFetched_Internal(organization.LegacyId, organization.Name);
+            }
+        }
+
+        [NativeMethod("OnMissingProjectInfosFetched")]
+        private static extern void OnMissingProjectInfosFetched_Internal(string organizationId, string organizationName);
 
         [NativeMethod("GetOrganizationForeignKey")]
         private static extern string GetOrganizationForeignKey_Internal();
@@ -726,7 +767,10 @@ namespace UnityEditor.Connect
         private static extern ProjectInfo GetProjectInfo_Internal();
         public ProjectInfo projectInfo
         {
-            get { return GetProjectInfo_Internal(); }
+            get
+            {
+                return GetProjectInfo_Internal();
+            }
         }
 
         [NativeMethod("GetConnectInfo")]

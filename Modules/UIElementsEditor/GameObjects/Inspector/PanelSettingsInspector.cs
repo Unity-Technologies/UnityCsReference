@@ -131,6 +131,10 @@ namespace UnityEditor.UIElements.Inspector
 
         private void UpdateScaleModeValues(PanelScaleMode scaleMode)
         {
+            var ps = target as PanelSettings;
+            if (ps != null && ps.renderMode == PanelRenderMode.WorldSpace)
+                return; // Don't update the visibility of "overlay" scale values when in world space render mode
+
             switch (scaleMode)
             {
                 case PanelScaleMode.ConstantPixelSize:
@@ -228,7 +232,7 @@ namespace UnityEditor.UIElements.Inspector
                 displayStyleForWorldProperties = DisplayStyle.Flex;
                 displayStyleForOverlayProperties = DisplayStyle.None;
             }
-            else if(Unsupported.IsDeveloperMode())
+            else if(UIToolkitProjectSettings.enableWorldSpaceRendering)
             {
                 m_RenderModeField.style.display = DisplayStyle.Flex;
                 m_WorldSpaceBox.style.display = DisplayStyle.None;

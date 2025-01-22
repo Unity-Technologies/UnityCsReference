@@ -27,6 +27,7 @@ namespace UnityEditor.Connect
         const string k_ProgressTitle = "Connecting to services url";
         const string k_ConfigJsonSessionStateKey = "UnityServiceConfig::ConfigJson";
 
+        string m_ApiUrl;
         string m_CurrentUserApiUrl;
         string m_ProjectsApiUrl;
         string m_ProjectApiUrl;
@@ -48,6 +49,8 @@ namespace UnityEditor.Connect
         string m_CollabDashboardUrl;
         string m_PurchasingDashboardUrl;
         string m_AnalyticsDashboardUrl;
+
+        string m_ServicesGatewayUrl;
 
         UnityWebRequest m_GetServicesUrlsRequest;
 
@@ -74,7 +77,7 @@ namespace UnityEditor.Connect
             Custom,
         }
 
-        enum AsyncUrlId
+        internal enum AsyncUrlId
         {
             CurrentUserApiUrl,
             ProjectsApiUrl,
@@ -93,6 +96,8 @@ namespace UnityEditor.Connect
             CollabDashboardUrl,
             PurchasingDashboardUrl,
             AnalyticsDashboardUrl,
+            ServicesGatewayUrl,
+            ApiUrl,
         }
 
         static ServicesConfiguration()
@@ -138,14 +143,14 @@ namespace UnityEditor.Connect
 
         void BuildPaths()
         {
-            var apiUrl = m_ServicesUrlsConfig["core"] + "/api";
-            m_CurrentUserApiUrl = apiUrl + "/users/me";
-            m_ProjectsApiUrl = apiUrl + "/orgs/{0}/projects";
+            m_ApiUrl = m_ServicesUrlsConfig["core"] + "/api";
+            m_CurrentUserApiUrl = m_ApiUrl + "/users/me";
+            m_ProjectsApiUrl = m_ApiUrl + "/orgs/{0}/projects";
             m_ProjectApiUrl = m_ProjectsApiUrl + "/{1}";
             m_ProjectCoppaApiUrl = m_ProjectApiUrl + "/coppa";
             m_ProjectUsersApiUrl = m_ProjectApiUrl + "/users";
             m_ProjectDashboardUrl = m_ServicesUrlsConfig["core"] + "/orgs/{0}/projects/{1}";
-            m_ProjectServiceFlagsApiUrl = apiUrl + "/projects/{0}/service_flags"; //no org to specify
+            m_ProjectServiceFlagsApiUrl = m_ApiUrl + "/projects/{0}/service_flags"; //no org to specify
 
             m_CloudBuildProjectUrl = m_ServicesUrlsConfig["build"] + "/build/orgs/{0}/projects/{1}";
 
@@ -159,6 +164,8 @@ namespace UnityEditor.Connect
             m_CollabDashboardUrl = m_ServicesUrlsConfig["build"] + "/collab/orgs/{0}/projects/{1}/assets/";
             m_PurchasingDashboardUrl = m_ServicesUrlsConfig["analytics"] + "/projects/{0}/purchasing/";
             m_AnalyticsDashboardUrl = UnityEditor.Analytics.AnalyticsSettings.dashboardUrl + "/organizations/{0}/projects/{1}/analytics/about";
+
+            m_ServicesGatewayUrl = m_ServicesUrlsConfig["services-gateway"];
 
             pathsReady = true;
             loadingConfigurations = false;
@@ -241,7 +248,8 @@ namespace UnityEditor.Connect
                 ""hub-disable-marketing-tips"":false,
                 ""asset_store_api"":""https://packages.unity.com"",
                 ""asset_store_url"":""https://assetstore.unity.com"",
-                ""packman_key"":""6357C523886E813D1500408F05B0D7A6""}";
+                ""packman_key"":""6357C523886E813D1500408F05B0D7A6"",
+                ""services-gateway"":""https://serivices.unity.com""}";
             LoadJsonConfiguration(hardCodedConfigs);
         }
 
@@ -385,7 +393,7 @@ namespace UnityEditor.Connect
             internal Action<string> callback;
         }
 
-        void RequestAsyncUrl(AsyncUrlId asyncUrlId, Action<string> callback)
+        internal void RequestAsyncUrl(AsyncUrlId asyncUrlId, Action<string> callback)
         {
             var asyncUrlCallback = new AsyncUrlCallback()
             {
@@ -457,6 +465,12 @@ namespace UnityEditor.Connect
                     break;
                 case AsyncUrlId.AnalyticsDashboardUrl:
                     asyncUrlCallback.callback(m_AnalyticsDashboardUrl);
+                    break;
+                case AsyncUrlId.ServicesGatewayUrl:
+                    asyncUrlCallback.callback(m_ServicesGatewayUrl);
+                    break;
+                case AsyncUrlId.ApiUrl:
+                    asyncUrlCallback.callback(m_ApiUrl);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

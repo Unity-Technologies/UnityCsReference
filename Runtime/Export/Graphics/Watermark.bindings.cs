@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 
 namespace UnityEngine.Rendering
 {
@@ -11,5 +12,12 @@ namespace UnityEngine.Rendering
     {
         [FreeFunction("IsAnyWatermarkVisible")]
         extern public static bool IsVisible();
+
+        [NativeProperty("s_ShowDeveloperWatermark", false, TargetType.Field)]
+        public extern static bool showDeveloperWatermark
+        {
+            get;
+            set;
+        }
     }
 } // namespace UnityEngine.Rendering

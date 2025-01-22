@@ -42,6 +42,10 @@ namespace UnityEditor
             }
         }
 
+        /// <summary>
+        /// Get the service authentication token used for the Service Gateway apis
+        /// </summary>
+        /// <param name="cancellationToken"></param>
         public static Task<string> GetServiceTokenAsync(CancellationToken cancellationToken = default)
             => ServiceToken.Instance.GetServiceTokenAsync(accessToken, cancellationToken);
 

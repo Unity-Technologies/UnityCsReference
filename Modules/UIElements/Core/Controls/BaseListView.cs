@@ -630,7 +630,8 @@ namespace UnityEngine.UIElements
 
         private void AddItems(int itemCount)
         {
-            viewController.AddItems(itemCount);
+            if (GetOrCreateViewController() is BaseListViewController controller)
+                controller.AddItems(itemCount);
         }
 
         private void RemoveItems(List<int> indices)
@@ -796,7 +797,7 @@ namespace UnityEngine.UIElements
                 viewController.RemoveItems(selectedIndices.ToList());
                 ClearSelection();
             }
-            else if (itemsSource.Count > 0)
+            else if (itemsSource?.Count > 0)
             {
                 var index = itemsSource.Count - 1;
                 viewController.RemoveItem(index);

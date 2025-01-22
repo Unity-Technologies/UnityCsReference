@@ -391,6 +391,8 @@ namespace UnityEngine.UIElements
 			}
             else if (m_RootHasWorldTransform)
                 ClearTransform();
+
+            UpdateCutRenderChainFlag();
         }
 
         void UpdateRenderer()
@@ -399,7 +401,6 @@ namespace UnityEngine.UIElements
             if (!TryGetComponent<UIRenderer>(out renderer))
             {
                 rootVisualElement.uiRenderer = null;
-                UpdateCutRenderChainFlag();
                 return;
             }
 
@@ -448,15 +449,25 @@ namespace UnityEngine.UIElements
 
         void UpdateCutRenderChainFlag()
         {
-            // Every UIDocument associated with a world-space panel should cut the render-chain.
-            // If we don't, some UIDocument may try to render from the main thread, or risk being
-            // rendered as part of a previous UIDocument.
+            bool isWorldSpacePanel = !panelSettings.panel.isFlat;
+            bool shouldCutRenderChain;
 
-            bool shouldCutRenderChain = (parentUI == null);
+            if (isWorldSpacePanel)
+            {
+                // World-space panel should cut the render chain unless they are nested in another UIDocument,
+                // in which case they are rendered through their parent.
+                shouldCutRenderChain = (parentUI == null);
+            }
+            else
+            {
+                // For overlay panels, we should never cut the render chain.
+                shouldCutRenderChain = false;
+            }
+
             if (rootVisualElement.shouldCutRenderChain != shouldCutRenderChain)
             {
                 rootVisualElement.shouldCutRenderChain = shouldCutRenderChain;
-                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
+                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert/remove a CutRenderChain command
             }
         }
 

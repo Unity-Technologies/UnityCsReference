@@ -28,6 +28,7 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ShaderVariant.Editor")]
 
 namespace UnityEditor.Search
 {

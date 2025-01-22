@@ -150,29 +150,6 @@ namespace UnityEngine
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.
         internal Color RGBMultiplied(Color multiplier) { return new Color(r * multiplier.r, g * multiplier.g, b * multiplier.b, a); }
 
-        // Solid red. RGBA is (1, 0, 0, 1).
-        public static Color red { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(1F, 0F, 0F, 1F); } }
-        // Solid green. RGBA is (0, 1, 0, 1).
-        public static Color green { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(0F, 1F, 0F, 1F); } }
-        // Solid blue. RGBA is (0, 0, 1, 1).
-        public static Color blue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(0F, 0F, 1F, 1F); } }
-        // Solid white. RGBA is (1, 1, 1, 1).
-        public static Color white { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(1F, 1F, 1F, 1F); } }
-        // Solid black. RGBA is (0, 0, 0, 1).
-        public static Color black { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(0F, 0F, 0F, 1F); } }
-        // Yellow. RGBA is (1, 0.92, 0.016, 1), but the color is nice to look at!
-        public static Color yellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(1F, 235F / 255F, 4F / 255F, 1F); } }
-        // Cyan. RGBA is (0, 1, 1, 1).
-        public static Color cyan { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(0F, 1F, 1F, 1F); } }
-        // Magenta. RGBA is (1, 0, 1, 1).
-        public static Color magenta { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(1F, 0F, 1F, 1F); } }
-        // Gray. RGBA is (0.5, 0.5, 0.5, 1).
-        public static Color gray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(.5F, .5F, .5F, 1F); } }
-        // English spelling for ::ref::gray. RGBA is the same (0.5, 0.5, 0.5, 1).
-        public static Color grey { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(.5F, .5F, .5F, 1F); } }
-        // Completely transparent. RGBA is (0, 0, 0, 0).
-        public static Color clear { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return new Color(0F, 0F, 0F, 0F); } }
-
         // The grayscale value of the color (RO)
         public float grayscale { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return 0.299F * r + 0.587F * g + 0.114F * b; } }
 
@@ -400,5 +377,482 @@ namespace UnityEngine
             }
             return retval;
         }
+
+        #region Preset Colors
+
+        // The original reference: https://learn.microsoft.com/en-us/dotnet/api/system.windows.media.colors
+        
+        // Color Preset of @@RGBA(0.9411765f, 0.9725491f, 1f, 1f)@@       
+        public static Color aliceBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9411765f, 0.9725491f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9803922f, 0.9215687f, 0.8431373f, 1f)@@
+        public static Color antiqueWhite { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9803922f, 0.9215687f, 0.8431373f, 1f); }
+		
+        // Color Preset of @@RGBA(0.4980392f, 1f, 0.8313726f, 1f)@@        
+        public static Color aquamarine { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4980392f, 1f, 0.8313726f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9411765f, 1f, 1f, 1f)@@        
+        public static Color azure { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9411765f, 1f, 1f, 1f); }
+	
+        // Color Preset of @@RGBA(0.9607844f, 0.9607844f, 0.8627452f, 1f)@@        
+        public static Color beige { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9607844f, 0.9607844f, 0.8627452f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.8941177f, 0.7686275f, 1f)@@        
+        public static Color bisque { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.8941177f, 0.7686275f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 0f, 0f, 1f)@@
+        public static Color black { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.9215687f, 0.8039216f, 1f)@@
+        public static Color blanchedAlmond { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9215687f, 0.8039216f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0f, 1f, 1f)@@
+        public static Color blue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5411765f, 0.1686275f, 0.8862746f, 1f)@@
+        public static Color blueViolet { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5411765f, 0.1686275f, 0.8862746f, 1f); }
+		
+        // Color Preset of @@RGBA(0.6470588f, 0.1647059f, 0.1647059f, 1f)@@
+        public static Color brown { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6470588f, 0.1647059f, 0.1647059f, 1f); }
+		
+        // Color Preset of @@RGBA(0.8705883f, 0.7215686f, 0.5294118f, 1f)@@
+        public static Color burlywood { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8705883f, 0.7215686f, 0.5294118f, 1f); }
+
+        // Color Preset of @@RGBA(0.372549f, 0.6196079f, 0.627451f, 1f)@@
+        public static Color cadetBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.372549f, 0.6196079f, 0.627451f, 1f); }
+
+        // Color Preset of @@RGBA(0.4980392f, 1f, 0f, 1f)@@
+        public static Color chartreuse { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4980392f, 1f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(0.8235295f, 0.4117647f, 0.1176471f, 1f)@@
+        public static Color chocolate { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8235295f, 0.4117647f, 0.1176471f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0f, 0f, 0f)@@
+        public static Color clear { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 0f, 0f); }
+		
+        // Color Preset of @@RGBA(1f, 0.4980392f, 0.3137255f, 1f)@@
+        public static Color coral { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.4980392f, 0.3137255f, 1f); }
+
+        // Color Preset of @@RGBA(0.3921569f, 0.5843138f, 0.9294118f, 1f)@@
+        public static Color cornflowerBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.3921569f, 0.5843138f, 0.9294118f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.9725491f, 0.8627452f, 1f)@@
+        public static Color cornsilk { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9725491f, 0.8627452f, 1f); }
+
+        // Color Preset of @@RGBA(0.8627452f, 0.07843138f, 0.2352941f, 1f)@@
+        public static Color crimson { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8627452f, 0.07843138f, 0.2352941f, 1f); }
+	
+        // Color Preset of @@RGBA(0f, 1f, 1f, 1f)@@
+        public static Color cyan { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 1f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0f, 0.5450981f, 1f)@@
+        public static Color darkBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 0.5450981f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0.5450981f, 0.5450981f, 1f)@@
+        public static Color darkCyan { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.5450981f, 0.5450981f, 1f); }
+
+        // Color Preset of @@RGBA(0.7215686f, 0.5254902f, 0.04313726f, 1f)@@
+        public static Color darkGoldenRod { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7215686f, 0.5254902f, 0.04313726f, 1f); }
+		
+        // Color Preset of @@RGBA(0.6627451f, 0.6627451f, 0.6627451f, 1f)@@
+        public static Color darkGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6627451f, 0.6627451f, 0.6627451f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 0.3921569f, 0f, 1f)@@
+        public static Color darkGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.3921569f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(0.7411765f, 0.7176471f, 0.4196079f, 1f)@@
+        public static Color darkKhaki { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7411765f, 0.7176471f, 0.4196079f, 1f); }
+
+        // Color Preset of @@RGBA(0.5450981f, 0f, 0.5450981f, 1f)@@
+        public static Color darkMagenta { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5450981f, 0f, 0.5450981f, 1f); }
+		
+        // Color Preset of @@RGBA(0.3333333f, 0.4196079f, 0.1843137f, 1f)@@
+        public static Color darkOliveGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.3333333f, 0.4196079f, 0.1843137f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.5490196f, 0f, 1f)@@
+        public static Color darkOrange { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.5490196f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(0.6f, 0.1960784f, 0.8000001f, 1f)@@
+        public static Color darkOrchid { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6f, 0.1960784f, 0.8000001f, 1f); }
+
+        // Color Preset of @@RGBA(0.5450981f, 0f, 0f, 1f)@@
+        public static Color darkRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5450981f, 0f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(0.9137256f, 0.5882353f, 0.4784314f, 1f)@@
+        public static Color darkSalmon { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9137256f, 0.5882353f, 0.4784314f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5607843f, 0.7372549f, 0.5607843f, 1f)@@
+        public static Color darkSeaGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5607843f, 0.7372549f, 0.5607843f, 1f); }
+		
+        // Color Preset of @@RGBA(0.282353f, 0.2392157f, 0.5450981f, 1f)@@
+        public static Color darkSlateBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.282353f, 0.2392157f, 0.5450981f, 1f); }
+		
+        // Color Preset of @@RGBA(0.1843137f, 0.3098039f, 0.3098039f, 1f)@@
+        public static Color darkSlateGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1843137f, 0.3098039f, 0.3098039f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0.8078432f, 0.8196079f, 1f)@@
+        public static Color darkTurquoise { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.8078432f, 0.8196079f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5803922f, 0f, 0.8274511f, 1f)@@
+        public static Color darkViolet { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5803922f, 0f, 0.8274511f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.07843138f, 0.5764706f, 1f)@@
+        public static Color deepPink { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.07843138f, 0.5764706f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 0.7490196f, 1f, 1f)@@
+        public static Color deepSkyBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.7490196f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0.4117647f, 0.4117647f, 0.4117647f, 1f)@@
+        public static Color dimGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4117647f, 0.4117647f, 0.4117647f, 1f); }
+
+        // Color Preset of @@RGBA(0.1176471f, 0.5647059f, 1f, 1f)@@
+        public static Color dodgerBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1176471f, 0.5647059f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0.6980392f, 0.1333333f, 0.1333333f, 1f)@@
+        public static Color firebrick { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6980392f, 0.1333333f, 0.1333333f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.9803922f, 0.9411765f, 1f)@@
+        public static Color floralWhite { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9803922f, 0.9411765f, 1f); }
+		
+        // Color Preset of @@RGBA(0.1333333f, 0.5450981f, 0.1333333f, 1f)@@
+        public static Color forestGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1333333f, 0.5450981f, 0.1333333f, 1f); }
+		
+        // Color Preset of @@RGBA(0.8627452f, 0.8627452f, 0.8627452f, 1f)@@
+        public static Color gainsboro { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8627452f, 0.8627452f, 0.8627452f, 1f); }
+
+        // Color Preset of @@RGBA(0.9725491f, 0.9725491f, 1f, 1f)@@
+        public static Color ghostWhite { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9725491f, 0.9725491f, 1f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.8431373f, 0f, 1f)@@
+        public static Color gold { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.8431373f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(0.854902f, 0.6470588f, 0.1254902f, 1f)@@
+        public static Color goldenRod { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.854902f, 0.6470588f, 0.1254902f, 1f); }
+
+        // Color Preset of @@RGBA(0.5f, 0.5f, 0.5f, 1f)@@
+        public static Color gray => Color.gray5;
+		
+        // Color Preset of @@RGBA(0.5f, 0.5f, 0.5f, 1f)@@
+        public static Color grey => Color.gray5;
+
+        // Color Preset of @@RGBA(0.1f, 0.1f, 0.1f, 1f)@@
+        public static Color gray1 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1f, 0.1f, 0.1f, 1f); }
+
+        // Color Preset of @@RGBA(0.2f, 0.2f, 0.2f, 1f)@@
+        public static Color gray2 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.2f, 0.2f, 0.2f, 1f); }
+
+        // Color Preset of @@RGBA(0.3f, 0.3f, 0.3f, 1f)@@
+        public static Color gray3 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.3f, 0.3f, 0.3f, 1f); }
+
+        // Color Preset of @@RGBA(0.4f, 0.4f, 0.4f, 1f)@@
+        public static Color gray4 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4f, 0.4f, 0.4f, 1f); }
+
+        // Color Preset of @@RGBA(0.5f, 0.5f, 0.5f, 1f)@@
+        public static Color gray5 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5f, 0.5f, 0.5f, 1f); }
+
+        // Color Preset of @@RGBA(0.6f, 0.6f, 0.6f, 1f)@@
+        public static Color gray6 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6f, 0.6f, 0.6f, 1f); }
+
+        // Color Preset of @@RGBA(0.7f, 0.7f, 0.7f, 1f)@@
+        public static Color gray7 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7f, 0.7f, 0.7f, 1f); }
+
+        // Color Preset of @@RGBA(0.8f, 0.8f, 0.8f, 1f)@@
+        public static Color gray8 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8f, 0.8f, 0.8f, 1f); }
+
+        // Color Preset of @@RGBA(0.9f, 0.9f, 0.9f, 1f)@@
+        public static Color gray9 { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9f, 0.9f, 0.9f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 1f, 0f, 1f)@@
+        public static Color green { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 1f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(0.6784314f, 1f, 0.1843137f, 1f)@@
+        public static Color greenYellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6784314f, 1f, 0.1843137f, 1f); }
+
+        // Color Preset of @@RGBA(0.9411765f, 1f, 0.9411765f, 1f)@@
+        public static Color honeydew { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9411765f, 1f, 0.9411765f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.4117647f, 0.7058824f, 1f)@@
+        public static Color hotPink { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.4117647f, 0.7058824f, 1f); }
+
+        // Color Preset of @@RGBA(0.8039216f, 0.3607843f, 0.3607843f, 1f)@@
+        public static Color indianRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8039216f, 0.3607843f, 0.3607843f, 1f); }
+		
+        // Color Preset of @@RGBA(0.2941177f, 0f, 0.509804f, 1f)@@
+        public static Color indigo { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.2941177f, 0f, 0.509804f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 1f, 0.9411765f, 1f)@@
+        public static Color ivory { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 1f, 0.9411765f, 1f); }
+
+        // Color Preset of @@RGBA(0.9411765f, 0.9019608f, 0.5490196f, 1f)@@
+        public static Color khaki { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9411765f, 0.9019608f, 0.5490196f, 1f); }
+
+        // Color Preset of @@RGBA(0.9019608f, 0.9019608f, 0.9803922f, 1f)@@
+        public static Color lavender { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9019608f, 0.9019608f, 0.9803922f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.9411765f, 0.9607844f, 1f)@@
+        public static Color lavenderBlush { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9411765f, 0.9607844f, 1f); }
+
+        // Color Preset of @@RGBA(0.4862745f, 0.9882354f, 0f, 1f)@@
+        public static Color lawnGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4862745f, 0.9882354f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.9803922f, 0.8039216f, 1f)@@
+        public static Color lemonChiffon { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9803922f, 0.8039216f, 1f); }
+
+        // Color Preset of @@RGBA(0.6784314f, 0.8470589f, 0.9019608f, 1f)@@
+        public static Color lightBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6784314f, 0.8470589f, 0.9019608f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9411765f, 0.5019608f, 0.5019608f, 1f)@@
+        public static Color lightCoral { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9411765f, 0.5019608f, 0.5019608f, 1f); }
+		
+        // Color Preset of @@RGBA(0.8784314f, 1f, 1f, 1f)@@
+        public static Color lightCyan { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8784314f, 1f, 1f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9333334f, 0.8666667f, 0.509804f, 1f)@@
+        public static Color lightGoldenRod { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9333334f, 0.8666667f, 0.509804f, 1f); }
+
+        // Color Preset of @@RGBA(0.9803922f, 0.9803922f, 0.8235295f, 1f)@@
+        public static Color lightGoldenRodYellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9803922f, 0.9803922f, 0.8235295f, 1f); }
+		
+        // Color Preset of @@RGBA(0.8274511f, 0.8274511f, 0.8274511f, 1f)@@
+        public static Color lightGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8274511f, 0.8274511f, 0.8274511f, 1f); }
+
+        // Color Preset of @@RGBA(0.5647059f, 0.9333334f, 0.5647059f, 1f)@@
+        public static Color lightGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5647059f, 0.9333334f, 0.5647059f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.7137255f, 0.7568628f, 1f)@@
+        public static Color lightPink { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.7137255f, 0.7568628f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.627451f, 0.4784314f, 1f)@@
+        public static Color lightSalmon { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.627451f, 0.4784314f, 1f); }
+
+        // Color Preset of @@RGBA(0.1254902f, 0.6980392f, 0.6666667f, 1f)@@
+        public static Color lightSeaGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1254902f, 0.6980392f, 0.6666667f, 1f); }
+
+        // Color Preset of @@RGBA(0.5294118f, 0.8078432f, 0.9803922f, 1f)@@
+        public static Color lightSkyBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5294118f, 0.8078432f, 0.9803922f, 1f); }
+
+        // Color Preset of @@RGBA(0.5176471f, 0.4392157f, 1f, 1f)@@
+        public static Color lightSlateBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5176471f, 0.4392157f, 1f, 1f); }
+
+        // Color Preset of @@RGBA(0.4666667f, 0.5333334f, 0.6f, 1f)@@
+        public static Color lightSlateGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4666667f, 0.5333334f, 0.6f, 1f); }
+
+        // Color Preset of @@RGBA(0.6901961f, 0.7686275f, 0.8705883f, 1f)@@
+        public static Color lightSteelBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6901961f, 0.7686275f, 0.8705883f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 1f, 0.8784314f, 1f)@@
+        public static Color lightYellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 1f, 0.8784314f, 1f); }
+
+        // Color Preset of @@RGBA(0.1960784f, 0.8039216f, 0.1960784f, 1f)@@
+        public static Color limeGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1960784f, 0.8039216f, 0.1960784f, 1f); }
+
+        // Color Preset of @@RGBA(0.9803922f, 0.9411765f, 0.9019608f, 1f)@@
+        public static Color linen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9803922f, 0.9411765f, 0.9019608f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0f, 1f, 1f)@@
+        public static Color magenta { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0f, 1f, 1f); }
+
+        // Color Preset of @@RGBA(0.6901961f, 0.1882353f, 0.3764706f, 1f)@@
+        public static Color maroon { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6901961f, 0.1882353f, 0.3764706f, 1f); }
+		
+        // Color Preset of @@RGBA(0.4f, 0.8039216f, 0.6666667f, 1f)@@
+        public static Color mediumAquamarine { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4f, 0.8039216f, 0.6666667f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0f, 0.8039216f, 1f)@@
+        public static Color mediumBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 0.8039216f, 1f); }
+		
+        // Color Preset of @@RGBA(0.7294118f, 0.3333333f, 0.8274511f, 1f)@@
+        public static Color mediumOrchid { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7294118f, 0.3333333f, 0.8274511f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5764706f, 0.4392157f, 0.8588236f, 1f)@@
+        public static Color mediumPurple { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5764706f, 0.4392157f, 0.8588236f, 1f); }
+
+        // Color Preset of @@RGBA(0.2352941f, 0.7019608f, 0.4431373f, 1f)@@
+        public static Color mediumSeaGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.2352941f, 0.7019608f, 0.4431373f, 1f); }
+		
+        // Color Preset of @@RGBA(0.482353f, 0.4078432f, 0.9333334f, 1f)@@
+        public static Color mediumSlateBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.482353f, 0.4078432f, 0.9333334f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 0.9803922f, 0.6039216f, 1f)@@
+        public static Color mediumSpringGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.9803922f, 0.6039216f, 1f); }
+
+        // Color Preset of @@RGBA(0.282353f, 0.8196079f, 0.8000001f, 1f)@@
+        public static Color mediumTurquoise { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.282353f, 0.8196079f, 0.8000001f, 1f); }
+
+        // Color Preset of @@RGBA(0.7803922f, 0.08235294f, 0.5215687f, 1f)@@
+        public static Color mediumVioletRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7803922f, 0.08235294f, 0.5215687f, 1f); }
+
+        // Color Preset of @@RGBA(0.09803922f, 0.09803922f, 0.4392157f, 1f)@@
+        public static Color midnightBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.09803922f, 0.09803922f, 0.4392157f, 1f); }
+
+        // Color Preset of @@RGBA(0.9607844f, 1f, 0.9803922f, 1f)@@
+        public static Color mintCream { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9607844f, 1f, 0.9803922f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.8941177f, 0.882353f, 1f)@@
+        public static Color mistyRose { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.8941177f, 0.882353f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.8941177f, 0.7098039f, 1f)@@
+        public static Color moccasin { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.8941177f, 0.7098039f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.8705883f, 0.6784314f, 1f)@@
+        public static Color navajoWhite { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.8705883f, 0.6784314f, 1f); }
+		
+        // Color Preset of @@RGBA(0f, 0f, 0.5019608f, 1f)@@
+        public static Color navyBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0f, 0.5019608f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9921569f, 0.9607844f, 0.9019608f, 1f)@@
+        public static Color oldLace { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9921569f, 0.9607844f, 0.9019608f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5019608f, 0.5019608f, 0f, 1f)@@
+        public static Color olive { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5019608f, 0.5019608f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(0.4196079f, 0.5568628f, 0.1372549f, 1f)@@
+        public static Color oliveDrab { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4196079f, 0.5568628f, 0.1372549f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.6470588f, 0f, 1f)@@
+        public static Color orange { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.6470588f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.2705882f, 0f, 1f)@@
+        public static Color orangeRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.2705882f, 0f, 1f); }
+		
+        // Color Preset of @@RGBA(0.854902f, 0.4392157f, 0.8392158f, 1f)@@
+        public static Color orchid { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.854902f, 0.4392157f, 0.8392158f, 1f); }
+		
+        // Color Preset of @@RGBA(0.9333334f, 0.909804f, 0.6666667f, 1f)@@
+        public static Color paleGoldenRod { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9333334f, 0.909804f, 0.6666667f, 1f); }
+		
+        // Color Preset of @@RGBA(0.5960785f, 0.9843138f, 0.5960785f, 1f)@@
+        public static Color paleGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5960785f, 0.9843138f, 0.5960785f, 1f); }
+		
+        // Color Preset of @@RGBA(0.6862745f, 0.9333334f, 0.9333334f, 1f)@@
+        public static Color paleTurquoise { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6862745f, 0.9333334f, 0.9333334f, 1f); }
+		
+        // Color Preset of @@RGBA(0.8588236f, 0.4392157f, 0.5764706f, 1f)@@
+        public static Color paleVioletRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8588236f, 0.4392157f, 0.5764706f, 1f); }
+		
+        // Color Preset of @@RGBA(1f, 0.937255f, 0.8352942f, 1f)@@
+        public static Color papayaWhip { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.937255f, 0.8352942f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.854902f, 0.7254902f, 1f)@@
+        public static Color peachPuff { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.854902f, 0.7254902f, 1f); }
+
+        // Color Preset of @@RGBA(0.8039216f, 0.5215687f, 0.2470588f, 1f)@@
+        public static Color peru { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8039216f, 0.5215687f, 0.2470588f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.7529413f, 0.7960785f, 1f)@@
+        public static Color pink { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.7529413f, 0.7960785f, 1f); }
+
+        // Color Preset of @@RGBA(0.8666667f, 0.627451f, 0.8666667f, 1f)@@
+        public static Color plum { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8666667f, 0.627451f, 0.8666667f, 1f); }
+
+        // Color Preset of @@RGBA(0.6901961f, 0.8784314f, 0.9019608f, 1f)@@
+        public static Color powderBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6901961f, 0.8784314f, 0.9019608f, 1f); }
+
+        // Color Preset of @@RGBA(0.627451f, 0.1254902f, 0.9411765f, 1f)@@
+        public static Color purple { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.627451f, 0.1254902f, 0.9411765f, 1f); }
+
+        // Color Preset of @@RGBA(0.4f, 0.2f, 0.6f, 1f)@@
+        public static Color rebeccaPurple { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4f, 0.2f, 0.6f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0f, 0f, 1f)@@
+        public static Color red { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(0.7372549f, 0.5607843f, 0.5607843f, 1f)@@
+        public static Color rosyBrown { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7372549f, 0.5607843f, 0.5607843f, 1f); }
+
+        // Color Preset of @@RGBA(0.254902f, 0.4117647f, 0.882353f, 1f)@@
+        public static Color royalBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.254902f, 0.4117647f, 0.882353f, 1f); }
+
+        // Color Preset of @@RGBA(0.5450981f, 0.2705882f, 0.07450981f, 1f)@@
+        public static Color saddleBrown { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5450981f, 0.2705882f, 0.07450981f, 1f); }
+
+        // Color Preset of @@RGBA(0.9803922f, 0.5019608f, 0.4470589f, 1f)@@
+        public static Color salmon { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9803922f, 0.5019608f, 0.4470589f, 1f); }
+
+        // Color Preset of @@RGBA(0.9568628f, 0.6431373f, 0.3764706f, 1f)@@
+        public static Color sandyBrown { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9568628f, 0.6431373f, 0.3764706f, 1f); }
+
+        // Color Preset of @@RGBA(0.1803922f, 0.5450981f, 0.3411765f, 1f)@@
+        public static Color seaGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1803922f, 0.5450981f, 0.3411765f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.9607844f, 0.9333334f, 1f)@@
+        public static Color seashell { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9607844f, 0.9333334f, 1f); }
+
+        // Color Preset of @@RGBA(0.627451f, 0.3215686f, 0.1764706f, 1f)@@
+        public static Color sienna { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.627451f, 0.3215686f, 0.1764706f, 1f); }
+
+        // Color Preset of @@RGBA(0.7529413f, 0.7529413f, 0.7529413f, 1f)@@
+        public static Color silver { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.7529413f, 0.7529413f, 0.7529413f, 1f); }
+
+        // Color Preset of @@RGBA(0.5294118f, 0.8078432f, 0.9215687f, 1f)@@
+        public static Color skyBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5294118f, 0.8078432f, 0.9215687f, 1f); }
+
+        // Color Preset of @@RGBA(0.4156863f, 0.3529412f, 0.8039216f, 1f)@@
+        public static Color slateBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4156863f, 0.3529412f, 0.8039216f, 1f); }
+
+        // Color Preset of @@RGBA(0.4392157f, 0.5019608f, 0.5647059f, 1f)@@
+        public static Color slateGray { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.4392157f, 0.5019608f, 0.5647059f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.9803922f, 0.9803922f, 1f)@@
+        public static Color snow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9803922f, 0.9803922f, 1f); }
+
+        // Color Preset of @@RGBA(0.8627452f, 0.1921569f, 0.1960784f, 1f); }
+        public static Color softRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8627452f, 0.1921569f, 0.1960784f, 1f); }
+
+        // Color Preset of @@RGBA(0.1882353f, 0.682353f, 0.7490196f, 1f); }
+        public static Color softBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.1882353f, 0.682353f, 0.7490196f, 1f); }
+
+        // Color Preset of @@RGBA(0.5490196f, 0.7882354f, 0.1411765f, 1f)@@
+        public static Color softGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.5490196f, 0.7882354f, 0.1411765f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.9333334f, 0.5490196f, 1f)@@
+        public static Color softYellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.9333334f, 0.5490196f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 1f, 0.4980392f, 1f)@@
+        public static Color springGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 1f, 0.4980392f, 1f); }
+
+        // Color Preset of @@RGBA(0.2745098f, 0.509804f, 0.7058824f, 1f)@@
+        public static Color steelBlue { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.2745098f, 0.509804f, 0.7058824f, 1f); }
+
+        // Color Preset of @@RGBA(0.8235295f, 0.7058824f, 0.5490196f, 1f)@@
+        public static Color tan { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8235295f, 0.7058824f, 0.5490196f, 1f); }
+
+        // Color Preset of @@RGBA(0f, 0.5019608f, 0.5019608f, 1f)@@
+        public static Color teal { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0f, 0.5019608f, 0.5019608f, 1f); }
+
+        // Color Preset of @@RGBA(0.8470589f, 0.7490196f, 0.8470589f, 1f)@@
+        public static Color thistle { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8470589f, 0.7490196f, 0.8470589f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.3882353f, 0.2784314f, 1f)@@
+        public static Color tomato { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 0.3882353f, 0.2784314f, 1f); }
+
+        // Color Preset of @@RGBA(0.2509804f, 0.8784314f, 0.8156863f, 1f)@@
+        public static Color turquoise { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.2509804f, 0.8784314f, 0.8156863f, 1f); }
+
+        // Color Preset of @@RGBA(0.9333334f, 0.509804f, 0.9333334f, 1f)@@
+        public static Color violet { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9333334f, 0.509804f, 0.9333334f, 1f); }
+
+        // Color Preset of @@RGBA(0.8156863f, 0.1254902f, 0.5647059f, 1f)@@
+        public static Color violetRed { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.8156863f, 0.1254902f, 0.5647059f, 1f); }
+
+        // Color Preset of @@RGBA(0.9607844f, 0.8705883f, 0.7019608f, 1f)@@
+        public static Color wheat { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9607844f, 0.8705883f, 0.7019608f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 1f, 1f, 1f); }
+        public static Color white { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 1f, 1f, 1f); }
+
+        // Color Preset of @@RGBA(0.9607844f, 0.9607844f, 0.9607844f, 1f)@@
+        public static Color whiteSmoke { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9607844f, 0.9607844f, 0.9607844f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 1f, 0f, 1f)@@
+        public static Color yellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 1f, 0f, 1f); }
+
+        // Color Preset of @@RGBA(0.6039216f, 0.8039216f, 0.1960784f, 1f)@@
+        public static Color yellowGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6039216f, 0.8039216f, 0.1960784f, 1f); }
+
+        // Color Preset of @@RGBA(1f, 0.92f, 0.016f, 1f)@@
+        public static Color yellowNice { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new (1f, 235f / 255f, 4f / 255f, 1f); }
+
+        #endregion
     }
 } //namespace
