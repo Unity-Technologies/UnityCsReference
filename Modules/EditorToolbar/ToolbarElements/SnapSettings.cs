@@ -17,6 +17,7 @@ namespace UnityEditor.Toolbars
             name = "SceneViewSnapSize";
             value = GridSettings.size.x;
             showMixedValue = !GridSettings.linked;
+            isDelayed = true;
 
             GridSettings.sizeChanged += newValue =>
             {

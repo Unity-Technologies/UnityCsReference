@@ -39,14 +39,14 @@ namespace UnityEditor
         const float k_FrameWidth = 1f;
         const float k_ToggleSize = 17;
         const float k_SeparatorHeight = 6;
-        const float k_JustClosedPeriod = 200;
         const string k_LayerVisible = "Show/Hide Layer";
         const string k_LayerPickable = "Toggle Pickable status this Layer. Non-Pickable items cannot be selected in the Scene View.";
 
         private static LayerVisibilityWindow s_LayerVisibilityWindow;
         private static long s_LastClosedTime;
-        private static Styles s_Styles;
+        const long k_JustClosedPeriod = 400;
 
+        private static Styles s_Styles;
         private List<string> s_LayerNames;
         private List<int> s_LayerMasks;
         private int m_AllLayersMask;

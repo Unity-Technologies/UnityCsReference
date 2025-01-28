@@ -844,8 +844,8 @@ namespace UnityEngine
         // Color Preset of @@RGBA(0.9607844f, 0.9607844f, 0.9607844f, 1f)@@
         public static Color whiteSmoke { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.9607844f, 0.9607844f, 0.9607844f, 1f); }
 
-        // Color Preset of @@RGBA(1f, 1f, 0f, 1f)@@
-        public static Color yellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 1f, 0f, 1f); }
+        // Color Preset of @@RGBA(1f, 0.92f, 0.016f, 1f)@@
+        public static Color yellow { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(1f, 235f / 255f, 4f / 255f, 1f); }
 
         // Color Preset of @@RGBA(0.6039216f, 0.8039216f, 0.1960784f, 1f)@@
         public static Color yellowGreen { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get => new(0.6039216f, 0.8039216f, 0.1960784f, 1f); }

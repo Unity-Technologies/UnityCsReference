@@ -253,7 +253,6 @@ namespace Unity.UI.Builder
                     : BuilderLibraryContent.standardControlsTreeNoEditor;
 
                 m_ControlsTreeView = new BuilderLibraryTreeView(controlsTree);
-                m_ControlsTreeView.viewDataKey = "unity-ui-builder-library-controls-tree";
                 SetUpLibraryView(m_ControlsTreeView);
 
                 return m_ControlsTreeView;

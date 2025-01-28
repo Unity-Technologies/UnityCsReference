@@ -56,7 +56,6 @@ namespace UnityEditor
         const float k_WindowWidth = 270;
         const float k_ScrollBarWidth = 14;
         const float k_ListElementHeight = 18;
-        const float k_JustClosedPeriod = 200;
         const float k_FrameWidth = 1f;
         float iconSize = 16;
         float gizmoRightAlign;
@@ -66,6 +65,8 @@ namespace UnityEditor
 
         static AnnotationWindow s_AnnotationWindow = null;
         static long s_LastClosedTime;
+        const long k_JustClosedPeriod = 400;
+
         static Styles m_Styles;
         List<GizmoInfo> m_RecentAnnotations;
         List<GizmoInfo> m_BuiltinAnnotations;

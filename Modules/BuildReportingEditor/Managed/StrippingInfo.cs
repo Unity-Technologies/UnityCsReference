@@ -12,10 +12,19 @@ using UnityEditor.Build.Reporting;
 
 namespace UnityEditor.Build.Reporting
 {
+    ///<summary>The StrippingInfo object contains information about which native code modules in the engine are still present in the build, and the reasons why they are still present.</summary>
     public class StrippingInfo : ScriptableObject, ISerializationCallbackReceiver
     {
+        ///<summary>The native engine modules that were included in the build.</summary>
+        ///<remarks>You can pass each of these to <see cref="StrippingInfo.GetReasonsForIncluding" /> to obtain information about what caused a module to be included in the build.</remarks>
         public IEnumerable<string> includedModules {  get { return modules; } }
 
+        ///<summary>Returns the list of dependencies or reasons that caused the given entity to be included in the build.</summary>
+        ///<remarks>The returned list of strings may include names of components, internal engine objects, other modules, or other human-readable reasons. To obtain further information, you can pass each string back into GetReasonsForIncluding again.
+        ///
+        ///For example, calling GetReasonsForIncluding("Physics Module") may return a list that includes "Rigidbody", and you can then call GetReasonsForIncluding("Rigidbody") to get more information about which Scenes or assets are using the Rigidbody component.</remarks>
+        ///<param name="entityName">The name of an engine module, class, or other entity present in the build.</param>
+        ///<returns>A list of modules, classes, or other entities that caused the provided entity to be included in the build.</returns>
         public IEnumerable<string> GetReasonsForIncluding(string entityName)
         {
             HashSet<string> deps;
