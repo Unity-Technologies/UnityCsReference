@@ -161,7 +161,7 @@ namespace UnityEditor
                 m_Presets.Add(new ColorPreset(new Color(Random.Range(0.2f, 1f), Random.Range(0.2f, 1f), Random.Range(0.2f, 1f), 1f), "Preset Color " + i));
         }
 
-        private static Texture2D CreateColorSwatchWithBorder(int width, int height, bool triangular)
+        internal static Texture2D CreateColorSwatchWithBorder(int width, int height, bool triangular)
         {
             Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
             texture.hideFlags = HideFlags.HideAndDontSave;

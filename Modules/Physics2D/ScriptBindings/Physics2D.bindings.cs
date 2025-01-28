@@ -3430,8 +3430,8 @@ namespace UnityEngine
             if (!float.IsFinite(slideMovement.gravitySlipAngle) || slideMovement.gravitySlipAngle < 0f || slideMovement.gravitySlipAngle > 90f)
                 throw new ArgumentException($"Gravity Slip Angle must be in the range of 0 to 90 degrees. It is {slideMovement.gravitySlipAngle}.", "SlideMovement.gravitySlipAngle");
 
-            if (!float.IsFinite(slideMovement.surfaceUp.x) || !float.IsFinite(slideMovement.surfaceUp.y) || slideMovement.surfaceUp.sqrMagnitude < Mathf.Epsilon)
-                throw new ArgumentException($"Surface Up is invalid and must be non-zero magnitude. It is {slideMovement.surfaceUp}.", "SlideMovement.surfaceUp");
+            if (!float.IsFinite(slideMovement.surfaceUp.x) || !float.IsFinite(slideMovement.surfaceUp.y))
+                throw new ArgumentException($"Surface Up is invalid. It is {slideMovement.surfaceUp}.", "SlideMovement.surfaceUp");
 
             if (!float.IsFinite(slideMovement.surfaceAnchor.x) || !float.IsFinite(slideMovement.surfaceAnchor.y))
                 throw new ArgumentException($"Surface Anchor is invalid. It is {slideMovement.surfaceAnchor}.", "SlideMovement.surfaceAnchor");

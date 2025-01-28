@@ -219,14 +219,9 @@ namespace UnityEngine.UIElements
             compatibilityEvt.skipDisabledElements = evt.skipDisabledElements;
 
             if (DebuggerEventDispatchUtilities.InterceptEvent(compatibilityEvt, panel))
-            {
-                HandleEventAcrossPropagationPath(evt, panel, target, isCapturingTarget);
-                DebuggerEventDispatchUtilities.PostDispatch(compatibilityEvt, panel);
                 return;
-            }
 
             using var path = PropagationPaths.Build(target, evt, eventCategories);
-
             try
             {
                 Debug.Assert(!evt.dispatch, "Event is being dispatched recursively.");
@@ -344,8 +339,6 @@ namespace UnityEngine.UIElements
                 compatibilityEvt.propagationPhase = PropagationPhase.None;
 
                 evt.dispatch = false;
-
-                DebuggerEventDispatchUtilities.PostDispatch(compatibilityEvt, panel);
             }
         }
 

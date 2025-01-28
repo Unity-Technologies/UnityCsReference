@@ -6,10 +6,14 @@ using System;
 
 namespace UnityEditor.Build.Reporting
 {
+    ///<summary>Build type.</summary>
+    ///<seealso cref="BuildSummary.buildType" />
     [Flags]
     public enum BuildType
     {
+        ///<summary>Indicates a Player build.</summary>
         Player = 1,
+        ///<summary>Indicates an Asset Bundle build.</summary>
         AssetBundle = 2
     }
 }

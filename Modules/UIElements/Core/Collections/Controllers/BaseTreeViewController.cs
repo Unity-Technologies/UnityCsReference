@@ -569,9 +569,6 @@ namespace UnityEngine.UIElements
         /// <returns>Whether the item with the specified ID is expanded in the tree.</returns>
         public bool IsExpanded(int id)
         {
-            if (IsViewDataKeyEnabled())
-                return baseTreeView.expandedItemIds.Contains(id);
-
             return m_IdToNodeDictionary.ContainsKey(id) && m_Hierarchy.Exists(m_IdToNodeDictionary[id]) && m_HierarchyViewModel.HasAllFlags(m_IdToNodeDictionary[id], HierarchyNodeFlags.Expanded);
         }
 
@@ -696,15 +693,15 @@ namespace UnityEngine.UIElements
             if (!CanChangeExpandedState(id))
                 return;
 
-            // Using a HashSet in order to prevent duplicates and it is faster than List.Contains(id)
             m_HierarchyViewModel.SetFlags(node, HierarchyNodeFlags.Expanded, expandAllChildren);
             m_HierarchyHasPendingChanged = true;
 
+            // Required to update the expandedItemIds, can get rid of once we find a way to handle the serialized
+            // field for the viewDataKey
             if (IsViewDataKeyEnabled())
             {
+                // Using a HashSet in order to prevent duplicates and it is faster than List.Contains(id)
                 var hashSet = new HashSet<int>(baseTreeView.expandedItemIds) { id };
-                // Required to update the expandedItemIds, can get rid of once we find a way to handle the serialized
-                // field for the viewDataKey
                 if (expandAllChildren)
                 {
                     // We need to refresh the view model in order the updated nodes
@@ -749,7 +746,7 @@ namespace UnityEngine.UIElements
                 baseTreeView.SaveViewData();
             }
 
-            m_HierarchyViewModel.ClearFlags(GetHierarchyNodeById(id), HierarchyNodeFlags.Expanded, collapseAllChildren);
+            m_HierarchyViewModel.ClearFlags(node, HierarchyNodeFlags.Expanded, collapseAllChildren);
             m_HierarchyHasPendingChanged = true;
 
             if (refresh)

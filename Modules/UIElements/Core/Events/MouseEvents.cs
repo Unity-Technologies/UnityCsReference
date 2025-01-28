@@ -292,6 +292,8 @@ namespace UnityEngine.UIElements
 
         protected internal override void PostDispatch(IPanel panel)
         {
+            DebuggerEventDispatchUtilities.PostDispatch(this, (BaseVisualElementPanel)panel);
+
             if (sourcePointerEvent is EventBase pointerEvent)
             {
                 // pointerEvent processing should not be done and it should not have returned to the pool.
@@ -976,6 +978,9 @@ namespace UnityEngine.UIElements
         void LocalInit()
         {
             propagation = EventPropagation.Bubbles;
+
+            // Don't recompute top element before dispatch, we want a last valid target for this event.
+            // Note that PostDispatch clears the top element right after, so it will still end up null.
             recomputeTopElementUnderMouse = false;
         }
 
@@ -1007,9 +1012,11 @@ namespace UnityEngine.UIElements
             // of a drag and drop operation, at the very beginning of the drag. Since
             // we are not really exiting the window, we do not want to set the element
             // under mouse to null in this case.
-            if (pressedButtons == 0)
+            if (pressedButtons == 0 && panel is BaseVisualElementPanel elementPanel)
             {
-                (panel as BaseVisualElementPanel)?.ClearCachedElementUnderPointer(PointerId.mousePointerId, this);
+                elementPanel.ClearCachedElementUnderPointer(PointerId.mousePointerId, this);
+                // Call CommitElementUnderPointers manually because recomputeTopElementUnderMouse is false.
+                elementPanel.CommitElementUnderPointers();
             }
 
             base.PostDispatch(panel);
