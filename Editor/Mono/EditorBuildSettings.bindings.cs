@@ -86,10 +86,9 @@ namespace UnityEditor
         {
             get
             {
-                if (BuildProfileContext.activeProfile is not null
-                    && BuildProfileContext.activeProfile.overrideGlobalSceneList)
+                if (BuildProfileContext.activeProfile is not null)
                 {
-                    return BuildProfileContext.activeProfile.scenes;
+                    return BuildProfileContext.activeProfile.GetScenesForBuild();
                 }
 
                 return GetEditorBuildSettingsScenes();
@@ -97,7 +96,7 @@ namespace UnityEditor
             set
             {
                 if (BuildProfileContext.activeProfile is not null
-                    && BuildProfileContext.activeProfile.overrideGlobalSceneList)
+                    && BuildProfileContext.activeProfile.overrideGlobalScenes)
                 {
                     BuildProfileContext.activeProfile.scenes = value;
                 }
@@ -108,12 +107,24 @@ namespace UnityEditor
             }
         }
 
+        public static EditorBuildSettingsScene[] globalScenes
+        {
+            get
+            {
+                return GetEditorBuildSettingsSceneIgnoreProfile();
+            }
+            set
+            {
+                SetEditorBuildSettingsSceneIgnoreProfile(value);
+            }
+        }
+
         [RequiredByNativeCode]
         static EditorBuildSettingsScene[] GetActiveBuildProfileSceneList()
         {
             if (!EditorUserBuildSettings.isBuildProfileAvailable
                 || BuildProfileContext.activeProfile is null
-                || !BuildProfileContext.activeProfile.overrideGlobalSceneList)
+                || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 return null;
 
             return BuildProfileContext.activeProfile.scenes;

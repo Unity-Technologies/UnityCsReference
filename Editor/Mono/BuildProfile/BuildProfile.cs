@@ -85,11 +85,13 @@ namespace UnityEditor.Build.Profile
         }
 
         /// <summary>
-        /// When set, this build profiles <see cref="scenes"/> used when building.
+        /// Boolean flag for overriding global scene list.
+        /// When true, the scene list <see cref="scenes"/> in the build profile is used
+        /// when building. Otherwise, the global scene list is used.
         /// </summary>
         /// <seealso cref="EditorBuildSettings"/>
         [SerializeField] private bool m_OverrideGlobalSceneList = false;
-        internal bool overrideGlobalSceneList
+        public bool overrideGlobalScenes
         {
             get => m_OverrideGlobalSceneList;
             set => m_OverrideGlobalSceneList = value;
@@ -114,7 +116,7 @@ namespace UnityEditor.Build.Profile
                 m_Scenes = value;
                 CheckSceneListConsistency();
 
-                if (this == BuildProfileContext.activeProfile && m_OverrideGlobalSceneList)
+                if (this == BuildProfileContext.activeProfile && overrideGlobalScenes)
                     EditorBuildSettings.SceneListChanged();
             }
         }
@@ -149,6 +151,21 @@ namespace UnityEditor.Build.Profile
         /// Get the IBuildTarget of the build profile.
         /// </summary>
         internal IBuildTarget GetIBuildTarget() => ModuleManager.GetIBuildTarget(buildTarget);
+
+        /// <summary>
+        /// Get the list of scenes that is used when building with the build profile.
+        /// </summary>
+        /// <returns>
+        /// Returns the build profile's scene list when it's overriding global scenes. Otherwise,
+        /// returns the global scene list.
+        /// </returns>
+        public EditorBuildSettingsScene[] GetScenesForBuild()
+        {
+            if (overrideGlobalScenes)
+                return scenes;
+
+            return EditorBuildSettings.globalScenes;
+        }
 
         /// <summary>
         /// Returns true if the given <see cref="BuildProfile"/> is the active profile or a classic

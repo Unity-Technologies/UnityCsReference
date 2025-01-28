@@ -187,6 +187,8 @@ namespace UnityEditor.Build.Profile
             if (m_PlayerSettings == null)
                 return;
 
+            PlayerSettings.EnsureUnityConnectSettingsEqual(m_PlayerSettings, s_GlobalPlayerSettings);
+
             var yamlStr = PlayerSettings.SerializeAsYAMLString(m_PlayerSettings);
             m_PlayerSettingsYaml.SetSettingsFromYaml(yamlStr);
         }
@@ -201,6 +203,8 @@ namespace UnityEditor.Build.Profile
             else
                 UpdatePlayerSettingsObjectFromYAML();
             s_LoadedPlayerSettings.Add(m_PlayerSettings);
+
+            PlayerSettings.EnsureUnityConnectSettingsEqual(m_PlayerSettings, s_GlobalPlayerSettings);
             UpdateGlobalManagerPlayerSettings();
         }
 

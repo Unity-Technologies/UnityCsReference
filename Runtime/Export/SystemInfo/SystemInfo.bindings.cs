@@ -389,6 +389,11 @@ namespace UnityEngine
             get { return SupportsMultisampled2DArrayTextures(); }
         }
 
+        public static bool supportsMultisampledBackBuffer
+        {
+            get { return SupportsMultisampledBackBuffer(); }
+        }
+
         public static bool supportsMultisampleAutoResolve
         {
             get { return SupportsMultisampleAutoResolve(); }
@@ -907,6 +912,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampled2DArrayTextures")]
         static extern bool SupportsMultisampled2DArrayTextures();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledBackBuffer")]
+        static extern bool SupportsMultisampledBackBuffer();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
         static extern bool SupportsMultisampleAutoResolve();
