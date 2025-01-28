@@ -237,7 +237,7 @@ namespace UnityEditor.Build.Profile
             options.targetGroup = buildTargetGroup;
             options.locationPathName = buildLocation;
             options.assetBundleManifestPath = assetBundleManifestPath ?? PostprocessBuildPlayer.GetStreamingAssetsBundleManifestPath();
-            options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.scenes);
+            options.scenes = EditorBuildSettingsScene.GetActiveSceneList(activeProfile.GetScenesForBuild());
 
             return options;
         }

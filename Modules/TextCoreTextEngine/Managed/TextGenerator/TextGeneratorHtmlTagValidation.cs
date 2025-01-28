@@ -165,6 +165,12 @@ namespace UnityEngine.TextCore.Text
                                 tagValueType = TagValueType.None;
                                 tagUnitType = TagUnitType.Pixels;
                                 attributeIndex += 1;
+                                // IMGUI can support more than the initial 8 values for XMLAttribute. We resize if necessary.
+                                if (m_XmlAttribute.Length <= attributeIndex)
+                                {
+                                    int size = Mathf.NextPowerOfTwo(attributeIndex + 1);
+                                    Array.Resize(ref m_XmlAttribute, size);
+                                }
                                 m_XmlAttribute[attributeIndex].nameHashCode = 0;
                                 m_XmlAttribute[attributeIndex].valueType = TagValueType.None;
                                 m_XmlAttribute[attributeIndex].unitType = TagUnitType.Pixels;
@@ -808,8 +814,19 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
 
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = 3;
+                                // For IMGUI we may have multiple arguments in a single tag. We combine them in a single tag
+                                int lastIndex = m_XmlAttribute[1].valueLength;
+                                for (int i = attributeIndex; i >= 1; i--)
+                                {
+                                    if (m_XmlAttribute[i].valueLength <= 0)
+                                        continue;
+
+                                    lastIndex = (m_XmlAttribute[i].valueLength + m_XmlAttribute[i].valueStartIndex);
+                                    break;
+                                        
+                                }
                                 if (m_XmlAttribute[1].valueLength > 0)
-                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, m_XmlAttribute[1].valueLength + m_XmlAttribute[1].valueStartIndex - 1);
+                                    textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, lastIndex - 1);
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {

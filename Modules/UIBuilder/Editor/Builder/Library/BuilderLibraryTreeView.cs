@@ -46,15 +46,13 @@ namespace Unity.UI.Builder
             Add(m_TreeView);
 
             m_Items = items;
-            m_TreeView.viewDataKey = "samples-tree";
+            m_TreeView.viewDataKey = "unity-ui-builder-library-controls-tree";
             m_TreeView.fixedItemHeight = 20;
             m_TreeView.SetRootItems(items);
             m_TreeView.makeItem = MakeItem;
             m_TreeView.bindItem = BindItem;
             m_TreeView.itemsChosen += OnItemsChosen;
             m_TreeView.Rebuild();
-
-            m_TreeView.ExpandRootItems();
         }
 
         void OnContextualMenuPopulateEvent(ContextualMenuPopulateEvent evt)
@@ -202,10 +200,10 @@ namespace Unity.UI.Builder
 
             if (string.IsNullOrEmpty(value) && m_IsSearching)
             {
-                m_TreeView.viewController.CollapseAll();
+                m_TreeView.CollapseAll();
                 foreach (var id in m_PreviouslyExpandedIds)
                 {
-                    m_TreeView.viewController.ExpandItem(id, false);
+                    m_TreeView.ExpandItem(id);
                 }
                 m_PreviouslyExpandedIds.Clear();
                 m_IsSearching = false;

@@ -265,5 +265,7 @@ namespace UnityEngine.U2D
         extern internal unsafe static void SetupMaterialProperties([NotNull] SpriteRenderer spriteRenderer);
 
         extern internal static bool IsGPUSkinningEnabled();
+
+        extern internal static bool IsSRPBatchingEnabled([NotNull] SpriteRenderer spriteRenderer);
     }
 }

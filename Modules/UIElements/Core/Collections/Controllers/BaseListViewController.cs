@@ -15,6 +15,9 @@ namespace UnityEngine.UIElements
     /// </summary>
     public abstract class BaseListViewController : CollectionViewController
     {
+        internal const string k_NullItemSourceError = "Unable to add or remove items because the source is not defined. Please assign a valid items source.";
+        internal const string k_FixedItemSourceError = "Unable to add or remove items because the items source is a fixed size.";
+
         private protected class SerializedObjectListControllerImpl
         {
             private ISerializedObjectList serializedObjectList => m_SerializedObjectListGetter?.Invoke();
@@ -449,10 +452,10 @@ namespace UnityEngine.UIElements
 
         void EnsureItemSourceCanBeResized()
         {
-            var itemsSourceType = itemsSource?.GetType();
-            var itemsSourceIsArray = itemsSourceType?.IsArray ?? false;
-            if (itemsSource == null || itemsSource.IsFixedSize && !itemsSourceIsArray)
-                throw new InvalidOperationException("Cannot add or remove items from source, because it is null or its size is fixed.");
+            if (itemsSource == null)
+                throw new InvalidOperationException(k_NullItemSourceError);
+            else if (itemsSource.IsFixedSize && !itemsSource.GetType().IsArray)
+                throw new InvalidOperationException(k_FixedItemSourceError);
         }
     }
 }

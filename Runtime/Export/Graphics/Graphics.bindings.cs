@@ -354,7 +354,10 @@ namespace UnityEngine
             SetResolution(width, height, fullscreen, 0);
         }
 
+        [NativeName("SetRequestedMSAASamples")]
         extern public static void SetMSAASamples(int numSamples);
+        
+        [NativeName("GetRequestedMSAASamples")]
         extern private static int GetMSAASamples();
 
         public static int msaaSamples

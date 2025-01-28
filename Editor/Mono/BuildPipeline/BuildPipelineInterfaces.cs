@@ -13,6 +13,7 @@ using UnityEditor.Rendering;
 using UnityEngine.Scripting;
 using UnityEditor.AssetImporters;
 using UnityEngine.SceneManagement;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor.Build
 {
@@ -506,6 +507,14 @@ namespace UnityEditor.Build
                 processors.buildPreprocessorsWithReport, bpp => bpp.OnPreprocessBuild(report),
                 (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
 #pragma warning restore 618
+
+            // NOTE: This is a workaround for PLAT-11795.
+            // Sometimes, when a player settings override is modified in one of the callbacks, its internal
+            // serialized version is not updated prior to the build. As a result it will be restored to the
+            // serialized values. To avoid that situation we force the update here.
+            var profile = BuildProfile.GetActiveBuildProfile();
+            if (profile != null)
+                profile.SerializePlayerSettings();
         }
 
         [RequiredByNativeCode]
