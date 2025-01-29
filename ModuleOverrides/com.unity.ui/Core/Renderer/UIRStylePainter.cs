@@ -520,8 +520,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
                 TryAtlasTexture(rectParams.texture, rectParams.meshFlags, out uvRegion, out isAtlas, out textureId, out addFlags);
 
                 var nativeParams = rectParams.ToNativeParams(uvRegion);
-                ApplyInset(ref nativeParams, rectParams.texture);
-
                 MeshWriteDataInterface meshData;
                 if (rectParams.texture != null)
                     meshData = MeshBuilderNative.MakeTexturedRect(nativeParams, UIRUtility.k_MeshPosZ);
@@ -1464,32 +1462,6 @@ namespace UnityEngine.UIElements.UIR.Implementation
 
             mwd.SetAllVertices(vertices);
             mwd.SetAllIndices(indices);
-        }
-
-        void ApplyInset(ref MeshBuilderNative.NativeRectParams rectParams, Texture tex)
-        {
-            var rect = rectParams.rect;
-            var inset = rectParams.rectInset;
-            if (Mathf.Approximately(rect.size.x, 0.0f) || Mathf.Approximately(rect.size.y, 0.0f) || inset == Vector4.zero)
-                return;
-
-            var prevRect = rect;
-            rect.x += inset.x;
-            rect.y += inset.y;
-            rect.width -= (inset.x + inset.z);
-            rect.height -= (inset.y + inset.w);
-            rectParams.rect = rect;
-
-            var uv = rectParams.uv;
-            if (tex != null && uv.width > UIRUtility.k_Epsilon && uv.height > UIRUtility.k_Epsilon)
-            {
-                var uvScale = new Vector2(1.0f / prevRect.width, 1.0f / prevRect.height);
-                uv.x += (inset.x * uvScale.x);
-                uv.y += (inset.w * uvScale.y);
-                uv.width -= ((inset.x + inset.z) * uvScale.x);
-                uv.height -= ((inset.y + inset.w) * uvScale.y);
-                rectParams.uv = uv;
-            }
         }
 
         public void RegisterVectorImageGradient(VectorImage vi, out int settingIndexOffset, out TextureId texture)

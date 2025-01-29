@@ -12,6 +12,7 @@ namespace Unity.UI.Builder
         {
             public VisualElement editedElement;
             public TextElement targetTextElement;
+            public VisualElement editorLayer;
             public string uxmlAttributeName;
             public string propertyName;
 
@@ -126,10 +127,10 @@ namespace Unity.UI.Builder
         public static void OpenEditor(VisualElement element, Vector2 pos, VisualElement documentRoot)
         {
             var viewport = element.GetFirstAncestorOfType<BuilderViewport>();
-            var editorLayer = viewport.editorLayer;
             var textEditor = viewport.textEditor;
 
             var context = GetAttributeToEdit(element, k_TextAttributeName);
+            context.editorLayer = viewport.editorLayer;
 
             if (context.targetTextElement == null || string.IsNullOrEmpty(context.uxmlAttributeName))
                 return;
@@ -151,7 +152,7 @@ namespace Unity.UI.Builder
                 context.editedElement.SetValueByReflection(context.propertyName, k_DummyText);
             }
 
-            editorLayer.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
+            context.editorLayer.RemoveFromClassList(BuilderConstants.HiddenStyleClassName);
 
             var textInput = textEditor.Q(TextField.textInputUssName);
             textEditor.SetValueWithoutNotify(value);
@@ -191,6 +192,7 @@ namespace Unity.UI.Builder
 
             textInput.RegisterCallback<FocusOutEvent, EditingContext>(OnFocusOutEvent, context, TrickleDown.TrickleDown);
             textEditor.RegisterCallback<ChangeEvent<string>, EditingContext>(OnTextChanged, context);
+            element.RegisterCallback<DetachFromPanelEvent, EditingContext>(OnDetachFromPanelEvent, context, TrickleDown.TrickleDown);
         }
 
         static void OnTextElementGeometryChanged(GeometryChangedEvent evt, EditingContext context)
@@ -226,13 +228,15 @@ namespace Unity.UI.Builder
 
         private static void CloseEditor(EditingContext context)
         {
+            context.editorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
+            context.editedElement.UnregisterCallback<DetachFromPanelEvent, EditingContext>(OnDetachFromPanelEvent, TrickleDown.TrickleDown);
+
             var viewport = context.editedElement.GetFirstAncestorOfType<BuilderViewport>();
             if (null == viewport)
                 return;
 
             viewport.textEditor.UnregisterCallback<FocusOutEvent, EditingContext>(OnFocusOutEvent, TrickleDown.TrickleDown);
             viewport.textEditor.UnregisterCallback<ChangeEvent<string>, EditingContext>(OnTextChanged);
-            viewport.editorLayer.AddToClassList(BuilderConstants.HiddenStyleClassName);
             context.targetTextElement.UnregisterCallback<GeometryChangedEvent, EditingContext>(OnTextElementGeometryChanged);
         }
 
@@ -244,6 +248,12 @@ namespace Unity.UI.Builder
         static void OnFocusOutEvent(FocusOutEvent evt, EditingContext context)
         {
             OnEditTextFinished(context);
+        }
+
+        static void OnDetachFromPanelEvent(DetachFromPanelEvent evt, EditingContext context)
+        {
+            // Any change to the hierarchy or actions like undoing will cause a refresh of the element. Close the editor to avoid staying in a dead state. (UUM-87944)
+            CloseEditor(context);
         }
 
         static void OnEditTextFinished(EditingContext context)
