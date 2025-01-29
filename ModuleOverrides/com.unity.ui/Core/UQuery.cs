@@ -1066,6 +1066,9 @@ namespace UnityEngine.UIElements
         /// <returns>The first element matching all the criteria, or null if none was found.</returns>
         public static T Q<T>(this VisualElement e, string name = null, string className = null) where T : VisualElement
         {
+            if (e == null)
+                throw new ArgumentNullException(nameof(e));
+
             if (typeof(T) == typeof(VisualElement))
             {
                 return e.Q(name, className) as T;
