@@ -155,6 +155,7 @@ namespace UnityEditor
         string m_ConsoleSearchNoResultMsg = "";
 
         ListViewState m_ListView;
+        bool m_SyncAutoScroll;
         string m_ActiveText = "";
         StringBuilder m_CopyString;
         bool m_DevBuild;
@@ -489,7 +490,7 @@ namespace UnityEditor
             // We reset the scroll list to auto scrolling whenever the log entry count is modified
             m_ListView.rowHeight = newRowHeight;
             m_ListView.row = -1;
-            m_ListView.scrollPos.y = LogEntries.GetCount() * newRowHeight;
+            SetScrollPosYFromRow(LogEntries.GetCount());
         }
 
         bool HasSpaceForExtraButtons()
@@ -535,13 +536,15 @@ namespace UnityEditor
 
             int currCount = LogEntries.GetCount();
             bool showSearchNoResultMessage = currCount == 0 && !String.IsNullOrEmpty(m_SearchText);
-
+            m_SyncAutoScroll = false;
             if (m_ListView.totalRows != currCount)
             {
                 // scroll bar was at the bottom?
-                if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
+                var expectedScrollPosY = GetScrollPosY(m_ListView.totalRows);
+                if (m_ListView.scrollPos.y >= expectedScrollPosY)
                 {
-                    m_ListView.scrollPos.y = currCount * RowHeight - ms_LVHeight;
+                    m_ListView.scrollPos.y = GetScrollPosY(currCount);
+                    m_SyncAutoScroll = true;
                 }
             }
 
@@ -555,7 +558,7 @@ namespace UnityEditor
                 m_ListView.row = -1;
 
                 // scroll to bottom
-                m_ListView.scrollPos.y = LogEntries.GetCount() * RowHeight;
+                SetScrollPosYFromRow(LogEntries.GetCount());
             }
 
             if (HasSpaceForExtraButtons())
@@ -622,7 +625,7 @@ namespace UnityEditor
                         // Make sure that scrollPos.y is always up to date after restoring last entry
                         if (m_RestoreLatestSelection)
                         {
-                            m_ListView.scrollPos.y = scrollPosY;
+                            SetScrollPosY(scrollPosY);
                         }
 
                         if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
@@ -635,6 +638,7 @@ namespace UnityEditor
                                 EditorGUIUtility.PingObject(entry.instanceID);
                             if (e.clickCount == 2)
                                 openSelectedItem = true;
+                            m_SyncAutoScroll = false;
                         }
                         else if (e.type == EventType.Repaint)
                         {
@@ -712,8 +716,11 @@ namespace UnityEditor
 
                     if (selectedRow != -1)
                     {
-                        if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
-                            m_ListView.scrollPos.y = m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight - 1;
+                        var expectedScrollPosY = GetScrollPosY(m_ListView.totalRows);
+                        if (m_ListView.scrollPos.y >= expectedScrollPosY)
+                        {
+                            SetScrollPosY(expectedScrollPosY - 1);
+                        }
                     }
 
                     // Make sure the selected entry is up to date
@@ -806,6 +813,28 @@ namespace UnityEditor
 
             if (!ms_ConsoleWindow)
                 ms_ConsoleWindow = this;
+
+            if (m_SyncAutoScroll)
+            {
+                // Enforce autoscroll according to any potentially new rows having been added during OnGUI
+                SetScrollPosYFromRow(m_ListView.totalRows);
+            }
+        }
+
+        private void SetScrollPosY(float posY)
+        {
+            m_ListView.scrollPos.y = posY;
+            m_SyncAutoScroll = false;
+        }
+
+        private void SetScrollPosYFromRow(int rowIndex)
+        {
+            SetScrollPosY(GetScrollPosY(rowIndex));
+        }
+
+        private float GetScrollPosY(int rowIndex)
+        {
+            return rowIndex * m_ListView.rowHeight - ms_LVHeight;
         }
 
         private void SearchField(Event e)
@@ -1265,7 +1294,7 @@ namespace UnityEditor
                 ShowConsoleRow(rowIndex);
                 m_ListView.selectedItems = new bool[rowIndex + 1];
                 m_ListView.selectedItems[rowIndex] = true;
-                m_ListView.scrollPos.y = rowIndex * m_ListView.rowHeight;
+                SetScrollPosYFromRow(rowIndex);
             }
             else
             {

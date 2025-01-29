@@ -11,10 +11,14 @@ namespace UnityEditor.ShortcutManagement
 {
     class Directory : IDirectory
     {
-        List<ShortcutEntry>[] m_IndexedShortcutEntries;
+        Dictionary<KeyCode, List<ShortcutEntry>> m_IndexedShortcutEntries;
         List<ShortcutEntry> m_ShortcutEntries;
 
-        public const int MaxIndexedEntries = (int)KeyCode.Mouse6 + 1;
+        public static bool IsKeyCodeSupported(KeyCode key)
+        {
+            // KeyCode.F15 (296) and KeyCode.F16 (670) are not contiguous and start after all joystick keycode
+            return (int)key <= (int)KeyCode.Mouse6 || ((int)key >= (int)KeyCode.F16 && (int)key <= (int)KeyCode.F24);
+        }
 
         public Directory(IEnumerable<ShortcutEntry> entries)
         {
@@ -24,7 +28,7 @@ namespace UnityEditor.ShortcutManagement
         public void Initialize(IEnumerable<ShortcutEntry> entries)
         {
             m_ShortcutEntries = new List<ShortcutEntry>(entries.Count());
-            m_IndexedShortcutEntries = new List<ShortcutEntry>[MaxIndexedEntries];
+            m_IndexedShortcutEntries = new Dictionary<KeyCode, List<ShortcutEntry>>(entries.Count());
             foreach (ShortcutEntry entry in entries)
             {
                 m_ShortcutEntries.Add(entry);
@@ -43,7 +47,7 @@ namespace UnityEditor.ShortcutManagement
         {
             if (combinationSequence == null || combinationSequence.Count < 1)
                 return null;
-            return m_IndexedShortcutEntries[(int)combinationSequence[0].keyCode];
+            return m_IndexedShortcutEntries.GetValueOrDefault(combinationSequence[0].keyCode);
         }
 
         // These two overloads have some duplication to avoid creating predicates etc.
@@ -172,7 +176,7 @@ namespace UnityEditor.ShortcutManagement
 
             var tempCombinations = new List<KeyCombination>(binding.Count);
             output.Clear();
-            List<ShortcutEntry> entries = m_IndexedShortcutEntries[(int)binding[0].keyCode];
+            List<ShortcutEntry> entries = m_IndexedShortcutEntries.GetValueOrDefault(binding[0].keyCode);
             if (entries == null || !entries.Any())
                 return;
 
@@ -202,7 +206,7 @@ namespace UnityEditor.ShortcutManagement
         public void FindShortcutsWithConflicts(List<ShortcutEntry> output, IContextManager contextManager)
         {
             var conflictingEntries = new HashSet<int>();
-            foreach (List<ShortcutEntry> entries in m_IndexedShortcutEntries)
+            foreach (List<ShortcutEntry> entries in m_IndexedShortcutEntries.Values)
             {
                 if (entries == null || entries.Count < 2)
                     continue;
@@ -236,10 +240,8 @@ namespace UnityEditor.ShortcutManagement
 
         void AddEntry(KeyCode keyCode, ShortcutEntry entry)
         {
-            int keyCodeValue = (int)keyCode;
-            List<ShortcutEntry> entriesForKeyCode = m_IndexedShortcutEntries[keyCodeValue];
-            if (entriesForKeyCode == null)
-                m_IndexedShortcutEntries[keyCodeValue] = entriesForKeyCode = new List<ShortcutEntry>();
+            if (!m_IndexedShortcutEntries.TryGetValue(keyCode, out var entriesForKeyCode))
+                m_IndexedShortcutEntries.Add(keyCode, entriesForKeyCode = new List<ShortcutEntry>());
             entriesForKeyCode.Add(entry);
         }
 

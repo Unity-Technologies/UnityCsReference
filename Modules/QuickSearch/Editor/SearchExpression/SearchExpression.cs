@@ -241,13 +241,12 @@ namespace UnityEditor.Search
 
         internal static SearchExpression Parse(string text, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
         {
-            var searchContext = SearchService.CreateContext(text);
-            return Parse(searchContext, options);
+            return ParserManager.Parse(new SearchExpressionParserArgs(text.GetStringView(), options));
         }
 
         internal static SearchExpression Parse(SearchContext context, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
         {
-            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchText.GetStringView(), context, options));
+            return ParserManager.Parse(new SearchExpressionParserArgs(context.searchText.GetStringView(), options));
         }
 
         private IEnumerable<SearchItem> Evaluate(SearchExpressionContext c, SearchExpressionExecutionFlags flags)

@@ -20,6 +20,10 @@ namespace UnityEngine.TextCore.Text
                 return Vector2.zero;
             }
 
+            // Early exit if invalid font-size
+            if (settings.fontSize <= 0)
+                return Vector2.zero;
+
             Prepare(settings, textInfo);
             return GetPreferredValuesInternal(settings, textInfo);
         }

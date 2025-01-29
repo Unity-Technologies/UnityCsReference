@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Overlays;
+using UnityEditor.Rendering;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
@@ -330,6 +331,13 @@ namespace UnityEditor
             if (m_Overlay.viewpoint == null || !m_Overlay.viewpoint.TargetObject || !(m_Overlay.viewpoint is ICameraLensData))
             {
                 GUILayout.Label(k_NoCameraDisplayLabel, EditorStyles.centeredGreyMiniLabel);
+                return;
+            }
+
+            //In some context, some camera cannot render preview (e.g.: overlay camera from URP's camera stacking)
+            if (m_Overlay.viewpoint.TargetObject is Camera camera && !RenderPipelineEditorUtility.SupportPreview(camera, out string reason))
+            {
+                GUILayout.Label(reason, EditorStyles.centeredGreyMiniLabel);
                 return;
             }
 

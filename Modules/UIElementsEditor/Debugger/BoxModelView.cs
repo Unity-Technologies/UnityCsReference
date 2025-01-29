@@ -71,21 +71,27 @@ namespace UnityEditor.UIElements.Debugger
 
             m_TopTextFieldMarginContainer.pickingMode = PickingMode.Ignore;
             m_TopTextFieldMarginContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_TopTextFieldMarginContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Margin);
 
             m_BottomTextFieldMarginContainer.pickingMode = PickingMode.Ignore;
             m_BottomTextFieldMarginContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_BottomTextFieldMarginContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Margin);
 
             m_TopTextFieldBorderContainer.pickingMode = PickingMode.Ignore;
             m_TopTextFieldBorderContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_TopTextFieldBorderContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Border);
 
             m_BottomTextFieldBorderContainer.pickingMode = PickingMode.Ignore;
             m_BottomTextFieldBorderContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_BottomTextFieldBorderContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Border);
 
             m_TopTextFieldPaddingContainer.pickingMode = PickingMode.Ignore;
             m_TopTextFieldPaddingContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_TopTextFieldPaddingContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Padding);
 
             m_BottomTextFieldPaddingContainer.pickingMode = PickingMode.Ignore;
             m_BottomTextFieldPaddingContainer.AddToClassList("box-model-textfield-top-bottom-spacer");
+            m_BottomTextFieldPaddingContainer.RegisterCallback<MouseOverEvent, BoxType>(OnMouseOver, BoxType.Padding);
 
             m_ContentSpacer.pickingMode = PickingMode.Ignore;
             m_ContentSpacer.AddToClassList("box-model-textfield-top-bottom-spacer");

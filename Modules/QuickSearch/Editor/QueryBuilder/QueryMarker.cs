@@ -42,6 +42,11 @@ namespace UnityEditor.Search
                 return Evaluate(context, reevaluateLiterals).ToList();
             }
         }
+
+        public override string ToString()
+        {
+            return rawText.ToString();
+        }
     }
 
     // <$CONTROL_TYPE:[VALUE,]EXPRESSION_ARGS$>.
@@ -106,7 +111,7 @@ namespace UnityEditor.Search
             {
                 foreach (var arg in args)
                 {
-                    var parserArgs = new SearchExpressionParserArgs(arg, context, SearchExpressionParserFlags.ImplicitLiterals);
+                    var parserArgs = new SearchExpressionParserArgs(arg, SearchExpressionParserFlags.ImplicitLiterals);
                     SearchExpression expression = null;
                     try
                     {

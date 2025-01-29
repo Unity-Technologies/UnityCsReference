@@ -271,7 +271,7 @@ namespace UnityEditor.Search
                 m_ViewModel.SetSearchText(qd.searchText);
         }
 
-        private bool IsFilteredQuery(ISearchQuery query, SearchProvider provider)
+        private static bool IsFilteredQuery(ISearchQuery query, SearchProvider provider)
         {
             if (provider == null)
                 return false;
@@ -302,7 +302,7 @@ namespace UnityEditor.Search
             });
         }
 
-        private IEnumerable<string> EnumerateUniqueRecentSearches()
+        private static IEnumerable<string> EnumerateUniqueRecentSearches()
         {
             var recentSearches = SearchSettings.recentSearches.ToList();
             for (var i = 0; i < recentSearches.Count(); ++i)
@@ -687,7 +687,7 @@ namespace UnityEditor.Search
             // Nothing to do
         }
 
-        void IResultView.AddSaveQueryMenuItems(SearchContext context, GenericMenu menu)
+        void IResultView.AddSaveQueryMenuItems(SearchContext ctx, GenericMenu menu)
         {
             // Nothing to do
         }

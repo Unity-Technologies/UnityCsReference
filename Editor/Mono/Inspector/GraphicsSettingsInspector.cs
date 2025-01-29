@@ -287,6 +287,7 @@ namespace UnityEditor
             var enumMode = content.MandatoryQ<EnumField>($"{id}Modes");
             var enumModeGroup = content.MandatoryQ<VisualElement>($"{id}ModesGroup");
             var enumModeProperty = serializedObject.FindProperty($"m_{id}Stripping");
+            UIElementsEditorUtility.SetVisibility(enumModeGroup, (StrippingModes)enumModeProperty.enumValueFlag == StrippingModes.Custom);
             UIElementsEditorUtility.BindSerializedProperty<StrippingModes>(enumMode, enumModeProperty,
                 mode => UIElementsEditorUtility.SetVisibility(enumModeGroup, mode == StrippingModes.Custom));
             content.MandatoryQ<Button>($"Import{id}FromCurrentScene").clicked += buttonCallback;

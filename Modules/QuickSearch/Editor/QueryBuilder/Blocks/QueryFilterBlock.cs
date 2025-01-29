@@ -332,12 +332,6 @@ namespace UnityEditor.Search
 
         internal override void AddContextualMenuItems(GenericMenu menu)
         {
-            foreach (var _e in Enum.GetValues(typeof(QueryBlockFormat)))
-            {
-                var e = (QueryBlockFormat)_e;
-                menu.AddItem(EditorGUIUtility.TrTextContent($"Format/{ObjectNames.NicifyVariableName(e.ToString())}"), format == e, () => SetFormat(e));
-            }
-
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Equal (=)"), string.Equals(op, "=", StringComparison.Ordinal), () => SetOperator("="));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Contains (:)"), string.Equals(op, ":", StringComparison.Ordinal), () => SetOperator(":"));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Less Than or Equal (<=)"), string.Equals(op, "<=", StringComparison.Ordinal), () => SetOperator("<="));

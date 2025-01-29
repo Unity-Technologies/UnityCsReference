@@ -105,6 +105,18 @@ namespace UnityEngine.Rendering
             public CubemapFace face = CubemapFace.Unknown;
             public int slice = 0;
         }
+        
+        //this should be in a dedicated editor class but there is none sadly to communicate between engine and SRP
+        internal protected virtual bool IsPreviewSupported(Camera camera, out string reason)
+        {
+            if (camera == null || camera.Equals(null))
+            {
+                reason = "Camera is null";
+                return false;
+            }
+            reason = null;
+            return true;
+        }
 
         public bool disposed { get; private set; }
 

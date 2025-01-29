@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+// #define DEBUG_SEARCHINDEXER_DISPOSE
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -328,6 +329,7 @@ namespace UnityEditor.Search
     /// </summary>
     public class SearchIndexer : IDisposable
     {
+
         /// <summary>
         /// Name of the index. Generally this name is given by a user from a <see cref="SearchDatabase.Settings"/>
         /// </summary>
@@ -480,6 +482,7 @@ namespace UnityEditor.Search
 
         void Dispose(bool disposing)
         {
+
             m_Indexes.Dispose();
             if (m_DocumentListTableHandle.IsAllocated)
                 m_DocumentListTableHandle.Free();
@@ -1450,6 +1453,9 @@ namespace UnityEditor.Search
             }
         }
 
+        // If this ever comes public, remove GC.SuppressFinalize(source) and make sure
+        // to copy the native data. Also, do not call Dispose on the SearchIndexer passed
+        // to ApplyFrom.
         internal void ApplyFrom(SearchIndexer source)
         {
             lock (this)
@@ -1468,6 +1474,10 @@ namespace UnityEditor.Search
                     m_DocumentListTableHandle = source.m_DocumentListTableHandle;
                     m_DocumentListTable.Dispose();
                     m_DocumentListTable = source.m_DocumentListTable;
+
+                    // Suppress finalizer for the source, because we now own
+                    // the native arrays.
+                    GC.SuppressFinalize(source);
 
                     BuildDocumentIndexTable();
 

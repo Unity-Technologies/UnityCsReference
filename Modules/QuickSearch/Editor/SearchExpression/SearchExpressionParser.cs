@@ -12,7 +12,6 @@ using System.Text.RegularExpressions;
 namespace UnityEditor.Search
 {
     delegate SearchExpression SearchExpressionParserWithStructHandler(SearchExpressionParserArgs args);
-    delegate SearchExpression SearchExpressionParserWithContextHandler(string text, SearchContext context);
     delegate SearchExpression SearchExpressionParserHandler(string text);
     delegate SearchExpression SearchExpressionParserHandlerStringView(StringView text);
 
@@ -63,24 +62,19 @@ namespace UnityEditor.Search
     readonly struct SearchExpressionParserArgs
     {
         public readonly StringView text;
-        public readonly SearchContext context;
         public readonly SearchExpressionParserFlags options;
 
-        public SearchExpressionParserArgs(StringView text, SearchContext context = null, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
+        public SearchExpressionParserArgs(StringView text, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
         {
             this.text = text.Trim();
-            this.context = context;
+
             this.options = options;
         }
 
-        public SearchExpressionParserArgs(SearchContext context, SearchExpressionParserFlags options = SearchExpressionParserFlags.Default)
-            : this(new StringView(context.searchText), context, options)
-        {
-        }
 
         internal SearchExpressionParserArgs With(StringView newText, SearchExpressionParserFlags optionsToAdd = SearchExpressionParserFlags.None)
         {
-            return new SearchExpressionParserArgs(newText, context, options | optionsToAdd);
+            return new SearchExpressionParserArgs(newText, options | optionsToAdd);
         }
 
         public SearchExpressionParserArgs With(SearchExpressionParserFlags optionsToAdd)
@@ -90,7 +84,7 @@ namespace UnityEditor.Search
 
         public SearchExpressionParserArgs Without(SearchExpressionParserFlags optionsToRemove)
         {
-            return new SearchExpressionParserArgs(text, context, options & ~optionsToRemove);
+            return new SearchExpressionParserArgs(text, options & ~optionsToRemove);
         }
 
         public bool HasOption(SearchExpressionParserFlags option)
@@ -150,7 +144,6 @@ namespace UnityEditor.Search
             {
                 MethodSignature.FromDelegate<SearchExpressionParserHandler>(),
                 MethodSignature.FromDelegate<SearchExpressionParserHandlerStringView>(),
-                MethodSignature.FromDelegate<SearchExpressionParserWithContextHandler>(),
                 MethodSignature.FromDelegate<SearchExpressionParserWithStructHandler>()
             };
             parsers = ReflectionUtils.LoadAllMethodsWithAttribute<SearchExpressionParserAttribute, SearchExpressionParser>(
@@ -158,8 +151,6 @@ namespace UnityEditor.Search
                 {
                     if (handler is SearchExpressionParserWithStructHandler handlerWithStruct)
                         return new SearchExpressionParser(attribute.name, attribute.priority, handlerWithStruct);
-                    if (handler is SearchExpressionParserWithContextHandler handlerWithContext)
-                        return new SearchExpressionParser(attribute.name, attribute.priority, args => handlerWithContext(args.text.ToString(), args.context));
                     if (handler is SearchExpressionParserHandlerStringView handlerStringView)
                         return new SearchExpressionParser(attribute.name, attribute.priority, (args) => handlerStringView(args.text));
                     if (handler is SearchExpressionParserHandler handlerNoContext)
@@ -179,8 +170,7 @@ namespace UnityEditor.Search
                     return expr;
             }
 
-            throw new SearchExpressionParseException($"Expression `{args.text}` cannot be parsed.\n" +
-                $"{string.Join("\n", args.context.GetAllErrors().Select(e => e.reason))}".Trim(), args.text.startIndex, args.text.length);
+            throw new SearchExpressionParseException($"Expression `{args.text}` cannot be parsed.\n", args.text.startIndex, args.text.length);
         }
     }
 

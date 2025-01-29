@@ -132,7 +132,12 @@ namespace UnityEditor
             keywords = GetSearchKeywordsFromGUIContentProperties<T>();
         }
 
-        internal virtual void FocusLost()
+        internal void OnFocusLost()
+        {
+            FocusLost();
+        }
+
+        protected virtual void FocusLost()
         {
         }
 

@@ -24,7 +24,7 @@ namespace UnityEditor
         [SerializeField] private Vector2 m_PosRight;
 
         [SerializeField] private SettingsScope m_Scope;
-        [SerializeField] public float m_SplitterFlex = 0.2f;
+        [SerializeField] public float m_SplitterPos;
         [SerializeField] private string m_SearchText;
         [SerializeField] private TreeViewState m_TreeViewState;
 
@@ -117,7 +117,7 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            m_TreeView?.currentProvider?.FocusLost();
+            m_TreeView?.currentProvider?.OnFocusLost();
         }
 
         internal void FilterProviders(string search)
@@ -149,9 +149,7 @@ namespace UnityEditor
         {
             if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
-                var splitLeft = m_Splitter.Children().First();
-                float flexGrow = splitLeft.resolvedStyle.flexGrow;
-                EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_Splitter)), flexGrow);
+                EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_SplitterPos)), m_Splitter.fixedPaneDimension);
             }
 
             if (m_TreeView != null && m_TreeView.currentProvider != null)
@@ -362,8 +360,8 @@ namespace UnityEditor
             m_Toolbar = new IMGUIContainer(DrawToolbar);
             root.Add(m_Toolbar);
 
-            m_SplitterFlex = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_Splitter)), m_SplitterFlex);
-            m_Splitter = new TwoPaneSplitView
+            m_SplitterPos = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_SplitterPos)), 150f);
+            m_Splitter = new TwoPaneSplitView(0, m_SplitterPos, TwoPaneSplitViewOrientation.Horizontal)
             {
                 name = "SettingsSplitter",
                 viewDataKey = k_MainSplitterViewDataKey
@@ -372,24 +370,12 @@ namespace UnityEditor
             root.Add(m_Splitter);
             m_TreeViewContainer = new IMGUIContainer(DrawTreeView)
             {
-                style =
-                {
-                    flexGrow = m_SplitterFlex,
-                    flexBasis = 0f
-                },
                 focusOnlyIfHasFocusableControls = false,
             };
             m_TreeViewContainer.AddToClassList("settings-tree-imgui-container");
             m_Splitter.Add(m_TreeViewContainer);
 
-            m_SettingsPanel = new VisualElement()
-            {
-                style =
-                {
-                    flexGrow = 1.0f - m_SplitterFlex,
-                    flexBasis = 0f
-                }
-            };
+            m_SettingsPanel = new VisualElement();
             m_SettingsPanel.AddToClassList("settings-panel");
             m_Splitter.Add(m_SettingsPanel);
         }

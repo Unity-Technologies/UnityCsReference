@@ -92,6 +92,11 @@ namespace UnityEditor.Search
             {
                 return query.lastUsedTime == other.query.lastUsedTime && string.Equals(query.displayName, other.query.displayName, StringComparison.Ordinal);
             }
+
+            public override string ToString()
+            {
+                return searchText;
+            }
         }
 
         public bool blockMode;
@@ -115,7 +120,7 @@ namespace UnityEditor.Search
             QueryBuilder builder = null;
             if (blockMode)
             {
-                builder = new QueryBuilder(query.searchText) { @readonly = true };
+                builder = new QueryBuilder(query.searchText, supportsSearchExpression: false) { @readonly = true };
                 foreach (var b in builder.blocks)
                     b.disableHovering = true;
             }

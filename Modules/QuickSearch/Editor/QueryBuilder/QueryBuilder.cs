@@ -23,6 +23,8 @@ namespace UnityEditor.Search
         private readonly SearchContext m_Context;
         private readonly QueryEngine<QueryBlock> m_QueryEngine;
 
+        public bool supportsSearchExpression { get; set; } = true;
+
         public bool @readonly
         {
             get
@@ -98,9 +100,10 @@ namespace UnityEditor.Search
             Build();
         }
 
-        public QueryBuilder(string searchText)
+        public QueryBuilder(string searchText, bool supportsSearchExpression = true)
             : this()
         {
+            this.supportsSearchExpression = supportsSearchExpression;
             m_SearchText = searchText;
             Build();
         }
@@ -258,7 +261,10 @@ namespace UnityEditor.Search
                 SearchExpression rootExpression = null;
                 try
                 {
-                    rootExpression = SearchExpression.Parse(searchText);
+                    if (supportsSearchExpression)
+                    {
+                        rootExpression = SearchExpression.Parse(searchText);
+                    }
                 }
                 catch(SearchExpressionParseException)
                 {
@@ -497,11 +503,11 @@ namespace UnityEditor.Search
         private void SetSearchText(string text)
         {
             text = Utils.Simplify(text);
+            searchText = text;
             if (searchView != null)
                 searchView.SetSearchText(text, TextCursorPlacement.None);
             else if (context != null)
                 context.searchText = text;
-            searchText = text;
         }
 
         static bool HasCharacterModifier(in Event evt)

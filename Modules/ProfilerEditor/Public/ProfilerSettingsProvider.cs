@@ -114,7 +114,7 @@ namespace UnityEditor.Profiling
             }
         }
 
-        internal override void FocusLost()
+        protected override void FocusLost()
         {
             ValidateConnectionId();
         }

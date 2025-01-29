@@ -41,10 +41,7 @@ namespace UnityEditor.Search
         internal const string toggleInspectorPanelShortcutId = "Search/Toggle Inspector Panel";
         internal const string toggleSavedSearchesPanelShortcutId = "Search/Toggle Saved Searches Panel";
 
-        private const string k_TogleSyncShortcutName = "Search/Toggle Sync Search View";
         private const string k_LastSearchPrefKey = "last_search";
-        private const string k_SideBarWidthKey = "Search.SidebarWidth";
-        private const string k_DetailsWidthKey = "Search.DetailsWidth";
         private static readonly string k_CheckWindowKeyName = $"{typeof(SearchWindow).FullName}h";
 
         private static EditorWindow s_FocusedWindow;
@@ -79,7 +76,7 @@ namespace UnityEditor.Search
         internal SearchToolbar searchToolbar => m_SearchToolbar;
         internal IReadOnlyCollection<SearchProvider> availableProviders => m_AvailableProviders;
 
-        internal static readonly int generalWindowContextHash = SearchFlags.GeneralSearchWindow.ToString().GetHashCode();
+        internal static readonly int generalWindowContextHash = HashingUtils.GetHashCode(SearchFlags.GeneralSearchWindow.ToString());
         internal int contextHash => m_ContextHash;
 
         public Action<SearchItem, bool> selectCallback
@@ -303,15 +300,15 @@ namespace UnityEditor.Search
             if (m_ViewState.isInspectorPanelVisible)
                 m_DetailsPanelContainer.Add(new SearchDetailView("SearchDetailView", this, "search-panel", "search-detail-panel"));
 
-            m_LeftSplitter = new TwoPaneSplitView(0, EditorPrefs.GetFloat(k_SideBarWidthKey, 120f), TwoPaneSplitViewOrientation.Horizontal) { name = "SearchLeftSidePanels" };
-            m_LeftSplitter.viewDataKey = k_LeftSplitterViewDataKey;
+            m_LeftSplitter = new TwoPaneSplitView() { name = "SearchLeftSidePanels", viewDataKey = k_LeftSplitterViewDataKey };
+            m_LeftSplitter.fixedPaneIndex = 0;
             m_LeftSplitter.AddToClassList("search-splitter");
             m_LeftSplitter.AddToClassList("search-splitter__flexed-pane");
             m_LeftSplitter.Add(m_SearchQueryPanelContainer);
             m_LeftSplitter.Add(resultContainer);
 
-            m_RightSplitter = new TwoPaneSplitView(1, EditorPrefs.GetFloat(k_DetailsWidthKey, 160f), TwoPaneSplitViewOrientation.Horizontal) { name = "SearchContent" };
-            m_RightSplitter.viewDataKey = k_RightSplitterViewDataKey;
+            m_RightSplitter = new TwoPaneSplitView() { name = "SearchContent", viewDataKey = k_RightSplitterViewDataKey };
+            m_RightSplitter.fixedPaneIndex = 1;
             m_RightSplitter.AddToClassList("search-content");
             m_RightSplitter.AddToClassList("search-splitter");
             m_RightSplitter.Add(m_LeftSplitter);
@@ -1065,7 +1062,7 @@ namespace UnityEditor.Search
             }
             else if (context.options.HasFlag(SearchFlags.UseSessionSettings) && !string.IsNullOrEmpty(viewState.sessionName))
             {
-                m_ContextHash = viewState.sessionName.GetHashCode();
+                m_ContextHash = HashingUtils.GetHashCode(viewState.sessionName);
             }
             else
             {

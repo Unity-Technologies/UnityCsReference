@@ -7650,6 +7650,9 @@
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\DebugTimer.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\DebugTimer.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\HashingUtils.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\HashingUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\IStringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\IStringView.cs</Link>
     </Compile>
@@ -7658,6 +7661,9 @@
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\RetriableOperation.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\RetriableOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\SearchDisposableTracker.cs">
+      <Link>Modules\QuickSearch\Editor\Utilities\SearchDisposableTracker.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\QuickSearch\Editor\Utilities\StringView.cs">
       <Link>Modules\QuickSearch\Editor\Utilities\StringView.cs</Link>
