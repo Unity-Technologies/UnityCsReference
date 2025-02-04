@@ -265,5 +265,22 @@ namespace UnityEditor.Rendering
         /// <returns>A string with the warning message about layers beyond the supported bit count being ignored.</returns>
         internal static string GetOutsideOfMaxBitCountWarningMessage(int bitCount) =>
             $"Current mask contains layers outside of a supported range by active Render Pipeline. The active Render Pipeline only supports up to {bitCount} layers. Rendering Layers above {bitCount} are ignored.";
+
+        internal static bool SupportPreview(Camera camera, out string reason)
+        {
+            if (!RenderPipelineManager.isCurrentPipelineValid)
+            {
+                //Thus we are in Built-in Render Pipeline. Preview are supported here.
+                if (camera == null || camera.Equals(null))
+                {
+                    reason = "Camera is null";
+                    return false;
+                }
+                reason = null;
+                return true;
+            }
+
+            return RenderPipelineManager.currentPipeline.IsPreviewSupported(camera, out reason);
+        }
     }
 }

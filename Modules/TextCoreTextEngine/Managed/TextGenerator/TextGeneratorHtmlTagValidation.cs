@@ -409,6 +409,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SUBSCRIPT:
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.subscriptSize > 0 ? m_CurrentFontAsset.faceInfo.subscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
+                        m_MaterialReferenceStack.Push(m_MaterialReferences[m_CurrentMaterialIndex]);
                         fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.subscriptOffset * fontScale * m_FontScaleMultiplier;
 
@@ -418,10 +419,11 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SLASH_SUBSCRIPT:
                         if ((m_FontStyleInternal & FontStyles.Subscript) == FontStyles.Subscript)
                         {
+                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset;
                             if (m_FontScaleMultiplier < 1)
                             {
                                 m_BaselineOffset = m_BaselineOffsetStack.Pop();
-                                m_FontScaleMultiplier /= m_CurrentFontAsset.faceInfo.subscriptSize > 0 ? m_CurrentFontAsset.faceInfo.subscriptSize : 1;
+                                m_FontScaleMultiplier /= previousFontAsset.faceInfo.subscriptSize > 0 ? previousFontAsset.faceInfo.subscriptSize : 1;
                             }
 
                             if (m_FontStyleStack.Remove(FontStyles.Subscript) == 0)
@@ -431,6 +433,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SUPERSCRIPT:
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.superscriptSize > 0 ? m_CurrentFontAsset.faceInfo.superscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
+                        m_MaterialReferenceStack.Push(m_MaterialReferences[m_CurrentMaterialIndex]);
                         fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.superscriptOffset * fontScale * m_FontScaleMultiplier;
 
@@ -440,10 +443,11 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SLASH_SUPERSCRIPT:
                         if ((m_FontStyleInternal & FontStyles.Superscript) == FontStyles.Superscript)
                         {
+                            var previousFontAsset = m_MaterialReferenceStack.Pop().fontAsset;
                             if (m_FontScaleMultiplier < 1)
                             {
                                 m_BaselineOffset = m_BaselineOffsetStack.Pop();
-                                m_FontScaleMultiplier /= m_CurrentFontAsset.faceInfo.superscriptSize > 0 ? m_CurrentFontAsset.faceInfo.superscriptSize : 1;
+                                m_FontScaleMultiplier /= previousFontAsset.faceInfo.superscriptSize > 0 ? previousFontAsset.faceInfo.superscriptSize : 1;
                             }
 
                             if (m_FontStyleStack.Remove(FontStyles.Superscript) == 0)

@@ -110,6 +110,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             => !string.IsNullOrEmpty(versionInManifest) && !HasTag(PackageTag.Git | PackageTag.Local | PackageTag.Custom) &&
                 versionInManifest != versionString;
 
+        // Request but overridden could happen because other packages/features depend on this version of the package,
+        // or because of bundled packages in the editor or editor manifest versions that require a specific version of a package
+        // Here is the list of bundled packages: https://github.cds.internal.unity3d.com/unity/neutron/tree/main/Packages
         public bool IsRequestedButOverriddenVersion
             => !string.IsNullOrEmpty(versionString) && !isInstalled &&
                 versionString == m_Package?.versions.primary.versionInManifest;

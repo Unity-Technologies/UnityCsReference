@@ -168,7 +168,7 @@ namespace UnityEngine.Rendering
             return currentPipeline != null;
         }
 
-        private static bool isCurrentPipelineValid => currentPipeline is { disposed: false };
+        internal static bool isCurrentPipelineValid => currentPipeline is { disposed: false };
         static bool IsPipelineRequireCreation() => s_CurrentPipelineAsset != null && (currentPipeline == null || currentPipeline.disposed);
     }
 }

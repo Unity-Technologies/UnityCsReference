@@ -145,7 +145,7 @@ namespace Unity.UI.Builder
             {
                 var variable = variables[i];
 
-                if (!editorExtensionMode && variable.sheet.isDefaultStyleSheet)
+                if (!editorExtensionMode && variable.sheet.IsUnityEditorStyleSheet())
                     continue;
 
                 if (variables[i].name == variableName)

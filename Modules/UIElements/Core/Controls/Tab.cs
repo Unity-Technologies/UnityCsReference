@@ -178,7 +178,7 @@ namespace UnityEngine.UIElements
         /// This event is called before a tab is closed. Return true if the tab can be closed.
         /// </summary>
         /// <remarks>
-        /// In the case where more than one events are assigned, all of them will be executed synchronously but only the
+        /// In the case where more than one event are assigned, all of them will be executed synchronously but only the
         /// last value will be taken into account.
         /// </remarks>
         public event Func<bool> closing;

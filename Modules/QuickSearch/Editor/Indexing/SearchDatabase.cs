@@ -300,6 +300,7 @@ namespace UnityEditor.Search
             }
 
             this.settings = settings;
+            index?.Dispose();
             index = CreateIndexer(settings);
             name = settings.name;
             LoadAsync();
@@ -385,7 +386,10 @@ namespace UnityEditor.Search
             {
                 var db = Find(p);
                 if (db)
+                {
                     updateViews = s_DBs.Remove(db);
+                    Unload(db);
+                }
             }
 
             foreach (var p in FilterIndexes(updated))
@@ -454,6 +458,7 @@ namespace UnityEditor.Search
         public void Import(string settingsPath)
         {
             settings = LoadSettings(settingsPath);
+            index?.Dispose();
             index = CreateIndexer(settings);
             name = settings.name;
             DeleteBackupIndex();
@@ -493,6 +498,7 @@ namespace UnityEditor.Search
                 DestroyImmediate(db);
         }
 
+
         internal void OnEnable()
         {
             if (settings == null)
@@ -504,6 +510,8 @@ namespace UnityEditor.Search
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
             EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
+            // In the off chance we call OnEnable on an existing SearchDatabase.
+            index?.Dispose();
             index = CreateIndexer(settings, path);
 
             if (settings.source == null)
@@ -618,6 +626,13 @@ namespace UnityEditor.Search
         private string GetIndexTypeSuffix()
         {
             return $"{settings.options.GetHashCode():X}.index".ToLowerInvariant();
+        }
+
+        internal ArtifactKey GetAssetArtifactKey(string assetPath)
+        {
+            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
+            var artifact = new IndexArtifact(assetPath, AssetDatabase.GUIDFromAssetPath(assetPath), indexImporterType);
+            return artifact.key;
         }
 
         private bool ResolveArtifactPaths(in IList<IndexArtifact> artifacts, out List<IndexArtifact> unresolvedArtifacts, Task task, ref int completed)
@@ -838,7 +853,6 @@ namespace UnityEditor.Search
 
             // Do not dispose of data.combinedIndex, since we are using its data into index
             index.ApplyFrom(data.combinedIndex);
-            GC.SuppressFinalize(data.combinedIndex);
             indexSize = data.bytes.Length;
             SaveIndex(data.bytes, Setup);
             EmitDatabaseReady(this);
@@ -862,7 +876,6 @@ namespace UnityEditor.Search
 
             // Do not dispose of data.combinedIndex, since we are using its data into index
             index.ApplyFrom(data.combinedIndex);
-            GC.SuppressFinalize(data.combinedIndex);
             indexSize = data.bytes.Length;
             Setup();
 
@@ -915,17 +928,13 @@ namespace UnityEditor.Search
                 File.WriteAllBytes(tempSave, saveBytes);
                 indexSize = saveBytes.Length;
 
-                try
+                RetriableOperation<IOException>.Execute(() =>
                 {
                     if (File.Exists(backupIndexPath))
                         File.Delete(backupIndexPath);
-                }
-                catch (IOException)
-                {
-                    // ignore file index persistence operation, since it is not critical and will redone later.
-                }
 
-                File.Move(tempSave, backupIndexPath);
+                    File.Move(tempSave, backupIndexPath);
+                });
             }
             catch (IOException ex)
             {

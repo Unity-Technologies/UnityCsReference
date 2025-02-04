@@ -37,6 +37,8 @@ namespace UnityEditor.Search
         private static readonly ConcurrentQueue<Task> s_ExecutionQueue = new ConcurrentQueue<Task>();
         private static readonly SearchEventManager s_SearchEventManager = new SearchEventManager();
 
+        internal static int QueueCount => s_ExecutionQueue.Count;
+
         static Dispatcher()
         {
             Utils.tick += Update;

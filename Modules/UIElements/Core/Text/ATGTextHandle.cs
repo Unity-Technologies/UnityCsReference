@@ -146,9 +146,7 @@ namespace UnityEngine.UIElements
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
-            nativeSettings.fontSize = (int)(style.fontSize.value > 0
-                ? style.fontSize.value * 64.0f
-                : fa.faceInfo.pointSize * 64.0f);
+            nativeSettings.fontSize = (int)(style.fontSize.value * 64.0f);
             nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
             nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
