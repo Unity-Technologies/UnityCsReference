@@ -473,17 +473,17 @@ namespace UnityEngine.UIElements
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginLeft + m_FixedPane.resolvedStyle.marginRight;
                 if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.left = fixedPaneMargins + m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.left = fixedPaneMargins + dimension;
                 else
-                    m_DragLineAnchor.style.left = resolvedStyle.width - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.width;
+                    m_DragLineAnchor.style.left = resolvedStyle.width - fixedPaneMargins - dimension - m_DragLineAnchor.resolvedStyle.width;
             }
             else
             {
                 var fixedPaneMargins = m_FixedPane.resolvedStyle.marginTop + m_FixedPane.resolvedStyle.marginBottom;
                 if (m_FixedPaneIndex == 0)
-                    m_DragLineAnchor.style.top = fixedPaneMargins + m_FixedPaneInitialDimension;
+                    m_DragLineAnchor.style.top = fixedPaneMargins + dimension;
                 else
-                    m_DragLineAnchor.style.top = resolvedStyle.height - fixedPaneMargins - m_FixedPaneInitialDimension - m_DragLineAnchor.resolvedStyle.height;
+                    m_DragLineAnchor.style.top = resolvedStyle.height - fixedPaneMargins - dimension - m_DragLineAnchor.resolvedStyle.height;
             }
 
             int direction = 1;

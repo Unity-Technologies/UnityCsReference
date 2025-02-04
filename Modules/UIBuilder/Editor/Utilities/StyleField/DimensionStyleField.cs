@@ -28,6 +28,33 @@ namespace Unity.UI.Builder
             public new static void Register()
             {
                 StyleField<float>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(min), "min"),
+                    new (nameof(max), "max"),
+                });
+            }
+
+            #pragma warning disable 649
+            [SerializeField] float min;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags min_UxmlAttributeFlags;
+            [SerializeField] float max;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags max_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (DimensionStyleField)obj;
+                if (ShouldWriteAttributeValue(min_UxmlAttributeFlags))
+                {
+                    e.min = min;
+                }
+                if (ShouldWriteAttributeValue(max_UxmlAttributeFlags))
+                {
+                    e.max = max;
+                }
             }
 
             public override object CreateInstance() => new DimensionStyleField();
@@ -39,6 +66,44 @@ namespace Unity.UI.Builder
         protected IntegerField draggerIntegerField => m_DraggerIntegerField;
 
         bool m_IsFieldDraggerInitialized;
+
+        float m_Min = float.MinValue;
+
+        /// <summary>
+        /// This is the minimum value that the field allows.
+        /// </summary>
+        [UxmlAttribute]
+        public float min
+        {
+            get => m_Min;
+            set
+            {
+                if (!EqualityComparer<float>.Default.Equals(m_Min, value))
+                {
+                    m_Min = value;
+                    innerValue = Math.Clamp(innerValue, m_Min, m_Max);
+                }
+            }
+        }
+
+        float m_Max = float.MaxValue;
+
+        /// <summary>
+        /// This is the maximum value that the field allows.
+        /// </summary>
+        [UxmlAttribute]
+        public float max
+        {
+            get => m_Max;
+            set
+            {
+                if (!EqualityComparer<float>.Default.Equals(m_Max, value))
+                {
+                    m_Max = value;
+                    innerValue = Math.Clamp(innerValue, m_Max, m_Min); // Ensure the value is within the new min/max range.
+                }
+            }
+        }
 
         float m_DragStep = 1;
 

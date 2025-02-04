@@ -551,6 +551,9 @@ namespace UnityEditor
             m_Editor = editor;
 
             displayName = "Edit Light Probes";
+            collapsedIcon = EditorGUIUtility.LoadIcon("EditCollider");
+
+            displayedChanged += value => m_Visible = value;
         }
 
         public override void OnGUI()
@@ -633,7 +636,8 @@ namespace UnityEditor
             return vec1 - vec2;
         }
 
-        public override bool visible => true;
+        public override bool visible => m_Visible;
+        private bool m_Visible = true;
     }
 
     [EditorTool("Light Probe Group", typeof(LightProbeGroup))]

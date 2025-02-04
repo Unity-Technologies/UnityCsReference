@@ -190,7 +190,10 @@ namespace UnityEditor
         UseContentHash = 65536, // 1 << 16
 
         // Use when AssetBundle dependencies need to be calculated recursively, such as when you have a dependency chain of matching typed Scriptable Objects
-        RecurseDependencies = 131072 // 1 << 17
+        RecurseDependencies = 131072, // 1 << 17
+
+        // Sprites are normally copied to all bundles that reference them. This flag prevents that behavior if the sprite is not in an atlas.
+        StripUnatlasedSpriteCopies = 262144 // 1 << 18
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h

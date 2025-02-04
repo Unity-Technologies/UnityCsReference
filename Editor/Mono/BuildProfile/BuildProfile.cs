@@ -236,7 +236,7 @@ namespace UnityEditor.Build.Profile
 
         void OnDisable()
         {
-            if (BuildProfileContext.activeProfile == this)
+            if (IsActiveBuildProfileOrPlatform())
                 EditorUserBuildSettings.SetActiveProfileScriptingDefines(m_ScriptingDefines);
 
             var playerSettingsDirty = EditorUtility.IsDirty(m_PlayerSettings);
@@ -261,6 +261,7 @@ namespace UnityEditor.Build.Profile
 
             targetBuildProfile.platformBuildProfile = null;
             targetBuildProfile.TryCreatePlatformSettings();
+            targetBuildProfile.overrideGlobalScenes = false;
             targetBuildProfile.scenes = Array.Empty<EditorBuildSettingsScene>();
             targetBuildProfile.scriptingDefines = Array.Empty<string>();
 

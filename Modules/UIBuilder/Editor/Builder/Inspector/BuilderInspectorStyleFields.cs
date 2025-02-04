@@ -2153,7 +2153,7 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {
                 m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
-                currentVisualElement.IncrementVersion((VersionChangeType)(-1));
+                currentVisualElement.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
             }
             else
             {
@@ -2338,6 +2338,11 @@ namespace Unity.UI.Builder
         {
             var dimensionStyleField = e.target as DimensionStyleField;
             var notifyType = dimensionStyleField.isUsingLabelDragger ? NotifyType.RefreshOnly : NotifyType.Default;
+
+            if (!dimensionStyleField.isKeyword)
+            {
+                dimensionStyleField.length = Math.Clamp(dimensionStyleField.length, dimensionStyleField.min, dimensionStyleField.max);
+            }
 
             if (!dimensionStyleField.isUsingLabelDragger && BuilderSharedStyles.IsSelectorElement(currentVisualElement))
             {

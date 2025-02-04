@@ -67,6 +67,12 @@ namespace UnityEngine
         {
             return m_CancellationToken.IsCancellationRequested;
         }
+
+        internal virtual Object[] CreateResultArray(int size)
+        {
+            m_Result = new Object[size];
+            return m_Result;
+        }
     }
 
     public class AsyncInstantiateOperation<T> : AsyncInstantiateOperation
@@ -79,9 +85,14 @@ namespace UnityEngine
         {
             get
             {
-                var objArr = base.Result;
-                return UnsafeUtility.As<Object[], T[]>(ref objArr);
+                return (T[])(object)m_Result;
             }
+        }
+
+        internal override Object[] CreateResultArray(int size)
+        {
+            m_Result = (Object[])(object)new T[size];
+            return m_Result;
         }
 
         internal static new class BindingsMarshaller
@@ -127,9 +138,9 @@ namespace UnityEngine
     internal class AsyncInstantiateOperationHelper
     {
         [RequiredByNativeCode]
-        public static void SetAsyncInstantiateOperationResult(AsyncInstantiateOperation op, UnityEngine.Object[] result)
+        public static Object[] CreateAsyncInstantiateOperationResultArray(AsyncInstantiateOperation op, int size)
         {
-            op.m_Result = result;
+            return op.CreateResultArray(size);
         }
     }
 }

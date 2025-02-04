@@ -760,8 +760,24 @@ namespace UnityEditor.UIElements
             field.label = fieldLabel;
 
             ConfigureFieldStyles<TField, TValue>(field);
+            ConfigureTooltip(property, field);
 
             return field;
+        }
+
+        private void ConfigureTooltip<TField>(SerializedProperty property, BaseField<TField> field)
+        {
+            var fieldInfo = ScriptAttributeUtility.GetFieldInfoFromProperty(property, out _);
+
+            if (fieldInfo == null)
+            {
+                return;
+            }
+
+            var hasTooltipAttribute = fieldInfo.IsDefined(typeof(TooltipAttribute), false);
+
+            // Don't display elided tooltip if the property has a TooltipAttribute.
+            field.labelElement.displayTooltipWhenElided = !hasTooltipAttribute;
         }
 
         private VisualElement ConfigureLabelOnly(SerializedProperty property)

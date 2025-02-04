@@ -373,10 +373,8 @@ namespace UnityEngine.UIElements
                 var element = m_BindingRegistrationRequests[i];
                 // skip elements that don't belong here. This can happen when a binding request happen while
                 // an element is inside a panel, but then removed before this updater can run.
-                if (null == element.panel)
+                if (element.panel != panel)
                     continue;
-
-                Assert.IsTrue(element.panel == panel);
 
                 ProcessBindingRequests(element);
             }

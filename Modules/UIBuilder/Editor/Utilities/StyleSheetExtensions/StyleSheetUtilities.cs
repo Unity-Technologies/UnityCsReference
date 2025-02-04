@@ -71,7 +71,7 @@ namespace Unity.UI.Builder
             selectorElement.SetProperty(BuilderConstants.ElementLinkedFakeStyleSelectorVEPropertyName, fakeSelector);
             // To ensure that the fake selector is removed from the stylesheet if the builder gets closed with a selector still selected
             selectorElement.RegisterCallback<DetachFromPanelEvent>(OnSelectorElementDetachedFromPanel);
-            selectorElement.IncrementVersion((VersionChangeType)(-1));
+            selectorElement.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
         }
 
         public static void RemoveFakeSelector(VisualElement selectorElement)

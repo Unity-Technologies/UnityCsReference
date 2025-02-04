@@ -496,6 +496,10 @@ namespace UnityEditor
                 RenderTexture.active = oldRt;
             }
 
+            // Honor async shader compilation editor settings for this preview
+            bool oldShaderAsyncState = ShaderUtil.allowAsyncCompilation;
+            ShaderUtil.allowAsyncCompilation = EditorSettings.asyncShaderCompilation;
+
             using (new SavedStateForCameraPreview(cameraToRender))
             {
                 // make sure the preview camera is rendering the same stage as the SceneView is
@@ -520,6 +524,8 @@ namespace UnityEditor
                     previewCamera.Render();
                 }
             }
+
+            ShaderUtil.allowAsyncCompilation = oldShaderAsyncState;
             return rt;
         }
     }
