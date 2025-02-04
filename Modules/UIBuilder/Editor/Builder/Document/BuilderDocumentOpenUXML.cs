@@ -283,7 +283,7 @@ namespace Unity.UI.Builder
             UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
             foreach (var openUSS in m_OpenUSSFiles)
                 openUSS.FixRuleReferences();
-            m_CurrentDocumentRootElement.IncrementVersion((VersionChangeType) (-1));
+            m_CurrentDocumentRootElement.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
         }
 
         public void MarkStyleSheetsDirty()

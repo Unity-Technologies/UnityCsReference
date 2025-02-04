@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements
         private VisualElement m_LogicalParent;
 
         // This will be invoked once a visual element is successfully added into the hierarchy.
-        internal event Action<VisualElement> elementAdded;
+        internal event Action<VisualElement, int> elementAdded;
 
         // This will be invoked once a visual element is successfully removed into the hierarchy.
         internal event Action<VisualElement> elementRemoved;
@@ -112,7 +112,7 @@ namespace UnityEngine.UIElements
         ///\\
         /// If the content container is the same as the element itself, child elements are added directly to the element.
         /// This is true for most elements but can be overridden by more complex types.
-        /// 
+        ///
         /// The <see cref="ScrollView"/>, for example, has a content container that is different from itself.
         /// In that case, child elements added to the scroll view are added to its content container element instead.
         /// While the physical parent (<see cref="VisualElement.Hierarchy.parent"/>) of the child elements is the
@@ -559,7 +559,7 @@ namespace UnityEngine.UIElements
                 child.InvokeHierarchyChanged(HierarchyChangeType.AddedToParent);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
-                m_Owner.elementAdded?.Invoke(child);
+                m_Owner.elementAdded?.Invoke(child, index);
             }
 
             /// <summary>

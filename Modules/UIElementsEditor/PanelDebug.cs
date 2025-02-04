@@ -30,7 +30,7 @@ namespace UnityEditor.UIElements
 
         private PanelOwner ownerObject;
 
-        private void InitializeDebuggerOverlayPanel()
+        internal void InitializeDebuggerOverlayPanel()
         {
             if (debuggerOverlayPanel == null)
             {
@@ -38,6 +38,7 @@ namespace UnityEditor.UIElements
                 // All debug panels are context type Editor, even if they are Runtime (Player) panels because the
                 // debug panel itself are in the Editor anyway.
                 var debuggerOverlayTmpPanel = new Panel(ownerObject, ContextType.Editor, EventDispatcher.CreateDefault(), EditorPanel.InitEditorUpdater);
+                debuggerOverlayTmpPanel.overlayedOverPanel = panel;
                 debuggerOverlayTmpPanel.clearSettings = new PanelClearSettings();
                 debuggerOverlayPanel = debuggerOverlayTmpPanel;
                 debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
@@ -54,7 +55,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        private void RemoveDebuggerOverlayPanel()
+        internal void RemoveDebuggerOverlayPanel()
         {
             if (debuggerOverlayPanel != null && m_Debuggers.Count == 0)
             {

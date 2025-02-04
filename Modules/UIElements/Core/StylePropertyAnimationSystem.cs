@@ -1175,8 +1175,8 @@ namespace UnityEngine.UIElements
                     running.properties[i], running.style[i].currentValue);
             }
 
-            //TODO axis is not "lerped" as it is assumed to be z only.
-            private static Rotate Lerp(Rotate a, Rotate b, float t) => new Rotate(Mathf.LerpUnclamped(a.angle.ToDegrees(), b.angle.ToDegrees(), t));
+            // In web standards, we don't interpolate the axis and go straight to the final value.
+            private static Rotate Lerp(Rotate a, Rotate b, float t) => new Rotate(Mathf.LerpUnclamped(a.angle.ToDegrees(), b.angle.ToDegrees(), t), b.axis);
 
             protected sealed override void UpdateValues()
             {

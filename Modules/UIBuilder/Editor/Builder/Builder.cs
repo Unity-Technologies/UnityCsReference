@@ -18,8 +18,15 @@ namespace Unity.UI.Builder
             EditorApplication.fileMenuSaved += () =>
             {
                 var builder = ActiveWindow;
-                if (builder != null && builder.document.hasUnsavedChanges)
-                    builder.SaveChanges();
+
+                if (builder != null)
+                {
+                    // Make sure changes are committed before saving the file.
+                    builder.inspector.BeforeSelectionChanged();
+
+                    if (builder.document.hasUnsavedChanges)
+                        builder.SaveChanges();
+                }
             };
         }
 

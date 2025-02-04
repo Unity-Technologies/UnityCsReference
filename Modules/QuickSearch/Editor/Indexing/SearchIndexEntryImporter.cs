@@ -36,9 +36,9 @@ namespace UnityEditor.Search
     {
         public const int version = SearchIndexEntry.version | (SearchDocumentListTable.defaultVersion << 8) | (0x0004 << 13);
 
-        public static string GetGUID(Type type)
+        public static string GetCustomDependencyName(Type type)
         {
-            return GUID.CreateGUIDFromSInt64((long)type.FullName.GetHashCode64()).ToString();
+            return type.FullName;
         }
 
         public abstract IndexingOptions options { get; }
@@ -68,8 +68,8 @@ namespace UnityEditor.Search
                     indexer.Write(fileStream);
 
                 ctx.DependsOnSourceAsset(ctx.assetPath);
-                var typeGuid = GetGUID(GetType());
-                ctx.DependsOnCustomDependency(typeGuid);
+                var customDependencyName = GetCustomDependencyName(GetType());
+                ctx.DependsOnCustomDependency(customDependencyName);
                 ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
 
             }

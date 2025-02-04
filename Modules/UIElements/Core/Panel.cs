@@ -555,7 +555,12 @@ namespace UnityEngine.UIElements
 
         public float scaledPixelsPerPoint
         {
-            get { return m_PixelsPerPoint * m_Scale; }
+           get {
+               // Case UUM-87669, for debug panels, fallback on overlayed panel for pixels-per-point values
+               if (overlayedOverPanel != null)
+                   return overlayedOverPanel.scaledPixelsPerPoint;
+               return m_PixelsPerPoint * m_Scale;
+           }
         }
 
         public float referenceSpritePixelsPerUnit { get; set; } = 100.0f;
@@ -563,6 +568,9 @@ namespace UnityEngine.UIElements
         internal PanelClearSettings clearSettings { get; set; } = new PanelClearSettings { clearDepthStencil = true, clearColor = true, color = Color.clear };
 
         internal IPanelRenderer panelRenderer;
+
+        // For debug panels, over which panel is it overlayed. Null otherwise.
+        internal IPanel overlayedOverPanel;
 
         internal bool duringLayoutPhase { get; set; }
 

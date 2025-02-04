@@ -82,6 +82,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             detailTitle.SetValueWithoutNotify(m_Version.displayName);
             detailsLinks.Refresh(m_Version);
+            versionInfoIcon.Refresh(m_Package);
 
             RefreshName();
             RefreshDependency();
@@ -89,7 +90,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshTags();
             RefreshHelpBoxes();
             RefreshVersionLabel();
-            RefreshVersionInfoIcon();
             RefreshRegistryAndAuthor();
             RefreshEntitlement();
         }
@@ -256,52 +256,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 : string.Format(L10n.Tr("{0} · {1}"), versionString, releaseDateString));
         }
 
-        private void RefreshVersionInfoIcon()
-        {
-            var installed = m_Package?.versions?.installed;
-            if (installed == null || m_Version == null)
-            {
-                UIUtils.SetElementDisplay(versionInfoIcon, false);
-                return;
-            }
-            var installedVersionString = installed.versionString;
-            if (installed.IsDifferentVersionThanRequested && !installed.isInvalidSemVerInManifest)
-            {
-                UIUtils.SetElementDisplay(versionInfoIcon, true);
-                versionInfoIcon.tooltip = string.Format(L10n.Tr("Unity installed version {0} because another package depends on it (version {0} overrides version {1})."),
-                    installedVersionString, m_Version.versionInManifest);
-                return;
-            }
-
-            // If a Unity package doesn't have a recommended version (decided by versions set in the editor manifest or remote manifest override),
-            // then that package is not considered part of the Unity Editor "product" and we need to let users know.
-            var unityVersionString = m_Application.unityVersion;
-            if (m_Version.HasTag(PackageTag.Unity) && !m_Version.HasTag(PackageTag.BuiltIn) && m_Package.versions.recommended == null)
-            {
-                UIUtils.SetElementDisplay(versionInfoIcon, true);
-                versionInfoIcon.tooltip = string.Format(L10n.Tr("This package is not officially supported for Unity {0}."), unityVersionString);
-                return;
-            }
-
-            // We want to let users know when they are using a version different than the recommended.
-            // However, we don't want to show the info icon if the version currently installed
-            // is a higher patch version of the one in the editor manifest (still considered recommended).
-            var recommended = m_Package.versions.recommended;
-            if (m_Version.isInstalled
-                && m_Package.state != PackageState.InstalledAsDependency
-                && m_Version.HasTag(PackageTag.Unity)
-                && recommended != null
-                && installed.version?.IsEqualOrPatchOf(recommended.version) != true)
-            {
-                UIUtils.SetElementDisplay(versionInfoIcon, true);
-                versionInfoIcon.tooltip = string.Format(L10n.Tr("This version is not the recommended for Unity {0}. The recommended version is {1}."),
-                    unityVersionString, recommended.versionString);
-                return;
-            }
-
-            UIUtils.SetElementDisplay(versionInfoIcon, false);
-        }
-
         private bool TryShowAuthorLink()
         {
             authorContainer.Clear();
@@ -345,7 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SelectableLabel detailTitle => cache.Get<SelectableLabel>("detailTitle");
         private Label detailEntitlement => cache.Get<Label>("detailEntitlement");
         private SelectableLabel detailVersion => cache.Get<SelectableLabel>("detailVersion");
-        private VisualElement versionInfoIcon => cache.Get<VisualElement>("versionInfoIcon");
+        private VersionInfoIcon versionInfoIcon => cache.Get<VersionInfoIcon>("versionInfoIcon");
 
         private SelectableLabel detailName => cache.Get<SelectableLabel>("detailName");
 

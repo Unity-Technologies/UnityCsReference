@@ -92,6 +92,11 @@ namespace UnityEditor.Search
         string selectedItemPath => m_IndexSettingsFilePaths != null && selectedIndex >= 0 && selectedIndex < m_IndexSettingsFilePaths.Count ? m_IndexSettingsFilePaths[selectedIndex] : null;
         bool selectedItemExists => m_IndexSettingsExists != null && selectedIndex >= 0 && selectedIndex < m_IndexSettingsExists.Count ? m_IndexSettingsExists[selectedIndex] : false;
 
+        /// <summary>
+        /// The amount of indexes in the IndexManager.
+        /// </summary>
+        internal int count => m_IndexSettingsAssets?.Count ?? 0;
+
         internal void OnEnable()
         {
             SearchService.SetupSearchFirstUse();
@@ -870,6 +875,11 @@ namespace UnityEditor.Search
             var deleteIndex = selectedIndex;
             string path = selectedItemPath;
             m_IndexSettings.RemoveAt(deleteIndex);
+            if (deleteIndex >= 0 && deleteIndex < m_IndexSettingsAssets.Count)
+            {
+                var db = m_IndexSettingsAssets[deleteIndex];
+                SearchDatabase.Unload(db);
+            }
             m_IndexSettingsAssets.RemoveAt(deleteIndex);
             if (m_IndexSettingsExists[deleteIndex])
             {
@@ -1010,11 +1020,7 @@ namespace UnityEditor.Search
                         menu.AddItem(new GUIContent("Open JSon"), false, () => EditorUtility.OpenWithDefaultApp(m_IndexSettingsFilePaths[index]));
                         menu.AddItem(new GUIContent("Force rebuild"), false, () =>
                         {
-                            var settings = m_IndexSettingsAssets[index].settings;
-                            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
-                            var typeGuid = SearchIndexEntryImporter.GetGUID(indexImporterType);
-                            AssetDatabaseAPI.RegisterCustomDependency(typeGuid, Hash128.Parse(Guid.NewGuid().ToString("N")));
-                            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index], true);
+                            ForceRebuildIndex(index);
                         });
                         menu.ShowAsContext();
                     }
@@ -1029,6 +1035,29 @@ namespace UnityEditor.Search
                 element.Q<Label>("IndexName").text = text;
                 element.Q<VisualElement>("BasicDataContainer").style.display = DisplayStyle.None;
             }
+        }
+
+        internal void ForceRebuildIndex(int index)
+        {
+            if (m_IndexSettingsAssets == null)
+                return;
+            if (index < 0 || index >= m_IndexSettingsAssets.Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            var settings = m_IndexSettingsAssets[index].settings;
+            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
+            var customDependencyName = SearchIndexEntryImporter.GetCustomDependencyName(indexImporterType);
+            AssetDatabaseAPI.RegisterCustomDependency(customDependencyName, Hash128.Parse(Guid.NewGuid().ToString("N")));
+            AssetDatabase.Refresh();
+            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index], true);
+        }
+
+        internal SearchDatabase GetSearchDatabaseAtIndex(int index)
+        {
+            if (m_IndexSettingsAssets == null)
+                return null;
+            if (index < 0 || index >= m_IndexSettingsAssets.Count)
+                throw new ArgumentOutOfRangeException(nameof(index));
+            return m_IndexSettingsAssets[index];
         }
 
         private void UpdateBasicPreview(VisualElement element, int index)
@@ -1530,7 +1559,7 @@ namespace UnityEditor.Search
             UpdateListView();
         }
 
-        
+
         internal void SetSelection(int index)
         {
             ListView.SetSelection(index);

@@ -142,9 +142,7 @@ namespace UnityEngine.UIElements
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
-            tgs.fontSize = style.fontSize.value > 0
-                ? style.fontSize.value
-                : tgs.fontAsset.faceInfo.pointSize;
+            tgs.fontSize = style.fontSize.value;
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
 

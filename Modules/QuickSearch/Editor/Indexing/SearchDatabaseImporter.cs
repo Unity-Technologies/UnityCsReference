@@ -106,6 +106,8 @@ namespace UnityEditor.Search
                 ctx.DependsOnCustomDependency(nameof(CustomObjectIndexerAttribute));
 
                 hideFlags |= HideFlags.HideInInspector;
+
+                db.index?.Dispose();
             }
             catch (SearchDatabaseException ex)
             {

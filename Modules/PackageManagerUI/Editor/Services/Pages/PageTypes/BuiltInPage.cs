@@ -19,7 +19,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string displayName => L10n.Tr("Built-in");
         public override Icon icon =>  Icon.BuiltInPage;
 
-        public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearchOffline;
+        // We use UpmSearch instead of UpmSearchOffline, as search offline never returns packages from scoped registry right now.
+        // Using UpmSearchOffline here will cause scoped registry packages to disappear when user refreshes the built in page.
+        public override RefreshOptions refreshOptions => RefreshOptions.UpmListOffline | RefreshOptions.UpmSearch;
 
         public override IEnumerable<PageFilters.Status> supportedStatusFilters => Enumerable.Empty<PageFilters.Status>();
         public override IEnumerable<PageSortOption> supportedSortOptions => k_SupportedSortOptions;

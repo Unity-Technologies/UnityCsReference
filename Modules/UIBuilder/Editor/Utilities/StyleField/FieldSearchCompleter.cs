@@ -303,7 +303,7 @@ namespace Unity.UI.Builder
                     m_Popup.elementChosen += (index) =>
                     {
                         CancelEvaluateFocus();
-                        textField.value = GetTextFromData(results[index]);
+                        textField.SetValueWithoutNotify(GetTextFromData(results[index]));
                         m_TemporarilyDontShowPopup = true;
                         textField.schedule.Execute((e) =>
                         {
@@ -783,7 +783,7 @@ namespace Unity.UI.Builder
 
                 if (selectedIndex != -1)
                 {
-                    m_TextField.value = GetTextFromData(m_Results[selectedIndex]);
+                    m_TextField.SetValueWithoutNotify(GetTextFromData(m_Results[selectedIndex]));
                     textField.Blur();
                     m_TemporarilyDontShowPopup = true;
                     textField.schedule.Execute((e) => m_TemporarilyDontShowPopup = false).ExecuteLater(k_PauseDelay);
