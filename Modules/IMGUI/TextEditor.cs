@@ -209,7 +209,11 @@ namespace UnityEngine
                     if (!href.StartsWith("href"))
                         return false;
                     // Removes href="..."
-                    href = href.Substring(6, href.Length - 7);
+                    if (href.StartsWith("href=\"") || href.StartsWith("href=\'"))
+                        href = href.Substring(6, href.Length - 7);
+                    // Removes href=...
+                    else
+                        href = href.Substring(5, href.Length - 6);
                     if (Uri.IsWellFormedUriString(href, UriKind.Absolute))
                     {
                         return true;

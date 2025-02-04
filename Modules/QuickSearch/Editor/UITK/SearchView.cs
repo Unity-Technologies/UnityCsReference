@@ -200,6 +200,10 @@ namespace UnityEditor.Search
         {
             m_AsyncRequestOff?.Invoke();
             m_AsyncRequestOff = null;
+            
+            // Make sure we don't use SearchFlags.Sorted when fetching items
+            var wasSorted = context.options.HasAny(SearchFlags.Sorted);
+            context.options &= ~SearchFlags.Sorted;
 
             context.ClearErrors();
             m_FilteredItems.Clear();
@@ -212,6 +216,10 @@ namespace UnityEditor.Search
                 Debug.Log($"[{context.sessionId}] Running query {context.searchText}");
             RefreshContent(RefreshFlags.QueryStarted, false);
             SearchService.Request(context, OnIncomingItems, OnQueryRequestFinished);
+
+            // Put back the flag if it was already applied.
+            if (wasSorted)
+                context.options |= SearchFlags.Sorted;
         }
 
         public override string ToString() => context.searchText;

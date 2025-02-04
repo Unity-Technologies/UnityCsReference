@@ -220,7 +220,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     {
                         continue;
                     }
-                    else if (i >= remainingPath.Length || Utility.IsPathSeparator(remainingPath[i + 1]))
+
+                    // We have match the "editor" folder, if we are at the end of the
+                    // match or do we have a separator as our next character
+                    if (i + 1 >= remainingPath.Length
+                        || Utility.IsPathSeparator(remainingPath[i + 1]))
                     {
                         return true;
                     }

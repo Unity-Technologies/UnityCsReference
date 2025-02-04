@@ -1212,7 +1212,7 @@ namespace UnityEditor
         private Object m_LastLockedObject;
 
         [SerializeField]
-        private DrawCameraMode m_LastDebugDrawMode = DrawCameraMode.GIContributorsReceivers;
+        private CameraMode m_LastDebugDrawMode = new CameraMode() { drawMode = DrawCameraMode.GIContributorsReceivers };
 
         [SerializeField]
         bool m_ViewIsLockedToObject;
@@ -1414,7 +1414,7 @@ namespace UnityEditor
                 // If this a draw mode for debugging purposes, take note of it, so we can toggle back and forth between it and the previous mode.
                 if (cameraMode.drawMode != DrawCameraMode.Textured && cameraMode.drawMode != DrawCameraMode.Wireframe && cameraMode.drawMode != DrawCameraMode.TexturedWire)
                 {
-                    m_LastDebugDrawMode = cameraMode.drawMode;
+                    m_LastDebugDrawMode = cameraMode;
                 }
             };
 
@@ -2031,6 +2031,12 @@ namespace UnityEditor
                 draggingLocked = DraggingLockedState.Dragging;
             else if (GUIUtility.hotControl == 0 && draggingLocked == DraggingLockedState.Dragging)
                 draggingLocked = DraggingLockedState.LookAt;
+
+            // UUM-90436. UITK's MouseEnterEvent/MouseEnterWindowEvent callbacks that
+            // drive `viewportsUnderMouse` seem to not fire reliably when a pen tablet is used.
+            if (!sceneViewMotion.viewportsUnderMouse && 
+                (evt.type == EventType.MouseDown || evt.type == EventType.MouseMove))
+                sceneViewMotion.viewportsUnderMouse = true;
 
             if (evt.type == EventType.MouseDown)
             {
@@ -2792,11 +2798,17 @@ namespace UnityEditor
             this.cameraMode = GetBuiltinCameraMode(mode);
         }
 
+        internal void SwitchToRenderMode(CameraMode mode, bool sceneLighting = true)
+        {
+            this.sceneLighting = sceneLighting;
+            this.cameraMode = mode;
+        }
+
         internal void SwitchToUnlit() => SwitchToRenderMode(DrawCameraMode.Textured, false);
 
         internal void ToggleLastDebugDrawMode()
         {
-            if (cameraMode.drawMode == m_LastDebugDrawMode)
+            if (cameraMode.drawMode == m_LastDebugDrawMode.drawMode)
             {
                 SwitchToRenderMode(DrawCameraMode.Textured);
             }

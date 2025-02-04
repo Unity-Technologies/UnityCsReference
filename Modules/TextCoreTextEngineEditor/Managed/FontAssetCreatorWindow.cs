@@ -478,13 +478,13 @@ namespace UnityEditor.TextCore.Text
                 GUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
 
-                m_PaddingFieldValue = EditorGUILayout.FloatField("Padding", m_PaddingFieldValue);
+                m_PaddingFieldValue = Mathf.Max(EditorGUILayout.FloatField("Padding", m_PaddingFieldValue), 0);
 
                 int selection = m_PaddingMode == PaddingMode.Undefined || m_PaddingMode == PaddingMode.Pixel ? 1 : 0;
                 selection = GUILayout.SelectionGrid(selection, k_PaddingOptionLabels, 2);
 
                 if (m_PaddingMode == PaddingMode.Percentage)
-                    m_PaddingFieldValue = (int)(m_PaddingFieldValue + 0.5f);
+                    m_PaddingFieldValue = Mathf.Min((int)(m_PaddingFieldValue + 0.5f), float.MaxValue);
 
                 if (EditorGUI.EndChangeCheck())
                 {

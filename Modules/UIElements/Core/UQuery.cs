@@ -505,8 +505,20 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
-    /// Utility Object that contructs a set of selection rules to be ran on a root visual element.
+    /// Utility Object that constructs a set of selection rules to be run on a root visual element.
     /// </summary>
+    /// <remarks>
+    /// A generic class that allows you to build queries for UI elements of type T.
+    /// You can refine queries using selectors like name, class, and other conditions.
+    /// It enables you to search for elements and execute the query on any VisualElement, making it easier to navigate
+    /// and filter the VisualElement tree in large UIs, by type, name, class, and hierarchy conditions.
+    ///
+    /// For more information, refer to the [[wiki:UIE-UQuery|UQuery manual page]].
+    /// </remarks>
+    /// <example>
+    /// The following example demonstrates how to use UQueryBuilder to find certain elements in a UI hierarchy and iterate over them:
+    /// <code source="../Tests/UIElementsExamples/Assets/Examples/UQueryBuilderExample.cs"/>
+    /// </example>
     public struct UQueryBuilder<T> : IEquatable<UQueryBuilder<T>> where T : VisualElement
     {
         private List<StyleSelector> m_StyleSelectors;
@@ -1019,6 +1031,7 @@ namespace UnityEngine.UIElements
 
     /// <summary>
     /// UQuery is a set of extension methods allowing you to select individual or collection of visualElements inside a complex hierarchy.
+    /// For more information, refer to [[wiki:UIE-UQuery|Find visual elements with UQuery]].
     /// </summary>
     public static class UQueryExtensions
     {

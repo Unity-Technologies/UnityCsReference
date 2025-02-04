@@ -60,7 +60,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.layoutData.Write().flexGrow = 0f;
             s_InitialStyle.layoutData.Write().flexShrink = 1f;
             s_InitialStyle.layoutData.Write().flexWrap = Wrap.NoWrap;
-            s_InitialStyle.inheritedData.Write().fontSize = 0f;
+            s_InitialStyle.inheritedData.Write().fontSize = 14f;
             s_InitialStyle.layoutData.Write().height = StyleKeyword.Auto.ToLength();
             s_InitialStyle.layoutData.Write().justifyContent = Justify.FlexStart;
             s_InitialStyle.layoutData.Write().left = StyleKeyword.Auto.ToLength();

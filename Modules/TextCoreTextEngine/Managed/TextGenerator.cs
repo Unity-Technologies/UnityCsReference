@@ -302,7 +302,7 @@ namespace UnityEngine.TextCore.Text
                 textInfo.Clear();
 
             // Early exit if we don't have any Text to generate.
-            if (m_TextProcessingArray == null || m_TextProcessingArray.Length == 0 || m_TextProcessingArray[0].unicode == 0)
+            if (generationSettings.fontSize <= 0 || m_TextProcessingArray == null || m_TextProcessingArray.Length == 0 || m_TextProcessingArray[0].unicode == 0)
             {
                 // Clear mesh and upload changes to the mesh.
                 ClearMesh(true, textInfo);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 //#define DEBUG_PROGRESS
+// #define DEBUG_SEARCHTASK_DISPOSE
 using System;
 using System.Threading;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace UnityEditor.Search
         where T : class
     {
         public delegate void ResolveHandler(SearchTask<T> task, T data);
+
 
         private const int k_NoProgress = -1;
         private const int k_BlockingProgress = -2;
