@@ -105,7 +105,8 @@ namespace UnityEngine
 
             // Delay synching back (using ReadPixels) if CopyTexture can be used.
             // TODO: Checking the format compatibility is difficult as it varies by platforms. For instance copying between ARGB32 RT and RGBA32 Tex seems to be fine on all tested platforms...
-            allowDelayedCPUSync = allowDelayedCPUSync && SupportsCopyTextureBetweenRTAndTexture;
+            // If the user has a global mipmap limit, use readpixels, as the missing mips prevent us from using Graphics.CopyTexture.
+            allowDelayedCPUSync = allowDelayedCPUSync && SupportsCopyTextureBetweenRTAndTexture && QualitySettings.globalTextureMipmapLimit == 0;
             if (allowDelayedCPUSync)
             {
                 if (dstTexture.mipmapCount > 1)

@@ -263,6 +263,15 @@ namespace UnityEngine
                 case "f13":         evt.keyCode = KeyCode.F13; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "f14":         evt.keyCode = KeyCode.F14; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "f15":         evt.keyCode = KeyCode.F15; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f16":         evt.keyCode = KeyCode.F16; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f17":         evt.keyCode = KeyCode.F17; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f18":         evt.keyCode = KeyCode.F18; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f19":         evt.keyCode = KeyCode.F19; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f20":         evt.keyCode = KeyCode.F20; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f21":         evt.keyCode = KeyCode.F21; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f22":         evt.keyCode = KeyCode.F22; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f23":         evt.keyCode = KeyCode.F23; evt.modifiers |= EventModifiers.FunctionKey; break;
+                case "f24":         evt.keyCode = KeyCode.F24; evt.modifiers |= EventModifiers.FunctionKey; break;
                 case "[esc]":       evt.keyCode = KeyCode.Escape; break;
                 case "return":      evt.character = '\n'; evt.keyCode = KeyCode.Return; evt.modifiers &= ~EventModifiers.FunctionKey; break;
                 case "space":       evt.keyCode = KeyCode.Space; evt.character = ' '; evt.modifiers &= ~EventModifiers.FunctionKey; break;

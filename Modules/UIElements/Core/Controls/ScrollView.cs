@@ -1011,6 +1011,13 @@ namespace UnityEngine.UIElements
             horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
             verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
 
+            horizontalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
+            verticalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
+            verticalScroller.highButton.acceptClicksIfDisabled = true;
+            verticalScroller.lowButton.acceptClicksIfDisabled = true;
+            horizontalScroller.highButton.acceptClicksIfDisabled = true;
+            horizontalScroller.lowButton.acceptClicksIfDisabled = true;
+
             horizontalScroller.lowButton.AddAction(UpdateElasticBehaviour);
             horizontalScroller.highButton.AddAction(UpdateElasticBehaviour);
             verticalScroller.lowButton.AddAction(UpdateElasticBehaviour);
@@ -1022,13 +1029,12 @@ namespace UnityEngine.UIElements
 
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
-            RegisterCallback<WheelEvent>(OnScrollWheel);
+            RegisterCallback<WheelEvent>(OnScrollWheel, InvokePolicy.IncludeDisabled);
             verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
             horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
 
             horizontalPageSize = k_UnsetPageSizeValue;
             verticalPageSize = k_UnsetPageSizeValue;
-
 
             horizontalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollDragElementChanged);
             verticalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollDragElementChanged);
@@ -1723,8 +1729,8 @@ namespace UnityEngine.UIElements
             AdjustScrollers();
 
             // Set availability
-            horizontalScroller.SetEnabled(contentContainer.boundingBox.width - contentViewport.layout.width > 0);
-            verticalScroller.SetEnabled(contentContainer.boundingBox.height - contentViewport.layout.height > 0);
+            horizontalScroller.SetEnabled(scrollableWidth > 0);
+            verticalScroller.SetEnabled(scrollableHeight > 0);
 
             var newShowHorizontal = displayHorizontal && m_HorizontalScrollerVisibility != ScrollerVisibility.Hidden;
             var newShowVertical = displayVertical && m_VerticalScrollerVisibility != ScrollerVisibility.Hidden;
@@ -1770,8 +1776,8 @@ namespace UnityEngine.UIElements
         void OnScrollWheel(WheelEvent evt)
         {
             var updateContentViewTransform = false;
-            var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && contentContainer.boundingBox.height - layout.height > 0;
-            var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && contentContainer.boundingBox.width - layout.width > 0;
+            var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
+            var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
             var mouseScrollFactor = m_MouseWheelScrollSizeIsInline ? mouseWheelScrollSize : m_SingleLineHeight;
 

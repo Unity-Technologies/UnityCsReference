@@ -14,7 +14,7 @@ namespace UnityEditor.UIElements
         {
             menu.PrepareForDisplay(triggerEvent);
 
-            var genericMenu = new GenericOSMenu();
+            var genericMenu = new GenericOSMenu(menu.allowDuplicateNames);
             foreach (var item in menu.MenuItems())
             {
                 var action = item as DropdownMenuAction;
@@ -85,9 +85,10 @@ namespace UnityEditor.UIElements
     {
         GenericMenu m_GenericMenu;
 
-        public GenericOSMenu()
+        public GenericOSMenu(bool allowDuplicateNames = false)
         {
             m_GenericMenu = new GenericMenu();
+            m_GenericMenu.allowDuplicateNames = allowDuplicateNames;
         }
 
         public GenericOSMenu(GenericMenu genericMenu)

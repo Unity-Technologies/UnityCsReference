@@ -67,6 +67,8 @@ namespace Unity.UI.Builder
 
         public BuilderInspector inspector => m_Inspector;
 
+        public VariableCompleter completerOnTarget => m_CompleterOnTarget;
+
         public VariableEditingHandler(BindableElement field)
         {
             targetField = field;

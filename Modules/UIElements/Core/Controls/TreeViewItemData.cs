@@ -9,7 +9,8 @@ using UnityEngine.Bindings;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// Item structure provided to a TreeView using the default implementation.
+    /// Item structure provided to a TreeView using the default implementation. For more information on usage,
+    /// refer to [[wiki:UIE-uxml-element-TreeView|TreeView]] and [[wiki:UIE-ListView-TreeView|Create list and tree views]].
     /// </summary>
     /// <typeparam name="T">Data type the TreeView will hold.</typeparam>
     public readonly struct TreeViewItemData<T>

@@ -3990,11 +3990,17 @@
     <Compile Include="..\..\Runtime\Export\ObjectPool\IObjectPool.cs">
       <Link>Runtime\Export\ObjectPool\IObjectPool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\IPool.cs">
+      <Link>Runtime\Export\ObjectPool\IPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\LinkedPool.cs">
       <Link>Runtime\Export\ObjectPool\LinkedPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\ObjectPools.cs">
       <Link>Runtime\Export\ObjectPool\ObjectPools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\PoolManager.cs">
+      <Link>Runtime\Export\ObjectPool\PoolManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\PooledObject.cs">
       <Link>Runtime\Export\ObjectPool\PooledObject.cs</Link>

@@ -48,31 +48,6 @@ namespace UnityEditor.Build.Profile.Handlers
         }
 
         /// <summary>
-        /// Removes all null unity objects from the custom profiles list.
-        /// </summary>
-        internal bool ClearDeletedProfiles()
-        {
-            bool changed = false;
-            for (int i = customBuildProfiles.Count - 1; i >= 0; --i)
-            {
-                var obj = customBuildProfiles[i];
-                if (obj != null)
-                    continue;
-
-                if (BuildProfileContext.activeProfile == obj)
-                    BuildProfileContext.activeProfile = null;
-
-                customBuildProfiles.RemoveAt(i);
-                changed = true;
-            }
-
-            if (changed)
-                BuildProfileModuleUtil.CleanUpPlayerSettingsForDeletedBuildProfiles(currentBuildProfiles: customBuildProfiles);
-
-            return changed;
-        }
-
-        /// <summary>
         /// Helper function that takes a list of profiles and duplicates them
         /// </summary>
         internal List<BuildProfile> DuplicateProfiles(List<BuildProfile> profilesToDuplicate, bool isClassic)
@@ -162,23 +137,33 @@ namespace UnityEditor.Build.Profile.Handlers
             }
         }
 
-        internal void DeleteNullProfiles()
+        internal bool DeleteNullProfiles()
         {
             bool removedProfile = false;
+            bool activeProfileIsNull = false;
             for (int i = customBuildProfiles.Count - 1; i >= 0; i--)
             {
-                if (customBuildProfiles[i] == null)
+                if (customBuildProfiles[i] != null)
                 {
-                    customBuildProfiles.RemoveAt(i);
-                    removedProfile = true;
+                    continue;
                 }
+
+                if (BuildProfileContext.activeProfile == customBuildProfiles[i])
+                        activeProfileIsNull = true;
+                customBuildProfiles.RemoveAt(i);
+                removedProfile = true;
             }
+
+            if (activeProfileIsNull)
+                BuildProfileContext.activeProfile = null;
 
             if (removedProfile)
             {
                 BuildProfileModuleUtil.CleanUpPlayerSettingsForDeletedBuildProfiles(currentBuildProfiles: customBuildProfiles);
                 BuildProfileModuleUtil.DeleteLastRunnableBuildKeyForDeletedProfiles();
             }
+
+            return removedProfile;
         }
 
         /// <summary>

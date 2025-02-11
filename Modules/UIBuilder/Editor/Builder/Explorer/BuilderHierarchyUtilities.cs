@@ -28,18 +28,5 @@ namespace Unity.UI.Builder
 
             return true;
         }
-
-        // Specific to ToggleButtonGroup for now, but the idea is to be able to retrieve specific content containers
-        // for those controls that are designed to group a specific type(s) of control(s).
-        public static VisualElement GetToggleButtonGroupContentContainer(VisualElement element)
-        {
-            // Once we have a better way to do this, we should enhance and make this more generic as other control that
-            // act as containers would benefit greatly from this. This is also specific for the builder authoring
-            // workflow.
-            if (element is ToggleButtonGroup toggleButtonGroup)
-                return toggleButtonGroup.Q<VisualElement>(className: ToggleButtonGroup.buttonGroupClassName);
-
-            return null;
-        }
     }
 }

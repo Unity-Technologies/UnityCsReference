@@ -21,7 +21,7 @@ namespace UnityEditor.ShortcutManagement
         // Linux may send key masks and they will be greater than the shortcut index length.
         // Check implemented at getter and not at assignment because binding validator
         // should be able to work out what the original key code was by accessing internal field.
-        public KeyCode keyCode => (int)m_KeyCode < Directory.MaxIndexedEntries ? m_KeyCode : KeyCode.None;
+        public KeyCode keyCode => Directory.IsKeyCodeSupported(m_KeyCode) ? m_KeyCode : KeyCode.None;
         public ShortcutModifiers modifiers => m_Modifiers;
 
         static Dictionary<KeyCode, string> s_KeyCodeToMenuItemKeyCodeString = new Dictionary<KeyCode, string>()
@@ -59,6 +59,18 @@ namespace UnityEditor.ShortcutManagement
             { KeyCode.F10, "F10" },
             { KeyCode.F11, "F11" },
             { KeyCode.F12, "F12" },
+            { KeyCode.F13, "F13" },
+            { KeyCode.F14, "F14" },
+            { KeyCode.F15, "F15" },
+            { KeyCode.F16, "F16" },
+            { KeyCode.F17, "F17" },
+            { KeyCode.F18, "F18" },
+            { KeyCode.F19, "F19" },
+            { KeyCode.F20, "F20" },
+            { KeyCode.F21, "F21" },
+            { KeyCode.F22, "F22" },
+            { KeyCode.F23, "F23" },
+            { KeyCode.F24, "F24" },
 
             { KeyCode.Mouse0, "M0" },
             { KeyCode.Mouse1, "M1" },

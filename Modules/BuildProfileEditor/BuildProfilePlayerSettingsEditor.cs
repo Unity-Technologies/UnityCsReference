@@ -142,8 +142,7 @@ namespace UnityEditor.Build.Profile
                 m_PlayerSettingsEditor = Editor.CreateEditor(m_Profile.playerSettings) as PlayerSettingsEditor;
                 m_PlayerSettingsEditor.ConfigurePlayerSettingsForBuildProfile(
                     m_ProfileSerializedObject,
-                    m_Profile.moduleName,
-                    m_Profile.subtarget == StandaloneBuildSubtarget.Server,
+                    new GUID(m_Profile.platformId),
                     isActiveProfile,
                     OnPlayerSettingsEditorChanged);
             }

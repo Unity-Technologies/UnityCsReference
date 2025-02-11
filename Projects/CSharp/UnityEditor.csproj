@@ -2667,6 +2667,9 @@
     <Compile Include="..\..\Editor\Mono\ObjectNames.cs">
       <Link>Editor\Mono\ObjectNames.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ObjectPool\PoolManager.cs">
+      <Link>Editor\Mono\ObjectPool\PoolManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ObjectSelector.cs">
       <Link>Editor\Mono\ObjectSelector.cs</Link>
     </Compile>
