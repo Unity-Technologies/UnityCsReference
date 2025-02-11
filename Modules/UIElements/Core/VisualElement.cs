@@ -193,6 +193,10 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// VisualElement contains several features that are common to all controls in UIElements, such as layout, styling and event handling.
     /// Several other classes derive from it to implement custom rendering and define behaviour for controls.
+    ///\\
+    /// For more information, refer to [[wiki:UIE-uxml-element-VisualElement|VisualElement]].
+    ///\\
+    /// To inherit from VisualElement and create a custom control, refer to [[wiki:UIB-structuring-ui-custom-elements|Creating a custom control]].
     /// </remarks>
     public partial class VisualElement : Focusable, ITransform
     {

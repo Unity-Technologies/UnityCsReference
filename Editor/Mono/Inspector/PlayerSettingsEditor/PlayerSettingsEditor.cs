@@ -795,8 +795,7 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
         internal void ConfigurePlayerSettingsForBuildProfile(
             SerializedObject serializedProfile,
-            string buildProfileModuleName,
-            bool isServerBuildProfile,
+            GUID buildProfilePlatformGuid,
             bool isActiveBuildProfile,
             Action<SerializedObject> onTrackSerializedObjectChanged)
         {
@@ -804,20 +803,28 @@ namespace UnityEditor
             playerSettingsType = isActiveBuildProfile ? PlayerSettingsType.ActiveBuildProfile : PlayerSettingsType.NonActiveBuildProfile;
 
             // We don't want to show other platform tabs that it's not the build profile one
-            bool gotValidPlatform = false;
-            string platformModuleName = string.Empty;
+            var gotValidPlatform = false;
+            var buildProfileSubtarget = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(buildProfilePlatformGuid).Item2;
+            var isBuildProfilePlatformStandalone = buildProfileSubtarget == StandaloneBuildSubtarget.Player;
+            var isBuildProfilePlatformServer = buildProfileSubtarget == StandaloneBuildSubtarget.Server;
             for (int i = 0; i < validPlatforms.Length; i++)
             {
-                platformModuleName = ModuleManager.GetTargetStringFrom(validPlatforms[i].defaultTarget);
-                bool isServerPlatform = validPlatforms[i].namedBuildTarget == NamedBuildTarget.Server;
-                if (platformModuleName == buildProfileModuleName && isServerPlatform == isServerBuildProfile)
-                {
-                    var copy = (BuildPlatform)validPlatforms[i].Clone();
-                    copy.tooltip = string.Empty;
-                    validPlatforms[0] = copy;
-                    gotValidPlatform = true;
-                    break;
-                }
+                var buildTarget = validPlatforms[i].defaultTarget;
+                var namedBuildTarget = validPlatforms[i].namedBuildTarget;
+                var platformGuid = BuildTargetDiscovery.GetGUIDFromBuildTarget(namedBuildTarget, buildTarget);
+
+                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
+                // NamedBuildTarget in addition to the base platform guid for standalone and server platforms
+                var isStandalone = namedBuildTarget == NamedBuildTarget.Standalone && isBuildProfilePlatformStandalone;
+                var isServer = namedBuildTarget == NamedBuildTarget.Server && isBuildProfilePlatformServer;
+                if (platformGuid != buildProfilePlatformGuid && !(isStandalone || isServer))
+                    continue;
+
+                var copy = (BuildPlatform)validPlatforms[i].Clone();
+                copy.tooltip = string.Empty;
+                validPlatforms[0] = copy;
+                gotValidPlatform = true;
+                break;
             }
 
             if (!gotValidPlatform)
@@ -825,7 +832,8 @@ namespace UnityEditor
 
             Array.Resize(ref validPlatforms, 1);
             m_SettingsExtensions = new ISettingEditorExtension[1];
-            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(platformModuleName);
+            var moduleName = BuildProfileModuleUtil.GetModuleName(buildProfilePlatformGuid.ToString());
+            m_SettingsExtensions[0] = ModuleManager.GetEditorSettingsExtension(moduleName);
             m_SettingsExtensions[0]?.OnEnable(this);
             m_SettingsExtensions[0]?.ConfigurePlatformProfile(serializedProfile);
         }
@@ -3942,69 +3950,6 @@ namespace UnityEditor
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
         }
 
-        public void BrowseablePathProperty(string propertyLabel, SerializedProperty property, string browsePanelTitle, string extension, string dir)
-        {
-            EditorGUILayout.BeginHorizontal();
-
-            EditorGUILayout.PrefixLabel(EditorGUIUtility.TextContent(propertyLabel));
-
-            GUIContent browseBtnLabel = EditorGUIUtility.TrTextContent("...");
-            Vector2 sizeOfLabel = GUI.skin.GetStyle("Button").CalcSize(browseBtnLabel);
-
-            if (GUILayout.Button(browseBtnLabel, EditorStyles.miniButton, GUILayout.MaxWidth(sizeOfLabel.x)))
-            {
-                GUI.FocusControl("");
-
-                string title = EditorGUIUtility.TempContent(browsePanelTitle).text;
-                string currDirectory = string.IsNullOrEmpty(dir) ? Directory.GetCurrentDirectory().Replace('\\', '/') + "/" : dir.Replace('\\', '/') + "/";
-                string newStringValue = "";
-
-                if (string.IsNullOrEmpty(extension))
-                    newStringValue = EditorUtility.OpenFolderPanel(title, currDirectory, "");
-                else
-                    newStringValue = EditorUtility.OpenFilePanel(title, currDirectory, extension);
-
-                if (newStringValue.StartsWith(currDirectory))
-                    newStringValue = newStringValue.Substring(currDirectory.Length);
-
-                if (!string.IsNullOrEmpty(newStringValue))
-                {
-                    property.stringValue = newStringValue;
-                    serializedObject.ApplyModifiedProperties();
-                }
-            }
-
-            GUIContent gc = null;
-            bool emptyString = string.IsNullOrEmpty(property.stringValue);
-            using (new EditorGUI.DisabledScope(emptyString))
-            {
-                if (emptyString)
-                {
-                    gc = EditorGUIUtility.TrTextContent("Not selected.");
-                }
-                else
-                {
-                    gc = EditorGUIUtility.TempContent(property.stringValue);
-                }
-
-                EditorGUI.BeginChangeCheck();
-                GUILayoutOption[] options = { GUILayout.Width(32), GUILayout.ExpandWidth(true) };
-                string modifiedString = EditorGUILayout.TextArea(gc.text, options);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    if (string.IsNullOrEmpty(modifiedString))
-                    {
-                        property.stringValue = "";
-                        serializedObject.ApplyModifiedProperties();
-                        GUI.FocusControl("");
-                    }
-                }
-            }
-
-            EditorGUILayout.EndHorizontal();
-            EditorGUILayout.Space();
-        }
-
         internal static void BuildPathBoxButton(SerializedProperty prop, string uiString, string directory)
         {
             BuildPathBoxButton(prop, uiString, directory, null, null);
@@ -4021,8 +3966,8 @@ namespace UnityEditor
             Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
             Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
 
-            string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
-            EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+            string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
+            EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
 
             bool changed = false;
             if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
@@ -4068,8 +4013,8 @@ namespace UnityEditor
                 Rect buttonRect = new Rect(r.x + EditorGUI.indent, r.y, labelWidth - EditorGUI.indent, r.height);
                 Rect fieldRect = new Rect(r.x + labelWidth, r.y, r.width - labelWidth, r.height);
 
-                string display = (prop.stringValue.Length == 0) ? "Not selected." : prop.stringValue;
-                EditorGUI.TextArea(fieldRect, display, EditorStyles.label);
+                string display = (prop.stringValue.Length == 0) ? "Not selected" : prop.stringValue;
+                EditorGUI.LabelField(fieldRect, display, EditorStyles.label);
 
                 if (GUI.Button(buttonRect, EditorGUIUtility.TextContent(uiString)))
                 {

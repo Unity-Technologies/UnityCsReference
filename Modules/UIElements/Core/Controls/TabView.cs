@@ -197,9 +197,9 @@ namespace UnityEngine.UIElements
         ViewState m_ViewState;
         bool m_ApplyingViewState;
         bool m_Reordering;
+        internal VisualElement header => m_HeaderContainer;
         internal List<Tab> tabs => m_Tabs;
         internal List<VisualElement> tabHeaders => m_TabHeaders;
-        internal VisualElement header => m_HeaderContainer;
 
         /// <summary>
         /// Called when the active tab is reassigned.
@@ -209,6 +209,18 @@ namespace UnityEngine.UIElements
         /// being the newly selected tab.
         /// </remarks>
         public event Action<Tab, Tab> activeTabChanged;
+
+        /// <summary>
+        /// Raised when a tab is reordered.
+        /// The first argument is source index, second is destination index.
+        /// </summary>
+        public event Action<int, int> tabReordered;
+
+        /// <summary>
+        /// Raised when a tab is closed.
+        /// The first argument is the tab that was closed, the second is the index of the tab that was closed.
+        /// </summary>
+        public event Action<Tab, int> tabClosed;
 
         /// <summary>
         /// Property that holds the current active tab.
@@ -340,7 +352,7 @@ namespace UnityEngine.UIElements
             SaveViewData();
         }
 
-        void OnElementAdded(VisualElement ve)
+        void OnElementAdded(VisualElement ve, int index)
         {
             if (ve is not Tab tab || m_Reordering)
                 return;
@@ -348,10 +360,13 @@ namespace UnityEngine.UIElements
             var tabHeader = tab.tabHeader;
             if (tabHeader != null)
             {
-                m_HeaderContainer.Add(tabHeader);
-                m_TabHeaders.Add(tabHeader);
-                m_Tabs.Add(tab);
+                // Insert at specified index
+                m_HeaderContainer.Insert(index, tabHeader);
+                m_TabHeaders.Insert(index, tabHeader);
+                m_Tabs.Insert(index, tab);
                 tab.EnableTabDragHandles(m_Reorderable);
+
+                tab.closed += (t) => OnTabClosed(t, index);
             }
 
             tab.selected += OnTabSelected;
@@ -388,7 +403,20 @@ namespace UnityEngine.UIElements
             activeTab = tab;
         }
 
-        internal void ReorderTab(int from, int to)
+        void OnTabClosed(Tab tab, int index)
+        {
+            tabClosed?.Invoke(tab, index);
+        }
+
+        /// <summary>
+        /// Moves the tab from the specified index to a new index.
+        /// </summary>
+        /// <remarks>
+        /// If the TabView contains a view-data-key, reorder the tab only after the view data is applied. Otherwise, the view data will override the order.
+        /// </remarks>
+        /// <param name="from">The current index of the tab to move.</param>
+        /// <param name="to">The target index to move the tab to.</param>
+        public void ReorderTab(int from, int to)
         {
             var tabHeader = m_TabHeaders[from];
             var tab = m_Tabs[from];
@@ -409,8 +437,32 @@ namespace UnityEngine.UIElements
 
             m_Reordering = false;
 
+            tabReordered?.Invoke(from, to);
+
             if (!m_ApplyingViewState)
                 SaveViewState();
+        }
+
+        /// <summary>
+        /// Returns the tab at the specified index.
+        /// </summary>
+        public Tab GetTab(int index)
+        {
+            if (index < 0 || index >= m_Tabs.Count)
+                return null;
+
+            return m_Tabs[index];
+        }
+
+        /// <summary>
+        /// Returns the tab header at the specified index.
+        /// </summary>
+        public VisualElement GetTabHeader(int index)
+        {
+            if (index < 0 || index >= m_Tabs.Count)
+                return null;
+
+            return m_TabHeaders[index];
         }
 
         internal Tab FindTabByKey(string key)

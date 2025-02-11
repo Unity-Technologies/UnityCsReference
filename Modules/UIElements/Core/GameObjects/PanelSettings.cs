@@ -60,6 +60,14 @@ namespace UnityEngine.UIElements
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
     /// </summary>
+    /// <remarks>
+    /// The UIDocument component contains a reference to a PanelSettings object.
+    /// The PanelSettings contains the rendering settings for the UI, including the scale mode and the sort order.
+    /// Multiple UIDocument components can point to the same PanelSettings object, which optimizes performance when
+    /// using multiple UI screens in the same scene.
+    ///\\
+    /// For more information on the different properties of the PanelSettings object, refer to [[wiki:UIE-Runtime-Panel-Settings|Panel Settings properties reference]].
+    /// </remarks>
     [HelpURL("UIE-Runtime-Panel-Settings")]
     public class PanelSettings : ScriptableObject
     {
@@ -677,7 +685,7 @@ namespace UnityEngine.UIElements
         ///
         /// As this is called at every change marked on any visual element of the panel, the overhead is not negligible.
         /// The callback will not be called in release builds as the method is stripped.
-        /// 
+        ///
         /// The following example uses the panelChangeReceiver in a game.
         /// To test it, add the component to a GameObject and the Panel Setting asset linked in the component fields.
         /// </remarks>

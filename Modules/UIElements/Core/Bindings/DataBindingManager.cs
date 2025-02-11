@@ -387,12 +387,12 @@ namespace UnityEngine.UIElements
 
             class SourceInfo
             {
-                private List<PropertyPath> m_DetectedChanges;
+                private HashSet<PropertyPath> m_DetectedChanges;
 
                 public long lastVersion { get; set; }
                 public int refCount { get; set; }
-                public List<PropertyPath> detectedChanges => m_DetectedChanges ??= new List<PropertyPath>();
-                public List<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
+                public HashSet<PropertyPath> detectedChanges => m_DetectedChanges ??= new HashSet<PropertyPath>();
+                public HashSet<PropertyPath> detectedChangesNoAlloc => m_DetectedChanges;
             }
 
             class InvalidateDataSourcesTraversal : HierarchyTraversal
@@ -590,7 +590,7 @@ namespace UnityEngine.UIElements
                 return m_ResolvedHierarchicalDataSourceContext.ContainsKey(element);
             }
 
-            public List<PropertyPath> GetChangesFromSource(object dataSource)
+            public HashSet<PropertyPath> GetChangesFromSource(object dataSource)
             {
                 return m_SourceInfos.TryGetValue(dataSource, out var info) ? info.detectedChangesNoAlloc : null;
             }
@@ -891,7 +891,7 @@ namespace UnityEngine.UIElements
             return m_DetectedChangesFromUI;
         }
 
-        internal List<PropertyPath> GetChangedDetectedFromSource(object dataSource)
+        internal HashSet<PropertyPath> GetChangedDetectedFromSource(object dataSource)
         {
             return m_DataSourceTracker.GetChangesFromSource(dataSource);
         }

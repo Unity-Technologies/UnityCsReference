@@ -10,7 +10,7 @@ using Unity.Properties;
 namespace UnityEngine.UIElements
 {
     /// <summary>
-    /// A tree view with multi column support.
+    /// A tree view with multi column support. For more information, refer to [[wiki:UIE-uxml-element-MultiColumnTreeView|MultiColumnTreeView]].
     /// </summary>
     public class MultiColumnTreeView : BaseTreeView
     {

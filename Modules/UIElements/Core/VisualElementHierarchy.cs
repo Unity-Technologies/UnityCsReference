@@ -67,7 +67,7 @@ namespace UnityEngine.UIElements
         private VisualElement m_LogicalParent;
 
         // This will be invoked once a visual element is successfully added into the hierarchy.
-        internal event Action<VisualElement> elementAdded;
+        internal event Action<VisualElement, int> elementAdded;
 
         // This will be invoked once a visual element is successfully removed into the hierarchy.
         internal event Action<VisualElement> elementRemoved;
@@ -510,7 +510,7 @@ namespace UnityEngine.UIElements
                 child.InvokeHierarchyChanged(HierarchyChangeType.AddedToParent);
                 child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
-                m_Owner.elementAdded?.Invoke(child);
+                m_Owner.elementAdded?.Invoke(child, index);
             }
 
             /// <summary>

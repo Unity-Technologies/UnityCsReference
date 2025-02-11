@@ -91,11 +91,11 @@ namespace UnityEngine.Rendering
         private static unsafe GPUDrivenRendererDataNativeCallback s_NativeRendererCallback = (in GPUDrivenRendererGroupDataNative nativeData, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback callback) =>
         {
             var rendererGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.rendererGroupID, nativeData.rendererGroupCount, Allocator.Invalid);
-            var localBounds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Bounds>(nativeData.localBounds, nativeData.rendererGroupCount, Allocator.Invalid);
+            var localBounds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Bounds>(nativeData.localBounds, nativeData.localBounds == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
             var lightmapScaleOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector4>(nativeData.lightmapScaleOffset, nativeData.rendererGroupCount, Allocator.Invalid);
             var gameObjectLayer = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.gameObjectLayer, nativeData.rendererGroupCount, Allocator.Invalid);
             var renderingLayerMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<uint>(nativeData.renderingLayerMask, nativeData.rendererGroupCount, Allocator.Invalid);
-            var lodGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodGroupID, nativeData.rendererGroupCount, Allocator.Invalid);
+            var lodGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.lodGroupID, nativeData.lodGroupID == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
             var lightmapIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.motionVecGenMode, nativeData.rendererGroupCount, Allocator.Invalid);
             var packedRendererData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenPackedRendererData>(nativeData.packedRendererData, nativeData.rendererGroupCount, Allocator.Invalid);
             var rendererPriority = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.rendererPriority, nativeData.rendererGroupCount, Allocator.Invalid);
@@ -109,8 +109,8 @@ namespace UnityEngine.Rendering
 
             var invalidRendererGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.invalidRendererGroupID, nativeData.invalidRendererGroupIDCount, Allocator.Invalid);
 
-            var localToWorldMatrix = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(nativeData.localToWorldMatrix, nativeData.rendererGroupCount, Allocator.Invalid);
-            var prevLocalToWorldMatrix = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(nativeData.prevLocalToWorldMatrix, nativeData.rendererGroupCount, Allocator.Invalid);
+            var localToWorldMatrix = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(nativeData.localToWorldMatrix, nativeData.localToWorldMatrix == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
+            var prevLocalToWorldMatrix = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(nativeData.prevLocalToWorldMatrix, nativeData.prevLocalToWorldMatrix == null ? 0 : nativeData.rendererGroupCount, Allocator.Invalid);
             var rendererGroupIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
 
             var meshID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.meshID, nativeData.meshCount, Allocator.Invalid);
@@ -122,8 +122,8 @@ namespace UnityEngine.Rendering
             var materialIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialIndex, nativeData.materialIndexCount, Allocator.Invalid);
 
             var materialID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialID, nativeData.materialCount, Allocator.Invalid);
-            var packedMaterialData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenPackedMaterialData>(nativeData.packedMaterialData, nativeData.materialCount, Allocator.Invalid);
-            var materialFilterFlags = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialFilterFlags, nativeData.materialCount, Allocator.Invalid);
+            var packedMaterialData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenPackedMaterialData>(nativeData.packedMaterialData, nativeData.packedMaterialData == null ? 0 : nativeData.materialCount, Allocator.Invalid);
+            var materialFilterFlags = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.materialFilterFlags, nativeData.packedMaterialData == null ? 0 : nativeData.materialCount, Allocator.Invalid);
 
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref rendererGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref localBounds, AtomicSafetyHandle.Create());
@@ -278,12 +278,12 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
         };
 
-        private extern void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataNativeCallback callback, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback param);
-        public void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataCallback callback)
+        private extern void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataNativeCallback callback, List<Mesh> meshes, List<Material> materials, GPUDrivenRendererDataCallback param, bool materialUpdateOnly);
+        public void EnableGPUDrivenRenderingAndDispatchRendererData(ReadOnlySpan<int> renderersID, GPUDrivenRendererDataCallback callback, bool materialUpdateOnly = false)
         {
             scratchMeshes.Clear();
             scratchMaterials.Clear();
-            EnableGPUDrivenRenderingAndDispatchRendererData(renderersID, s_NativeRendererCallback, scratchMeshes, scratchMaterials, callback);
+            EnableGPUDrivenRenderingAndDispatchRendererData(renderersID, s_NativeRendererCallback, scratchMeshes, scratchMaterials, callback, materialUpdateOnly);
         }
         public extern void DisableGPUDrivenRendering(ReadOnlySpan<int> renderersID);
 
@@ -299,12 +299,12 @@ namespace UnityEngine.Rendering
         public extern void ClearMaterialFilters();
         public extern int GetMaterialFilterFlags(Material material);
 
-        [FreeFunction("GPUDrivenProcessor::FindUnsupportedMaterials", IsThreadSafe = true)]
-        private static extern int FindUnsupportedMaterialsImpl(ReadOnlySpan<int> materialIDs, Span<int> unsupportedMaterialIDs);
+        [FreeFunction("GPUDrivenProcessor::ClassifyMaterials", IsThreadSafe = true)]
+        private static extern int ClassifyMaterialsImpl(ReadOnlySpan<int> materialIDs, Span<int> unsupportedMaterialIDs, Span<int> supportedMaterialIDs, Span<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas);
 
-        public static int FindUnsupportedMaterialIDs(NativeArray<int> materialIDs, NativeArray<int> unsupportedMaterialIDs)
+        public static int ClassifyMaterials(NativeArray<int> materialIDs, NativeArray<int> unsupportedMaterialIDs, NativeArray<int> supportedMaterialIDs, NativeArray<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas)
         {
-            return FindUnsupportedMaterialsImpl(materialIDs, unsupportedMaterialIDs);
+            return ClassifyMaterialsImpl(materialIDs, unsupportedMaterialIDs, supportedMaterialIDs, supportedPackedMaterialDatas);
         }
 
         internal static class BindingsMarshaller
@@ -450,6 +450,11 @@ namespace UnityEngine.Rendering
             data = isTransparent ? 1u : 0u;
             data |= isMotionVectorsPassEnabled ? 1u << 1 : 0u;
             data |= isIndirectSupported ? 1u << 2 : 0u;
+        }
+
+        public bool Equals(GPUDrivenPackedMaterialData other)
+        {
+            return (other.data & 7) == (data & 7);
         }
     }
 

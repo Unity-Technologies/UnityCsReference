@@ -613,6 +613,14 @@ namespace UnityEditorInternal
                 case KeyCode.F13: text = "F13"; break;
                 case KeyCode.F14: text = "F14"; break;
                 case KeyCode.F15: text = "F15"; break;
+                case KeyCode.F16: text = "F16"; break;
+                case KeyCode.F17: text = "F17"; break;
+                case KeyCode.F18: text = "F18"; break;
+                case KeyCode.F19: text = "F19"; break;
+                case KeyCode.F20: text = "F20"; break;
+                case KeyCode.F21: text = "F21"; break;
+                case KeyCode.F23: text = "F23"; break;
+                case KeyCode.F24: text = "F24"; break;
 
 
                 case KeyCode.Escape: text = "[esc]"; break;

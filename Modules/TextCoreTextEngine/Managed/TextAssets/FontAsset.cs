@@ -1038,8 +1038,17 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Update Units per EM for pre-existing font assets.
-            if (m_FaceInfo.unitsPerEM == 0)
-                m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+            if (m_FaceInfo.unitsPerEM == 0 && atlasPopulationMode != AtlasPopulationMode.Static)
+            {
+                // Only retrieve Units Per EM if we are on the main thread.
+                if (!JobsUtility.IsExecutingJob)
+                {
+                    m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.");
+                }
+                else
+                    Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.");
+            }
 
             // Compute hash codes for various properties of the font asset used for lookup.
             hashCode = TextUtilities.GetHashCodeCaseInSensitive(name);
@@ -1420,7 +1429,7 @@ namespace UnityEngine.TextCore.Text
         ///
         /// </summary>
         /// <returns></returns>
-        FontEngineError LoadFontFace()
+        internal FontEngineError LoadFontFace()
         {
             if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic)
             {

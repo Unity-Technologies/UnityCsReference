@@ -2,12 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.IO;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -58,6 +54,15 @@ namespace Unity.UI.Builder
 
             hoveredItemChanged += UpdateDetailView;
             selectionChanged += UpdateDetailView;
+            itemChosen += (i) =>
+            {
+                // Only needed for when the variable is typed in manually in the style field.
+                if (!m_Handler.isVariableFieldVisible)
+                {
+                    var varName = results[i].name;
+                    m_Handler.SetVariable(varName);
+                }
+            };
 
             matcherCallback = Matcher;
             getTextFromDataCallback = GetVarName;
@@ -102,14 +107,15 @@ namespace Unity.UI.Builder
             if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleInt(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleLength(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleRotate(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
             {
-                return new[] { StyleValueType.Float, StyleValueType.Dimension };
+                return new[] { StyleValueType.Float, StyleValueType.Dimension, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleColor(val))
             {
-                return new[] { StyleValueType.Color };
+                return new[] { StyleValueType.Color, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleFont(val, handler.styleName) || BuilderInspectorStyleFields.IsComputedStyleFontAsset(val, handler.styleName))
@@ -119,22 +125,22 @@ namespace Unity.UI.Builder
 
             if (BuilderInspectorStyleFields.IsComputedStyleBackground(val))
             {
-                return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
+                return new[] { StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleCursor(val) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<StylePropertyName>(val))
             {
-                return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath };
+                return new[] { StyleValueType.Enum, StyleValueType.ScalableImage, StyleValueType.AssetReference, StyleValueType.ResourcePath, StyleValueType.Keyword };
             }
 
             if (BuilderInspectorStyleFields.IsComputedStyleEnum(val, styleType) ||
                 BuilderInspectorStyleFields.IsComputedStyleList<EasingFunction>(val))
             {
-                return new[] { StyleValueType.Enum };
+                return new[] { StyleValueType.Enum, StyleValueType.Keyword };
             }
 
-            return new[] { StyleValueType.Invalid };
+            return new[] { StyleValueType.Invalid, StyleValueType.Keyword };
         }
 
         bool Matcher(string filter, VariableInfo data)

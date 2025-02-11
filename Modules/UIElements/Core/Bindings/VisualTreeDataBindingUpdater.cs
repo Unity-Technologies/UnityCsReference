@@ -185,6 +185,9 @@ namespace UnityEngine.UIElements
                         if (!m_Updater.ShouldProcessBindingAtStage(bindingData.binding, BindingUpdateStage.UpdateUI, changed, m_DirtyBindings.Contains(bindingData.binding)))
                             continue;
 
+                        if (null != source && changed)
+                            m_KnownSources.Add(source);
+
                         if (bindingData.binding.updateTrigger == BindingUpdateTrigger.OnSourceChanged && source is INotifyBindablePropertyChanged && !bindingData.binding.isDirty)
                         {
                             var changedPaths = bindingManager.GetChangedDetectedFromSource(source);
@@ -206,9 +209,6 @@ namespace UnityEngine.UIElements
                                 continue;
                         }
                     }
-
-                    if (null != source)
-                        m_KnownSources.Add(source);
 
                     var wasDirty = bindingData.binding.isDirty;
                     bindingData.binding.ClearDirty();
