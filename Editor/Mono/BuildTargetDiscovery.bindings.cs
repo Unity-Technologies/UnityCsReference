@@ -243,6 +243,11 @@ namespace UnityEditor
             public string iconName = "BuildSettings.Editor";
             public string subtitle = "";
             public List<NameAndLink> nameAndLinkToShowUnderTitle = null;
+
+            // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
+            // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
+            public NameAndLink? temporaryLabelAndLinkForIndustrialOnboarding = null;
+
             public PlatformInfo() {}
 
             public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
@@ -582,6 +587,11 @@ namespace UnityEditor
                     description = L10n.Tr("Choose Embedded Linux, a compact version of Linux, if you are planning to build applications for embedded devices and appliances."),
                     buildTarget = BuildTarget.EmbeddedLinux,
                     iconName = "BuildSettings.EmbeddedLinux",
+
+                    // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
+                    // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
+                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No Embedded Linux module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team."), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
+
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -595,6 +605,11 @@ namespace UnityEditor
                     description = L10n.Tr("Deploy the Unity runtime to automotive and other embedded systems utilizing the Blackberry® QNX® real-time operating system."),
                     buildTarget = BuildTarget.QNX,
                     iconName = "BuildSettings.QNX",
+
+                    // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
+                    // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
+                    temporaryLabelAndLinkForIndustrialOnboarding = new NameAndLink{name = L10n.Tr("No QNX® module loaded. If you are a current Embedded Platforms customer, contact your Account Manager for download instructions.\nFor information on access and licensing, contact the Unity Sales team."), linkUrl = "https://create.unity.com/unity-for-industries?sfcid=7015G000000KFqdQAG&sflsa=2023-04-na-dg-hmi-solutions-contact-us"},
+
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -940,6 +955,25 @@ namespace UnityEditor
                 return platformInfo.nameAndLinkToShowUnderTitle;
 
             return null;
+        }
+
+        // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
+        // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
+        public static bool BuildPlatformTryGetCustomInstallLinkAndText(GUID guid, out string url, out string text)
+        {
+            if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
+            {
+                var nameAndLink = platformInfo.temporaryLabelAndLinkForIndustrialOnboarding;
+                if (nameAndLink != null)
+                {
+                    url = nameAndLink.Value.linkUrl;
+                    text = nameAndLink.Value.name;
+                    return true;
+                }
+            }
+            url = string.Empty;
+            text = string.Empty;
+            return false;
         }
 
         [System.Obsolete("BuildPlatformOnboardingInstructions(BuildTarget) is obsolete. Use BuildPlatformOnboardingInstructions(IBuildTarget) instead.", false)]

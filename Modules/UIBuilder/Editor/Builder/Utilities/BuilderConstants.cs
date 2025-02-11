@@ -639,6 +639,7 @@ namespace Unity.UI.Builder
         public static readonly string ChangeUIStyleValueUndoMessage = "Change UI Style Value";
         public static readonly string ChangeSelectionUndoMessage = "Change UI Builder Selection";
         public static readonly string CreateUIElementUndoMessage = "Create UI Element";
+        public static readonly string RenameUIElementUndoMessage = "Rename UI Element";
         public static readonly string DeleteUIElementUndoMessage = "Delete UI Element";
         public static readonly string ReparentUIElementUndoMessage = "Reparent UI Element";
         public static readonly string AddStyleClassUndoMessage = "Add UI Style Class";

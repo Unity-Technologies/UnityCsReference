@@ -22,7 +22,7 @@ namespace Unity.UI.Builder
         internal static readonly string floatFieldName = "item-float-field";
         internal static readonly string dimensionFieldName = "item-dimension-field";
         internal static readonly string colorFieldName = "item-color-field";
-        internal static readonly string imageFieldName = "item-image-field";
+        internal static readonly string assetFieldName = "item-asset-field";
         internal static readonly string keywordFieldName = "item-keyword-field";
         internal static readonly string typeFieldName = "item-type-field";
 
@@ -39,7 +39,7 @@ namespace Unity.UI.Builder
         internal FloatField itemFloatField;
         internal USSVariablesStyleField itemDimensionField;
         internal ColorField itemColorField;
-        internal ImageStyleField itemImageField;
+        internal AssetReferenceStyleField itemAssetField;
         internal DropdownField itemKeywordField;
         internal DropdownField itemTypeField;
 
@@ -62,8 +62,8 @@ namespace Unity.UI.Builder
                 { name = dimensionFieldName, classList = { dimensionFieldName, compositeFieldClassName } });
             fieldsGroup.Add(itemColorField = new ColorField()
                 { name = colorFieldName, classList = { hiddenFieldClassName } });
-            fieldsGroup.Add(itemImageField = new ImageStyleField()
-                { name = imageFieldName, classList = { hiddenFieldClassName } });
+            fieldsGroup.Add(itemAssetField = new AssetReferenceStyleField()
+                { name = assetFieldName, classList = { hiddenFieldClassName } });
             fieldsGroup.Add(itemKeywordField = new DropdownField()
                 { name = keywordFieldName, classList = { hiddenFieldClassName } });
             fieldsGroup.Add(itemTypeField = new DropdownField()

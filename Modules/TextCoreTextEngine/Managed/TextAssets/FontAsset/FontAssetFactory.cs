@@ -13,13 +13,13 @@ internal class FontAssetFactory
     const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
     static readonly HashSet<FontAsset> visitedFontAssets = new();
 
-    public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, float fontSize)
+    public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, int fontSize)
     {
         visitedFontAssets.Clear();
         return CloneFontAssetWithBitmapRenderingInternal(baseFontAsset, fontSize);
     }
 
-    static FontAsset? CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, float fontSize)
+    static FontAsset? CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, int fontSize)
     {
         visitedFontAssets.Add(baseFontAsset);
         FontAsset? resultFontAsset = CloneFontAssetWithBitmapSettings(baseFontAsset, fontSize);
@@ -33,7 +33,7 @@ internal class FontAssetFactory
         return resultFontAsset;
     }
 
-    static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, float size)
+    static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, int size)
     {
         bool shouldInstantiate = source.atlasRenderMode != GlyphRenderMode.SDFAA || !source.IsEditorFont || source.sourceFontFile == null;
         FontAsset? newFontAsset;
@@ -63,7 +63,7 @@ internal class FontAssetFactory
         return newFontAsset;
     }
 
-    static void ProcessFontWeights(FontAsset resultFontAsset, FontAsset baseFontAsset, float fontSize)
+    static void ProcessFontWeights(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize)
     {
         for (int i = 0; i < baseFontAsset.fontWeightTable.Length; i++)
         {
@@ -79,7 +79,7 @@ internal class FontAssetFactory
         }
     }
 
-    static void ProcessFallbackFonts(FontAsset resultFontAsset, FontAsset baseFontAsset, float fontSize)
+    static void ProcessFallbackFonts(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize)
     {
         if (baseFontAsset.fallbackFontAssetTable == null)
             return;

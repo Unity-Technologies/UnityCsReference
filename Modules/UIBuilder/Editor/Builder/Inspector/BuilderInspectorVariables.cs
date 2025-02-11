@@ -79,7 +79,7 @@ namespace Unity.UI.Builder
                 item.itemKeywordField.RegisterValueChangedCallback(OnValueChanged);
                 item.itemDimensionField.RegisterValueChangedCallback(OnDimensionChanged);
                 item.itemColorField.RegisterValueChangedCallback(OnColourChanged);
-                item.itemImageField.RegisterValueChangedCallback(OnImageChanged);
+                item.itemAssetField.RegisterValueChangedCallback(OnAssetChanged);
                 item.itemTypeField.RegisterValueChangedCallback(OnTypeChanged);
 
                 item.itemValueField.enabledSelf = true;
@@ -101,8 +101,8 @@ namespace Unity.UI.Builder
                         item.itemColorField.SetValueWithoutNotify(color);
                         break;
                     case StyleValueType.AssetReference:
-                        var image = styleSheet.ReadAssetReference(listItem);
-                        item.itemImageField.SetValueWithoutNotify(image);
+                        var asset = styleSheet.ReadAssetReference(listItem);
+                        item.itemAssetField.SetValueWithoutNotify(asset);
                         break;
                     case StyleValueType.Dimension:
                         var dimensionText = StyleSheetToUss.ValueHandleToUssString(styleSheet, new UssExportOptions(), "",
@@ -142,7 +142,7 @@ namespace Unity.UI.Builder
                 item.itemKeywordField.UnregisterValueChangedCallback(OnValueChanged);
                 item.itemDimensionField.UnregisterValueChangedCallback(OnDimensionChanged);
                 item.itemColorField.UnregisterValueChangedCallback(OnColourChanged);
-                item.itemImageField.UnregisterValueChangedCallback(OnImageChanged);
+                item.itemAssetField.UnregisterValueChangedCallback(OnAssetChanged);
                 item.itemTypeField.UnregisterValueChangedCallback(OnTypeChanged);
 
                 EnableWarningBox(item, null, false);
@@ -249,7 +249,7 @@ namespace Unity.UI.Builder
                 case (StyleValueType.ScalableImage):
                 case (StyleValueType.AssetReference):
                 case (StyleValueType.MissingAssetReference):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.imageFieldName).AddToClassList(s_ActiveFieldClassName);
+                    currentRow.Q(name: BuilderInspectorVariablesListItem.assetFieldName).AddToClassList(s_ActiveFieldClassName);
                     break;
                 case (StyleValueType.Dimension):
                     currentRow.Q(name: BuilderInspectorVariablesListItem.dimensionFieldName).AddToClassList(s_ActiveFieldClassName);
@@ -492,7 +492,7 @@ namespace Unity.UI.Builder
             m_Selection.NotifyOfStylingChange();
         }
 
-        void OnImageChanged(ChangeEvent<Object> evt)
+        void OnAssetChanged(ChangeEvent<Object> evt)
         {
             if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
                 return;

@@ -201,7 +201,7 @@ namespace UnityEditor
             public static readonly GUIContent autoGraphicsAPIForLinux = EditorGUIUtility.TrTextContent("Auto Graphics API for Linux");
 
             public static readonly GUIContent iOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
-            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources and Prepare iOS for Recording are both off.");
+            public static readonly GUIContent iOSExternalAudioInputNotSupported = EditorGUIUtility.TrTextContent("Audio input from Bluetooth microphones is not supported when Mute Other Audio Sources is off.");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
@@ -802,20 +802,27 @@ namespace UnityEditor
             // We don't want to show other platform tabs that it's not the build profile one
             var gotValidPlatform = false;
             var buildProfileBasePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(buildProfilePlatformGuid);
+            var buildProfileSubtarget = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(buildProfileBasePlatformGuid).Item2;
+            var isBuildProfilePlatformStandalone = buildProfileSubtarget == StandaloneBuildSubtarget.Player;
+            var isBuildProfilePlatformServer = buildProfileSubtarget == StandaloneBuildSubtarget.Server;
             for (int i = 0; i < validPlatforms.Length; i++)
             {
                 var buildTarget = validPlatforms[i].defaultTarget;
                 var namedBuildTarget = validPlatforms[i].namedBuildTarget;
                 var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(namedBuildTarget, buildTarget);
+                
+                // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
+                // NamedBuildTarget in addition to the base platform guid for standalone and server platforms
+                var isStandalone = namedBuildTarget == NamedBuildTarget.Standalone && isBuildProfilePlatformStandalone;
+                var isServer = namedBuildTarget == NamedBuildTarget.Server && isBuildProfilePlatformServer;
+                if (basePlatformGuid != buildProfileBasePlatformGuid && !(isStandalone || isServer))
+                    continue;
 
-                if (basePlatformGuid == buildProfileBasePlatformGuid)
-                {
-                    var copy = (BuildPlatform)validPlatforms[i].Clone();
-                    copy.tooltip = string.Empty;
-                    validPlatforms[0] = copy;
-                    gotValidPlatform = true;
-                    break;
-                }
+                var copy = (BuildPlatform)validPlatforms[i].Clone();
+                copy.tooltip = string.Empty;
+                validPlatforms[0] = copy;
+                gotValidPlatform = true;
+                break;
             }
 
             if (!gotValidPlatform)
@@ -3322,7 +3329,12 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_AccelerometerFrequency, SettingsContent.accelerometerFrequency);
 
                 if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS || platform.namedBuildTarget == NamedBuildTarget.Android)
+                {
                     EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
+
+                    if (m_MuteOtherAudioSources.boolValue == false && platform.namedBuildTarget == NamedBuildTarget.iOS)
+                        EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
+                }
 
                 // TVOS TODO: check what should stay or go
                 if (platform.namedBuildTarget == NamedBuildTarget.iOS || platform.namedBuildTarget == NamedBuildTarget.tvOS)
@@ -3330,8 +3342,6 @@ namespace UnityEditor
                     if (platform.namedBuildTarget == NamedBuildTarget.iOS)
                     {
                         EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
-                        if (m_MuteOtherAudioSources.boolValue == false && m_PrepareIOSForRecording.boolValue == false)
-                            EditorGUILayout.HelpBox(SettingsContent.iOSExternalAudioInputNotSupported.text, MessageType.Warning);
 
                         EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }

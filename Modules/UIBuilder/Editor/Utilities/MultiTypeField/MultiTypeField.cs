@@ -38,6 +38,8 @@ namespace Unity.UI.Builder
         readonly Dictionary<string, Type> m_TypeOptions;
         readonly PopupField<string> m_TypePopup;
 
+        internal PopupField<string> typePopup => m_TypePopup;
+
         protected MultiTypeField() : this(null) {}
 
         protected MultiTypeField(string label) : base(label)

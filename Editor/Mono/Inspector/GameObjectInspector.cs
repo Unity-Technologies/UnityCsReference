@@ -49,7 +49,7 @@ namespace UnityEditor
             public static GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
             public static GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
             public static GUIContent staticPreviewContent = EditorGUIUtility.TrTextContent("Static Preview", "This asset is greater than 8MB so, by default, the Asset Preview displays a static preview.\nTo view the asset interactively, click the Asset Preview.");
-            
+
             public static float tagFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.tagContent, EditorStyles.boldLabel);
             public static float layerFieldWidth = EditorGUI.CalcPrefixLabelWidth(Styles.layerContent, EditorStyles.boldLabel);
 
@@ -1370,7 +1370,14 @@ namespace UnityEditor
                         m_DragObject.transform.position = Matrix4x4.identity.MultiplyPoint(point + (normal * offset));
                     }
                     else
-                        m_DragObject.transform.position = HandleUtility.GUIPointToWorldRay(mousePosition).GetPoint(10);
+                    {
+                        // UUM-95510 scale the distance based on FOV to avoid very close placement at low FOVs
+                        var clampedFov = Mathf.Clamp(sceneView.camera.fieldOfView, 4f, 60f);
+                        var fovFactor = Mathf.InverseLerp(60f, 4f, clampedFov);
+                        var distanceFactor = Mathf.Pow(fovFactor, 6);
+                        var distance = (distanceFactor * 110f) + 10f;
+                        m_DragObject.transform.position = HandleUtility.GUIPointToWorldRay(mousePosition).GetPoint(distance);
+                    }
 
                     if (alt)
                     {

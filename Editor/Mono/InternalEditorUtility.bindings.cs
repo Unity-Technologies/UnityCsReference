@@ -293,14 +293,8 @@ namespace UnityEditorInternal
         extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
-        {
-            // place at scene pivot unless we have Pref for placing at root or we dont have a scene view
-            Vector3 worldPosition = Vector3.zero;
-            if (!GOCreationCommands.s_PlaceObjectsAtWorldOrigin.value && SceneView.lastActiveSceneView != null)
-                worldPosition = SceneView.lastActiveSceneView.pivot;
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
 
-            return HierarchyWindowDragByID(dropTargetInstanceID, worldPosition, dropMode, parentForDraggedObjects, perform);
-        }
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
         extern internal static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, Vector3 worldPosition, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
@@ -630,6 +624,14 @@ namespace UnityEditorInternal
                 case KeyCode.F13: text = "F13"; break;
                 case KeyCode.F14: text = "F14"; break;
                 case KeyCode.F15: text = "F15"; break;
+                case KeyCode.F16: text = "F16"; break;
+                case KeyCode.F17: text = "F17"; break;
+                case KeyCode.F18: text = "F18"; break;
+                case KeyCode.F19: text = "F19"; break;
+                case KeyCode.F20: text = "F20"; break;
+                case KeyCode.F21: text = "F21"; break;
+                case KeyCode.F23: text = "F23"; break;
+                case KeyCode.F24: text = "F24"; break;
 
 
                 case KeyCode.Escape: text = "[esc]"; break;

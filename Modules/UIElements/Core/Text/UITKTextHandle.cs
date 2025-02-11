@@ -25,8 +25,8 @@ namespace UnityEngine.UIElements
         public Vector2 ATGMeasuredSizes { get; set; }
         public Vector2 ATGRoundedSizes { get; set; }
 
-        internal static Func<float, FontAsset, FontAsset> GetBlurryMapping;
-        internal static Func<float, bool> CanGenerateFallbackFontAssets;
+        internal static Func<int, FontAsset, FontAsset> GetBlurryMapping;
+        internal static Func<int, bool> CanGenerateFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
         protected TextElement m_TextElement;
@@ -154,7 +154,7 @@ namespace UnityEngine.UIElements
                 if (m_TextElement.panel != null)
                     settings.pixelsPerPoint = m_TextElement.scaledPixelsPerPoint;
 
-                var pixelSize = tgs.fontSize * settings.pixelsPerPoint;
+                var pixelSize = (int)Math.Round(((tgs.fontSize * settings.pixelsPerPoint)), MidpointRounding.AwayFromZero);
                 FontAsset fa = GetBlurryMapping(pixelSize, tgs.fontAsset);
 
                 // Fallbacks also need to be generated on the Main Thread

@@ -43,7 +43,7 @@ namespace UnityEditor
             UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
-        public static FontAsset GetBlurryFontAssetMapping(float pointSize, FontAsset ft)
+        public static FontAsset GetBlurryFontAssetMapping(int pointSize, FontAsset ft)
         {
             if (pointSize < k_MinSupportedPointSize || pointSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return ft;
@@ -115,7 +115,7 @@ namespace UnityEditor
             return GetFallbackFontAssetsInternal(textPixelSize);
         }
 
-        static List<FontAsset> GetFallbackFontAssetsInternal(float textPixelSize)
+        static List<FontAsset> GetFallbackFontAssetsInternal(int textPixelSize)
         {
             var editorTextSettings = defaultTextSettings;
             var localFallback = editorTextSettings.fallbackFontAssets[0];
@@ -143,7 +143,7 @@ namespace UnityEditor
             };
         }
 
-        static bool CanGenerateFallbackFontAssets(float textPixelSize)
+        static bool CanGenerateFallbackFontAssets(int textPixelSize)
         {
             if (textPixelSize < k_MinSupportedPointSize || textPixelSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return true;

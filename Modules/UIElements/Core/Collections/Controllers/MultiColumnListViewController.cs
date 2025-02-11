@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements.Internal;
 
@@ -67,8 +66,7 @@ namespace UnityEngine.UIElements
 
         internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
         {
-            var sortedIndex = m_ColumnController.GetSortedIndex(index);
-            base.InvokeBindItem(reusableItem, sortedIndex);
+            base.InvokeBindItem(reusableItem, index);
 
             if (reusableItem is ReusableListViewItem listItem)
             {
@@ -77,10 +75,22 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal override void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)
+        public override object GetItemForIndex(int index)
         {
-            var sortedIndex = m_ColumnController.GetSortedIndex(index);
-            base.InvokeUnbindItem(reusableItem, sortedIndex);
+            var sourceIndex = columnController.GetSourceIndex(index);
+            return base.GetItemForIndex(sourceIndex);
+        }
+
+        public override int GetIndexForId(int id)
+        {
+            var sortedIndex = base.GetIndexForId(id);
+            return columnController.GetSortedIndex(sortedIndex);
+        }
+
+        public override int GetIdForIndex(int index)
+        {
+            var sourceIndex = columnController.GetSourceIndex(index);
+            return base.GetIdForIndex(sourceIndex);
         }
 
         /// <inheritdoc />

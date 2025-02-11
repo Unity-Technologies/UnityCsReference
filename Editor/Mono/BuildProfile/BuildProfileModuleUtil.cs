@@ -167,6 +167,20 @@ namespace UnityEditor.Build.Profile
                 });
             }
 
+            // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
+            // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
+            if (BuildTargetDiscovery.BuildPlatformTryGetCustomInstallLinkAndText(platformId, out var url, out var text))
+            {
+                return new IMGUIContainer(() =>
+                {
+                    GUILayout.Label(EditorGUIUtility.TextContent(text), EditorStyles.wordWrappedLabel);
+                    if (GUILayout.Button("Contact Sales", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    {
+                        Help.BrowseURL(url);
+                    }
+                });
+            }
+
             return new IMGUIContainer(
                 () => BuildPlayerWindow.ShowNoModuleLabel(platformId,
                     k_NoModuleLoaded, k_OpenDownloadPage, k_InstallModuleWithHub, k_EditorWillNeedToBeReloaded));

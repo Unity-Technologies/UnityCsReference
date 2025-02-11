@@ -75,6 +75,7 @@ namespace UnityEditor
         void ShowSelectionDropdown(ClickEvent evt)
         {
             var menu = new DropdownMenu();
+            menu.allowDuplicateNames = true;
             foreach (var vp in m_Overlay.availableViewpoints)
             {
                 var status = vp.TargetObject.Equals(m_Overlay.viewpoint.TargetObject) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;

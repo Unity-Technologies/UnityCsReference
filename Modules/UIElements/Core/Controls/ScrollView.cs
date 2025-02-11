@@ -1037,6 +1037,13 @@ namespace UnityEngine.UIElements
             horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
             verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
 
+            horizontalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
+            verticalScroller.slider.clampedDragger.acceptClicksIfDisabled = true;
+            verticalScroller.highButton.acceptClicksIfDisabled = true;
+            verticalScroller.lowButton.acceptClicksIfDisabled = true;
+            horizontalScroller.highButton.acceptClicksIfDisabled = true;
+            horizontalScroller.lowButton.acceptClicksIfDisabled = true;
+
             horizontalScroller.lowButton.AddAction(UpdateElasticBehaviour);
             horizontalScroller.highButton.AddAction(UpdateElasticBehaviour);
             verticalScroller.lowButton.AddAction(UpdateElasticBehaviour);
@@ -1048,13 +1055,12 @@ namespace UnityEngine.UIElements
 
             touchScrollBehavior = TouchScrollBehavior.Clamped;
 
-            RegisterCallback<WheelEvent>(OnScrollWheel);
+            RegisterCallback<WheelEvent>(OnScrollWheel, InvokePolicy.IncludeDisabled);
             verticalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
             horizontalScroller.RegisterCallback<GeometryChangedEvent>(OnScrollersGeometryChanged);
 
             horizontalPageSize = k_UnsetPageSizeValue;
             verticalPageSize = k_UnsetPageSizeValue;
-
 
             horizontalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnHorizontalScrollDragElementChanged);
             verticalScroller.slider.dragElement.RegisterCallback<GeometryChangedEvent>(OnVerticalScrollDragElementChanged);

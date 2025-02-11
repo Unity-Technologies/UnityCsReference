@@ -18,9 +18,9 @@ namespace UnityEditor
         [SerializeField]
         public List<FontAsset> m_FontAssetCorrespondingFontAssets = new ();
         [SerializeField]
-        public List<float> m_FontAssetPointSize = new ();
+        public List<int> m_FontAssetPointSize = new ();
 
-        Dictionary<Tuple<float, FontAsset>, FontAsset> m_FontAssetPointSizeLookup = new ();
+        Dictionary<Tuple<int, FontAsset>, FontAsset> m_FontAssetPointSizeLookup = new ();
 
         public void InitializeLookups()
         {
@@ -36,7 +36,7 @@ namespace UnityEditor
             }
         }
 
-        public void Add(FontAsset srcFontAsset, float pointSize, FontAsset dstFontAsset)
+        public void Add(FontAsset srcFontAsset, int pointSize, FontAsset dstFontAsset)
         {
             m_SrcFontAsset.Add(srcFontAsset);
             m_FontAssetPointSize.Add(pointSize);
@@ -45,7 +45,7 @@ namespace UnityEditor
             m_FontAssetPointSizeLookup.Add(Tuple.Create(pointSize, srcFontAsset), dstFontAsset);
         }
 
-        public FontAsset Find(FontAsset srcFontAsset, float pointSize)
+        public FontAsset Find(FontAsset srcFontAsset, int pointSize)
         {
             return m_FontAssetPointSizeLookup.TryGetValue(Tuple.Create(pointSize, srcFontAsset), out var dstFontAsset) ? dstFontAsset : null;
         }
