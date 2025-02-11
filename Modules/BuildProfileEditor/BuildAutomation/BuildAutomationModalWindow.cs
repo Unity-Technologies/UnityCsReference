@@ -16,12 +16,13 @@ namespace UnityEditor.Build.Profile
         const string k_PackageId = "com.unity.services.cloud-build";
         const string k_Uxml = "BuildProfile/UXML/BuildAutomationModalWindow.uxml";
 
-        static readonly string s_Label_Install = L10n.Tr("Cloud Builds require the Build Automation package. Clicking install will add the package your project. It will also create a Build Profile so you can sign your builds with credentials from the Build Automation service.");
-        static readonly string s_Label_Credentials = L10n.Tr("Cloud Builds require Cloud Build credential settings to be added to the selected Build Profile.");
+        static readonly string s_Label_Install = L10n.Tr("Cloud Builds require the Build Automation package. Clicking install will add the package to your project. It will also add a Build Automation section to your Build Profile so you can customize the way your Cloud Builds are run.");
+        static readonly string s_Label_Settings = L10n.Tr("Cloud Builds require Build Automation settings to be added to the selected Build Profile.");
         static readonly string s_Button_Install = L10n.Tr("Install");
-        static readonly string s_Button_Credentials = L10n.Tr("Add Settings");
+        static readonly string s_Button_Settings = L10n.Tr("Add Settings");
+        static readonly string s_Modal_Title = L10n.Tr("Build Automation");
 
-        static readonly string s_Helpbox = L10n.Tr("Cloud Build is a pay-as-you-go service provided by Unity. You can start using it for free without a credit card on file, and we will notify you when you reach the limits of the free tier.");
+        static readonly string s_Helpbox = L10n.Tr("Build Automation is a pay-as-you-go service provided by Unity. You can start using it for free without a credit card on file, and we will notify you when you reach the limits of the free tier.");
 
         BuildProfileWindow m_ParentWindow;
         BuildProfile m_TargetProfile;
@@ -52,7 +53,7 @@ namespace UnityEditor.Build.Profile
 
             // Show modal automating cloud build workflow integration,
             // handle package installation and initial configuration object.
-            var window = GetWindow<BuildAutomationModalWindow>();
+            var window = GetWindow<BuildAutomationModalWindow>(s_Modal_Title);
             window.minSize = new Vector2(600, 180);
             window.maxSize = new Vector2(600, 180);
             window.m_TargetProfile = profile;
@@ -111,8 +112,8 @@ namespace UnityEditor.Build.Profile
 
         void SetAddCredentialsInfo()
         {
-            m_InfoLabel.text = s_Label_Credentials;
-            m_SubmitButton.text = s_Button_Credentials;
+            m_InfoLabel.text = s_Label_Settings;
+            m_SubmitButton.text = s_Button_Settings;
             m_SubmitButton.clicked += OnAddCredentialsObject;
         }
 

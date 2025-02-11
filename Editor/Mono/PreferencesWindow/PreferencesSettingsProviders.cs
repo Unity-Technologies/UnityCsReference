@@ -136,7 +136,10 @@ By default, Windows will combine these under a single taskbar item.");
             public static readonly GUIContent enableFilteringWhileSearching = EditorGUIUtility.TrTextContent("Enable filtering while searching", "If enabled, searching will cause non-matching items in the scene view to be greyed out");
             public static readonly GUIContent enableFilteringWhileLodGroupEditing = EditorGUIUtility.TrTextContent("Enable filtering while editing LOD groups", "If enabled, editing LOD groups will cause other objects in the scene view to be greyed out");
             public static readonly GUIContent handlesLineThickness = EditorGUIUtility.TrTextContent("Line Thickness", "Thickness of manipulator tool handle lines");
-            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("Create Objects at Origin", "Enable this preference to instantiate new 3D objects at World coordinates 0,0,0. Disable it to instantiate them at the Scene pivot (in front of the Scene view Camera).");
+            public static readonly GUIContent placementMode = EditorGUIUtility.TrTextContent("3D Placement Mode", "Select where newly created 3D objects are placed in the scene.");
+            public static readonly GUIContent createObjectsAtWorldOrigin = EditorGUIUtility.TrTextContent("World Origin");
+            public static readonly GUIContent createObjectsAtRaycastToScenePivot = EditorGUIUtility.TrTextContent("Scene Intersection");
+            public static readonly GUIContent createObjectsAtScenePivot = EditorGUIUtility.TrTextContent("Scene Pivot");
             public static readonly GUIContent enableConstrainProportionsScalingForNewObjects = EditorGUIUtility.TrTextContent("Create Objects with Constrained Proportions scale on", "If enabled, scale in the transform component will be set to constrain proportions for new GameObjects by default");
             public static readonly GUIContent useInspectorExpandedStateContent = EditorGUIUtility.TrTextContent("Auto-hide gizmos", "Automatically hide gizmos of Components collapsed in the Inspector");
             public static readonly GUIContent ignoreAlwaysRefreshWhenNotFocused = EditorGUIUtility.TrTextContent("Refresh the Scene view only when the Editor is in focus.", "If enabled, ignore the \"Always Refresh\" flag on the Scene view when the Editor is not the foregrounded application.");
@@ -209,7 +212,7 @@ By default, Windows will combine these under a single taskbar item.");
         private float m_EditorTextSharpness = 0.0f;
         private bool m_AllowAlphaNumericHierarchy = false;
         private PrefabStage.Mode m_DefaultPrefabModeFromHierarchy = PrefabStage.Mode.InContext;
-        private bool m_Create3DObjectsAtOrigin = false;
+        private GOCreationCommands.PlacementMode m_CreatePlacementMode = GOCreationCommands.PlacementMode.SceneIntersection;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
         private bool m_EnableExtendedDynamicHints
@@ -559,6 +562,8 @@ By default, Windows will combine these under a single taskbar item.");
 
             if (m_EditorTextRenderingMode == EditorTextRenderingMode.SDF)
                 m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
+            else
+                EditorGUILayout.HelpBox("Bitmap fonts are only supported at full resolutions (100%, 200%). Scaling to fractional resolutions is not supported yet.", MessageType.Warning);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
@@ -888,7 +893,42 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUI.BeginChangeCheck();
 
             GUILayout.Label("General", EditorStyles.boldLabel);
-            m_Create3DObjectsAtOrigin = EditorGUILayout.Toggle(SceneViewProperties.createObjectsAtWorldOrigin, m_Create3DObjectsAtOrigin);
+
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
+            var toggleLabelWidth = EditorStyles.label.CalcSize(SceneViewProperties.ignoreAlwaysRefreshWhenNotFocused).x;
+            EditorGUIUtility.labelWidth = toggleLabelWidth;
+
+            GUIContent PlacementModeToGUIContent(GOCreationCommands.PlacementMode mode)
+            {
+                if (mode == GOCreationCommands.PlacementMode.SceneIntersection)
+                    return SceneViewProperties.createObjectsAtRaycastToScenePivot;
+                else if(mode == GOCreationCommands.PlacementMode.WorldOrigin)
+                    return SceneViewProperties.createObjectsAtWorldOrigin;
+                else if(mode == GOCreationCommands.PlacementMode.ScenePivot)
+                    return SceneViewProperties.createObjectsAtScenePivot;
+
+                return GUIContent.none;
+            }
+            void AddItem(GenericMenu menu, GOCreationCommands.PlacementMode mode)
+            {
+                menu.AddItem(PlacementModeToGUIContent(mode), m_CreatePlacementMode == mode, mode =>
+                {
+                    m_CreatePlacementMode = (GOCreationCommands.PlacementMode)mode;
+                    WritePreferences();
+                }, mode);
+            }
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(SceneViewProperties.placementMode);
+            if (EditorGUILayout.DropdownButton(PlacementModeToGUIContent(m_CreatePlacementMode), FocusType.Keyboard))
+            {
+                var menu = new GenericMenu();
+                AddItem(menu, GOCreationCommands.PlacementMode.SceneIntersection);
+                AddItem(menu, GOCreationCommands.PlacementMode.WorldOrigin);
+                AddItem(menu, GOCreationCommands.PlacementMode.ScenePivot);
+                menu.ShowAsContext();
+            }
+            EditorGUILayout.EndHorizontal();
+
             m_EnableConstrainProportionsScalingForNewObjects = EditorGUILayout.Toggle(SceneViewProperties.enableConstrainProportionsScalingForNewObjects, m_EnableConstrainProportionsScalingForNewObjects);
             AnnotationUtility.useInspectorExpandedState = EditorGUILayout.Toggle(SceneViewProperties.useInspectorExpandedStateContent, AnnotationUtility.useInspectorExpandedState);
             SceneView.s_PreferenceIgnoreAlwaysRefreshWhenNotFocused.value = EditorGUILayout.Toggle(SceneViewProperties.ignoreAlwaysRefreshWhenNotFocused, SceneView.s_PreferenceIgnoreAlwaysRefreshWhenNotFocused);
@@ -899,6 +939,8 @@ By default, Windows will combine these under a single taskbar item.");
             GUILayout.Label("Search", EditorStyles.boldLabel);
             SceneView.s_PreferenceEnableFilteringWhileSearching.value = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileSearching, SceneView.s_PreferenceEnableFilteringWhileSearching);
             SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing.value  = EditorGUILayout.Toggle(SceneViewProperties.enableFilteringWhileLodGroupEditing, SceneView.s_PreferenceEnableFilteringWhileLodGroupEditing);
+
+            EditorGUIUtility.labelWidth = oldLabelWidth;
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -1199,7 +1241,7 @@ By default, Windows will combine these under a single taskbar item.");
             EditorPrefs.SetInt("DefaultPrefabModeFromHierarchy", (int)m_DefaultPrefabModeFromHierarchy);
 
             EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
-            GOCreationCommands.s_PlaceObjectsAtWorldOrigin.value = m_Create3DObjectsAtOrigin;
+            GOCreationCommands.s_PlacementMode = m_CreatePlacementMode;
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
@@ -1290,7 +1332,14 @@ By default, Windows will combine these under a single taskbar item.");
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
             m_DefaultPrefabModeFromHierarchy = GetDefaultPrefabModeForHierarchy();
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
-            m_Create3DObjectsAtOrigin = GOCreationCommands.s_PlaceObjectsAtWorldOrigin;
+
+            m_CreatePlacementMode = GOCreationCommands.s_PlacementMode;
+            var create3DObjectsAtOrigin = EditorPrefs.GetBool("Create3DObject.PlaceAtWorldOrigin", false);
+            if (create3DObjectsAtOrigin && !EditorPrefs.HasKey("Create3DObject.PlacementMode"))
+            {
+                // Parse old preference to try and respect old pref
+                GOCreationCommands.s_PlacementMode = m_CreatePlacementMode = GOCreationCommands.PlacementMode.WorldOrigin;
+            }
 
             m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
 

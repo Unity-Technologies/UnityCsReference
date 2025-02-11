@@ -146,6 +146,18 @@ namespace UnityEditor
 
         }
 
+        // Default CameraMode should be DrawCameraMode.GIContributorsReceivers
+        internal static SceneView.CameraMode defaultCameraMode
+        {
+            get
+            {
+                var mode = Styles.sBuiltinCameraModes [3];
+                if(mode.drawMode != DrawCameraMode.GIContributorsReceivers)
+                    Debug.LogError("Default Draw Camera mode should be set to DrawCameraMode.GIContributorsReceivers.");
+                return mode;
+            }
+        }
+
         private Dictionary<string, bool> foldoutStates = new Dictionary<string, bool>();
 
         private float windowHeight

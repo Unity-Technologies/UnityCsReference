@@ -54,18 +54,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal override void InvokeBindItem(ReusableCollectionItem reusableItem, int index)
-        {
-            var sortedIndex = m_ColumnController.GetSortedIndex(index);
-            base.InvokeBindItem(reusableItem, sortedIndex);
-        }
-
-        internal override void InvokeUnbindItem(ReusableCollectionItem reusableItem, int index)
-        {
-            var sortedIndex = m_ColumnController.GetSortedIndex(index);
-            base.InvokeUnbindItem(reusableItem, sortedIndex);
-        }
-
         /// <inheritdoc />
         protected override VisualElement MakeItem()
         {

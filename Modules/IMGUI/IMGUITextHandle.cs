@@ -19,7 +19,7 @@ namespace UnityEngine
         const int sNewHandlesBetweenCleanupRuns = 500;
 
         internal static Func<Object> GetEditorTextSettings;
-        internal static Func<float, FontAsset, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
 
         private static TextSettings s_EditorTextSettings;
 
@@ -235,7 +235,7 @@ namespace UnityEngine
             var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
-                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize * GUIUtility.pixelsPerPoint, settings.fontAsset);
+                settings.fontAsset = GetBlurryFontAssetMapping((int)Math.Round((settings.fontSize * GUIUtility.pixelsPerPoint), MidpointRounding.AwayFromZero), settings.fontAsset);
                 settings.pixelsPerPoint = GUIUtility.pixelsPerPoint;
             }
 

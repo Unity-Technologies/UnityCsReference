@@ -78,6 +78,23 @@ namespace UnityEngine.UIElements
 
         private Clickable m_Clickable;
 
+        private bool m_AcceptClicksIfDisabled;
+
+        internal bool acceptClicksIfDisabled
+        {
+            get => m_AcceptClicksIfDisabled;
+            set
+            {
+                if (m_AcceptClicksIfDisabled == value)
+                    return;
+
+                m_AcceptClicksIfDisabled = value;
+
+                if (m_Clickable != null)
+                    m_Clickable.acceptClicksIfDisabled = value;
+            }
+        }
+
         /// <summary>
         /// USS class name of elements of this type.
         /// </summary>

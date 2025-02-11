@@ -72,7 +72,7 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
-            [UxmlAttribute(obsoleteNames = new[] { "maxLength" })]
+            [UxmlAttribute(obsoleteNames = new[] { "maxLength" }), Delayed]
             [SerializeField] int maxLength;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
             [UxmlAttribute("password")]
@@ -486,6 +486,8 @@ namespace UnityEngine.UIElements
                 if (textEdition.maxLength == value)
                     return;
                 textEdition.maxLength = value;
+                textEdition.UpdateText(ValueToString(this.value));
+
                 NotifyPropertyChanged(maxLengthProperty);
             }
         }

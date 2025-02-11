@@ -1614,11 +1614,7 @@ namespace UnityEngine
             GUIUtility.CheckOnGUI();
 
             if (scrollViewStates.Count == 0)
-            {
-                Debug.LogWarning("Attempting to end a scrollview but there is no open scrollview.");
                 return;
-            }
-
             ScrollViewState state = (ScrollViewState)scrollViewStates.Peek();
 
             GUIClip.Pop();

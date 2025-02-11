@@ -102,7 +102,7 @@ namespace Unity.UI.Builder
         {
             get
             {
-                // If this uxmnl is being edited in place then use the parent document's settings
+                // If this uxml is being edited in place then use the parent document's settings
                 if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
                 {
                     m_Settings = openSubDocumentParent.settings;
@@ -1021,7 +1021,11 @@ namespace Unity.UI.Builder
             BuilderSharedStyles.AddSelectorElementsFromStyleSheet(documentRootElement, m_OpenUSSFiles);
 
             var parentIndex = openSubDocumentParentIndex;
-            while (parentIndex > -1)
+
+            // Do not display styles from parent documents if this is a subdocument open in isolation.
+            bool isIsolationMode = isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex == -1;
+
+            while (parentIndex > -1 && !isIsolationMode)
             {
                 var parentUXML = openUXMLFiles[parentIndex];
                 var parentUSSFiles = parentUXML.openUSSFiles;

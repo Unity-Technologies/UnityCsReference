@@ -1624,10 +1624,10 @@ namespace UnityEditor
 
         protected void DoRenderPreview()
         {
+            bool LODSelected = activeLOD >= 0;
             if (m_PreviewUtility.renderTexture.width <= 0
                 || m_PreviewUtility.renderTexture.height <= 0
-                || m_NumberOfLODs <= 0
-                || activeLOD < 0)
+                || m_NumberOfLODs <= 0)
                 return;
 
             var bounds = new Bounds(Vector3.zero, Vector3.zero);
@@ -1635,7 +1635,7 @@ namespace UnityEditor
 
             var meshsToRender = new List<MeshFilter>();
             var billboards = new List<BillboardRenderer>();
-            var renderers = serializedObject.FindProperty(string.Format(kRenderRootPath, activeLOD));
+            var renderers = serializedObject.FindProperty(string.Format(kRenderRootPath, LODSelected ? activeLOD : 0)); // display LOD0 if no LOD is selected
             for (int i = 0; i < renderers.arraySize; i++)
             {
                 var lodRenderRef = renderers.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
