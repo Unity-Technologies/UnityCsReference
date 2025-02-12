@@ -9,6 +9,7 @@ using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.TerrainTools
 {
+    [FilePathAttribute("Library/TerrainTools/Smooth", FilePathAttribute.Location.ProjectFolder)]
     internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
         const string toolName = "Smooth Height";

@@ -216,8 +216,20 @@ namespace UnityEditor.ShaderKeywordFilter
                     containerConstraints.AddParentConstraints(parentConstraints);
             }
 
+            // Reflect all fields from the container's type. We must manually traverse the type's inheritance chain
+            // since, otherwise, there's no way to expose private fields belonging to the type's base class.
+            const BindingFlags kFieldReflectionFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance
+                | BindingFlags.Static | BindingFlags.DeclaredOnly;
+            var fields = new List<FieldInfo>();
+            var containerType = containerObject.GetType();
+            while (containerType != null)
+            {
+                var declaredFields = containerType.GetFields(kFieldReflectionFlags);
+                fields.AddRange(declaredFields);
+                containerType = containerType.BaseType;
+            }
+
             // Go through all fields that could potentially contain filter attributes (directly or through children)
-            var fields = containerObject.GetType().GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Static);
             foreach (var f in fields)
             {
                 bool isConst = f.IsLiteral && !f.IsInitOnly;

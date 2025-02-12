@@ -170,6 +170,10 @@ namespace UnityEditor
                     }
                 }
 
+                // Honor async shader compilation editor settings for this preview
+                bool oldShaderAsyncState = ShaderUtil.allowAsyncCompilation;
+                ShaderUtil.allowAsyncCompilation = EditorSettings.asyncShaderCompilation;
+
                 Vector2 previewSize = selectedCamera.targetTexture
                     ? new Vector2(selectedCamera.targetTexture.width, selectedCamera.targetTexture.height)
                     : PlayModeView.GetMainPlayModeViewTargetSize();
@@ -214,6 +218,8 @@ namespace UnityEditor
                 previewCamera.Render();
 
                 Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+
+                ShaderUtil.allowAsyncCompilation = oldShaderAsyncState;
             }
         }
     }

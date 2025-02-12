@@ -239,6 +239,7 @@ namespace UnityEditor
             // Edit Smallest Occluder
             EditorGUI.BeginChangeCheck();
             float smallestOccluder = EditorGUILayout.FloatField(s_Styles.smallestOccluder, StaticOcclusionCulling.smallestOccluder);
+            smallestOccluder = Math.Clamp(smallestOccluder, 0.0f, float.MaxValue);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Change Smallest Occluder");
@@ -248,6 +249,7 @@ namespace UnityEditor
             // Edit smallest hole
             EditorGUI.BeginChangeCheck();
             float smallestHole = EditorGUILayout.FloatField(s_Styles.smallestHole, StaticOcclusionCulling.smallestHole);
+            smallestHole = Math.Clamp(smallestHole, 0.0f, float.MaxValue);
             if (EditorGUI.EndChangeCheck())
             {
                 Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Change Smallest Hole");

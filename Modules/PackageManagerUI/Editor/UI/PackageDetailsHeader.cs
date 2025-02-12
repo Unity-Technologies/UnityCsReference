@@ -327,12 +327,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshVersionInfoIcon()
         {
+            UIUtils.SetElementDisplay(versionInfoIcon, false);
             var installed = m_Package?.versions?.installed;
             if (installed == null || m_Version == null)
-            {
-                UIUtils.SetElementDisplay(versionInfoIcon, false);
                 return;
-            }
 
             var installedVersionString = installed.versionString;
             if (installed.IsDifferentVersionThanRequested)
@@ -342,6 +340,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     installedVersionString, m_Version.versionInManifest);
                 return;
             }
+
+            if (installed.hasEntitlements)
+                return;
 
             // In Lifecycle V2, if a Unity package doesn't have a lifecycle version (listed in the editor manifest),
             // then that package is not considered part of the Unity Editor "product" and we need to let users know.
@@ -368,10 +369,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UIUtils.SetElementDisplay(versionInfoIcon, true);
                 versionInfoIcon.tooltip = string.Format(L10n.Tr("This version is not the recommended for Unity {0}. The recommended version is {1}."),
                     unityVersionString, recommended.versionString);
-                return;
             }
-
-            UIUtils.SetElementDisplay(versionInfoIcon, false);
         }
 
         private bool TryShowAuthorLink()

@@ -11,7 +11,7 @@ namespace UnityEngine.Pool
     /// Generic object pool implementation.
     /// </summary>
     /// <typeparam name="T">Type of the object pool.</typeparam>
-    public class ObjectPool<T> : IDisposable, IObjectPool<T> where T : class
+    public class ObjectPool<T> : IDisposable, IPool, IObjectPool<T> where T : class
     {
         internal readonly List<T> m_List;
         readonly Func<T> m_CreateFunc;
@@ -61,6 +61,8 @@ namespace UnityEngine.Pool
             m_ActionOnRelease = actionOnRelease;
             m_ActionOnDestroy = actionOnDestroy;
             m_CollectionCheck = collectionCheck;
+
+            PoolManager.Register(this);
         }
 
         /// <summary>
