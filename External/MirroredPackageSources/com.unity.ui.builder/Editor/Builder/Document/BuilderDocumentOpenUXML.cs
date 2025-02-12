@@ -96,7 +96,7 @@ namespace Unity.UI.Builder
         {
             get
             {
-                // If this uxmnl is being edited in place then use the parent document's settings
+                // If this uxml is being edited in place then use the parent document's settings
                 if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
                 {
                     m_Settings = openSubDocumentParent.settings;
@@ -331,27 +331,6 @@ namespace Unity.UI.Builder
 
                 rootAsset.RemoveStyleSheet(m_OpenUSSFiles[i].styleSheet);
                 rootAsset.RemoveStyleSheetPath(localUssPath);
-            }
-        }
-
-        // For the near to mid term, we have this code that cleans up any
-        // existing root element stylesheets.
-        void RemoveLegacyStyleSheetsFromRootAssets()
-        {
-            foreach (var asset in visualTreeAsset.visualElementAssets)
-            {
-                if (!visualTreeAsset.IsRootElement(asset))
-                    continue; // Not a root asset.
-
-                RemoveStyleSheetsFromRootAsset(asset);
-            }
-
-            foreach (var asset in visualTreeAsset.templateAssets)
-            {
-                if (!visualTreeAsset.IsRootElement(asset))
-                    continue; // Not a root asset.
-
-                RemoveStyleSheetsFromRootAsset(asset);
             }
         }
 
@@ -659,10 +638,6 @@ namespace Unity.UI.Builder
             var styleSheetsUsed = m_VisualTreeAsset.GetAllReferencedStyleSheets();
             for (int i = 0; i < styleSheetsUsed.Count; ++i)
                 AddStyleSheetToDocument(styleSheetsUsed[i], null);
-
-            // For the near to mid term, we have this code that cleans up any
-            // existing root element stylesheets.
-            RemoveLegacyStyleSheetsFromRootAssets();
 
             hasUnsavedChanges = false;
         }
@@ -980,7 +955,11 @@ namespace Unity.UI.Builder
             BuilderSharedStyles.AddSelectorElementsFromStyleSheet(documentRootElement, m_OpenUSSFiles);
 
             var parentIndex = openSubDocumentParentIndex;
-            while (parentIndex > -1)
+
+            // Do not display styles from parent documents if this is a subdocument open in isolation.
+            bool isIsolationMode = isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex == -1;
+
+            while (parentIndex > -1 && !isIsolationMode)
             {
                 var parentUXML = openUXMLFiles[parentIndex];
                 var parentUSSFiles = parentUXML.openUSSFiles;

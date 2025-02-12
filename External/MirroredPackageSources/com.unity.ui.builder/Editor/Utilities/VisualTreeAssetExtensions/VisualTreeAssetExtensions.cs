@@ -258,11 +258,7 @@ namespace Unity.UI.Builder
             var sheets = new HashSet<StyleSheet>();
 
             foreach (var vea in vta.visualElementAssets)
-                if (vta.IsRootElement(vea) || vta.IsRootUXMLElement(vea))
-                    GetAllReferencedStyleSheets(vea, sheets);
-
-            foreach (var vea in vta.templateAssets)
-                if (vta.IsRootElement(vea))
+                if (vta.IsRootUXMLElement(vea))
                     GetAllReferencedStyleSheets(vea, sheets);
 
             return sheets.ToList();

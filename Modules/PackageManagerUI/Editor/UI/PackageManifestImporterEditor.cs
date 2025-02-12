@@ -11,6 +11,8 @@ using UnityEditor.AssetImporters;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEditor.Callbacks;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -312,7 +314,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             using (new EditorGUILayout.VerticalScope(GUI.skin.box, GUILayout.ExpandWidth(true)))
             {
                 EditorGUILayout.PropertyField(m_Name, Styles.name);
-                m_OrganizationName.stringValue = EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames);
+                m_OrganizationName.stringValue = SanitizePackageName(EditorGUILayout.TextFieldDropDown(Styles.organizationName, m_OrganizationName.stringValue.ToLower(), Connect.UnityConnect.instance.userInfo.organizationNames));
                 EditorGUILayout.PropertyField(m_DisplayName, Styles.displayName);
                 EditorGUILayout.PropertyField(m_Version, Styles.version);
 
@@ -768,6 +770,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                         warningMessages.Add($"Consider to use an integer less than or equal to {kRecommendedMaxVersion} for each component of version '{version}' for dependency '{packageName}'.");
                 }
             }
+        }
+
+        public static string SanitizePackageName(string value)
+        {
+            return Regex.Replace(value ?? string.Empty, @"[^a-zA-Z\-_.\d]", "").TrimEnd('.').ToLower(CultureInfo.InvariantCulture);
         }
     }
 }

@@ -205,7 +205,7 @@ namespace UnityEditor.SceneTemplate
             path = path ?? k_Path;
             settings = settings ?? Get();
             var json = JsonUtility.ToJson(settings, true);
-            System.IO.File.WriteAllText(path, json);
+            FileUtil.WriteTextFileToDisk(path, json);
         }
 
         public static SceneTemplateProjectSettings Load(string path)
@@ -358,7 +358,7 @@ namespace UnityEditor.SceneTemplate
             {
                 defaultDependencyTypeInfo.ignore = false;
                 defaultDependencyTypeInfo.supportsModification = true;
-            }            
+            }
 
             foreach (var defaultDti in defaultDependencyTypeInfos)
             {
