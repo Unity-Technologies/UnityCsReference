@@ -6,7 +6,7 @@ using System;
 
 namespace UnityEngine.Pool
 {
-    public class LinkedPool<T> : IDisposable, IObjectPool<T> where T : class
+    public class LinkedPool<T> : IDisposable, IPool, IObjectPool<T> where T : class
     {
         internal class LinkedPoolItem
         {
@@ -37,6 +37,8 @@ namespace UnityEngine.Pool
             m_ActionOnDestroy = actionOnDestroy;
             m_Limit = maxSize;
             m_CollectionCheck = collectionCheck;
+
+            PoolManager.Register(this);
         }
 
         public int CountInactive { get; private set; }

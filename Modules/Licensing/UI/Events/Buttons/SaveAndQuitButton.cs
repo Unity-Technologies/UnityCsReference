@@ -22,7 +22,31 @@ sealed class SaveAndQuitButton : TemplateEventsButton
     protected override void Click()
     {
         m_CloseAction?.Invoke();
-        var _ = m_NativeApiWrapper.SaveUnsavedChanges();
+
+        // Method to save changes will not work if we are in playmode
+        // that's why we cancel playmode and call save method on playmode state change event handler
+        if (EditorApplication.isPlaying)
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+
+            EditorApplication.isPlaying = false;
+        }
+        else
+        {
+            SaveChangesAndExit();
+        }
+    }
+
+    private void OnPlayModeStateChanged(PlayModeStateChange state)
+    {
+        EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+
+        SaveChangesAndExit();
+    }
+
+    private void SaveChangesAndExit()
+    {
+        m_NativeApiWrapper.SaveUnsavedChanges();
         m_NativeApiWrapper.ExitEditor();
     }
 }
