@@ -185,7 +185,10 @@ namespace UnityEditor
         AssetBundleStripUnityVersion = 32768, // 1 << 15
 
         // Calculate bundle hash on the bundle content
-        UseContentHash = 65536 // 1 << 16
+        UseContentHash = 65536, // 1 << 16
+
+        // Sprites are normally copied to all bundles that reference them. This flag prevents that behavior if the sprite is not in an atlas.
+        StripUnatlasedSpriteCopies = 262144 // 1 << 18
     }
 
     // Keep in sync with CanAppendBuild in EditorUtility.h
