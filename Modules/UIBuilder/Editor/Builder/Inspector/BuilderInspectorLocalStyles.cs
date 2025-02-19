@@ -14,7 +14,7 @@ using UnityEngine;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderInspectorLocalStyles : IBuilderInspectorSection
+    internal sealed class BuilderInspectorLocalStyles : IBuilderInspectorSection, IDisposable
     {
         BuilderInspector m_Inspector;
         BuilderInspectorStyleFields m_StyleFields;
@@ -99,6 +99,11 @@ namespace Unity.UI.Builder
                 }
                 m_StyleCategories.Add(styleCategory, categoryStyleFields);
             }
+        }
+
+        public void Dispose()
+        {
+            TransitionPropertyDropdownContent.Content = default;
         }
 
         void StyleCategoryContextualMenu(ContextualMenuPopulateEvent evt)

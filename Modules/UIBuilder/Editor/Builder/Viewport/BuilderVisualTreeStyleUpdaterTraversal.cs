@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 
@@ -17,11 +18,11 @@ namespace Unity.UI.Builder
         }
 
         SavedContext m_SavedContext = SavedContext.none;
-        VisualElement m_DocumentElement;
+        WeakReference<VisualElement> m_DocumentElement;
 
         public BuilderVisualTreeStyleUpdaterTraversal(VisualElement document)
         {
-            m_DocumentElement = document;
+            m_DocumentElement = new WeakReference<VisualElement>(document);
         }
 
         void SaveAndClearContext()
@@ -60,7 +61,7 @@ namespace Unity.UI.Builder
 
             // In order to ensure that only the selected preview theme is applied to the document content in the viewport, 
             // we clear the current style context to prevent the document element from inheriting from the actual Unity Editor theme.
-            bool shouldClearStyleContext = element == m_DocumentElement && m_DocumentElement.styleSheets.count != 0;
+            bool shouldClearStyleContext = m_DocumentElement.TryGetTarget(out var document) && document != null && element == document && document.styleSheets.count != 0;
 
             if (shouldClearStyleContext)
             {

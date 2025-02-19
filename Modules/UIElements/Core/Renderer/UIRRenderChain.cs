@@ -122,8 +122,8 @@ namespace UnityEngine.UIElements.UIR
         RenderChainCommand m_FirstCommand;
         DepthOrderedDirtyTracking m_DirtyTracker;
         VisualChangesProcessor m_VisualChangesProcessor;
-        LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), null);
-        LinkedPool<ExtraRenderChainVEData> m_ExtraDataPool = new(() => new ExtraRenderChainVEData(), null);
+        LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), r => r.Reset());
+        LinkedPool<ExtraRenderChainVEData> m_ExtraDataPool = new(() => new ExtraRenderChainVEData(), e => e.Reset());
         BasicNodePool<MeshHandle> m_MeshHandleNodePool = new();
         BasicNodePool<TextureEntry> m_TexturePool = new();
         Dictionary<VisualElement, ExtraRenderChainVEData> m_ExtraData = new();
@@ -723,13 +723,11 @@ namespace UnityEngine.UIElements.UIR
         internal RenderChainCommand AllocCommand()
         {
             var cmd = m_CommandPool.Get();
-            cmd.Reset();
             return cmd;
         }
 
         internal void FreeCommand(RenderChainCommand cmd)
         {
-            cmd.Reset();
             m_CommandPool.Return(cmd);
         }
 
@@ -1010,6 +1008,12 @@ namespace UnityEngine.UIElements.UIR
     class ExtraRenderChainVEData : LinkedPoolItem<ExtraRenderChainVEData>
     {
         public BasicNode<MeshHandle> extraMesh;
+
+        public void Reset()
+        {
+            // This should have been released during FreeExtraMeshes.
+            Debug.Assert(extraMesh == null);
+        }
     }
 
     struct TextureEntry

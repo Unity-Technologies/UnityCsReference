@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Unity.Jobs.LowLevel.Unsafe;
 
@@ -19,16 +19,7 @@ namespace UnityEngine.UIElements.UIR
         ImplicitPool<Entry> m_SharedPool;
 
         static readonly Func<Entry> k_CreateAction = () => new Entry();
-        static readonly Action<Entry> k_ResetAction = e =>
-        {
-            e.nextSibling = null;
-            e.firstChild = null;
-            e.lastChild = null;
-            e.texture = null;
-            e.material = null;
-            e.gradientsOwner = null;
-            e.flags = 0;
-        };
+        static readonly Action<Entry> k_ResetAction = e => e.Reset();
 
         public EntryPool(int maxCapacity = 1024)
         {
