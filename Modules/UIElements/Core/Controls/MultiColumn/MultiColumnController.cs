@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Pool;
 using UnityEngine.UIElements.Internal;
 
 namespace UnityEngine.UIElements
@@ -68,7 +67,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public event Action<ContextualMenuPopulateEvent, Column> headerContextMenuPopulateEvent;
 
-        List<int> m_SortedIndices;
+        List<int> m_SortedToSourceIndex;
+        List<int> m_SourceToSortedIndex;
         ColumnSortingMode m_SortingMode;
 
         BaseVerticalCollectionView m_View;
@@ -176,6 +176,7 @@ namespace UnityEngine.UIElements
         public void BindItem<T>(VisualElement element, int index, T item)
         {
             var i = 0;
+            index = GetSourceIndex(index);
             foreach (var column in m_MultiColumnHeader.columns.visibleList)
             {
                 if (!m_MultiColumnHeader.columnDataMap.TryGetValue(column, out var columnData))
@@ -196,6 +197,7 @@ namespace UnityEngine.UIElements
         /// <param name="index">The item index.</param>
         public void UnbindItem(VisualElement element, int index)
         {
+            index = GetSourceIndex(index);
             foreach (var cellContainer in element.Children())
             {
                 var column = cellContainer.GetProperty(k_BoundColumnVePropertyName) as Column;
@@ -341,30 +343,31 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var wasSorted = m_SortedIndices?.Count > 0;
-            if (wasSorted)
-            {
-                // We need to unbind before the indices are sorted, so that the sorted index matches the previous one.
-                m_View.virtualizationController.UnbindAll();
-            }
+            // Make sure to unbind before sorting the indices. This way, the sorted index stays aligned with the original one.
+            // If you don't, any later unbind will use an old index which may not be valid anymore.
+            m_View.virtualizationController.UnbindAll();
 
-            m_SortedIndices?.Clear();
+            m_SortedToSourceIndex?.Clear();
+            m_SourceToSortedIndex?.Clear();
 
             if (header.sortedColumnReadonly.Count == 0)
             {
                 return;
             }
 
-            using var pool = ListPool<int>.Get(out var sortedList);
+            m_SortedToSourceIndex ??= new List<int>(m_View.itemsSource.Count);
+            m_SourceToSortedIndex ??= new List<int>(m_View.itemsSource.Count);
             for (var i = 0; i < m_View.itemsSource.Count; i++)
             {
-                sortedList.Add(i);
+                m_SortedToSourceIndex.Add(i);
+                m_SourceToSortedIndex.Add(-1); // Fill the list to match the size of the source index
             }
 
-            sortedList.Sort(CombinedComparison);
-
-            m_SortedIndices ??= new List<int>(capacity: m_View.itemsSource.Count);
-            m_SortedIndices.AddRange(sortedList);
+            m_SortedToSourceIndex.Sort(CombinedComparison);
+            for (int i = 0; i < m_SortedToSourceIndex.Count; i++)
+            {
+                m_SourceToSortedIndex[m_SortedToSourceIndex[i]] = i;
+            }
         }
 
         int CombinedComparison(int a, int b)
@@ -438,15 +441,28 @@ namespace UnityEngine.UIElements
             return result == 0 ? a.CompareTo(b) : result;
         }
 
-        internal int GetSortedIndex(int index)
+        /// <summary>
+        /// Returns the index in the source list from the sorted index.
+        /// </summary>
+        /// <param name="sortedIndex">The index of the item from after sorting.</param>
+        /// <returns></returns>
+        internal int GetSourceIndex(int sortedIndex) => GetIndexFromList(sortedIndex, m_SortedToSourceIndex);
+
+        /// <summary>
+        /// Returns the sorted index from the source index.
+        /// </summary>
+        /// <param name="sourceIndex"></param>
+        /// <returns>The index of the item in the source list.</returns>
+        internal int GetSortedIndex(int sourceIndex) => GetIndexFromList(sourceIndex, m_SourceToSortedIndex);
+
+        static int GetIndexFromList(int index, List<int> indices)
         {
-            if (m_SortedIndices == null)
+            if (indices == null)
                 return index;
 
-            if (index < 0 || index >= m_SortedIndices.Count)
+            if (index < 0 || index >= indices.Count)
                 return index;
-
-            return m_SortedIndices.Count > 0 ? m_SortedIndices[index] : index;
+            return indices.Count > 0 ? indices[index] : index;
         }
 
         void OnContextMenuPopulateEvent(ContextualMenuPopulateEvent evt, Column column) => headerContextMenuPopulateEvent?.Invoke(evt, column);

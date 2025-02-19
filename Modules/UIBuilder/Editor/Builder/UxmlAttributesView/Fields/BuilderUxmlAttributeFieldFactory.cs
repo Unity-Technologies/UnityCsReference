@@ -181,5 +181,12 @@ namespace Unity.UI.Builder
         {
             (field as TextField).SetValueWithoutNotify(string.Empty);
         }
+
+        public override void SetFieldValue(VisualElement field, object attributeOwner, VisualTreeAsset uxmlDocument,
+            UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, object value)
+        {
+            var valueAsString = value.ToString();
+            base.SetFieldValue(field, attributeOwner, uxmlDocument, attributeUxmlOwner, attribute, valueAsString);
+        }
     }
 }

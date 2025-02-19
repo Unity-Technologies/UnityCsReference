@@ -669,8 +669,7 @@ namespace UnityEngine.UIElements
 
                 if (adjustTop && spaceAbove > spaceBelow)
                 {
-                    m_PositionTop = targetElementTop - dropdownHeight;
-                    m_PositionTop = Math.Max(m_PositionTop, 0);
+                    m_PositionTop = AlignmentUtils.RoundToPanelPixelSize(m_OuterContainer, Math.Max(targetElementTop - dropdownHeight, 0));
                     m_OuterContainer.style.maxHeight = m_PositionTop == 0 ? Math.Max(targetElementTop, itemHeight) : Length.None();
                     m_OuterContainer.style.top = m_PositionTop;
                     m_ShownAboveTarget = true;

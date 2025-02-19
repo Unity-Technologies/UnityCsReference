@@ -171,7 +171,7 @@ namespace UnityEditor
         {
             // We could not use realtimeSinceStartUp since it is set to 0 when entering/exitting playmode, we assume an increasing time when comparing time.
             long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
-            bool justClosed = nowMilliSeconds < s_LastClosedTime + 50;
+            bool justClosed = nowMilliSeconds < s_LastClosedTime + 400;
             if (!justClosed)
             {
                 Event.current.Use();

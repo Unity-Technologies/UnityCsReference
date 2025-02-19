@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using Unity.Profiling;
 using UnityEditor;
 using UnityEngine;
@@ -9,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderInspectorHeader
+    internal sealed class BuilderInspectorHeader : IDisposable
     {
         // Shared variables regardless of selected type
         BuilderInspector m_Inspector;
@@ -91,6 +92,11 @@ namespace Unity.UI.Builder
                 attributesContainer = m_DataSourceViewContainer,
                 onNotifyAttributesChanged = () => m_Inspector.selection.NotifyOfHierarchyChange(m_Inspector)
             };
+        }
+
+        public void Dispose()
+        {
+            m_DataSourceAndPathView.Dispose();
         }
 
         public void Refresh()

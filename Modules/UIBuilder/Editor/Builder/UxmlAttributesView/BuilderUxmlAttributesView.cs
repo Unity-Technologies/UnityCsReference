@@ -23,7 +23,7 @@ namespace Unity.UI.Builder
     /// <summary>
     /// This view displays and edits the list of uxml attributes of an object in a uxml document.
     /// </summary>
-    internal class BuilderUxmlAttributesView
+    internal class BuilderUxmlAttributesView : IDisposable
     {
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
@@ -211,11 +211,19 @@ namespace Unity.UI.Builder
             SerializedObjectBindingContext.PostProcessTrackedPropertyChanges += ProcessBatchedChanges;
         }
 
-        ~BuilderUxmlAttributesView()
+        public void Dispose()
         {
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-            BindingsStyleHelpers.HandleRightClickMenu = null;
-            SerializedObjectBindingContext.PostProcessTrackedPropertyChanges -= ProcessBatchedChanges;
+            Dispose(true);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+                BindingsStyleHelpers.HandleRightClickMenu = null;
+                SerializedObjectBindingContext.PostProcessTrackedPropertyChanges -= ProcessBatchedChanges;
+            }
         }
 
         void OnUndoRedoPerformed()

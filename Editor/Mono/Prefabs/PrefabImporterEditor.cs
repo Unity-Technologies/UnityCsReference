@@ -43,7 +43,7 @@ namespace UnityEditor
 
         readonly List<Component> m_TempComponentsResults = new List<Component>();
         readonly List<TrackedAsset> m_DirtyPrefabAssets = new List<TrackedAsset>();
-        bool m_HasPendingChanges;
+        internal bool m_HasPendingChanges;
 
         public override bool showImportedObject { get { return !hasMissingScripts; } }
 
@@ -91,24 +91,34 @@ namespace UnityEditor
 
             for (int i = 0; i < stream.length; ++i)
             {
+                int instanceId = 0;
                 if (stream.GetEventType(i) == ObjectChangeKind.ChangeGameObjectOrComponentProperties)
                 {
                     stream.GetChangeGameObjectOrComponentPropertiesEvent(i, out var changeGameObjectOrComponent);
-                    var asset = EditorUtility.InstanceIDToObject(changeGameObjectOrComponent.instanceId);
-                    if (IsTargetAsset(asset))
-                    {
-                        if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
-                        {
-                            SaveDirtyPrefabAssets(true);
-                        }
-                        else
-                        {
-                            m_HasPendingChanges = true;
-                            EditorApplication.update += WaitToApplyChanges;
-                        }
+                    instanceId = changeGameObjectOrComponent.instanceId;
+                }
+                else if (stream.GetEventType(i) == ObjectChangeKind.ChangeGameObjectStructure)
+                {
+                    stream.GetChangeGameObjectStructureEvent(i, out var changeGameObject);
+                    instanceId = changeGameObject.instanceId;
+                }
 
-                        return;
+                if (instanceId == 0)
+                    continue;
+
+                var asset = EditorUtility.InstanceIDToObject(instanceId);
+                if (IsTargetAsset(asset))
+                {
+                    if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
+                    {
+                        SaveDirtyPrefabAssets(true);
                     }
+                    else
+                    {
+                        m_HasPendingChanges = true;
+                        EditorApplication.update += WaitToApplyChanges;
+                    }
+                    return;
                 }
             }
         }

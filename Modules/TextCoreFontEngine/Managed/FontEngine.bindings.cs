@@ -305,11 +305,11 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(string filePath, float pointSize, int faceIndex)
         {
-            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_Internal(filePath, pointSize, faceIndex);
+            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_Internal(filePath, (int)Math.Round(pointSize, MidpointRounding.AwayFromZero), faceIndex);
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
-        static extern int LoadFontFace_With_Size_And_FaceIndex_Internal(string filePath, float pointSize, int faceIndex);
+        static extern int LoadFontFace_With_Size_And_FaceIndex_Internal(string filePath, int pointSize, int faceIndex);
 
 
         /// <summary>
@@ -358,11 +358,11 @@ namespace UnityEngine.TextCore.LowLevel
             if (sourceFontFile.Length == 0)
                 return FontEngineError.Invalid_File;
 
-            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(sourceFontFile, pointSize, faceIndex);
+            return (FontEngineError)LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(sourceFontFile, (int)Math.Round(pointSize, MidpointRounding.AwayFromZero), faceIndex);
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
-        static extern int LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(byte[] sourceFontFile, float pointSize, int faceIndex);
+        static extern int LoadFontFace_With_Size_And_FaceIndex_FromSourceFontFile_Internal(byte[] sourceFontFile, int pointSize, int faceIndex);
 
 
         /// <summary>
@@ -402,11 +402,11 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(Font font, float pointSize, int faceIndex)
         {
-            return (FontEngineError)LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(font, pointSize, faceIndex);
+            return (FontEngineError)LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(font, (int)Math.Round(pointSize, MidpointRounding.AwayFromZero), faceIndex);
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
-        static extern int LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(Font font, float pointSize, int faceIndex);
+        static extern int LoadFontFace_With_Size_and_FaceIndex_FromFont_Internal(Font font, int pointSize, int faceIndex);
 
         /// <summary>
         /// Loads the font file from a potential system font by family and style name.
@@ -431,11 +431,11 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>A value of zero (0) if the font face was loaded successfully.</returns>
         public static FontEngineError LoadFontFace(string familyName, string styleName, float pointSize)
         {
-            return (FontEngineError)LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(familyName, styleName, pointSize);
+            return (FontEngineError)LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(familyName, styleName, (int)Math.Round(pointSize, MidpointRounding.AwayFromZero));
         }
 
         [NativeMethod(Name = "TextCore::FontEngine::LoadFontFace", IsFreeFunction = true)]
-        static extern int LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(string familyName, string styleName, float pointSize);
+        static extern int LoadFontFace_With_Size_by_FamilyName_and_StyleName_Internal(string familyName, string styleName, int pointSize);
 
         /// <summary>
         /// Unloads current font face and removes it from the cache.
