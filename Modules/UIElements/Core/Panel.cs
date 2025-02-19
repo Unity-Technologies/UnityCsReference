@@ -753,6 +753,8 @@ namespace UnityEngine.UIElements
         public ILiveReloadSystem liveReloadSystem { get; set; }
 
         public virtual void Render() => panelRenderer.Render();
+
+        internal virtual IGenericMenu CreateMenu() => new GenericDropdownMenu();
     }
 
     // Strategy to initialize the editor updater
@@ -1030,7 +1032,7 @@ namespace UnityEngine.UIElements
         private IDebugPanelChangeReceiver m_PanelChangeReceiver;
 
         /// <summary>
-        /// Sets a custom <see cref="IPanelChangeReceiver"> in the panelChangeReceiver setter to receive every change event.
+        /// Sets a custom <see cref="IPanelChangeReceiver"/> in the panelChangeReceiver setter to receive every change event.
         /// This method is exclusively available in development builds and the Editor, as it serves as a debug feature that complements the profiling of an application.
         /// </summary>
         /// <remarks>

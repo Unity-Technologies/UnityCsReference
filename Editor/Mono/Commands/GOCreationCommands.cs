@@ -13,7 +13,18 @@ namespace UnityEditor
 {
     static class GOCreationCommands
     {
-        internal static SavedBool s_PlaceObjectsAtWorldOrigin = new SavedBool("Create3DObject.PlaceAtWorldOrigin", false);
+        internal enum PlacementMode
+        {
+            SceneIntersection,
+            WorldOrigin,
+            ScenePivot
+        }
+        static SavedInt s_PlacementModePref = new SavedInt("Create3DObject.PlacementMode", 0);
+        internal static PlacementMode s_PlacementMode
+        {
+            get => (PlacementMode)s_PlacementModePref.value;
+            set => s_PlacementModePref.value = (int)value;
+        }
 
         // This is here because we can't pass Scenes around with the MenuCommand context. SceneHierarchy toggles this
         // flag when add object context menu items are invoked from a context click on Scene headers. If you make use of
@@ -22,7 +33,7 @@ namespace UnityEditor
 
         static bool placeObjectsAtWorldOrigin
         {
-            get { return s_PlaceObjectsAtWorldOrigin.value || forcePlaceObjectsAtWorldOrigin; }
+            get { return s_PlacementMode == PlacementMode.WorldOrigin || forcePlaceObjectsAtWorldOrigin; }
         }
 
         private static void SetGameObjectParent(GameObject go, Transform parentTransform)
@@ -36,6 +47,32 @@ namespace UnityEditor
 
             if (parentTransform.GetComponent<RectTransform>())
                 ObjectFactory.AddComponent<RectTransform>(go);
+        }
+
+        internal static Vector3 GetNewObjectPosition()
+        {
+            var sceneView = SceneView.lastActiveSceneView;
+            if (placeObjectsAtWorldOrigin || sceneView == null) return Vector3.zero;
+
+            if (sceneView.in2DMode)
+                return new Vector3((float)Math.Round(sceneView.pivot.x, 5), (float)Math.Round(sceneView.pivot.y, 5), 0f);
+
+            if (s_PlacementMode == PlacementMode.SceneIntersection)
+            {
+                var prevCamera = Camera.current;
+
+                Handles.Internal_SetCurrentCamera(sceneView.camera);
+                var guiPoint = HandleUtility.WorldToGUIPoint(sceneView.pivot);
+                var didPlace = HandleUtility.PlaceObject(guiPoint, out var position, out _);
+                Handles.Internal_SetCurrentCamera(prevCamera);
+
+                if (didPlace)
+                    return new Vector3((float)Math.Round(position.x, 5), (float)Math.Round(position.y, 5), (float)Math.Round(position.z, 5));
+            }
+
+            // if s_PlacementMode == PlacementMode.ScenePivot
+            var pivot = sceneView.pivot;
+            return new Vector3((float)Math.Round(pivot.x, 5), (float)Math.Round(pivot.y, 5), (float)Math.Round(pivot.z, 5));
         }
 
         internal static void Place(GameObject go, GameObject parent, bool ignoreSceneViewPosition = true, bool alignWithSceneCamera = false)
@@ -77,7 +114,7 @@ namespace UnityEditor
                         SceneView.AlignCameraWithView(cam);
                     }
                     else
-                        SceneView.PlaceGameObjectInFrontOfSceneView(go);
+                        go.transform.position = GetNewObjectPosition();
                 }
 
                 StageUtility.PlaceGameObjectInCurrentStage(go); // may change parent

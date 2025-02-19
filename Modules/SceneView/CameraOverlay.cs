@@ -75,12 +75,13 @@ namespace UnityEditor
         void ShowSelectionDropdown(ClickEvent evt)
         {
             var menu = new DropdownMenu();
+            menu.allowDuplicateNames = true;
             foreach (var vp in m_Overlay.availableViewpoints)
             {
                 var status = vp.TargetObject.Equals(m_Overlay.viewpoint.TargetObject) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
                 menu.AppendAction(vp.TargetObject.name, (_) => { m_Overlay.viewpoint = vp; }, status);
             }
-            menu.DoDisplayEditorMenu(worldBound);
+            menu.DoDisplayEditorMenu(worldBound, this);
         }
 
         void OnViewpointSelected(IViewpoint vp) => SetCameraName();
@@ -352,6 +353,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
             {
                 Vector2 previewSize = PlayModeView.GetMainPlayModeViewTargetSize();
+
                 if (previewSize.x < 0f)
                 {
                     // Fallback to Scene View if not a valid game view size
@@ -373,12 +375,12 @@ namespace UnityEditor
                     previewRect = new Rect(cameraRect.xMin, cameraRect.yMin + cameraRect.height * (1.0f - stretch) * .5f, cameraRect.width, stretch * cameraRect.height);
                 }
 
-                var settings = new PreviewSettings(new Vector2((int)previewRect.width, (int)previewRect.height));
+                var settings = new PreviewSettings(previewSize);
                 settings.overrideSceneCullingMask = sceneView.overrideSceneCullingMask;
                 settings.scene = sceneView.customScene;
                 settings.useHDR = (m_Overlay.containerWindow as SceneView).SceneViewIsRenderingHDR();
 
-                var previewTexture = CameraPreviewUtils.GetPreview(m_Overlay.viewpoint, new CameraPreviewUtils.PreviewSettings(new Vector2((int)previewRect.width, (int)previewRect.height)));
+                var previewTexture = CameraPreviewUtils.GetPreview(m_Overlay.viewpoint, settings);
 
                 Graphics.DrawTexture(previewRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }

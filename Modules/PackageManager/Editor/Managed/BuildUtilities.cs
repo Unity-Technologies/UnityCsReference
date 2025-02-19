@@ -10,6 +10,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.PackageManager
 {
+    [System.Obsolete(@"BuildUtilities is deprecated and will be removed in a later version, use PluginImporter.SetIncludeInBuildDelegate instead.", false)]
     public static class BuildUtilities
     {
         private static Dictionary<string, IShouldIncludeInBuildCallback> m_PackageNameToCallback = new Dictionary<string, IShouldIncludeInBuildCallback>();

@@ -623,10 +623,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             if (GetRenameOverlay().IsRenaming())
                 if (!GetRenameOverlay().OnGUI(renameStyle))
-                {
                     EndRename();
-                    GUIUtility.ExitGUI();
-                }
         }
 
         virtual protected void SyncFakeItem() {}

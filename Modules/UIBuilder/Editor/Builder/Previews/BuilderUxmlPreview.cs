@@ -13,16 +13,9 @@ namespace Unity.UI.Builder
         {
         }
 
-        string GenerateUXMLText()
-        {
-            bool writingToFile = true; // Set this to false to see the special selection elements and attributes.
-            var uxmlText = document.visualTreeAsset.GenerateUXML(document.uxmlPath, writingToFile);
-            return uxmlText;
-        }
-
         protected override void RefreshPreview()
         {
-            SetText(hasDocument ? GenerateUXMLText() : string.Empty);
+            SetText(hasDocument ? document.activeOpenUXMLFile.uxmlPreview : string.Empty);
         }
 
         protected override void RefreshHeader()
@@ -44,6 +37,7 @@ namespace Unity.UI.Builder
                     BuilderHierarchyChangeType.ElementName |
                     BuilderHierarchyChangeType.ClassList)) != 0)
             {
+                document.activeOpenUXMLFile.GenerateUxmlPreview();
                 RefreshPreviewIfVisible();
             }
         }

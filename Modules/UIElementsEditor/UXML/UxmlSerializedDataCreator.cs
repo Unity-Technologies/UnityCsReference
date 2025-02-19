@@ -16,7 +16,7 @@ namespace UnityEditor.UIElements
         /// <summary>
         /// Creates a <see cref="UxmlSerializedData"/> instance for the given type with default values applied.
         /// </summary>
-        /// <param name="fullTypeName">The full type name of the Type that contains the <see cref="UxmlSerializedData"/>.
+        /// <param name="type">The type that contains the <see cref="UxmlSerializedData"/>.
         /// Should belong to a type that is decorated with either the <see cref="UxmlElementAttribute"/> or <see cref="UxmlObjectAttribute"/> attribute.</param>
         /// <returns></returns>
         public static UxmlSerializedData CreateUxmlSerializedData(Type type)

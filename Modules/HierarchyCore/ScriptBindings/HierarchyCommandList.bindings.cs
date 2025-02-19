@@ -197,7 +197,7 @@ namespace Unity.Hierarchy
         /// Sets a value for a property of a hierarchy node.
         /// </summary>
         /// <typeparam name="T">The property type.</typeparam>
-        /// <param name="name">The property name.</param>
+        /// <param name="property">The property.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The property value.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
@@ -212,7 +212,7 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Sets a value for a property of a hierarchy node
         /// </summary>
-        /// <param name="name">The property name.</param>
+        /// <param name="property">The property.</param>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="value">The property value.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>

@@ -61,15 +61,20 @@ namespace Unity.UI.Builder
         static readonly StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
         List<IBuilderSelectionNotifier> m_Notifiers;
 
-        IBuilderSelectionNotifier m_CurrentNotifier;
-        List<string> m_CurrentStyleList;
-        BuilderStylingChangeType m_CurrentChangeType;
+        List<StylingChangeNotification> m_Notifications;
         Action m_NextPostStylingAction;
 
         VisualElement m_Root;
         BuilderPaneWindow m_PaneWindow;
         VisualElement m_DocumentRootElement;
         VisualElement m_DummyElementForStyleChangeNotifications;
+
+        struct StylingChangeNotification
+        {
+            public IBuilderSelectionNotifier notifier { get; set; }
+            public List<string> styleList { get; set; }
+            public BuilderStylingChangeType changeType { get; set; }
+        }
 
         public BuilderSelectionType selectionType
         {
@@ -124,6 +129,7 @@ namespace Unity.UI.Builder
         {
             m_Notifiers = new List<IBuilderSelectionNotifier>();
             m_Selection = new List<VisualElement>();
+            m_Notifications = new List<StylingChangeNotification>();
 
             m_Root = root;
             m_PaneWindow = paneWindow;
@@ -313,9 +319,23 @@ namespace Unity.UI.Builder
             if (m_DocumentRootElement != null)
                 m_PaneWindow.document.RefreshStyle(m_DocumentRootElement);
 
-            m_CurrentNotifier = source;
-            m_CurrentStyleList = styles;
-            m_CurrentChangeType = changeType;
+            // If there's already a notification with styles and the same changeType, merge the new styles into it.
+            foreach (var notification in m_Notifications)
+            {
+                if (notification.changeType == changeType && notification.styleList != null && styles != null)
+                {
+                    notification.styleList.AddRange(styles);
+                    return;
+                }
+            }
+
+            m_Notifications.Add(new StylingChangeNotification
+            {
+                notifier = source,
+                styleList = styles,
+                changeType = changeType
+            });
+
             QueueUpPostPanelUpdaterChangeAction(NotifyOfStylingChangePostStylingUpdate);
         }
 
@@ -349,17 +369,48 @@ namespace Unity.UI.Builder
             //RetainedMode.FlagStyleSheetChange(); // Works but TOO SLOW.
             m_PaneWindow.document.MarkStyleSheetsDirty();
 
-            foreach (var notifier in m_Notifiers)
-                if (notifier != m_CurrentNotifier)
-                    notifier.StylingChanged(m_CurrentStyleList, m_CurrentChangeType);
+            // Order notifications from least to most specific.
+
+            m_Notifications.Sort((left, right) =>
+            {
+                // Prioritize Default changeType over RefreshOnly
+                if (left.changeType == BuilderStylingChangeType.Default && right.changeType != BuilderStylingChangeType.Default)
+                    return -1;
+                if (left.changeType != BuilderStylingChangeType.Default && right.changeType == BuilderStylingChangeType.Default)
+                    return 1;
+
+                // If both have the same changeType, sort by styleList length
+                var leftStyleCount = left.styleList?.Count ?? 0;
+                var rightStyleCount = right.styleList?.Count ?? 0;
+
+                if (leftStyleCount < rightStyleCount)
+                    return -1;
+                if (leftStyleCount > rightStyleCount)
+                    return 1;
+
+                // If all else is equal, keep the order stable
+                return 0;
+            });
+
+            var notifiedNotifiers = new HashSet<IBuilderSelectionNotifier>();
+            foreach (var notification in m_Notifications)
+            {
+                foreach (var notifier in m_Notifiers)
+                {
+                    if (!notifiedNotifiers.Contains(notifier) && notifier != notification.notifier)
+                    {
+                        notifier.StylingChanged(notification.styleList, notification.changeType);
+                        notifiedNotifiers.Add(notifier); // Mark as notified to avoid duplicate notifications
+                    }
+                }
+            }
+
+            m_Notifications.Clear();
 
             if (hasUnsavedChanges && !isAnonymousDocument)
             {
                 BuilderAssetUtilities.LiveReload(BuilderAssetUtilities.LiveReloadChanges.Styles);
             }
-
-            m_CurrentNotifier = null;
-            m_CurrentStyleList = null;
         }
 
         void QueueUpPostPanelUpdaterChangeAction(Action action)

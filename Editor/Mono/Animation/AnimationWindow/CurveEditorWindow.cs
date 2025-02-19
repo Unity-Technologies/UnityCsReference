@@ -44,11 +44,13 @@ namespace UnityEditor
 
         [SerializeField]
         GUIView m_DelegateView;
-        internal GUIView delegateView => m_DelegateView;
 
         public const string CurveChangedCommand = "CurveChanged";
         public const string CurveChangeCompletedCommand = "CurveChangeCompleted";
 
+        // Watch out when accessing this, it will create a new curve editor window if none exists yet.
+        // If you don't display the window (call Show()), it will cause an error when validating the layout
+        // (e.g. when the user maximizes a window).
         public static CurveEditorWindow instance
         {
             get
@@ -98,6 +100,11 @@ namespace UnityEditor
                 CurveEditorWindow.instance.m_Color = value;
                 CurveEditorWindow.instance.RefreshShownCurves();
             }
+        }
+
+        internal static GUIView delegateView
+        {
+            get { return visible ? CurveEditorWindow.instance.m_DelegateView : null; }
         }
 
         public static bool visible

@@ -181,7 +181,7 @@ namespace UnityEditor.TextCore.Text
         internal static void AddTextureToAsset(Texture tex, Object obj)
         {
             // Return if referenced object is not a persistent asset
-            if (!EditorUtility.IsPersistent(obj))
+            if (!EditorUtility.IsPersistent(obj) || (obj.hideFlags & HideFlags.DontSave) != 0)
                 return;
 
             if (tex != null)

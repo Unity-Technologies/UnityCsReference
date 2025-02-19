@@ -583,7 +583,10 @@ namespace UnityEditor.UIElements
                     var noScriptErrorContainer = new IMGUIContainer(() =>
                     {
                         if (scriptProperty.isValid)
-                            GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance);
+                        {
+                            var originalClassIdentifier = serializedObject.FindProperty("m_EditorClassIdentifier");
+                            GenericInspector.ShowScriptNotLoadedWarning(scriptProperty, isPartOfPrefabInstance, originalClassIdentifier);
+                        }
                     });
                     noScriptErrorContainer.name = noScriptErrorContainerName;
                     container.Add(noScriptErrorContainer);

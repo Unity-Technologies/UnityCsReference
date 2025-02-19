@@ -366,6 +366,9 @@ namespace UnityEditor
             m_HasPreviewPeriodicCheckDelayer?.Dispose();
             m_HasPreviewPeriodicCheckDelayer = Delayer.Throttle(HasPreviewPeriodicCheck, TimeSpan.FromMilliseconds(200));
             EditorApplication.update += OnEditorUpdate;
+
+            // Restrict the minimum height of the content area so it can't be collapsed to nothing
+            m_ScrollView.style.minHeight = 150;
         }
 
         void HasPreviewPeriodicCheck(object _)
@@ -1145,8 +1148,13 @@ namespace UnityEditor
                 }));
             }
 
-            if(m_SplitView == null)
+            if (m_SplitView == null)
+            {
                 m_SplitView = rootVisualElement.Q<TwoPaneSplitView>();
+
+                // Hide the dragline by default until we determine what kind of preview (UITK or IMGUI) we have
+                m_SplitView.Q(s_draglineAnchor).style.display = DisplayStyle.None;
+            }
 
             ClearPreview();
 

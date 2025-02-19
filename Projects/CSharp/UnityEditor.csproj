@@ -2700,6 +2700,9 @@
     <Compile Include="..\..\Editor\Mono\ObjectNames.cs">
       <Link>Editor\Mono\ObjectNames.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ObjectPool\PoolManager.cs">
+      <Link>Editor\Mono\ObjectPool\PoolManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\ObjectSelector.cs">
       <Link>Editor\Mono\ObjectSelector.cs</Link>
     </Compile>
@@ -6132,6 +6135,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ToolBar\PackageToolBarError.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\VersionInfoIcon.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\AssetStoreInfo.cs</Link>
     </Compile>
@@ -8825,6 +8831,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\AngleStyleField.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\AssetReferenceStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\AssetReferenceStyleField.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionDimensionStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\BackgroundPositionDimensionStyleField.cs</Link>

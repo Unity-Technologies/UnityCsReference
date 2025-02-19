@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
@@ -305,14 +306,10 @@ namespace UnityEditor.Animations
 
         public Motion GetStateEffectiveMotion(AnimatorState state, int layerIndex)
         {
-            if (layers[layerIndex].syncedLayerIndex == -1)
-            {
-                return state.motion;
-            }
-            else
-            {
-                return layers[layerIndex].GetOverrideMotion(state);
-            }
+            if (layerIndex < 0 || layerIndex > layers.Length)
+                return null;
+
+            return layers[layerIndex].syncedLayerIndex == -1 ? state.motion : layers[layerIndex].GetOverrideMotion(state);
         }
 
         public void SetStateEffectiveBehaviours(AnimatorState state, int layerIndex, StateMachineBehaviour[] behaviours)
@@ -331,6 +328,9 @@ namespace UnityEditor.Animations
 
         public StateMachineBehaviour[] GetStateEffectiveBehaviours(AnimatorState state, int layerIndex)
         {
+            if (layerIndex < 0 || layerIndex > layers.Length)
+                return Array.Empty<StateMachineBehaviour>();
+
             return Internal_GetEffectiveBehaviours(state, layerIndex) as StateMachineBehaviour[];
         }
 

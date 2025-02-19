@@ -34,87 +34,87 @@ namespace Unity.Properties
     public static class TypeTraits<T>
     {
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a value type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a value type.
         /// </summary>
         public static bool IsValueType { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a primitive type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a primitive type.
         /// </summary>
         public static bool IsPrimitive { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an interface type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an interface type.
         /// </summary>
         public static bool IsInterface { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an abstract type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an abstract type.
         /// </summary>
         public static bool IsAbstract { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an array type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an array type.
         /// </summary>
         public static bool IsArray { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a multidimensional array type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a multidimensional array type.
         /// </summary>
         public static bool IsMultidimensionalArray { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an enum type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an enum type.
         /// </summary>
         public static bool IsEnum { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an flags enum type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an flags enum type.
         /// </summary>
         public static bool IsEnumFlags { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a nullable type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a nullable type.
         /// </summary>
         public static bool IsNullable { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is <see cref="Object"/> type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is <see cref="Object"/> type.
         /// </summary>
         public static bool IsObject { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is <see cref="string"/> type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is <see cref="string"/> type.
         /// </summary>
         public static bool IsString { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a property container type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a property container type.
         /// </summary>
         public static bool IsContainer { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> can be null. i.e. The type is an object or nullable.
+        /// Gets a value indicating whether <typeparamref name="T"/> can be null. i.e. The type is an object or nullable.
         /// </summary>
         public static bool CanBeNull { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a primitive or <see cref="string"/> type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a primitive or <see cref="string"/> type.
         /// </summary>
         public static bool IsPrimitiveOrString { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is an abstract or interface type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is an abstract or interface type.
         /// </summary>
         public static bool IsAbstractOrInterface { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a <see cref="UnityEngine.Object"/> type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a <see cref="UnityEngine.Object"/> type.
         /// </summary>
         public static bool IsUnityObject { get; }
 
         /// <summary>
-        /// Gets a value indicating whether <see cref="T"/> is a <see cref="UnityEngine.LazyLoadReference{TValue}"/> type.
+        /// Gets a value indicating whether <typeparamref name="T"/> is a <see cref="UnityEngine.LazyLoadReference{TValue}"/> type.
         /// </summary>
         public static bool IsLazyLoadReference { get; }
 

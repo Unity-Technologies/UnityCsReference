@@ -764,7 +764,6 @@ internal class SerializedObjectBindingContext
 
     /// <summary>
     /// Map of value trackers per serialized property type. WARNING: tracker may be null for some types.
-    /// Check <see cref="GetOrCreateTrackedValues"/> for reference.
     /// </summary>
     private TrackedValues m_ValueTracker = new TrackedValues();
 

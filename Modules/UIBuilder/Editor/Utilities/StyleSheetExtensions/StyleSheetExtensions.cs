@@ -259,9 +259,51 @@ namespace Unity.UI.Builder
             fromStyleSheet.RemoveProperty(fromRule, property);
         }
 
+        public static void TransferPropertyToSelector(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleRule fromRule, StyleProperty property)
+        {
+            var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
+            foreach (var value in property.values)
+            {
+                switch (value.valueType)
+                {
+                    case StyleValueType.Float: toStyleSheet.AddValue(newProperty, toStyleSheet.GetFloat(value)); break;
+                    case StyleValueType.Dimension: toStyleSheet.AddValue(newProperty, toStyleSheet.GetDimension(value)); break;
+                    case StyleValueType.Enum: toStyleSheet.AddValueAsEnum(newProperty, toStyleSheet.GetEnum(value)); break;
+                    case StyleValueType.String: toStyleSheet.AddValue(newProperty, toStyleSheet.GetString(value)); break;
+                    case StyleValueType.Color: toStyleSheet.AddValue(newProperty, toStyleSheet.GetColor(value)); break;
+                    case StyleValueType.AssetReference: toStyleSheet.AddValue(newProperty, toStyleSheet.GetAsset(value)); break;
+                    case StyleValueType.ResourcePath: toStyleSheet.AddValue(newProperty, toStyleSheet.GetAsset(value)); break;
+                    case StyleValueType.Variable: toStyleSheet.AddVariable(newProperty, toStyleSheet.GetString(value)); break;
+                    case StyleValueType.Keyword: toStyleSheet.AddValue(newProperty, toStyleSheet.GetKeyword(value)); break;
+                }
+            }
+
+            toStyleSheet.RemoveProperty(fromRule, property);
+        }
+
+        public static void DuplicatePropertyInSelector(this StyleSheet styleSheet, StyleComplexSelector selector, StyleProperty property, string name)
+        {
+            var newProperty = styleSheet.AddProperty(selector, name);
+            foreach (var value in property.values)
+            {
+                switch (value.valueType)
+                {
+                    case StyleValueType.Float: styleSheet.AddValue(newProperty, styleSheet.GetFloat(value)); break;
+                    case StyleValueType.Dimension: styleSheet.AddValue(newProperty, styleSheet.GetDimension(value)); break;
+                    case StyleValueType.Enum: styleSheet.AddValueAsEnum(newProperty, styleSheet.GetEnum(value)); break;
+                    case StyleValueType.String: styleSheet.AddValue(newProperty, styleSheet.GetString(value)); break;
+                    case StyleValueType.Color: styleSheet.AddValue(newProperty, styleSheet.GetColor(value)); break;
+                    case StyleValueType.AssetReference: styleSheet.AddValue(newProperty, styleSheet.GetAsset(value)); break;
+                    case StyleValueType.ResourcePath: styleSheet.AddValue(newProperty, styleSheet.GetAsset(value)); break;
+                    case StyleValueType.Variable: styleSheet.AddVariable(newProperty, styleSheet.GetString(value)); break;
+                    case StyleValueType.Keyword: styleSheet.AddValue(newProperty, styleSheet.GetKeyword(value)); break;
+                }
+            }
+        }
+
         public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleValueType valueType, string variableName, string value)
         {
-            var property = toStyleSheet.FindProperty(toSelector, variableName) ?? toStyleSheet.AddProperty(toSelector, variableName);
+            var property = toStyleSheet.AddProperty(toSelector, variableName);
 
             switch (valueType)
             {
@@ -292,7 +334,7 @@ namespace Unity.UI.Builder
         // Add color variable.
         public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, Color value)
         {
-            var property = toStyleSheet.FindProperty(toSelector, variableName) ?? toStyleSheet.AddProperty(toSelector, variableName);
+            var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
             toStyleSheet.UpdateContentHash();
@@ -301,7 +343,7 @@ namespace Unity.UI.Builder
         // Add image variable.
         public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, UnityEngine.Object value)
         {
-            var property = toStyleSheet.FindProperty(toSelector, variableName) ?? toStyleSheet.AddProperty(toSelector, variableName);
+            var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
             toStyleSheet.UpdateContentHash();
@@ -310,7 +352,7 @@ namespace Unity.UI.Builder
         // Add dimension variable.
         public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, Dimension value)
         {
-            var property = toStyleSheet.FindProperty(toSelector, variableName) ?? toStyleSheet.AddProperty(toSelector, variableName);
+            var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
             toStyleSheet.UpdateContentHash();

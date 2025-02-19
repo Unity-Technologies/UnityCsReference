@@ -2,12 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
-using System.IO;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -57,6 +53,15 @@ namespace Unity.UI.Builder
 
             hoveredItemChanged += UpdateDetailView;
             selectionChanged += UpdateDetailView;
+            itemChosen += (i) =>
+            {
+                // Only needed for when the variable is typed in manually in the style field.
+                if (!m_Handler.isVariableFieldVisible)
+                {
+                    var varName = results[i].name;
+                    m_Handler.SetVariable(varName);
+                }
+            };
 
             matcherCallback = Matcher;
             getTextFromDataCallback = GetVarName;
@@ -89,18 +94,11 @@ namespace Unity.UI.Builder
 
             var val = StyleDebug.GetComputedStyleValue(handler.inspector.currentVisualElement.computedStyle, handler.styleName);
 
-            if (BuilderInspectorStyleFields.IsComputedStyleLength(val) || BuilderInspectorStyleFields.IsComputedStyleRotate(val))
-            {
-                return new[] { StyleValueType.Dimension, StyleValueType.Keyword };
-            }
-
             if (BuilderInspectorStyleFields.IsComputedStyleFloat(val) ||
-                BuilderInspectorStyleFields.IsComputedStyleInt(val))
-            {
-                return new[] { StyleValueType.Float, StyleValueType.Keyword, StyleValueType.Function };
-            }
-
-            if (BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
+                BuilderInspectorStyleFields.IsComputedStyleInt(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleLength(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleRotate(val) ||
+                BuilderInspectorStyleFields.IsComputedStyleList<TimeValue>(val))
             {
                 return new[] { StyleValueType.Float, StyleValueType.Dimension, StyleValueType.Keyword };
             }

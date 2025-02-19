@@ -151,7 +151,7 @@ internal class RemoveAction : PackageAction
         public DisableIfInstalledAsDependency(IPackageVersion version)
         {
             active = version != null && version.package.versions.installed == version
-                                    && (!version.isDirectDependency || version.IsDifferentVersionThanRequested)
+                                    && !version.isDirectDependency
                                     && !version.isInvalidSemVerInManifest;
             tooltip = string.Format(k_TooltipTemplate, version?.GetDescriptor() ?? string.Empty);
         }

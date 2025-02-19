@@ -71,7 +71,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 else
                 {
                     m_SelectedProfileNameLabel.text = profile.name;
-                    m_SelectedProfilePlatformLabel.text = platformDisplayName;
+                    m_SelectedProfilePlatformLabel.text = $"{platformDisplayName} Build Profile";
                     m_SelectedProfilePlatformLabel.Show();
                 }
             }

@@ -14,7 +14,7 @@ namespace UnityEngine.UIElements
         void AddItem(string itemName, bool isChecked, Action<object> action, object data);
         void AddDisabledItem(string itemName, bool isChecked);
         void AddSeparator(string path);
-        void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false);
+        void DropDown(Rect position, VisualElement targetElement, bool anchored = false);
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     /// The GenericDropdownMenu is a generic implementation of a dropdown menu that you can use in both Editor UI and runtime UI.
     /// </remarks>
     /// <example>
-    /// The following example creates a dropdown menu with three items. It displays the menu when the user clicks the button. The example also demonstrates how to set 
+    /// The following example creates a dropdown menu with three items. It displays the menu when the user clicks the button. The example also demonstrates how to set
     /// the width of the dropdown menu with the @@DropDown@@ method.
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/MenuExample.cs"/>
     /// </example>
@@ -516,18 +516,17 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The parent element that displays the menu:
-        /// 
+        ///
         ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
         ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
-        /// 
+        ///
         /// The @@anchored@@ parameter determines the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
         /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
         /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands to the container's full width.</param>
-        public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
+        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false)
         {
-            // TODO the argument should not optional. This is because IGenericMenu requires it, but this is not great.
             if (targetElement == null)
             {
                 Debug.LogError("VisualElement Generic Menu needs a target to find a root to attach to.");
@@ -580,20 +579,20 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// The parent element that displays the menu:
-        /// 
+        ///
         ///- For Editor UI, the parent element is <see cref="EditorWindow.rootVisualElement"/>.
         ///- For runtime UI, the parent element is <see cref="UIDocument.rootVisualElement"/>.
-        /// 
+        ///
         /// The @@anchored@@ and @@fitContentWidthIfAnchored@@ parameters determine the width of the menu. Refer to <see cref="GenericDropdownMenu"/> for example usages.
-        /// 
+        ///
         /// </remarks>
         /// <param name="position">The position in the coordinate space of the panel.</param>
         /// <param name="targetElement">The element determines which root to use as the menu's parent.</param>
-        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands 
+        /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands
         /// to the container's full width.</param>
-        /// <param name="fitContentWidthIfAnchored">If true and the menu is anchored, the menu's width matches its content's width; 
+        /// <param name="fitContentWidthIfAnchored">If true and the menu is anchored, the menu's width matches its content's width;
         /// otherwise, the menu's width matches the width of the @@position@@. If the menu is unanchored, this parameter is ignored.</param>
-        public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false, bool fitContentWidthIfAnchored = false)
+        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false, bool fitContentWidthIfAnchored = false)
         {
             m_FitContentWidth = anchored && fitContentWidthIfAnchored;
             m_OuterContainer.EnableInClassList(contentWidthUssClassName, m_FitContentWidth);
@@ -669,8 +668,7 @@ namespace UnityEngine.UIElements
 
                 if (adjustTop && spaceAbove > spaceBelow)
                 {
-                    m_PositionTop = targetElementTop - dropdownHeight;
-                    m_PositionTop = Math.Max(m_PositionTop, 0);
+                    m_PositionTop = AlignmentUtils.RoundToPanelPixelSize(m_OuterContainer, Math.Max(targetElementTop - dropdownHeight, 0));
                     m_OuterContainer.style.maxHeight = m_PositionTop == 0 ? Math.Max(targetElementTop, itemHeight) : Length.None();
                     m_OuterContainer.style.top = m_PositionTop;
                     m_ShownAboveTarget = true;
@@ -705,13 +703,18 @@ namespace UnityEngine.UIElements
                     {
                        element = element
                     });
+                    largestWidth = Math.Max(largestWidth, element.layout.width);
                 }
                 m_Items.AddRange(menuItems);
                 ListPool<MenuItem>.Release(menuItems);
+                return largestWidth;
             }
+
             foreach (var item in m_Items)
             {
-                largestWidth = Math.Max(largestWidth, item.element.layout.width);
+                var itemContent = item.element.Q(classes: itemContentUssClassName);
+                var contentWidth = itemContent != null ? itemContent.layout.width : item.element.layout.width;
+                largestWidth = Math.Max(largestWidth, contentWidth);
             }
 
             return largestWidth;

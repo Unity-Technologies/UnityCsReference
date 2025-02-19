@@ -127,7 +127,7 @@ namespace UnityEditor
                         string.Format("{0}{1}{2}.{3}",
                             Path.GetDirectoryName(assetPath),
                             Path.DirectorySeparatorChar,
-                            asset.name,
+                            string.IsNullOrEmpty(asset.name) ? "_" : asset.name,
                             extension)
                     );
 

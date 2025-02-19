@@ -5752,7 +5752,7 @@ namespace UnityEditor
             position.width = Mathf.Max(position.width, 2);
             position.height = Mathf.Max(position.height, 2);
 
-            if (GUIUtility.keyboardControl == id && evt.type != EventType.Layout && GUIView.current == CurveEditorWindow.instance.delegateView)
+            if (GUIUtility.keyboardControl == id && evt.type != EventType.Layout && GUIView.current == CurveEditorWindow.delegateView)
             {
                 if (s_CurveID != id)
                 {
@@ -5801,7 +5801,7 @@ namespace UnityEditor
                     EditorStyles.colorPickerBox.Draw(position2, GUIContent.none, id, false);
                     break;
                 case EventType.ExecuteCommand:
-                    if (s_CurveID == id && GUIView.current == CurveEditorWindow.instance.delegateView)
+                    if (s_CurveID == id && GUIView.current == CurveEditorWindow.delegateView)
                     {
                         switch (evt.commandName)
                         {

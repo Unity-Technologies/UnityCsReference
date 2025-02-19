@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Linq;
 using UnityEditor.Audio.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -26,9 +24,9 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static string missingScriptMessage = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+            public static string missingScriptMessage = L10n.Tr("The associated script can not be loaded: {}\n\nThis could be because the script has a compile error or because the script was deleted.\nFix any compile errors if present or assign a valid script.");
+            public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded: {}\n\nYou must resolve missing scripts on prefabs on the prefab asset itself through the prefab view. Open the source prefab asset for this prefab instance to continue.");
             public static string missingSerializeReferenceInstanceMessage = L10n.Tr("This object contains SerializeReference types which are missing.\nFor more information see SerializationUtility.HasManagedReferencesWithMissingTypes.");
-            public static string missingScriptMessageForPrefabInstance = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand open Prefab Mode and assign a valid script to the Prefab Asset.");
         }
 
         internal static string GetMissingSerializeRefererenceMessageContainer()
@@ -208,43 +206,27 @@ namespace UnityEditor
         public bool MissingMonoBehaviourGUI()
         {
             serializedObject.Update();
-            SerializedProperty scriptProperty = serializedObject.FindProperty("m_Script");
+            var scriptProperty = serializedObject.FindProperty("m_Script");
             if (scriptProperty == null)
                 return false;
 
-            bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
+            var originalEnabledState = GUI.enabled;
+            GUI.enabled = !IsAnyMonoBehaviourTargetPartOfPrefabInstance(this);
 
-            bool oldGUIEnabled = GUI.enabled;
+            EditorGUILayout.PropertyField(scriptProperty); // We don't support changing script as an override on Prefab Instances (case 1255454)
 
-            if (!scriptLoaded)
-            {
-                GUI.enabled = IsAnyMonoBehaviourTargetPartOfPrefabInstance(this) == false; // We don't support changing script as an override on Prefab Instances (case 1255454)
-            }
-
-            EditorGUILayout.PropertyField(scriptProperty);
-            if (!scriptLoaded)
+            if (!CheckIfScriptLoaded(scriptProperty))
             {
                 GUI.enabled = true;
-                // if script is not loaded, this might also be because
-                // the asset is tied to an EditorClassIdentifier rather than a MonoScript
-                // (it happens when multiple types are defined in a C# script)
-                switch (ShowTypeFixup())
-                {
-                    case ShowTypeFixupResult.CantFindCandidate:
-                        ShowScriptNotLoadedWarning(IsAnyMonoBehaviourTargetPartOfPrefabInstance(this));
-                        break;
-                    case ShowTypeFixupResult.SelectedCandidate:
-                        serializedObject.ApplyModifiedProperties();
-                        EditorUtility.RequestScriptReload();
-                        return true;
-                }
+                var originalClassIdentifier = serializedObject.FindProperty("m_EditorClassIdentifier");
+                ShowScriptNotLoadedWarning(IsAnyMonoBehaviourTargetPartOfPrefabInstance(this), originalClassIdentifier);
             }
 
-            GUI.enabled = oldGUIEnabled;
+            GUI.enabled = originalEnabledState;
+
             if (serializedObject.ApplyModifiedProperties())
-            {
                 EditorUtility.ForceRebuildInspectors();
-            }
+
             return true;
         }
 
@@ -252,11 +234,8 @@ namespace UnityEditor
         {
             var monoBehaviour = unityTarget as MonoBehaviour;
             var scriptableObject = unityTarget as ScriptableObject;
-            if ((monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(unityTarget))
-            {
-                return true;
-            }
-            return false;
+
+            return (monoBehaviour != null || scriptableObject != null) && SerializationUtility.HasManagedReferencesWithMissingTypes(unityTarget);
         }
 
         internal static bool ShowMissingSerializeReferenceWarningBoxIfRequired(Object unityTarget)
@@ -277,73 +256,26 @@ namespace UnityEditor
             return ShowMissingSerializeReferenceWarningBoxIfRequired(target);
         }
 
-        static GUIContent s_fixupTypeContent = new GUIContent("Fix underlying type");
-        enum ShowTypeFixupResult
-        {
-            CantFindCandidate,
-            DisplayedCandidates,
-            SelectedCandidate
-        }
-        private ShowTypeFixupResult ShowTypeFixup()
-        {
-            var originalClassIdentifier = serializedObject.FindProperty("m_EditorClassIdentifier");
-            if (originalClassIdentifier == null)
-            {
-                return ShowTypeFixupResult.CantFindCandidate;
-            }
-            var assemblySepartor = originalClassIdentifier.stringValue?.IndexOf("::");
-            if (assemblySepartor == null || assemblySepartor == -1)
-            {
-                return ShowTypeFixupResult.CantFindCandidate;
-            }
-            var withoutAssembly = originalClassIdentifier.stringValue.Substring(assemblySepartor.Value + 2);
-            var potentialMatches = TypeCache.GetTypesDerivedFrom<ScriptableObject>().Where(c => c.FullName == withoutAssembly)
-                .Concat(TypeCache.GetTypesDerivedFrom<MonoBehaviour>().Where(c => c.FullName == withoutAssembly))
-                .Select(c => $"{c.Assembly.GetName().Name}::{c.FullName}")
-                .Where(c => c != originalClassIdentifier.stringValue)
-                .ToList();
-
-            if (potentialMatches.Count == 0)
-            {
-                return ShowTypeFixupResult.CantFindCandidate;
-            }
-
-            var buttons = new string[potentialMatches.Count + 1];
-            buttons[0] = "-";
-            for (int i = 0; i < potentialMatches.Count; i++)
-            {
-                buttons[i + 1] = potentialMatches[i];
-            }
-
-            EditorGUILayout.HelpBox("It seems that the underlying type has been moved in a different assembly. Please select the correct object type.", MessageType.Warning);
-            EditorGUI.BeginChangeCheck();
-            var value = EditorGUILayout.Popup(s_fixupTypeContent, 0, buttons);
-            if (EditorGUI.EndChangeCheck())
-            {
-                originalClassIdentifier.stringValue = buttons[value];
-                return ShowTypeFixupResult.SelectedCandidate;
-            }
-            return ShowTypeFixupResult.DisplayedCandidates;
-        }
-
         private static bool CheckIfScriptLoaded(SerializedProperty scriptProperty)
         {
             MonoScript targetScript = scriptProperty?.objectReferenceValue as MonoScript;
             return targetScript != null && targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
         }
 
-        private static void ShowScriptNotLoadedWarning(bool missingScriptIsOnPrefabInstance)
+        private static void ShowScriptNotLoadedWarning(bool missingScriptIsOnPrefabInstance, SerializedProperty className)
         {
             var message = missingScriptIsOnPrefabInstance ? Styles.missingScriptMessageForPrefabInstance : Styles.missingScriptMessage;
+            var missingClassName = className == null || string.IsNullOrEmpty(className.stringValue);
+            message = message.Replace("{}", missingClassName ? "<unknown>" : className.stringValue);
             EditorGUILayout.HelpBox(message, MessageType.Warning, true);
         }
 
-        internal static void ShowScriptNotLoadedWarning(SerializedProperty scriptProperty, bool isPartOfPrefabInstance)
+        internal static void ShowScriptNotLoadedWarning(SerializedProperty scriptProperty, bool isPartOfPrefabInstance, SerializedProperty className)
         {
             bool scriptLoaded = CheckIfScriptLoaded(scriptProperty);
             if (!scriptLoaded)
             {
-                ShowScriptNotLoadedWarning(isPartOfPrefabInstance);
+                ShowScriptNotLoadedWarning(isPartOfPrefabInstance, className);
             }
         }
 

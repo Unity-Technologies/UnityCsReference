@@ -366,9 +366,8 @@ namespace UnityEngine.TextCore.Text
             get { return m_IsMultiAtlasTexturesEnabled; }
             set { m_IsMultiAtlasTexturesEnabled = value; }
         }
-
         [SerializeField]
-        private bool m_IsMultiAtlasTexturesEnabled;
+        bool m_IsMultiAtlasTexturesEnabled = true;
 
         /// <summary>
         /// Determines if OpenType font features should be retrieved from the source font file as new characters and glyphs are added dynamically to the font asset.
@@ -389,8 +388,9 @@ namespace UnityEngine.TextCore.Text
             get { return m_ClearDynamicDataOnBuild; }
             set { m_ClearDynamicDataOnBuild = value; }
         }
+
         [SerializeField]
-        private bool m_ClearDynamicDataOnBuild;
+        bool m_ClearDynamicDataOnBuild = true;
 
         /// <summary>
         /// The width of the atlas texture(s) used by this font asset.
@@ -615,7 +615,7 @@ namespace UnityEngine.TextCore.Text
             return null;
         }
 
-        internal static FontAsset? CreateFontAsset(string familyName, string styleName, float pointSize, int padding, GlyphRenderMode renderMode)
+        internal static FontAsset? CreateFontAsset(string familyName, string styleName, int pointSize, int padding, GlyphRenderMode renderMode)
         {
             if (FontEngine.TryGetSystemFontReference(familyName, styleName, out FontReference fontRef))
                 return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, padding, renderMode, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
@@ -630,7 +630,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="fallbacksFamilyNames">The desired fonts to be included, ordered by preferred fallback</param>
         /// <param name="pointSize">Optional point size.</param>
         /// <returns>A List of FontAsset containing the available fallbacks for the current platform.</returns>
-        internal static List<FontAsset> CreateFontAssetOSFallbackList(string[] fallbacksFamilyNames, Shader shader, float pointSize = 90)
+        internal static List<FontAsset> CreateFontAssetOSFallbackList(string[] fallbacksFamilyNames, Shader shader, int pointSize = 90)
         {
             List<FontAsset> fallbackList = new List<FontAsset>();
             FontAsset currentFontAsset;
@@ -648,7 +648,7 @@ namespace UnityEngine.TextCore.Text
             return fallbackList;
         }
 
-        internal static FontAsset CreateFontAssetWithOSFallbackList(string[] fallbacksFamilyNames, Shader shader, float pointSize = 90)
+        internal static FontAsset CreateFontAssetWithOSFallbackList(string[] fallbacksFamilyNames, Shader shader, int pointSize = 90)
         {
             FontAsset mainFontAsset = null;
             FontAsset currentFontAsset;
@@ -672,7 +672,7 @@ namespace UnityEngine.TextCore.Text
             return mainFontAsset;
         }
 
-        static FontAsset CreateFontAssetFromFamilyName(string familyName, Shader shader, float pointSize = 90)
+        static FontAsset CreateFontAssetFromFamilyName(string familyName, Shader shader, int pointSize = 90)
         {
             FontAsset fontAsset = null;
 
@@ -706,7 +706,7 @@ namespace UnityEngine.TextCore.Text
             return CreateFontAsset(fontFilePath, faceIndex, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, AtlasPopulationMode.Dynamic, true);
         }
 
-        static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, float samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
+        static FontAsset CreateFontAsset(string fontFilePath, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode, bool enableMultiAtlasSupport = true)
         {
             // Load Font Face
             if (FontEngine.LoadFontFace(fontFilePath, samplingPointSize, faceIndex) != FontEngineError.Success)
@@ -752,15 +752,10 @@ namespace UnityEngine.TextCore.Text
         /// <returns>An instance of the newly created font asset.</returns>
         public static FontAsset CreateFontAsset(Font font, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
         {
-            return CreateFontAsset(font, 0, (float)samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, null, atlasPopulationMode, enableMultiAtlasSupport);
-        }
-
-        internal static FontAsset CreateFontAsset(Font font, float samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
-        {
             return CreateFontAsset(font, 0, samplingPointSize, atlasPadding, renderMode, atlasWidth, atlasHeight, null, atlasPopulationMode, enableMultiAtlasSupport);
         }
 
-        static FontAsset CreateFontAsset(Font font, int faceIndex, float samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, Shader shader, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
+        static FontAsset CreateFontAsset(Font font, int faceIndex, int samplingPointSize, int atlasPadding, GlyphRenderMode renderMode, int atlasWidth, int atlasHeight, Shader shader, AtlasPopulationMode atlasPopulationMode = AtlasPopulationMode.Dynamic, bool enableMultiAtlasSupport = true)
         {
             if (font.name == "LegacyRuntime")
             {
@@ -1038,8 +1033,17 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Update Units per EM for pre-existing font assets.
-            if (m_FaceInfo.unitsPerEM == 0)
-                m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+            if (m_FaceInfo.unitsPerEM == 0 && atlasPopulationMode != AtlasPopulationMode.Static)
+            {
+                // Only retrieve Units Per EM if we are on the main thread.
+                if (!JobsUtility.IsExecutingJob)
+                {
+                    m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
+                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.");
+                }
+                else
+                    Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.");
+            }
 
             // Compute hash codes for various properties of the font asset used for lookup.
             hashCode = TextUtilities.GetHashCodeCaseInSensitive(name);
@@ -1420,7 +1424,7 @@ namespace UnityEngine.TextCore.Text
         ///
         /// </summary>
         /// <returns></returns>
-        FontEngineError LoadFontFace()
+        internal FontEngineError LoadFontFace()
         {
             if (m_AtlasPopulationMode == AtlasPopulationMode.Dynamic)
             {

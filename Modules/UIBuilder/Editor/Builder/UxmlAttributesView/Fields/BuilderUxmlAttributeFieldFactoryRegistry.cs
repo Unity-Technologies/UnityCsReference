@@ -84,7 +84,7 @@ namespace Unity.UI.Builder
             // Traverse factories from last to first because we can have two factories that match a specific attribute but we want
             // the one with the most specific conditions (override) to win. We ensure this factory is added after the
             // less specific one.
-            for (var i = factories.Count - 1; i > 0; i--)
+            for (var i = factories.Count - 1; i >= 0; i--)
             {
                 var factory = factories[i];
 

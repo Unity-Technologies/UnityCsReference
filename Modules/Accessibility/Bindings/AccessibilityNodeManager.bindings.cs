@@ -100,7 +100,6 @@ namespace UnityEngine.Accessibility
         /// If neither the parent ID nor the index are valid, the node will be
         /// added as a root node at the end of the root node list.
         /// </remarks>
-        /// </summary>
         internal static extern void SetParent(int id, int parentId, int index = -1);
 
         /// <summary>

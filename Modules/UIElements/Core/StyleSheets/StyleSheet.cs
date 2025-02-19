@@ -276,7 +276,7 @@ namespace UnityEngine.UIElements
 
             for (int i = 0, count = complexSelectors.Length; i < count; i++)
             {
-                complexSelectors[i].CachePseudoStateMasks();
+                complexSelectors[i].CachePseudoStateMasks(this);
             }
 
             tables = new TableType[(int)OrderedSelectorType.Length];

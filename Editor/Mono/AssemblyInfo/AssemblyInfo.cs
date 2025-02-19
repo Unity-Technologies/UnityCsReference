@@ -52,6 +52,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Profiler")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Rendering")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.SceneVisibility")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ShortcutManager")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UIToolkit")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Framework.PackageManager")]

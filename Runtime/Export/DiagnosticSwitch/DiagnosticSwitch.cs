@@ -15,6 +15,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Utilities/DiagnosticSwitch.h")]
     [NativeClass("DiagnosticSwitch", "struct DiagnosticSwitch;")]
     [NativeAsStruct]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal class DiagnosticSwitch
     {
         private IntPtr m_Ptr;

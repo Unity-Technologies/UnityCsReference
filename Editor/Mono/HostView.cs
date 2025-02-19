@@ -27,7 +27,7 @@ namespace UnityEditor
 
             public static readonly GUIStyle background = new GUIStyle("hostview");
             public static readonly GUIStyle overlay = "dockareaoverlay";
-            public static readonly GUIStyle paneOptions = "PaneOptions";
+            public static readonly GUIStyle menuButton = "WindowMenuButton";
             public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
 
             public static class DataModes
@@ -764,8 +764,8 @@ namespace UnityEditor
         {
             if (showGenericMenu)
             {
-                Rect paneMenu = new Rect(leftOffset, topOffset, Styles.paneOptions.fixedWidth, Styles.paneOptions.fixedHeight);
-                if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.paneOptions))
+                Rect paneMenu = new Rect(leftOffset, topOffset, Styles.menuButton.fixedWidth, Styles.menuButton.fixedHeight);
+                if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, Styles.menuButton))
                     PopupGenericMenu(m_ActualView, paneMenu);
 
                 if (m_ShowButton != null)

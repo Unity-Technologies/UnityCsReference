@@ -44,10 +44,12 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public const int InvalidPseudoStateMask = -1;
+
         // those two variables are initialized lazily by UIElements when it first sees the selector
         // it's convenient to store them here to avoid using an associative container
-        internal int pseudoStateMask = -1;
-        internal int negatedPseudoStateMask = -1;
+        internal int pseudoStateMask = InvalidPseudoStateMask;
+        internal int negatedPseudoStateMask = InvalidPseudoStateMask;
 
         public override string ToString()
         {

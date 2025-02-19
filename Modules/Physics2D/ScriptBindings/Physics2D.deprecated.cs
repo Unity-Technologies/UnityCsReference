@@ -12,47 +12,47 @@ namespace UnityEngine
     partial class Rigidbody2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("OverlapCollider has been renamed to Overlap (UnityUpgradable) -> Overlap(*)", false)]
+        [Obsolete("OverlapCollider has been deprecated. Please use Overlap (UnityUpgradable) -> Overlap(*)", false)]
         [ExcludeFromDocs]
-        public int OverlapCollider(ContactFilter2D contactFilter, [Out] Collider2D[] results) { return Overlap(contactFilter, results); }
+        public int OverlapCollider(ContactFilter2D contactFilter, [Out] Collider2D[] results) => Overlap(contactFilter, results);
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("OverlapCollider has been renamed to Overlap (UnityUpgradable) -> Overlap(*)", false)]
+        [Obsolete("OverlapCollider has been deprecated. Please use Overlap (UnityUpgradable) -> Overlap(*)", false)]
         [ExcludeFromDocs]
-        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results) { return Overlap(contactFilter, results); }
+        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results) => Overlap(contactFilter, results);
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Rigidbody2D.fixedAngle is deprecated. Use Rigidbody2D.constraints instead.", true)]
+        [Obsolete("Rigidbody2D.fixedAngle is obsolete. Use Rigidbody2D.constraints instead.", true)]
         [ExcludeFromDocs]
-        public bool fixedAngle { get { return false; } set { } }
+        public bool fixedAngle { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.bodyType instead.", false)]
+        [Obsolete("isKinematic has been deprecated. Please use bodyType.", false)]
         [ExcludeFromDocs]
-        public bool isKinematic { get { return bodyType == RigidbodyType2D.Kinematic; } set { bodyType = value ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic; } }
+        public bool isKinematic { get => bodyType == RigidbodyType2D.Kinematic; set => bodyType = value ? RigidbodyType2D.Kinematic : RigidbodyType2D.Dynamic; }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.linearDamping instead. (UnityUpgradable) -> linearDamping", false)]
+        [Obsolete("drag has been deprecated. Please use linearDamping. (UnityUpgradable) -> linearDamping", false)]
         [ExcludeFromDocs]
         public float drag { get => linearDamping; set => linearDamping = value; }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.angularDamping instead. (UnityUpgradable) -> angularDamping", false)]
+        [Obsolete("angularDrag has been deprecated. Please use angularDamping. (UnityUpgradable) -> angularDamping", false)]
         [ExcludeFromDocs]
         public float angularDrag { get => angularDamping; set => angularDamping = value; }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.linearVelocity instead. (UnityUpgradable) -> linearVelocity", false)]
+        [Obsolete("velocity has been deprecated. Please use linearVelocity. (UnityUpgradable) -> linearVelocity", false)]
         [ExcludeFromDocs]
         public Vector2 velocity { get => linearVelocity; set => linearVelocity = value; }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.linearVelocityX instead. (UnityUpgradable) -> linearVelocityX", false)]
+        [Obsolete("velocityX has been deprecated. Please use linearVelocityX. (UnityUpgradable) -> linearVelocityX", false)]
         [ExcludeFromDocs]
         public float velocityX { get => linearVelocityX; set => linearVelocityX = value; }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Please use Rigidbody2D.linearVelocityY instead. (UnityUpgradable) -> linearVelocityY", false)]
+        [Obsolete("velocityY has been deprecated. Please use linearVelocityY (UnityUpgradable) -> linearVelocityY", false)]
         [ExcludeFromDocs]
         public float velocityY { get => linearVelocityY; set => linearVelocityY = value; }
     }
@@ -60,186 +60,186 @@ namespace UnityEngine
     partial class Collider2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("OverlapCollider has been renamed to Overlap (UnityUpgradable) -> Overlap(*)", false)]
+        [Obsolete("OverlapCollider has been deprecated. Please use Overlap. (UnityUpgradable) -> Overlap(*)", false)]
         [ExcludeFromDocs]
-        public int OverlapCollider(ContactFilter2D contactFilter, Collider2D[] results) { return Overlap(contactFilter, results); }
+        public int OverlapCollider(ContactFilter2D contactFilter, Collider2D[] results) => Overlap(contactFilter, results);
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("OverlapCollider has been renamed to Overlap (UnityUpgradable) -> Overlap(*)", false)]
+        [Obsolete("OverlapCollider has been deprecated. Please use Overlap. (UnityUpgradable) -> Overlap(*)", false)]
         [ExcludeFromDocs]
-        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results) { return Overlap(contactFilter, results); }
+        public int OverlapCollider(ContactFilter2D contactFilter, List<Collider2D> results) => Overlap(contactFilter, results);
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("usedByComposite has been deprecated. Use Collider2D.compositeOperation instead", false)]
+        [Obsolete("usedByComposite has been deprecated. Please use compositeOperation.", false)]
         [ExcludeFromDocs]
-        public bool usedByComposite { get { return compositeOperation != CompositeOperation.None; } set { compositeOperation = value ? CompositeOperation.Merge : CompositeOperation.None; } }
+        public bool usedByComposite { get => compositeOperation != CompositeOperation.None; set => compositeOperation = value ? CompositeOperation.Merge : CompositeOperation.None; }
     }
 
     partial class CircleCollider2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("CircleCollider2D.center has been deprecated. Use CircleCollider2D.offset instead (UnityUpgradable) -> offset", true)]
-        public Vector2 center { get { return Vector2.zero; } set {} }
+        [Obsolete("CircleCollider2D.center has been obsolete. Use CircleCollider2D.offset instead (UnityUpgradable) -> offset", true)]
+        public Vector2 center { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class BoxCollider2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("BoxCollider2D.center has been deprecated. Use BoxCollider2D.offset instead (UnityUpgradable) -> offset", true)]
-        public Vector2 center { get { return Vector2.zero; } set {} }
+        [Obsolete("BoxCollider2D.center has been obsolete. Use BoxCollider2D.offset instead (UnityUpgradable) -> offset", true)]
+        public Vector2 center { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class Joint2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Joint2D.collideConnected has been deprecated. Use Joint2D.enableCollision instead (UnityUpgradable) -> enableCollision", true)]
-        public bool collideConnected { get { return enableCollision; } set { enableCollision = value; } }
+        [Obsolete("Joint2D.collideConnected has been obsolete. Use Joint2D.enableCollision instead (UnityUpgradable) -> enableCollision", true)]
+        public bool collideConnected { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class AreaEffector2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("AreaEffector2D.forceDirection has been deprecated. Use AreaEffector2D.forceAngle instead (UnityUpgradable) -> forceAngle", true)]
-        public float forceDirection { get { return forceAngle; } set { forceAngle = value; } }
+        [Obsolete("AreaEffector2D.forceDirection has been obsolete. Use AreaEffector2D.forceAngle instead (UnityUpgradable) -> forceAngle", true)]
+        public float forceDirection { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("AreaEffector2D.drag has been deprecated. Use AreaEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
-        public float drag { get => linearDamping; set => linearDamping = value; }
+        [Obsolete("AreaEffector2D.drag has been obsolete. Use AreaEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("AreaEffector2D.angularDrag has been deprecated. Use AreaEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
-        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+        [Obsolete("AreaEffector2D.angularDrag has been obsolete. Use AreaEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class BuoyancyEffector2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("BuoyancyEffector2D.drag has been deprecated. Use BuoyancyEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
-        public float drag { get => linearDamping; set => linearDamping = value; }
+        [Obsolete("BuoyancyEffector2D.drag has been obsolete. Use BuoyancyEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("BuoyancyEffector2D.angularDrag has been deprecated. Use BuoyancyEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
-        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+        [Obsolete("BuoyancyEffector2D.angularDrag has been obsolete. Use BuoyancyEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class PointEffector2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PointEffector2D.drag has been deprecated. Use PointEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
-        public float drag { get => linearDamping; set => linearDamping = value; }
+        [Obsolete("PointEffector2D.drag has been obsolete. Use PointEffector2D.linearDamping instead (UnityUpgradable) -> linearDamping", true)]
+        public float drag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PointEffector2D.angularDrag has been deprecated. Use PointEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
-        public float angularDrag { get => angularDamping; set => angularDamping = value; }
+        [Obsolete("PointEffector2D.angularDrag has been obsolete. Use PointEffector2D.angularDamping instead (UnityUpgradable) -> angularDamping", true)]
+        public float angularDrag { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class PlatformEffector2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PlatformEffector2D.oneWay has been deprecated. Use PlatformEffector2D.useOneWay instead (UnityUpgradable) -> useOneWay", true)]
-        public bool oneWay { get { return useOneWay; } set { useOneWay = value; } }
+        [Obsolete("PlatformEffector2D.oneWay has been obsolete. Use PlatformEffector2D.useOneWay instead (UnityUpgradable) -> useOneWay", true)]
+        public bool oneWay { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PlatformEffector2D.sideFriction has been deprecated. Use PlatformEffector2D.useSideFriction instead (UnityUpgradable) -> useSideFriction", true)]
-        public bool sideFriction { get { return useSideFriction; } set { useSideFriction = value; } }
+        [Obsolete("PlatformEffector2D.sideFriction has been obsolete. Use PlatformEffector2D.useSideFriction instead (UnityUpgradable) -> useSideFriction", true)]
+        public bool sideFriction { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PlatformEffector2D.sideBounce has been deprecated. Use PlatformEffector2D.useSideBounce instead (UnityUpgradable) -> useSideBounce", true)]
-        public bool sideBounce { get { return useSideBounce; } set { useSideBounce = value; } }
+        [Obsolete("PlatformEffector2D.sideBounce has been obsolete. Use PlatformEffector2D.useSideBounce instead (UnityUpgradable) -> useSideBounce", true)]
+        public bool sideBounce { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("PlatformEffector2D.sideAngleVariance has been deprecated. Use PlatformEffector2D.sideArc instead (UnityUpgradable) -> sideArc", true)]
-        public float sideAngleVariance { get { return sideArc; } set { sideArc = value; } }
+        [Obsolete("PlatformEffector2D.sideAngleVariance has been obsolete. Use PlatformEffector2D.sideArc instead (UnityUpgradable) -> sideArc", true)]
+        public float sideAngleVariance { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
     }
 
     partial class Physics2D
     {
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.raycastsHitTriggers is deprecated. Use Physics2D.queriesHitTriggers instead. (UnityUpgradable) -> queriesHitTriggers", true)]
-        public static bool raycastsHitTriggers { get { return false; } set {} }
+        [Obsolete("Physics2D.raycastsHitTriggers is obsolete. Use Physics2D.queriesHitTriggers instead. (UnityUpgradable) -> queriesHitTriggers", true)]
+        public static bool raycastsHitTriggers { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.raycastsStartInColliders is deprecated. Use Physics2D.queriesStartInColliders instead. (UnityUpgradable) -> queriesStartInColliders", true)]
-        public static bool raycastsStartInColliders { get { return false; } set {} }
+        [Obsolete("Physics2D.raycastsStartInColliders is obsolete. Use Physics2D.queriesStartInColliders instead. (UnityUpgradable) -> queriesStartInColliders", true)]
+        public static bool raycastsStartInColliders { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.deleteStopsCallbacks is deprecated.(UnityUpgradable) -> changeStopsCallbacks", true)]
-        public static bool deleteStopsCallbacks { get { return false; } set {} }
+        [Obsolete("Physics2D.deleteStopsCallbacks is obsolete.(UnityUpgradable) -> changeStopsCallbacks", true)]
+        public static bool deleteStopsCallbacks { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
-        [Obsolete("Physics2D.changeStopsCallbacks is deprecated and will always return false.", true)]
-        public static bool changeStopsCallbacks { get { return false; } set {} }
+        [Obsolete("Physics2D.changeStopsCallbacks is obsolete and will always return false.", true)]
+        public static bool changeStopsCallbacks { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
-        [Obsolete("Physics2D.minPenetrationForPenalty is deprecated. Use Physics2D.defaultContactOffset instead. (UnityUpgradable) -> defaultContactOffset", true)]
-        public static float minPenetrationForPenalty { get { return defaultContactOffset; } set { defaultContactOffset = value; } }
+        [Obsolete("Physics2D.minPenetrationForPenalty is obsolete. Use Physics2D.defaultContactOffset instead. (UnityUpgradable) -> defaultContactOffset", true)]
+        public static float minPenetrationForPenalty { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
-        [Obsolete("Physics2D.velocityThreshold is deprecated. Use Physics2D.bounceThreshold instead. (UnityUpgradable) -> bounceThreshold", true)]
-        public static float velocityThreshold { get { return bounceThreshold; } set { bounceThreshold = value; } }
+        [Obsolete("Physics2D.velocityThreshold is obsolete. Use Physics2D.bounceThreshold instead. (UnityUpgradable) -> bounceThreshold", true)]
+        public static float velocityThreshold { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.autoSimulation is deprecated. Use Physics2D.simulationMode instead.", true)]
-        public static bool autoSimulation { get { return simulationMode != SimulationMode2D.Script; } set { simulationMode = value ? SimulationMode2D.FixedUpdate : SimulationMode2D.Script; } }
-
-        [ExcludeFromDocs]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.colliderAwakeColor is deprecated. This options has been moved to 2D Preferences.", true)]
-        public static Color colliderAwakeColor { get { return Color.magenta; } set { } }
+        [Obsolete("Physics2D.autoSimulation is obsolete. Use Physics2D.simulationMode instead.", true)]
+        public static bool autoSimulation { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.colliderAsleepColor is deprecated. This options has been moved to 2D Preferences.", true)]
-        public static Color colliderAsleepColor { get { return Color.magenta; } set { } }
+        [Obsolete("Physics2D.colliderAwakeColor is obsolete. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderAwakeColor { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.colliderContactColor is deprecated. This options has been moved to 2D Preferences.", true)]
-        public static Color colliderContactColor { get { return Color.magenta; } set { } }
+        [Obsolete("Physics2D.colliderAsleepColor is obsolete. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderAsleepColor { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.colliderAABBColor is deprecated. All Physics 2D colors moved to Preferences. This is now known as 'Collider Bounds Color'.", true)]
-        public static Color colliderAABBColor { get { return Color.magenta; } set { } }
+        [Obsolete("Physics2D.colliderContactColor is obsolete. This options has been moved to 2D Preferences.", true)]
+        public static Color colliderContactColor { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.contactArrowScale is deprecated. This options has been moved to 2D Preferences.", true)]
-        public static float contactArrowScale { get { return 0.2f; } set { } }
+        [Obsolete("Physics2D.colliderAABBColor is obsolete. All Physics 2D colors moved to Preferences. This is now known as 'Collider Bounds Color'.", true)]
+        public static Color colliderAABBColor { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.alwaysShowColliders is deprecated. It is no longer available in the Editor or Builds.", true)]
-        public static bool alwaysShowColliders { get; set; }
+        [Obsolete("Physics2D.contactArrowScale is obsolete. This options has been moved to 2D Preferences.", true)]
+        public static float contactArrowScale { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.showCollidersFilled is deprecated. It is no longer available in the Editor or Builds.", true)]
-        public static bool showCollidersFilled { get; set; }
+        [Obsolete("Physics2D.alwaysShowColliders is obsolete. It is no longer available in the Editor or Builds.", true)]
+        public static bool alwaysShowColliders { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.showColliderSleep is deprecated. It is no longer available in the Editor or Builds.", true)]
-        public static bool showColliderSleep { get; set; }
+        [Obsolete("Physics2D.showCollidersFilled is obsolete. It is no longer available in the Editor or Builds.", true)]
+        public static bool showCollidersFilled { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.showColliderContacts is deprecated. It is no longer available in the Editor or Builds.", true)]
-        public static bool showColliderContacts { get; set; }
+        [Obsolete("Physics2D.showColliderSleep is obsolete. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderSleep { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.showColliderAABB is deprecated. It is no longer available in the Editor or Builds.", true)]
-        public static bool showColliderAABB { get { return false; } set { } }
+        [Obsolete("Physics2D.showColliderContacts is obsolete. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderContacts { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        [ExcludeFromDocs]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Physics2D.showColliderAABB is obsolete. It is no longer available in the Editor or Builds.", true)]
+        public static bool showColliderAABB { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
 
         #region Linecast
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.LinecastNonAlloc is deprecated. Use Physics2D.Linecast instead.", false)]
-        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results) { return defaultPhysicsScene.Linecast(start, end, results); }
+        [Obsolete("LinecastNonAlloc has neen deprecated. Please use Linecast.", false)]
+        public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results) => defaultPhysicsScene.Linecast(start, end, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.LinecastNonAlloc is deprecated. Use Physics2D.Linecast instead.", false)]
+        [Obsolete("LinecastNonAlloc has been deprecated. Please use Linecast.", false)]
         public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -248,7 +248,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.LinecastNonAlloc is deprecated. Use Physics2D.Linecast instead.", false)]
+        [Obsolete("LinecastNonAlloc has been deprecated. Please use Linecast.", false)]
         public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -257,7 +257,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.LinecastNonAlloc is deprecated. Use Physics2D.Linecast instead.", false)]
+        [Obsolete("LinecastNonAlloc has been deprecated. Please use Linecast.", false)]
         public static int LinecastNonAlloc(Vector2 start, Vector2 end, RaycastHit2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -270,23 +270,17 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.RaycastNonAlloc is deprecated. Use Physics2D.Raycast instead.", false)]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.Raycast(origin, direction, Mathf.Infinity, results);
-        }
+        [Obsolete("RaycastNonAlloc has been deprecated. Please use Raycast.", false)]
+        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results) => defaultPhysicsScene.Raycast(origin, direction, Mathf.Infinity, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.RaycastNonAlloc is deprecated. Use Physics2D.Raycast instead.", false)]
-        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.Raycast(origin, direction, distance, results);
-        }
+        [Obsolete("RaycastNonAlloc has been deprecated. Please use Raycast.", false)]
+        public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance) => defaultPhysicsScene.Raycast(origin, direction, distance, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.RaycastNonAlloc is deprecated. Use Physics2D.Raycast instead.", false)]
+        [Obsolete("RaycastNonAlloc has been deprecated. Please use Raycast.", false)]
         public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -295,7 +289,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.RaycastNonAlloc is deprecated. Use Physics2D.Raycast instead.", false)]
+        [Obsolete("RaycastNonAlloc has been deprecated. Please use Raycast.", false)]
         public static int RaycastNonAlloc(Vector2 origin, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -308,23 +302,17 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CircleCastNonAlloc is deprecated. Use Physics2D.CircleCast instead.", false)]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, Mathf.Infinity, results);
-        }
+        [Obsolete("CircleCastNonAlloc has been deprecated. Please use CircleCast instead.", false)]
+        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results) => defaultPhysicsScene.CircleCast(origin, radius, direction, Mathf.Infinity, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CircleCastNonAlloc is deprecated. Use Physics2D.CircleCast instead.", false)]
-        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.CircleCast(origin, radius, direction, distance, results);
-        }
+        [Obsolete("CircleCastNonAlloc has been deprecated. Please use CircleCast instead.", false)]
+        public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance) => defaultPhysicsScene.CircleCast(origin, radius, direction, distance, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CircleCastNonAlloc is deprecated. Use Physics2D.CircleCast instead.", false)]
+        [Obsolete("CircleCastNonAlloc has been deprecated. Please use CircleCast instead.", false)]
         public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -333,7 +321,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CircleCastNonAlloc is deprecated. Use Physics2D.CircleCast instead.", false)]
+        [Obsolete("CircleCastNonAlloc has been deprecated. Please use CircleCast instead.", false)]
         public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -342,7 +330,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CircleCastNonAlloc is deprecated. Use Physics2D.CircleCast instead.", false)]
+        [Obsolete("CircleCastNonAlloc has been deprecated. Please use CircleCast instead.", false)]
         public static int CircleCastNonAlloc(Vector2 origin, float radius, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -355,23 +343,17 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.BoxCastNonAlloc is deprecated. Use Physics2D.BoxCast instead.", false)]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, Mathf.Infinity, results);
-        }
+        [Obsolete("BoxCastNonAlloc has been deprecated. Please use BoxCast.", false)]
+        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results) => defaultPhysicsScene.BoxCast(origin, size, angle, direction, Mathf.Infinity, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.BoxCastNonAlloc is deprecated. Use Physics2D.BoxCast instead.", false)]
-        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, results);
-        }
+        [Obsolete("BoxCastNonAlloc has been deprecated. Please use BoxCast.", false)]
+        public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance) => defaultPhysicsScene.BoxCast(origin, size, angle, direction, distance, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.BoxCastNonAlloc is deprecated. Use Physics2D.BoxCast instead.", false)]
+        [Obsolete("BoxCastNonAlloc has been deprecated. Please use BoxCast.", false)]
         public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -380,7 +362,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.BoxCastNonAlloc is deprecated. Use Physics2D.BoxCast instead.", false)]
+        [Obsolete("BoxCastNonAlloc has been deprecated. Please use BoxCast.", false)]
         public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -389,7 +371,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.BoxCastNonAlloc is deprecated. Use Physics2D.BoxCast instead.", false)]
+        [Obsolete("BoxCastNonAlloc has been deprecated. Please use BoxCast.", false)]
         public static int BoxCastNonAlloc(Vector2 origin, Vector2 size, float angle, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -402,23 +384,17 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CapsuleCastNonAlloc is deprecated. Use Physics2D.CapsuleCast instead.", false)]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, Mathf.Infinity, results);
-        }
+        [Obsolete("CapsuleCastNonAlloc has been deprecated. Please use CapsuleCast.", false)]
+        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results) => defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, Mathf.Infinity, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CapsuleCastNonAlloc is deprecated. Use Physics2D.CapsuleCast instead.", false)]
-        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, results);
-        }
+        [Obsolete("CapsuleCastNonAlloc has been deprecated. Please use CapsuleCast.", false)]
+        public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance) => defaultPhysicsScene.CapsuleCast(origin, size, capsuleDirection, angle, direction, distance, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CapsuleCastNonAlloc is deprecated. Use Physics2D.CapsuleCast instead.", false)]
+        [Obsolete("CapsuleCastNonAlloc has been deprecated. Please use CapsuleCast.", false)]
         public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -427,7 +403,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CapsuleCastNonAlloc is deprecated. Use Physics2D.CapsuleCast instead.", false)]
+        [Obsolete("CapsuleCastNonAlloc has been deprecated. Please use CapsuleCast.", false)]
         public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, float distance, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -436,7 +412,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.CapsuleCastNonAlloc is deprecated. Use Physics2D.CapsuleCast instead.", false)]
+        [Obsolete("CapsuleCastNonAlloc has been deprecated. Please use CapsuleCast.", false)]
         public static int CapsuleCastNonAlloc(Vector2 origin, Vector2 size, CapsuleDirection2D capsuleDirection, float angle, Vector2 direction, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -449,19 +425,13 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.GetRayIntersectionNonAlloc is deprecated. Use Physics2D.GetRayIntersection instead.", false)]
-        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results)
-        {
-            return defaultPhysicsScene.GetRayIntersection(ray, Mathf.Infinity, results);
-        }
+        [Obsolete("GetRayIntersectionNonAlloc is deprecated. Please use GetRayIntersection.", false)]
+        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results) => defaultPhysicsScene.GetRayIntersection(ray, Mathf.Infinity, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.GetRayIntersectionNonAlloc is deprecated. Use Physics2D.GetRayIntersection instead.", false)]
-        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, float distance)
-        {
-            return defaultPhysicsScene.GetRayIntersection(ray, distance, results);
-        }
+        [Obsolete("GetRayIntersectionNonAlloc is deprecated. Please use GetRayIntersection.", false)]
+        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, float distance) => defaultPhysicsScene.GetRayIntersection(ray, distance, results);
 
         #endregion
 
@@ -469,15 +439,12 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapPointNonAlloc is deprecated. Use Physics2D.OverlapPoint instead.", false)]
-        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapPoint(point, results);
-        }
+        [Obsolete("OverlapPointNonAlloc has been deprecated. Please use OverlapPoint.", false)]
+        public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results) => defaultPhysicsScene.OverlapPoint(point, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapPointNonAlloc is deprecated. Use Physics2D.OverlapPoint instead.", false)]
+        [Obsolete("OverlapPointNonAlloc has been deprecated. Please use OverlapPoint.", false)]
         public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -486,7 +453,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapPointNonAlloc is deprecated. Use Physics2D.OverlapPoint instead.", false)]
+        [Obsolete("OverlapPointNonAlloc has been deprecated. Please use OverlapPoint.", false)]
         public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -495,7 +462,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapPointNonAlloc is deprecated. Use Physics2D.OverlapPoint instead.", false)]
+        [Obsolete("OverlapPointNonAlloc has been deprecated. Please use OverlapPoint.", false)]
         public static int OverlapPointNonAlloc(Vector2 point, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -508,15 +475,12 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCircleNonAlloc is deprecated. Use Physics2D.OverlapCircle instead.", false)]
-        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapCircle(point, radius, results);
-        }
+        [Obsolete("OverlapCircleNonAlloc has been deprecated. Please use OverlapCircle.", false)]
+        public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results) => defaultPhysicsScene.OverlapCircle(point, radius, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCircleNonAlloc is deprecated. Use Physics2D.OverlapCircle instead.", false)]
+        [Obsolete("OverlapCircleNonAlloc has been deprecated. Please use OverlapCircle.", false)]
         public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity,  Mathf.Infinity);
@@ -525,7 +489,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCircleNonAlloc is deprecated. Use Physics2D.OverlapCircle instead.", false)]
+        [Obsolete("OverlapCircleNonAlloc has been deprecated. Please use OverlapCircle.", false)]
         public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth,  Mathf.Infinity);
@@ -534,7 +498,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCircleNonAlloc is deprecated. Use Physics2D.OverlapCircle instead.", false)]
+        [Obsolete("OverlapCircleNonAlloc has been deprecated. Please use OverlapCircle.", false)]
         public static int OverlapCircleNonAlloc(Vector2 point, float radius, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -547,15 +511,12 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapBoxNonAlloc is deprecated. Use Physics2D.OverlapBox instead.", false)]
-        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapBox(point, size, angle, results);
-        }
+        [Obsolete("OverlapBoxNonAlloc has been deprecated. Please use OverlapBox.", false)]
+        public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results) => defaultPhysicsScene.OverlapBox(point, size, angle, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapBoxNonAlloc is deprecated. Use Physics2D.OverlapBox instead.", false)]
+        [Obsolete("OverlapBoxNonAlloc has been deprecated. Please use OverlapBox.", false)]
         public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -564,7 +525,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapBoxNonAlloc is deprecated. Use Physics2D.OverlapBox instead.", false)]
+        [Obsolete("OverlapBoxNonAlloc has been deprecated. Please use OverlapBox.", false)]
         public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -573,7 +534,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapBoxNonAlloc is deprecated. Use Physics2D.OverlapBox instead.", false)]
+        [Obsolete("OverlapBoxNonAlloc has been deprecated. Please use OverlapBox.", false)]
         public static int OverlapBoxNonAlloc(Vector2 point, Vector2 size, float angle, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -586,15 +547,12 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapAreaNonAlloc is deprecated. Use Physics2D.OverlapArea instead.", false)]
-        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapArea(pointA, pointB, results);
-        }
+        [Obsolete("OverlapAreaNonAlloc has been deprecated. Please use OverlapArea.", false)]
+        public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results) => defaultPhysicsScene.OverlapArea(pointA, pointB, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapAreaNonAlloc is deprecated. Use Physics2D.OverlapArea instead.", false)]
+        [Obsolete("OverlapAreaNonAlloc has been deprecated. Please use OverlapArea.", false)]
         public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -603,7 +561,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapAreaNonAlloc is deprecated. Use Physics2D.OverlapArea instead.", false)]
+        [Obsolete("OverlapAreaNonAlloc has been deprecated. Please use OverlapArea.", false)]
         public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -612,7 +570,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapAreaNonAlloc is deprecated. Use Physics2D.OverlapArea instead.", false)]
+        [Obsolete("OverlapAreaNonAlloc has been deprecated. Please use OverlapArea.", false)]
         public static int OverlapAreaNonAlloc(Vector2 pointA, Vector2 pointB, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -625,15 +583,12 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCapsuleNonAlloc is deprecated. Use Physics2D.OverlapCapsule instead.", false)]
-        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results)
-        {
-            return defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, results);
-        }
+        [Obsolete("OverlapCapsuleNonAlloc has been deprecated. Please use OverlapCapsule.", false)]
+        public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results) => defaultPhysicsScene.OverlapCapsule(point, size, direction, angle, results);
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCapsuleNonAlloc is deprecated. Use Physics2D.OverlapCapsule instead.", false)]
+        [Obsolete("OverlapCapsuleNonAlloc has been deprecated. Please use OverlapCapsule.", false)]
         public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, int layerMask)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, -Mathf.Infinity, Mathf.Infinity);
@@ -642,7 +597,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCapsuleNonAlloc is deprecated. Use Physics2D.OverlapCapsule instead.", false)]
+        [Obsolete("OverlapCapsuleNonAlloc has been deprecated. Please use OverlapCapsule.", false)]
         public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, int layerMask, float minDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, Mathf.Infinity);
@@ -651,7 +606,7 @@ namespace UnityEngine
 
         [ExcludeFromDocs]
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Physics2D.OverlapCapsuleNonAlloc is deprecated. Use Physics2D.OverlapCapsule instead.", false)]
+        [Obsolete("OverlapCapsuleNonAlloc has been deprecated. Please use OverlapCapsule.", false)]
         public static int OverlapCapsuleNonAlloc(Vector2 point, Vector2 size, CapsuleDirection2D direction, float angle, Collider2D[] results, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("-Mathf.Infinity")] float minDepth, [DefaultValue("Mathf.Infinity")] float maxDepth)
         {
             var contactFilter = ContactFilter2D.CreateLegacyFilter(layerMask, minDepth, maxDepth);
@@ -659,6 +614,14 @@ namespace UnityEngine
         }
 
         #endregion
+    }
+
+    partial struct ContactFilter2D
+    {
+        [ExcludeFromDocs]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("ContactFilter2D.NoFilter method has been deprecated. Please use the static ContactFilter2D.noFilter property.", false)]
+        public ContactFilter2D NoFilter() => noFilter;
     }
 }
 

@@ -31,21 +31,5 @@ namespace UnityEngine
 
         [Obsolete("Use PhysicMaterial.bounciness instead (UnityUpgradable) -> bounciness")]
         public float bouncyness { get; set; }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection2 { get; set; }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float dynamicFriction2 { get; set; }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public float staticFriction2 { get; set; }
-
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
-        public Vector3 frictionDirection { get; set; }
     }
 }

@@ -297,7 +297,7 @@ namespace UnityEngine.UIElements
             UpdateButtonStates(newValue);
         }
 
-        void OnButtonGroupContainerElementAdded(VisualElement ve)
+        void OnButtonGroupContainerElementAdded(VisualElement ve, int index)
         {
             if (ve is not Button button)
             {

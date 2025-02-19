@@ -180,6 +180,7 @@ namespace UnityEditor.StyleSheets
             {
                 case TextClipping.Clip: return "clip";
                 case TextClipping.Overflow: return "overflow";
+                case TextClipping.Ellipsis: return "ellipsis";
             }
             return "";
         }
@@ -190,6 +191,7 @@ namespace UnityEditor.StyleSheets
             {
                 case "clip": return TextClipping.Clip;
                 case "overflow": return TextClipping.Overflow;
+                case "ellipsis": return TextClipping.Ellipsis;
             }
             return TextClipping.Clip;
         }

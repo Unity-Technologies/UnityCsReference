@@ -871,7 +871,11 @@ namespace NiceIO
             if (!DirectoryExists() || extensions.Length == 0)
                 return new NPath[] {};
 
-            return FileSystem.Active.Directory_GetFiles(this, "*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).Where(p => extensions.Contains(p.Extension)).ToArray();
+            // If there is only one extension, do a glob with a more specific filter, which should both allow the OS to
+            // do more prefiltering, and also avoids registering a misleadingly general glob with any capturing filesystems
+            return extensions.Length == 1 
+                ? FileSystem.Active.Directory_GetFiles(this, $"*.{extensions[0]}", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly) 
+                : FileSystem.Active.Directory_GetFiles(this, "*", recurse ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly).Where(p => extensions.Contains(p.Extension)).ToArray();
         }
 
         /// <summary>

@@ -67,7 +67,7 @@ namespace Unity.Properties
         void Accept(ITypeVisitor visitor);
 
         /// <summary>
-        /// Call this method to invoke <see cref="IPropertyBagVisitor.Visit{TContainer}"/> with the strongly typed container for the given <see cref="container"/> object.
+        /// Call this method to invoke <see cref="IPropertyBagVisitor.Visit{TContainer}"/> with the strongly typed container for the given <paramref name="container"/> object.
         /// </summary>
         /// <param name="visitor">The visitor to invoke the visit callback on.</param>
         /// <param name="container">The container being visited.</param>
@@ -100,16 +100,16 @@ namespace Unity.Properties
         PropertyCollection<TContainer> GetProperties(ref TContainer container);
 
         /// <summary>
-        /// Creates and returns a new instance of <see cref="TContainer"/>.
+        /// Creates and returns a new instance of <typeparamref name="TContainer"/>.
         /// </summary>
-        /// <returns>A new instance of <see cref="TContainer"/>.</returns>
+        /// <returns>A new instance of <typeparamref name="TContainer"/>.</returns>
         TContainer CreateInstance();
 
         /// <summary>
-        /// Tries to create a new instance of <see cref="TContainer"/>.
+        /// Tries to create a new instance of <typeparamref name="TContainer"/>.
         /// </summary>
         /// <param name="instance">When this method returns, contains the created instance, if type construction succeeded; otherwise, the default value for <typeparamref name="TContainer"/>.</param>
-        /// <returns><see langword="true"/> if a new instance of type <see cref="TContainer"/> was created; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if a new instance of type <typeparamref name="TContainer"/> was created; otherwise, <see langword="false"/>.</returns>
         bool TryCreateInstance(out TContainer instance);
 
         /// <summary>

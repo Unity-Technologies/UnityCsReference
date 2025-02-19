@@ -33,7 +33,8 @@ namespace UnityEngine
         public static Shader Find(string name) => ResourcesAPI.ActiveAPI.FindShaderByName(name);
         [FreeFunction("GetBuiltinResource<Shader>")] extern internal static Shader FindBuiltin(string name);
 
-        [FreeFunction("ShaderScripting::CreateFromCompiledData")] extern internal static Shader CreateFromCompiledData(byte[] compiledData);
+        [FreeFunction("ShaderScripting::CreateFromCompiledData")] extern internal static Shader CreateFromCompiledData(
+            byte[] compiledData, Shader[] dependencies);
 
         [NativeProperty("MaxChunksRuntimeOverride")] extern public static int maximumChunksOverride { get; set; }
 

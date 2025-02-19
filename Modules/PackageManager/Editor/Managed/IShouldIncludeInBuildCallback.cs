@@ -4,6 +4,7 @@
 
 namespace UnityEditor.PackageManager
 {
+    [System.Obsolete(@"IShouldIncludeInBuildCallback interface is deprecated and will be removed in a later version, use PluginImporter.SetIncludeInBuildDelegate instead.", false)]
     public interface IShouldIncludeInBuildCallback
     {
         string PackageName { get; }

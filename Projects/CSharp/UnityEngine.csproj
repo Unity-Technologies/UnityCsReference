@@ -927,9 +927,6 @@
     <Compile Include="..\..\Modules\Physics\Managed\Collision.cs">
       <Link>Modules\Physics\Managed\Collision.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics\Managed\Collision.deprecated.cs">
-      <Link>Modules\Physics\Managed\Collision.deprecated.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Physics\Managed\CollisionDetectionMode.cs">
       <Link>Modules\Physics\Managed\CollisionDetectionMode.cs</Link>
     </Compile>
@@ -938,9 +935,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\Managed\JointConstraints.cs">
       <Link>Modules\Physics\Managed\JointConstraints.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics\Managed\JointConstraints.deprecated.cs">
-      <Link>Modules\Physics\Managed\JointConstraints.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\Managed\WheelFrictionCurve.cs">
       <Link>Modules\Physics\Managed\WheelFrictionCurve.cs</Link>
@@ -954,9 +948,6 @@
     <Compile Include="..\..\Modules\Physics\ScriptBindings\BoxCollider.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\BoxCollider.bindings.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\BoxCollider.deprecated.cs">
-      <Link>Modules\Physics\ScriptBindings\BoxCollider.deprecated.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\CapsuleCollider.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\CapsuleCollider.bindings.cs</Link>
     </Compile>
@@ -965,9 +956,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\CharacterJoint.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\CharacterJoint.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\CharacterJoint.deprecated.cs">
-      <Link>Modules\Physics\ScriptBindings\CharacterJoint.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Collider.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Collider.bindings.cs</Link>
@@ -995,9 +983,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\MeshCollider.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\MeshCollider.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\MeshCollider.deprecated.cs">
-      <Link>Modules\Physics\ScriptBindings\MeshCollider.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Physics.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Physics.bindings.cs</Link>
@@ -1031,9 +1016,6 @@
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\RaycastHit.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\RaycastHit.bindings.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\Physics\ScriptBindings\RaycastHit.deprecated.cs">
-      <Link>Modules\Physics\ScriptBindings\RaycastHit.deprecated.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\Physics\ScriptBindings\Rigidbody.bindings.cs">
       <Link>Modules\Physics\ScriptBindings\Rigidbody.bindings.cs</Link>
@@ -2856,6 +2838,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\ATGTextHandle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextJobSystem.cs">
+      <Link>Modules\UIElements\Core\Text\ATGTextJobSystem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\PanelTextSettings.cs">
       <Link>Modules\UIElements\Core\Text\PanelTextSettings.cs</Link>
     </Compile>
@@ -2864,6 +2849,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEventHandler.cs">
       <Link>Modules\UIElements\Core\Text\TextEventHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextJobSystem.cs">
+      <Link>Modules\UIElements\Core\Text\TextJobSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextSelectingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextSelectingManipulator.cs</Link>
@@ -4026,11 +4014,17 @@
     <Compile Include="..\..\Runtime\Export\ObjectPool\IObjectPool.cs">
       <Link>Runtime\Export\ObjectPool\IObjectPool.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\IPool.cs">
+      <Link>Runtime\Export\ObjectPool\IPool.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\LinkedPool.cs">
       <Link>Runtime\Export\ObjectPool\LinkedPool.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\ObjectPools.cs">
       <Link>Runtime\Export\ObjectPool\ObjectPools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Export\ObjectPool\PoolManager.cs">
+      <Link>Runtime\Export\ObjectPool\PoolManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Runtime\Export\ObjectPool\PooledObject.cs">
       <Link>Runtime\Export\ObjectPool\PooledObject.cs</Link>

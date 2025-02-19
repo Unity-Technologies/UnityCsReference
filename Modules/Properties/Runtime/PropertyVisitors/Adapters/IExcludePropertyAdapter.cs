@@ -5,14 +5,14 @@
 namespace Unity.Properties
 {
     /// <summary>
-    /// Implement this interface to filter visitation for a specific <see cref="TContainer"/> and <see cref="TValue"/> pair.
+    /// Implement this interface to filter visitation for a specific <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
     /// </summary>
     /// <typeparam name="TContainer">The container type being visited.</typeparam>
     /// <typeparam name="TValue">The value type being visited.</typeparam>
     public interface IExcludePropertyAdapter<TContainer, TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific a <see cref="TContainer"/> and <see cref="TValue"/> pair.
+        /// Invoked when the visitor encounters specific a <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -22,13 +22,13 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to filter visitation for a specific <see cref="TValue"/> type.
+    /// Implement this interface to filter visitation for a specific <typeparamref name="TValue"/> type.
     /// </summary>
     /// <typeparam name="TValue">The value type.</typeparam>
     public interface IExcludePropertyAdapter<TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific a <see cref="TValue"/>.
+        /// Invoked when the visitor encounters specific a <typeparamref name="TValue"/>.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -56,14 +56,14 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to filter visitation for a specific <see cref="TContainer"/> and <see cref="TValue"/> pair.
+    /// Implement this interface to filter visitation for a specific <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
     /// </summary>
     /// <typeparam name="TContainer">The container type being visited.</typeparam>
     /// <typeparam name="TValue">The value type being visited.</typeparam>
     public interface IExcludeContravariantPropertyAdapter<TContainer, in TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific a <see cref="TContainer"/> and <see cref="TValue"/> pair.
+        /// Invoked when the visitor encounters specific a <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -73,7 +73,7 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to filter visitation for a specific <see cref="TValue"/> type.
+    /// Implement this interface to filter visitation for a specific <typeparamref name="TValue"/> type.
     /// </summary>
     /// <typeparam name="TValue">The value type.</typeparam>
     public interface IExcludeContravariantPropertyAdapter<in TValue> : IPropertyVisitorAdapter

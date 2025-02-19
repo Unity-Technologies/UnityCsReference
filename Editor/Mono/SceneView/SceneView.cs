@@ -1212,7 +1212,9 @@ namespace UnityEditor
         private Object m_LastLockedObject;
 
         [SerializeField]
-        private CameraMode m_LastDebugDrawMode = new CameraMode() { drawMode = DrawCameraMode.GIContributorsReceivers };
+        private CameraMode m_LastDebugDrawMode = SceneRenderModeWindow.defaultCameraMode;
+        //internal for tests
+        internal CameraMode lastDebugDrawMode => m_LastDebugDrawMode;
 
         [SerializeField]
         bool m_ViewIsLockedToObject;
@@ -1596,16 +1598,6 @@ namespace UnityEditor
             m_PreviousScene = lastActiveSceneView;
         }
 
-        [RequiredByNativeCode]
-        internal static void PlaceGameObjectInFrontOfSceneView(GameObject go)
-        {
-            if (s_SceneViews.Count >= 1)
-            {
-                SceneView view = lastActiveSceneView;
-                if (view)
-                    view.MoveToView(go.transform);
-            }
-        }
         internal static void AlignCameraWithView(Camera camera)
         {
             if (s_SceneViews.Count >= 1)
@@ -2061,6 +2053,12 @@ namespace UnityEditor
                 draggingLocked = DraggingLockedState.Dragging;
             else if (GUIUtility.hotControl == 0 && draggingLocked == DraggingLockedState.Dragging)
                 draggingLocked = DraggingLockedState.LookAt;
+
+            // UUM-90436. UITK's MouseEnterEvent/MouseEnterWindowEvent callbacks that
+            // drive `viewportsUnderMouse` seem to not fire reliably when a pen tablet is used.
+            if (!sceneViewMotion.viewportsUnderMouse &&
+                (evt.type == EventType.MouseDown || evt.type == EventType.MouseMove))
+                sceneViewMotion.viewportsUnderMouse = true;
 
             if (evt.type == EventType.MouseDown)
             {

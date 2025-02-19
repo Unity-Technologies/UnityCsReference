@@ -93,10 +93,9 @@ namespace Unity.Properties
             new T Instantiate();
 
             /// <summary>
-            /// Sets an explicit instantiation method for the <see cref="T"/> type.
+            /// Sets an explicit instantiation method for the <typeparamref name="T"/> type.
             /// </summary>
             /// <param name="constructor">The instantiation method.</param>
-            /// <typeparam name="T">The type to set the explicit instantiation method.</typeparam>
             void SetExplicitConstructor(Func<T> constructor);
         }
 
@@ -501,18 +500,18 @@ namespace Unity.Properties
             => GetTypeConstructor(type).CanBeInstantiated;
 
         /// <summary>
-        /// Returns <see langword="true"/> if type <see cref="T"/> is instantiatable.
+        /// Returns <see langword="true"/> if type <typeparamref name="T"/> is instantiatable.
         /// </summary>
         /// <remarks>
         /// Instantiatable is defined as either having a default or implicit constructor or having a registered instantiation method.
         /// </remarks>
         /// <typeparam name="T">The type to query.</typeparam>
-        /// <returns><see langword="true"/> if type <see cref="T"/> is instantiatable.</returns>
+        /// <returns><see langword="true"/> if type <typeparamref name="T"/> is instantiatable.</returns>
         public static bool CanBeInstantiated<T>()
             => GetTypeConstructor<T>().CanBeInstantiated;
 
         /// <summary>
-        /// Sets an explicit instantiation method for the <see cref="T"/> type.
+        /// Sets an explicit instantiation method for the <typeparamref name="T"/> type.
         /// </summary>
         /// <param name="constructor">The instantiation method.</param>
         /// <typeparam name="T">The type to set the explicit instantiation method.</typeparam>
@@ -520,11 +519,11 @@ namespace Unity.Properties
             => GetTypeConstructor<T>().SetExplicitConstructor(constructor);
 
         /// <summary>
-        /// Creates a new instance of the specified <see cref="T"/>.
+        /// Creates a new instance of the specified <typeparamref name="T"/>.
         /// </summary>
         /// <typeparam name="T">The type we want to create a new instance of.</typeparam>
-        /// <returns>A new instance of the <see cref="T"/>.</returns>
-        /// <exception cref="InvalidOperationException">The specified <see cref="T"/> has no available instantiation method.</exception>
+        /// <returns>A new instance of the <typeparamref name="T"/>.</returns>
+        /// <exception cref="InvalidOperationException">The specified <typeparamref name="T"/> has no available instantiation method.</exception>
         public static T Instantiate<T>()
         {
             var constructor = GetTypeConstructor<T>();
@@ -535,11 +534,11 @@ namespace Unity.Properties
         }
 
         /// <summary>
-        /// Creates a new instance of the specified <see cref="T"/>.
+        /// Creates a new instance of the specified <typeparamref name="T"/>.
         /// </summary>
         /// <param name="instance">When this method returns, contains the created instance, if type instantiation succeeded; otherwise, the default value for <typeparamref name="T"/>.</param>
         /// <typeparam name="T">The type to create an instance of.</typeparam>
-        /// <returns><see langword="true"/> if a new instance of type <see cref="T"/> was created; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if a new instance of type <typeparamref name="T"/> was created; otherwise, <see langword="false"/>.</returns>
         public static bool TryInstantiate<T>(out T instance)
         {
             var constructor = GetTypeConstructor<T>();
@@ -555,12 +554,12 @@ namespace Unity.Properties
         }
 
         /// <summary>
-        /// Creates a new instance of the given type type and returns it as <see cref="T"/>.
+        /// Creates a new instance of the given type type and returns it as <typeparamref name="T"/>.
         /// </summary>
         /// <param name="derivedType">The type we want to create a new instance of.</param>
         /// <typeparam name="T">The type we want to create a new instance of.</typeparam>
-        /// <returns>a new instance of the <see cref="T"/> type.</returns>
-        /// <exception cref="ArgumentException">Thrown when the given type is not assignable to <see cref="T"/>.</exception>
+        /// <returns>a new instance of the <typeparamref name="T"/> type.</returns>
+        /// <exception cref="ArgumentException">Thrown when the given type is not assignable to <typeparamref name="T"/>.</exception>
         public static T Instantiate<T>(Type derivedType)
         {
             var constructor = GetTypeConstructor(derivedType);
@@ -572,7 +571,7 @@ namespace Unity.Properties
         }
 
         /// <summary>
-        /// Tries to create a new instance of the given type type and returns it as <see cref="T"/>.
+        /// Tries to create a new instance of the given type type and returns it as <typeparamref name="T"/>.
         /// </summary>
         /// <param name="derivedType">The type we want to create a new instance of.</param>
         /// <param name="value">When this method returns, contains the created instance, if type instantiation succeeded; otherwise, the default value for <typeparamref name="T"/>.</param>
@@ -605,7 +604,7 @@ namespace Unity.Properties
         /// <param name="count">The size of the array to instantiate.</param>
         /// <typeparam name="TArray">The array type to instantiate.</typeparam>
         /// <returns>The array newly created array.</returns>
-        /// <exception cref="ArgumentException">Thrown is count is negative or if <see cref="TArray"/> is not an array type.</exception>
+        /// <exception cref="ArgumentException">Thrown is count is negative or if <typeparamref name="TArray"/> is not an array type.</exception>
         public static TArray InstantiateArray<TArray>(int count = 0)
         {
             if (count < 0)
@@ -643,7 +642,7 @@ namespace Unity.Properties
         /// <param name="instance">When this method returns, contains the created instance, if type instantiation succeeded; otherwise, the default value for <typeparamref name="TArray"/>.</param>
         /// <typeparam name="TArray">The array type.</typeparam>
         /// <returns><see langword="true"/> if the type was instantiated; otherwise, <see langword="false"/>.</returns>
-        /// <exception cref="ArgumentException">Thrown is count is negative or if <see cref="TArray"/> is not an array type.</exception>
+        /// <exception cref="ArgumentException">Thrown is count is negative or if <typeparamref name="TArray"/> is not an array type.</exception>
         public static bool TryInstantiateArray<TArray>(int count, out TArray instance)
         {
             if (count < 0)
@@ -694,7 +693,7 @@ namespace Unity.Properties
         /// <param name="count">The size of the array to instantiate.</param>
         /// <typeparam name="TArray">The array type to instantiate.</typeparam>
         /// <returns>The array newly created array.</returns>
-        /// <exception cref="ArgumentException">Thrown is count is negative or if <see cref="TArray"/> is not an array type.</exception>
+        /// <exception cref="ArgumentException">Thrown is count is negative or if <typeparamref name="TArray"/> is not an array type.</exception>
         public static TArray InstantiateArray<TArray>(Type derivedType, int count = 0)
         {
             if (count < 0)

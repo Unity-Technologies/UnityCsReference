@@ -5,7 +5,7 @@
 namespace Unity.Properties
 {
     /// <summary>
-    /// Implement this interface to intercept the visitation for a specific <see cref="TContainer"/> and <see cref="TValue"/> pair.
+    /// Implement this interface to intercept the visitation for a specific <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
     /// </summary>
     /// <remarks>
     /// * <seealso cref="IVisitPropertyAdapter{TValue}"/>
@@ -16,7 +16,7 @@ namespace Unity.Properties
     public interface IVisitPropertyAdapter<TContainer, TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific a <see cref="TContainer"/> and <see cref="TValue"/> pair.
+        /// Invoked when the visitor encounters specific a <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -25,7 +25,7 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to intercept the visitation for a specific <see cref="TValue"/> type.
+    /// Implement this interface to intercept the visitation for a specific <typeparamref name="TValue"/> type.
     /// </summary>
     /// <remarks>
     /// <seealso cref="IVisitPropertyAdapter{TContainer,TValue}"/>
@@ -35,7 +35,7 @@ namespace Unity.Properties
     public interface IVisitPropertyAdapter<TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific <see cref="TValue"/> type with any container.
+        /// Invoked when the visitor encounters specific <typeparamref name="TValue"/> type with any container.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -65,7 +65,7 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to intercept the visitation for a specific <see cref="TContainer"/> and <see cref="TValue"/> pair.
+    /// Implement this interface to intercept the visitation for a specific <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
     /// </summary>
     /// <remarks>
     /// * <seealso cref="IVisitContravariantPropertyAdapter{TValue}"/>
@@ -76,7 +76,7 @@ namespace Unity.Properties
     public interface IVisitContravariantPropertyAdapter<TContainer, in TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific a <see cref="TContainer"/> and <see cref="TValue"/> pair.
+        /// Invoked when the visitor encounters specific a <typeparamref name="TContainer"/> and <typeparamref name="TValue"/> pair.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>
@@ -85,7 +85,7 @@ namespace Unity.Properties
     }
 
     /// <summary>
-    /// Implement this interface to intercept the visitation for a specific <see cref="TValue"/> type.
+    /// Implement this interface to intercept the visitation for a specific <typeparamref name="TValue"/> type.
     /// </summary>
     /// <remarks>
     /// <seealso cref="IVisitContravariantPropertyAdapter{TContainer,TValue}"/>
@@ -95,7 +95,7 @@ namespace Unity.Properties
     public interface IVisitContravariantPropertyAdapter<in TValue> : IPropertyVisitorAdapter
     {
         /// <summary>
-        /// Invoked when the visitor encounters specific <see cref="TValue"/> type with any container.
+        /// Invoked when the visitor encounters specific <typeparamref name="TValue"/> type with any container.
         /// </summary>
         /// <param name="context">The context being visited.</param>
         /// <param name="container">The container being visited.</param>

@@ -1856,7 +1856,7 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public static int GetContacts(Collider2D collider, ContactPoint2D[] contacts)
         {
-            return GetColliderContactsArray(collider, new ContactFilter2D().NoFilter(), contacts);
+            return GetColliderContactsArray(collider, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this collider.
@@ -1868,7 +1868,7 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public static int GetContacts(Collider2D collider, Collider2D[] colliders)
         {
-            return GetColliderContactsCollidersOnlyArray(collider, new ContactFilter2D().NoFilter(), colliders);
+            return GetColliderContactsCollidersOnlyArray(collider, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this collider.
@@ -1880,7 +1880,7 @@ namespace UnityEngine
         // Get all contacts for this rigidbody.
         public static int GetContacts(Rigidbody2D rigidbody, ContactPoint2D[] contacts)
         {
-            return GetRigidbodyContactsArray(rigidbody, new ContactFilter2D().NoFilter(), contacts);
+            return GetRigidbodyContactsArray(rigidbody, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this rigidbody.
@@ -1892,7 +1892,7 @@ namespace UnityEngine
         // Get all contacts for this rigidbody.
         public static int GetContacts(Rigidbody2D rigidbody, Collider2D[] colliders)
         {
-            return GetRigidbodyContactsCollidersOnlyArray(rigidbody, new ContactFilter2D().NoFilter(), colliders);
+            return GetRigidbodyContactsCollidersOnlyArray(rigidbody, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this rigidbody.
@@ -1938,7 +1938,7 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public static int GetContacts(Collider2D collider, List<ContactPoint2D> contacts)
         {
-            return GetColliderContactsList(collider, new ContactFilter2D().NoFilter(), contacts);
+            return GetColliderContactsList(collider, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this collider.
@@ -1950,7 +1950,7 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public static int GetContacts(Collider2D collider, List<Collider2D> colliders)
         {
-            return GetColliderContactsCollidersOnlyList(collider, new ContactFilter2D().NoFilter(), colliders);
+            return GetColliderContactsCollidersOnlyList(collider, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this collider.
@@ -1962,7 +1962,7 @@ namespace UnityEngine
         // Get all contacts for this rigidbody.
         public static int GetContacts(Rigidbody2D rigidbody, List<ContactPoint2D> contacts)
         {
-            return GetRigidbodyContactsList(rigidbody, new ContactFilter2D().NoFilter(), contacts);
+            return GetRigidbodyContactsList(rigidbody, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this rigidbody.
@@ -1974,7 +1974,7 @@ namespace UnityEngine
         // Get all contacts for this rigidbody.
         public static int GetContacts(Rigidbody2D rigidbody, List<Collider2D> colliders)
         {
-            return GetRigidbodyContactsCollidersOnlyList(rigidbody, new ContactFilter2D().NoFilter(), colliders);
+            return GetRigidbodyContactsCollidersOnlyList(rigidbody, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this rigidbody.
@@ -2795,27 +2795,25 @@ namespace UnityEngine
     [NativeClass("ContactFilter", "struct ContactFilter;")]
     [NativeHeader("Modules/Physics2D/Public/Collider2D.h")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
-    public struct ContactFilter2D
+    public partial struct ContactFilter2D
     {
-        public ContactFilter2D NoFilter()
+        public static ContactFilter2D noFilter => _noFilter;
+        private static ContactFilter2D _noFilter = new()
         {
-            useTriggers = true;
+            useTriggers = true,
+            useLayerMask = false,
+            layerMask = Physics2D.AllLayers,
 
-            useLayerMask = false;
-            layerMask = Physics2D.AllLayers;
+            useDepth = false,
+            useOutsideDepth = false,
+            minDepth = -Mathf.Infinity,
+            maxDepth = Mathf.Infinity,
 
-            useDepth = false;
-            useOutsideDepth = false;
-            minDepth = -Mathf.Infinity;
-            maxDepth = Mathf.Infinity;
-
-            useNormalAngle = false;
-            useOutsideNormalAngle = false;
-            minNormalAngle = 0.0f;
-            maxNormalAngle = NormalAngleUpperLimit;
-
-            return this;
-        }
+            useNormalAngle = false,
+            useOutsideNormalAngle = false,
+            minNormalAngle = 0.0f,
+            maxNormalAngle = NormalAngleUpperLimit
+        };
 
         extern private void CheckConsistency();
 
@@ -3679,12 +3677,12 @@ namespace UnityEngine
         // Get all contacts for this rigidbody.
         public int GetContacts(ContactPoint2D[] contacts)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, contacts);
         }
 
         public int GetContacts(List<ContactPoint2D> contacts)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this rigidbody.
@@ -3701,12 +3699,12 @@ namespace UnityEngine
         // Get all contacts for this rigidbody (collider results).
         public int GetContacts(Collider2D[] colliders)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, colliders);
         }
 
         public int GetContacts(List<Collider2D> colliders)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this rigidbody (collider results).
@@ -3990,6 +3988,13 @@ namespace UnityEngine
         // Gets the method used to combine both material bounce values.
         extern public PhysicsMaterialCombine2D bounceCombine { get; }
 
+        // Gets the contact mask taking into account the layer mask and the body/collider include/exclude masks.
+        extern public LayerMask contactMask { [NativeMethod("GetContactMask_Binding")] get; }
+
+        // Can this collider contact the specified collider.
+        [NativeMethod("CanContact_Binding")]
+        extern public bool CanContact([NotNull] Collider2D collider);
+
         // Get whether this collider is currently touching a specific collider or not.
         extern public bool IsTouching([NotNull] Collider2D collider);
 
@@ -4215,12 +4220,12 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public int GetContacts(ContactPoint2D[] contacts)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, contacts);
         }
 
         public int GetContacts(List<ContactPoint2D> contacts)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), contacts);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, contacts);
         }
 
         // Get filtered contacts for this collider.
@@ -4237,12 +4242,12 @@ namespace UnityEngine
         // Get all contacts for this collider.
         public int GetContacts(Collider2D[] colliders)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, colliders);
         }
 
         public int GetContacts(List<Collider2D> colliders)
         {
-            return Physics2D.GetContacts(this, new ContactFilter2D().NoFilter(), colliders);
+            return Physics2D.GetContacts(this, ContactFilter2D.noFilter, colliders);
         }
 
         // Get filtered contacts for this collider.
@@ -4590,7 +4595,27 @@ namespace UnityEngine
         }
 
         [NativeMethod("CreatePrimitive")]
-        extern private void CreatePrimitive_Internal(int sides, [DefaultValue("Vector2.one")] Vector2 scale, [DefaultValue("Vector2.zero")] Vector2 offset, bool autoRefresh);
+        extern private void CreatePrimitive_Internal(int sides, Vector2 scale, Vector2 offset, bool recreateCollider);
+
+        public bool CreateFromSprite(Sprite sprite, [DefaultValue("0.25f")] float detail = 0.25f, [DefaultValue("200")] byte alphaTolerance = 200, [DefaultValue("true")] bool holeDetection = true)
+        {
+            if (sprite == null)
+            {
+                Debug.LogWarning("Sprite cannot be NULL.", this);
+                return false;
+            }
+
+            if (detail < 0.0f || detail > 1.0f)
+            {
+                Debug.LogWarning("Detail must be in the range [0, 1].", this);
+                return false;
+            }
+
+            return CreateFromSprite_Internal(sprite, detail, alphaTolerance, holeDetection, true);
+        }
+
+        [NativeMethod("CreateFromSprite")]
+        extern private bool CreateFromSprite_Internal([NotNull] Sprite sprite, float detail, byte alphaTolerance, bool holeDetection, bool recreateCollider);
     }
 
     [RequireComponent(typeof(Rigidbody2D))]

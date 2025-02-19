@@ -251,6 +251,11 @@ namespace UnityEngine.UIElements
         internal int Count => m_MenuItems.Count;
 
         /// <summary>
+        /// Determines whether the menu allows duplicate names.
+        /// </summary>
+        public bool allowDuplicateNames { get; set; }
+
+        /// <summary>
         /// Gets the list of menu items.
         /// </summary>
         /// <returns>The list of items in the menu.</returns>

@@ -731,7 +731,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Converts touch or stylus tilt to azimuth angle.
         /// </summary>
-        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be &lt; pi/2</param>
         /// <returns>Azimuth angle as determined by tilt along x and y axese.</returns>
         private static float TiltToAzimuth(Vector2 tilt)
         {
@@ -754,7 +754,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Converts touch or stylus azimuth and altitude to tilt
         /// </summary>
-        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be &lt; pi/2</param>
         /// <returns>Azimuth angle as determined by tilt along x and y axese.</returns>
         private static Vector2 AzimuthAndAlitutudeToTilt(float altitude, float azimuth)
         {
@@ -769,7 +769,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Converts touch or stylus tilt to altitude angle.
         /// </summary>
-        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be < pi/2</param>
+        /// <param name="tilt">Angle relative to the X and Y axis, in radians. abs(tilt.y) must be &lt; pi/2</param>
         /// <returns>Altitude angle as determined by tilt along x and y axese.</returns>
         private static float TiltToAltitude(Vector2 tilt)
         {

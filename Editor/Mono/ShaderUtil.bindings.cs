@@ -383,6 +383,8 @@ namespace UnityEditor
             return PassStageHasKeywordForAPI(s, passIdentifier, keyword.m_Index, shaderType, shaderCompilerPlatform);
         }
 
+        extern internal static Shader[] GetShaderDependencies([NotNull] Shader shader);
+
         [FreeFunction("ShaderUtil::GetCompiledData")] extern internal static byte[] GetCompiledData(
             Shader s, BuildUsageTagSet buildUsageTags, BuildUsageTagGlobal globalUsageTag,
             BuildTargetSelection buildTarget, bool shouldIncludeAllVariants);

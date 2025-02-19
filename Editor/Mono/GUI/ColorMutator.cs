@@ -47,7 +47,7 @@ namespace UnityEditor
         }
 
         [SerializeField] private Color m_OriginalColor;
-        [SerializeField] private Color m_HDRBaseColor;
+        [SerializeField] private Color m_HDRBaseColor; // This field is needed to compute the correct exposure value. Without it, the exposure would have rounding errors.
         [SerializeField] private byte[] m_Color = new byte[4];
         [SerializeField] private float[] m_ColorHdr = new float[4];
         [SerializeField] private float[] m_Hsv = new float[3];
@@ -93,6 +93,7 @@ namespace UnityEditor
             m_ColorHdr[channelIndex] = value / 255f;
             if (channel != RgbaChannel.A)
                 m_ColorHdr[channelIndex] *= Mathf.Pow(2f, m_ExposureValue);
+            m_HDRBaseColor = new Color(m_ColorHdr[0], m_ColorHdr[1], m_ColorHdr[2], m_ColorHdr[3]);
             Color.RGBToHSV(color, out m_Hsv[(int)HsvChannel.H], out m_Hsv[(int)HsvChannel.S], out m_Hsv[(int)HsvChannel.V]);
         }
 

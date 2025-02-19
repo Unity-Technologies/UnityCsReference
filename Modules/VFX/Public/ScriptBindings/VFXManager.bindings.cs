@@ -90,7 +90,7 @@ namespace UnityEngine.VFX
         public static void ProcessCamera(Camera cam)
         {
             PrepareCamera(cam, kDefaultCameraXRSettings);
-            Internal_ProcessCameraCommand(cam, null, kDefaultCameraXRSettings, IntPtr.Zero);
+            Internal_ProcessCameraCommand(cam, null, kDefaultCameraXRSettings, IntPtr.Zero, IntPtr.Zero);
         }
 
         public static void PrepareCamera(Camera cam)
@@ -103,21 +103,26 @@ namespace UnityEngine.VFX
         [Obsolete("Use ProcessCameraCommand with CullingResults to allow culling of VFX per camera")]
         public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd)
         {
-            Internal_ProcessCameraCommand(cam, cmd, kDefaultCameraXRSettings, IntPtr.Zero);
+            Internal_ProcessCameraCommand(cam, cmd, kDefaultCameraXRSettings, IntPtr.Zero, IntPtr.Zero);
         }
 
         [Obsolete("Use ProcessCameraCommand with CullingResults to allow culling of VFX per camera")]
         public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings)
         {
-            Internal_ProcessCameraCommand(cam, cmd, camXRSettings, IntPtr.Zero);
+            Internal_ProcessCameraCommand(cam, cmd, camXRSettings, IntPtr.Zero, IntPtr.Zero);
         }
 
         public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, Rendering.CullingResults results)
         {
-            Internal_ProcessCameraCommand(cam, cmd, camXRSettings, results.ptr);
+            Internal_ProcessCameraCommand(cam, cmd, camXRSettings, results.ptr, IntPtr.Zero);
         }
 
-        extern private static void Internal_ProcessCameraCommand([NotNull] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, IntPtr cullResults);
+        public static void ProcessCameraCommand(Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, Rendering.CullingResults results, Rendering.CullingResults customPassResults)
+        {
+            Internal_ProcessCameraCommand(cam, cmd, camXRSettings, results.ptr, customPassResults.ptr);
+        }
+
+        extern private static void Internal_ProcessCameraCommand([NotNull] Camera cam, CommandBuffer cmd, VFXCameraXRSettings camXRSettings, IntPtr cullResults, IntPtr customPassCullResults);
         extern public static VFXCameraBufferTypes IsCameraBufferNeeded([NotNull] Camera cam);
         extern public static void SetCameraBuffer([NotNull] Camera cam, VFXCameraBufferTypes type, Texture buffer, int x, int y, int width, int height);
 

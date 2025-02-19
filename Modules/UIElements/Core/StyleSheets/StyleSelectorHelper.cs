@@ -97,6 +97,12 @@ namespace UnityEngine.UIElements.StyleSheets
                         match = parts[i].tempData is UQuery.IVisualPredicateWrapper w && w.Predicate(element);
                         break;
                     case StyleSelectorType.PseudoClass:
+                        // Selectors with invalid pseudo states should be rejected
+                        if (selector.pseudoStateMask == StyleSelector.InvalidPseudoStateMask
+                            || selector.negatedPseudoStateMask == StyleSelector.InvalidPseudoStateMask)
+                        {
+                            match = false;
+                        }
                         break;
                     default: // ignore, all errors should have been warned before hand
                         match = false;

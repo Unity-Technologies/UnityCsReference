@@ -283,7 +283,7 @@ namespace UnityEditor.Build.Profile
             m_PlatformConfigs.Clear();
             m_NameLinks.Clear();
             m_AddtionalInfoLabel.Clear();
-            m_BuildProfileNameTextField.value = "";
+            m_BuildProfileNameTextField.value = BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId);
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);

@@ -287,27 +287,13 @@ namespace UnityEditor.EditorTools
         {
             editors.Clear();
 
-            // If the shared tracker is locked, use fallback tracker instance so that the current selection is always
+            // If the shared tracker is locked, use fallback tracker instance so that the active selection is always
             // represented. Addresses case where a single locked inspector is open.
             var shared = ActiveEditorTracker.sharedTracker;
             var activeTracker = shared.isLocked ? ActiveEditorTracker.fallbackTracker : shared;
-            var propertyEditors = PropertyEditor.GetPropertyEditors();
 
-            // Collect editor tools for the shared tracker first, then any locked inspectors or open properties editors
+            // We collect editors only for the tracker that represents the active selection.
             CollectEditorsForTracker(ctx, activeTracker, editors);
-
-            foreach (var propertyEditor in propertyEditors)
-            {
-                if (propertyEditor is InspectorWindow)
-                {
-                    if ((propertyEditor as InspectorWindow).isLocked)
-                        CollectEditorsForTracker(ctx, propertyEditor.tracker, editors);
-                }
-                else
-                {
-                    CollectEditorsForTracker(ctx, propertyEditor.tracker, editors);
-                }
-            }
 
             foreach (var editor in editors)
                 editor.InstantiateEditor();

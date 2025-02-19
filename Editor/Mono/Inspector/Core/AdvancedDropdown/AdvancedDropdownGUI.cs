@@ -16,6 +16,7 @@ namespace UnityEditor.IMGUI.Controls
         {
             public static GUIStyle itemStyle = "DD ItemStyle";
             public static GUIStyle header = "DD HeaderStyle";
+            public static GUIStyle headerEllipsis = "DD HeaderStyle";
             public static GUIStyle checkMark = "DD ItemCheckmark";
             public static GUIStyle lineSeparator = "DefaultLineSeparator";
             public static GUIStyle rightArrow = "ArrowNavigationRight";
@@ -27,6 +28,12 @@ namespace UnityEditor.IMGUI.Controls
             public static SVC<Color> searchBackgroundColor = new SVC<Color>("--theme-toolbar-background-color", Color.black);
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
+
+            static Styles()
+            {
+                headerEllipsis.padding.left = 20;
+                headerEllipsis.clipping = TextClipping.Ellipsis;
+            }
         }
 
         internal static void LoadStyles()
@@ -139,11 +146,16 @@ namespace UnityEditor.IMGUI.Controls
         internal void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed, bool hasParent)
         {
             var content = group.content;
-            m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true), GUILayout.MaxHeight(22));
+            m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true), GUILayout.Height(22));
             bool hovered = m_HeaderRect.Contains(Event.current.mousePosition);
 
             if (Event.current.type == EventType.Repaint)
-                Styles.header.Draw(m_HeaderRect, content, hovered, false, false, false);
+            {
+                var headerContentSize = Styles.header.CalcSize(content);
+                var textAreaWidth = m_HeaderRect.width - Styles.leftArrow.fixedWidth - Styles.header.padding.left - Styles.header.padding.right;
+                var headerStyle = textAreaWidth < headerContentSize.x ? Styles.headerEllipsis : Styles.header;
+                headerStyle.Draw(m_HeaderRect, content, hovered, false, false, false);
+            }
 
             // Back button
             if (hasParent)

@@ -34,12 +34,12 @@ namespace Unity.UI.Builder
         internal List<StyleProperty> variablesItemsSource => m_VariablesItemsSource;
 
         internal static readonly string s_InspectorVariableListName = "variables-list-view";
-        static readonly string s_EmptyListText = "There are no variables within this selector. Click the + icon to create a new variable.";
+        static readonly string s_EmptyListText = "Click the + icon to create a new Variable";
         static readonly string s_VariablesDropdownClassName = "inspector-variables-dropdown";
         static readonly string s_EmptyListClassName = "variables-list-empty";
         static readonly string s_VariablesSectionClassName = "inspector-style-section-foldout-variables";
         static readonly string s_ActiveFieldClassName = "active";
-        static readonly string s_DefaultVariableName = "--new-var";
+        const string s_DefaultVariableName = "--new-var";
         static readonly string s_WarningBoxUssClassName = "warning-info-box";
 
         internal static readonly StyleValueType[] typesArray =
@@ -79,7 +79,7 @@ namespace Unity.UI.Builder
                 item.itemKeywordField.RegisterValueChangedCallback(OnValueChanged);
                 item.itemDimensionField.RegisterValueChangedCallback(OnDimensionChanged);
                 item.itemColorField.RegisterValueChangedCallback(OnColourChanged);
-                item.itemImageField.RegisterValueChangedCallback(OnImageChanged);
+                item.itemAssetField.RegisterValueChangedCallback(OnAssetChanged);
                 item.itemTypeField.RegisterValueChangedCallback(OnTypeChanged);
 
                 item.itemValueField.enabledSelf = true;
@@ -101,8 +101,8 @@ namespace Unity.UI.Builder
                         item.itemColorField.SetValueWithoutNotify(color);
                         break;
                     case StyleValueType.AssetReference:
-                        var image = styleSheet.ReadAssetReference(listItem);
-                        item.itemImageField.SetValueWithoutNotify(image);
+                        var asset = styleSheet.ReadAssetReference(listItem);
+                        item.itemAssetField.SetValueWithoutNotify(asset);
                         break;
                     case StyleValueType.Dimension:
                         var dimensionText = StyleSheetToUss.ValueHandleToUssString(styleSheet, new UssExportOptions(), "",
@@ -130,6 +130,14 @@ namespace Unity.UI.Builder
                 item.itemTypeField.SetValueWithoutNotify(string.Join(" ", listItem.valueType.ToString()));
 
                 EnableWarningBox(item, BuilderConstants.VariableNameFieldMustBeValidMessage, !IsValidName(item.itemNameField.text));
+
+                // Add context menu actions
+                item.contextualMenuManipulator = new ContextualMenuManipulator((evt) =>
+                {
+                    m_VariablesListView.AddToSelection(i);
+                    BuildContextMenu(evt, item);
+                });
+                item.AddManipulator(item.contextualMenuManipulator);
             };
             m_VariablesListView.unbindItem = (e, _) =>
             {
@@ -142,10 +150,18 @@ namespace Unity.UI.Builder
                 item.itemKeywordField.UnregisterValueChangedCallback(OnValueChanged);
                 item.itemDimensionField.UnregisterValueChangedCallback(OnDimensionChanged);
                 item.itemColorField.UnregisterValueChangedCallback(OnColourChanged);
-                item.itemImageField.UnregisterValueChangedCallback(OnImageChanged);
+                item.itemAssetField.UnregisterValueChangedCallback(OnAssetChanged);
                 item.itemTypeField.UnregisterValueChangedCallback(OnTypeChanged);
 
                 EnableWarningBox(item, null, false);
+                item.RemoveManipulator(item.contextualMenuManipulator);
+            };
+
+            m_VariablesListView.destroyItem = (e) =>
+            {
+                var item = e as BuilderInspectorVariablesListItem;
+                item.RemoveManipulator(item.contextualMenuManipulator);
+                item.contextualMenuManipulator = null;
             };
 
             var menu = new GenericDropdownMenu();
@@ -161,8 +177,13 @@ namespace Unity.UI.Builder
                 menu.contentContainer.AddToClassList(s_VariablesDropdownClassName);
             };
 
-            m_VariablesListView.onRemove += OnRemoveVariable;
+            m_VariablesListView.onRemove += DeleteVariable;
             m_VariablesListView.itemIndexChanged += OnListReordered;
+
+            // Change the icon of the listview add button
+            var addButton = m_VariablesListView.Q<Button>("unity-list-view__add-button");
+            addButton.text = string.Empty;
+            addButton.iconImage = EditorGUIUtility.IconContent("Toolbar Plus More", "Add new variable").image as Texture2D;
         }
 
         static string GetTextFieldDefaultValue(StyleValueType type)
@@ -175,18 +196,32 @@ namespace Unity.UI.Builder
             };
         }
 
-        string GenerateDefaultName()
+        string GenerateDefaultName(string baseName = s_DefaultVariableName)
         {
             var suffix = 1;
-            var baseName = s_DefaultVariableName;
-            var name = $"{baseName}{suffix}";
+            if (baseName != s_DefaultVariableName)
+            {
+                var regex = new Regex(@"-(\d+)$");
+                var match = regex.Match(baseName);
+                if (match.Success)
+                {
+                    // Extract the number from the match group
+                    var number = int.Parse(match.Groups[1].Value);
+
+                    // Increment the number and create a new string
+                    suffix = number + 1;
+                    baseName = baseName.Substring(0, match.Index);
+                }
+            }
+
+            var name = $"{baseName}-{suffix}";
 
             if (!m_VariablesItemsSource.Any(prop => prop.name.Equals(name)))
                 return name;
 
             do
             {
-                name = $"{baseName}{suffix}";
+                name = $"{baseName}-{suffix}";
                 suffix++;
             } while (m_VariablesItemsSource.Any(prop => prop.name.Equals(name)));
 
@@ -227,12 +262,12 @@ namespace Unity.UI.Builder
             AfterAddVariable();
         }
 
-        void OnChangeVariableType(StyleValueType type, VisualElement currentRow)
+        void OnChangeVariableType(StyleValueType type, BuilderInspectorVariablesListItem currentRow)
         {
             var row = currentRow.Q(className: s_ActiveFieldClassName);
             if (row == null)
             {
-                row = (currentRow as BuilderInspectorVariablesListItem)?.itemValueField;
+                row = currentRow?.itemValueField;
                 row.AddToClassList(s_ActiveFieldClassName);
             }
 
@@ -249,7 +284,7 @@ namespace Unity.UI.Builder
                 case (StyleValueType.ScalableImage):
                 case (StyleValueType.AssetReference):
                 case (StyleValueType.MissingAssetReference):
-                    currentRow.Q(name: BuilderInspectorVariablesListItem.imageFieldName).AddToClassList(s_ActiveFieldClassName);
+                    currentRow.Q(name: BuilderInspectorVariablesListItem.assetFieldName).AddToClassList(s_ActiveFieldClassName);
                     break;
                 case (StyleValueType.Dimension):
                     currentRow.Q(name: BuilderInspectorVariablesListItem.dimensionFieldName).AddToClassList(s_ActiveFieldClassName);
@@ -283,8 +318,7 @@ namespace Unity.UI.Builder
             m_VariablesListView.RefreshItems();
         }
 
-        // This method is used by the ListView remove footer.
-        internal void OnRemoveVariable(BaseListView listView)
+        internal void DeleteVariable(BaseListView listView)
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
@@ -302,10 +336,9 @@ namespace Unity.UI.Builder
             {
                 foreach (var selectedIndex in listView.selectedIndices)
                 {
-                    if (selectedIndex >= m_VariablesItemsSource.Count)
-                    {
+                    if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
                         continue;
-                    }
+
                     var prop = m_VariablesItemsSource[selectedIndex];
                     if (prop != null)
                     {
@@ -330,7 +363,7 @@ namespace Unity.UI.Builder
             m_VariablesListView.RefreshItems();
         }
 
-        void ReorderVariables()
+        internal void ReorderVariables()
         {
             var variableIndices = new List<int>();
 
@@ -492,7 +525,7 @@ namespace Unity.UI.Builder
             m_Selection.NotifyOfStylingChange();
         }
 
-        void OnImageChanged(ChangeEvent<Object> evt)
+        void OnAssetChanged(ChangeEvent<Object> evt)
         {
             if (evt.elementTarget.GetFirstAncestorOfType<BuilderInspectorVariablesListItem>().userData is not StyleProperty styleProperty)
                 return;
@@ -503,6 +536,118 @@ namespace Unity.UI.Builder
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             m_Selection.NotifyOfStylingChange();
+        }
+
+        void BuildContextMenu(ContextualMenuPopulateEvent evt, BuilderInspectorVariablesListItem currentRow)
+        {
+            var menu = evt.menu;
+            var index = m_VariablesItemsSource.IndexOf(currentRow.userData as StyleProperty);
+            var isRootSelector = currentVisualElement.GetStyleComplexSelector().Equals(m_Inspector.styleSheet.FindSelector(":root"));
+            var multipleSelected = m_VariablesListView.selectedIndices.GetCount() > 1;
+
+            menu.AppendAction("Extract to Global variable", _ =>
+            {
+                ExtractToGlobalVariable();
+            }, _ => isRootSelector ? DropdownMenuAction.Status.Disabled : DropdownMenuAction.Status.Normal);
+
+            menu.AppendAction("Delete", _ =>
+            {
+                DeleteVariable(m_VariablesListView);
+            });
+
+            menu.AppendAction("Duplicate", _ =>
+            {
+                DuplicateVariable();
+            });
+
+            menu.AppendAction("Move Up", _ =>
+            {
+                MoveVariable(index, -1);
+            }, _ => index > 0 && !multipleSelected ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+
+            menu.AppendAction("Move Down", _ =>
+            {
+                MoveVariable(index, 1);
+            }, _ => index < m_VariablesItemsSource.Count - 1 && !multipleSelected ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
+        }
+
+        internal void MoveVariable(int index, int direction)
+        {
+            if (index == -1)
+                return;
+
+            var newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= m_VariablesItemsSource.Count || index < 0 || index >= m_VariablesItemsSource.Count)
+                return;
+
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            (m_VariablesItemsSource[newIndex], m_VariablesItemsSource[index]) = (m_VariablesItemsSource[index], m_VariablesItemsSource[newIndex]);
+
+            ReorderVariables();
+
+            // Select the moved item
+            m_VariablesListView.selectedIndex = newIndex;
+
+            m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
+            m_Selection.NotifyOfStylingChange();
+            m_VariablesListView.RefreshItems();
+        }
+
+        internal void DuplicateVariable()
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            var selectedIndices = m_VariablesListView.selectedIndices;
+            if (selectedIndices.GetCount() == 0)
+                return;
+
+            foreach (var selectedIndex in selectedIndices)
+            {
+                if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
+                    continue;
+
+                var styleProperty = m_VariablesItemsSource[selectedIndex];
+                var newName = GenerateDefaultName(styleProperty.name);
+
+                styleSheet.DuplicatePropertyInSelector(currentVisualElement.GetStyleComplexSelector(), styleProperty, newName);
+            }
+
+            AfterAddVariable();
+        }
+
+        internal void ExtractToGlobalVariable()
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            var selectedIndices = m_VariablesListView.selectedIndices;
+            if (selectedIndices.GetCount() == 0)
+                return;
+
+            // Find root selector
+            var rootSelector = m_Inspector.styleSheet.FindSelector(":root");
+            if (currentVisualElement.GetStyleComplexSelector().Equals(rootSelector))
+            {
+                return;
+            }
+
+            if (rootSelector == null)
+            {
+                rootSelector = BuilderSharedStyles.CreateNewSelector(currentVisualElement.parent, styleSheet, ":root");
+                m_Selection.NotifyOfHierarchyChange(m_Inspector);
+                m_Selection.NotifyOfStylingChange(m_Inspector);
+            }
+
+            foreach (var selectedIndex in selectedIndices)
+            {
+                if (selectedIndex < 0 || selectedIndex >= m_VariablesItemsSource.Count)
+                    continue;
+                var styleProperty = m_VariablesItemsSource[selectedIndex];
+                styleSheet.TransferPropertyToSelector(rootSelector, currentStyleRule, styleProperty);
+            }
+            // Delete the variables from the current element
+            DeleteVariable(m_VariablesListView);
+            m_VariablesListView.RefreshItems();
         }
 
         public void Refresh()

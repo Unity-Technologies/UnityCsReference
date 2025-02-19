@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Text;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -649,33 +651,93 @@ namespace UnityEditor.ShortcutManagement
             return m_SerializedState.selectedModifiers;
         }
 
-        public void RequestRebindOfSelectedEntry(List<KeyCombination> newbinding)
+        public void RequestRebindOfSelectedEntry(List<KeyCombination> newBinding)
         {
-            var conflicts = FindConflictsIfRebound(selectedEntry, newbinding);
-
+            newBinding = CheckAndAdjustReservedModifierUse(newBinding);
+            if (newBinding == null)
+                return;
+            
+            var conflicts = FindConflictsIfRebound(selectedEntry, newBinding);
             if (conflicts.Count == 0)
             {
-                RebindEntry(selectedEntry, newbinding);
+                RebindEntry(selectedEntry, newBinding);
             }
             else
             {
-                var howToHandle = m_ShortcutManagerWindowView.HandleRebindWillCreateConflict(selectedEntry, newbinding, conflicts);
+                var howToHandle = m_ShortcutManagerWindowView.HandleRebindWillCreateConflict(selectedEntry, newBinding, conflicts);
                 switch (howToHandle)
                 {
                     case RebindResolution.DoNotRebind:
                         break;
                     case RebindResolution.CreateConflict:
-                        RebindEntry(selectedEntry, newbinding);
+                        RebindEntry(selectedEntry, newBinding);
                         break;
                     case RebindResolution.UnassignExistingAndBind:
                         foreach (var conflictEntry in conflicts)
                             RebindEntry(conflictEntry, new List<KeyCombination>());
-                        RebindEntry(selectedEntry, newbinding);
+                        RebindEntry(selectedEntry, newBinding);
                         break;
                     default:
                         throw new Exception("Unhandled enum case");
                 }
             }
+        }
+
+        List<KeyCombination> CheckAndAdjustReservedModifierUse(List<KeyCombination> binding)
+        {
+            // Get reserved modifiers of selected entry's context
+            var ctxReservedModifiers = ShortcutModifiers.None;
+            var attribute = selectedEntry.context.GetCustomAttribute<ReserveModifiersAttribute>(true);
+            if (attribute != null)
+                ctxReservedModifiers = attribute.Modifiers;
+
+            // Check if incoming binding includes any of the selected shortcut context's reserved modifiers
+            var bindingUsesReservedModifier = false;
+            if (ctxReservedModifiers != ShortcutModifiers.None)
+            {
+                foreach (var keyCombination in binding)
+                {
+                    if (keyCombination.modifiers.HasFlag(ctxReservedModifiers))
+                    {
+                        bindingUsesReservedModifier = true;
+                        break;
+                    }
+                }
+            }
+
+            if (bindingUsesReservedModifier)
+            {
+                // Build alternative binding with reserved modifiers ommited
+                var altBinding = new List<KeyCombination>();
+                for (int i = 0; i < binding.Count; ++i)
+                {
+                    var altModifiers = binding[i].modifiers & ~ctxReservedModifiers;
+                    altBinding.Add(new KeyCombination(binding[i].keyCode, altModifiers));
+                }
+                
+                // Prompt user
+                var ctxModifiersStr = new StringBuilder();
+                KeyCombination.VisualizeModifiers(ctxReservedModifiers, ctxModifiersStr);
+                    
+                var title = L10n.Tr("Attempt to bind Reserved Modifier");
+                var altBindingStr = KeyCombination.SequenceToString(altBinding);
+                var message = string.Format(
+                    L10n.Tr("You can't bind \"{0}\" to {1}, because {1} contains {3} which is a reserved modifier in the \"{2}\" shortcut context.\n\n" +
+                            "You can choose to bind just \"{4}\" instead. If you do, \"{4}\" will also work with the reserved modifier {3}."),
+                    selectedEntry.displayName,
+                    KeyCombination.SequenceToString(binding),
+                    ObjectNames.NicifyVariableName(selectedEntry.context.Name),
+                    ctxModifiersStr,
+                    altBindingStr);
+                var okLabel = string.Format(L10n.Tr("Bind \'{0}\' instead"), altBindingStr);
+                var cancelLabel = L10n.Tr("Cancel");
+
+                if (EditorUtility.DisplayDialog(title, message, okLabel, cancelLabel))
+                    return altBinding;
+                
+                return null;
+            }
+            return binding;
         }
 
         public void BindSelectedEntryTo(List<KeyCombination> keyCombination)

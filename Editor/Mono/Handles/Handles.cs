@@ -1068,7 +1068,7 @@ namespace UnityEditor
         }
 
         // The camera used for deciding where 3D handles end up
-        public Camera currentCamera { get { return Camera.current; } set { Internal_SetCurrentCamera(value); } }
+        public static Camera currentCamera { get { return Camera.current; } set { Internal_SetCurrentCamera(value); } }
 
 
         internal static Color realHandleColor { get { return color * new Color(1, 1, 1, .5f) + (lighting ? new Color(0, 0, 0, .5f) : new Color(0, 0, 0, 0)); } }

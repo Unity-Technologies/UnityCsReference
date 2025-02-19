@@ -77,7 +77,7 @@ namespace Unity.Hierarchy
 
         /// <summary>
         /// Gets the version of this <see cref="HierarchyViewModel"/>.
-        /// </summary>        
+        /// </summary>
         internal int Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -133,7 +133,9 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="nativePtr">The native pointer.</param>
         /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
-        /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
+        /// <param name="nodesPtr">The pointer to the node data.</param>
+        /// <param name="nodesCount">The number of nodes in the buffer pointed to by <paramref name="nodesPtr"/>.</param>
+        /// <param name="version">The data version.</param>
         HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr nodesPtr, int nodesCount, int version)
         {
             m_Ptr = nativePtr;

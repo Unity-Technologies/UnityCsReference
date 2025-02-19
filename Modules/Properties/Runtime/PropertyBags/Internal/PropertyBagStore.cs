@@ -124,7 +124,7 @@ namespace Unity.Properties.Internal
         /// Gets an interface to the <see cref="ContainerPropertyBag{TContainer}"/> for the given type.
         /// </summary>
         /// <remarks>
-        /// The returned <see cref="IPropertyBag"/> can be used to get the strongly typed generic using the <see cref="IPropertyBag.Accept"/> method.
+        /// The returned <see cref="IPropertyBag"/> can be used to get the strongly typed generic using the <see cref="IPropertyBag.Accept(ITypeVisitor)"/> method.
         /// </remarks>
         /// <param name="type">The container type to resolve the property bag for.</param>
         /// <returns>The resolved property bag.</returns>

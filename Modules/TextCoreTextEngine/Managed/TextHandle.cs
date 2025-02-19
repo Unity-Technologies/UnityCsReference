@@ -131,8 +131,6 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-
-
         public virtual void AddTextInfoToPermanentCache()
         {
             if (useAdvancedText)

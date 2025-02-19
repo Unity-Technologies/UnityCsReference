@@ -117,7 +117,7 @@ namespace UnityEngine.UIElements
         }
         static Dictionary<string, PseudoStateData> s_PseudoStates;
 
-        internal void CachePseudoStateMasks()
+        internal void CachePseudoStateMasks(StyleSheet styleSheet)
         {
             // lazily build a cache of pseudo state names
             if (s_PseudoStates == null)
@@ -142,7 +142,8 @@ namespace UnityEngine.UIElements
                 StyleSelectorPart[] parts = selector.parts;
                 PseudoStates pseudoClassMask = 0;
                 PseudoStates negatedPseudoClassMask = 0;
-                for (int i = 0; i < selector.parts.Length; i++)
+                bool allValid = true;
+                for (int i = 0; i < selector.parts.Length && allValid; i++)
                 {
                     if (selector.parts[i].type == StyleSelectorType.PseudoClass)
                     {
@@ -156,12 +157,23 @@ namespace UnityEngine.UIElements
                         }
                         else
                         {
-                            Debug.LogWarningFormat("Unknown pseudo class \"{0}\"", parts[i].value);
+                            Debug.LogWarningFormat(styleSheet, "Unknown pseudo class \"{0}\" in StyleSheet {1}", parts[i].value, styleSheet.name);
+                            allValid = false;
                         }
                     }
                 }
-                selector.pseudoStateMask = (int)pseudoClassMask;
-                selector.negatedPseudoStateMask = (int)negatedPseudoClassMask;
+
+                if (allValid)
+                {
+                    selector.pseudoStateMask = (int)pseudoClassMask;
+                    selector.negatedPseudoStateMask = (int)negatedPseudoClassMask;
+                }
+                else
+                {
+                    selector.pseudoStateMask = StyleSelector.InvalidPseudoStateMask;
+                    selector.negatedPseudoStateMask = StyleSelector.InvalidPseudoStateMask;
+                }
+
             }
         }
 

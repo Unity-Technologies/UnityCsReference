@@ -20,7 +20,7 @@ namespace Unity.Properties
         /// Gets an interface to the <see cref="PropertyBag{TContainer}"/> for the given type.
         /// </summary>
         /// <remarks>
-        /// The returned <see cref="IPropertyBag"/> can be used to get the strongly typed generic using the <see cref="IPropertyBagAccept"/> interface method.
+        /// The returned <see cref="IPropertyBag"/> can be used to get the strongly typed generic using the <see cref="IPropertyBag.Accept(ITypeVisitor)"/> interface method.
         /// </remarks>
         /// <param name="type">The container type to resolve the property bag for.</param>
         /// <returns>The resolved property bag.</returns>
@@ -208,16 +208,16 @@ namespace Unity.Properties
         }
 
         /// <summary>
-        /// Creates and returns a new instance of <see cref="TContainer"/>.
+        /// Creates and returns a new instance of <typeparamref name="TContainer"/>.
         /// </summary>
-        /// <returns>A new instance of <see cref="TContainer"/>.</returns>
+        /// <returns>A new instance of <typeparamref name="TContainer"/>.</returns>
         public TContainer CreateInstance() => TypeUtility.Instantiate<TContainer>();
 
         /// <summary>
-        /// Tries to create a new instance of <see cref="TContainer"/>.
+        /// Tries to create a new instance of <typeparamref name="TContainer"/>.
         /// </summary>
         /// <param name="instance">When this method returns, contains the created instance, if type instantiation succeeded; otherwise, the default value for <typeparamref name="TContainer"/>.</param>
-        /// <returns><see langword="true"/> if a new instance of type <see cref="TContainer"/> was created; otherwise, <see langword="false"/>.</returns>
+        /// <returns><see langword="true"/> if a new instance of type <typeparamref name="TContainer"/> was created; otherwise, <see langword="false"/>.</returns>
         public bool TryCreateInstance(out TContainer instance) => TypeUtility.TryInstantiate(out instance);
     }
 }

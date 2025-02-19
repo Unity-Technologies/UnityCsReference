@@ -824,10 +824,12 @@ namespace UnityEditor
 
             // We show baking device and performance even when not baking, so the user can see the information after a long bake:
             {
-                string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
-                if (deviceName.Length > 0)
-                    GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
-
+                if (Lightmapping.GetLightingSettingsOrDefaultsFallback().lightmapper == LightingSettings.Lightmapper.ProgressiveGPU)
+                {
+                    string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
+                    if (deviceName.Length > 0)
+                        GUILayout.Label("Baking device: " + deviceName, Styles.labelStyle);
+                }
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();
                 {
                     string text;

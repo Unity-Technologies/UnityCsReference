@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SearchFieldDelayArgs m_SearchFieldDelayArgs;
 
         private const long k_SearchFieldDelayTicks = TimeSpan.TicksPerSecond / 3;
+        private const int k_SearchFieldTextLimit = 500;
         public static readonly string k_SearchPlaceholderText = L10n.Tr("Search {0}");
 
         private IUpmRegistryClient m_UpmRegistryClient;
@@ -38,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public PackageSearchBar()
         {
             m_SearchField = new ToolbarSearchField();
+            m_SearchField.textInputField.maxLength = k_SearchFieldTextLimit;
             Add(m_SearchField);
 
             ResolveDependencies();

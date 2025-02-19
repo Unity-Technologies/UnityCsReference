@@ -134,6 +134,7 @@ namespace UnityEditor
         ASTC = -1,
     }
 
+    [Obsolete("UnityEditor.AndroidCreateSymbols has been deprecated. Use UnityEditor.Android.DebugSymbols.level instead")]
     public enum AndroidCreateSymbols
     {
         Disabled,

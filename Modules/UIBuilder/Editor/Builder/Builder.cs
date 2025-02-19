@@ -11,15 +11,30 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu
+    sealed class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
         static Builder()
         {
             EditorApplication.fileMenuSaved += () =>
             {
                 var builder = ActiveWindow;
-                if (builder != null && builder.document.hasUnsavedChanges)
-                    builder.SaveChanges();
+
+                if (builder != null)
+                {
+                    // Make sure changes are committed before saving the file.
+                    builder.inspector.BeforeSelectionChanged();
+
+                    if (builder.document.hasUnsavedChanges)
+                    {
+                        // Give time to UI Builder to reload the changes if the save caused a reimport. Case UUM-76252.
+                        // See BuilderDocumentOpenUXML.OnPostProcessAsset delayed load.
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (builder.document.hasUnsavedChanges)
+                                builder.SaveChanges();
+                        };
+                    }
+                }
             };
         }
 
@@ -202,11 +217,26 @@ namespace Unity.UI.Builder
             commandHandler.RegisterPane(m_Viewport);
             commandHandler.RegisterToolbar(m_Toolbar);
 
+            // Register key down for save.
+            root.RegisterCallback<KeyDownEvent>(SaveOnKeyDownEvent, TrickleDown.TrickleDown);
+
             m_MiddleSplitView = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
             m_MiddleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
 
             OnEnableAfterAllSerialization();
             closing += m_UnregisterBuilderLibraryContentProcessors;
+        }
+
+        private void SaveOnKeyDownEvent(KeyDownEvent evt)
+        {
+            var isCmdOrCtrlKey = Application.platform == RuntimePlatform.OSXEditor ? evt.commandKey : evt.ctrlKey;
+            if (!isCmdOrCtrlKey || evt.keyCode != KeyCode.S)
+                return;
+
+            if (document.hasUnsavedChanges)
+                SaveChanges();
+
+            evt.StopPropagation();
         }
 
         // Message received when we dock/undock the window.
@@ -286,9 +316,9 @@ namespace Unity.UI.Builder
             base.DiscardChanges();
         }
 
-        public void ReloadDocument()
+        public bool ReloadDocument()
         {
-            m_Toolbar.ReloadDocument();
+            return m_Toolbar.ReloadDocument();
         }
 
         protected override void OnEnable()
@@ -302,13 +332,27 @@ namespace Unity.UI.Builder
                 SetupPanel();
             // Sometimes, the panel is not already set
             else
-                rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetupPanel());
+                rootVisualElement.RegisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+        }
+
+        void SetupPanelAttach(AttachToPanelEvent evt)
+        {
+            SetupPanel();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
+            Dispose();
+        }
+
+        public void Dispose()
+        {
             closing -= m_UnregisterBuilderLibraryContentProcessors;
+            rootVisualElement.UnregisterCallback<KeyDownEvent>(SaveOnKeyDownEvent, TrickleDown.TrickleDown);
+            rootVisualElement.UnregisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+            rootVisualElement.Clear();
+            m_Inspector.Dispose();
         }
 
         private void Update()
@@ -351,13 +395,20 @@ namespace Unity.UI.Builder
                 builderWindow.Focus();
             }
 
+            bool validAsset;
             if (builderWindow.document.visualTreeAsset != asset)
             {
-                builderWindow.LoadDocument(asset);
+                validAsset = builderWindow.LoadDocument(asset);
             }
             else
             {
-                builderWindow.ReloadDocument();
+                validAsset = builderWindow.ReloadDocument();
+            }
+
+            if (!validAsset)
+            {
+                builderWindow.NewDocument();
+                return false; // Let user open the asset in the IDE.
             }
 
             return true;

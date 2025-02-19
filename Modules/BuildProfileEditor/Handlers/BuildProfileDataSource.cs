@@ -23,20 +23,20 @@ namespace UnityEditor.Build.Profile.Handlers
         static string GetDefaultNewProfilePath(string platformDisplayName, string variantName = null)
         {
             if (variantName == null)
-                return $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile.asset";
-            return $"{k_AssetFolderPath}/New {SanitizeFileName(platformDisplayName)} Profile - {SanitizeFileName(variantName)}.asset";
+                return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)}.asset";
+            return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)} - {SanitizeFileName(variantName)}.asset";
         }
 
-        static string GetProfilePathWithProvidedName(string platformDisplayName, string variantName = null)
+        static string GetProfilePathWithProvidedName(GUID platformId, string customProfileName, string variantName = null)
         {
-            if (string.IsNullOrEmpty(platformDisplayName))
+            if (string.IsNullOrEmpty(customProfileName))
             {
-                return GetDefaultNewProfilePath(platformDisplayName, variantName);
+                return GetDefaultNewProfilePath(BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId), variantName);
             }
             // A valid name should be provided already but do the sanity check anyways.
             if (variantName == null)
-                return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)}.asset";
-            return $"{k_AssetFolderPath}/{SanitizeFileName(platformDisplayName)}-{SanitizeFileName(variantName)}.asset";
+                return $"{k_AssetFolderPath}/{SanitizeFileName(customProfileName)}.asset";
+            return $"{k_AssetFolderPath}/{SanitizeFileName(customProfileName)} - {SanitizeFileName(variantName)}.asset";
         }
 
         static string GetDefaultNewProfilePath(GUID platformGuid)
@@ -92,7 +92,7 @@ namespace UnityEditor.Build.Profile.Handlers
         internal static void CreateNewAssetWithName(GUID platformId, string platformDisplayName, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
             EnsureCustomBuildProfileFolderExists();
-            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfile.CreateInstance(platformId, GetProfilePathWithProvidedName(platformId, platformDisplayName, preconfiguredSettingsVariantName), preconfiguredSettingsVariant, packagesToAdd);
         }
 
         /// <summary>

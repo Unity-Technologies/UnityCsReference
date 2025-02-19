@@ -14,7 +14,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
-    internal class UITKTextJobSystem
+    class UITKTextJobSystem
     {
         class ManagedJobData
         {
@@ -163,7 +163,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void GenerateTextJobified(MeshGenerationContext mgc, object _)
+        void GenerateTextJobified(MeshGenerationContext mgc, object _)
         {
             TextCore.Text.TextGenerator.IsExecutingJob = false;
             k_UpdateMainThreadMarker.Begin();
@@ -235,7 +235,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static void ConvertMeshInfoToUIRVertex(MeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
+        static void ConvertMeshInfoToUIRVertex(MeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
         {
             lock (s_MaterialPool)
             {

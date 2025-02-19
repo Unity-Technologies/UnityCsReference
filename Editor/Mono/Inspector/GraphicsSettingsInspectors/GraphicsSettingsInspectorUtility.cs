@@ -646,7 +646,7 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
                         if (s_EventCounter != 0)
                             return;
 
-                        scrollView.UpdateScrollers(false, true);
+                        scrollView.UpdateScrollers(scrollView.needsHorizontal, true);
                         ScrollTo(field, scrollView);
                     });
                     foldout.value = true;
@@ -668,14 +668,17 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         static void ScrollTo<T>(T field, ScrollView scrollView)
             where T : VisualElement
         {
-            scrollView.ScrollTo(field);
-            field.AddToClassList(highlightableClass);
-            field.AddToClassList(highlightableColorClass);
-            field.RegisterCallbackOnce<TransitionEndEvent>(_ =>
+            scrollView.schedule.Execute(() =>
             {
-                field.RemoveFromClassList(highlightableColorClass);
+                scrollView.ScrollTo(field);
+                field.AddToClassList(highlightableClass);
+                field.AddToClassList(highlightableColorClass);
                 field.RegisterCallbackOnce<TransitionEndEvent>(_ =>
-                    field.RemoveFromClassList(highlightableClass));
+                {
+                    field.RemoveFromClassList(highlightableColorClass);
+                    field.RegisterCallbackOnce<TransitionEndEvent>(_ =>
+                        field.RemoveFromClassList(highlightableClass));
+                });
             });
         }
 

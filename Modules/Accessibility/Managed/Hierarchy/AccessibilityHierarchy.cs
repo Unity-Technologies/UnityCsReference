@@ -219,7 +219,7 @@ namespace UnityEngine.Accessibility
 
         /// <summary>
         /// Removes the node from the hierarchy. Can also optionally remove nodes under the given node depending on the value of
-        /// the <see cref="removeChildren"/> parameter.
+        /// the <paramref name="removeChildren"/> parameter.
         /// </summary>
         /// <param name="node">The node to remove.</param>
         /// <param name="removeChildren">Default value is @@true@@. If removeChildren is @@false@@, Unity grafts the child nodes to the parent.</param>

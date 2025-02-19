@@ -5,7 +5,7 @@
 using System.IO;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
-
+using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEditor.TextCore.Text
 {
@@ -354,7 +354,7 @@ namespace UnityEditor.TextCore.Text
         }
 
         //This function is used for debugging and fixing potentially broken font atlas links.
-        [MenuItem("CONTEXT/Font Asset/Extract Atlas", priority = 2101)]
+        [MenuItem("CONTEXT/Font Asset/Extract Atlas", priority = 2102)]
         static void ExtractAtlas(MenuCommand command)
         {
             FontAsset font = command.context as FontAsset;
@@ -387,13 +387,13 @@ namespace UnityEditor.TextCore.Text
         /// Clear Character and Glyph data (only).
         /// </summary>
         /// <param name="command"></param>
-        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", validate = true, priority = 2102)]
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", validate = true, priority = 2103)]
         static bool ClearFontCharacterDataValidate(MenuCommand command)
         {
             return AssetDatabase.IsOpenForEdit(command.context);
         }
 
-        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", priority = 2102)]
+        [MenuItem("CONTEXT/FontAsset/Clear Dynamic Data", priority = 2103)]
         static void ClearFontCharacterData(MenuCommand command)
         {
             FontAsset fontAsset = command.context as FontAsset;
@@ -415,6 +415,29 @@ namespace UnityEditor.TextCore.Text
             fontAsset.ClearCharacterAndGlyphTablesInternal();
 
             TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
+        }
+
+                [MenuItem("CONTEXT/FontAsset/Reset FaceInfo", priority = 2101)]
+        static void ResetFaceInfo(MenuCommand command)
+        {
+            FontAsset fontAsset = command.context as FontAsset;
+
+            if (fontAsset == null)
+                return;
+
+            if (Selection.activeObject != fontAsset)
+                Selection.activeObject = fontAsset;
+
+            if (fontAsset.LoadFontFace() != FontEngineError.Success)
+                return;
+
+            fontAsset.faceInfo = FontEngine.GetFaceInfo();
+            TextResourceManager.RebuildFontAssetCache();
+            TextEventManager.ON_FONT_PROPERTY_CHANGED(true, fontAsset);
+
+            EditorUtility.SetDirty(fontAsset);
+            AssetDatabase.SaveAssetIfDirty(fontAsset);
+            AssetDatabase.Refresh();
         }
 
         /// <summary>

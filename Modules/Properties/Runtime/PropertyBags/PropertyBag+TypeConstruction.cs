@@ -9,10 +9,10 @@ namespace Unity.Properties
     static partial class PropertyBag
     {
         /// <summary>
-        /// Constructs a new instance of the given <see cref="TContainer"/> type.
+        /// Constructs a new instance of the given <typeparamref name="TContainer"/> type.
         /// </summary>
         /// <typeparam name="TContainer">The container type to construct.</typeparam>
-        /// <returns>A new instance of <see cref="TContainer"/>.</returns>
+        /// <returns>A new instance of <typeparamref name="TContainer"/>.</returns>
         public static TContainer CreateInstance<TContainer>()
         {
             var propertyBag = PropertyBagStore.GetPropertyBag<TContainer>();

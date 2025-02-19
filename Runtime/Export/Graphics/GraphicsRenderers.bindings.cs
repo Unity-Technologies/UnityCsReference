@@ -243,6 +243,7 @@ namespace UnityEngine
         extern public float shadowBias          { get; set; }
 
         extern public bool generateLightingData { get; set; }
+        extern public bool applyActiveColorSpace { get; set; }
 
         extern public LineTextureMode textureMode { get; set; }
         extern public LineAlignment   alignment   { get; set; }
@@ -330,6 +331,7 @@ namespace UnityEngine
         extern public float shadowBias          { get; set; }
 
         extern public bool generateLightingData { get; set; }
+        extern public bool applyActiveColorSpace { get; set; }
 
         extern public LineTextureMode textureMode { get; set; }
         extern public LineAlignment   alignment   { get; set; }

@@ -23,7 +23,7 @@ namespace Unity.Properties
         }
 
         /// <summary>
-        /// An enumerator struct to enumerate all properties for the given <see cref="TContainer"/>.
+        /// An enumerator struct to enumerate all properties for the given <typeparamref name="TContainer"/>.
         /// </summary>
         public struct Enumerator : IEnumerator<IProperty<TContainer>>
         {

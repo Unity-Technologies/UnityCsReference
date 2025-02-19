@@ -101,6 +101,8 @@ namespace UnityEditor.UIElements
             base.Render();
         }
 
+        internal override IGenericMenu CreateMenu() => new GenericOSMenu();
+
         internal override Color HyperlinkColor
         {
             get

@@ -175,8 +175,18 @@ namespace UnityEditor.ShortcutManagement
 
         public static void RemoveAppStatusBarClient()
         {
-            s_Clients.RemoveWhere(c => c is ShortcutHelperBar);
+            s_Clients.RemoveWhere(IsShortcutHelperBar);
             ClearIfNoClients();
+        }
+
+        static bool IsShortcutHelperBar(IShortcutUpdate client)
+        {
+            if (client is ShortcutHelperBar bar)
+            {
+                bar.OnDisable();
+                return true;
+            }
+            return false;
         }
 
         static void UpdateClients()

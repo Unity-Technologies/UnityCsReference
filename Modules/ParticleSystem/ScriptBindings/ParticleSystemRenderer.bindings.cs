@@ -39,6 +39,7 @@ namespace UnityEngine
         extern public bool allowRoll { get; set; }
         extern public bool freeformStretching { get; set; }
         extern public bool rotateWithStretchDirection { get; set; }
+        extern public bool applyActiveColorSpace { get; set; }
 
         // Mesh used as particle instead of billboarded texture.
         extern public Mesh mesh
