@@ -17,11 +17,12 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporter.deprecated.h")]
     [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterUtils.h")]
+    [NativeHeader("Editor/Src/AssetPipeline/TextureImporting/TextureImporterPlatformSettingsUtils.h")]
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public sealed partial class TextureImporter : AssetImporter
     {
         [FreeFunction]
-        internal static extern string GetFixedPlatformName(string platform);
+        internal static extern string GetTexturePlatformSerializationName(string platformName);
 
         [Obsolete("textureFormat is no longer accessible at the TextureImporter level. For old 'simple' formats use the textureCompression property for the equivalent automatic choice (Uncompressed for TrueColor, Compressed and HQCommpressed for 16 bits). For platform specific formats use the [[PlatformTextureSettings]] API. Using this setter will setup various parameters to match the new automatic system as well as possible. Getter will return the last value set.")]
         public extern TextureImporterFormat textureFormat
@@ -103,8 +104,7 @@ namespace UnityEditor
         // public API will always return a valid TextureImporterPlatformSettings, creating it based on the default one if it did not exist.
         public TextureImporterPlatformSettings GetPlatformTextureSettings(string platform)
         {
-            // make sure we are converting the settings to use the proper BuildTarget name to get them (the way it works on other importers)
-            platform = GetFixedPlatformName(platform);
+            platform = GetTexturePlatformSerializationName(platform); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
 
             TextureImporterPlatformSettings dest = GetPlatformTextureSetting_Internal(platform);
             if (platform != dest.name)
@@ -122,27 +122,24 @@ namespace UnityEditor
 
         public TextureImporterFormat GetAutomaticFormat(string platform)
         {
-            platform = GetFixedPlatformName(platform);
+            platform = GetTexturePlatformSerializationName(platform); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
             TextureImporterSettings settings = new TextureImporterSettings();
             ReadTextureSettings(settings);
             TextureImporterPlatformSettings platformSettings = GetPlatformTextureSettings(platform);
 
-            List<BuildPlatform> validPlatforms = BuildPlatforms.instance.GetValidPlatforms();
-            foreach (BuildPlatform bp in validPlatforms)
+            BuildTarget buildTarget = BuildPipeline.GetBuildTargetByName(platform);
+            if (buildTarget != BuildTarget.NoTarget)
             {
-                if (bp.name == platform)
-                {
-                    return DefaultFormatFromTextureParameters(settings,
-                        !platformSettings.overridden ? GetDefaultPlatformTextureSettings() : platformSettings,
-                        DoesSourceTextureHaveAlpha(),
-                        IsSourceTextureHDR(),
-                        bp.defaultTarget);
+                return DefaultFormatFromTextureParameters(settings,
+                    !platformSettings.overridden ? GetDefaultPlatformTextureSettings() : platformSettings,
+                    DoesSourceTextureHaveAlpha(),
+                    IsSourceTextureHDR(),
+                    buildTarget);
 
-                    // Regarding the "GetDefaultPlatformTextureSettings" call: in case 1281084, we made it so that platform settings stop automatically
-                    // resetting to the default platform's settings when the platform override is disabled. This introduced a regression where
-                    // "GetAutomaticFormat" would not return the actual format used by platforms with a disabled override, (as in, the one indicated in
-                    // the default platform's settings) which is why we pass in the default platform's settings instead.
-                }
+                // Regarding the "GetDefaultPlatformTextureSettings" call: in case 1281084, we made it so that platform settings stop automatically
+                // resetting to the default platform's settings when the platform override is disabled. This introduced a regression where
+                // "GetAutomaticFormat" would not return the actual format used by platforms with a disabled override, (as in, the one indicated in
+                // the default platform's settings) which is why we pass in the default platform's settings instead.
             }
 
             return TextureImporterFormat.Automatic;
@@ -183,8 +180,7 @@ namespace UnityEditor
         // Set specific target platform settings
         public void SetPlatformTextureSettings(TextureImporterPlatformSettings platformSettings)
         {
-            // we need to fix the name in case the user changed it to some mismatching value
-            platformSettings.name = GetFixedPlatformName(platformSettings.name);
+            platformSettings.name = GetTexturePlatformSerializationName(platformSettings.name); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
             SetPlatformTextureSettings_Internal(platformSettings);
         }
 
@@ -194,7 +190,8 @@ namespace UnityEditor
 
         public void ClearPlatformTextureSettings(string platform)
         {
-            ClearPlatformTextureSettings_Internal(GetFixedPlatformName(platform));
+            platform = GetTexturePlatformSerializationName(platform); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
+            ClearPlatformTextureSettings_Internal(platform);
         }
 
         [FreeFunction]

@@ -559,6 +559,8 @@ By default, Windows will combine these under a single taskbar item.");
 
             if (m_EditorTextRenderingMode == EditorTextRenderingMode.SDF)
                 m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
+            else
+                EditorGUILayout.HelpBox("Bitmap fonts are only supported at full resolutions (100%, 200%). Scaling to fractional resolutions is not supported yet.", MessageType.Warning);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {

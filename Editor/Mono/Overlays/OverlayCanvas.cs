@@ -995,8 +995,15 @@ namespace UnityEditor.Overlays
         {
             if(data == null)
                 data = FindSaveData(overlay);
-            
-            EditorJsonUtility.FromJsonOverwrite(data.contents, overlay);
+
+            try
+            {
+                EditorJsonUtility.FromJsonOverwrite(data.contents, overlay);
+            }
+            catch (ArgumentException)
+            {
+                data.contents = string.Empty;
+            }
 
             #pragma warning disable 618
             if(string.IsNullOrEmpty(data.contents))

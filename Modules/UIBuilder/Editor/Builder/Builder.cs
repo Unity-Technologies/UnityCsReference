@@ -11,7 +11,7 @@ using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu
+    sealed class Builder : BuilderPaneWindow, IBuilderViewportWindow, IHasCustomMenu, IDisposable
     {
         static Builder()
         {
@@ -309,13 +309,26 @@ namespace Unity.UI.Builder
                 SetupPanel();
             // Sometimes, the panel is not already set
             else
-                rootVisualElement.RegisterCallback<AttachToPanelEvent>(e => SetupPanel());
+                rootVisualElement.RegisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+        }
+
+        void SetupPanelAttach(AttachToPanelEvent evt)
+        {
+            SetupPanel();
         }
 
         protected override void OnDisable()
         {
             base.OnDisable();
+            Dispose();
+        }
+
+        public void Dispose()
+        {
             closing -= m_UnregisterBuilderLibraryContentProcessors;
+            rootVisualElement.UnregisterCallback<AttachToPanelEvent>(SetupPanelAttach);
+            rootVisualElement.Clear();
+            m_Inspector.Dispose();
         }
 
         private void Update()

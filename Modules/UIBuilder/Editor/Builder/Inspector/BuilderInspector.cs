@@ -18,7 +18,7 @@ using UnityEditor.UIElements.Bindings;
 
 namespace Unity.UI.Builder
 {
-    internal class BuilderInspector : BuilderPaneContent, IBuilderSelectionNotifier
+    internal sealed class BuilderInspector : BuilderPaneContent, IBuilderSelectionNotifier, IDisposable
     {
         enum Section
         {
@@ -359,6 +359,13 @@ namespace Unity.UI.Builder
                 HelpBoxMessageType.Warning);
             helpBox.style.marginLeft = 0.0f;
             scaleModeWarningPlaceHolder.Add(helpBox);
+        }
+
+        public void Dispose()
+        {
+            m_LocalStylesSection.Dispose();
+            m_AttributesSection.Dispose();
+            m_HeaderSection.Dispose();
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)

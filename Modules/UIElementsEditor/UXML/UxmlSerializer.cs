@@ -789,6 +789,29 @@ namespace UnityEditor.UIElements
                 if (!vea.TryGetAttributeValue(nameof(VisualElement.name), out var elementName) || string.IsNullOrEmpty(elementName))
                     continue;
 
+                var parentAsset = templateVta.GetParentAsset(vea);
+                var nameInsertIndex = namesCopy.Count;
+                var idInsertIndex = idsCopy.Count;
+                var rootElement = templateVta.GetRootUxmlElement();
+
+                // For attribute overrides, we need to take into account template assets in the hierarchy
+                // from the root to the current element.
+                while (parentAsset != rootElement)
+                {
+                    if (parentAsset is TemplateAsset)
+                    {
+                        if (parentAsset.TryGetAttributeValue(nameof(VisualElement.name), out var parentElementName) &&
+                            !string.IsNullOrEmpty(parentElementName))
+                        {
+                            namesCopy.Insert(nameInsertIndex, parentElementName);
+                        }
+
+                        idsCopy.Insert(idInsertIndex, parentAsset.id);
+                    }
+
+                    parentAsset = templateVta.GetParentAsset(parentAsset);
+                }
+
                 namesCopy.Add(elementName);
                 idsCopy.Add(vea.id);
 

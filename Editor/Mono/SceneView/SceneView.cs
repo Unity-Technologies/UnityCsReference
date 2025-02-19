@@ -2034,7 +2034,7 @@ namespace UnityEditor
 
             // UUM-90436. UITK's MouseEnterEvent/MouseEnterWindowEvent callbacks that
             // drive `viewportsUnderMouse` seem to not fire reliably when a pen tablet is used.
-            if (!sceneViewMotion.viewportsUnderMouse && 
+            if (!sceneViewMotion.viewportsUnderMouse &&
                 (evt.type == EventType.MouseDown || evt.type == EventType.MouseMove))
                 sceneViewMotion.viewportsUnderMouse = true;
 
