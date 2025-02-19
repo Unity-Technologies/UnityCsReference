@@ -364,5 +364,11 @@ namespace UnityEngine.UIElements
 
             s_MarkerPoll.End();
         }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            PerformTrackingOperations();
+        }
     }
 }

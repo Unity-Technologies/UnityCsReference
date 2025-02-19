@@ -77,9 +77,7 @@ namespace UnityEditor
             public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
             public static readonly GUIContent vulkanSettingsTitle = EditorGUIUtility.TrTextContent("Vulkan Settings");
             public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
-            public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TrTextContent("Mac App Store Options");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
-            public static readonly GUIContent macConfigurationTitle = EditorGUIUtility.TrTextContent("Mac Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Stack Trace*");
             public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
@@ -89,8 +87,6 @@ namespace UnityEditor
             public static readonly GUIContent usePlayerLog = EditorGUIUtility.TrTextContent("Use Player Log");
             public static readonly GUIContent resizableWindow = EditorGUIUtility.TrTextContent("Resizable Window");
             public static readonly GUIContent forceSingleInstance = EditorGUIUtility.TrTextContent("Force Single Instance");
-            public static readonly GUIContent overrideDefaultApplicationIdentifier = EditorGUIUtility.TrTextContent("Override Default Bundle Identifier");
-            public static readonly GUIContent bundleIdentifier = EditorGUIUtility.TrTextContent("Bundle Identifier");
 
             public static readonly GUIContent shaderSectionTitle = EditorGUIUtility.TrTextContent("Shader Settings");
             public static readonly GUIContent shaderVariantLoadingTitle = EditorGUIUtility.TrTextContent("Shader Variant Loading Settings");
@@ -129,9 +125,6 @@ namespace UnityEditor
             public static readonly GUIContent UIRequiresFullScreen = EditorGUIUtility.TrTextContent("Requires Fullscreen");
             public static readonly GUIContent UIStatusBarHidden = EditorGUIUtility.TrTextContent("Status Bar Hidden");
             public static readonly GUIContent UIStatusBarStyle = EditorGUIUtility.TrTextContent("Status Bar Style");
-            public static readonly GUIContent useMacAppStoreValidation = EditorGUIUtility.TrTextContent("Mac App Store Validation");
-            public static readonly GUIContent macAppStoreCategory = EditorGUIUtility.TrTextContent("Category", "'LSApplicationCategoryType'");
-            public static readonly GUIContent macOSURLSchemes = EditorGUIUtility.TrTextContent("Supported URL schemes*");
             public static readonly GUIContent fullscreenMode = EditorGUIUtility.TrTextContent("Fullscreen Mode ", " Not all platforms support all modes");
             public static readonly GUIContent exclusiveFullscreen = EditorGUIUtility.TrTextContent("Exclusive Fullscreen");
             public static readonly GUIContent fullscreenWindow = EditorGUIUtility.TrTextContent("Fullscreen Window");
@@ -181,7 +174,6 @@ namespace UnityEditor
             public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
             public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*", "String shown to the user when requesting to use the device microphone. Written to the NSMicrophoneUsageDescription field in Xcode project's info.plist file");
-            public static readonly GUIContent bluetoothUsageDescription = EditorGUIUtility.TrTextContent("Bluetooth Usage Description*", "String shown to the user when requesting to use the device bluetooth. Written to the NSBluetoothAlwaysUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
@@ -342,9 +334,6 @@ namespace UnityEditor
 
         // macOS
         SerializedProperty m_ApplicationBundleVersion;
-        SerializedProperty m_UseMacAppStoreValidation;
-        SerializedProperty m_MacAppStoreCategory;
-        SerializedProperty m_MacURLSchemes;
 
         // vulkan
         SerializedProperty m_VulkanNumSwapchainBuffers;
@@ -359,7 +348,6 @@ namespace UnityEditor
         SerializedProperty m_CameraUsageDescription;
         SerializedProperty m_LocationUsageDescription;
         SerializedProperty m_MicrophoneUsageDescription;
-        SerializedProperty m_BluetoothUsageDescription;
 
         SerializedProperty m_IPhoneScriptCallOptimization;
 
@@ -401,7 +389,6 @@ namespace UnityEditor
 
         SerializedProperty m_OverrideDefaultApplicationIdentifier;
         SerializedProperty m_ApplicationIdentifier;
-        SerializedProperty m_BuildNumber;
 
         // General
         SerializedProperty m_CompanyName;
@@ -621,7 +608,6 @@ namespace UnityEditor
 
             m_OverrideDefaultApplicationIdentifier = FindPropertyAssert("overrideDefaultApplicationIdentifier");
             m_ApplicationIdentifier         = FindPropertyAssert("applicationIdentifier");
-            m_BuildNumber                   = FindPropertyAssert("buildNumber");
 
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
             if (m_ApplicationBundleVersion == null)
@@ -641,7 +627,6 @@ namespace UnityEditor
             m_CameraUsageDescription        = FindPropertyAssert("cameraUsageDescription");
             m_LocationUsageDescription      = FindPropertyAssert("locationUsageDescription");
             m_MicrophoneUsageDescription    = FindPropertyAssert("microphoneUsageDescription");
-            m_BluetoothUsageDescription     = FindPropertyAssert("bluetoothUsageDescription");
 
             m_EnableInternalProfiler        = FindPropertyAssert("enableInternalProfiler");
             m_ActionOnDotNetUnhandledException  = FindPropertyAssert("actionOnDotNetUnhandledException");
@@ -689,9 +674,6 @@ namespace UnityEditor
             m_BakeCollisionMeshes              = FindPropertyAssert("bakeCollisionMeshes");
             m_DedicatedServerOptimizations     = FindPropertyAssert("dedicatedServerOptimizations");
             m_ResizableWindow                  = FindPropertyAssert("resizableWindow");
-            m_UseMacAppStoreValidation         = FindPropertyAssert("useMacAppStoreValidation");
-            m_MacAppStoreCategory              = FindPropertyAssert("macAppStoreCategory");
-            m_MacURLSchemes                    = FindPropertyAssert("macOSURLSchemes");
             m_VulkanNumSwapchainBuffers        = FindPropertyAssert("vulkanNumSwapchainBuffers");
             m_VulkanEnableLateAcquireNextImage = FindPropertyAssert("vulkanEnableLateAcquireNextImage");
             m_VulkanEnableCommandBufferRecycling = FindPropertyAssert("vulkanEnableCommandBufferRecycling");
@@ -732,9 +714,15 @@ namespace UnityEditor
             var validPlatformsLength = validPlatforms.Length;
             m_SettingsExtensions = new ISettingEditorExtension[validPlatformsLength];
             var currentPlatform = 0;
+            var isStandaloneGroup = EditorUserBuildSettings.activeBuildTargetGroup == BuildTargetGroup.Standalone;
             for (int i = 0; i < validPlatformsLength; i++)
             {
-                string module = ModuleManager.GetTargetStringFromBuildTargetGroup(validPlatforms[i].namedBuildTarget.ToBuildTargetGroup());
+                // Show the settings of the active standalone platform for the standalone tab in global player settings
+                var buildTargetGroup = validPlatforms[i].namedBuildTarget.ToBuildTargetGroup();
+                var module = (isStandaloneGroup && buildTargetGroup == BuildTargetGroup.Standalone) ?
+                    ModuleManager.GetTargetStringFromBuildTarget(EditorUserBuildSettings.activeBuildTarget) :
+                    ModuleManager.GetTargetStringFromBuildTargetGroup(buildTargetGroup);
+
                 m_SettingsExtensions[i] = ModuleManager.GetEditorSettingsExtension(module);
                 if (m_SettingsExtensions[i] != null)
                     m_SettingsExtensions[i].OnEnable(this);
@@ -810,7 +798,7 @@ namespace UnityEditor
                 var buildTarget = validPlatforms[i].defaultTarget;
                 var namedBuildTarget = validPlatforms[i].namedBuildTarget;
                 var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUIDFromBuildTarget(namedBuildTarget, buildTarget);
-                
+
                 // Player settings tabs are shown by BuildPlatform/NamedBuildTarget, so we need to compare the
                 // NamedBuildTarget in addition to the base platform guid for standalone and server platforms
                 var isStandalone = namedBuildTarget == NamedBuildTarget.Standalone && isBuildProfilePlatformStandalone;
@@ -2855,36 +2843,10 @@ namespace UnityEditor
         private void OtherSectionIdentificationGUI(BuildPlatform platform, ISettingEditorExtension settingsExtension)
         {
             // Identification
-
             if (settingsExtension != null && settingsExtension.HasIdentificationGUI())
             {
                 GUILayout.Label(SettingsContent.identificationTitle, EditorStyles.boldLabel);
                 settingsExtension.IdentificationSectionGUI();
-
-                EditorGUILayout.Space();
-            }
-            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone && CanShowPlatformSettingsForHostPlatform(BuildTarget.StandaloneOSX, platform))
-            {
-                // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
-                GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
-
-                EditorGUILayout.PropertyField(m_OverrideDefaultApplicationIdentifier, SettingsContent.overrideDefaultApplicationIdentifier);
-
-                using (var horizontal = new EditorGUILayout.HorizontalScope())
-                {
-                    using (new EditorGUI.PropertyScope(horizontal.rect, GUIContent.none, m_OverrideDefaultApplicationIdentifier))
-                    {
-                        using (new EditorGUI.IndentLevelScope())
-                        {
-                            ShowApplicationIdentifierUI(BuildTargetGroup.Standalone, SettingsContent.bundleIdentifier.text, "'CFBundleIdentifier'");
-                        }
-                    }
-                }
-
-                PlayerSettingsEditor.ShowBuildNumberUI(m_BuildNumber, NamedBuildTarget.Standalone, "Build", "'CFBundleVersion'");
-
-                EditorGUILayout.PropertyField(m_MacAppStoreCategory, SettingsContent.macAppStoreCategory);
-                EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, SettingsContent.useMacAppStoreValidation);
 
                 EditorGUILayout.Space();
             }
@@ -3393,20 +3355,8 @@ namespace UnityEditor
 
             if (settingsExtension != null)
                 settingsExtension.ConfigurationSectionGUI();
-                
+
             EditorGUILayout.Space();
-
-            if (platform.namedBuildTarget == NamedBuildTarget.Standalone && CanShowPlatformSettingsForHostPlatform(BuildTarget.StandaloneOSX, platform))
-            {
-                GUILayout.Label(SettingsContent.macConfigurationTitle, EditorStyles.boldLabel);
-
-                EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
-                EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
-                EditorGUILayout.PropertyField(m_BluetoothUsageDescription, SettingsContent.bluetoothUsageDescription);
-                EditorGUILayout.PropertyField(m_MacURLSchemes, SettingsContent.macOSURLSchemes, true);
-
-                EditorGUILayout.Space();
-            }
         }
 
         private string GetScriptingDefineSymbolsForGroup(NamedBuildTarget buildTarget)
@@ -4228,14 +4178,6 @@ namespace UnityEditor
             }
 
             m_boxes.Sort((a, b) => a.order.CompareTo(b.order));
-        }
-
-        bool CanShowPlatformSettingsForHostPlatform(BuildTarget settingsBuildTarget, BuildPlatform currentPlatform)
-        {
-            if (IsBuildProfileEditor() && currentPlatform.defaultTarget != settingsBuildTarget)
-                return false;
-
-            return BuildTargetDiscovery.BuildPlatformIsAvailableOnHostPlatform(settingsBuildTarget, SystemInfo.operatingSystemFamily);
         }
 
         void SyncColorGamuts()

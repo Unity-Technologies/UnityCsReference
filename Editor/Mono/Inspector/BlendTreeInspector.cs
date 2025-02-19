@@ -399,6 +399,25 @@ namespace UnityEditor
             m_MaxThreshold.floatValue = m_Childs.arraySize > 0 ? max : 1;
         }
 
+        private void BoundBlendParameter(string paramName)
+        {
+            // Ensures that the blend parameter is bounded between the root blend tree min and max
+            if (parentBlendTree != null)
+            {
+                for (int i = 0; i < parentBlendTree.recursiveBlendParameterCount; ++i)
+                {
+                    if (parentBlendTree.GetRecursiveBlendParameter(i) != paramName)
+                        continue;
+
+                    float value = GetParameterValue(currentAnimator, m_BlendTree, paramName);
+                    float min = parentBlendTree.GetRecursiveBlendParameterMin(i);
+                    float max = parentBlendTree.GetRecursiveBlendParameterMax(i);
+                    value = Mathf.Clamp(value, min, max);
+                    SetParameterValue(currentAnimator, m_BlendTree, parentBlendTree, paramName, value);
+                }
+            }
+        }
+
         private void ThresholdValues()
         {
             Rect r = EditorGUILayout.GetControlRect();
@@ -1318,9 +1337,6 @@ namespace UnityEditor
                 SetMinMaxThresholds();
 
                 serializedObject.ApplyModifiedProperties();
-
-                //  Layout has changed, bail out now.
-                EditorGUIUtility.ExitGUI();
             }
         }
 
@@ -1409,6 +1425,7 @@ namespace UnityEditor
                         serializedObject.ApplyModifiedProperties();
                         m_BlendTree.SortChildren();
                         SetMinMaxThresholds();
+                        BoundBlendParameter(m_BlendTree.blendParameter);
                         GUI.changed = true;
                     }
                 }
@@ -1445,6 +1462,7 @@ namespace UnityEditor
                         pos[i] = Mathf.Clamp(coord, -10000, 10000);
                         position.vector2Value = pos;
                         serializedObject.ApplyModifiedProperties();
+                        BoundBlendParameter(i == 0 ? m_BlendTree.blendParameter : m_BlendTree.blendParameterY);
                         GUI.changed = true;
                     }
                 }

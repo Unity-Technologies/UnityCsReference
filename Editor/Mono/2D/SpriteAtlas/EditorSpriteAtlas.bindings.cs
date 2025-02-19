@@ -111,8 +111,23 @@ namespace UnityEditor.U2D
         extern public static void SetTextureSettings([NotNull] this SpriteAtlas spriteAtlas, SpriteAtlasTextureSettings src);
         extern public static SpriteAtlasPackingSettings GetPackingSettings([NotNull] this SpriteAtlas spriteAtlas);
         extern public static void SetPackingSettings([NotNull] this SpriteAtlas spriteAtlas, SpriteAtlasPackingSettings src);
-        extern public static TextureImporterPlatformSettings GetPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, string buildTarget);
-        extern public static void SetPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src);
+
+        [NativeName("GetPlatformSettings")]
+        extern private static TextureImporterPlatformSettings GetPlatformSettings_Internal([NotNull] this SpriteAtlas spriteAtlas, string buildTarget);
+        public static TextureImporterPlatformSettings GetPlatformSettings(this SpriteAtlas spriteAtlas, string buildTarget)
+        {
+            buildTarget = TextureImporter.GetTexturePlatformSerializationName(buildTarget); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
+            return GetPlatformSettings_Internal(spriteAtlas, buildTarget);
+        }
+
+        [NativeName("SetPlatformSettings")]
+        extern private static void SetPlatformSettings_Internal([NotNull] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src);
+        public static void SetPlatformSettings(this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src)
+        {
+            src.name = TextureImporter.GetTexturePlatformSerializationName(src.name); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
+            SetPlatformSettings_Internal(spriteAtlas, src);
+        }
+
         extern public static void SetIncludeInBuild([NotNull] this SpriteAtlas spriteAtlas, bool value);
         extern public static void SetIsVariant([NotNull] this SpriteAtlas spriteAtlas, bool value);
         extern public static void SetMasterAtlas([NotNull] this SpriteAtlas spriteAtlas, SpriteAtlas value);
@@ -126,8 +141,23 @@ namespace UnityEditor.U2D
         extern internal static TextureFormat GetTextureFormat([NotNull] this SpriteAtlas spriteAtlas, BuildTarget target);
         extern internal static Sprite[] GetPackedSprites([NotNull] this SpriteAtlas spriteAtlas);
         extern internal static Hash128 GetStoredHash([NotNull] this SpriteAtlas spriteAtlas);
-        extern internal static TextureImporterPlatformSettings GetSecondaryPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName);
-        extern internal static void SetSecondaryPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName);
+
+        [NativeName("GetSecondaryPlatformSettings")]
+        extern private static TextureImporterPlatformSettings GetSecondaryPlatformSettings_Internal([NotNull] this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName);
+        internal static TextureImporterPlatformSettings GetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, string buildTarget, string secondaryTextureName)
+        {
+            buildTarget = TextureImporter.GetTexturePlatformSerializationName(buildTarget); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
+            return GetSecondaryPlatformSettings_Internal(spriteAtlas, buildTarget, secondaryTextureName);
+        }
+
+        [NativeName("SetSecondaryPlatformSettings")]
+        extern private static void SetSecondaryPlatformSettings_Internal([NotNull] this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName);
+        internal static void SetSecondaryPlatformSettings(this SpriteAtlas spriteAtlas, TextureImporterPlatformSettings src, string secondaryTextureName)
+        {
+            src.name = TextureImporter.GetTexturePlatformSerializationName(src.name); // String may refer to a platform group: if != "Standalone", ensure it refers to a platform instead. E.g.: "iOS", not "iPhone".
+            SetSecondaryPlatformSettings_Internal(spriteAtlas, src, secondaryTextureName);
+        }
+
         extern internal static bool GetSecondaryColorSpace([NotNull] this SpriteAtlas spriteAtlas, string secondaryTextureName);
         extern internal static void SetSecondaryColorSpace([NotNull] this SpriteAtlas spriteAtlas, string secondaryTextureName, bool srGB);
         extern internal static void DeleteSecondaryPlatformSettings([NotNull] this SpriteAtlas spriteAtlas, string secondaryTextureName);

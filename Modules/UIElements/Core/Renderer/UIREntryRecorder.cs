@@ -61,6 +61,18 @@ namespace UnityEngine.UIElements.UIR
 
         public Entry firstChild;
         public Entry lastChild;
+
+        public void Reset()
+        {
+            nextSibling = null;
+            firstChild = null;
+            lastChild = null;
+            texture = null;
+            material = null;
+            gradientsOwner = null;
+            flags = 0;
+            immediateCallback = null;
+        }
     }
 
     // This class converts the most basic operations into entries. It performs no transformation of any kind,

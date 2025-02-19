@@ -14,7 +14,7 @@ namespace Unity.UI.Builder
     /// <summary>
     /// Provides a view to uxml attributes of a binding.
     /// </summary>
-    internal class BuilderBindingUxmlAttributesView : BuilderDataSourceAndPathView, IDisposable
+    internal class BuilderBindingUxmlAttributesView : BuilderDataSourceAndPathView
     {
         internal const string k_BindingAttr_BindingMode = "binding-mode";
         internal const string k_BindingAttr_ConvertersToUi = "source-to-ui-converters";
@@ -462,10 +462,15 @@ namespace Unity.UI.Builder
             return path.Substring(0, endIndex + 1);
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            Undo.ClearUndo(m_VisualTreeAssetCopy);
-            UnityEngine.Object.DestroyImmediate(m_VisualTreeAssetCopy);
+            base.Dispose(disposing);
+
+            if (disposing)
+            {
+                Undo.ClearUndo(m_VisualTreeAssetCopy);
+                UnityEngine.Object.DestroyImmediate(m_VisualTreeAssetCopy);
+            }
         }
     }
 }

@@ -2,8 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -32,11 +32,13 @@ namespace UnityEngine
             }
         }
 
-        // Delegate for layer add/remove events
+        // Delegate for layer add/remove/changed events
         public delegate void LayerCallback(SortingLayer layer);
+        internal delegate void LayerChangedCallback();
 
         public static LayerCallback onLayerAdded;
         public static LayerCallback onLayerRemoved;
+        internal static LayerChangedCallback onLayerChanged;
 
         [FreeFunction("GetTagManager().GetSortingLayerIDs")]
         extern private static int[] GetSortingLayerIDsInternal();

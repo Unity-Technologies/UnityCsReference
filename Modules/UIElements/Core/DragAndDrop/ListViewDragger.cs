@@ -341,7 +341,7 @@ namespace UnityEngine.UIElements
             else if (pointerPosition.y - recycledItem.rootElement.worldBound.yMin > k_BetweenElementsAreaSize)
             {
                 var scrollOffset = targetScrollView.scrollOffset;
-                targetScrollView.ScrollTo(recycledItem.rootElement);
+                targetView.ScrollToItem(recycledItem.index);
                 if (!Mathf.Approximately(scrollOffset.x, targetScrollView.scrollOffset.x) || !Mathf.Approximately(scrollOffset.y, targetScrollView.scrollOffset.y))
                 {
                     return TryGetDragPosition(pointerPosition, ref dragPosition);
@@ -403,7 +403,6 @@ namespace UnityEngine.UIElements
             var treeController = treeView.viewController;
             var targetIndex = dragPosition.insertAtIndex;
             var initialTargetId = treeController.GetIdForIndex(targetIndex);
-            // var targetId = initialTargetId;
 
             GetPreviousAndNextItemsIgnoringDraggedItems(dragPosition.insertAtIndex, out var previousItemId, out var nextItemId);
 
@@ -422,11 +421,11 @@ namespace UnityEngine.UIElements
             // Get the indent width
             var toggleWidth = 15f;
             var indentWidth = 15f;
-            if (previousItemDepth > 0)
+            var previousItemRootElement = treeView.GetRootElementForId(previousItemId);
+            if (previousItemDepth > 0 && previousItemRootElement != null)
             {
-                var rootElement = treeView.GetRootElementForId(previousItemId);
-                var indentElement = rootElement.Q(BaseTreeView.itemIndentUssClassName);
-                var toggle = rootElement.Q(BaseTreeView.itemToggleUssClassName);
+                var indentElement = previousItemRootElement.Q(BaseTreeView.itemIndentUssClassName);
+                var toggle = previousItemRootElement.Q(BaseTreeView.itemToggleUssClassName);
                 toggleWidth = toggle.layout.width;
                 indentWidth = indentElement.layout.width / previousItemDepth;
             }
@@ -454,8 +453,17 @@ namespace UnityEngine.UIElements
                 else
                 {
                     dragPosition.parentId = treeController.GetParentId(previousItemId);
-                    dragPosition.childIndex = treeController.GetChildIndexForId(nextItemId);
+                    // Check if the index of the inserted item belongs to the sibling parent
+                    if (treeController.GetParentId(nextItemId) == treeController.GetIdForIndex(dragPosition.insertAtIndex))
+                    {
+                        dragPosition.childIndex = treeController.GetChildIndexForId(previousItemId) + 1;
+                    }
+                    else
+                    {
+                        dragPosition.childIndex = treeController.GetChildIndexForId(nextItemId);
+                    }
                 }
+
                 return; // The nextItem is a descendant of previous item so keep targetItem
             }
 
