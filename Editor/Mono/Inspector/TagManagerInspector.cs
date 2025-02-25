@@ -229,6 +229,9 @@ namespace UnityEditor
             {
                 serializedObject.ApplyModifiedProperties();
                 tagManager.UpdateSortingLayersOrder();
+
+                if (SortingLayer.onLayerChanged != null)
+                    SortingLayer.onLayerChanged();
             };
             sortingLayers.onAdd += (listView) =>
             {
@@ -240,6 +243,9 @@ namespace UnityEditor
 
                 if (SortingLayer.onLayerAdded != null)
                     SortingLayer.onLayerAdded(SortingLayer.layers[listView.selectedIndex]);
+
+                if (SortingLayer.onLayerChanged != null)
+                    SortingLayer.onLayerChanged();
             };
             sortingLayers.onRemove += (listView) =>
             {
@@ -253,6 +259,9 @@ namespace UnityEditor
                 serializedObject.ApplyModifiedProperties();
                 serializedObject.Update();
                 tagManager.UpdateSortingLayersOrder();
+
+                if (SortingLayer.onLayerChanged != null)
+                    SortingLayer.onLayerChanged();
             };
             //TextFields in Array are not bind correctly so we need to refresh them manually
             content.TrackPropertyValue(sortingLayersProperty, sp => sortingLayers.RefreshItems());
