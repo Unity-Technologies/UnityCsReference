@@ -13,6 +13,9 @@ namespace UnityEditor;
 
 sealed class AudioContainerWindowState
 {
+    // Used by tests.
+    internal const string previewAudioSourceName = "PreviewAudioSource595651";
+
     AudioRandomContainer m_AudioContainer;
     AudioSource m_PreviewAudioSource;
     SerializedObject m_SerializedObject;
@@ -21,7 +24,7 @@ sealed class AudioContainerWindowState
 
     // Need this flag to track transport state changes immediately, as there could be a
     // one-frame delay to get the correct value from AudioSource.isContainerPlaying.
-    bool m_IsPlayingOrPausedLocalFlag;
+    bool m_IsPreviewPlayingOrPausedLocalFlag;
     bool m_IsSuspended;
 
     internal event EventHandler TargetChanged;
@@ -73,10 +76,10 @@ sealed class AudioContainerWindowState
 
     internal void Reset()
     {
-        Stop();
+        StopPreview();
         m_AudioContainer = null;
         m_SerializedObject = null;
-        m_IsPlayingOrPausedLocalFlag = false;
+        m_IsPreviewPlayingOrPausedLocalFlag = false;
         UpdateTargetPath();
     }
 
@@ -88,20 +91,20 @@ sealed class AudioContainerWindowState
 
     internal void OnDestroy()
     {
-        Stop();
+        StopPreview();
 
         if (m_PreviewAudioSource != null)
             Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
 
         EditorApplication.playModeStateChanged -= OnEditorPlayModeStateChanged;
-        Selection.selectionChanged -= OnSelectionChanged;
         EditorApplication.pauseStateChanged -= OnEditorPauseStateChanged;
+        Selection.selectionChanged -= OnSelectionChanged;
     }
 
     internal void Suspend()
     {
         m_IsSuspended = true;
-        Stop();
+        StopPreview();
 
         if (m_PreviewAudioSource != null)
             Object.DestroyImmediate(m_PreviewAudioSource.gameObject);
@@ -225,9 +228,9 @@ sealed class AudioContainerWindowState
         }
     }
 
-    internal void Play()
+    internal void PlayPreview()
     {
-        var canNotPlay = m_IsSuspended || IsPlayingOrPaused() || !IsReadyToPlay();
+        var canNotPlay = m_IsSuspended || IsPreviewPlayingOrPaused() || !IsReadyToPlayPreview();
 
         if (canNotPlay)
             return;
@@ -239,7 +242,7 @@ sealed class AudioContainerWindowState
             // This means that this object is a hidden part of the user's scene during play/pause.
             var gameObject = new GameObject
             {
-                name = "PreviewAudioSource595651",
+                name = previewAudioSourceName,
                 hideFlags = HideFlags.HideInHierarchy | HideFlags.DontSaveInEditor | HideFlags.DontSaveInBuild
             };
 
@@ -249,28 +252,36 @@ sealed class AudioContainerWindowState
 
         m_PreviewAudioSource.resource = m_AudioContainer;
         m_PreviewAudioSource.Play();
-        m_IsPlayingOrPausedLocalFlag = true;
+        m_IsPreviewPlayingOrPausedLocalFlag = true;
         TransportStateChanged?.Invoke(this, EventArgs.Empty);
         EditorApplication.update += OnEditorApplicationUpdate;
     }
 
-    internal void Stop()
+    internal void StopPreview()
     {
-        var canNotStop = m_IsSuspended || !IsPlayingOrPaused();
+        var canNotStop = m_IsSuspended || !IsPreviewPlayingOrPaused();
 
         if (canNotStop)
             return;
 
         m_PreviewAudioSource.Stop();
         m_PreviewAudioSource.resource = null;
-        m_IsPlayingOrPausedLocalFlag = false;
+        m_IsPreviewPlayingOrPausedLocalFlag = false;
         TransportStateChanged?.Invoke(this, EventArgs.Empty);
         EditorApplication.update -= OnEditorApplicationUpdate;
     }
 
+    internal void OnAudioClipListChanged()
+    {
+        // We don't support live updates that affect the clip scheduling,
+        // so stop the preview and any other audio sources that reference this asset.
+        AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
+        StopPreview();
+    }
+
     internal void Skip()
     {
-        var canNotSkip = m_IsSuspended || !IsPlayingOrPaused();
+        var canNotSkip = m_IsSuspended || !IsPreviewPlayingOrPaused();
 
         if (canNotSkip)
             return;
@@ -278,16 +289,16 @@ sealed class AudioContainerWindowState
         m_PreviewAudioSource.SkipToNextElementIfHasContainer();
     }
 
-    internal bool IsPlayingOrPaused()
+    internal bool IsPreviewPlayingOrPaused()
     {
-        return m_IsPlayingOrPausedLocalFlag || (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying);
+        return m_IsPreviewPlayingOrPausedLocalFlag || (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying);
     }
 
     /// <summary>
     /// Checks if the window has a current target with at least one enabled audio clip assigned.
     /// </summary>
     /// <returns>Whether or not there are valid audio clips to play</returns>
-    internal bool IsReadyToPlay()
+    internal bool IsReadyToPlayPreview()
     {
         if (m_AudioContainer == null)
             return false;
@@ -303,7 +314,7 @@ sealed class AudioContainerWindowState
 
     internal ActivePlayable[] GetActivePlayables()
     {
-        return IsPlayingOrPaused() ? m_PreviewAudioSource.containerActivePlayables : null;
+        return IsPreviewPlayingOrPaused() ? m_PreviewAudioSource.containerActivePlayables : null;
     }
 
     internal float GetMeterValue()
@@ -321,7 +332,7 @@ sealed class AudioContainerWindowState
         if (m_PreviewAudioSource != null && m_PreviewAudioSource.isContainerPlaying)
             return;
 
-        m_IsPlayingOrPausedLocalFlag = false;
+        m_IsPreviewPlayingOrPausedLocalFlag = false;
         TransportStateChanged?.Invoke(this, EventArgs.Empty);
         EditorApplication.update -= OnEditorApplicationUpdate;
     }
@@ -330,7 +341,7 @@ sealed class AudioContainerWindowState
     {
         if (state is PlayModeStateChange.ExitingEditMode or PlayModeStateChange.ExitingPlayMode)
         {
-            Stop();
+            StopPreview();
 
             if (m_PreviewAudioSource != null)
             {

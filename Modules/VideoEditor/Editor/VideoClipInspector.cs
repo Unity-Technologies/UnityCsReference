@@ -161,7 +161,7 @@ namespace UnityEditor
 
             if (!m_PreviewID.Empty() &&
                 VideoUtil.IsPreviewPlaying(m_PreviewID) &&
-                Event.current.type == EventType.Repaint)
+                Event.current.type == EventType.Repaint && GUIView.current != null)
                 GUIView.current.Repaint();
         }
 
@@ -172,9 +172,6 @@ namespace UnityEditor
             tex = AssetPreview.GetAssetPreview(target);
             if (!tex)
             {
-                // We have a static preview it just hasn't been loaded yet. Repaint until we have it loaded.
-                if (isLoadingAssetPreview)
-                    GUIView.current.Repaint();
                 tex = AssetPreview.GetMiniThumbnail(target);
             }
             return tex;
