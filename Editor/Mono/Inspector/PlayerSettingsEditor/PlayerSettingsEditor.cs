@@ -2402,7 +2402,8 @@ namespace UnityEditor
             }
 
             bool graphicsJobsOptionEnabled = true;
-            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget);
+            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
+                platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
 
             if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
@@ -2465,7 +2466,9 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget, platform.defaultTarget, newGraphicsJobs);
+                    PlayerSettings.SetGraphicsJobsForPlatform_Internal(m_CurrentTarget,
+                        platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
+
                     OnTargetObjectChangedDirectly();
 
                     if (IsActivePlayerSettingsEditor() && CheckApplyGraphicsJobsModeChange(platform.defaultTarget))

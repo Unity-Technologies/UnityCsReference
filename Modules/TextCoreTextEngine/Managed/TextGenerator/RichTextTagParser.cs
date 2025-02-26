@@ -607,7 +607,8 @@ namespace UnityEngine.TextCore
 
                     //Layout/Positioning
                     case TagType.Size:
-                        textSpan.fontSize = (int)(segment.tags[i].value!.NumericalValue/64f);
+                        // TODO: Add support for size
+                        //textSpan.fontSize = (int)(segment.tags[i].value!.NumericalValue/64f);
                         break;
                     case TagType.CSpace:
                         //TODO : Add support for cspace

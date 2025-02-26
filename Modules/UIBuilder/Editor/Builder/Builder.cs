@@ -293,9 +293,9 @@ namespace Unity.UI.Builder
             base.DiscardChanges();
         }
 
-        public void ReloadDocument()
+        public bool ReloadDocument()
         {
-            m_Toolbar.ReloadDocument();
+            return m_Toolbar.ReloadDocument();
         }
 
         protected override void OnEnable()
@@ -371,13 +371,20 @@ namespace Unity.UI.Builder
                 builderWindow.Focus();
             }
 
+            bool validAsset;
             if (builderWindow.document.visualTreeAsset != asset)
             {
-                builderWindow.LoadDocument(asset);
+                validAsset = builderWindow.LoadDocument(asset);
             }
             else
             {
-                builderWindow.ReloadDocument();
+                validAsset = builderWindow.ReloadDocument();
+            }
+
+            if (!validAsset)
+            {
+                builderWindow.NewDocument();
+                return false; // Let user open the asset in the IDE.
             }
 
             return true;

@@ -366,9 +366,8 @@ namespace UnityEngine.TextCore.Text
             get { return m_IsMultiAtlasTexturesEnabled; }
             set { m_IsMultiAtlasTexturesEnabled = value; }
         }
-
         [SerializeField]
-        private bool m_IsMultiAtlasTexturesEnabled;
+        bool m_IsMultiAtlasTexturesEnabled = true;
 
         /// <summary>
         /// Determines if OpenType font features should be retrieved from the source font file as new characters and glyphs are added dynamically to the font asset.
@@ -389,8 +388,9 @@ namespace UnityEngine.TextCore.Text
             get { return m_ClearDynamicDataOnBuild; }
             set { m_ClearDynamicDataOnBuild = value; }
         }
+
         [SerializeField]
-        private bool m_ClearDynamicDataOnBuild;
+        bool m_ClearDynamicDataOnBuild = true;
 
         /// <summary>
         /// The width of the atlas texture(s) used by this font asset.

@@ -128,6 +128,7 @@ namespace UnityEngine.UIElements.UIR
         internal List<CommandList>[] commandLists => m_CommandLists;
         internal List<CommandList> currentFrameCommandLists => m_CommandLists == null ? null : m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
         internal int currentFrameCommandListCount = 0;
+        CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero);
 
 
         static UIRenderDevice()
@@ -285,6 +286,9 @@ namespace UnityEngine.UIElements.UIR
                     if (m_SynchronousFree)
                         ProcessDeviceFreeQueue();
                 }
+
+                m_DefaultCommandList.Dispose();
+                m_DefaultCommandList = null;
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -738,6 +742,15 @@ namespace UnityEngine.UIElements.UIR
                 mustApplyStencil = true
             };
 
+            if (drawsInCameras)
+            {
+                // The default command list is never actually executed, but we use it to catch any commands that could
+                // be emitted by the root VisualElement. This could happen if, for example, a user applies a style that
+                // affects the root in some way.
+                m_DefaultCommandList.Reset(null);
+                st.activeCommandList = m_DefaultCommandList;
+            }
+
             var drawParams = m_DrawParams;
             drawParams.Reset();
             if (!drawsInCameras)
@@ -928,6 +941,8 @@ namespace UnityEngine.UIElements.UIR
                         st.activeCommandList = cmdList;
                         st.constantProps = st.activeCommandList.constantProps;
                         st.batchProps = st.activeCommandList.batchProps;
+                        st.mustApplyBatchProps = true;
+                        st.mustApplyStencil = true;
 
                         st.batchProps.Clear();
                         if (gradientSettings != null)

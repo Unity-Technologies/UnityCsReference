@@ -321,6 +321,10 @@ namespace UnityEngine.TextCore.Text
                 while (allGlyphsAddedToTexture == false)
                     allGlyphsAddedToTexture = TryAddGlyphsToNewAtlasTexture();
             }
+            else if (!allGlyphsAddedToTexture)
+            {
+                Debug.Log($"Atlas is full, consider enabling multi-atlas textures in the Font Asset: {name}");
+            }
 
             // Get Font Features for the given characters
             if (includeFontFeatures)
@@ -541,6 +545,10 @@ namespace UnityEngine.TextCore.Text
                 FontEngine.SetTextureUploadMode(false);
                 if (TryAddGlyphToTexture(glyphIndex, out glyph, populateLigatures))
                     return true;
+            }
+            else if (m_UsedGlyphRects.Count > 0)
+            {
+                Debug.Log($"Atlas is full, consider enabling multi-atlas textures in the Font Asset: {name}");;
             }
 
             return false;

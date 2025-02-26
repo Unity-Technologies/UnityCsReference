@@ -30,10 +30,21 @@ namespace UnityEngine.TextCore.Text
             Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
             var textInfo = GenerateTextInternal(settings, textGenerationInfo);
 
+            return textInfo;
+        }
+
+        // The rasterization of glyph was extracted to its own method to ensure it is called on the main thread.
+        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings)
+        {
             foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
             {
                 var fa = FontAsset.GetFontAssetByID(meshInfo.fontAssetId);
                 meshInfo.fontAsset = fa;
+
+                var padding = settings.vertexPadding / 64.0f;
+                var inverseAtlasWidth = 1.0f / fa.atlasWidth;
+                var inverseAtlasHeight = 1.0f / fa.atlasHeight;
+
 
                 // TODO we should add glyphs in batch instead
                 foreach (ref var textElementInfo in meshInfo.textElementInfos.AsSpan())
@@ -45,36 +56,64 @@ namespace UnityEngine.TextCore.Text
                         continue;
 
                     var glyphRect = glyph.glyphRect;
-                    var padding = settings.vertexPadding / 64.0f;
 
-                    Vector2 bottomLeftUV; // Bottom Left
-                    bottomLeftUV.x = (float)(glyphRect.x - padding) / fa.atlasWidth;
-                    bottomLeftUV.y = (float)(glyphRect.y - padding) / fa.atlasHeight;
+                    bool allUVsAreZeroOrOne =
+                        (textElementInfo.bottomLeft.uv0.x == 0f || textElementInfo.bottomLeft.uv0.x == 1f) &&
+                        (textElementInfo.bottomLeft.uv0.y == 0f || textElementInfo.bottomLeft.uv0.y == 1f) &&
+                        (textElementInfo.topLeft.uv0.x == 0f || textElementInfo.topLeft.uv0.x == 1f) &&
+                        (textElementInfo.topLeft.uv0.y == 0f || textElementInfo.topLeft.uv0.y == 1f) &&
+                        (textElementInfo.topRight.uv0.x == 0f || textElementInfo.topRight.uv0.x == 1f) &&
+                        (textElementInfo.topRight.uv0.y == 0f || textElementInfo.topRight.uv0.y == 1f) &&
+                        (textElementInfo.bottomRight.uv0.x == 0f || textElementInfo.bottomRight.uv0.x == 1f) &&
+                        (textElementInfo.bottomRight.uv0.y == 0f || textElementInfo.bottomRight.uv0.y == 1f);
 
-                    Vector2 topLeftUV; // Top Left
-                    topLeftUV.x = bottomLeftUV.x;
-                    topLeftUV.y = (float)(glyphRect.y + glyphRect.height + padding) / fa.atlasHeight;
+                    if (allUVsAreZeroOrOne)
+                    {
+                        float xMin = (glyphRect.x - padding) * inverseAtlasWidth;
+                        float yMin = (glyphRect.y - padding) * inverseAtlasHeight;
+                        float xMax = (glyphRect.x + glyphRect.width + padding) * inverseAtlasWidth;
+                        float yMax = (glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight;
 
-                    Vector2 topRightUV; // Top Right
-                    topRightUV.x = (float)(glyphRect.x + glyphRect.width + padding) / fa.atlasWidth;
-                    topRightUV.y = topLeftUV.y;
+                        textElementInfo.bottomLeft.uv0.x = xMin;
+                        textElementInfo.bottomLeft.uv0.y = yMin;
 
-                    Vector2 bottomRightUV; // Bottom Right
-                    bottomRightUV.x = topRightUV.x;
-                    bottomRightUV.y = bottomLeftUV.y;
+                        textElementInfo.topLeft.uv0.x = xMin;
+                        textElementInfo.topLeft.uv0.y = yMax;
 
-                    // The native code is not yet aware of the atlas, and glyphs for the underline+strikethrough have their UV manually eddited to
-                    // be stretched without side effect. We need to combine the position in the atlas with the expected position in the source glyph.
-                    textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomLeft.uv0);
-                    textElementInfo.topLeft.uv0 = topRightUV * textElementInfo.topLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topLeft.uv0); ;
-                    textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topRight.uv0); ;
-                    textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomRight.uv0); ;
+                        textElementInfo.topRight.uv0.x = xMax;
+                        textElementInfo.topRight.uv0.y = yMax;
+
+                        textElementInfo.bottomRight.uv0.x = xMax;
+                        textElementInfo.bottomRight.uv0.y = yMin;
+                    }
+                    else
+                    {
+                        Vector2 bottomLeftUV; // Bottom Left
+                        bottomLeftUV.x = (float)(glyphRect.x - padding) * inverseAtlasWidth;
+                        bottomLeftUV.y = (float)(glyphRect.y - padding) * inverseAtlasHeight;
+
+                        Vector2 topLeftUV; // Top Left
+                        topLeftUV.x = bottomLeftUV.x;
+                        topLeftUV.y = (float)(glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight;
+
+                        Vector2 topRightUV; // Top Right
+                        topRightUV.x = (float)(glyphRect.x + glyphRect.width + padding) * inverseAtlasWidth;
+                        topRightUV.y = topLeftUV.y;
+
+                        Vector2 bottomRightUV; // Bottom Right
+                        bottomRightUV.x = topRightUV.x;
+                        bottomRightUV.y = bottomLeftUV.y;
+
+                        textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomLeft.uv0);
+                        textElementInfo.topLeft.uv0 = topRightUV * textElementInfo.topLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topLeft.uv0); ;
+                        textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topRight.uv0); ;
+                        textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomRight.uv0); ;
+                    }
                 }
             }
-            return textInfo;
         }
 
-        [NativeMethod(Name = "TextLib::GenerateTextMesh")]
+        [NativeMethod(Name = "TextLib::GenerateTextMesh", IsThreadSafe = true)]
         private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
         [NativeMethod(Name = "TextLib::MeasureText")]
@@ -94,9 +133,9 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class TextGenerationInfo
     {
+        [ThreadSafe]
         public static extern IntPtr Create();
 
-        [FreeFunction("TextGenerationInfo::Destroy",IsThreadSafe = true)]
         public static extern void Destroy(IntPtr ptr);
     }
 }
