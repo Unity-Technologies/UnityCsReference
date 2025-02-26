@@ -127,7 +127,12 @@ namespace UnityEditor
                     var extraClips = new List<AnimationClip>();
                     clipSources[i].GetAnimationClips(extraClips);
 
-                    allClips.AddRange(extraClips);
+                    allClips.Capacity = allClips.Count + extraClips.Count;
+                    foreach (var clip in extraClips)
+                    {
+                        if (clip != null)
+                            allClips.Add(clip);
+                    }
                 }
 
                 return allClips.ToArray();

@@ -176,7 +176,16 @@ namespace UnityEditor.ShortcutManagement
 
         internal void ResetToDefault()
         {
+            if (m_OverriddenCombinations == null)
+                return;
+
             m_OverriddenCombinations = null;
+
+            if (m_DefaultCombinations != null && m_Type == ShortcutType.Menu && m_Identifier.path.StartsWith(ShortcutManagerWindowViewController.k_MainMenu))
+            {
+                var newMenuKey = (m_DefaultCombinations.Count > 0) ? m_DefaultCombinations[0].ToMenuShortcutString() : "";
+                Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), newMenuKey);
+            }
         }
 
         internal void SetOverride(IEnumerable<KeyCombination> newKeyCombinations)

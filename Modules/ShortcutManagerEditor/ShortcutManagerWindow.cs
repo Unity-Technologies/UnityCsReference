@@ -118,7 +118,7 @@ namespace UnityEditor.ShortcutManagement
 
         void NavigateTo(ShortcutEntry shortcutEntry);
 
-        void RequestRebindOfSelectedEntry(List<KeyCombination> newbinding);
+        void RequestRebindOfSelectedEntry(List<KeyCombination> newBinding);
 
         void BindSelectedEntryTo(List<KeyCombination> newbinding);
         IList<ShortcutEntry> GetSelectedEntryConflictsForGivenKeyCombination(List<KeyCombination> temporaryCombination);
