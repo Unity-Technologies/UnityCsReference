@@ -13,7 +13,7 @@ namespace UnityEngine
     /// </summary>
     internal class RuntimeTextSettings : TextSettings
     {
-        private static RuntimeTextSettings s_DefaultTextSettings;
+        static RuntimeTextSettings s_DefaultTextSettings;
 
         internal static RuntimeTextSettings defaultTextSettings
         {
@@ -28,7 +28,8 @@ namespace UnityEngine
             }
         }
 
-        private static List<FontAsset> s_FallbackOSFontAssetIMGUIInternal;
+        static List<FontAsset> s_FallbackOSFontAssetIMGUIInternal;
+
 
         internal override Shader GetFontShader()
         {

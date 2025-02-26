@@ -54,6 +54,8 @@ namespace UnityEngine.UIElements.UIR
             handle = GCHandle.Alloc(this);
         }
 
+        public int Count => m_Commands.Count;
+
         public void Reset(VisualElement newOwner)
         {
             m_Owner = newOwner;

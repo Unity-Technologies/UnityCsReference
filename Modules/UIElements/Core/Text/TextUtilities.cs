@@ -122,11 +122,11 @@ namespace UnityEngine.UIElements
 
         static bool s_HasAdvancedTextSystemErrorBeenShown = false;
 
-        internal static bool IsAdvancedTextEnabledForElement(TextElement te)
+        internal static bool IsAdvancedTextEnabledForElement(VisualElement ve)
         {
-            if (te == null)
+            if (ve == null)
                 return false;
-            var isAdvancedTextGeneratorEnabledOnTextElement = te.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
+            var isAdvancedTextGeneratorEnabledOnTextElement = ve.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
             var isAdvancedTextGeneratorEnabledOnProject = false;
             isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
             if (!s_HasAdvancedTextSystemErrorBeenShown && !isAdvancedTextGeneratorEnabledOnProject && isAdvancedTextGeneratorEnabledOnTextElement)

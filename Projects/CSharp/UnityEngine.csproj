@@ -2856,6 +2856,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextHandle.cs">
       <Link>Modules\UIElements\Core\Text\ATGTextHandle.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\ATGTextJobSystem.cs">
+      <Link>Modules\UIElements\Core\Text\ATGTextJobSystem.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\PanelTextSettings.cs">
       <Link>Modules\UIElements\Core\Text\PanelTextSettings.cs</Link>
     </Compile>
@@ -2864,6 +2867,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEventHandler.cs">
       <Link>Modules\UIElements\Core\Text\TextEventHandler.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextJobSystem.cs">
+      <Link>Modules\UIElements\Core\Text\TextJobSystem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextSelectingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextSelectingManipulator.cs</Link>

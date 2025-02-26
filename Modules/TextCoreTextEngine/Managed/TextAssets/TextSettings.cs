@@ -12,6 +12,7 @@ namespace UnityEngine.TextCore.Text
     [System.Serializable]
     [ExcludeFromPresetAttribute]
     [ExcludeFromObjectFactory]
+    [NativeHeader("Modules/TextCoreTextEngine/Native/TextSettings.h")]
     public class TextSettings : ScriptableObject
     {
         /// <summary>
@@ -59,7 +60,11 @@ namespace UnityEngine.TextCore.Text
         public List<FontAsset> fallbackFontAssets
         {
             get => m_FallbackFontAssets;
-            set => m_FallbackFontAssets = value;
+            set
+            {
+                m_FallbackFontAssets = value;
+                m_IsNativeTextSettingsDirty = true;
+            }
         }
 
         [FormerlySerializedAs("m_fallbackFontAssets")]
@@ -79,7 +84,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        private static List<FontAsset> s_FallbackOSFontAssetInternal;
+        static List<FontAsset> s_FallbackOSFontAssetInternal;
 
         internal virtual List<FontAsset> GetStaticFallbackOSFontAsset()
         {
@@ -160,8 +165,13 @@ namespace UnityEngine.TextCore.Text
         public List<TextAsset> emojiFallbackTextAssets
         {
             get => m_EmojiFallbackTextAssets;
-            set => m_EmojiFallbackTextAssets = value;
+            set
+            {
+                m_EmojiFallbackTextAssets = value;
+                m_IsNativeTextSettingsDirty = true;
+            }
         }
+
         [SerializeField]
         private List<TextAsset> m_EmojiFallbackTextAssets;
 
@@ -236,6 +246,7 @@ namespace UnityEngine.TextCore.Text
             get => m_StyleSheetsResourcePath;
             set => m_StyleSheetsResourcePath = value;
         }
+
         [SerializeField]
         protected string m_StyleSheetsResourcePath = "Text Style Sheets/";
 
@@ -274,6 +285,7 @@ namespace UnityEngine.TextCore.Text
             }
             set => m_UnicodeLineBreakingRules = value;
         }
+
         [SerializeField]
         protected UnicodeLineBreakingRules m_UnicodeLineBreakingRules;
 
@@ -312,6 +324,12 @@ namespace UnityEngine.TextCore.Text
             SetStaticFallbackOSFontAsset(null);
             if (s_GlobalSpriteAsset == null)
                 s_GlobalSpriteAsset = Resources.Load<SpriteAsset>("Sprite Assets/Default Sprite Asset");
+        }
+
+        void OnDestroy()
+        {
+            if (m_NativeTextSettings != IntPtr.Zero)
+                DestroyNativeObject(m_NativeTextSettings);
         }
 
         protected void InitializeFontReferenceLookup()
@@ -417,6 +435,85 @@ namespace UnityEngine.TextCore.Text
             Debug.LogWarning("GetEditorTextSettings() should only be called on EditorTextSettings");
             return null;
         }
-    }
+        [NativeMethod(Name = "TextSettings::Create")]
+        static extern IntPtr CreateNativeObject(IntPtr[] fallbacks);
+        [NativeMethod(Name = "TextSettings::Destroy")]
+        static extern void DestroyNativeObject(IntPtr m_NativeTextSettings);
+        static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
 
+        IntPtr m_NativeTextSettings = IntPtr.Zero;
+        internal IntPtr nativeTextSettings
+        {
+            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+            get
+            {
+                UpdateNativeTextSettings();
+                return m_NativeTextSettings;
+            }
+        }
+
+        IntPtr[] GetGlobalFallbacks()
+        {
+            List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
+            fallbackFontAssets?.ForEach(fallback =>
+            {
+                if (fallback == null)
+                    return;
+                if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
+                {
+                    Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                    return;
+                }
+                globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+
+            });
+
+            fallbackOSFontAssets?.ForEach(fallback =>
+            {
+                if (fallback == null)
+                    return;
+                if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
+                {
+                    Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                    return;
+                }
+                globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
+            });
+
+            emojiFallbackTextAssets?.ForEach(fallback =>
+            {
+                // emojiFallbackTextAssets could contain both FontAsset and SpriteAsset
+                if (fallback is FontAsset fontAsset)
+                {
+                    if (fontAsset == null)
+                        return;
+                    if (fontAsset.atlasPopulationMode == AtlasPopulationMode.Static && fontAsset.characterTable.Count > 0)
+                    {
+                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
+                        return;
+                    }
+                    globalFontAssetFallbacks.Add(fontAsset.nativeFontAsset);
+                }
+            });
+
+            return globalFontAssetFallbacks.ToArray();
+        }
+
+        bool m_IsNativeTextSettingsDirty = true;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal void UpdateNativeTextSettings()
+        {
+            if (m_NativeTextSettings == IntPtr.Zero)
+            {
+                m_NativeTextSettings = CreateNativeObject(GetGlobalFallbacks());
+                m_IsNativeTextSettingsDirty = false;
+            }
+            else if (m_IsNativeTextSettingsDirty && m_NativeTextSettings != IntPtr.Zero)
+            {
+                UpdateFallbacks(m_NativeTextSettings, GetGlobalFallbacks());
+                m_IsNativeTextSettingsDirty = false;
+            }
+        }
+    }
 }

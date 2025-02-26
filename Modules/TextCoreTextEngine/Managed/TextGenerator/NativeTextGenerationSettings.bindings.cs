@@ -18,7 +18,7 @@ namespace UnityEngine.TextCore
     internal struct NativeTextGenerationSettings
     {
         public IntPtr fontAsset;
-        public IntPtr[] globalFontAssetFallbacks;
+        public IntPtr textSettings;
         public string text;         // Contains the parsed text, meaning the rich text tags have been removed.
         public int screenWidth;     // Encoded in Fixed Point.
         public int screenHeight;    // Encoded in Fixed Point.
@@ -100,7 +100,7 @@ namespace UnityEngine.TextCore
             verticalAlignment = tgs.verticalAlignment;
             color = tgs.color;
             fontAsset = tgs.fontAsset;
-            globalFontAssetFallbacks = tgs.globalFontAssetFallbacks;
+            textSettings = tgs.textSettings;
             fontStyle = tgs.fontStyle;
             fontWeight = tgs.fontWeight;
             languageDirection = tgs.languageDirection;
@@ -114,10 +114,6 @@ namespace UnityEngine.TextCore
 
         public override string ToString()
         {
-            string fallbacksString = globalFontAssetFallbacks != null
-                ? $"{string.Join(", ", globalFontAssetFallbacks)}"
-                : "null";
-
             string textSpansString = "null";
             if (textSpans != null)
             {
@@ -136,7 +132,7 @@ namespace UnityEngine.TextCore
             }
 
             return $"{nameof(fontAsset)}: {fontAsset}\n" +
-                $"{nameof(globalFontAssetFallbacks)}: {fallbacksString}\n" +
+                $"{nameof(textSettings)}: {textSettings}\n" +
                 $"{nameof(text)}: {text}\n" +
                 $"{nameof(screenWidth)}: {screenWidth}\n" +
                 $"{nameof(screenHeight)}: {screenHeight}\n" +

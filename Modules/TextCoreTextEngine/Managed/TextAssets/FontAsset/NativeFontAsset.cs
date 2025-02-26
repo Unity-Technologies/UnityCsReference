@@ -16,19 +16,27 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
-                if (m_NativeFontAsset == IntPtr.Zero)
-                {
-                    var fallbacks = GetFallbacks();
-                    var weightFallbacks = GetWeightFallbacks();
-
-                    kFontAssetByInstanceId.TryAdd(instanceID, this);
-                    Font sourceFont_editorRef = null;
-                    sourceFont_editorRef = SourceFont_EditorRef;
-                    m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2);
-                }
+                EnsureNativeFontAssetIsCreated();
                 return m_NativeFontAsset;
             }
         }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal void EnsureNativeFontAssetIsCreated()
+        {
+            if (m_NativeFontAsset != IntPtr.Zero)
+                return;
+
+            var fallbacks = GetFallbacks();
+            var weightFallbacks = GetWeightFallbacks();
+
+            kFontAssetByInstanceId.TryAdd(instanceID, this);
+            Font sourceFont_editorRef = null;
+            sourceFont_editorRef = SourceFont_EditorRef;
+            m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2);
+        }
+
+
         internal void UpdateFontEditorRef()
         {
             UpdateFontEditorRef(nativeFontAsset, SourceFont_EditorRef);
@@ -76,7 +84,6 @@ namespace UnityEngine.TextCore.Text
             }
             return fallbackList.ToArray();
         }
-
 
         private static HashSet<int> visitedFontAssets = new HashSet<int>();
         private bool HasRecursion(FontAsset fontAsset)
@@ -177,6 +184,10 @@ namespace UnityEngine.TextCore.Text
             return (regularTypefaces, italicTypefaces);
         }
 
+
+        // Resetting the Unity FontObject destroys the FontEngine. Is then possible that the hb_face is no longer valid.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern void CreateHbFaceIfNeeded();
         private static extern void UpdateFontEditorRef(IntPtr ptr, Font sourceFont_EditorRef);
         private static extern void UpdateFallbacks(IntPtr ptr, IntPtr[] fallbacks);
         private static extern void UpdateWeightFallbacks(IntPtr ptr, IntPtr[] regularFallbacks, IntPtr[] italicFallbacks);
@@ -186,11 +197,6 @@ namespace UnityEngine.TextCore.Text
 
         [FreeFunction("FontAsset::Destroy")]
         private static extern void Destroy(IntPtr ptr);
-
-        ~FontAsset()
-        {
-            GC.SuppressFinalize(this);
-        }
 
         internal static class BindingsMarshaller
         {

@@ -18,6 +18,25 @@ namespace UnityEngine.UIElements
             m_TextElement = textElement;
         }
 
+        public void OnDestroy()
+        {
+            if (HasAllocatedLinkCallbacks())
+            {
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerDown, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_LinkTagOnPointerOut, TrickleDown.TrickleDown);
+            }
+
+            if (HasAllocatedATagCallbacks())
+            {
+                m_TextElement.UnregisterCallback(m_ATagOnPointerOver, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_ATagOnPointerMove, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_ATagOnPointerUp, TrickleDown.TrickleDown);
+                m_TextElement.UnregisterCallback(m_ATagOnPointerOut, TrickleDown.TrickleDown);
+            }
+        }
+
         EventCallback<PointerDownEvent> m_LinkTagOnPointerDown;
         EventCallback<PointerUpEvent> m_LinkTagOnPointerUp;
         EventCallback<PointerMoveEvent> m_LinkTagOnPointerMove;

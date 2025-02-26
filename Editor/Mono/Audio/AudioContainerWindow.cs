@@ -119,6 +119,7 @@ sealed class AudioContainerWindow : EditorWindow
         window.Show();
     }
 
+    // Used by tests.
     internal bool IsInitializedForTargetDisplay()
     {
         return m_ContainerElementsInitialized && m_IsSubscribedToGUICallbacksAndEvents;
@@ -168,12 +169,12 @@ sealed class AudioContainerWindow : EditorWindow
         if (!m_IsVisible)
             return;
 
-        if (State.IsPlayingOrPaused()) { UpdateClipFieldProgressBars(); }
+        if (State.IsPreviewPlayingOrPaused()) { UpdateClipFieldProgressBars(); }
         else if (!m_ClipFieldProgressBarsAreCleared) { ClearClipFieldProgressBars(); }
 
         if (m_Meter != null)
         {
-            if (State.IsPlayingOrPaused())
+            if (State.IsPreviewPlayingOrPaused())
             {
                 if (State != null) { m_Meter.Value = State.GetMeterValue(); }
                 else { m_Meter.Value = -80.0f; }
@@ -410,20 +411,20 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnPlayStopButtonClicked()
     {
-        if (State.IsPlayingOrPaused())
+        if (State.IsPreviewPlayingOrPaused())
         {
-            State.Stop();
+            State.StopPreview();
             ClearClipFieldProgressBars();
         }
         else
-            State.Play();
+            State.PlayPreview();
 
         UpdateTransportButtonStates();
     }
 
     void OnSkipButtonClicked()
     {
-        if (State.IsPlayingOrPaused())
+        if (State.IsPreviewPlayingOrPaused())
             State.Skip();
     }
 
@@ -431,9 +432,9 @@ sealed class AudioContainerWindow : EditorWindow
     {
         var editorIsPaused = EditorApplication.isPaused;
 
-        m_PlayStopButton?.SetEnabled(State.IsReadyToPlay() && !editorIsPaused && !EditorUtility.audioMasterMute);
-        m_SkipButton?.SetEnabled(State.IsPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused && !EditorUtility.audioMasterMute);
-        m_PlayStopButtonImage.style.backgroundImage = State.IsPlayingOrPaused() ? GetIconTexture(Icons.Stop) : GetIconTexture(Icons.Play);
+        m_PlayStopButton?.SetEnabled(State.IsReadyToPlayPreview() && !editorIsPaused && !EditorUtility.audioMasterMute);
+        m_SkipButton?.SetEnabled(State.IsPreviewPlayingOrPaused() && State.AudioContainer.triggerMode == AudioRandomContainerTriggerMode.Automatic && !editorIsPaused && !EditorUtility.audioMasterMute);
+        m_PlayStopButtonImage.style.backgroundImage = State.IsPreviewPlayingOrPaused() ? GetIconTexture(Icons.Stop) : GetIconTexture(Icons.Play);
     }
 
     Texture2D GetIconTexture(Icons icon)
@@ -700,10 +701,7 @@ sealed class AudioContainerWindow : EditorWindow
         m_ClipsListView.itemIndexChanged += OnItemListIndexChanged;
         m_ClipsListView.makeItem = OnMakeListItem;
         m_ClipsListView.bindItem = OnBindListItem;
-
-        // We need a no-op unbind callback to prevent the default implementation from being run.
-        // See the comments in UUM-46918.
-        m_ClipsListView.unbindItem = (elm, idx) => { };
+        m_ClipsListView.unbindItem = OnUnbindListItem;
         m_DragManipulator.addAudioClipsDelegate += OnAudioClipDrag;
     }
 
@@ -792,6 +790,24 @@ sealed class AudioContainerWindow : EditorWindow
         enabledToggle.TrackPropertyValue(enabledProperty, OnElementEnabledToggleChanged);
         audioClipField.TrackPropertyValue(audioClipProperty, OnElementAudioClipChanged);
         volumeField.TrackPropertyValue(volumeProperty, OnElementPropertyChanged);
+
+        enabledToggle.RegisterValueChangedCallback(OnElementEnabledToggleChanged);
+        audioClipField.RegisterValueChangedCallback(OnElementAudioClipChanged);
+    }
+
+    void OnUnbindListItem(VisualElement element, int index)
+    {
+        var enabledToggle = UIToolkitUtilities.GetChildByName<Toggle>(element, "enabled-toggle");
+        var audioClipField = UIToolkitUtilities.GetChildByName<AudioContainerElementClipField>(element, "audio-clip-field");
+        var volumeField = UIToolkitUtilities.GetChildByName<FloatField>(element, "volume-field");
+
+        enabledToggle.UnregisterValueChangedCallback(OnElementEnabledToggleChanged);
+        audioClipField.UnregisterValueChangedCallback(OnElementAudioClipChanged);
+        audioClipField.UnregisterCallback<DragPerformEvent>(OnListDragPerform);
+
+        enabledToggle.Unbind();
+        audioClipField.Unbind();
+        volumeField.Unbind();
     }
 
     static void OnListDragPerform(DragPerformEvent evt)
@@ -799,19 +815,15 @@ sealed class AudioContainerWindow : EditorWindow
         evt.StopPropagation();
     }
 
-    void OnElementAudioClipChanged(SerializedProperty property)
+    void OnElementEnabledToggleChanged(ChangeEvent<bool> evt)
     {
-        var element = property.serializedObject.targetObject as AudioContainerElement;
-        Assert.IsNotNull(element);
-        var clip = property.objectReferenceValue as AudioClip;
-        UpdateListElementName(element, clip);
-        OnElementPropertyChanged(property);
-        UpdateTransportButtonStates();
-        State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
+        State.OnAudioClipListChanged();
     }
 
     void OnElementEnabledToggleChanged(SerializedProperty property)
     {
+        State.OnAudioClipListChanged();
+
         OnElementPropertyChanged(property);
         UpdateTransportButtonStates();
 
@@ -820,9 +832,23 @@ sealed class AudioContainerWindow : EditorWindow
         var last = State.AudioContainer.avoidRepeatingLast;
         State.AudioContainer.avoidRepeatingLast = -1;
         State.AudioContainer.avoidRepeatingLast = last;
+    }
 
-        if (State.IsPlayingOrPaused())
-            State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
+    void OnElementAudioClipChanged(ChangeEvent<Object> evt)
+    {
+        State.OnAudioClipListChanged();
+    }
+
+    void OnElementAudioClipChanged(SerializedProperty property)
+    {
+        State.OnAudioClipListChanged();
+
+        var element = property.serializedObject.targetObject as AudioContainerElement;
+        Assert.IsNotNull(element);
+        var clip = property.objectReferenceValue as AudioClip;
+        UpdateListElementName(element, clip);
+        OnElementPropertyChanged(property);
+        UpdateTransportButtonStates();
     }
 
     void OnElementPropertyChanged(SerializedProperty property)
@@ -833,6 +859,8 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnListItemsAdded(IEnumerable<int> indices)
     {
+        State.OnAudioClipListChanged();
+
         var indicesArray = indices as int[] ?? indices.ToArray();
         const string undoName = $"Add {nameof(AudioRandomContainer)} element";
         var groupUndoName = undoName;
@@ -868,6 +896,8 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnListItemsRemoved(IEnumerable<int> indices)
     {
+        State.OnAudioClipListChanged();
+
         var indicesArray = indices as int[] ?? indices.ToArray();
 
         // Confusingly, this callback is sometimes invoked post-delete and sometimes pre-delete,
@@ -889,17 +919,18 @@ sealed class AudioContainerWindow : EditorWindow
         }
 
         Undo.SetCurrentGroupName(undoName);
-        State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnItemListIndexChanged(int oldIndex, int newIndex)
     {
+        State.OnAudioClipListChanged();
         Undo.SetCurrentGroupName($"Reorder {nameof(AudioRandomContainer)} list");
-        State.AudioContainer.NotifyObservers(AudioRandomContainer.ChangeEventType.List);
     }
 
     void OnAudioClipDrag(List<AudioClip> audioClips)
     {
+        State.OnAudioClipListChanged();
+
         const string undoName = $"Add {nameof(AudioRandomContainer)} element";
         var groupUndoName = undoName;
 
@@ -934,8 +965,11 @@ sealed class AudioContainerWindow : EditorWindow
         }
     }
 
+    // NOTE: this function is also the entry point for handling undo-redo of clip list changes.
     void OnAudioClipListChanged(SerializedProperty property)
     {
+        State.OnAudioClipListChanged();
+
         // Do manual fixup of orphaned subassets after a possible undo of item removal
         // because the undo system does not play nice with RegisterCreatedObjectUndo.
         if (m_CachedElements.Count < State.AudioContainer.elements.Length)
@@ -965,11 +999,7 @@ sealed class AudioContainerWindow : EditorWindow
         // Force a list rebuild when the list has changed or it will not always render correctly
         m_ClipsListView.Rebuild();
 
-        // This function is the first entry-point in `AudioContainerWindow` after an undo-event that alters the
-        // audio clip list has been triggered. And, whenever the list is altered, we need to make sure the state is stopped.
-        State.Stop();
         ClearClipFieldProgressBars();
-
         UpdateTransportButtonStates();
         SetTitle();
     }
@@ -1182,7 +1212,7 @@ sealed class AudioContainerWindow : EditorWindow
             }
             else
             {
-                var mode = State.IsPlayingOrPaused() ? "Stop" : "Play";
+                var mode = State.IsPreviewPlayingOrPaused() ? "Stop" : "Play";
                 var shortcut = ShortcutManager.instance.GetShortcutBinding("Audio/Play-stop Audio Random Container");
 
                 if (shortcut.Equals(ShortcutBinding.empty))
@@ -1315,9 +1345,9 @@ sealed class AudioContainerWindow : EditorWindow
 
     void OnAudioMasterMuteChanged(bool isMuted)
     {
-        if (isMuted && State.IsPlayingOrPaused())
+        if (isMuted && State.IsPreviewPlayingOrPaused())
         {
-            State.Stop();
+            State.StopPreview();
             ClearClipFieldProgressBars();
         }
 

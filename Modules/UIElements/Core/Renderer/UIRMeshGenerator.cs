@@ -21,10 +21,9 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        UITKTextJobSystem textJobSystem { get; set; }
+        TextJobSystem textJobSystem { get; set; }
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
-        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
@@ -67,12 +66,12 @@ namespace UnityEngine.UIElements.UIR
         {
             m_MeshGenerationContext = mgc;
             m_OnMeshGenerationDelegate = OnMeshGeneration;
-            textJobSystem = new UITKTextJobSystem();
+            textJobSystem = new TextJobSystem();
         }
 
         public VisualElement currentElement { get; set; }
 
-        public UITKTextJobSystem textJobSystem { get; set; }
+        public TextJobSystem textJobSystem { get; set; }
 
         public struct BorderParams
         {
@@ -643,23 +642,6 @@ namespace UnityEngine.UIElements.UIR
             TextCore.Text.TextGenerator.GetTextGenerator().GenerateText(m_Settings, m_TextInfo);
 
             DrawTextBase(m_TextInfo, new NativeTextInfo(), pos, false);
-        }
-
-        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
-        {
-            DrawTextBase(null, textInfo, pos, true);
-
-            // Call Texture.Apply for all texture still dirty
-            // There are no other place where we are calling this to export the texture to the gpu
-            // for the ATG. This is as late as it could be right now.
-
-            // I am putting it here as this will only be call if an ATG-text has been modified
-            // and it will not be called when non-atg text only are modified
-            // Trying to keep the codepath separated for now.
-
-            // Finally, calling this once per text element is not optimal but the code underneath
-            // should simply retrun if there is nothing to apply
-            FontAsset.UpdateFontAssetsInUpdateQueue();
         }
 
         void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)

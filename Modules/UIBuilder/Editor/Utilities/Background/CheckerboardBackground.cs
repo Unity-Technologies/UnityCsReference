@@ -39,9 +39,10 @@ namespace Unity.UI.Builder
         {
             pickingMode = PickingMode.Ignore;
             RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             style.position = Position.Absolute;
+            style.width = Length.Percent(100.0f);
+            style.height = Length.Percent(100.0f);
             generateVisualContent += OnGenerateVisualContent;
         }
 
@@ -58,32 +59,6 @@ namespace Unity.UI.Builder
             m_Texture = null;
         }
 
-        void OnAttachToPanel(AttachToPanelEvent e)
-        {
-            if (parent != null)
-            {
-                parent.RegisterCallback<GeometryChangedEvent>(e => { UpdateWidthAndHeight(); });
-            }
-        }
-
-        void UpdateWidthAndHeight()
-        {
-            if (parent != null)
-            {
-                var parentSize = new Vector2(parent.worldClip.width, parent.worldClip.height);
-                var veSize = m_CellSize * k_TextureSize;
-                var quadSize = new Vector2(veSize, veSize);
-
-                int dimX = (int)Mathf.Max(Mathf.Ceil(parentSize.x / quadSize.x), 1.0f);
-                int dimY = (int)Mathf.Max(Mathf.Ceil(parentSize.y / quadSize.y), 1.0f);
-
-                style.width = dimX * quadSize.x;
-                style.height = dimY * quadSize.y;
-
-                MarkDirtyRepaint();
-            }
-        }
-
         void OnGenerateVisualContent(MeshGenerationContext context)
         {
             var veSize = m_CellSize * k_TextureSize;
@@ -92,16 +67,13 @@ namespace Unity.UI.Builder
             int dimX = (int)(resolvedStyle.width / quadSize.x) + 1;
             int dimY = (int)(resolvedStyle.height / quadSize.x) + 1;
 
-            float offsetX = ((int)(worldClip.x - worldBound.x) / (m_CellSize * 2)) * (m_CellSize * 2);
-            float offsetY = ((int)(worldClip.y - worldBound.y) / (m_CellSize * 2)) * (m_CellSize * 2);
-
             int dim = dimX * dimY;
             var mesh = context.Allocate(4 * dim, 6 * dim, m_Texture);
 
             for (var x = 0; x < dimX; x++)
                 for (var y = 0; y < dimY; y++)
                 {
-                    Quad(mesh, new Vector2(offsetX + x * quadSize.x, offsetY + y * quadSize.y), quadSize, Color.white);
+                    Quad(mesh, new Vector2(x * quadSize.x, y * quadSize.y), quadSize, Color.white);
                 }
         }
 
@@ -210,9 +182,6 @@ namespace Unity.UI.Builder
 
             // The width and height will not directly be used since we compute a dynamic size in OnGenerateVisualContent
             var veSize = m_CellSize * k_TextureSize;
-            style.width = veSize;
-            style.height = veSize;
-
             m_Texture.Apply(false, true);
         }
 

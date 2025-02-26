@@ -434,11 +434,6 @@ namespace UnityEngine.UIElements
             meshGenerator.DrawText(text, pos, fontSize, color, font);
         }
 
-        internal void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
-        {
-            meshGenerator.DrawNativeText(textInfo, pos);
-        }
-
         /// <summary>
         /// Returns an allocator that can be used to safely allocate temporary meshes from the job system. The meshes
         /// have the same scope as those allocated by <see cref="AllocateTempMesh"/>.
