@@ -319,7 +319,7 @@ namespace UnityEditor.ShortcutManagement
             return keyCombinations.Single().ToMenuShortcutString();
         }
 
-        static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)
+        internal static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
