@@ -694,9 +694,13 @@ namespace Unity.UI.Builder
         public static readonly string SaveDialogSaveChangesPromptMessage = "Do you want to save changes you made?";
         public static readonly string SaveDialogExternalChangesPromptTitle = "The document, {0}, has been changed outside of the UI Builder";
         public static readonly string SaveDialogExternalChangesPromptMessage =
-            "The UI Builder will now apply the changes made outside of the UI Builder. This overwrites any unsaved changes you made in the UI Builder.\n\n" +
-            "Note: To avoid conflicting changes, make sure to save any changes you make in the UI Builder before editing a file in an external editor or " +
-            "in a dedicated editor inside Unity (this includes resource files like Font and Sprite assets which have their own editor).";
+            "The UI Document or a style sheet was modified externally. Choose to keep UI Builder changes, use external changes, or save UI Builder changes to a temporary file for later merging.\n\n" +
+            "Note: To avoid conflicts, save your UI Builder changes before editing files in an external editor or " +
+            "in a dedicated editor inside Unity (including assets like Font and Sprites).";
+
+        public static readonly string SaveDialogExternalChangedOkButton = "Keep UI Builder changes";
+        public static readonly string SaveDialogExternalChangedCancelButton = "Use external changes";
+        public static readonly string SaveDialogExternalChangedAltButton = "Write to temporary file and use external";
         public static readonly string SaveDialogInvalidPathMessage = "Can only save in the 'Assets/' or 'Packages/' folders.";
         public static readonly string SaveDialogReplaceWithNewTemplateMessage = "Changes to your template affect this file. In order to replace this template, we need to save your current file.";
 

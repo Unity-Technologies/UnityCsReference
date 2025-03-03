@@ -22,7 +22,9 @@ namespace Unity.UI.Builder
             bool added = BuilderAssetUtilities.AddStyleSheetToAsset(paneWindow.document, ussPath);
 
             if (added)
+            {
                 paneWindow.OnEnableAfterAllSerialization();
+            }
 
             return added;
         }

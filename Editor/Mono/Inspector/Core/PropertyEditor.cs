@@ -135,7 +135,6 @@ namespace UnityEditor
         protected bool m_PreviousPreviewExpandedState;
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
-        internal bool hasFloatingPreviewWindow { get; set; }
         readonly List<Type> m_EditorTargetTypes = new List<Type>();
 
         List<DataMode> m_SupportedDataModes = new(4);
@@ -150,7 +149,16 @@ namespace UnityEditor
 
         EditorElementUpdater m_EditorElementUpdater;
         IPreviewable m_cachedPreviewEditor;
+
+        /// <summary>
+        /// Delayer used to periodically check if the return value of <see cref="IPreviewable.HasPreviewGUI"/> has changed.
+        /// </summary>
         Delayer m_HasPreviewPeriodicCheckDelayer;
+
+        /// <summary>
+        /// Stores the last return value of <see cref="IPreviewable.HasPreviewGUI"/> in <see cref="HasPreviewPeriodicCheck"/>.
+        /// </summary>
+        bool m_LastHasPreviewPeriodicCheck;
 
         public InspectorMode inspectorMode
         {
@@ -313,7 +321,6 @@ namespace UnityEditor
             editorDragging = new EditorDragging(this);
             minSize = new Vector2(k_MinimumWindowWidth, minSize.y);
             m_EditorElementUpdater = new EditorElementUpdater(this);
-            hasFloatingPreviewWindow = false;
         }
 
         [UsedImplicitly]
@@ -361,36 +368,42 @@ namespace UnityEditor
             if (shouldUpdateSupportedDataModes)
                 EditorApplication.CallDelayed(UpdateSupportedDataModesList);
 
-            if (!m_AllPropertyEditors.Contains(this)) m_AllPropertyEditors.Add(this);
+            if (!m_AllPropertyEditors.Contains(this))
+                m_AllPropertyEditors.Add(this);
 
-            m_HasPreviewPeriodicCheckDelayer?.Dispose();
+            // Setup a periodic check to determine if we need to rebuild the contents containers
             m_HasPreviewPeriodicCheckDelayer = Delayer.Throttle(HasPreviewPeriodicCheck, TimeSpan.FromMilliseconds(200));
-            EditorApplication.update += OnEditorUpdate;
 
             // Restrict the minimum height of the content area so it can't be collapsed to nothing
             m_ScrollView.style.minHeight = 150;
         }
 
+        /// <summary>
+        /// Periodic check if the preview editor has changed its HasPreviewGUI return value.
+        /// This is not executed on every frame because getting the editor that controls the preview is expensive.
+        /// </summary>
         void HasPreviewPeriodicCheck(object _)
         {
             var previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
 
-            // Do we have a preview?
+            // Check if the return value of HasPreviewGUI has changed, and rebuild the contents containers if it did
             var hasPreview = previewEditor != null && previewEditor.HasPreviewGUI();
-            if (hasPreview != m_HasPreview)
+            if (hasPreview != m_LastHasPreviewPeriodicCheck)
             {
-                m_HasPreview = hasPreview;
                 RebuildContentsContainers();
+                m_LastHasPreviewPeriodicCheck = hasPreview;
             }
         }
-
-        void OnEditorUpdate() => m_HasPreviewPeriodicCheckDelayer?.Execute(null);
 
         [UsedImplicitly]
         protected virtual void OnDisable()
         {
-            m_HasPreviewPeriodicCheckDelayer?.Dispose();
-            hasFloatingPreviewWindow = false;
+            if (m_HasPreviewPeriodicCheckDelayer != null)
+            {
+                m_HasPreviewPeriodicCheckDelayer.Dispose();
+                m_HasPreviewPeriodicCheckDelayer = null;
+            }
+
             ClearPreviewables();
 
             // save vertical scroll position
@@ -413,7 +426,6 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             m_AllPropertyEditors.Remove(this);
-            EditorApplication.update -= OnEditorUpdate; 
         }
 
         private void OnMouseEnter(MouseEnterEvent e) => HoveredPropertyEditor = this;
@@ -466,6 +478,8 @@ namespace UnityEditor
         {
             if (m_FirstInitialize)
                 RebuildContentsContainers();
+            else
+                m_HasPreviewPeriodicCheckDelayer?.Execute();
         }
 
         static Editor[] s_Editors = new Editor[10];
@@ -1160,7 +1174,7 @@ namespace UnityEditor
 
             if (m_PreviewResizer != null && editors.Any())
             {
-                if (previewAndLabelElement != null && !hasFloatingPreviewWindow)
+                if (previewAndLabelElement != null)
                 {
                     VisualElement previewItem = null;
                     CreatePreviewables();

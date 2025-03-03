@@ -2082,6 +2082,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Events\FocusEvents.cs">
       <Link>Modules\UIElements\Core\Events\FocusEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\IMEEvent.cs">
+      <Link>Modules\UIElements\Core\Events\IMEEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Events\InputEvents.cs">
       <Link>Modules\UIElements\Core\Events\InputEvents.cs</Link>
     </Compile>

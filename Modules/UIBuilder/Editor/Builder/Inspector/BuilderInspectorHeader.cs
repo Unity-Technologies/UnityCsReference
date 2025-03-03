@@ -225,24 +225,16 @@ namespace Unity.UI.Builder
             BuildNameFieldContextualMenu(evt.menu, evt.elementTarget);
         }
 
-        private void UnsetName(DropdownMenuAction action)
+        private void UnsetName(DropdownMenuAction _) => UnsetName();
+
+        internal void UnsetName()
         {
-            // Undo/Redo
-            Undo.RegisterCompleteObjectUndo(m_Inspector.visualTreeAsset,
-                BuilderConstants.ChangeAttributeValueUndoMessage);
-
-            // Unset value in asset.
-            var vea = currentVisualElement.GetVisualElementAsset();
-
-            vea.RemoveAttribute("name");
+            // Link the attribute description 
+            var attributeDesc = m_Inspector.attributesSection.m_SerializedDataDescription.FindAttributeWithPropertyName("name");
+            m_TextField.SetLinkedAttributeDescription(attributeDesc);
+            m_Inspector.attributesSection.UnsetAttributeProperty(m_TextField, true);
 
             m_TextField.SetValueWithoutNotify(string.Empty);
-
-            m_Inspector.CallInitOnElement();
-
-            // Notify of changes.
-            m_Selection.NotifyOfHierarchyChange(m_Inspector);
-
             ToggleNameOverrideBox(false);
         }
 

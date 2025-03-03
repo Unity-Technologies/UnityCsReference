@@ -19,7 +19,21 @@ namespace Unity.UI.Builder
 
         protected override void RefreshPreview()
         {
-            SetText(GetTargetStylesheet()?.GenerateUSS() ?? string.Empty);
+            var targetStylesheet = GetTargetStylesheet();
+            if (targetStylesheet == null || document.activeOpenUXMLFile == null)
+            {
+                SetText(string.Empty);
+                return;
+            }
+
+            foreach (var openUssFile in document.activeOpenUXMLFile.openUSSFiles)
+            {
+                if (openUssFile.styleSheet != targetStylesheet)
+                    continue;
+
+                SetText(openUssFile.ussPreview);
+                break;
+            }
         }
 
         protected override void RefreshHeader()
@@ -56,6 +70,24 @@ namespace Unity.UI.Builder
             return null;
         }
 
+        BuilderDocumentOpenUSS GetTargetUss()
+        {
+            var targetStylesheet = GetTargetStylesheet();
+            if (targetStylesheet == null || document.activeOpenUXMLFile == null)
+            {
+                return null;
+            }
+
+            foreach (var openUssFile in document.activeOpenUXMLFile.openUSSFiles)
+            {
+                if (openUssFile.styleSheet != targetStylesheet)
+                    continue;
+                return openUssFile;
+            }
+
+            return null;
+        }
+
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             RefreshHeader();
@@ -71,6 +103,7 @@ namespace Unity.UI.Builder
         {
             if (changeType == BuilderStylingChangeType.Default)
             {
+                GetTargetUss()?.GeneratePreview();
                 RefreshPreviewIfVisible();
             }
         }
