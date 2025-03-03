@@ -68,10 +68,19 @@ namespace UnityEditor
                     return;
                 m_ExposureValue = value;
                 var newRgbFloat = m_HDRBaseColor * Mathf.Pow(2f, m_ExposureValue - m_BaseExposureValue);
-                m_ColorHdr[(int)RgbaChannel.R] = newRgbFloat.r;
-                m_ColorHdr[(int)RgbaChannel.G] = newRgbFloat.g;
-                m_ColorHdr[(int)RgbaChannel.B] = newRgbFloat.b;
+                m_ColorHdr[(int)RgbaChannel.R] = FloatClampSafe(newRgbFloat.r);
+                m_ColorHdr[(int)RgbaChannel.G] = FloatClampSafe(newRgbFloat.g);
+                m_ColorHdr[(int)RgbaChannel.B] = FloatClampSafe(newRgbFloat.b);
             }
+        }
+
+        static float FloatClampSafe(float value)
+        {
+            if (float.IsPositiveInfinity(value) || float.IsNaN(value))
+                return float.MaxValue;
+            if (float.IsNegativeInfinity(value))
+                return float.MinValue;
+            return value;
         }
 
         public byte GetColorChannel(RgbaChannel channel)

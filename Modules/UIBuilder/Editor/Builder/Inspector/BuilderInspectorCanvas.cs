@@ -219,7 +219,7 @@ namespace Unity.UI.Builder
             m_EditorExtensionsModeToggle.RegisterValueChangedCallback(e =>
             {
                 m_Document.fileSettings.editorExtensionMode = e.newValue;
-                m_Inspector.selection.NotifyOfStylingChangePostStylingUpdate();
+                m_Inspector.selection.NotifyOfHierarchyChange(m_Document, null, BuilderHierarchyChangeType.Attributes);
                 if (e.newValue)
                 {
                     Builder.ShowWarning(BuilderConstants.InspectorEditorExtensionAuthoringActivated);

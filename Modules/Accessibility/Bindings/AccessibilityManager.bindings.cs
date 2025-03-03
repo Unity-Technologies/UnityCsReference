@@ -53,7 +53,7 @@ namespace UnityEngine.Accessibility
             }
         }
 
-        static Queue<NotificationContext> s_AsyncNotificationContexts = new();
+        internal static Queue<NotificationContext> asyncNotificationContexts = new();
 
         /// <summary>
         /// Indicates whether our Accessibility support is implemented for the current platform.
@@ -107,18 +107,18 @@ namespace UnityEngine.Accessibility
         static void Internal_Update()
         {
             // Prevent lock if empty.
-            if (s_AsyncNotificationContexts.Count == 0)
+            if (asyncNotificationContexts.Count == 0)
                 return;
 
             NotificationContext[] contexts;
 
-            lock (s_AsyncNotificationContexts)
+            lock (asyncNotificationContexts)
             {
-                if (s_AsyncNotificationContexts.Count == 0)
+                if (asyncNotificationContexts.Count == 0)
                     return;
 
-                contexts = s_AsyncNotificationContexts.ToArray();
-                s_AsyncNotificationContexts.Clear();
+                contexts = asyncNotificationContexts.ToArray();
+                asyncNotificationContexts.Clear();
             }
 
             using var amLock = GetExclusiveLock();
@@ -163,23 +163,22 @@ namespace UnityEngine.Accessibility
         }
 
         [RequiredByNativeCode]
-        static int[] Internal_GetRootNodeIds()
+        internal static int[] Internal_GetRootNodeIds()
         {
             var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
             var rootNodes = service?.GetRootNodes();
 
             if (rootNodes == null || rootNodes.Count == 0)
+            {
                 return null;
+            }
 
             using (ListPool<int>.Get(out var rootNodeIds))
             {
                 for (var i = 0; i < rootNodes.Count; i++)
                     rootNodeIds.Add(rootNodes[i].id);
 
-                if (rootNodeIds.Count == 0)
-                    return null;
-
-                return rootNodeIds.ToArray();
+                return rootNodeIds.Count == 0 ? null : rootNodeIds.ToArray();
             }
         }
 
@@ -199,33 +198,21 @@ namespace UnityEngine.Accessibility
                 node.GetNodeData(ref nodeData);
                 return true;
             }
-            
+
             return false;
         }
 
         [RequiredByNativeCode]
-        static int Internal_GetNodeIdAt(float x, float y)
+        internal static int Internal_GetNodeIdAt(float x, float y)
         {
             var service = AssistiveSupport.GetService<AccessibilityHierarchyService>();
 
-            if (service == null)
-                return AccessibilityNodeManager.k_InvalidNodeId;
-
-            var rootNodes = service.GetRootNodes();
-
-            if (rootNodes.Count == 0)
-                return AccessibilityNodeManager.k_InvalidNodeId;
-
-            if (service.TryGetNodeAt(x, y, out var node))
-            {
-                return node.id;
-            }
-
-            return AccessibilityNodeManager.k_InvalidNodeId;
+            return service != null && service.TryGetNodeAt(x, y, out var node) ?
+                node.id : AccessibilityNodeManager.k_InvalidNodeId;
         }
 
         [RequiredByNativeCode]
-        static void Internal_OnAccessibilityNotificationReceived(ref AccessibilityNotificationContext context)
+        internal static void Internal_OnAccessibilityNotificationReceived(ref AccessibilityNotificationContext context)
         {
             // Ignore the global notification and only rely on the per-node notification.
             if (context.notification == AccessibilityNotification.ElementFocused)
@@ -236,9 +223,9 @@ namespace UnityEngine.Accessibility
 
         internal static void QueueNotification(NotificationContext notification)
         {
-            lock (s_AsyncNotificationContexts)
+            lock (asyncNotificationContexts)
             {
-                s_AsyncNotificationContexts.Enqueue(notification);
+                asyncNotificationContexts.Enqueue(notification);
             }
         }
 

@@ -12,7 +12,7 @@ namespace Unity.UI.Builder
         const string k_EditorExtensionModeAttributeName = "editor-extension-mode";
 
         bool m_EditorExtensionMode;
-        readonly VisualElementAsset m_RootElementAsset;
+        VisualElementAsset m_RootElementAsset;
 
         public bool editorExtensionMode
         {
@@ -29,9 +29,7 @@ namespace Unity.UI.Builder
 
         public BuilderUXMLFileSettings(VisualTreeAsset visualTreeAsset)
         {
-            m_RootElementAsset = visualTreeAsset.GetRootUxmlElement();
-
-            RetrieveEditorExtensionModeSetting();
+            SetRootElementAsset(visualTreeAsset);
         }
 
         void RetrieveEditorExtensionModeSetting()
@@ -40,6 +38,13 @@ namespace Unity.UI.Builder
                 m_EditorExtensionMode = Convert.ToBoolean(m_RootElementAsset.GetAttributeValue(k_EditorExtensionModeAttributeName));
             else
                 editorExtensionMode = BuilderProjectSettings.enableEditorExtensionModeByDefault;
+        }
+
+        internal void SetRootElementAsset(VisualTreeAsset visualTreeAsset)
+        {
+            m_RootElementAsset = visualTreeAsset.GetRootUxmlElement();
+
+            RetrieveEditorExtensionModeSetting();
         }
     }
 }

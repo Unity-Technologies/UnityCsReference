@@ -400,7 +400,16 @@ namespace Unity.UI.Builder
             if (!BuilderAssetUtilities.ValidateAsset(visualTreeAsset, assetPath))
                 return false;
 
-            if (!document.CheckForUnsavedChanges(assetModifiedExternally))
+            var hasUnsavedChanges = document.CheckForUnsavedChanges(assetModifiedExternally);
+            if (!hasUnsavedChanges && assetModifiedExternally)
+            {
+                // Needed to refresh the document after an external change.
+                document.OnAfterBuilderDeserialize(m_Viewport.documentRootElement);
+                m_Selection.NotifyOfHierarchyChange(document);
+                m_Selection.ClearSelection(this);
+            }
+
+            if (!hasUnsavedChanges)
                 return false;
 
             if (unloadAllSubdocuments)

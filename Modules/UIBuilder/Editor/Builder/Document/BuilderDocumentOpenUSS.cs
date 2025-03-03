@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor;
 using System;
-using System.IO;
 
 namespace Unity.UI.Builder
 {
@@ -15,6 +14,12 @@ namespace Unity.UI.Builder
     {
         [SerializeField]
         StyleSheet m_StyleSheet;
+
+        [SerializeField]
+        private int m_ContentHash;
+
+        [SerializeField]
+        private string m_UssPreview;
 
         // Used to restore in-memory StyleSheet asset if closing without saving.
         StyleSheet m_BackupStyleSheet;
@@ -29,7 +34,11 @@ namespace Unity.UI.Builder
         public StyleSheet styleSheet
         {
             get => m_StyleSheet;
-            set => m_StyleSheet = value;
+            set
+            {
+                m_StyleSheet = value;
+                m_ContentHash = m_StyleSheet.contentHash;
+            }
         }
 
         public StyleSheet backupStyleSheet
@@ -37,19 +46,26 @@ namespace Unity.UI.Builder
             get => m_BackupStyleSheet;
         }
 
+        public int contentHash => m_ContentHash;
+
         public string assetPath => AssetDatabase.GetAssetPath(m_StyleSheet);
 
         public string oldPath => m_OldPath;
 
-        public void Set(StyleSheet styleSheet, string ussPath)
+        public string ussPreview => m_UssPreview;
+
+        public void Set(StyleSheet styleSheet, string ussPath, bool updateBackup = true)
         {
             if (string.IsNullOrEmpty(ussPath))
                 ussPath = AssetDatabase.GetAssetPath(styleSheet);
 
-            m_StyleSheet = styleSheet;
-            m_BackupStyleSheet = styleSheet.DeepCopy();
+            this.styleSheet = styleSheet;
+            if (updateBackup) {
+                m_BackupStyleSheet = styleSheet.DeepCopy();
+            }
             m_OldPath = ussPath;
             m_NewPath = null;
+            m_UssPreview = m_StyleSheet.GenerateUSS();
         }
 
         public void Clear()
@@ -58,6 +74,8 @@ namespace Unity.UI.Builder
 
             ClearBackup();
             m_StyleSheet = null;
+            m_UssPreview = string.Empty;
+            m_ContentHash = 0;
 
             // Note: Leaving here as a warning to NOT do this in the
             // future. The problem is that the lines below will force
@@ -77,6 +95,11 @@ namespace Unity.UI.Builder
             m_StyleSheet.FixRuleReferences();
         }
 
+        public void GeneratePreview()
+        {
+            m_UssPreview = m_StyleSheet.GenerateUSS();
+        }
+
         public bool SaveToDisk(VisualTreeAsset visualTreeAsset)
         {
             var newUSSPath = assetPath;
@@ -86,16 +109,14 @@ namespace Unity.UI.Builder
             m_NewPath = newUSSPath;
             visualTreeAsset.ReplaceStyleSheetPaths(m_OldPath, newUSSPath);
 
-            var ussText = m_StyleSheet.GenerateUSS();
-
-            if (ussText == null)
+            if (ussPreview == null)
                 return false;
 
             bool shouldSave = m_OldPath != newUSSPath;
             if (!shouldSave && m_BackupStyleSheet)
             {
                 var backUss = m_BackupStyleSheet.GenerateUSS();
-                shouldSave = backUss != ussText;
+                shouldSave = backUss != ussPreview;
             }
 
             if (!shouldSave)
@@ -109,17 +130,21 @@ namespace Unity.UI.Builder
             else
                 m_StyleSheet.DeepOverwrite(m_BackupStyleSheet);
 
-            return WriteUSSToFile(newUSSPath, ussText);
+            return BuilderAssetUtilities.WriteTextFileToDisk(newUSSPath, ussPreview);
         }
 
         public bool PostSaveToDiskChecksAndFixes()
         {
             m_StyleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(m_NewPath);
-            bool needsFullRefresh = m_StyleSheet != m_BackupStyleSheet;
+            var needsFullRefresh = m_StyleSheet != m_BackupStyleSheet;
+
+            m_ContentHash = m_StyleSheet.contentHash;
 
             // Get back selection markers from backup:
             if (needsFullRefresh)
+            {
                 m_BackupStyleSheet.DeepOverwrite(m_StyleSheet);
+            }
 
             m_NewPath = null;
             return needsFullRefresh;
@@ -130,8 +155,20 @@ namespace Unity.UI.Builder
             if (assetPath != m_OldPath)
                 return false;
 
-            m_StyleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(assetPath);
+            styleSheet = BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(assetPath);
             return true;
+        }
+
+        public void RestoreUnsavedChanges()
+        {
+            ClearUndo();
+            ClearBackup();
+
+            var restoredStyleSheet = StyleSheetUtilities.CreateInstance();
+            var ussImporter = new BuilderStyleSheetImporter();
+            ussImporter.Import(restoredStyleSheet, ussPreview);
+            m_BackupStyleSheet = styleSheet.DeepCopy();
+            restoredStyleSheet.DeepOverwrite(styleSheet);
         }
 
         public void RestoreFromBackup()
@@ -140,6 +177,7 @@ namespace Unity.UI.Builder
                 return;
 
             m_BackupStyleSheet.DeepOverwrite(m_StyleSheet);
+            m_ContentHash = m_StyleSheet.contentHash;
         }
 
         public void ClearBackup()
@@ -154,27 +192,6 @@ namespace Unity.UI.Builder
         public void ClearUndo()
         {
             m_StyleSheet.ClearUndo();
-        }
-
-        bool WriteUSSToFile(string ussPath)
-        {
-            var ussText = m_StyleSheet.GenerateUSS();
-
-            // This will only be null (not empty) if the UXML is invalid in some way.
-            if (ussText == null)
-                return false;
-
-            return WriteUSSToFile(ussPath, ussText);
-        }
-
-        bool WriteUSSToFile(string ussPath, string ussText)
-        {
-            // Make sure the folders exist.
-            var ussFolder = Path.GetDirectoryName(ussPath);
-            if (!Directory.Exists(ussFolder))
-                Directory.CreateDirectory(ussFolder);
-
-            return BuilderAssetUtilities.WriteTextFileToDisk(ussPath, ussText);
         }
 
         public int GetComplexSelectorsCount()
