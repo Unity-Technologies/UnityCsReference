@@ -549,8 +549,7 @@ namespace UnityEngine.InputForUI
         private void CheckIfIMEChanged(DiscreteTime currentTime)
         {
             var currentCompositionString = _input.compositionString;
-            if (string.IsNullOrEmpty(_compositionString) != string.IsNullOrEmpty(currentCompositionString) &&
-                _compositionString != currentCompositionString)
+            if (_compositionString != currentCompositionString)
             {
                 _compositionString = currentCompositionString;
                 EventProvider.Dispatch(Event.From(ToIMECompositionEvent(currentTime, _compositionString)));

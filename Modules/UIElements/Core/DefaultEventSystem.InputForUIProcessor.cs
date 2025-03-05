@@ -271,14 +271,11 @@ namespace UnityEngine.UIElements
                 if (m_EventSystem.verbose)
                     m_EventSystem.Log(compositionEvent);
 
-                // IME Composition events aren't part of UITK runtime input at the moment.
-                // They are sent while the user is entering a sequence of text that can be completed from a list of
+                // IME Events are sent while the user is entering a sequence of text that can be completed from a list of
                 // suggestions, each time they type a new letter and upon confirmation of their choice of word.
                 // Once the choice of word is confirmed, a sequence of corresponding TextInputEvents are sent and
                 // match all the letters that need to be entered in the TextField.
-                // The IME Composition events don't affect the state of any of the UITK controls and aren't displayed
-                // by UITK visual elements at the moment, so for compatibility with non-InputForUI events, we don't
-                // support them for the time being.
+                m_EventSystem.SendFocusBasedEvent(_ => IMEEvent.GetPooled(compositionEvent.compositionString), 0);
             }
         }
     }

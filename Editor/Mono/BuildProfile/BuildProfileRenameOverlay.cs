@@ -18,6 +18,7 @@ namespace UnityEditor.Build.Profile
     {
         static readonly string k_InvalidChars = BuildProfileModuleUtil.GetFilenameInvalidCharactersStr();
         static readonly string k_ErrorMessage = string.Format(L10n.Tr("A file name can't contain any of the following characters:\t{0}"), k_InvalidChars);
+        static readonly string k_ErrorMessageLength = string.Format(L10n.Tr("Build profile name can't be longer than {0} symbols"), BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension);
 
         TextField m_TextField;
         Rect? m_ErrorRect = null;
@@ -52,6 +53,16 @@ namespace UnityEditor.Build.Profile
                 m_TextField.SetValueWithoutNotify(previousValue);
 
                 // The cursor should be kept in place when adding an invalid character
+                var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
+                m_TextField.cursorIndex = targetIndex;
+                m_TextField.selectIndex = targetIndex;
+            }
+            else if (newValue.Length > BuildProfileModuleUtil.k_MaxAssetFileNameLengthWithoutExtension)
+            {
+                TooltipView.Show(k_ErrorMessageLength, errorRect);
+                m_TextField.SetValueWithoutNotify(previousValue);
+
+                // The cursor should be kept in place when adding too much
                 var targetIndex = Mathf.Max(m_TextField.cursorIndex - 1, 0);
                 m_TextField.cursorIndex = targetIndex;
                 m_TextField.selectIndex = targetIndex;

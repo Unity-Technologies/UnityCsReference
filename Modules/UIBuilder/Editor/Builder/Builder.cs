@@ -25,7 +25,15 @@ namespace Unity.UI.Builder
                     builder.inspector.BeforeSelectionChanged();
 
                     if (builder.document.hasUnsavedChanges)
-                        builder.SaveChanges();
+                    {
+                        // Give time to UI Builder to reload the changes if the save caused a reimport. Case UUM-76252.
+                        // See BuilderDocumentOpenUXML.OnPostProcessAsset delayed load.
+                        EditorApplication.delayCall += () =>
+                        {
+                            if (builder.document.hasUnsavedChanges)
+                                builder.SaveChanges();
+                        };
+                    }
                 }
             };
         }
@@ -209,11 +217,26 @@ namespace Unity.UI.Builder
             commandHandler.RegisterPane(m_Viewport);
             commandHandler.RegisterToolbar(m_Toolbar);
 
+            // Register key down for save.
+            root.RegisterCallback<KeyDownEvent>(SaveOnKeyDownEvent, TrickleDown.TrickleDown);
+
             m_MiddleSplitView = rootVisualElement.Q<TwoPaneSplitView>("middle-column");
             m_MiddleSplitView.RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
 
             OnEnableAfterAllSerialization();
             closing += m_UnregisterBuilderLibraryContentProcessors;
+        }
+
+        private void SaveOnKeyDownEvent(KeyDownEvent evt)
+        {
+            var isCmdOrCtrlKey = Application.platform == RuntimePlatform.OSXEditor ? evt.commandKey : evt.ctrlKey;
+            if (!isCmdOrCtrlKey || evt.keyCode != KeyCode.S)
+                return;
+
+            if (document.hasUnsavedChanges)
+                SaveChanges();
+
+            evt.StopPropagation();
         }
 
         // Message received when we dock/undock the window.

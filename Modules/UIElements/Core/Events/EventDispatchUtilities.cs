@@ -555,9 +555,22 @@ namespace UnityEngine.UIElements
         {
             var capturingElement = panel.GetCapturingElement(pointerId) as VisualElement;
 
+            // We make our best effort to always send Pointer and Mouse events to the same element.
+            // If there's an element with the specific pointer capture, we send it to them.
+            // Otherwise, if we have mouse capture, we allow mouse compatibility events to play out their
+            // mouse capture logic in a closed loop by sending them all the mouse and pointer events.
+            // In this context, capturing another pointer during mouse capture will hijack the mouse capture
+            // but not the other way around.
             if (capturingElement == null)
             {
-                return false;
+                if (evt is IPointerEventInternal pei && pei.compatibilityMouseEvent != null)
+                {
+                    capturingElement = panel.GetCapturingElement(PointerId.mousePointerId) as VisualElement;
+                    if (capturingElement == null)
+                        return false;
+                }
+                else
+                    return false;
             }
 
             // Release pointer capture if capture element is not in a panel.

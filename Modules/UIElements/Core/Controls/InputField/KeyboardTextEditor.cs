@@ -57,6 +57,9 @@ namespace UnityEngine.UIElements
                 case NavigationCancelEvent ne:
                     OnNavigationEvent(ne);
                     break;
+                case IMEEvent ev:
+                    OnIMEInput(ev);
+                    break;
             }
         }
 
@@ -69,6 +72,13 @@ namespace UnityEngine.UIElements
         void OnBlur(BlurEvent _)
         {
             GUIUtility.imeCompositionMode = IMECompositionMode.Auto;
+        }
+
+        void OnIMEInput(IMEEvent _)
+        {
+            var oldIsCompositionActive = editingUtilities.isCompositionActive;
+            if (editingUtilities.UpdateImeState() || oldIsCompositionActive != editingUtilities.isCompositionActive)
+                UpdateLabel(true);
         }
 
         void OnKeyDown(KeyDownEvent evt)

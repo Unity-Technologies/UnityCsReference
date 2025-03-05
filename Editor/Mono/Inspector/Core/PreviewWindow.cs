@@ -57,7 +57,6 @@ namespace UnityEditor
             base.OnDisable();
             if (m_ParentInspectorWindow != null && GetInspectors().Contains(m_ParentInspectorWindow))
             {
-                m_ParentInspectorWindow.hasFloatingPreviewWindow = false;
                 m_ParentInspectorWindow.RebuildContentsContainers();
             }
         }

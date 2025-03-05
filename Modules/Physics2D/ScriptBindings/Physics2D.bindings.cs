@@ -3990,6 +3990,9 @@ namespace UnityEngine
         // Gets the method used to combine both material bounce values.
         extern public PhysicsMaterialCombine2D bounceCombine { get; }
 
+        // Gets the contact mask taking into account the layer mask and the body/collider include/exclude masks.
+        extern internal LayerMask contactMask { [NativeMethod("GetContactMask_Binding")] get; }
+
         // Get whether this collider is currently touching a specific collider or not.
         extern public bool IsTouching([NotNull] Collider2D collider);
 
@@ -4049,7 +4052,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
         }
@@ -4059,7 +4062,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, distance, contactFilter, true, results);
         }
@@ -4068,7 +4071,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
         }

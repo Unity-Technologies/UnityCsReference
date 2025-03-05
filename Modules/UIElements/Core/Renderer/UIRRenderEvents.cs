@@ -892,37 +892,37 @@ namespace UnityEngine.UIElements.UIR
         {
             var style = ve.resolvedStyle;
             bool hasAllocated = false;
-            if (!ve.renderChainData.colorID.IsValid() && style.color != Color.white)
+            if (!ve.renderChainData.colorID.IsValid() && ve is TextElement)
             {
                 ve.renderChainData.colorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.backgroundColorID.IsValid() && style.backgroundColor != Color.clear)
+            if (!ve.renderChainData.backgroundColorID.IsValid())
             {
                 ve.renderChainData.backgroundColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderLeftColorID.IsValid() && style.borderLeftWidth > 0.0f)
+            if (!ve.renderChainData.borderLeftColorID.IsValid() && style.borderLeftWidth > 0.0f) // Size change will trigger a re-tessellation
             {
                 ve.renderChainData.borderLeftColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderTopColorID.IsValid() && style.borderTopWidth > 0.0f)
+            if (!ve.renderChainData.borderTopColorID.IsValid() && style.borderTopWidth > 0.0f) // Size change will trigger a re-tessellation
             {
                 ve.renderChainData.borderTopColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderRightColorID.IsValid() && style.borderRightWidth > 0.0f)
+            if (!ve.renderChainData.borderRightColorID.IsValid() && style.borderRightWidth > 0.0f) // Size change will trigger a re-tessellation
             {
                 ve.renderChainData.borderRightColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderBottomColorID.IsValid() && style.borderBottomWidth > 0.0f)
+            if (!ve.renderChainData.borderBottomColorID.IsValid() && style.borderBottomWidth > 0.0f) // Size change will trigger a re-tessellation
             {
                 ve.renderChainData.borderBottomColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.tintColorID.IsValid() && style.unityBackgroundImageTintColor != Color.white)
+            if (!ve.renderChainData.tintColorID.IsValid())
             {
                 ve.renderChainData.tintColorID = renderChain.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;

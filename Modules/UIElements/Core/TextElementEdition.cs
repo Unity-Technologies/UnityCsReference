@@ -322,7 +322,7 @@ namespace UnityEngine.UIElements
             typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
             typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
             typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
-            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent))]
+            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent))]
         protected override void HandleEventBubbleUp(EventBase evt)
         {
             base.HandleEventBubbleUp(evt);

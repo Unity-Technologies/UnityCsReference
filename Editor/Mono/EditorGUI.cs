@@ -581,6 +581,7 @@ namespace UnityEditor
             {
                 if (activeEditor == this)
                 {
+                    activeEditor.m_HasFocus = false;
                     activeEditor = null;
                 }
 

@@ -601,6 +601,9 @@ namespace UnityEngine
             {
                 case RuntimePlatform.Android:
                 case RuntimePlatform.WebGLPlayer:
+                case RuntimePlatform.WSAPlayerX64:
+                case RuntimePlatform.WSAPlayerX86:
+                case RuntimePlatform.WSAPlayerARM:
                     return !TouchScreenKeyboard.isInPlaceEditingAllowed;
                 default:
                     return TouchScreenKeyboard.isSupported;

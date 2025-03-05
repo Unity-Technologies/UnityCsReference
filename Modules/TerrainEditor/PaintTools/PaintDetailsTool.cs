@@ -329,30 +329,52 @@ namespace UnityEditor.TerrainTools
 
         private void ShowTextureFallbackWarning(ref Terrain terrain)
         {
-            if (!UnityEngine.Experimental.Rendering.GraphicsFormatUtility.IsCompressedFormat(terrain.terrainData.atlasFormat))
+            var hasCompressedPrototypeTexture = false;
+            var hasGPUInstancing = false;
+            foreach (var prototype in terrain.terrainData.detailPrototypes)
+            {
+                if (prototype.useInstancing)
+                {
+                    hasGPUInstancing = true;
+                    continue;
+                }
+                if (hasCompressedPrototypeTexture && hasGPUInstancing)
+                    break;
+                if (hasCompressedPrototypeTexture)
+                    continue;
+                var sourceTexture = prototype.prototypeTexture;
+                if (prototype.usePrototypeMesh)
+                {
+                    var renderer = prototype.prototype.GetComponent<Renderer>();
+                    sourceTexture = renderer?.sharedMaterial.mainTexture as Texture2D;
+                }
+
+                hasCompressedPrototypeTexture = sourceTexture != null && UnityEngine.Experimental.Rendering.GraphicsFormatUtility.IsCompressedFormat(sourceTexture.graphicsFormat);
+            }
+            if (hasCompressedPrototypeTexture && !UnityEngine.Experimental.Rendering.GraphicsFormatUtility.IsCompressedFormat(terrain.terrainData.atlasFormat))
             {
                 using (new EditorGUILayout.VerticalScope())
                 {
                     GUILayout.Space(3);
-                    using (new EditorGUILayout.HorizontalScope(EditorStyles.helpBox))
+                    using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
                     {
+                        var message = hasGPUInstancing ? "The detail texture atlas cannot be compressed due to a mix of GPU instanced and non-GPU instanced details." : "The detail texture atlas cannot be compressed due to a mix of detail texture formats.";
                         // Copied from LabelField called by HelpBox - using so that label and button link are in the same helpbox
-                        var infoLabel = EditorGUIUtility.TempContent("Atlas uncompressed. This can be caused by mismatched texture formats.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                        var infoLabel = EditorGUIUtility.TempContent(message, EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                         Rect r = GUILayoutUtility.GetRect(infoLabel, EditorStyles.wordWrappedLabel);
                         int oldIndent = EditorGUI.indentLevel;
                         EditorGUI.indentLevel = 0;
                         EditorGUI.LabelField(r, infoLabel, EditorStyles.wordWrappedLabel);
                         EditorGUI.indentLevel = oldIndent;
 
-                        using(new EditorGUILayout.VerticalScope())
+                        GUILayout.FlexibleSpace();
+                        EditorGUI.indentLevel = 2;
+                        if (EditorGUILayout.LinkButton("Read more about formats"))
                         {
-                            GUILayout.FlexibleSpace();
-                            if(EditorGUILayout.LinkButton("Read More"))
-                            {
-                                Help.BrowseURL($"https://docs.unity3d.com//{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Texture2D.PackTextures.html");
-                            }
-                            GUILayout.FlexibleSpace();
+                            Help.BrowseURL($"https://docs.unity3d.com//{Application.unityVersionVer}.{Application.unityVersionMaj}/Documentation/ScriptReference/Texture2D.PackTextures.html");
                         }
+                        EditorGUI.indentLevel = oldIndent;
+                        GUILayout.Space(3);
                     }
                 }
             }
