@@ -40,6 +40,8 @@ namespace Unity.Baselib.LowLevel
             AddressUnreachable = 0x4000002,
             AddressFamilyNotSupported = 0x4000003,
             Disconnected = 0x4000004,
+            InvalidSocketType = 0x4000005,
+            InvalidAddressFamily = 0x4000006,
             /// <summary>FileIO</summary>
             InvalidPathname = 0x5000000,
             RequestedAccessIsNotAllowed = 0x5000001,

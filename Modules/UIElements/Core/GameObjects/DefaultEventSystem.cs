@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using static UnityEngine.InputForUI.PointerEvent;
 
 namespace UnityEngine.UIElements
@@ -29,11 +32,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private BaseRuntimePanel m_FocusedPanel;
-        private BaseRuntimePanel m_PreviousFocusedPanel;
+        private RuntimePanel m_FocusedPanel;
+        private RuntimePanel m_PreviousFocusedPanel;
         private Focusable m_PreviousFocusedElement;
 
-        public BaseRuntimePanel focusedPanel
+        public RuntimePanel focusedPanel
         {
             get => m_FocusedPanel;
             set
@@ -64,6 +67,8 @@ namespace UnityEngine.UIElements
         {
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
                 return;
+
+            m_Raycaster?.Update();
 
             if (m_IsInputForUIActive)
             {
@@ -170,6 +175,7 @@ namespace UnityEngine.UIElements
                 m_IsInputForUIActive = true;
                 UnityEngine.InputForUI.EventProvider.SetEnabled(true);
                 UnityEngine.InputForUI.EventProvider.Subscribe(inputForUIProcessor.OnEvent);
+                m_InputForUIProcessor.Reset();
             }
         }
 
@@ -204,8 +210,7 @@ namespace UnityEngine.UIElements
             var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                var panel = panels[i];
-                if (panel is BaseRuntimePanel runtimePanel)
+                if (panels[i] is RuntimePanel { drawsInCameras: false } runtimePanel)
                 {
                     using (EventBase evt = evtFactory(arg))
                     {
@@ -229,7 +234,23 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int pointerId, int? targetDisplay, Func<Vector3, Vector3, TArg, EventBase> evtFactory, TArg arg, bool deselectIfNoTarget = false)
+        internal void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int pointerId,
+            int? targetDisplay, Func<Vector3, Vector3, TArg, EventBase> evtFactory, TArg arg,
+            bool deselectIfNoTarget = false)
+        {
+            SendPositionBasedEvent(mousePosition, delta, pointerId,
+            targetDisplay, (p, t) =>
+            {
+                var e = t.evtFactory(p, t.delta, t.arg);
+                if (e is IPointerOrMouseEvent pme)
+                    pme.deltaPosition = t.delta;
+                return e;
+            }, (evtFactory, delta, arg), deselectIfNoTarget);
+        }
+
+        internal void SendPositionBasedEvent<TArg>(Vector3 mousePosition, Vector3 delta, int pointerId,
+            int? targetDisplay, Func<Vector3, TArg, EventBase> evtFactory, TArg arg,
+            bool deselectIfNoTarget = false)
         {
             // Allow focus to be lost before processing the event
             if (focusedPanel != null)
@@ -237,57 +258,36 @@ namespace UnityEngine.UIElements
                 UpdateFocusedPanel(focusedPanel);
             }
 
-            var capturingPanel = PointerDeviceState.GetPlayerPanelWithSoftPointerCapture(pointerId);
+            FindTargetAtPosition(mousePosition, delta, pointerId, targetDisplay, out var target, out var targetPanel,
+                out var targetPanelPosition, out var elementUnderPointer);
 
-            // Allow element with pointer capture to update panel soft capture
-            var capturing = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
-            if (capturing is VisualElement capturingVE)
-            {
-                capturingPanel = capturingVE.panel;
-            }
-
-            BaseRuntimePanel targetPanel = null;
-            Vector2 targetPanelPosition = Vector2.zero;
-            Vector2 targetPanelDelta = Vector2.zero;
-
-            if (capturingPanel is BaseRuntimePanel capturingRuntimePanel)
-            {
-                // Panel with soft capture has priority, that is it will receive pointer events until pointer up
-                targetPanel = capturingRuntimePanel;
-                targetPanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, out targetPanelDelta);
-            }
-            else
-            {
-                // Find a candidate panel for the event
-                // Try all the panels, from closest to deepest
-                var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
-                for (var i = panels.Count - 1; i >= 0; i--)
-                {
-                    if (panels[i] is BaseRuntimePanel runtimePanel && (targetDisplay == null || runtimePanel.targetDisplay == targetDisplay))
-                    {
-                        if (runtimePanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, out targetPanelDelta) &&
-                            runtimePanel.Pick(targetPanelPosition, pointerId) != null)
-                        {
-                            targetPanel = runtimePanel;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            BaseRuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as BaseRuntimePanel;
+            RuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
 
             if (lastActivePanel != targetPanel)
             {
                 // Allow last panel the pointer was in to dispatch [Mouse|Pointer][Out|Leave] events if needed.
-                lastActivePanel?.PointerLeavesPanel(pointerId, lastActivePanel.ScreenToPanel(mousePosition));
+                lastActivePanel?.PointerLeavesPanel(pointerId);
                 targetPanel?.PointerEntersPanel(pointerId, targetPanelPosition);
             }
 
             if (targetPanel != null)
             {
-                using (EventBase evt = evtFactory(targetPanelPosition, targetPanelDelta, arg))
+                using (EventBase evt = evtFactory(targetPanelPosition, arg))
                 {
+                    if (!targetPanel.isFlat)
+                    {
+                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        //
+                        // This behavior is slightly different than screen-space panels and Editor panels: if an
+                        // element moves or a collider starts blocking our raycast, the element under pointer will not
+                        // change until the pointer moves again or some other event is sent.
+                        //
+                        // Projects that require an up-to-date element under pointer can implement an InputProvider
+                        // (when we make it public) that sends PointerStationaryEvent on every Update.
+                        targetPanel.SetTopElementUnderPointer(pointerId, elementUnderPointer, evt);
+                    }
+
+                    evt.elementTarget = target;
                     targetPanel.visualTree.SendEvent(evt);
 
                     if (evt.processedByFocusController)
@@ -296,9 +296,9 @@ namespace UnityEngine.UIElements
                     }
 
                     if (evt.eventTypeId == PointerDownEvent.TypeId())
-                        PointerDeviceState.SetPlayerPanelWithSoftPointerCapture(pointerId, targetPanel);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree);
                     else if (evt.eventTypeId == PointerUpEvent.TypeId() && ((PointerUpEvent)evt).pressedButtons == 0)
-                        PointerDeviceState.SetPlayerPanelWithSoftPointerCapture(pointerId, null);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null);
                 }
             }
             else
@@ -310,7 +310,149 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void UpdateFocusedPanel(BaseRuntimePanel runtimePanel)
+        internal void SendRayBasedEvent<TArg>(Ray worldRay, int pointerId, Func<Vector3, TArg, EventBase> evtFactory,
+            TArg arg, bool deselectIfNoTarget = false)
+        {
+            // Allow focus to be lost before processing the event
+            if (focusedPanel != null)
+            {
+                UpdateFocusedPanel(focusedPanel);
+            }
+
+            FindTargetAtRay(worldRay, pointerId, out var target, out var targetPanel,
+                out var targetPanelPosition, out var elementUnderPointer);
+
+            RuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
+
+            if (lastActivePanel != targetPanel)
+            {
+                // Allow last panel the pointer was in to dispatch [Mouse|Pointer][Out|Leave] events if needed.
+                lastActivePanel?.PointerLeavesPanel(pointerId);
+                targetPanel?.PointerEntersPanel(pointerId, targetPanelPosition);
+            }
+
+            if (targetPanel != null)
+            {
+                using (EventBase evt = evtFactory(targetPanelPosition, arg))
+                {
+                    if (!targetPanel.isFlat)
+                    {
+                        // World-space panels can't use the regular RecomputeElementUnderPointer mechanism.
+                        //
+                        // This behavior is slightly different than screen-space panels and Editor panels: if an
+                        // element moves or a collider starts blocking our raycast, the element under pointer will not
+                        // change until the pointer moves again or some other event is sent.
+                        //
+                        // Projects that require an up-to-date element under pointer can implement an InputProvider
+                        // (when we make it public) that sends PointerStationaryEvent on every Update.
+                        targetPanel.SetTopElementUnderPointer(pointerId, elementUnderPointer, evt);
+                    }
+
+                    evt.elementTarget = target;
+                    targetPanel.visualTree.SendEvent(evt);
+
+                    if (evt.processedByFocusController)
+                    {
+                        UpdateFocusedPanel(targetPanel);
+                    }
+
+                    if (evt.eventTypeId == PointerDownEvent.TypeId())
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree);
+                    else if (evt.eventTypeId == PointerUpEvent.TypeId() && ((PointerUpEvent)evt).pressedButtons == 0)
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null);
+                }
+            }
+            else
+            {
+                if (deselectIfNoTarget)
+                {
+                    focusedPanel = null;
+                }
+            }
+        }
+
+        // Allow unit tests or XR implementations to swap these pieces
+        private IScreenRaycaster m_Raycaster;
+        public IScreenRaycaster raycaster
+        {
+            get => m_Raycaster ??= new MainCameraScreenRaycaster();
+            set => m_Raycaster = value;
+        }
+
+        private readonly PhysicsDocumentPicker m_WorldSpacePicker = new();
+        private readonly ScreenOverlayPanelPicker m_ScreenOverlayPicker = new();
+
+        public float worldSpaceMaxDistance = Mathf.Infinity;
+        public int worldSpaceLayers = Physics.DefaultRaycastLayers;
+
+        private static readonly Vector3 s_InvalidPanelCoordinates = new (float.NaN, float.NaN, float.NaN);
+
+        internal void FindTargetAtPosition(Vector2 mousePosition, Vector2 delta, int pointerId, int? targetDisplay,
+            out VisualElement target, out RuntimePanel targetPanel, out Vector3 targetPanelPosition,
+            out VisualElement elementUnderPointer)
+        {
+            // Try panels from closest to deepest.
+            var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
+            for (var i = panels.Count - 1; i >= 0; i--)
+            {
+                if (m_ScreenOverlayPicker.TryPick(panels[i], pointerId, mousePosition, delta,
+                        targetDisplay, out _))
+                {
+                    target = elementUnderPointer = null;
+                    targetPanel = (RuntimePanel)panels[i];
+                    targetPanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, true);
+                    return;
+                }
+            }
+
+            foreach (var worldRay in raycaster.MakeRay(mousePosition, targetDisplay))
+            {
+                if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, worldSpaceMaxDistance, worldSpaceLayers,
+                        out var document, out elementUnderPointer, out _, out _))
+                {
+                    // We hit a non-UI GameObject
+                    if (document == null)
+                        break;
+                    var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
+                    target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;
+                    targetPanel = document.containerPanel;
+                    targetPanelPosition = GetPanelPosition(target, document, worldRay);
+                    return;
+                }
+            }
+
+            target = elementUnderPointer = null;
+            targetPanel = null;
+            targetPanelPosition = s_InvalidPanelCoordinates;
+        }
+
+        internal void FindTargetAtRay(Ray worldRay, int pointerId, out VisualElement target,
+            out RuntimePanel targetPanel, out Vector3 targetPanelPosition, out VisualElement elementUnderPointer)
+        {
+            if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, worldSpaceMaxDistance, worldSpaceLayers,
+                    out var document, out elementUnderPointer, out _, out _))
+            {
+                var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
+                target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;
+                targetPanel = document.containerPanel;
+                targetPanelPosition = GetPanelPosition(target, document, worldRay);
+                return;
+            }
+
+            target = elementUnderPointer = null;
+            targetPanel = null;
+            targetPanelPosition = s_InvalidPanelCoordinates;
+        }
+
+        Vector3 GetPanelPosition(VisualElement pickedElement, UIDocument document, Ray worldRay)
+        {
+            var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
+            pickedElement.IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
+            var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
+            return documentPoint;
+        }
+
+        private void UpdateFocusedPanel(RuntimePanel runtimePanel)
         {
             if (runtimePanel.focusController.focusedElement != null)
             {
@@ -319,38 +461,6 @@ namespace UnityEngine.UIElements
             else if (focusedPanel == runtimePanel)
             {
                 focusedPanel = null;
-            }
-        }
-
-        private static EventBase MakeTouchEvent(Touch touch, int pointerId, EventModifiers modifiers, int targetDisplay)
-        {
-            switch (touch.phase)
-            {
-                case TouchPhase.Began:
-                    return PointerDownEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
-                case TouchPhase.Moved:
-                    return PointerMoveEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
-                case TouchPhase.Ended:
-                    return PointerUpEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
-                case TouchPhase.Canceled:
-                    return PointerCancelEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
-                default:
-                    return null;
-            }
-        }
-
-        private static EventBase MakePenEvent(PenData pen, EventModifiers modifiers, int targetDisplay)
-        {
-            switch (pen.contactType)
-            {
-                case PenEventType.PenDown:
-                    return PointerDownEvent.GetPooled(pen, modifiers, targetDisplay);
-                case PenEventType.PenUp:
-                    return PointerUpEvent.GetPooled(pen, modifiers, targetDisplay);
-                case PenEventType.NoContact:
-                    return PointerMoveEvent.GetPooled(pen, modifiers, targetDisplay);
-                default:
-                    return null;
             }
         }
 

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -96,6 +97,21 @@ namespace UnityEngine.UIElements
             {
                 visualTree.Add(uiDocument.rootVisualElement);
             }
+        }
+    }
+
+    internal class UIDocumentRootElement : TemplateContainer
+    {
+        public UIDocument document;
+
+        public UIDocumentRootElement()
+        {
+        }
+
+        public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset.name,
+            sourceAsset)
+        {
+            this.document = document;
         }
     }
 
@@ -239,8 +255,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private VisualElement m_RootVisualElement;
-        private RuntimePanel m_RuntimePanel;
+        private UIDocumentRootElement m_RootVisualElement;
 
         /// <summary>
         /// The root visual element where the UI hierarchy starts.
@@ -248,7 +263,20 @@ namespace UnityEngine.UIElements
         public VisualElement rootVisualElement
         {
             get { return m_RootVisualElement; }
+            private set
+            {
+                m_RootVisualElement = (UIDocumentRootElement)value;
+                focusRing = value != null ? new(value) : null;
+            }
         }
+
+        internal VisualElementFocusRing focusRing { get; private set; } = null;
+
+        /// <summary>
+        /// See <see cref="PointerDeviceState.s_WorldSpaceDocumentWithSoftPointerCapture"/>
+        /// </summary>
+        internal int softPointerCaptures = 0;
+
         private int m_FirstChildInsertIndex;
 
         internal int firstChildInserIndex
@@ -274,6 +302,8 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         private float m_WorldSpaceHeight = 1080;
+
+        [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
 
         /// <summary>
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
@@ -305,6 +335,9 @@ namespace UnityEngine.UIElements
         {
             AddRootVisualElementToTree();
         }
+
+        internal static UIDocument FindParentDocument(VisualElement element) =>
+            element.GetFirstOfType<UIDocumentRootElement>()?.document;
 
         internal static Func<UIDocument, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
@@ -354,43 +387,52 @@ namespace UnityEngine.UIElements
 
             if (TryGetComponent<UIRenderer>(out var renderer))
                 renderer.enabled = true;
-
-            ResolveRuntimePanel();
-        }
-
-        void ResolveRuntimePanel()
-        {
-            if (m_RuntimePanel == null)
-                m_RuntimePanel = rootVisualElement?.panel as RuntimePanel;
         }
 
         /// <summary>
-        /// The runtime panel that this UIDocument is attached to.
+        /// The runtime panel whose visualTree contains this document's rootVisualElement, if any.
         /// </summary>
         /// <remarks>
         /// Null will be returned if the UIDocument is not enabled or if the panel has not been created yet.
         /// </remarks>
-        public IRuntimePanel runtimePanel { get { ResolveRuntimePanel(); return  m_RuntimePanel; } }
+        public IRuntimePanel runtimePanel => containerPanel;
+
+        /// <summary>
+        /// Strongly-typed equivalent of <see cref="runtimePanel"/>.
+        /// </summary>
+        internal RuntimePanel containerPanel => (RuntimePanel)rootVisualElement?.elementPanel;
 
         bool m_RootHasWorldTransform;
 
-        void LateUpdate()
+        // Used by unit tests.
+        internal void LateUpdate()
         {
             if (m_RootVisualElement == null || panelSettings == null || panelSettings.panel == null)
+            {
+                RemoveWorldSpaceCollider();
                 return;
+            }
 
             AddOrRemoveRendererComponent();
 
             if (!panelSettings.panel.isFlat)
             {
-                // TODO: In editor we may loose the m_RuntimePanel connection when manipulation
-                // the hierarchy. This is weird and should be investigated.
-                ResolveRuntimePanel();
-				SetTransform();
+                SetTransform();
                 UpdateRenderer();
-			}
-            else if (m_RootHasWorldTransform)
-                ClearTransform();
+
+                if (panelSettings.worldInputMode == PanelWorldInputMode.AddAutoUpdatedPhysicsColliders
+                    && Application.isPlaying
+                    )
+                {
+                    UpdateWorldSpaceCollider();
+                }
+            }
+            else
+            {
+                RemoveWorldSpaceCollider();
+                if (m_RootHasWorldTransform)
+                    ClearTransform();
+            }
 
             UpdateCutRenderChainFlag();
         }
@@ -447,6 +489,50 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void UpdateWorldSpaceCollider()
+        {
+            if (containerPanel == null)
+            {
+                RemoveWorldSpaceCollider();
+                return;
+            }
+
+            var bb = WorldSpaceInput.GetPicking3DWorldBounds(rootVisualElement);
+
+            if (!IsValidBounds(bb))
+            {
+                RemoveWorldSpaceCollider();
+                return;
+            }
+
+            if (m_WorldSpaceCollider == null)
+            {
+                m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
+                m_WorldSpaceCollider.isTrigger = true;
+            }
+
+            // Setting BoxCollider.center or BoxCollider.size triggers some work even if the value doesn't change.
+            if (bb.center != m_WorldSpaceCollider.center || bb.size != m_WorldSpaceCollider.size)
+            {
+                m_WorldSpaceCollider.center = bb.center;
+                m_WorldSpaceCollider.size = bb.size;
+            }
+        }
+
+        internal void RemoveWorldSpaceCollider()
+        {
+            UIRUtility.Destroy(m_WorldSpaceCollider);
+            m_WorldSpaceCollider = null;
+        }
+
+        private static bool IsValidBounds(in Bounds b)
+        {
+            var e = b.extents;
+            var validDimensionCount = (e.x > 0 ? 1 : 0) + (e.y > 0 ? 1 : 0) + (e.z > 0 ? 1 : 0);
+            // Rays can intersect a plane or a volume, so we need at least 2 workable dimensions
+            return validDimensionCount >= 2;
+        }
+
         void UpdateCutRenderChainFlag()
         {
             bool isWorldSpacePanel = !panelSettings.panel.isFlat;
@@ -492,7 +578,7 @@ namespace UnityEngine.UIElements
             m_RootHasWorldTransform = false;
         }
 
-        float pixelsPerUnit => m_RuntimePanel == null ? 1.0f : m_RuntimePanel.pixelsPerUnit;
+        float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
         void ComputeTransform(Transform transform, out Matrix4x4 matrix)
         {
@@ -622,26 +708,31 @@ namespace UnityEngine.UIElements
                RemoveFromHierarchy();
                 if (m_PanelSettings != null)
                     m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
-                m_RootVisualElement = null;
+                rootVisualElement = null;
             }
 
             // Even though the root element is of type VisualElement, we use a TemplateContainer internally
             // because we still want to use it as a TemplateContainer.
             if (sourceAsset != null)
             {
-                m_RootVisualElement = sourceAsset.Instantiate();
-
-                // This shouldn't happen but if it does we don't fail silently.
-                if (m_RootVisualElement == null)
+                rootVisualElement = new UIDocumentRootElement(this, sourceAsset);
+                try
                 {
+                    sourceAsset.CloneTree(m_RootVisualElement);
+                }
+                catch (Exception e)
+                {
+                    // This shouldn't happen but if it does we don't fail silently.
                     Debug.LogError("The UXML file set for the UIDocument could not be cloned.");
+                    Debug.LogException(e);
                 }
             }
 
             if (m_RootVisualElement == null)
             {
                 // Empty container if no UXML is set or if there was an error with cloning the set UXML.
-                m_RootVisualElement = new TemplateContainer() { name = gameObject.name + k_VisualElementNameSuffix };
+                rootVisualElement = new UIDocumentRootElement
+                    { document = this, name = gameObject.name + k_VisualElementNameSuffix };
             }
             else
             {
@@ -762,13 +853,16 @@ namespace UnityEngine.UIElements
 
         private void OnDisable()
         {
+            PointerDeviceState.RemoveDocumentData(this);
+            RemoveWorldSpaceCollider();
+
             if (m_RootVisualElement != null)
             {
                 RemoveFromHierarchy();
                 // Unhook tracking, we're going down (but only after we detach from the panel).
                 if (m_PanelSettings != null)
                     m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
-                m_RootVisualElement = null;
+                rootVisualElement = null;
             }
 
             if (TryGetComponent<UIRenderer>(out var renderer))
@@ -872,7 +966,7 @@ namespace UnityEngine.UIElements
                 if (child.m_RootVisualElement != null)
                 {
                     child.m_RootVisualElement.RemoveFromHierarchy();
-                    child.m_RootVisualElement = null;
+                    child.rootVisualElement = null;
                 }
 
                 child.ClearChildrenRecursively();

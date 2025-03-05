@@ -115,6 +115,23 @@ namespace UnityEngine.InputForUI
         public Vector2 deltaPosition;
 
         /// <summary>
+        /// For tracked devices, current world position of the pointer.
+        /// For other pointer types, this value will always be default(Vector3).
+        /// </summary>
+        public Vector3 worldPosition;
+
+        /// <summary>
+        /// For tracked devices, current world orientation of the pointer.
+        /// For other pointer types, this value will always be default(Quaternion).
+        /// </summary>
+        public Quaternion worldOrientation;
+
+        /// <summary>
+        /// Returns a Ray using current world position and orientation (for tracked devices).
+        /// </summary>
+        public Ray worldRay => new(worldPosition, worldOrientation * Vector3.forward);
+
+        /// <summary>
         /// Scroll value for scroll events.
         /// (0, 0) for other type of events.
         /// </summary>

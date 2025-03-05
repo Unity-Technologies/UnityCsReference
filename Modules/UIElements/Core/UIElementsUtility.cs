@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
@@ -268,6 +269,8 @@ namespace UnityEngine.UIElements
             // we make a copy first.
             s_PanelsIterationList.Clear();
             UIElementsUtility.GetAllPanels(s_PanelsIterationList, ContextType.Editor);
+
+            LayoutManager.SharedManager.Collect();
 
             foreach (var panel in s_PanelsIterationList)
             {

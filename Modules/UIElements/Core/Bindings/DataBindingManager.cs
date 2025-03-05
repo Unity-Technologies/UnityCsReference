@@ -715,7 +715,7 @@ namespace UnityEngine.UIElements
 
                 while (null != current)
                 {
-                    if (!current.dataSourcePath.IsEmpty)
+                    if (!current.isDataSourcePathEmpty)
                         path = PropertyPath.Combine(current.dataSourcePath, path);
 
                     if (null != current.dataSource)

@@ -93,6 +93,18 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        public static implicit operator StyleTranslate(Vector3 v)
+        {
+            return new StyleTranslate(v);
+        }
+
+        /// <undoc/>
+        public static implicit operator StyleTranslate(Vector2 v)
+        {
+            return new StyleTranslate(v);
+        }
+
+        /// <undoc/>
         public bool Equals(StyleTranslate other)
         {
             return other == this;

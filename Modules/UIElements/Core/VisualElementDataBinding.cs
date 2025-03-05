@@ -14,6 +14,14 @@ using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
+    internal class PathRef
+    {
+        private PropertyPath m_Path;
+        public ref PropertyPath path => ref m_Path;
+
+        public bool IsEmpty => m_Path.IsEmpty;
+    }
+
     /// <summary>
     /// Defines a binding property that serves as an identifier for the binding system.
     /// </summary>
@@ -177,7 +185,7 @@ namespace UnityEngine.UIElements
     public partial class VisualElement
     {
         private object m_DataSource;
-        private PropertyPath m_DataSourcePath;
+        private PathRef m_DataSourcePath;
 
         /// <summary>
         /// Assigns a data source to this VisualElement which overrides any inherited data source. This data source is
@@ -214,16 +222,23 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public PropertyPath dataSourcePath
         {
-            get => m_DataSourcePath;
+            get => m_DataSourcePath?.path ?? default;
             set
             {
-                if (m_DataSourcePath == value)
+                if (m_DataSourcePath == null && value.IsEmpty)
                     return;
-                m_DataSourcePath = value;
+
+                ref var path = ref (m_DataSourcePath ??= new PathRef()).path;
+
+                if (path == value)
+                    return;
+                path = value;
                 IncrementVersion(VersionChangeType.DataSource);
                 NotifyPropertyChanged(dataSourcePathProperty);
             }
         }
+
+        internal bool isDataSourcePathEmpty => m_DataSourcePath == null || m_DataSourcePath.IsEmpty;
 
         internal string dataSourcePathString
         {
@@ -355,7 +370,7 @@ namespace UnityEngine.UIElements
 
             while (null != current)
             {
-                if (!current.dataSourcePath.IsEmpty)
+                if (!current.isDataSourcePathEmpty)
                     path = PropertyPath.Combine(current.dataSourcePath, path);
 
                 if (null != current.dataSource)

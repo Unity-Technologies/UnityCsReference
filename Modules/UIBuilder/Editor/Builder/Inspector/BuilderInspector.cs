@@ -346,8 +346,6 @@ namespace Unity.UI.Builder
             // Forward focus to the panel header.
             this.Query().Where(e => e.focusable).ForEach((e) => AddFocusable(e));
 
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
             if (m_BindingsCache != null)
             {
                 m_BindingsCache.onBindingStatusChanged += OnBindingStatusChanged;
@@ -374,6 +372,8 @@ namespace Unity.UI.Builder
             m_LocalStylesSection.Dispose();
             m_AttributesSection.Dispose();
             m_HeaderSection.Dispose();
+            m_PreviewWindow?.Close();
+            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
         }
 
         public void UnsetBoundFieldInlineValue(DropdownMenuAction menuAction)
@@ -1710,15 +1710,6 @@ namespace Unity.UI.Builder
                     e.StopImmediatePropagation();
                 }
             });
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
-        {
-            UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
-            if (m_PreviewWindow != null)
-            {
-                previewWindow.Close();
-            }
         }
 
         void ChangeTextGeneratorStyleVisibility(bool show)

@@ -507,6 +507,15 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private Rect ComputeTooltipRect()
+        {
+            if (!string.IsNullOrEmpty(label))
+            {
+                return string.IsNullOrEmpty(labelElement.tooltip) ? labelElement.worldBound : worldBound;
+            }
+            return worldBound;
+        }
+
         internal TValueType ValidatedValue(TValueType value)
         {
             if (onValidateValue != null)
@@ -515,6 +524,23 @@ namespace UnityEngine.UIElements
             }
 
             return value;
+        }
+
+        [EventInterest(typeof(TooltipEvent))]
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
+            if (evt is not TooltipEvent tooltipEvent)
+            {
+                base.HandleEventBubbleUp(evt);
+                return;
+            }
+
+            // Hide the field's tooltip if the label does not have a tooltip and the mouse is not over the label.
+            if ((tooltipEvent.elementTarget == labelElement)
+                || (!string.IsNullOrEmpty(labelElement?.tooltip)) || (string.IsNullOrEmpty(label)))
+                tooltipEvent.rect = ComputeTooltipRect();
+            else
+                tooltipEvent.StopImmediatePropagation();
         }
 
         /// <summary>
@@ -578,11 +604,6 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
-        }
-
-        internal override Rect GetTooltipRect()
-        {
-            return !string.IsNullOrEmpty(label) ? labelElement.worldBound : worldBound;
         }
     }
 

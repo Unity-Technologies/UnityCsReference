@@ -3099,6 +3099,9 @@
     <Compile Include="..\..\Editor\Mono\RemoteInput\Remoting.bindings.cs">
       <Link>Editor\Mono\RemoteInput\Remoting.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\RemoveLegacyMenuItems.cs">
+      <Link>Editor\Mono\RemoveLegacyMenuItems.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\RenderDoc\RenderDoc.bindings.cs">
       <Link>Editor\Mono\RenderDoc\RenderDoc.bindings.cs</Link>
     </Compile>

@@ -51,11 +51,9 @@ namespace UnityEngine.UIElements
             {
                 displayMenuHandledOSX = true;
 
-                if (button >= 0)
-                {
-                    // Reset the button state now, as we might miss the PointerUp event to the ContextualMenu window.
-                    PointerDeviceState.ReleaseButton(pointerId, button);
-                }
+                // Reset the button state now, as we might miss PointerUp events to the ContextualMenu window.
+                // UUM-97875: we need to release all buttons, not just the one that showed the menu.
+                PointerDeviceState.ReleaseAllButtons(pointerId);
             }
         }
 

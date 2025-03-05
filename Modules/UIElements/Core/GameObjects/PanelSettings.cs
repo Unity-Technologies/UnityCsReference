@@ -56,6 +56,12 @@ namespace UnityEngine.UIElements
         WorldSpace
     }
 
+    internal enum PanelWorldInputMode
+    {
+        AddAutoUpdatedPhysicsColliders,
+        UsePhysicsCollidersOnlyIfAlreadyPresent,
+    }
+
     /// <summary>
     /// Defines a Panel Settings asset that instantiates a panel at runtime. The panel makes it possible for Unity to display
     /// UXML-file based UI in the Game view.
@@ -118,7 +124,7 @@ namespace UnityEngine.UIElements
 
                         if (m_Settings.m_AssignedScreenToPanel != null)
                         {
-                            m_Settings.SetScreenToPanelSpaceFunction(m_Settings.m_AssignedScreenToPanel);
+                            m_Settings.SetScreenToPanelSpaceFunction3D(m_Settings.m_AssignedScreenToPanel);
                         }
                     }
 
@@ -257,6 +263,18 @@ namespace UnityEngine.UIElements
         {
             get => m_WorldSpaceLayer;
             set => m_WorldSpaceLayer = value;
+        }
+
+        [SerializeField]
+        private PanelWorldInputMode m_WorldInputMode = PanelWorldInputMode.AddAutoUpdatedPhysicsColliders;
+
+        /// <summary>
+        /// Determines how the panel input is handled.
+        /// </summary>
+        internal PanelWorldInputMode worldInputMode
+        {
+            get => m_WorldInputMode;
+            set => m_WorldInputMode = value;
         }
 
         [SerializeField]
@@ -461,8 +479,8 @@ namespace UnityEngine.UIElements
         ///\\
         /// UI Toolkit uses the depth/stencil buffer to perform masking operations, refer to [[Overflow.Hidden]] for more inforamtion.
         /// The renderer strategically positions masking shapes to intentionally fail the depth test.
-        /// This failure triggers efficient push/pop operations within the stencil buffer, enabling effective masking. 
-        ///\\ 
+        /// This failure triggers efficient push/pop operations within the stencil buffer, enabling effective masking.
+        ///\\
         /// To ensure this process functions correctly, the depth buffer values
         /// must be within a predetermined range. When UI Toolkit clears the depth buffer, it leaves
         /// a gap (controlled by [[PanelSettings.depthClearValue]]) where masks can be positioned to fail
@@ -659,6 +677,7 @@ namespace UnityEngine.UIElements
             referenceDpi = ScreenDPI;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
             renderMode = PanelRenderMode.ScreenSpaceOverlay;
+            worldInputMode = PanelWorldInputMode.AddAutoUpdatedPhysicsColliders;
             pixelsPerUnit = 100.0f;
             themeUss = GetOrCreateDefaultTheme?.Invoke();
             m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;
@@ -848,18 +867,44 @@ namespace UnityEngine.UIElements
         /// has a MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
         /// @@RaycastHit.textureCoord@@ in the texture's pixel space. Return a coordinate outside the panel to
         /// skip incoming pointer events if the ray doesn't hit a valid target or location.
+        ///
+        /// A non-zero z value should be returned when the element at the given screen coordinate contains
+        /// 3-D transformations that make it overflow forward or backward out of the panel's surface.
+        /// This z value is used by pointer events when converting between panel position and local position.
         /// </remarks>
-        /// <example>
-        /// <code source="../../../../Tests/EditModeAndPlayModeTests/UIElementsSamples/Assets/Runtime/Rendering/UITextureProjection.cs"/>
-        /// </example>
-        /// <param name="screentoPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
-        public void SetScreenToPanelSpaceFunction(Func<Vector2, Vector2> screentoPanelSpaceFunction)
+        /// <param name="screenToPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
+        public void SetScreenToPanelSpaceFunction3D(Func<Vector2, Vector3> screenToPanelSpaceFunction)
         {
-            m_AssignedScreenToPanel = screentoPanelSpaceFunction;
+            m_AssignedScreenToPanel = screenToPanelSpaceFunction;
             panel.screenToPanelSpace = m_AssignedScreenToPanel;
         }
 
-        private Func<Vector2, Vector2> m_AssignedScreenToPanel;
+        /// <summary>
+        /// Sets the function that handles the transformation from screen space to panel space. For overlay panels,
+        /// this function returns the input value.
+        /// </summary>
+        /// <remarks>
+        /// If the panel's targetTexture is applied to 3D objects, use a function that raycasts
+        /// against MeshColliders in the Scene. The function can first check whether the GameObject that the ray hits
+        /// has a MeshRenderer with a shader that uses this panel's target texture. It can then return the transformed
+        /// @@RaycastHit.textureCoord@@ in the texture's pixel space. Return a coordinate outside the panel to
+        /// skip incoming pointer events if the ray doesn't hit a valid target or location.
+        ///
+        /// If the panel contains elements with
+        /// 3-D transformations that make them overflow forward or backward out of the panel's surface, use the other
+        /// <see cref="PanelSettings.SetScreenToPanelSpaceFunction3D"/> method instead.
+        /// </remarks>
+        /// <param name="screenToPanelSpaceFunction">The translation function. Set to @@null@@ to revert to the default behavior.</param>
+        /// <example>
+        /// <code source="../../../../Tests/EditModeAndPlayModeTests/UIElementsSamples/Assets/Runtime/Rendering/UITextureProjection.cs"/>
+        /// </example>
+        public void SetScreenToPanelSpaceFunction(Func<Vector2, Vector2> screenToPanelSpaceFunction)
+        {
+            m_AssignedScreenToPanel = p => (Vector3)screenToPanelSpaceFunction(p);
+            panel.screenToPanelSpace = m_AssignedScreenToPanel;
+        }
+
+        private Func<Vector2, Vector3> m_AssignedScreenToPanel;
 
         internal float ResolveScale(Rect targetRect, float screenDpi)
         {

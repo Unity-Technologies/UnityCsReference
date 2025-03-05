@@ -11,7 +11,7 @@ namespace UnityEngine.Bindings
     class VisibleToOtherModulesAttribute : Attribute
     {
         // This attributes controls visibility of internal types and members to other modules.
-        // See https://confluence.hq.unity3d.com/display/DEV/Modular+UnityEngine+managed+assemblies+setup for details.
+        // See https://internaldocs.unity.com/editor_and_runtime_development_guide/DevelopmentProcess/authoring-changes/modules/#managed-code-in-modules for details.
         public VisibleToOtherModulesAttribute()
         {
         }

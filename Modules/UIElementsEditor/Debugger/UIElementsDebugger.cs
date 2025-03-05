@@ -746,12 +746,12 @@ namespace UnityEditor.UIElements.Debugger
         private bool SelectTopElementFromRuntimePanel(Vector2 editorMousePosition, Vector2 editorMouseDelta, Vector2 gameViewPadding, float gameMouseScale)
         {
             // Try picking element in runtime panels from closest to deepest
-            var panels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+            var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
-                var runtimePanel = (BaseRuntimePanel) panels[i];
+                var runtimePanel = panels[i];
 
-                if (!runtimePanel.ScreenToPanel(editorMousePosition - gameViewPadding, editorMouseDelta, out var panelPosition, out _))
+                if (!runtimePanel.ScreenToPanel(editorMousePosition - gameViewPadding, editorMouseDelta, out var panelPosition))
                     continue;
 
                 var mousePosition = panelPosition * gameMouseScale;

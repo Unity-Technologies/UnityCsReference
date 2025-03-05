@@ -70,6 +70,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        public static implicit operator Scale(Vector3 scale)
+        {
+            return new Scale(scale);
+        }
+
+        /// <undoc/>
         public static bool operator==(Scale lhs, Scale rhs)
         {
             return lhs.m_Scale == rhs.m_Scale;

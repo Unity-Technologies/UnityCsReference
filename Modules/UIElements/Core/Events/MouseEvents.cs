@@ -232,6 +232,7 @@ namespace UnityEngine.UIElements
 
         int IPointerOrMouseEvent.pointerId => PointerId.mousePointerId;
         Vector3 IPointerOrMouseEvent.position => mousePosition;
+        Vector3 IPointerOrMouseEvent.deltaPosition { get => mouseDelta; set => mouseDelta = value; }
 
         /// <summary>
         /// Resets the event members to their initial values.
@@ -269,7 +270,7 @@ namespace UnityEngine.UIElements
                 var element = currentTarget as VisualElement;
                 if (element != null)
                 {
-                    localMousePosition = element.WorldToLocal(mousePosition);
+                    localMousePosition = element.WorldToLocal3D(mousePosition);
                 }
                 else
                 {

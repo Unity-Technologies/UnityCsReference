@@ -4054,7 +4054,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, Mathf.Infinity, contactFilter, true, results);
         }
@@ -4064,7 +4064,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, distance, contactFilter, true, results);
         }
@@ -4073,7 +4073,7 @@ namespace UnityEngine
         {
             ContactFilter2D contactFilter = new ContactFilter2D();
             contactFilter.useTriggers = Physics2D.queriesHitTriggers;
-            contactFilter.SetLayerMask(Physics2D.GetLayerCollisionMask(this.gameObject.layer));
+            contactFilter.SetLayerMask(contactMask);
 
             return CastArray_Internal(direction, distance, contactFilter, ignoreSiblingColliders, results);
         }

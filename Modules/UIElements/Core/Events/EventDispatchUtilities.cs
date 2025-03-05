@@ -544,32 +544,33 @@ namespace UnityEngine.UIElements
         public static void DispatchToCapturingElementOrElementUnderPointer(EventBase evt,
             [NotNull] BaseVisualElementPanel panel, int pointerId, Vector2 position)
         {
-            if (DispatchToCapturingElement(evt, panel, pointerId, position))
+            if (DispatchToCapturingElement(evt, panel, pointerId))
                 return;
 
             DispatchToElementUnderPointerOrPanelRoot(evt, panel, pointerId, position);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private static bool DispatchToCapturingElement(EventBase evt, [NotNull] BaseVisualElementPanel panel, int pointerId, Vector2 position)
+        private static bool DispatchToCapturingElement(EventBase evt, [NotNull] BaseVisualElementPanel panel, int pointerId)
         {
             var capturingElement = panel.GetCapturingElement(pointerId) as VisualElement;
 
+            // We make our best effort to always send Pointer and Mouse events to the same element.
+            // If there's an element with the specific pointer capture, we send it to them.
+            // Otherwise, if we have mouse capture, we allow mouse compatibility events to play out their
+            // mouse capture logic in a closed loop by sending them all the mouse and pointer events.
+            // In this context, capturing another pointer during mouse capture will hijack the mouse capture
+            // but not the other way around.
             if (capturingElement == null)
             {
-                return false;
-            }
-
-            // Release pointer capture if capture element is not in a panel.
-            if (capturingElement.panel == null)
-            {
-                panel.ReleasePointer(pointerId);
-                return false;
-            }
-
-            if (evt.target != null && evt.target != capturingElement)
-            {
-                return false;
+                if (evt is IPointerEventInternal pei && pei.compatibilityMouseEvent != null)
+                {
+                    capturingElement = panel.GetCapturingElement(PointerId.mousePointerId) as VisualElement;
+                    if (capturingElement == null)
+                        return false;
+                }
+                else
+                    return false;
             }
 
             // Case 1342115: mouse position is in local panel coordinates; sending event to a target from a different
@@ -581,7 +582,7 @@ namespace UnityEngine.UIElements
             }
 
             evt.skipDisabledElements = false;
-            evt.elementTarget = capturingElement;
+            evt.elementTarget = capturingElement; // Ignore any pre-assigned target
             PropagateEvent(evt, panel, capturingElement, true);
 
             return true;

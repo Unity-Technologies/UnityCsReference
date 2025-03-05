@@ -24,6 +24,11 @@ namespace UnityEngine.InputForUI
         private static bool s_focusChangedRegistered;
 
         /// <summary>
+        /// Returns the IEventProviderImpl set as the current active provider, if any.
+        /// </summary>
+        public static IEventProviderImpl provider => s_impl;
+
+        /// <summary>
         /// Subscribes to event stream.
         /// Handler will be called before dynamic update.
         /// </summary>

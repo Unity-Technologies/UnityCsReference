@@ -151,11 +151,7 @@ namespace UnityEngine.UIElements.UIR
         static readonly ProfilerMarker k_MarkerSerialize = new("RenderChain.Serialize");
 
 
-        public RenderChain(BaseVisualElementPanel panel) : this(panel, new UIRenderDevice(panel.panelRenderer.vertexBudget), panel.atlas, new VectorImageManager(panel.atlas))
-        {
-        }
-
-        protected RenderChain(BaseVisualElementPanel panel, UIRenderDevice device, AtlasBase atlas, VectorImageManager vectorImageManager)
+        public RenderChain(BaseVisualElementPanel panel)
         {
             // A reasonable starting depth level suggested here
             m_DirtyTracker.heads = new List<VisualElement>(8);
@@ -165,9 +161,8 @@ namespace UnityEngine.UIElements.UIR
             m_DirtyTracker.Reset();
 
             this.panel = panel;
-            this.device = device;
-            this.atlas = atlas;
-            this.vectorImageManager = vectorImageManager;
+            atlas = panel.atlas;
+            vectorImageManager = new VectorImageManager(atlas);
 
             // TODO: Share across all panels
             tempMeshAllocator = new TempMeshAllocatorImpl();
@@ -180,7 +175,7 @@ namespace UnityEngine.UIElements.UIR
             if (panel.contextType == ContextType.Player)
             {
                 var runtimePanel = (BaseRuntimePanel)panel;
-                device.drawsInCameras = drawInCameras = runtimePanel.drawsInCameras;
+                drawInCameras = runtimePanel.drawsInCameras;
                 if (drawInCameras)
                     m_DefaultMat = Shaders.runtimeWorldMaterial;
                 else
@@ -196,12 +191,12 @@ namespace UnityEngine.UIElements.UIR
                     forceGammaRendering = true;
                 m_DefaultMat = Shaders.editorMaterial;
             }
+            isFlat = panel.isFlat;
+            device = new UIRenderDevice(panel.panelRenderer.vertexBudget, 0, isFlat, drawInCameras);
 
             Shaders.Acquire();
 
             shaderInfoAllocator = new UIRVEShaderInfoAllocator(forceGammaRendering ? ColorSpace.Gamma : activeColorSpace);
-
-            device.isFlat = isFlat = panel.isFlat;
         }
 
         #region Dispose Pattern
@@ -280,6 +275,8 @@ namespace UnityEngine.UIElements.UIR
             m_Stats.elementsAdded += m_StatsElementsAdded;
             m_Stats.elementsRemoved += m_StatsElementsRemoved;
             m_StatsElementsAdded = m_StatsElementsRemoved = 0;
+
+            device.AdvanceFrame(); // Before making any changes to the buffers
 
 
             int dirtyClass;
@@ -434,7 +431,7 @@ namespace UnityEngine.UIElements.UIR
             vectorImageManager?.Commit();
             shaderInfoAllocator.IssuePendingStorageChanges();
 
-            device?.OnFrameRenderingBegin();
+            device.OnFrameRenderingBegin();
 
             if (drawInCameras)
                 SerializeCommandsForCameras();

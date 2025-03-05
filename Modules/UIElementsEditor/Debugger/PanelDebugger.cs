@@ -141,7 +141,7 @@ namespace UnityEditor.UIElements.Debugger
 
             if (m_WindowToDebug is PlayModeView)
             {
-                var runtimePanels = UIElementsRuntimeUtility.GetSortedPlayerPanels();
+                var runtimePanels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
                 if (runtimePanels != null && runtimePanels.Count > 0)
                 {
                     root = runtimePanels[0].visualTree;

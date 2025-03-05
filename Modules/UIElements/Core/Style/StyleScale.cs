@@ -89,6 +89,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        public static implicit operator StyleScale(Vector3 scale)
+        {
+            return new Scale(scale);
+        }
+
+        /// <undoc/>
         public static bool operator==(StyleScale lhs, StyleScale rhs)
         {
             return lhs.m_Keyword == rhs.m_Keyword && lhs.m_Value == rhs.m_Value;

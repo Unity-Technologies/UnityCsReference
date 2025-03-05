@@ -113,7 +113,6 @@ namespace UnityEditor.UIElements.Debugger
             using (new EditorGUI.DisabledScope(Event.current.type != EventType.Repaint))
             {
                 EditorGUILayout.BeginHorizontal();
-                EditorGUILayout.IntField("Fully init", m_Stats.completeInit ? 1 : 0);
                 EditorGUILayout.IntField("Pages Count", m_Stats.pages != null ? m_Stats.pages.Length : 0);
                 EditorGUILayout.IntField("Frees Deferred", freesDeferred);
                 EditorGUILayout.EndHorizontal();

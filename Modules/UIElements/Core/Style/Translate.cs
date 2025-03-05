@@ -34,6 +34,22 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Implicitly converts a Vector3 to a Translate, with the resulting value specified in pixels.
+        /// </summary>
+        public static implicit operator Translate(Vector3 v)
+        {
+            return new Translate(v);
+        }
+
+        /// <summary>
+        /// Implicitly converts a Vector2 to a Translate, with the resulting value specified in pixels and the z value set to @@0@@.
+        /// </summary>
+        public static implicit operator Translate(Vector2 v)
+        {
+            return new Translate(v);
+        }
+
+        /// <summary>
         /// Returns the value of a Translate object with no translation applied.
         /// </summary>
         public static Translate None()

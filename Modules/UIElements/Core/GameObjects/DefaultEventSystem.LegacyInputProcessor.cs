@@ -402,6 +402,38 @@ namespace UnityEngine.UIElements
                 }
             }
 
+            static EventBase MakeTouchEvent(Touch touch, int pointerId, EventModifiers modifiers, int targetDisplay)
+            {
+                switch (touch.phase)
+                {
+                    case TouchPhase.Began:
+                        return PointerDownEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
+                    case TouchPhase.Moved:
+                        return PointerMoveEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
+                    case TouchPhase.Ended:
+                        return PointerUpEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
+                    case TouchPhase.Canceled:
+                        return PointerCancelEvent.GetPooled(touch, pointerId, modifiers, targetDisplay);
+                    default:
+                        return null;
+                }
+            }
+
+            static EventBase MakePenEvent(PenData pen, EventModifiers modifiers, int targetDisplay)
+            {
+                switch (pen.contactType)
+                {
+                    case PenEventType.PenDown:
+                        return PointerDownEvent.GetPooled(pen, modifiers, targetDisplay);
+                    case PenEventType.PenUp:
+                        return PointerUpEvent.GetPooled(pen, modifiers, targetDisplay);
+                    case PenEventType.NoContact:
+                        return PointerMoveEvent.GetPooled(pen, modifiers, targetDisplay);
+                    default:
+                        return null;
+                }
+            }
+
             internal interface IInput
             {
                 bool GetButtonDown(string button);

@@ -26,10 +26,9 @@ namespace UnityEditor.TerrainTools
         {
             if (didDomainReload)
             {
+                // if a terrain is selected and then the package is added, this code ensures that all the additional icons load
                 if (TerrainTransientToolbarOverlay.s_TerrainTransientToolbarOverlay != null)
                 {
-                    TerrainTransientToolbarOverlay.s_TerrainToolbarOverlay = new TerrainTransientToolbar();
-                    TerrainTransientToolbarOverlay.s_TerrainTransientToolbarOverlay.UpdateCollapsedIcon(); // subscribe to action once more
                     TerrainTransientToolbarOverlay.s_TerrainTransientToolbarOverlay.RebuildContent();
                 }
             }
@@ -40,45 +39,52 @@ namespace UnityEditor.TerrainTools
     internal class TerrainTransientToolbarOverlay : ToolbarOverlay, ITransientOverlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         bool m_OverlaysPackageInstalled;
-        
+        internal static ITerrainPaintToolWithOverlays s_LastSelectedTool;
+
         // See also
         // - SceneViewToolbars
         public TerrainTransientToolbarOverlay() : base("TerrainTransientToolbar")
         {
             // default collapsed icon
             collapsedIcon = EditorGUIUtility.LoadIcon("TerrainOverlays/ToolModeIcons/SculptMode_On.png");
-            CreateToolbarIfNull();
             s_TerrainTransientToolbarOverlay = this;
             m_OverlaysPackageInstalled = IsOverlaysPackageVersionInstalled();
         }
 
-        private void CreateToolbarIfNull()
+        // referencing TransformToolsOverlayToolBar in SceneViewToolbars.cs for subscribing/unsubscribing from collapsed icon updates
+        public override void OnCreated()
         {
-            if (s_TerrainToolbarOverlay == null)
+            base.OnCreated();
+            ToolManager.activeToolChanged += UpdateCollapsedIcon;
+            UpdateCollapsedIcon();
+        }
+
+        public override void OnWillBeDestroyed()
+        {
+            ToolManager.activeToolChanged -= UpdateCollapsedIcon;
+            base.OnWillBeDestroyed();
+        }
+
+        void UpdateCollapsedIcon()
+        {
+            var activeEditorTool = EditorToolManager.GetActiveTool();
+            if (activeEditorTool is ITerrainPaintToolWithOverlays)
             {
-                s_TerrainToolbarOverlay = new TerrainTransientToolbar();
-                UpdateCollapsedIcon();
+                var category = ((ITerrainPaintToolWithOverlays)activeEditorTool).Category;
+                var categoryMenuItem = TerrainTransientToolbar.s_ModeMenu[(int) category];
+                collapsedIcon = EditorGUIUtility.LoadIcon(categoryMenuItem.OnIcon);
             }
         }
+
 
         internal static TerrainTransientToolbarOverlay s_TerrainTransientToolbarOverlay;
 
         // determines whether the toolbar should be visible or not
         public bool visible => m_OverlaysPackageInstalled && TerrainInspector.s_activeTerrainInspectorInstance != null && BrushesOverlay.IsSelectedObjectTerrain();
 
-        internal static TerrainTransientToolbar s_TerrainToolbarOverlay;
+        internal TerrainTransientToolbar m_TerrainToolbarOverlay;
         private string m_PackageVersion = string.Empty;
         private bool m_PackageInstalled;
-
-        internal void UpdateCollapsedIcon()
-        {
-            s_TerrainToolbarOverlay.CategoryChangeAction += () =>
-            {
-                // change the icon
-                string iconPath = s_TerrainToolbarOverlay.CurrentTerrainCategory;
-                collapsedIcon = EditorGUIUtility.LoadIcon(iconPath);
-            };
-        }
 
         // is the CORRECT overlays package version installed
         private bool IsOverlaysPackageVersionInstalled()
@@ -139,31 +145,32 @@ namespace UnityEditor.TerrainTools
             return m_PackageInstalled;
         }
 
+        private OverlayToolbar CreateAndReturnTerrainTransientToolbar()
+        {
+            var lastSelectedTool = s_LastSelectedTool; // need to keep track of this because it gets reset in the TerrainTransientToolbar constructor
+            m_TerrainToolbarOverlay = new TerrainTransientToolbar();
+            if (lastSelectedTool != null) m_TerrainToolbarOverlay.SetToolActive(lastSelectedTool, true);
+            return m_TerrainToolbarOverlay;
+        }
+
         public override VisualElement CreatePanelContent()
         {
-            return s_TerrainToolbarOverlay;
+            return CreateAndReturnTerrainTransientToolbar();
         }
 
         OverlayToolbar ICreateHorizontalToolbar.CreateHorizontalToolbarContent()
         {
-            return s_TerrainToolbarOverlay;
+            return CreateAndReturnTerrainTransientToolbar();
         }
 
         OverlayToolbar ICreateVerticalToolbar.CreateVerticalToolbarContent()
         {
-            return s_TerrainToolbarOverlay;
-        }
-
-        public static void SetEditorToolActive(ITerrainPaintToolWithOverlays editorPaintTool)
-        {
-            if (s_TerrainToolbarOverlay == null) return; // avoid setting null tool when adding package
-            if (!BrushesOverlay.IsSelectedObjectTerrain()) return; //avoid setting tools when selected object IS NOT terrain
-            s_TerrainToolbarOverlay.SetToolActive(editorPaintTool);
+            return CreateAndReturnTerrainTransientToolbar();
         }
     }
 
     [EditorToolbarElement("TerrainTransientToolbar", typeof(SceneView))]
-    class TerrainTransientToolbar : OverlayToolbar
+    internal class TerrainTransientToolbar : OverlayToolbar
     {
         VisualElement m_DefaultToolsVE;
         VisualElement m_MenuButtonsVE;
@@ -190,17 +197,16 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        internal void SetToolActive(ITerrainPaintToolWithOverlays editorPaintTool)
+        internal void SetToolActive(ITerrainPaintToolWithOverlays editorPaintTool, bool forceReload = false)
         {
             // keep track of the last selected tool in each category
             m_CategoryToLastUsedTool[editorPaintTool.Category] = (EditorTool) editorPaintTool;
 
-            if ((int) editorPaintTool.Category != m_CurrIndex)
+            if ((int) editorPaintTool.Category != m_CurrCategoryIndex || forceReload)
             {
                 // change category and load tools if necessary
-                m_CurrIndex = (int) editorPaintTool.Category;
+                m_CurrCategoryIndex = (int) editorPaintTool.Category;
                 LoadTool(editorPaintTool.Category);
-                OnCategoryChangeAction(); // invoke the action for changing the category
             }
 
             // activating the tool after LoadTool() call so its in the dictionary
@@ -277,7 +283,6 @@ namespace UnityEditor.TerrainTools
 
         private void LoadTool(TerrainCategory category)
         {
-
             LoadTool(m_CategoryToTools[category], category);
             if (m_CategoryToLastUsedTool[category] is NoneTool) return; // check for an empty category, most likely custom tools
             // set the tool active in inspector if it is a paint tool (this is because the paint tools are all in the same drop down)
@@ -333,9 +338,6 @@ namespace UnityEditor.TerrainTools
                     UpdateState();
                 });
 
-                button.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-                button.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
                 // make the buttons have a darker background color using USS
                 button.name = "terrain_tool_button";
                 EditorToolbarUtility.LoadStyleSheets("TerrainToolbar", button);
@@ -349,8 +351,28 @@ namespace UnityEditor.TerrainTools
         }
 
         // ----- editorToolbarToggle button functions -----
+        void UpdateStateAndMenu()
+        {
+            UpdateState();
+            UpdateMenu();
+        }
+
         void UpdateState()
         {
+            var activeEditorTool = EditorToolManager.GetActiveTool();
+            if (activeEditorTool is ITerrainPaintToolWithOverlays)
+            {
+                TerrainTransientToolbarOverlay.s_LastSelectedTool = activeEditorTool as ITerrainPaintToolWithOverlays;
+
+                if (m_CurrCategoryIndex != (int)TerrainTransientToolbarOverlay.s_LastSelectedTool.Category)
+                {
+                    m_CurrCategoryIndex = (int) TerrainTransientToolbarOverlay.s_LastSelectedTool.Category;
+                    m_DefaultToolsVE.Clear();
+                    var category = (TerrainCategory)m_CurrCategoryIndex;
+                    LoadTool(m_CategoryToTools[category], category);
+                }
+            }
+
             //item.Key is the button, item.Value is the tool
             foreach (var item in m_ButtonToTool)
             {
@@ -359,19 +381,19 @@ namespace UnityEditor.TerrainTools
             }
         }
 
-        void OnAttachedToPanel(AttachToPanelEvent evt)
+        void RegisterToolChangeCallbacks()
         {
-            ToolManager.activeToolChanged += UpdateState;
-            ToolManager.activeContextChanged += UpdateState;
+            ToolManager.activeToolChanged += UpdateStateAndMenu;
+            ToolManager.activeContextChanged += UpdateStateAndMenu;
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void DeregisterToolChangeCallbacks()
         {
-            ToolManager.activeContextChanged -= UpdateState;
-            ToolManager.activeToolChanged -= UpdateState;
+            ToolManager.activeContextChanged -= UpdateStateAndMenu;
+            ToolManager.activeToolChanged -= UpdateStateAndMenu;
         }
 
-        struct MenuItem
+        internal struct MenuItem
         {
             public readonly string OnIcon;
             public readonly string OffIcon;
@@ -394,9 +416,9 @@ namespace UnityEditor.TerrainTools
         private static Texture2D s_SeparatorIcon =
             EditorGUIUtility.LoadIcon("TerrainOverlays/SeparatorDot.png");
 
-        static MenuItem[] s_ModeMenu = { s_SculptMode, s_MaterialMode, s_FoliageMode, s_NeighborMode, s_CustomBrushesMode };
+        internal static MenuItem[] s_ModeMenu = { s_SculptMode, s_MaterialMode, s_FoliageMode, s_NeighborMode, s_CustomBrushesMode };
 
-        int m_CurrIndex = 0;
+        int m_CurrCategoryIndex = 0;
         List<EditorToolbarToggle> m_MenuButtons = new List<EditorToolbarToggle>();
 
         void UpdateMenu()
@@ -405,7 +427,7 @@ namespace UnityEditor.TerrainTools
             foreach (var menuButton in m_MenuButtons)
             {
                 // the only menu button that should be active is the one at the currentIndex
-                menuButton.SetValueWithoutNotify(i == m_CurrIndex);
+                menuButton.SetValueWithoutNotify(i == m_CurrCategoryIndex);
                 i++;
             }
         }
@@ -434,7 +456,7 @@ namespace UnityEditor.TerrainTools
                 int indexCopy = i;
                 button.RegisterValueChangedCallback((evt) =>
                 {
-                    m_CurrIndex = indexCopy;
+                    m_CurrCategoryIndex = indexCopy;
                     if (evt.newValue)
                     {
                         m_DefaultToolsVE.Clear();
@@ -443,10 +465,6 @@ namespace UnityEditor.TerrainTools
                     }
 
                     UpdateMenu();
-
-                    // action called when terrain category is changed
-                    OnCategoryChangeAction();
-
                 });
                 m_MenuButtons.Add(button);
                 m_MenuButtonsVE.Add(button);
@@ -461,15 +479,6 @@ namespace UnityEditor.TerrainTools
             m_SeparatorVE.AddToClassList("toolbar-contents");
             m_SeparatorVE.AddToClassList("unity-editor-toolbar-element__separator");
             m_SeparatorVE.style.backgroundImage = s_SeparatorIcon;
-        }
-
-        // invoke an action when changing the menu category on the terrain toolbar
-        public string CurrentTerrainCategory = s_ModeMenu[0].OnIcon;
-        public Action CategoryChangeAction;
-        void OnCategoryChangeAction()
-        {
-            CurrentTerrainCategory = s_ModeMenu[m_CurrIndex].OnIcon;
-            CategoryChangeAction?.Invoke();
         }
 
         public TerrainTransientToolbar()
@@ -509,6 +518,10 @@ namespace UnityEditor.TerrainTools
             Add(m_MenuButtonsVE);
             Add(m_SeparatorVE);
             Add(m_DefaultToolsVE);
+
+            // register callbacks
+            RegisterCallback<AttachToPanelEvent>(evt => RegisterToolChangeCallbacks());
+            RegisterCallback<DetachFromPanelEvent>(evt => DeregisterToolChangeCallbacks());
 
         }
     }

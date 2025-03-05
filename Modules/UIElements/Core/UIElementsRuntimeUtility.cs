@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Profiling;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -18,6 +19,8 @@ namespace UnityEngine.UIElements
             Canvas.externBeginRenderOverlays = BeginRenderOverlays;
             Canvas.externRenderOverlaysBefore = (displayIndex, sortOrder) => RenderOverlaysBeforePriority(displayIndex, sortOrder);
             Canvas.externEndRenderOverlays = EndRenderOverlays;
+
+            UIElementsRuntimeUtilityNative.SetUpdateCallback(UpdatePanels);
         }
 
         public static EventBase CreateEvent(Event systemEvent)
@@ -54,16 +57,34 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private static void GetPlayerPanelsByRenderMode(List<BaseRuntimePanel> outScreenSpaceOverlayPanels, List<BaseRuntimePanel> outWorldSpacePanels)
+        {
+            using (Pool.ListPool<Panel>.Get(out var panels))
+            {
+                UIElementsUtility.GetAllPanels(panels, ContextType.Player);
+                foreach (var panel in panels)
+                {
+                    if (!(panel is BaseRuntimePanel runtimePanel))
+                        continue;
+
+                    if (runtimePanel.drawsInCameras)
+                        outWorldSpacePanels.Add(runtimePanel);
+                    else
+                        outScreenSpaceOverlayPanels.Add(runtimePanel);
+                }
+            }
+        }
+
         private static bool s_RegisteredPlayerloopCallback = false;
 
         private static void RegisterCachedPanelInternal(int instanceID, IPanel panel)
         {
             UIElementsUtility.RegisterCachedPanel(instanceID, panel as Panel);
-            s_PanelOrderingDirty = true;
+            s_PanelOrderingOrDrawInCameraDirty = true;
             if (!s_RegisteredPlayerloopCallback)
             {
                 s_RegisteredPlayerloopCallback = true;
-                RegisterPlayerloopCallback();
+                EnableRenderingAndInputCallbacks();
                 Canvas.SetExternalCanvasEnabled(true);
             }
         }
@@ -72,25 +93,29 @@ namespace UnityEngine.UIElements
         {
             UIElementsUtility.RemoveCachedPanel(instanceID);
 
-            s_PanelOrderingDirty = true;
+            s_PanelOrderingOrDrawInCameraDirty = true;
 
             // We don't call GetSortedPanels() here to avoid always sorting when we remove multiple panels in a row
             // the ordering is dirty anyways, it will eventually get recreated
-            s_SortedRuntimePanels.Clear();
-            UIElementsUtility.GetAllPanels(s_SortedRuntimePanels, ContextType.Player);
-
-            // un-register the playerloop callback as the last panel gets un-registered
-            if (s_SortedRuntimePanels.Count == 0)
+            using (Pool.ListPool<Panel>.Get(out var panels))
             {
-                s_RegisteredPlayerloopCallback = false;
-                UnregisterPlayerloopCallback();
-                Canvas.SetExternalCanvasEnabled(false);
+                UIElementsUtility.GetAllPanels(panels, ContextType.Player);
+
+                // un-register the playerloop callback as the last panel gets un-registered
+                if (panels.Count == 0)
+                {
+                    SortPanels(); // Clear the cached lists
+                    s_RegisteredPlayerloopCallback = false;
+                    DisableRenderingAndInputCallbacks();
+                    Canvas.SetExternalCanvasEnabled(false);
+                }
             }
         }
 
-        static List<Panel> s_SortedRuntimePanels = new List<Panel>();
-        private static bool s_PanelOrderingDirty = true;
-
+        private static readonly List<BaseRuntimePanel> s_SortedScreenOverlayPanels = new();
+        private static readonly List<BaseRuntimePanel> s_CachedWorldSpacePanels = new();
+        private static readonly List<BaseRuntimePanel> s_SortedPlayerPanels = new();
+        private static bool s_PanelOrderingOrDrawInCameraDirty = true;
         internal static int s_ResolvedSortingIndexMax = 0;
 
         public static void RenderOffscreenPanels()
@@ -98,9 +123,9 @@ namespace UnityEngine.UIElements
             var oldCam = Camera.current;
             var oldRT = RenderTexture.active;
 
-            foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
+            foreach (var panel in GetSortedScreenOverlayPlayerPanels())
             {
-                if (!panel.drawsInCameras && panel.targetTexture != null)
+                if (panel.targetTexture != null)
                 {
                     // We don't want the state to be restored immediately because the next panel might be rendering
                     // to the same render texture
@@ -151,17 +176,17 @@ namespace UnityEngine.UIElements
             if (currentOverlayIndex < 0)
                 return;
 
-            var runTimePanels = GetSortedPlayerPanels();
+            var overlayPanels = GetSortedScreenOverlayPlayerPanels();
 
-            for (; currentOverlayIndex < runTimePanels.Count; ++currentOverlayIndex)
+            for (; currentOverlayIndex < overlayPanels.Count; ++currentOverlayIndex)
             {
-                if (runTimePanels[currentOverlayIndex] is BaseRuntimePanel p)
-                {
-                    if (p.sortingPriority >= maxPriority)
-                        return;
+                var overlayPanel = overlayPanels[currentOverlayIndex];
+                if (overlayPanel.sortingPriority >= maxPriority)
+                    return;
 
-                    if (p.targetDisplay == displayIndex && !p.drawsInCameras && p.targetTexture == null)
-                        RenderPanel(p);
+                if (overlayPanel.targetDisplay == displayIndex && overlayPanel.targetTexture == null)
+                {
+                    RenderPanel(overlayPanel);
                 }
             }
         }
@@ -208,11 +233,27 @@ namespace UnityEngine.UIElements
             RemoveUnusedPanels();
             UIRenderDevice.ProcessDeviceFreeQueue();
 
-            foreach (BaseRuntimePanel panel in GetSortedPlayerPanels())
+            // This is already called in the Editor loop (UIElementsUtility) but we also need this in the Player
+            // When profiling in Editor this may not show accurate results however
+            LayoutManager.SharedManager.Collect();
+
+            List<BaseRuntimePanel> sortedPlayerPanels = GetSortedPlayerPanels();
+
+            // Early out to skip the loop below, and to avoid an Input Update when there are no panels
+            if (sortedPlayerPanels.Count == 0)
+                return;
+
+            // Update panels from back to front. World space first, then screen overlay.
+			foreach (BaseRuntimePanel panel in sortedPlayerPanels)
             {
                 panel.Update();
             }
 
+            UpdateEventSystem();
+        }
+
+        internal static void UpdateEventSystem()
+        {
             if (s_IsPlayMode)
             {
                 if (useDefaultEventSystem)
@@ -252,20 +293,14 @@ namespace UnityEngine.UIElements
             s_PotentiallyEmptyPanelSettings.Clear();
         }
 
-        public static void RegisterPlayerloopCallback()
+        public static void EnableRenderingAndInputCallbacks()
         {
-            UIElementsRuntimeUtilityNative.RegisterPlayerloopCallback();
-            UIElementsRuntimeUtilityNative.UpdatePanelsCallback = UpdatePanels;
-            UIElementsRuntimeUtilityNative.RepaintPanelsCallback = RepaintPanels;
-            UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = RenderOffscreenPanels;
+            UIElementsRuntimeUtilityNative.SetRenderingCallbacks(RepaintPanels, RenderOffscreenPanels);
         }
 
-        public static void UnregisterPlayerloopCallback()
+        public static void DisableRenderingAndInputCallbacks()
         {
-            UIElementsRuntimeUtilityNative.UnregisterPlayerloopCallback();
-            UIElementsRuntimeUtilityNative.UpdatePanelsCallback = null;
-            UIElementsRuntimeUtilityNative.RepaintPanelsCallback = null;
-            UIElementsRuntimeUtilityNative.RenderOffscreenPanelsCallback = null;
+            UIElementsRuntimeUtilityNative.UnsetRenderingCallbacks();
 
             if (s_DefaultEventSystem != null)
                 s_DefaultEventSystem.isInputReady = false;
@@ -273,26 +308,52 @@ namespace UnityEngine.UIElements
 
         internal static void SetPanelOrderingDirty()
         {
-            s_PanelOrderingDirty = true;
+            s_PanelOrderingOrDrawInCameraDirty = true;
         }
 
-        internal static List<Panel> GetSortedPlayerPanels()
+        internal static void SetPanelsDrawInCameraDirty()
         {
-            if (s_PanelOrderingDirty)
+            s_PanelOrderingOrDrawInCameraDirty = true;
+        }
+
+        internal static List<BaseRuntimePanel> GetWorldSpacePlayerPanels()
+        {
+            if (s_PanelOrderingOrDrawInCameraDirty)
                 SortPanels();
-            return s_SortedRuntimePanels;
+            return s_CachedWorldSpacePanels;
         }
 
-        static void SortPanels()
+        public static List<BaseRuntimePanel> GetSortedScreenOverlayPlayerPanels()
         {
-            s_SortedRuntimePanels.Clear();
-            UIElementsUtility.GetAllPanels(s_SortedRuntimePanels, ContextType.Player);
+            if (s_PanelOrderingOrDrawInCameraDirty)
+                SortPanels();
+            return s_SortedScreenOverlayPanels;
+        }
 
-            s_SortedRuntimePanels.Sort((a, b) =>
+        public static List<BaseRuntimePanel> GetSortedPlayerPanels()
+        {
+            if (s_PanelOrderingOrDrawInCameraDirty)
+                SortPanels();
+            return s_SortedPlayerPanels;
+        }
+
+        // For unit tests
+        internal static List<IPanel> GetSortedPlayerPanelsInternal()
+        {
+            List<IPanel> outPanels = new ();
+            foreach (var panel in GetSortedPlayerPanels())
+                outPanels.Add(panel);
+            return outPanels;
+        }
+
+        private static void SortPanels()
+        {
+            s_SortedScreenOverlayPanels.Clear();
+            s_CachedWorldSpacePanels.Clear();
+            GetPlayerPanelsByRenderMode(s_SortedScreenOverlayPanels, s_CachedWorldSpacePanels);
+
+            s_SortedScreenOverlayPanels.Sort((runtimePanelA, runtimePanelB) =>
             {
-                var runtimePanelA = a as BaseRuntimePanel;
-                var runtimePanelB = b as BaseRuntimePanel;
-
                 if (runtimePanelA == null || runtimePanelB == null)
                 {
                     // Should never happen, so just being safe (after all there's a cast happening).
@@ -310,15 +371,21 @@ namespace UnityEngine.UIElements
                 return (diff < 0) ? -1 : 1;
             });
 
-            for (var i = 0; i < s_SortedRuntimePanels.Count; i++)
+            for (var i = 0; i < s_SortedScreenOverlayPanels.Count; i++)
             {
-                var runtimePanel = s_SortedRuntimePanels[i] as BaseRuntimePanel;
-                if (runtimePanel != null)
-                    runtimePanel.resolvedSortingIndex = i;
+                var runtimePanel = s_SortedScreenOverlayPanels[i];
+                runtimePanel.resolvedSortingIndex = i;
             }
-            s_ResolvedSortingIndexMax = s_SortedRuntimePanels.Count - 1;
+            s_ResolvedSortingIndexMax = s_SortedScreenOverlayPanels.Count - 1;
 
-            s_PanelOrderingDirty = false;
+            // Update panels from back to front. World space first, then screen overlay.
+            s_SortedPlayerPanels.Clear();
+            foreach (var panel in s_CachedWorldSpacePanels)
+                s_SortedPlayerPanels.Add(panel);
+            foreach (var panel in s_SortedScreenOverlayPanels)
+                s_SortedPlayerPanels.Add(panel);
+
+            s_PanelOrderingOrDrawInCameraDirty = false;
         }
 
         internal static Vector2 MultiDisplayBottomLeftToPanelPosition(Vector2 position, out int? targetDisplay)
@@ -342,16 +409,32 @@ namespace UnityEngine.UIElements
         internal static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            var screenHeight = Screen.height;
-            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
-                screenHeight = Display.displays[targetDisplay].systemHeight;
-            position.y = screenHeight - position.y;
-            return position;
+            return FlipY(position, targetDisplay);
         }
 
         internal static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
         {
             // Flip deltas Y axis between input and UITK
+            return FlipDeltaY(delta);
+        }
+
+        internal static Vector2 PanelToScreenBottomLeftPosition(Vector2 panelPosition, int targetDisplay)
+        {
+            // Flip positions Y axis between input and UITK
+            return FlipY(panelPosition, targetDisplay);
+        }
+
+        private static Vector2 FlipY(Vector2 p, int targetDisplay)
+        {
+            var screenHeight = Screen.height;
+            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
+                screenHeight = Display.displays[targetDisplay].systemHeight;
+            p.y = screenHeight - p.y;
+            return p;
+        }
+
+        private static Vector2 FlipDeltaY(Vector2 delta)
+        {
             delta.y = -delta.y;
             return delta;
         }

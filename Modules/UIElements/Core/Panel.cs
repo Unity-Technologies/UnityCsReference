@@ -644,8 +644,17 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.RemoveElementUnderPointer(e);
         }
 
+        internal void SetTopElementUnderPointer(int pointerId, VisualElement element, EventBase triggerEvent)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
+        }
+
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
+            // World-space panels can't compute element from only a 2-D position.
+            if (!isFlat)
+                return GetTopElementUnderPointer(pointerId);
+
             VisualElement element = null;
 
             if (PointerDeviceState.GetPanel(pointerId, contextType) == this &&
@@ -721,19 +730,23 @@ namespace UnityEngine.UIElements
         internal event Action<IPanel> beforeUpdate;
         internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
 
+        //UUM-58503: In some code paths the mousePosition is converted to a Vector2Int, which causes undefined behavior
+        //           when the x,y coords are float.MinValue()
+        internal static readonly Vector2 s_OutsidePanelCoordinates = new ((float)int.MinValue, (float)int.MinValue);
+
         // returns true if elements under pointer have changed
         internal bool UpdateElementUnderPointers()
         {
-            foreach (var pointerId in PointerId.hoveringPointers)
+            foreach (var pointerId in PointerId.screenHoveringPointers)
             {
                 if (PointerDeviceState.GetPanel(pointerId, contextType) != this ||
                     PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
                 {
-                    //UUM-58503: In some code paths the mousePosition is converted to a Vector2Int, which causes undefined behavior
-                    //           when the x,y coords are float.MinValue()
-                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2((float)int.MinValue, (float)int.MinValue));
+                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, s_OutsidePanelCoordinates);
                 }
-                else
+                // World-space panels can't use PickAll to compute an element from only a 2-D position.
+                // See DefaultEventSystem.SendPositionBasedEvent where SetTopElementUnderPointer is called.
+                else if (isFlat)
                 {
                     var pointerPos = PointerDeviceState.GetPointerPosition(pointerId, contextType);
 
@@ -1151,7 +1164,7 @@ namespace UnityEngine.UIElements
         }
 
         // For tests only.
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule", "Assembly-CSharp-testable")]
         internal static VisualElement PickAllWithoutValidatingLayout(VisualElement root, Vector2 point)
         {
             return PickAll(root, point);
@@ -1500,6 +1513,7 @@ namespace UnityEngine.UIElements
                 if (m_DrawsInCameras != value)
                 {
                     m_DrawsInCameras = value;
+                    UIElementsRuntimeUtility.SetPanelsDrawInCameraDirty();
                     InvokeDrawsInCamerasChanged();
                 }
             }
@@ -1585,26 +1599,24 @@ namespace UnityEngine.UIElements
             RenderTexture.active = oldRT;
         }
 
-        internal static readonly Func<Vector2, Vector2> DefaultScreenToPanelSpace = (p) => (p);
-        private Func<Vector2, Vector2> m_ScreenToPanelSpace = DefaultScreenToPanelSpace;
+        internal static readonly Func<Vector2, Vector3> DefaultScreenToPanelSpace = (p) => (p);
+        private Func<Vector2, Vector3> m_ScreenToPanelSpace = DefaultScreenToPanelSpace;
 
-        public Func<Vector2, Vector2> screenToPanelSpace
+        public Func<Vector2, Vector3> screenToPanelSpace
         {
             get => m_ScreenToPanelSpace;
             set => m_ScreenToPanelSpace = value ?? DefaultScreenToPanelSpace;
         }
 
-        internal Vector2 ScreenToPanel(Vector2 screen)
+        internal Vector3 ScreenToPanel(Vector2 screen)
         {
             return screenToPanelSpace(screen) / scale;
         }
 
         internal bool ScreenToPanel(Vector2 screenPosition, Vector2 screenDelta,
-            out Vector2 panelPosition, out Vector2 panelDelta, bool allowOutside = false)
+            out Vector3 panelPosition, bool allowOutside = false)
         {
             panelPosition = ScreenToPanel(screenPosition);
-
-            Vector2 panelPrevPosition;
 
             // We don't allow pointer events outside of a panel to be considered
             // unless it is capturing the mouse (see SendPositionBasedEvent).
@@ -1613,23 +1625,16 @@ namespace UnityEngine.UIElements
                 var panelRect = visualTree.layout;
                 if (!panelRect.Contains(panelPosition))
                 {
-                    panelDelta = screenDelta;
                     return false;
                 }
 
-                panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
+                var panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
                 if (!panelRect.Contains(panelPrevPosition))
                 {
-                    panelDelta = screenDelta;
                     return true;
                 }
             }
-            else
-            {
-                panelPrevPosition = ScreenToPanel(screenPosition - screenDelta);
-            }
 
-            panelDelta = panelPosition - panelPrevPosition;
             return true;
         }
 
@@ -1646,18 +1651,17 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void PointerLeavesPanel(int pointerId, Vector2 position)
+        internal void PointerLeavesPanel(int pointerId)
         {
             ClearCachedElementUnderPointer(pointerId, null);
             CommitElementUnderPointers();
-            PointerDeviceState.SavePointerPosition(pointerId, position, null, contextType);
+            PointerDeviceState.SavePointerPosition(pointerId, s_OutsidePanelCoordinates, null, contextType);
         }
 
-        internal void PointerEntersPanel(int pointerId, Vector2 position)
+        internal void PointerEntersPanel(int pointerId, Vector3 position)
         {
             PointerDeviceState.SavePointerPosition(pointerId, position, this, contextType);
         }
-
     }
 
     internal interface IRuntimePanelComponent

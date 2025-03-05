@@ -179,7 +179,9 @@ namespace UnityEngine
         extern public void GetBlendShapeFrameVertices(int shapeIndex, int frameIndex, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
 
         [FreeFunction(Name = "AddBlendShapeFrameFromScript", HasExplicitThis = true, ThrowsException = true)]
-        extern public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents);
+        extern public void AddBlendShapeFrame(string shapeName, float frameWeight, ReadOnlySpan<Vector3> deltaVertices, ReadOnlySpan<Vector3> deltaNormals, ReadOnlySpan<Vector3> deltaTangents);
+        public void AddBlendShapeFrame(string shapeName, float frameWeight, Vector3[] deltaVertices, Vector3[] deltaNormals, Vector3[] deltaTangents)
+            => AddBlendShapeFrame(shapeName, frameWeight, new ReadOnlySpan<Vector3>(deltaVertices), new ReadOnlySpan<Vector3>(deltaNormals), new ReadOnlySpan<Vector3>(deltaTangents));
 
         [FreeFunction(Name = "MeshScripting::GetBlendShapeOffset", HasExplicitThis = true)]
         extern private BlendShape GetBlendShapeOffsetInternal(int index);

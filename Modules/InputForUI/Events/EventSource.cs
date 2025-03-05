@@ -40,4 +40,10 @@ internal enum EventSource
     /// Event was generated from a touch interaction.
     /// </summary>
     Touch = 5,
+
+    /// <summary>
+    /// Event was generated from a tracked device interaction.
+    /// See for example InputSystem's [[https://docs.unity3d.com/Packages/com.unity.inputsystem@1.12/api/UnityEngine.InputSystem.XR.XRController.html|XRController]].
+    /// </summary>
+    TrackedDevice = 6,
 }

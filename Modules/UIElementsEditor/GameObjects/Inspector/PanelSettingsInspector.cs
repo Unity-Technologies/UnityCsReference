@@ -26,6 +26,7 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_ThemeStyleSheetField;
         private ObjectField m_UITKTextSettings;
         private EnumField m_RenderModeField;
+        private EnumField m_WorldInputModeField;
         private LayerField m_WorldSpaceLayerField;
         private HelpBox m_WorldSpaceBox;
         private ObjectField m_TargetTextureField;
@@ -70,6 +71,7 @@ namespace UnityEditor.UIElements.Inspector
             m_UITKTextSettings.objectType = typeof(PanelTextSettings);
 
             m_RenderModeField = m_RootVisualElement.MandatoryQ<EnumField>("render-mode");
+            m_WorldInputModeField = m_RootVisualElement.MandatoryQ<EnumField>("worldinput-mode");
             m_WorldSpaceLayerField = m_RootVisualElement.MandatoryQ<LayerField>("worldspace-layer");
             m_WorldSpaceBox = m_RootVisualElement.MandatoryQ<HelpBox>("worldspace-box");
 
@@ -244,6 +246,7 @@ namespace UnityEditor.UIElements.Inspector
             }
 
             m_WorldSpaceLayerField.style.display = displayStyleForWorldProperties;
+            m_WorldInputModeField.style.display = displayStyleForWorldProperties;
 
             m_TargetTextureField.style.display = displayStyleForOverlayProperties;
             m_ScaleModeField.style.display = displayStyleForOverlayProperties;

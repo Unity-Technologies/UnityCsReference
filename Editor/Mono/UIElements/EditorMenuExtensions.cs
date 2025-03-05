@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.UIElements;
-using static UnityEngine.GraphicsBuffer;
 
 namespace UnityEditor.UIElements
 {
@@ -88,6 +87,28 @@ namespace UnityEditor.UIElements
 
             genericMenu.DropDown(new Rect(position, Vector2.zero), triggerEvent.elementTarget);
         }
+
+        public static Rect GUIToScreenRect(VisualElement targetElement, Rect position)
+        {
+            var panel = targetElement.elementPanel;
+
+            if (panel.contextType == ContextType.Editor && panel.ownerObject is View view)
+            {
+                // Convert first the postion in the panel to the position in UI pixels as per the editor's window definition
+                // This will not work in test where we disconnect the panel DPI from the window DPI
+
+                position.x *= panel.scale;
+                position.y *= panel.scale;
+                position.width *= panel.scale;
+                position.height *= panel.scale;
+
+                // Add the offset of window to get the position in screen space
+                // It include the position from the guiView to the root of the containerWindow and from the containerWindow to the screen
+                position.position += view.screenPosition.position;
+            }
+
+            return position;
+        }
     }
 
     internal class GenericOSMenu : IGenericMenu
@@ -138,23 +159,8 @@ namespace UnityEditor.UIElements
                 Debug.LogError("Cannot show dropdown menu with a target visualElement not in a panel");
                 return;
             }
-            var panel = targetElement.elementPanel;
 
-            if (panel.contextType ==ContextType.Editor && panel.ownerObject is View view)
-            {
-                // Convert first the postion in the panel to the position in UI pixels as per the editor's window definition
-                // This will not work in test where we disconnect the panel DPI from the window DPI
-
-                position.x *= panel.scale;
-                position.y *= panel.scale;
-                position.width *= panel.scale;
-                position.height *= panel.scale;
-
-                // Add the offset of window to get the position in screen space
-                // It include the position from the guiView to the root of the containerWindow and from the containerWindow to the screen
-                position.position += view.screenPosition.position;
-            }
-
+            position = EditorMenuExtensions.GUIToScreenRect(targetElement, position);
             m_GenericMenu.DropDownScreenSpace(position, false);
         }
 

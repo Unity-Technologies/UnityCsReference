@@ -184,7 +184,7 @@ namespace Unity.UI.Builder
         {
             var newValue = !m_PaneWindow.document.fileSettings.editorExtensionMode;
             m_PaneWindow.document.fileSettings.editorExtensionMode = newValue;
-            m_Selection.NotifyOfStylingChangePostStylingUpdate();
+            m_Selection.NotifyOfHierarchyChange(m_PaneWindow.document);
             SwitchLibraryTab(BuilderLibraryTab.Standard);
 
             if (newValue)

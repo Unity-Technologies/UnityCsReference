@@ -129,56 +129,67 @@ namespace UnityEngine.UIElements
                 var targetDisplay = pointerEvent.displayIndex;
                 var deltaPosition = pointerEvent.deltaPosition;
 
-                var pointerIdBase = pointerEvent.eventSource == EventSource.Touch ? PointerId.touchPointerIdBase :
-                    pointerEvent.eventSource == EventSource.Pen ? PointerId.penPointerIdBase : PointerId.mousePointerId;
+                var pointerIdBase = pointerEvent.eventSource switch
+                {
+                    EventSource.Touch => PointerId.touchPointerIdBase,
+                    EventSource.Pen => PointerId.penPointerIdBase,
+                    EventSource.TrackedDevice => PointerId.trackedPointerIdBase,
+                    _ => PointerId.mousePointerId
+                };
                 var pointerId = pointerIdBase + pointerEvent.pointerIndex;
 
                 var deltaTime = m_LastPointerTimestamp != DiscreteTime.Zero ? (float)(pointerEvent.timestamp - m_LastPointerTimestamp) : 0;
                 m_NextPointerTimestamp = pointerEvent.timestamp;
+                Func<Vector3, (PointerEvent pointerEvent, int pointerId, float deltaTime), EventBase> evtFactory;
+                bool deselectIfNoTarget = false;
 
                 if (pointerEvent.type == PointerEvent.Type.PointerMoved)
                 {
-                    if (!Mathf.Approximately(deltaPosition.x, 0f) || !Mathf.Approximately(deltaPosition.y, 0f))
-                    {
-                        m_EventSystem.SendPositionBasedEvent(position, deltaPosition, pointerId, targetDisplay,
-                            (panelPosition, panelDelta, t) => PointerMoveEvent.GetPooled(t.pointerEvent, panelPosition,
-                                panelDelta, t.pointerId, t.deltaTime), (pointerEvent, pointerId, deltaTime));
-                    }
+                    if (pointerEvent.eventSource != EventSource.TrackedDevice &&
+                        Mathf.Approximately(deltaPosition.x, 0f) && Mathf.Approximately(deltaPosition.y, 0f))
+                        return;
+
+                    evtFactory = (panelPosition, t) =>
+                        PointerMoveEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
                 }
                 else if (pointerEvent.type == PointerEvent.Type.ButtonPressed)
                 {
-                    m_EventSystem.SendPositionBasedEvent(position, deltaPosition, pointerId, targetDisplay,
-                        (panelPosition, panelDelta, t) => PointerDownEvent.GetPooled(t.pointerEvent, panelPosition,
-                            panelDelta, t.pointerId, t.deltaTime), (pointerEvent, pointerId, deltaTime));
+                    evtFactory = (panelPosition, t) =>
+                        PointerDownEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
                 }
                 else if (pointerEvent.type == PointerEvent.Type.ButtonReleased)
                 {
-                    m_EventSystem.SendPositionBasedEvent(position, deltaPosition, pointerId, targetDisplay,
-                        (panelPosition, panelDelta, t) => PointerUpEvent.GetPooled(t.pointerEvent, panelPosition,
-                            panelDelta, t.pointerId, t.deltaTime), (pointerEvent, pointerId, deltaTime), true);
+                    evtFactory = (panelPosition, t) =>
+                        PointerUpEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
+                    deselectIfNoTarget = true;
                 }
                 else if (pointerEvent.type == PointerEvent.Type.TouchCanceled)
                 {
-                    m_EventSystem.SendPositionBasedEvent(position, deltaPosition, pointerId, targetDisplay,
-                        (panelPosition, panelDelta, t) => PointerCancelEvent.GetPooled(t.pointerEvent, panelPosition,
-                            panelDelta, t.pointerId, t.deltaTime), (pointerEvent, pointerId, deltaTime));
+                    evtFactory = (panelPosition, t) =>
+                        PointerCancelEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
                 }
                 else if (pointerEvent.type == PointerEvent.Type.Scroll)
                 {
-                    var scrollDelta = pointerEvent.scroll;
-
-                    if (m_EventSystem.verbose)
-                        m_EventSystem.Log("ScrollDelta: " + scrollDelta);
-
-                    m_EventSystem.SendPositionBasedEvent(pointerEvent.position, pointerEvent.deltaPosition,
-                        PointerId.mousePointerId, targetDisplay,
-                        (panelPosition, _, t) => WheelEvent.GetPooled(t.scrollDelta, panelPosition, t.modifiers),
-                        (modifiers: GetModifiers(pointerEvent.eventModifiers), scrollDelta));
+                    evtFactory = (panelPosition, t) =>
+                        WheelEvent.GetPooled(t.pointerEvent.scroll, panelPosition,
+                            GetModifiers(t.pointerEvent.eventModifiers));
                 }
                 else
                 {
                     if (m_EventSystem.verbose)
                         m_EventSystem.Log("Unsupported event " + pointerEvent);
+                    return;
+                }
+
+                if (pointerEvent.eventSource == EventSource.TrackedDevice)
+                {
+                    m_EventSystem.SendRayBasedEvent(pointerEvent.worldRay, pointerId, evtFactory,
+                        (pointerEvent, pointerId, deltaTime), deselectIfNoTarget);
+                }
+                else
+                {
+                    m_EventSystem.SendPositionBasedEvent(position, deltaPosition, pointerId, targetDisplay,
+                        evtFactory, (pointerEvent, pointerId, deltaTime), deselectIfNoTarget);
                 }
             }
 
@@ -271,14 +282,11 @@ namespace UnityEngine.UIElements
                 if (m_EventSystem.verbose)
                     m_EventSystem.Log(compositionEvent);
 
-                // IME Composition events aren't part of UITK runtime input at the moment.
-                // They are sent while the user is entering a sequence of text that can be completed from a list of
+                // IME Events are sent while the user is entering a sequence of text that can be completed from a list of
                 // suggestions, each time they type a new letter and upon confirmation of their choice of word.
                 // Once the choice of word is confirmed, a sequence of corresponding TextInputEvents are sent and
                 // match all the letters that need to be entered in the TextField.
-                // The IME Composition events don't affect the state of any of the UITK controls and aren't displayed
-                // by UITK visual elements at the moment, so for compatibility with non-InputForUI events, we don't
-                // support them for the time being.
+                m_EventSystem.SendFocusBasedEvent(_ => IMEEvent.GetPooled(compositionEvent.compositionString), 0);
             }
         }
     }

@@ -219,7 +219,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (!inProgressSpinner.started)
                     return;
 
-                var position = PackageManagerWindow.instance.CalculateDropdownPosition(spinnerButtonContainer);
+                var position = EditorMenuExtensions.GUIToScreenRect(spinnerButtonContainer, spinnerButtonContainer.worldBound);
                 var dropdown = new InProgressDropdown(m_ResourceLoader, m_UpmClient, m_AssetStoreDownloadManager, m_PackageDatabase, m_PageManager) { position = position };
                 DropdownContainer.ShowDropdown(dropdown);
             });
@@ -349,7 +349,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.userData = "AddByName";
             dropdownItem.action = () =>
             {
-                var position = PackageManagerWindow.instance.CalculateDropdownPosition(addMenu);
+                var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
                 var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, PackageManagerWindow.instance) { position = position};
                 DropdownContainer.ShowDropdown(dropdown);
             };
@@ -380,7 +380,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 PackageManagerFiltersWindow.instance?.Close();
 
                 var page = m_PageManager.activePage;
-                if (page == null || !PackageManagerFiltersWindow.ShowAtPosition(GUIUtility.GUIToScreenRect(filtersMenu.worldBound), page))
+                if (page == null || !PackageManagerFiltersWindow.ShowAtPosition(EditorMenuExtensions.GUIToScreenRect(filtersMenu, filtersMenu.worldBound), page))
                     return;
 
                 filtersMenu.pseudoStates |= PseudoStates.Active;

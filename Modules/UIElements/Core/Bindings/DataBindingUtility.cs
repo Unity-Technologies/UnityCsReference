@@ -214,7 +214,7 @@ namespace UnityEngine.UIElements
 
             while (sourceElement != null)
             {
-                if (!sourceElement.dataSourcePath.IsEmpty)
+                if (!sourceElement.isDataSourcePathEmpty)
                 {
                     if (fullPath.IsEmpty)
                         fullPath = sourceElement.dataSourcePath;

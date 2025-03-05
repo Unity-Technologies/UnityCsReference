@@ -50,6 +50,8 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Misc")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Profiler")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.PS4")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.PS5")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Rendering")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.SceneVisibility")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]

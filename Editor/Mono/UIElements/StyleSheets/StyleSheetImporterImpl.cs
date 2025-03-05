@@ -437,6 +437,10 @@ namespace UnityEditor.UIElements.StyleSheets
 
                     // explicit asset reference already loaded
                     m_Context?.DependsOnArtifact(projectRelativePath);
+
+                    // Necessary to avoid the warning "Import of asset setup artifact dependency to but dependency isn't used
+                    // and therefore not registered in the asset database". (UUM-68160)
+                    AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(Object));
                 }
                 else
                 {

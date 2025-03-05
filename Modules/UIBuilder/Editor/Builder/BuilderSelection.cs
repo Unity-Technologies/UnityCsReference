@@ -362,7 +362,7 @@ namespace Unity.UI.Builder
                     notifier.SelectionChanged();
         }
 
-        public void NotifyOfStylingChangePostStylingUpdate()
+        void NotifyOfStylingChangePostStylingUpdate()
         {
             // This is so anyone interested can refresh their use of this USS with
             // the latest (unsaved to disk) changes.

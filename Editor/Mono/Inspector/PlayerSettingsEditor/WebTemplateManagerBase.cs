@@ -79,7 +79,7 @@ namespace UnityEditor
                     return i;
                 }
             }
-            return 0;
+            return -1;
         }
 
         public void ClearTemplates()
@@ -178,6 +178,11 @@ namespace UnityEditor
             {
                 using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, templateProp))
                 {
+
+                    var selectedTemplateIndex = GetTemplateIndex(templateProp.stringValue);
+                    if (selectedTemplateIndex < 0)
+                        EditorGUILayout.HelpBox("No valid template is selected. Choose a template to proceed.", MessageType.Error);
+
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
                         if (TemplateGUIThumbnails.Length < 1)
@@ -189,13 +194,19 @@ namespace UnityEditor
                             int numCols = Mathf.Min((int)Mathf.Max((Screen.width - kWebTemplateGridPadding * 2.0f) / kThumbnailSize, 1.0f), TemplateGUIThumbnails.Length);
                             int numRows = Mathf.Max((int)Mathf.Ceil((float)TemplateGUIThumbnails.Length / (float)numCols), 1);
 
-                            templateProp.stringValue = Templates[
-                                ThumbnailList(
-                                    GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
-                                    GetTemplateIndex(templateProp.stringValue),
-                                    TemplateGUIThumbnails,
-                                    numCols
-                                )].ToString();
+                            var updatedSelectedTemplateIndex =  ThumbnailList(
+                                GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
+                                selectedTemplateIndex,
+                                TemplateGUIThumbnails,
+                                numCols
+                            );
+
+                            // Only set/update templateProp and selectedTemplateIndex if there is a valid template selection.
+                            if (updatedSelectedTemplateIndex > -1)
+                            {
+                                templateProp.stringValue = Templates[updatedSelectedTemplateIndex].ToString();
+                                selectedTemplateIndex = updatedSelectedTemplateIndex;
+                            }
                         }
                     }
 
@@ -203,12 +214,17 @@ namespace UnityEditor
 
                     bool orgChanged = GUI.changed;
                     GUI.changed = false;
-                    var templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
-                    foreach (string key in templateCustomKeys)
+
+                    var templateCustomKeys = new string[]{};
+                    if (selectedTemplateIndex > -1)
                     {
-                        string value = PlayerSettings.GetTemplateCustomValue(key);
-                        value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
-                        PlayerSettings.SetTemplateCustomValue(key, value);
+                        templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
+                        foreach (string key in templateCustomKeys)
+                        {
+                            string value = PlayerSettings.GetTemplateCustomValue(key);
+                            value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
+                            PlayerSettings.SetTemplateCustomValue(key, value);
+                        }
                     }
 
                     if (GUI.changed)

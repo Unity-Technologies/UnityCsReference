@@ -83,8 +83,6 @@ namespace UnityEngine.UIElements.UIR
         internal const uint k_MaxQueuedFrameCount = 4; // Support drivers queuing up to 4 frames
         internal const int k_PruneEmptyPageFrameCount = 60; // Empty pages will be pruned if they are empty for x consecutive frames.
 
-        readonly bool m_MockDevice; // Don't access GfxDevice resources nor submit commands of any sort, used for tests
-
         IntPtr m_DefaultStencilState;
         IntPtr m_VertexDecl;
         Page m_FirstPage;
@@ -121,13 +119,14 @@ namespace UnityEngine.UIElements.UIR
 
         internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
         internal bool breakBatches { get; set; }
-        internal bool isFlat { get; set; }
-        internal bool drawsInCameras { get; set; }
+        internal bool isFlat { get; }
+        internal bool drawsInCameras { get; }
         internal uint frameIndex => m_FrameIndex;
 
         internal List<CommandList>[] commandLists => m_CommandLists;
         internal List<CommandList> currentFrameCommandLists => m_CommandLists == null ? null : m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
         internal int currentFrameCommandListCount = 0;
+        CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero);
 
 
         static UIRenderDevice()
@@ -136,24 +135,21 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0) :
-            this(initialVertexCapacity, initialIndexCapacity, false)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool drawsInCameras = false)
         {
-        }
-
-        protected UIRenderDevice(uint initialVertexCapacity, uint initialIndexCapacity, bool mockDevice)
-        {
-            m_MockDevice = mockDevice;
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
             if (m_ActiveDeviceCount++ == 0)
             {
-                if (!m_SubscribedToNotifications && !m_MockDevice)
+                if (!m_SubscribedToNotifications)
                 {
                     Utility.NotifyOfUIREvents(true);
                     m_SubscribedToNotifications = true;
                 }
             }
+
+            this.isFlat = isFlat;
+            this.drawsInCameras = drawsInCameras;
 
             m_NextPageVertexCount = Math.Max(initialVertexCapacity/2, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
             m_LargeMeshVertexCount = m_NextPageVertexCount;
@@ -167,6 +163,32 @@ namespace UnityEngine.UIElements.UIR
                 m_DeferredFrees.Add(new List<AllocToFree>());
                 m_Updates.Add(new List<AllocToUpdate>());
             }
+
+            InitVertexDeclaration();
+
+            m_Fences = new uint[(int)k_MaxQueuedFrameCount];
+            m_ConstantProps = new MaterialPropertyBlock();
+            m_BatchProps = new MaterialPropertyBlock();
+            m_DefaultStencilState = Utility.CreateStencilState(new StencilState
+            {
+                enabled = isFlat,
+                readMask = 255,
+                writeMask = 255,
+
+                compareFunctionFront = CompareFunction.Equal,
+                passOperationFront = StencilOp.Keep,
+                failOperationFront = StencilOp.Keep,
+                zFailOperationFront = StencilOp.IncrementSaturate, // Push
+
+                compareFunctionBack = CompareFunction.Less,
+                passOperationBack = StencilOp.Keep,
+                failOperationBack = StencilOp.Keep,
+                zFailOperationBack = StencilOp.DecrementSaturate, // Pop
+            });
+
+            m_CommandLists = new List<CommandList>[k_MaxQueuedFrameCount];
+            for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
+                m_CommandLists[i] = new List<CommandList>();
         }
 
         void InitVertexDeclaration()
@@ -208,40 +230,6 @@ namespace UnityEngine.UIElements.UIR
             m_VertexDecl = Utility.GetVertexDeclaration(vertexDecl);
         }
 
-        void CompleteCreation()
-        {
-            if (m_MockDevice || fullyCreated)
-                return;
-
-            InitVertexDeclaration();
-
-            m_Fences = new uint[(int)k_MaxQueuedFrameCount];
-            m_ConstantProps = new MaterialPropertyBlock();
-            m_BatchProps = new MaterialPropertyBlock();
-            m_DefaultStencilState = Utility.CreateStencilState(new StencilState
-            {
-                enabled = isFlat,
-                readMask = 255,
-                writeMask = 255,
-
-                compareFunctionFront = CompareFunction.Equal,
-                passOperationFront = StencilOp.Keep,
-                failOperationFront = StencilOp.Keep,
-                zFailOperationFront = StencilOp.IncrementSaturate, // Push
-
-                compareFunctionBack = CompareFunction.Less,
-                passOperationBack = StencilOp.Keep,
-                failOperationBack = StencilOp.Keep,
-                zFailOperationBack = StencilOp.DecrementSaturate, // Pop
-            });
-
-            m_CommandLists = new List<CommandList>[k_MaxQueuedFrameCount];
-            for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
-                m_CommandLists[i] = new List<CommandList>();
-        }
-
-        bool fullyCreated { get { return m_Fences != null; } }
-
         #region Dispose Pattern
 
         protected bool disposed { get; private set; }
@@ -273,7 +261,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 DeviceToFree free = new DeviceToFree
                 {
-                    handle = m_MockDevice ? 0 : Utility.InsertCPUFence(),
+                    handle = Utility.InsertCPUFence(),
                     page = m_FirstPage,
                     commandLists = m_CommandLists
                 };
@@ -285,6 +273,9 @@ namespace UnityEngine.UIElements.UIR
                     if (m_SynchronousFree)
                         ProcessDeviceFreeQueue();
                 }
+
+                m_DefaultCommandList.Dispose();
+                m_DefaultCommandList = null;
             }
             else
                 UnityEngine.UIElements.DisposeHelper.NotifyMissingDispose(this);
@@ -402,7 +393,7 @@ namespace UnityEngine.UIElements.UIR
                         else page = page.next;
                     }
                 }
-                else CompleteCreation();
+
                 if (ia.size == 0)
                 {
                     m_NextPageVertexCount <<= 1; // Double the vertex count
@@ -411,7 +402,7 @@ namespace UnityEngine.UIElements.UIR
                     uint newPageIndexCount = (uint)(m_NextPageVertexCount * m_IndexToVertexCountRatio + 0.5f);
                     newPageIndexCount = Math.Max(newPageIndexCount, (uint)(indexCount * 2));
                     Debug.Assert(page?.next == null); // page MUST be the last page in the list, but can be null
-                    page = new Page(m_NextPageVertexCount, newPageIndexCount, k_MaxQueuedFrameCount, m_MockDevice);
+                    page = new Page(m_NextPageVertexCount, newPageIndexCount, k_MaxQueuedFrameCount);
                     // Link this new page to the head of the list so next allocations have more chance of succeeding rather than scanning through all pages to land in this page
                     page.next = m_FirstPage;
                     m_FirstPage = page;
@@ -424,8 +415,6 @@ namespace UnityEngine.UIElements.UIR
             }
             else
             {
-                CompleteCreation();
-
                 // Search for an empty page that offers the best fit.
                 Page current = m_FirstPage;
                 Page lastPage = m_FirstPage;
@@ -455,7 +444,7 @@ namespace UnityEngine.UIElements.UIR
                     Debug.Assert(vertexCount <= maxVerticesPerPage, "Requested Vertex count is above the limit. Alloc will fail.");
 
                     // A huge mesh, push it to a page of its own. Put this page at the end so it won't be queried often
-                    page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount, m_MockDevice);
+                    page = new Page((uint)pageVertexCount, (uint)indexCount, k_MaxQueuedFrameCount);
                     if (lastPage != null)
                         lastPage.next = page;
                     else m_FirstPage = page;
@@ -589,7 +578,6 @@ namespace UnityEngine.UIElements.UIR
 
         public void OnFrameRenderingBegin()
         {
-            AdvanceFrame();
             m_DrawStats = new DrawStatistics();
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
@@ -664,43 +652,40 @@ namespace UnityEngine.UIElements.UIR
         // in the property blocks is applied.
         void ApplyBatchState(ref EvaluationState st)
         {
-            if (!m_MockDevice)
+            if (st.mustApplyMaterial)
             {
-                if (st.mustApplyMaterial)
+                if (drawsInCameras)
                 {
-                    if (drawsInCameras)
-                    {
-                        // This is only the case with world rendering where we are likely on the render thread. This is
-                        // very flaky and will need to be revisited anyway. For instance, we shouldn't access the device
-                        // and it should not be possible to modify the render chain from the main thread while we run this.
-                        Debug.LogError("Attempted to change material when it is not allowed to do so.");
-                        return;
-                    }
-
-                    m_DrawStats.materialSetCount++;
-
-                    st.curState.material.SetPass(0); // No multipass support, should it be even considered?
-                    if (st.constantProps != null)
-                        Utility.SetPropertyBlock(st.constantProps);
-
-                    st.mustApplyBatchProps = true;
-                    st.mustApplyStencil = true;
+                    // This is only the case with world rendering where we are likely on the render thread. This is
+                    // very flaky and will need to be revisited anyway. For instance, we shouldn't access the device
+                    // and it should not be possible to modify the render chain from the main thread while we run this.
+                    Debug.LogError("Attempted to change material when it is not allowed to do so.");
+                    return;
                 }
 
-                if (st.mustApplyBatchProps)
-                {
-                    if (st.activeCommandList == null)
-                        Utility.SetPropertyBlock(st.batchProps);
-                    else
-                        st.activeCommandList.ApplyBatchProps();
-                }
+                m_DrawStats.materialSetCount++;
 
-                if (st.mustApplyStencil)
-                {
-                    ++m_DrawStats.stencilRefChanges;
-                    if (st.activeCommandList == null)
-                        Utility.SetStencilState(m_DefaultStencilState, st.curState.stencilRef);
-                }
+                st.curState.material.SetPass(0); // No multipass support, should it be even considered?
+                if (st.constantProps != null)
+                    Utility.SetPropertyBlock(st.constantProps);
+
+                st.mustApplyBatchProps = true;
+                st.mustApplyStencil = true;
+            }
+
+            if (st.mustApplyBatchProps)
+            {
+                if (st.activeCommandList == null)
+                    Utility.SetPropertyBlock(st.batchProps);
+                else
+                    st.activeCommandList.ApplyBatchProps();
+            }
+
+            if (st.mustApplyStencil)
+            {
+                ++m_DrawStats.stencilRefChanges;
+                if (st.activeCommandList == null)
+                    Utility.SetStencilState(m_DefaultStencilState, st.curState.stencilRef);
             }
 
             st.mustApplyMaterial = false;
@@ -738,6 +723,15 @@ namespace UnityEngine.UIElements.UIR
                 mustApplyStencil = true
             };
 
+            if (drawsInCameras)
+            {
+                // The default command list is never actually executed, but we use it to catch any commands that could
+                // be emitted by the root VisualElement. This could happen if, for example, a user applies a style that
+                // affects the root in some way.
+                m_DefaultCommandList.Reset(null);
+                st.activeCommandList = m_DefaultCommandList;
+            }
+
             var drawParams = m_DrawParams;
             drawParams.Reset();
             if (!drawsInCameras)
@@ -745,16 +739,13 @@ namespace UnityEngine.UIElements.UIR
 
             m_TextureSlotManager.Reset();
 
-            if (fullyCreated)
-            {
-                st.batchProps.Clear();
-                if (gradientSettings != null)
-                    st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                if (shaderInfo != null)
-                    st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-                if (!drawsInCameras)
-                    Utility.SetPropertyBlock(st.constantProps);
-            }
+            st.batchProps.Clear();
+            if (gradientSettings != null)
+                st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
+            if (shaderInfo != null)
+                st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+            if (!drawsInCameras)
+                Utility.SetPropertyBlock(st.constantProps);
 
             while (head != null)
             {
@@ -908,40 +899,41 @@ namespace UnityEngine.UIElements.UIR
                         KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
                     }
 
-                    if (fullyCreated && head.type == CommandType.CutRenderChain)
-                    {
-                        // Reuse command lists whenever possible
-                        CommandList cmdList = null;
-                        if (currentFrameCommandListCount < currentFrameCommandLists.Count)
-                        {
-                            cmdList = currentFrameCommandLists[currentFrameCommandListCount];
-                            cmdList.Reset(head.owner);
-                        }
-                        else
-                        {
-                            cmdList = new CommandList(head.owner, m_VertexDecl, m_DefaultStencilState);
-                            currentFrameCommandLists.Add(cmdList);
-                        }
-
-                        ++currentFrameCommandListCount;
-
-                        st.activeCommandList = cmdList;
-                        st.constantProps = st.activeCommandList.constantProps;
-                        st.batchProps = st.activeCommandList.batchProps;
-
-                        st.batchProps.Clear();
-                        if (gradientSettings != null)
-                            st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                        if (shaderInfo != null)
-                            st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-
-                        m_TextureSlotManager.Reset();
-                    }
-
                     if (head.type != CommandType.Draw)
                     {
-                        if (!m_MockDevice)
-                            head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
+                        if (head.type == CommandType.CutRenderChain)
+                        {
+                            // Reuse command lists whenever possible
+                            CommandList cmdList = null;
+                            if (currentFrameCommandListCount < currentFrameCommandLists.Count)
+                            {
+                                cmdList = currentFrameCommandLists[currentFrameCommandListCount];
+                                cmdList.Reset(head.owner);
+                            }
+                            else
+                            {
+                                cmdList = new CommandList(head.owner, m_VertexDecl, m_DefaultStencilState);
+                                currentFrameCommandLists.Add(cmdList);
+                            }
+
+                            ++currentFrameCommandListCount;
+
+                            st.activeCommandList = cmdList;
+                            st.constantProps = st.activeCommandList.constantProps;
+                            st.batchProps = st.activeCommandList.batchProps;
+                            st.mustApplyBatchProps = true;
+                            st.mustApplyStencil = true;
+
+                            st.batchProps.Clear();
+                            if (gradientSettings != null)
+                                st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
+                            if (shaderInfo != null)
+                                st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+
+                            m_TextureSlotManager.Reset();
+                        }
+
+                        head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
                         if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.BlitToPreviousRT || head.type == CommandType.PushRenderTexture || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
                         {
                             st.curState.material = null; // A value that is unique to force material reset on next draw command
@@ -992,20 +984,17 @@ namespace UnityEngine.UIElements.UIR
 
         unsafe void UpdateFenceValue()
         {
-            if (m_Fences != null)
+            uint newFenceVal = Utility.InsertCPUFence();
+            fixed(uint* fence = &m_Fences[(int)(m_FrameIndex % m_Fences.Length)])
             {
-                uint newFenceVal = Utility.InsertCPUFence();
-                fixed(uint* fence = &m_Fences[(int)(m_FrameIndex % m_Fences.Length)])
+                for (;;)
                 {
-                    for (;;)
-                    {
-                        uint curFenceVal = *fence;
-                        if (((int)(newFenceVal - curFenceVal)) <= 0) // This is the same test as in GfxDeviceWorker::WaitOnCPUFence(). Handles wrap around.
-                            break; // Our newFenceVal is already older than the current one, so keep the current
-                        int cmpOldVal = System.Threading.Interlocked.CompareExchange(ref *((int*)fence), (int)newFenceVal, (int)curFenceVal);
-                        if (cmpOldVal == curFenceVal)
-                            break; // The exchange succeeded, now newFenceVal is stored atomically in (*fence)
-                    }
+                    uint curFenceVal = *fence;
+                    if (((int)(newFenceVal - curFenceVal)) <= 0) // This is the same test as in GfxDeviceWorker::WaitOnCPUFence(). Handles wrap around.
+                        break; // Our newFenceVal is already older than the current one, so keep the current
+                    int cmpOldVal = System.Threading.Interlocked.CompareExchange(ref *((int*)fence), (int)newFenceVal, (int)curFenceVal);
+                    if (cmpOldVal == curFenceVal)
+                        break; // The exchange succeeded, now newFenceVal is stored atomically in (*fence)
                 }
             }
         }
@@ -1016,8 +1005,7 @@ namespace UnityEngine.UIElements.UIR
 
             if (rangesStart + rangesReady <= rangesCount)
             {
-                if (!m_MockDevice)
-                    DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady), commandList);
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, rangesReady), commandList);
                 m_DrawStats.drawRangeCallCount++;
             }
             else
@@ -1025,11 +1013,8 @@ namespace UnityEngine.UIElements.UIR
                 // Less common situation, the numbers straddles the end of the ranges buffer
                 int firstRangeCount = rangesCount - rangesStart;
                 int secondRangeCount = rangesReady - firstRangeCount;
-                if (!m_MockDevice)
-                {
-                    DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount), commandList);
-                    DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount), commandList);
-                }
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges + rangesStart, firstRangeCount), commandList);
+                DrawRanges(curPage.indices.gpuData, curPage.vertices.gpuData, PtrToSlice<DrawBufferRange>(ranges, secondRangeCount), commandList);
 
                 m_DrawStats.drawRangeCallCount += 2;
             }
@@ -1077,7 +1062,6 @@ namespace UnityEngine.UIElements.UIR
 
             m_DrawStats.currentFrameIndex = (int)m_FrameIndex;
 
-            if (m_Fences != null)
             {
                 int fenceIndex = (int)(m_FrameIndex % m_Fences.Length);
                 uint fence = m_Fences[fenceIndex];
@@ -1201,12 +1185,10 @@ namespace UnityEngine.UIElements.UIR
             public struct PageStatistics { internal HeapStatistics vertices, indices; }
             public PageStatistics[] pages;
             public int[] freesDeferred;
-            public bool completeInit;
         }
         internal AllocationStatistics GatherAllocationStatistics()
         {
             AllocationStatistics stats = new AllocationStatistics();
-            stats.completeInit = fullyCreated;
             stats.freesDeferred = new int[m_DeferredFrees.Count];
             for (int i = 0; i < m_DeferredFrees.Count; i++)
                 stats.freesDeferred[i] = m_DeferredFrees[i].Count;

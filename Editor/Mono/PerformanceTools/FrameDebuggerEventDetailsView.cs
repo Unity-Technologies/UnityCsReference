@@ -3,18 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Text;
-using System.Globalization;
-using System.Collections.Generic;
-
-using UnityEngine;
-using UnityEngine.Rendering;
-using UnityEngine.Profiling;
-using UnityEngine.Experimental.Rendering;
-
 using UnityEditor;
-using UnityEditor.Rendering;
 using UnityEditor.AnimatedValues;
+using UnityEngine;
+using UnityEngine.Experimental.Rendering;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {
@@ -31,7 +25,18 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         [NonSerialized] private float m_RTWhiteMaxLevel = 1.0f;
 
         // Private
-        private int m_SelectedColorChannel = 0;
+        [Flags]
+        public enum SelectedColorChannel
+        {
+            None = 0,
+            R = 1 << 0,
+            G = 1 << 1,
+            B = 1 << 2,
+            A = 1 << 3,
+            All = R | G | B | A
+        }
+
+        private SelectedColorChannel m_SelectedColorChannel = SelectedColorChannel.All;
         private Vector2 m_ScrollViewVector = Vector2.zero;
         private Vector4 m_SelectedMask = Vector4.one;
         private AnimBool[] m_FoldoutAnimators = null;
@@ -71,7 +76,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
         internal void Reset()
         {
             m_RTSelectedChannel = 0;
-            m_SelectedColorChannel = 0;
+            m_SelectedColorChannel = SelectedColorChannel.All;
             m_RTIndex = 0;
             m_RTBlackLevel = 0.0f;
             m_RTBlackMinLevel = 0.0f;
@@ -303,49 +308,48 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             GUI.enabled = !isDepthOnlyRT;
 
-            // color channels
-            EditorGUILayout.Space(5f);
-            GUILayout.Label(FrameDebuggerStyles.EventToolbar.s_ChannelHeader, FrameDebuggerStyles.EventToolbar.s_ChannelHeaderStyle);
-            EditorGUILayout.Space(5f);
+            SelectedColorChannel channelToDisplay = SelectedColorChannel.None;
 
-            int channelToDisplay = 0;
             bool forceUpdate = false;
             
             // Negative RT index: display depth or stencil buffer
             bool isDepthOrStencilSelected = m_RTIndexLastSet < 0;
 
             bool shouldDisableChannelButtons = isDepthOnlyRT || isClearAction || isDepthOrStencilSelected;
+            GUI.enabled = shouldDisableChannelButtons;
             UInt32 componentCount = GraphicsFormatUtility.GetComponentCount((GraphicsFormat)curEventData.m_RenderTargetFormat);
             GUILayout.BeginHorizontal();
             {
-                GUI.enabled = !shouldDisableChannelButtons && m_SelectedColorChannel != 0;
-                if (GUILayout.Button(FrameDebuggerStyles.EventToolbar.s_ChannelAll, FrameDebuggerStyles.EventToolbar.s_ChannelAllStyle)) { m_RTSelectedChannel = 0; }
+                for (int i = 0; i < FrameDebuggerStyles.EventToolbar.s_ChannelLabels.Length; i++)
+                {
+                    SelectedColorChannel channelFlag = (SelectedColorChannel)(1 << i);
 
-                GUI.enabled = !shouldDisableChannelButtons && componentCount > 0 && m_SelectedColorChannel != 1;
-                if (GUILayout.Button(FrameDebuggerStyles.EventToolbar.s_ChannelR, FrameDebuggerStyles.EventToolbar.s_ChannelStyle)) { m_RTSelectedChannel = 1; }
+                    GUI.enabled = !shouldDisableChannelButtons && componentCount > i;
 
-                GUI.enabled = !shouldDisableChannelButtons && componentCount > 1 && m_SelectedColorChannel != 2;
-                if (GUILayout.Button(FrameDebuggerStyles.EventToolbar.s_ChannelG, FrameDebuggerStyles.EventToolbar.s_ChannelStyle)) { m_RTSelectedChannel = 2; }
+                    if (GUILayout.Toggle(
+                            m_SelectedColorChannel.HasFlag(channelFlag),
+                            FrameDebuggerStyles.EventToolbar.s_ChannelLabels[i],
+                            FrameDebuggerStyles.EventToolbar.s_ChannelStyle))
+                    {
+                        // Update selected channel and channelToDisplay
+                        m_RTSelectedChannel = i + 1;
+                        channelToDisplay |= channelFlag;
+                    }
+                }
 
-                GUI.enabled = !shouldDisableChannelButtons && componentCount > 2 && m_SelectedColorChannel != 3;
-                if (GUILayout.Button(FrameDebuggerStyles.EventToolbar.s_ChannelB, FrameDebuggerStyles.EventToolbar.s_ChannelStyle)) { m_RTSelectedChannel = 3; }
-
-                GUI.enabled = !shouldDisableChannelButtons && componentCount > 3 && m_SelectedColorChannel != 4;
-                if (GUILayout.Button(FrameDebuggerStyles.EventToolbar.s_ChannelA, FrameDebuggerStyles.EventToolbar.s_ChannelAStyle)) { m_RTSelectedChannel = 4; }
+                GUI.enabled = true;
 
                 // Force the channel to be "All" when:
-                // * Showing Shadows/Depth/Clear
-                // * Channel index is higher then the number available channels
-                bool shouldForceAll = (m_RTSelectedChannel != 0 && (shouldDisableChannelButtons || m_RTSelectedChannel < 4 && componentCount < m_RTSelectedChannel));
-                channelToDisplay = shouldForceAll ? 0 : m_RTSelectedChannel;
+                if (isDepthOnlyRT || isClearAction || isDepthOrStencilSelected) // Showing Shadows/Depth/Clear
+                    channelToDisplay = SelectedColorChannel.All;
+                else if (m_RTSelectedChannel < 4 && componentCount < m_RTSelectedChannel) // Channel index is higher then the number available channels
+                    channelToDisplay = SelectedColorChannel.All;
 
                 if (channelToDisplay != m_SelectedColorChannel)
                 {
                     forceUpdate = true;
                     m_SelectedColorChannel = channelToDisplay;
                 }
-
-                GUI.enabled = true;
             }
             GUILayout.EndHorizontal();
 
@@ -355,11 +359,11 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             GUILayout.BeginHorizontal(FrameDebuggerStyles.EventToolbar.s_LevelsHorizontalStyle);
             GUILayout.Label(FrameDebuggerStyles.EventToolbar.s_LevelsHeader);
 
-            float blackMinLevel = EditorGUILayout.DelayedFloatField(m_RTBlackMinLevel, GUILayout.MaxWidth(40.0f));
+            float blackMinLevel = EditorGUILayout.DelayedFloatField(m_RTBlackMinLevel);
             float blackLevel = m_RTBlackLevel;
             float whiteLevel = m_RTWhiteLevel;
-            EditorGUILayout.MinMaxSlider(ref blackLevel, ref whiteLevel, m_RTBlackMinLevel, m_RTWhiteMaxLevel, GUILayout.MaxWidth(200.0f));
-            float whiteMaxLevel = EditorGUILayout.DelayedFloatField(m_RTWhiteMaxLevel, GUILayout.MaxWidth(40.0f));
+            EditorGUILayout.MinMaxSlider(ref blackLevel, ref whiteLevel, m_RTBlackMinLevel, m_RTWhiteMaxLevel, GUILayout.MinWidth(300.0f));
+            float whiteMaxLevel = EditorGUILayout.DelayedFloatField(m_RTWhiteMaxLevel);
 
             if (blackMinLevel < whiteMaxLevel)
             {
@@ -374,17 +378,12 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 || (!isDepthOnlyRT && (rtIndexToSet != m_RTIndexLastSet))
                 || forceUpdate)
             {
-                m_SelectedMask = Vector4.zero;
-                switch (channelToDisplay)
-                {
-                    case 1: m_SelectedMask.x = 1f; break;
-                    case 2: m_SelectedMask.y = 1f; break;
-                    case 3: m_SelectedMask.z = 1f; break;
-                    case 4: m_SelectedMask.w = 1f; break;
-                    case 5: m_SelectedMask = Vector4.zero; break;
-                    default: m_SelectedMask = Vector4.one; break;
-                }
-
+                m_SelectedMask = new Vector4(
+                    channelToDisplay.HasFlag(SelectedColorChannel.R) ? 1.0f : 0.0f, // x (Red)
+                    channelToDisplay.HasFlag(SelectedColorChannel.G) ? 1.0f : 0.0f, // y (Green)
+                    channelToDisplay.HasFlag(SelectedColorChannel.B) ? 1.0f : 0.0f, // z (Blue)
+                    channelToDisplay.HasFlag(SelectedColorChannel.A) ? 1.0f : 0.0f  // w (Alpha)
+                );
                 FrameDebuggerUtility.SetRenderTargetDisplayOptions(rtIndexToSet, m_SelectedMask, m_RTBlackLevel, m_RTWhiteLevel);
                 m_FrameDebugger.RepaintAllNeededThings();
                 m_RTIndexLastSet = rtIndexToSet;

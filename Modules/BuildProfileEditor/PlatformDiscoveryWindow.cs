@@ -24,6 +24,15 @@ namespace UnityEditor.Build.Profile
     {
         const string k_Uxml = "BuildProfile/UXML/PlatformDiscoveryWindow.uxml";
 
+        // Asset database says max file name length = 250.
+        // Then, the longest variation we have now is " - Desktop - Development" = 24 bytes long.
+        // We also need to account for the `.asset` extension (6 bytes)
+        // and potentially ` 1`(2,3..) unique name suffix (3 bytes ought to be enough for everyone TM)
+        // if suddenly a build profile with such a long name already exists.
+        // This makes for 33 bytes worth of overhead, but to be even more safe let's limit the name to 200 during creation.
+        // There are checks at a lower level too.
+        const int k_MaxBuildProfileNameLength = 200;
+
         BuildProfileCard[] m_Cards;
         BuildProfileCard m_SelectedCard;
         Image m_SelectedCardImage;
@@ -102,7 +111,7 @@ namespace UnityEditor.Build.Profile
 
         static void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
@@ -190,8 +199,13 @@ namespace UnityEditor.Build.Profile
             m_BuildProfileNameTextField.RegisterCallback<FocusOutEvent>(evt =>
             {
                 m_SelectedCard.displayName = m_BuildProfileNameTextField.value;
+                // truncate the name, just in case UI restrictions don't apply.
+                if (!string.IsNullOrEmpty(m_SelectedCard.displayName) &&
+                    m_SelectedCard.displayName.Length > k_MaxBuildProfileNameLength)
+                    m_SelectedCard.displayName = m_SelectedCard.displayName.Substring(0, k_MaxBuildProfileNameLength);
                 m_RenameOverlay.OnRenameEnd();
             });
+            m_BuildProfileNameTextField.maxLength = k_MaxBuildProfileNameLength;
             m_PackagesListView.itemsSource = Array.Empty<object>();
             m_PackagesListView.makeItem = PlatformPackageItem.Make;
             m_PackagesListView.bindItem = (VisualElement element, int index) =>

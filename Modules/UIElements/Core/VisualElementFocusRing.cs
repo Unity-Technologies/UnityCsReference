@@ -109,6 +109,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="root">The root of the element tree for which we want to build a focus ring.</param>
         /// <param name="dfo">Default ordering of the elements in the ring.</param>
+        /// <remarks>
+        /// Navigation will never focus an element that's not a descendent of the root element.
+        /// If the root element is not the absolute root of its own visual tree, navigation within the focus ring
+        /// will wrap around the root element hierarchy when it would otherwise leave it.
+        /// </remarks>
         public VisualElementFocusRing(VisualElement root, DefaultFocusOrder dfo = DefaultFocusOrder.ChildOrder)
         {
             defaultFocusOrder = dfo;
@@ -387,6 +392,11 @@ namespace UnityEngine.UIElements
                 return changeTarget.target;
             }
 
+            return GetNextFocusableInSequence(currentFocusable, direction);
+        }
+
+        internal Focusable GetNextFocusableInSequence(Focusable currentFocusable, FocusChangeDirection direction)
+        {
             DoUpdate();
 
             if (m_FocusRing.Count == 0)
@@ -448,23 +458,17 @@ namespace UnityEngine.UIElements
             return m_FocusRing[index].m_Focusable;
         }
 
-        internal static Focusable GetNextFocusableInTree(VisualElement currentFocusable)
+        internal VisualElement GetNextFocusableInTree(VisualElement currentFocusable)
         {
             if (currentFocusable == null)
             {
                 return null;
             }
 
-            VisualElement ve = currentFocusable.GetNextElementDepthFirst();
+            VisualElement ve = GetNextElementDepthFirst(currentFocusable);
             while (!ve.canGrabFocus || ve.tabIndex < 0 || ve.excludeFromFocusRing)
             {
-                ve = ve.GetNextElementDepthFirst();
-
-                if (ve == null)
-                {
-                    // continue at the beginning
-                    ve = currentFocusable.GetRoot();
-                }
+                ve = GetNextElementDepthFirst(ve);
 
                 if (ve == currentFocusable)
                 {
@@ -476,32 +480,52 @@ namespace UnityEngine.UIElements
             return ve;
         }
 
-        internal static Focusable GetPreviousFocusableInTree(VisualElement currentFocusable)
+        internal VisualElement GetPreviousFocusableInTree(VisualElement currentFocusable)
         {
             if (currentFocusable == null)
             {
                 return null;
             }
 
-            VisualElement ve = currentFocusable.GetPreviousElementDepthFirst();
+            VisualElement ve = GetPreviousElementDepthFirst(currentFocusable);
             while (!ve.canGrabFocus || ve.tabIndex < 0 || ve.excludeFromFocusRing)
             {
-                ve = ve.GetPreviousElementDepthFirst();
-
-                if (ve == null)
-                {
-                    // continue at the end
-                    ve = currentFocusable.GetRoot();
-                    while (ve.childCount > 0)
-                    {
-                        ve = ve.hierarchy.ElementAt(ve.childCount - 1);
-                    }
-                }
+                ve = GetPreviousElementDepthFirst(ve);
 
                 if (ve == currentFocusable)
                 {
                     // We went through the whole tree and did not find anything.
                     return currentFocusable;
+                }
+            }
+
+            return ve;
+        }
+
+        private VisualElement GetNextElementDepthFirst(VisualElement ve)
+        {
+            ve = ve.GetNextElementDepthFirst();
+
+            if (!root.Contains(ve))
+            {
+                // continue at the beginning
+                ve = root;
+            }
+
+            return ve;
+        }
+
+        private VisualElement GetPreviousElementDepthFirst(VisualElement ve)
+        {
+            ve = ve.GetPreviousElementDepthFirst();
+
+            if (!root.Contains(ve))
+            {
+                // continue at the end
+                ve = root;
+                while (ve.childCount > 0)
+                {
+                    ve = ve.hierarchy.ElementAt(ve.childCount - 1);
                 }
             }
 

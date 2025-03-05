@@ -3,10 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using System.Threading;
 using Unity.Collections;
+using Unity.Profiling;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.Layout;
@@ -183,14 +184,15 @@ internal class LayoutManager : IDisposable
     LayoutDataStore m_Nodes;
     LayoutDataStore m_Configs;
 
-    readonly object m_SyncRoot = new();
-    readonly Stack<LayoutHandle> m_NodesToFree = new();
+    readonly ConcurrentQueue<LayoutHandle> m_NodesToFree = new();
 
     readonly LayoutHandle m_DefaultConfig;
 
     readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new();
     readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new();
     readonly ManagedObjectStore<WeakReference<VisualElement>> m_ManagedOwners = new();
+
+    readonly ProfilerMarker m_CollectMarker = new ("UIElements.CollectLayoutNodes");
 
     // Last allocated index in the store (0 mean index 0 is valid aka a node was allocated)
     int m_HighMark = -1;
@@ -286,7 +288,7 @@ internal class LayoutManager : IDisposable
 
     LayoutNode CreateNodeInternal(LayoutHandle configHandle)
     {
-        TryFreeNodes();
+        TryRecycleSingleNode();
 
         var handle = m_Nodes.Allocate(
             new LayoutNodeData { Config = configHandle , Children= new() },
@@ -303,50 +305,34 @@ internal class LayoutManager : IDisposable
         return node;
     }
 
-    void TryFreeNodes()
+    void TryRecycleSingleNode()
     {
-        var @lock = false;
-
-        try
+        if (m_NodesToFree.TryDequeue(out LayoutHandle handle))
         {
-            Monitor.TryEnter(m_SyncRoot, ref @lock);
-
-            if (@lock)
-            {
-                while (m_NodesToFree.Count > 0)
-                    FreeNode(m_NodesToFree.Pop());
-            }
-        }
-        finally
-        {
-            if (@lock)
-                Monitor.Exit(m_SyncRoot);
+            FreeNode(handle);
         }
     }
 
-    public void DestroyNode(ref LayoutNode node)
+    void TryRecycleNodes()
+    {
+        // Since this just about pre-emptively freeing up memory, and because we always try to free one node before
+        // allocating a new one, we will limit the number of iterations per frame
+        // We should make this configurable, at least as a diagnostic switch
+        const int maxIterations = 100;
+        int iterations = 0;
+        while (iterations < maxIterations && m_NodesToFree.TryDequeue(out LayoutHandle handle))
+        {
+            FreeNode(handle);
+            iterations++;
+        }
+    }
+
+    public void EnqueueNodeForRecycling(ref LayoutNode node)
     {
         if (node.IsUndefined)
             return;
 
-        var access = GetAccess();
-
-        // The data access has been disposed.
-        if (!access.IsValid)
-            return;
-
-        // Destroy thread safe data as this can be called from the finalizer.
-        ref var data = ref access.GetNodeData(node.Handle);
-
-        if (data.Children.IsCreated)
-        {
-            data.Children.Dispose();
-            data.Children = new();
-        }
-
-        // Defer the shared resource free until later.
-        lock (m_SyncRoot)
-            m_NodesToFree.Push(node.Handle);
+        m_NodesToFree.Enqueue(node.Handle);
 
         node = LayoutNode.Undefined;
     }
@@ -354,6 +340,11 @@ internal class LayoutManager : IDisposable
     void FreeNode(LayoutHandle handle)
     {
         ref var data = ref GetAccess().GetNodeData(handle);
+        if (data.Children.IsCreated)
+        {
+            data.Children.Dispose();
+            data.Children = new();
+        }
         m_ManagedMeasureFunctions.UpdateValue(ref data.ManagedMeasureFunctionIndex, null);
         m_ManagedBaselineFunctions.UpdateValue(ref data.ManagedBaselineFunctionIndex, null);
         m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, null);
@@ -362,9 +353,8 @@ internal class LayoutManager : IDisposable
 
     public void Collect()
     {
-        lock (m_SyncRoot)
-            while (m_NodesToFree.Count > 0)
-                FreeNode(m_NodesToFree.Pop());
+        using (m_CollectMarker.Auto())
+            TryRecycleNodes();
     }
 
     public LayoutMeasureFunction GetMeasureFunction(LayoutHandle handle)

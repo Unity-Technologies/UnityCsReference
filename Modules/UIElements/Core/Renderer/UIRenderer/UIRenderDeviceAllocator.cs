@@ -343,14 +343,14 @@ namespace UnityEngine.UIElements.UIR
 
     internal unsafe class Page : IDisposable
     {
-        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount, bool mockPage)
+        public Page(uint vertexMaxCount, uint indexMaxCount, uint maxQueuedFrameCount)
         {
             // The vertexMaxCount imposed here is only because we use UInt16 as the index type.
             // The actual render device may not support 0xFFFF as an index but it is up to the device
             // to limit the allocation size.
             vertexMaxCount = Math.Min(vertexMaxCount, (1 << 16));
-            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32, mockPage);
-            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32, mockPage);
+            vertices = new DataSet<Vertex>(Utility.GPUBufferType.Vertex, vertexMaxCount, maxQueuedFrameCount, 32);
+            indices = new DataSet<UInt16>(Utility.GPUBufferType.Index, indexMaxCount, maxQueuedFrameCount, 32);
         }
 
         #region Dispose Pattern
@@ -386,14 +386,12 @@ namespace UnityEngine.UIElements.UIR
 
         public class DataSet<T> : IDisposable where T : struct
         {
-            public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize, bool mockBuffer)
+            public DataSet(Utility.GPUBufferType bufferType, uint totalCount, uint maxQueuedFrameCount, uint updateRangePoolSize)
             {
-                if (!mockBuffer)
-                    gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
+                gpuData = new Utility.GPUBuffer<T>((int)totalCount, bufferType);
                 cpuData = new NativeArray<T>((int)totalCount, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
                 allocator = new GPUBufferAllocator(totalCount);
-                if (!mockBuffer)
-                    m_ElemStride = (uint)gpuData.ElementStride;
+                m_ElemStride = (uint)gpuData.ElementStride;
 
                 m_UpdateRangePoolSize = updateRangePoolSize;
                 uint multipliedUpdateRangePoolSize = m_UpdateRangePoolSize * maxQueuedFrameCount;

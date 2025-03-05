@@ -166,8 +166,13 @@ namespace UnityEngine.UIElements
             if (!element.worldBound.Contains(pe.position) || element.panel == null)
                 return false;
 
-            var elementUnderPointer = element.elementPanel.GetTopElementUnderPointer(pe.pointerId);
-            return element == elementUnderPointer || element.Contains(elementUnderPointer);
+            if (element.elementPanel.isFlat)
+            {
+                var elementUnderPointer = element.elementPanel.GetTopElementUnderPointer(pe.pointerId);
+                return element == elementUnderPointer || element.Contains(elementUnderPointer);
+            }
+
+            return true;
         }
 
         //Called when a visual element is removed from a panel to clear all reference to the visual element

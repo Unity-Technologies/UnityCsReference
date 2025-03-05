@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+
 namespace UnityEngine.UIElements
 {
     /// <summary>
@@ -28,6 +30,11 @@ namespace UnityEngine.UIElements
 
         private readonly PanelSettings m_PanelSettings;
         public PanelSettings panelSettings => m_PanelSettings;
+
+        private static readonly List<UIDocument> s_EmptyDocumentList = new();
+
+        internal List<UIDocument> documents =>
+            m_PanelSettings.m_AttachedUIDocumentsList?.m_AttachedUIDocuments ?? s_EmptyDocumentList;
 
         public static RuntimePanel Create(ScriptableObject ownerObject)
         {

@@ -93,6 +93,12 @@ namespace UnityEngine.UIElements
         }
 
         /// <undoc/>
+        public static implicit operator StyleRotate(Quaternion v)
+        {
+            return new Rotate(v);
+        }
+
+        /// <undoc/>
         public bool Equals(StyleRotate other)
         {
             return other == this;

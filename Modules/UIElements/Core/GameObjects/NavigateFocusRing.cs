@@ -56,12 +56,54 @@ namespace UnityEngine.UIElements
 
         public virtual Focusable GetNextFocusable(Focusable currentFocusable, FocusChangeDirection direction)
         {
-            if (direction == Up || direction == Down || direction == Right || direction == Left)
+            if (direction == FocusChangeDirection.none || direction == FocusChangeDirection.unspecified)
             {
-                return GetNextFocusable2D(currentFocusable, (ChangeDirection)direction);
+                return currentFocusable;
             }
 
-            return m_Ring.GetNextFocusable(currentFocusable, direction);
+            if (direction is VisualElementFocusChangeTarget changeTarget)
+            {
+                return changeTarget.target;
+            }
+
+            var root = m_Root;
+
+            // Check for world-space navigation special rules
+            if (m_Root?.elementPanel?.isFlat == false)
+            {
+                if (!IsWorldSpaceNavigationValid(currentFocusable, out var document))
+                    return null;
+
+                if (direction == Next || direction == Previous)
+                    return document.focusRing?.GetNextFocusableInSequence(currentFocusable, direction);
+
+                root = document.rootVisualElement;
+            }
+
+            if (direction == Up || direction == Down || direction == Right || direction == Left)
+            {
+                return GetNextFocusable2D(currentFocusable, (ChangeDirection)direction, root);
+            }
+
+            return m_Ring.GetNextFocusableInSequence(currentFocusable, direction);
+        }
+
+        private bool IsWorldSpaceNavigationValid(Focusable currentFocusable, out UIDocument document)
+        {
+            document = null;
+
+            // No jumping in from out-of-focus
+            if (currentFocusable is not VisualElement ve)
+            {
+                return false;
+            }
+
+            // Find document root as a replacement for m_Root. Assume ve is in a document.
+            document = UIDocument.FindParentDocument(ve);
+            if (document == null || document.rootVisualElement == null)
+                return false;
+
+            return true;
         }
 
         // Searches for a navigable element starting from currentFocusable and scanning along the specified direction.
@@ -76,27 +118,28 @@ namespace UnityEngine.UIElements
         // The best candidate is the element whose border is "least advanced" in the scanning direction, using the
         // element's worldBound border opposite from scanning direction, left border when scanning right, right border
         // for scanning left, etc. See FocusableHierarchyTraversal for more details and how further ties are resolved.
-        Focusable GetNextFocusable2D(Focusable currentFocusable, ChangeDirection direction)
+        Focusable GetNextFocusable2D(Focusable currentFocusable, ChangeDirection direction, VisualElement root)
         {
             if (!(currentFocusable is VisualElement ve))
-                ve = m_Root;
+                ve = root;
 
-            Rect panelBounds = m_Root.worldBoundingBox;
+            Rect panelBounds = root.boundingBox;
             Rect panelRect = new Rect(panelBounds.position - Vector2.one, panelBounds.size + Vector2.one * 2);
-            Rect rect = ve.worldBound;
+            Rect rect = ve.ChangeCoordinatesTo(root, ve.rect);
             Rect validRect = new Rect(rect.position - Vector2.one, rect.size + Vector2.one * 2);
             if (direction == Up) validRect.yMin = panelRect.yMin;
             else if (direction == Down) validRect.yMax = panelRect.yMax;
             else if (direction == Left) validRect.xMin = panelRect.xMin;
             else if (direction == Right) validRect.xMax = panelRect.xMax;
 
-            Focusable best = new FocusableHierarchyTraversal
+            var best = new FocusableHierarchyTraversal
             {
+                root = root,
                 currentFocusable = ve,
                 direction = direction,
                 validRect = validRect,
                 firstPass = true
-            }.GetBestOverall(m_Root);
+            }.GetBestOverall(root);
 
             if (best != null)
                 return best;
@@ -109,11 +152,12 @@ namespace UnityEngine.UIElements
 
             best = new FocusableHierarchyTraversal
             {
+                root = root,
                 currentFocusable = ve,
                 direction = direction,
                 validRect = validRect,
                 firstPass = false
-            }.GetBestOverall(m_Root);
+            }.GetBestOverall(root);
 
             if (best != null)
                 return best;
@@ -137,6 +181,7 @@ namespace UnityEngine.UIElements
 
         struct FocusableHierarchyTraversal
         {
+            public VisualElement root;
             public VisualElement currentFocusable;
             public Rect validRect;
             public bool firstPass;
@@ -144,24 +189,24 @@ namespace UnityEngine.UIElements
 
             bool ValidateHierarchyTraversal(VisualElement v)
             {
-                return IsActive(v) && v.worldBoundingBox.Overlaps(validRect);
+                return IsActive(v) && v.ChangeCoordinatesTo(root, v.boundingBox).Overlaps(validRect);
             }
 
             bool ValidateElement(VisualElement v)
             {
-                return IsNavigable(v) && v.worldBound.Overlaps(validRect);
+                return IsNavigable(v) && v.ChangeCoordinatesTo(root, v.rect).Overlaps(validRect);
             }
 
             int Order(VisualElement a, VisualElement b)
             {
-                Rect ra = a.worldBound, rb = b.worldBound;
+                Rect ra = a.ChangeCoordinatesTo(root, a.rect), rb = b.ChangeCoordinatesTo(root, b.rect);
                 int result = StrictOrder(ra, rb);
                 return result != 0 ? result : TieBreaker(ra, rb);
             }
 
             int StrictOrder(VisualElement a, VisualElement b)
             {
-                return StrictOrder(a.worldBound, b.worldBound);
+                return StrictOrder(a.ChangeCoordinatesTo(root, a.rect), b.ChangeCoordinatesTo(root, b.rect));
             }
 
             int StrictOrder(Rect ra, Rect rb)
@@ -180,7 +225,7 @@ namespace UnityEngine.UIElements
             {
                 // Elements are aligned in the search axis. Find whose top-left corner is closer to current element.
                 // TODO: use other corners if grow direction is not left-to-right / top-to-bottom
-                Rect rc = currentFocusable.worldBound;
+                Rect rc = currentFocusable.ChangeCoordinatesTo(root, currentFocusable.rect);
                 float diff = (ra.min - rc.min).sqrMagnitude - (rb.min - rc.min).sqrMagnitude;
                 if (!Mathf.Approximately(diff, 0f))
                     return diff > 0 ? 1 : -1;

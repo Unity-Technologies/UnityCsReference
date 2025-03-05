@@ -340,7 +340,7 @@ namespace UnityEngine.UIElements
                     var element = currentTarget as VisualElement;
                     if (element != null)
                     {
-                        imguiEvent.mousePosition = element.WorldToLocal(originalMousePosition);
+                        imguiEvent.mousePosition = element.WorldToLocal3D(originalMousePosition);
                     }
                     else
                     {

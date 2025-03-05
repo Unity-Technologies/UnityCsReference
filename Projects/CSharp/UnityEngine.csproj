@@ -1959,15 +1959,6 @@
     <Compile Include="..\..\Modules\UIElements\Core\Cursor.cs">
       <Link>Modules\UIElements\Core\Cursor.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.InputForUIProcessor.cs">
-      <Link>Modules\UIElements\Core\DefaultEventSystem.InputForUIProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.LegacyInputProcessor.cs">
-      <Link>Modules\UIElements\Core\DefaultEventSystem.LegacyInputProcessor.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\DefaultEventSystem.cs">
-      <Link>Modules\UIElements\Core\DefaultEventSystem.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\DisposeHelper.cs">
       <Link>Modules\UIElements\Core\DisposeHelper.cs</Link>
     </Compile>
@@ -2067,6 +2058,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Events\FocusEvents.cs">
       <Link>Modules\UIElements\Core\Events\FocusEvents.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Events\IMEEvent.cs">
+      <Link>Modules\UIElements\Core\Events\IMEEvent.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Events\InputEvents.cs">
       <Link>Modules\UIElements\Core\Events\InputEvents.cs</Link>
     </Compile>
@@ -2118,6 +2112,18 @@
     <Compile Include="..\..\Modules\UIElements\Core\FocusController.cs">
       <Link>Modules\UIElements\Core\FocusController.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DefaultEventSystem.InputForUIProcessor.cs">
+      <Link>Modules\UIElements\Core\GameObjects\DefaultEventSystem.InputForUIProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DefaultEventSystem.LegacyInputProcessor.cs">
+      <Link>Modules\UIElements\Core\GameObjects\DefaultEventSystem.LegacyInputProcessor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DefaultEventSystem.cs">
+      <Link>Modules\UIElements\Core\GameObjects\DefaultEventSystem.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DocumentPicker.cs">
+      <Link>Modules\UIElements\Core\GameObjects\DocumentPicker.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\DynamicAtlasSettings.cs">
       <Link>Modules\UIElements\Core\GameObjects\DynamicAtlasSettings.cs</Link>
     </Compile>
@@ -2136,11 +2142,17 @@
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\RuntimePanelUtils.cs">
       <Link>Modules\UIElements\Core\GameObjects\RuntimePanelUtils.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\ScreenRaycaster.cs">
+      <Link>Modules\UIElements\Core\GameObjects\ScreenRaycaster.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\UIDocument.cs">
       <Link>Modules\UIElements\Core\GameObjects\UIDocument.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\UIDocumentHierarchyUtil.cs">
       <Link>Modules\UIElements\Core\GameObjects\UIDocumentHierarchyUtil.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs">
+      <Link>Modules\UIElements\Core\GameObjects\WorldSpaceInput.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GroupBoxUtility.cs">
       <Link>Modules\UIElements\Core\GroupBoxUtility.cs</Link>
@@ -2778,14 +2790,14 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleScale.cs">
       <Link>Modules\UIElements\Core\Style\StyleScale.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTanslate.cs">
-      <Link>Modules\UIElements\Core\Style\StyleTanslate.cs</Link>
-    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTextShadow.cs">
       <Link>Modules\UIElements\Core\Style\StyleTextShadow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTransformOrigin.cs">
       <Link>Modules\UIElements\Core\Style\StyleTransformOrigin.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTranslate.cs">
+      <Link>Modules\UIElements\Core\Style\StyleTranslate.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleTypes.cs">
       <Link>Modules\UIElements\Core\Style\StyleTypes.cs</Link>

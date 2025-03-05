@@ -222,5 +222,37 @@ namespace Unity.Baselib.LowLevel
         /// <remarks>Closing an already closed socket results in a no-op.</remarks>
         [FreeFunction(IsThreadSafe = true)]
         public static extern void Baselib_Socket_Close(Baselib_Socket_Handle socket);
+        /// <summary>
+        /// Attempts to set the DON'T FRAGMENT header on an IPv4 socket.
+        /// This prevents the packet from being fragmented along the route,
+        /// which is useful for path MTU discovery and can provide improved network
+        /// performance so long as no packets exceed the path MTU.
+        /// Only available on IPv4 UDP sockets on certain platforms.
+        /// </summary>
+        /// <remarks>
+        /// Possible error codes:
+        /// - Baselib_ErrorCode_NotSupported: The current platform does not support user setting of the Don't Fragment header.
+        /// - Baselib_ErrorCode_InvalidSocketType: The socket is not a UDP socket.
+        /// - Baselib_ErrorCode_InvalidAddressFamily: The socket is not an IPv4 socket.
+        ///
+        /// The order that these error conditions are checked is always socket type, address family, platform support.
+        /// </remarks>
+        [FreeFunction(IsThreadSafe = true)]
+        public static extern void Baselib_Socket_SetIPv4DontFragHeader(Baselib_Socket_Handle socket,         [MarshalAs(UnmanagedType.U1)] bool set, Baselib_ErrorState* errorState);
+        /// <summary>
+        /// Retrieves the current value of the DON'T FRAGMENT header for an IPv4 socket.
+        /// Only available on IPv4 UDP sockets on certain platforms.
+        /// </summary>
+        /// <remarks>
+        /// Possible error codes:
+        /// - Baselib_ErrorCode_NotSupported: The current platform does not support user setting of the Don't Fragment header.
+        /// - Baselib_ErrorCode_InvalidSocketType: The socket is not a UDP socket.
+        /// - Baselib_ErrorCode_InvalidAddressFamily: The socket is not an IPv4 socket.
+        ///
+        /// The order that these error conditions are checked is always socket type, address family, platform support.
+        /// </remarks>
+        [FreeFunction(IsThreadSafe = true)]
+        [return: MarshalAs(UnmanagedType.U1)]
+        public static extern bool Baselib_Socket_GetIPv4DontFragHeader(Baselib_Socket_Handle socket, Baselib_ErrorState* errorState);
     }
 }

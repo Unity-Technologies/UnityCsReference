@@ -23,41 +23,35 @@ namespace UnityEngine.UIElements
         private const VersionChangeType WorldTransformChanged = VersionChangeType.Transform;
         private const VersionChangeType WorldClipChanged = VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.BorderWidth;
         private const VersionChangeType EventParentCategoriesChanged = VersionChangeType.Hierarchy | VersionChangeType.EventCallbackCategories;
-        private const VersionChangeType BoundingBoxChanged = VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy;
 
+        protected const VersionChangeType BoundingBoxChanged = VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy;
         protected const VersionChangeType ChildrenChanged = WorldTransformChanged | WorldClipChanged | EventParentCategoriesChanged;
-        protected const VersionChangeType ParentChanged = BoundingBoxChanged;
         protected const VersionChangeType VersionChanged = WorldTransformChanged | WorldClipChanged | VersionChangeType.Hierarchy | VersionChangeType.Picking;
 
-        protected const VersionChangeType AnythingChanged = ChildrenChanged | ParentChanged | VersionChanged;
+        protected const VersionChangeType AnythingChanged = ChildrenChanged | BoundingBoxChanged | VersionChanged;
 
         protected const VisualElementFlags BoundingBoxDirtyFlags =
             VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.Hierarchy | VersionChangeType.BorderWidth | VersionChangeType.EventCallbackCategories | VersionChangeType.Picking)) == 0)
+            if ((versionChangeType & AnythingChanged) == 0)
                 return;
 
-            // According to the flags, what operations must be done?
-            bool mustDirtyWorldTransform = (versionChangeType & VersionChangeType.Transform) != 0;
-            bool mustDirtyWorldClip = (versionChangeType & (VersionChangeType.Transform | VersionChangeType.Size | VersionChangeType.Overflow | VersionChangeType.BorderWidth)) != 0;
-            bool mustDirtyEventParentCategories = (versionChangeType & (VersionChangeType.Hierarchy | VersionChangeType.EventCallbackCategories)) != 0;
-
-            VisualElementFlags mustDirtyFlags =
-                (mustDirtyWorldTransform ? VisualElementFlags.WorldTransformDirty | VisualElementFlags.WorldBoundingBoxDirty : 0) |
-                (mustDirtyWorldClip ? VisualElementFlags.WorldClipDirty : 0) |
-                (mustDirtyEventParentCategories ? VisualElementFlags.EventInterestParentCategoriesDirty : 0);
-
-            var needDirtyFlags = mustDirtyFlags & ~ve.m_Flags;
-            if (needDirtyFlags != 0)
+            if ((versionChangeType & ChildrenChanged) != 0)
             {
-                DirtyHierarchy(ve, needDirtyFlags);
+                DirtyChildrenHierarchy(ve, GetChildrenMustDirtyFlags(ve, versionChangeType));
             }
 
-            DirtyBoundingBoxHierarchy(ve);
+            if ((versionChangeType & BoundingBoxChanged) != 0)
+            {
+                DirtyBoundingBoxHierarchy(ve);
+            }
 
-            ++m_Version;
+            if ((versionChangeType & VersionChanged) != 0)
+            {
+                ++m_Version;
+            }
         }
 
         protected static VisualElementFlags GetChildrenMustDirtyFlags(VisualElement ve, VersionChangeType versionChangeType)
@@ -74,43 +68,38 @@ namespace UnityEngine.UIElements
             return mustDirty;
         }
 
-        protected static void DirtyHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
+        protected static void DirtyChildrenHierarchy(VisualElement ve, VisualElementFlags mustDirtyFlags)
         {
-            // We use VisualElementFlags to track changes across the hierarchy since all those values come from m_Flags.
-            ve.m_Flags |= mustDirtyFlags;
+            // Are these operations already done?
+            var needDirtyFlags = mustDirtyFlags & ~ve.flags;
+            if (needDirtyFlags == 0)
+                return;
+
+            // We use VisualElementFlags to track changes across the hierarchy since all those values come from flags.
+            ve.flags |= needDirtyFlags;
 
             int count = ve.hierarchy.childCount;
             for (int i = 0; i < count; i++)
             {
                 var child = ve.hierarchy[i];
-
-                // Are these operations already done?
-                var needDirtyFlags = mustDirtyFlags & ~child.m_Flags;
-                if (needDirtyFlags != 0)
-                {
-                    DirtyHierarchy(child, needDirtyFlags);
-                }
+                DirtyChildrenHierarchy(child, needDirtyFlags);
             }
         }
 
-        static void DirtyBoundingBoxHierarchy(VisualElement ve)
+        private static void DirtyBoundingBoxHierarchy(VisualElement ve)
         {
-            ve.isBoundingBoxDirty = true;
-            ve.isWorldBoundingBoxDirty = true;
-            var parent = ve.hierarchy.parent;
-            while (parent != null && !parent.isBoundingBoxDirty)
-            {
-                parent.isBoundingBoxDirty = true;
-                parent.isWorldBoundingBoxDirty = true;
-                parent = parent.hierarchy.parent;
-            }
+            // Even if all the local bounding box flags are dirty already, we need to check the first parent too.
+            // This is because other factors can impact the parent boundingBox besides our own boundingBox changing
+            // (for instance, if our ShouldClip() method or resolvedStyle.display return a different value).
+            ve.flags |= BoundingBoxDirtyFlags;
+            DirtyParentHierarchy(ve.hierarchy.parent, BoundingBoxDirtyFlags);
         }
 
         protected static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
         {
-            while (ve != null && (ve.m_Flags & flags) != flags)
+            while (ve != null && (ve.flags & flags) != flags)
             {
-                ve.m_Flags |= flags;
+                ve.flags |= flags;
                 ve = ve.hierarchy.parent;
             }
         }
@@ -145,26 +134,24 @@ namespace UnityEngine.UIElements
     {
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            base.OnVersionChanged(ve, versionChangeType);
-
             if ((versionChangeType & AnythingChanged) == 0)
                 return;
 
             if ((versionChangeType & ChildrenChanged) != 0)
             {
-                DirtyHierarchy(ve, GetChildrenMustDirtyFlags(ve, versionChangeType));
+                DirtyChildrenHierarchy(ve, GetChildrenMustDirtyFlags(ve, versionChangeType));
             }
 
-            if ((versionChangeType & ParentChanged) != 0)
+            if ((versionChangeType & BoundingBoxChanged) != 0)
             {
-                DirtyParentHierarchy(ve, GetParentMustDirtyFlags(ve));
+                DirtyBoundingBoxHierarchy(ve);
             }
         }
 
         private new const VisualElementFlags BoundingBoxDirtyFlags =
             VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementFlags.LocalBounds3DDirty;
 
-        VisualElementFlags GetParentMustDirtyFlags(VisualElement ve)
+        private static VisualElementFlags GetParentMustDirtyFlags(VisualElement ve)
         {
             var mustDirty = BoundingBoxDirtyFlags;
 
@@ -172,6 +159,13 @@ namespace UnityEngine.UIElements
                 mustDirty |= VisualElementFlags.Needs3DBounds;
 
             return mustDirty;
+        }
+
+        private static void DirtyBoundingBoxHierarchy(VisualElement ve)
+        {
+            var flags = GetParentMustDirtyFlags(ve);
+            ve.flags |= flags;
+            DirtyParentHierarchy(ve.hierarchy.parent, flags);
         }
 
         public override void Update()

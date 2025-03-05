@@ -72,6 +72,8 @@ namespace UnityEngine.UIElements
         LocalBounds3DDirty = 1 << 16,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
         DetachedDataSource = 1 << 17,
+        // Element has capture on one or more pointerIds
+        PointerCapture = 1 << 18,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
@@ -460,7 +462,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static uint s_NextId;
+        internal bool hasOneOrMorePointerCaptures
+        {
+            get => (m_Flags & VisualElementFlags.PointerCapture) == VisualElementFlags.PointerCapture;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.PointerCapture : m_Flags & ~VisualElementFlags.PointerCapture;
+        }
+
+        internal static uint s_NextId;
 
         private static List<string> s_EmptyClassList = new List<string>(0);
 
@@ -473,7 +481,13 @@ namespace UnityEngine.UIElements
         string m_Name;
         List<string> m_ClassList;
         private Dictionary<PropertyName, object> m_PropertyBag;
-        internal VisualElementFlags m_Flags;
+
+        private VisualElementFlags m_Flags;
+        internal VisualElementFlags flags
+        {
+            get => m_Flags;
+            set => m_Flags = value;
+        }
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
         private string m_ViewDataKey;
@@ -929,6 +943,8 @@ namespace UnityEngine.UIElements
 
         private Rect m_WorldBoundingBox;
 
+        // Bounding box in the local space of the element. It starts with the layout of the element and is inflated to
+        // contain the descendants.
         internal Rect boundingBox
         {
             get
@@ -969,14 +985,15 @@ namespace UnityEngine.UIElements
 
         internal void UpdateBoundingBox()
         {
-            if (float.IsNaN(rect.x) || float.IsNaN(rect.y) || float.IsNaN(rect.width) || float.IsNaN(rect.height))
+            var r = rect;
+            if (float.IsNaN(r.x) || float.IsNaN(r.y) || float.IsNaN(r.width) || float.IsNaN(r.height))
             {
                 // Ignored unlayouted VisualElements.
                 m_BoundingBox = Rect.zero;
             }
             else
             {
-                m_BoundingBox = rect;
+                m_BoundingBox = r;
                 if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
                     var childCount = m_Children.Count;
@@ -1452,6 +1469,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void UpdatePointerCaptureFlag()
+        {
+            bool hasCapture = false;
+            for (int i = 0; i < PointerId.maxPointers; i++)
+                if (this.HasPointerCapture(i))
+                {
+                    hasCapture = true;
+                    break;
+                }
+            hasOneOrMorePointerCaptures = hasCapture;
+        }
+
         private PickingMode m_PickingMode;
 
         /// <summary>
@@ -1633,10 +1662,25 @@ namespace UnityEngine.UIElements
             UpdateEventInterestSelfCategories();
         }
 
+        // For unit tests
+        internal static int s_FinalizerCount = 0;
+
         ~VisualElement()
         {
-            // VisualManager.SharedManager.DestroyNodeThreaded(ref m_VisualNode);
-            LayoutManager.SharedManager.DestroyNode(ref m_LayoutNode);
+            try
+            {
+                // VisualManager.SharedManager.DestroyNodeThreaded(ref m_VisualNode);
+                LayoutManager.SharedManager.EnqueueNodeForRecycling(ref m_LayoutNode);
+
+				s_FinalizerCount++;
+            }
+            // Exceptions inside finalizers are not automatically logged by Unity
+            // So let's report those in the console to make sure they don't go undetected
+            catch (Exception e)
+            {
+                Debug.LogError("An exception occured in a VisualElement finalizer, please report a bug.");
+                Debug.LogException(e);
+            }
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -1752,6 +1796,18 @@ namespace UnityEngine.UIElements
                     //We need to remove this element from the ElementsUnderPointer
                     elementPanel.RemoveElementFromPointerCache(this);
                     elementPanel.CommitElementUnderPointers();
+                }
+
+                if (hasOneOrMorePointerCaptures)
+                {
+                    for (var i = 0; i < PointerId.maxPointers; i++)
+                    {
+                        if (this.HasPointerCapture(i))
+                        {
+                            this.ReleasePointer(i);
+                            elementPanel.ProcessPointerCapture(i);
+                        }
+                    }
                 }
 
                 // Only send this event if the element isn't waiting for an attach event already

@@ -3277,13 +3277,18 @@ namespace UnityEditor
 
             m_Camera.useInteractiveLightBakingData = usesInteractiveLightBakingData;
 
-            // update physical camera properties
             if (mainCamera != null)
             {
+                // update physical camera properties
                 m_Camera.iso = mainCamera.iso;
                 m_Camera.shutterSpeed = mainCamera.shutterSpeed;
                 m_Camera.aperture = mainCamera.aperture;
                 m_Camera.anamorphism = mainCamera.anamorphism;
+
+                // try to match main camera's hdr and depth texture settings if unambiguous main camera exists
+                m_Camera.allowHDR = mainCamera.allowHDR;
+                m_Camera.depthTextureMode = mainCamera.depthTextureMode;
+                m_Camera.clearStencilAfterLightingPass = mainCamera.clearStencilAfterLightingPass;
             }
 
             if (!m_SceneIsLit || !DoesCameraDrawModeSupportHDR(m_CameraMode.drawMode))
@@ -3291,19 +3296,7 @@ namespace UnityEditor
                 m_Camera.allowHDR = false;
                 m_Camera.depthTextureMode = DepthTextureMode.None;
                 m_Camera.clearStencilAfterLightingPass = false;
-                return;
             }
-
-            if (mainCamera == null)
-            {
-                m_Camera.allowHDR = false;
-                m_Camera.depthTextureMode = DepthTextureMode.None;
-                m_Camera.clearStencilAfterLightingPass = false;
-                return;
-            }
-            m_Camera.allowHDR = mainCamera.allowHDR;
-            m_Camera.depthTextureMode = mainCamera.depthTextureMode;
-            m_Camera.clearStencilAfterLightingPass = mainCamera.clearStencilAfterLightingPass;
         }
 
         void SetupCamera()

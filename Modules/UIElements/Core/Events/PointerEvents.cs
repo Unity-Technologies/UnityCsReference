@@ -31,6 +31,11 @@ namespace UnityEngine.UIElements
         /// </summary>
         public static readonly string pen = "pen";
         /// <summary>
+        /// The pointer type for tracked device events.
+        /// See for example InputSystem's [[https://docs.unity3d.com/Packages/com.unity.inputsystem@1.12/api/UnityEngine.InputSystem.XR.XRController.html|XRController]].
+        /// </summary>
+        public static readonly string tracked = "tracked";
+        /// <summary>
         /// The pointer type for events created by unknown devices.
         /// </summary>
         public static readonly string unknown = "";
@@ -39,10 +44,13 @@ namespace UnityEngine.UIElements
         {
             if (pointerId == PointerId.mousePointerId)
                 return mouse;
-            else if (pointerId == PointerId.penPointerIdBase)
+            if (pointerId >= PointerId.trackedPointerIdBase)
+                return tracked;
+            if (pointerId >= PointerId.penPointerIdBase)
                 return pen;
-            else
+            if (pointerId >= PointerId.touchPointerIdBase)
                 return touch;
+            return unknown;
         }
 
         // A direct manipulation device is a device where the user directly manipulates elements
@@ -102,8 +110,24 @@ namespace UnityEngine.UIElements
         /// The pointer ID for a pen event is a number between penPointerIdBase and penPointerIdBase + penPointerCount - 1.
         /// </remarks>
         public static readonly int penPointerCount = 2;
+        /// <summary>
+        /// The base ID for tracked device pointers.
+        /// See for example InputSystem's [[https://docs.unity3d.com/Packages/com.unity.inputsystem@1.12/api/UnityEngine.InputSystem.XR.XRController.html|XRController]].
+        /// </summary>
+        /// <remarks>
+        /// The pointer ID for a tracked device event is a number between trackedPointerIdBase and trackedPointerIdBase + trackedPointerCount - 1.
+        /// </remarks>
+        public static readonly int trackedPointerIdBase = penPointerIdBase + penPointerCount;
+        /// <summary>
+        /// The number of tracked device pointers the implementation supports.
+        /// </summary>
+        /// <remarks>
+        /// The pointer ID for a tracked device event is a number between trackedPointerIdBase and trackedPointerIdBase + trackedPointerCount - 1.
+        /// </remarks>
+        public static readonly int trackedPointerCount = 4;
 
-        internal static readonly int[] hoveringPointers =
+        // Tracked pointers are not screen hovering pointers because they only operate in world-space
+        internal static readonly int[] screenHoveringPointers =
         {
             mousePointerId
         };
@@ -330,6 +354,7 @@ namespace UnityEngine.UIElements
     {
         int pointerId { get; }
         Vector3 position { get; }
+        Vector3 deltaPosition { get; set; }
     }
 
     internal static class PointerEventHelper
@@ -638,6 +663,8 @@ namespace UnityEngine.UIElements
         int IPointerEventInternal.displayIndex => displayIndex;
         bool IPointerEventInternal.recomputeTopElementUnderPointer => recomputeTopElementUnderPointer;
 
+        Vector3 IPointerOrMouseEvent.deltaPosition { get => deltaPosition; set => deltaPosition = value; }
+
         /// <summary>
         /// Resets the event members to their initial values.
         /// </summary>
@@ -696,7 +723,7 @@ namespace UnityEngine.UIElements
                 var element = currentTarget as VisualElement;
                 if (element != null)
                 {
-                    localPosition = element.WorldToLocal(position);
+                    localPosition = element.WorldToLocal3D(position);
                 }
                 else
                 {
@@ -1030,13 +1057,13 @@ namespace UnityEngine.UIElements
             return e;
         }
 
-        internal static T GetPooled(PointerEvent pointerEvent, Vector2 position, Vector2 deltaPosition, int pointerId, float deltaTime)
+        internal static T GetPooled(PointerEvent pointerEvent, Vector3 position, int pointerId, float deltaTime)
         {
             T e = GetPooled();
 
             e.position = position;
             e.localPosition = position;
-            e.deltaPosition = deltaPosition;
+            e.deltaPosition = PointerDeviceState.GetPointerDeltaPosition(pointerId, ContextType.Player, position);
             e.pointerId = pointerId;
             e.deltaTime = deltaTime;
 
@@ -1086,6 +1113,15 @@ namespace UnityEngine.UIElements
                     e.button = (int)PenButton.PenBarrel;
                 else if (pointerEvent.button == PointerEvent.Button.PenEraserInTouch)
                     e.button = (int)PenButton.PenEraser;
+            }
+            else if (pointerEvent.eventSource == EventSource.TrackedDevice)
+            {
+                e.pointerType = PointerType.tracked;
+
+                Debug.Assert(e.pointerId >= PointerId.trackedPointerIdBase && e.pointerId < PointerId.trackedPointerIdBase + PointerId.trackedPointerCount, "PointerEvent from TrackedDevice source is expected to have tracked-based pointer id.");
+
+                if (pointerEvent.button == PointerEvent.Button.Primary)
+                    e.button = 0;
             }
             else
             {

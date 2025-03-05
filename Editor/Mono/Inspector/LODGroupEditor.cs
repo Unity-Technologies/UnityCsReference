@@ -638,6 +638,14 @@ namespace UnityEditor
             // Grab the latest data from the object
             serializedObject.Update();
 
+            // Flush this editor's state when it's out of sync with serialized data.
+            if (m_LODs.arraySize != m_LODGroupFoldoutHeaderValues.Length || m_LODs.arraySize != m_RendererMeshLists.Length)
+            {
+                m_MaxLODCountForMultiselection = GetMaxLODCountForMultiSelection();
+                CalculatePrimitiveCountForRenderers();
+                ResetFoldoutLists();
+            }
+
             EditorGUILayout.PropertyField(m_FadeMode);
 
             m_ShowAnimateCrossFading.target = m_FadeMode.intValue != (int)LODFadeMode.None;

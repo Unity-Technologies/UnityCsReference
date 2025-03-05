@@ -15,9 +15,9 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("Unity.UIElements")]
     internal static class UIElementsRuntimeUtilityNative
     {
-        internal static Action UpdatePanelsCallback;
-        internal static Action<bool> RepaintPanelsCallback;
-        internal static Action RenderOffscreenPanelsCallback;
+        private static Action UpdatePanelsCallback;
+        private static Action<bool> RepaintPanelsCallback;
+        private static Action RenderOffscreenPanelsCallback;
 
         [RequiredByNativeCode]
         public static void UpdatePanels()
@@ -37,8 +37,27 @@ namespace UnityEngine.UIElements
             RenderOffscreenPanelsCallback?.Invoke();
         }
 
-        public extern static void RegisterPlayerloopCallback();
-        public extern static void UnregisterPlayerloopCallback();
+        public static void SetUpdateCallback(Action callback)
+        {
+            UpdatePanelsCallback = callback;
+        }
+
+        public static void SetRenderingCallbacks(Action<bool> repaintPanels, Action renderOffscreenPanels)
+        {
+            RepaintPanelsCallback = repaintPanels;
+            RenderOffscreenPanelsCallback = renderOffscreenPanels;
+            RegisterRenderingCallbacks();
+        }
+
+        public static void UnsetRenderingCallbacks()
+        {
+            RepaintPanelsCallback = null;
+            RenderOffscreenPanelsCallback = null;
+            UnregisterRenderingCallbacks();
+        }
+
+        private extern static void RegisterRenderingCallbacks();
+        private extern static void UnregisterRenderingCallbacks();
 
         public extern static void VisualElementCreation();
     }

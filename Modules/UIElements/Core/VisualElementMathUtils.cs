@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 
 namespace UnityEngine.UIElements
 {
@@ -198,6 +199,25 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static Vector3 MultiplyMatrix44Point2ToPoint3(ref Matrix4x4 lhs, Vector2 point)
+        {
+            Vector3 res;
+            res.x = lhs.m00 * point.x + lhs.m01 * point.y + lhs.m03;
+            res.y = lhs.m10 * point.x + lhs.m11 * point.y + lhs.m13;
+            res.z = lhs.m20 * point.x + lhs.m21 * point.y + lhs.m23;
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static Vector2 MultiplyMatrix44Point3ToPoint2(ref Matrix4x4 lhs, Vector3 point)
+        {
+            Vector2 res;
+            res.x = lhs.m00 * point.x + lhs.m01 * point.y + lhs.m02 * point.z + lhs.m03;
+            res.y = lhs.m10 * point.x + lhs.m11 * point.y + lhs.m12 * point.z + lhs.m13;
+            return res;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         internal static Vector2 MultiplyVector2(ref Matrix4x4 lhs, Vector2 vector)
         {
             Vector2 res;
@@ -262,6 +282,10 @@ namespace UnityEngine.UIElements
         /// This element needs to be attached to a panel and must have a valid <see cref="VisualElement.layout"/>.
         /// Otherwise, this method might return invalid results.
         /// </remarks>
+        /// <remarks>
+        /// If the element's transform contains 3-D information, use
+        /// ele.worldTransform.inverse.MultiplyPoint3x4(p) to obtain a proper 3-D transformation.
+        /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
         /// <param name="p">The point to transform, in world space.</param>
         /// <returns>A point in the local space of the element.</returns>
@@ -276,11 +300,46 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Transforms a point from the world space to the local space of the element.
+        /// The result is stored in a Vector3, such that the original point can be reobtained
+        /// by applying LocalToWorld3D with the same element on the returned point.
+        /// </summary>
+        /// <remarks>
+        /// This element needs to be attached to a panel and must have a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method might return invalid results.
+        /// </remarks>
+        /// <param name="ele">The element to use as a reference for the local space.</param>
+        /// <param name="p">The point to transform, in world space.</param>
+        /// <returns>A point in the local space of the element.</returns>
+        // IMPORTANT:
+        // This method can't be called WorldToLocal because it would break existing code
+        // for example:
+        // Vector2 GetLocalPointWithOffset(VisualElement ve, Vector3 worldPoint)
+        // {
+        //     return ve.WorldToLocal(worldPoint) - new Vector2(10, 10);
+        // }
+        // Such examples can be found in some packages, for instance:
+        // Packages/com.unity.graphtoolsauthoringframework/GraphToolsAuthoringFrameworkEditor/UI/Manipulators/WireManipulator.cs
+        internal static Vector3 WorldToLocal3D(this VisualElement ele, Vector3 p)
+        {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
+            return ele.worldTransformInverse.MultiplyPoint3x4(p);
+        }
+
+        /// <summary>
         /// Transforms a point from the local space of the element to the world space.
         /// </summary>
         /// <remarks>
         /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
         /// Otherwise, this method may return invalid results.
+        /// </remarks>
+        /// <remarks>
+        /// If the element's transform contains 3-D information, use
+        /// ele.worldTransform.MultiplyPoint3x4(p) to obtain a proper 3-D transformation.
         /// </remarks>
         /// <param name="ele">The element to use as a reference for the local space.</param>
         /// <param name="p">The point to transform, in local space.</param>
@@ -293,6 +352,28 @@ namespace UnityEngine.UIElements
             }
 
             return VisualElement.MultiplyMatrix44Point2(ref ele.worldTransformRef, p);
+        }
+
+        /// <summary>
+        /// Transforms a point from the local space of the element to the world space.
+        /// The result is stored in a Vector3, such that the original point can be reobtained
+        /// by applying WorldToLocal3D with the same element on the returned point.
+        /// </summary>
+        /// <remarks>
+        /// This element needs to be attached to a panel and must receive a valid <see cref="VisualElement.layout"/>.
+        /// Otherwise, this method may return invalid results.
+        /// </remarks>
+        /// <param name="ele">The element to use as a reference for the local space.</param>
+        /// <param name="p">The point to transform, in local space.</param>
+        /// <returns>A point in the world space.</returns>
+        internal static Vector3 LocalToWorld3D(this VisualElement ele, Vector3 p)
+        {
+            if (ele == null)
+            {
+                throw new ArgumentNullException(nameof(ele));
+            }
+
+            return ele.worldTransformRef.MultiplyPoint3x4(p);
         }
 
         /// <summary>
@@ -335,6 +416,18 @@ namespace UnityEngine.UIElements
             return VisualElement.CalculateConservativeRect(ref ele.worldTransformRef, r);
         }
 
+        internal static Ray LocalToWorld([NotNull] this VisualElement ele, Ray r)
+        {
+            ref var m = ref ele.worldTransformRef;
+            return new Ray(m.MultiplyPoint3x4(r.origin), m.MultiplyVector(r.direction));
+        }
+
+        internal static Ray WorldToLocal([NotNull] this VisualElement ele, Ray r)
+        {
+            ref var m = ref ele.worldTransformInverse;
+            return new Ray(m.MultiplyPoint3x4(r.origin), m.MultiplyVector(r.direction));
+        }
+
         /// <summary>
         /// Transforms a point from the local space of an element to the local space of another element.
         /// </summary>
@@ -348,7 +441,31 @@ namespace UnityEngine.UIElements
         /// <returns>A point in the local space of destination element.</returns>
         public static Vector2 ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Vector2 point)
         {
-            return dest.WorldToLocal(src.LocalToWorld(point));
+            if (src == null)
+                throw new ArgumentNullException(nameof(src));
+            if (dest == null)
+                throw new ArgumentNullException(nameof(dest));
+
+            return src.elementPanel is { isFlat: false }
+                ? ChangeCoordinatesTo_3D(src, dest, point)
+                : ChangeCoordinatesTo_2D(src, dest, point);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 ChangeCoordinatesTo_2D([NotNull] this VisualElement src, [NotNull] VisualElement dest, Vector2 point)
+        {
+            Vector2 worldPoint = VisualElement.MultiplyMatrix44Point2(ref src.worldTransformRef, point);
+            return VisualElement.MultiplyMatrix44Point2(ref dest.worldTransformInverse, worldPoint);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static Vector2 ChangeCoordinatesTo_3D([NotNull] this VisualElement src, [NotNull] VisualElement dest, Vector2 point)
+        {
+            // Even though we transform a 2-D point into another 2-D point, if the visual tree contains some 3-D
+            // transformations, we need to preserve the intermediary world-point as a proper 3-D point since
+            // the z-coordinate value of the world-point can contribute to (x, y) offsets on the final result.
+            Vector3 worldPoint = VisualElement.MultiplyMatrix44Point2ToPoint3(ref src.worldTransformRef, point);
+            return VisualElement.MultiplyMatrix44Point3ToPoint2(ref dest.worldTransformInverse, worldPoint);
         }
 
         /// <summary>
@@ -364,7 +481,88 @@ namespace UnityEngine.UIElements
         /// <returns>A rectangle in the local space of destination element.</returns>
         public static Rect ChangeCoordinatesTo(this VisualElement src, VisualElement dest, Rect rect)
         {
-            return dest.WorldToLocal(src.LocalToWorld(rect));
+            if (src == null)
+                throw new ArgumentNullException(nameof(src));
+            if (dest == null)
+                throw new ArgumentNullException(nameof(dest));
+
+            // Use the CalculateConservativeRect algo but with ChangeCoordinatesTo.
+
+            if (float.IsNaN(rect.height) || float.IsNaN(rect.width) || float.IsNaN(rect.x) || float.IsNaN(rect.y))
+            {
+                return new Rect(float.NaN, float.NaN, float.NaN, float.NaN);
+            }
+
+            var topLeft = new Vector2(rect.xMin, rect.yMin);
+            var bottomRight = new Vector2(rect.xMax, rect.yMax);
+            var topRight = new Vector2(rect.xMax, rect.yMin);
+            var bottomLeft = new Vector2(rect.xMin, rect.yMax);
+
+            Vector2 transformedTL, transformedTR, transformedBL, transformedBR;
+
+            // Even though we transform a 2-D rect into another 2-D rect, if the visual tree contains some 3-D
+            // transformations, we need to preserve the intermediary world-space points since their z-coordinate
+            // can contribute to (x, y) offsets on the final result.
+            if (src.elementPanel is { isFlat: false })
+            {
+                transformedTL = ChangeCoordinatesTo_3D(src, dest, topLeft);
+                transformedTR = ChangeCoordinatesTo_3D(src, dest, topRight);
+                transformedBL = ChangeCoordinatesTo_3D(src, dest, bottomLeft);
+                transformedBR = ChangeCoordinatesTo_3D(src, dest, bottomRight);
+            }
+            else
+            {
+                transformedTL = ChangeCoordinatesTo_2D(src, dest, topLeft);
+                transformedTR = ChangeCoordinatesTo_2D(src, dest, topRight);
+                transformedBL = ChangeCoordinatesTo_2D(src, dest, bottomLeft);
+                transformedBR = ChangeCoordinatesTo_2D(src, dest, bottomRight);
+            }
+
+            Vector2 min = new Vector2(
+                VisualElement.Min(transformedTL.x, transformedTR.x, transformedBL.x, transformedBR.x),
+                VisualElement.Min(transformedTL.y, transformedTR.y, transformedBL.y, transformedBR.y));
+
+            Vector2 max = new Vector2(
+                VisualElement.Max(transformedTL.x, transformedTR.x, transformedBL.x, transformedBR.x),
+                VisualElement.Max(transformedTL.y, transformedTR.y, transformedBL.y, transformedBR.y));
+
+            return new Rect(min.x, min.y, max.x - min.x, max.y - min.y);
+        }
+
+        internal static Ray ChangeCoordinatesTo([NotNull] this VisualElement src, [NotNull] VisualElement dest, Ray ray)
+        {
+            return dest.WorldToLocal(src.LocalToWorld(ray));
+        }
+
+        internal static bool IntersectWorldRay([NotNull] this VisualElement ve, Ray worldRay, out float distance, out Vector3 localPoint)
+        {
+            ref var wti = ref ve.worldTransformInverse;
+            var localRay = new Ray(wti.MultiplyPoint3x4(worldRay.origin), wti.MultiplyVector(worldRay.direction));
+            var intersects = IntersectLocalRay(ve, localRay, out localPoint);
+            var worldPoint = ve.worldTransformRef.MultiplyPoint3x4(localPoint);
+            distance = Vector3.Distance(worldRay.origin, worldPoint);
+            return intersects;
+        }
+
+        internal static bool IntersectLocalRay([NotNull] this VisualElement ve, Ray localRay, out Vector3 localPoint)
+        {
+            // Intersect local ray with the Z=0 plane.
+            var distance = -localRay.origin.z / localRay.direction.z;
+            localPoint = localRay.origin + localRay.direction * distance;
+
+            // If the ray is going away from the Z=0 plane (or is NaN), we need to reject the point.
+            if (!(distance > 0))
+                return false;
+
+            // Otherwise, accept the ray if the projected point falls within the element rect.
+            // Note that we accept the ray even if it hits the back side of the element, since the element is rendered
+            // from behind too. That result may be rejected later but the raycast process should at least be stopped.
+            return ve.rect.Contains(localPoint);
+        }
+
+        internal static Ray TransformRay(this Matrix4x4 m, Ray ray)
+        {
+            return new Ray(m.MultiplyPoint3x4(ray.origin), m.MultiplyVector(ray.direction));
         }
     }
 }

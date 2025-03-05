@@ -1224,6 +1224,9 @@ namespace Unity.UI.Builder
                 m_ContentHash = m_VisualTreeAsset.contentHash;
             }
 
+            // Reset file settings
+            m_FileSettings.SetRootElementAsset(m_VisualTreeAsset);
+
             return needsFullRefresh;
         }
     }

@@ -572,6 +572,14 @@ namespace Unity.UI.Builder
                 var vea = ve.GetVisualElementAsset();
                 vea.Select();
             }
+            else if (ve.GetVisualElementAssetInTemplate() != null)
+            {
+                Undo.RegisterCompleteObjectUndo(
+                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
+
+                var vea = ve.GetVisualElementAssetInTemplate();
+                vea.Select();
+            }
         }
 
         public static void RemoveElementFromSelectionInAsset(BuilderDocument document, VisualElement ve)
@@ -610,6 +618,14 @@ namespace Unity.UI.Builder
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
                 var vea = ve.GetVisualElementAsset();
+                vea.Deselect();
+            }
+            else if (ve.GetVisualElementAssetInTemplate() != null)
+            {
+                Undo.RegisterCompleteObjectUndo(
+                    document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
+
+                var vea = ve.GetVisualElementAssetInTemplate();
                 vea.Deselect();
             }
         }
@@ -714,7 +730,7 @@ namespace Unity.UI.Builder
 
                     if (templateAsset != null)
                     {
-                        VisualTreeAsset visualTreeAsset = parent.GetVisualTreeAsset();
+                        VisualTreeAsset visualTreeAsset = parent.GetVisualTreeAsset() ?? parent.GetInstancedVisualTreeAsset();
                         if (visualTreeAsset != null)
                         {
                             attributeOverrideRanges.Add(new CreationContext.AttributeOverrideRange(visualTreeAsset, templateAsset.attributeOverrides));

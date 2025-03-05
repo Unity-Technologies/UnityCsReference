@@ -158,6 +158,7 @@ namespace UnityEditor.ShortcutManagement
                 Selection.selectionChanged += UpdateShortcuts;
                 SceneView.lastActiveSceneViewChanged += SceneViewChanged;
                 EditorToolManager.activeToolChanged += ActiveToolChanged;
+                ShortcutManager.instance.shortcutBindingChanged += OnShortcutBindingChanged;
 
                 if (SceneView.lastActiveSceneView != null)
                     SceneView.lastActiveSceneView.modeChanged2D += UpdateShortcuts2DModeChanged;
@@ -166,6 +167,12 @@ namespace UnityEditor.ShortcutManagement
             s_Clients.Add(client);
         }
 
+        static void OnShortcutBindingChanged(ShortcutBindingChangedEventArgs obj)
+        {
+            s_UpdateShortcuts = true;
+            UpdateShortcuts();
+        }
+        
         public static void OnClientDisable(IShortcutUpdate client)
         {
             // Unregister the callbacks when there are no more clients.
@@ -204,6 +211,7 @@ namespace UnityEditor.ShortcutManagement
                 Selection.selectionChanged -= UpdateShortcuts;
                 SceneView.lastActiveSceneViewChanged -= SceneViewChanged;
                 EditorToolManager.activeToolChanged -= ActiveToolChanged;
+                ShortcutManager.instance.shortcutBindingChanged -= OnShortcutBindingChanged;
 
                 if (SceneView.lastActiveSceneView != null)
                     SceneView.lastActiveSceneView.modeChanged2D -= UpdateShortcuts2DModeChanged;

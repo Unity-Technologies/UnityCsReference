@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
@@ -31,6 +32,7 @@ namespace Unity.UI.Builder
         Color m_EvenCellColor = k_DefaultEvenCellColor;
 
         Texture2D m_Texture;
+        ColorSpace m_TextureColorSpace;
 
         // test access
         internal Texture2D texture => m_Texture;
@@ -61,6 +63,12 @@ namespace Unity.UI.Builder
 
         void OnGenerateVisualContent(MeshGenerationContext context)
         {
+            // If the colorspace changes we need to regenerate the texture (UUM-85114)
+            if (PlayerSettings.colorSpace != m_TextureColorSpace)
+            {
+                GenerateResources();
+            }
+
             var veSize = m_CellSize * k_TextureSize;
             var quadSize = new Vector2(veSize, veSize);
 
@@ -162,6 +170,8 @@ namespace Unity.UI.Builder
         void GenerateResources()
         {
             DestroyTexture();
+
+            m_TextureColorSpace = PlayerSettings.colorSpace;
 
             m_Texture = new Texture2D(k_TextureSize, k_TextureSize)
             {

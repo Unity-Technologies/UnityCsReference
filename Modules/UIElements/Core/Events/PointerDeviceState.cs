@@ -20,18 +20,21 @@ namespace UnityEngine.UIElements
         private struct PointerLocation
         {
             // Pointer position in panel space. If Panel is null, position in screen space.
-            internal Vector2 Position { get; private set; }
+            // Position is in 3-D because we may use a 3-D transform to change it to and from a localPosition
+            internal Vector3 Position { get; private set; }
+
             // The Panel that handles events for this pointer.
             internal IPanel Panel { get; private set; }
             internal LocationFlag Flags { get; private set; }
 
-            internal void SetLocation(Vector2 position, IPanel panel)
+            internal void SetLocation(Vector3 position, IPanel panel)
             {
                 Position = position;
                 Panel = panel;
                 Flags = LocationFlag.None;
 
-                if (panel == null || !panel.visualTree.layout.Contains(position))
+                if (panel == null || (panel as BaseVisualElementPanel)?.isFlat == true &&
+                    !panel.visualTree.layout.Contains(position))
                 {
                     Flags |= LocationFlag.OutsidePanel;
                 }
@@ -45,7 +48,8 @@ namespace UnityEngine.UIElements
         // When a pointer button is pressed on top of a runtime panel, that panel is flagged as having "soft capture" of that pointer,
         // that is, unless an element has an actual pointer capture, pointer move events should stay inside this panel until
         // all pointer buttons are released again. This is used by runtime panels to mimic GUIView.cpp window capture behavior.
-        private static readonly IPanel[] s_PlayerPanelWithSoftPointerCapture = new IPanel[PointerId.maxPointers];
+        private static readonly RuntimePanel[] s_PlayerPanelWithSoftPointerCapture = new RuntimePanel[PointerId.maxPointers];
+        private static readonly UIDocument[] s_WorldSpaceDocumentWithSoftPointerCapture = new UIDocument[PointerId.maxPointers];
 
         // For test usage
         internal static void Reset()
@@ -56,6 +60,12 @@ namespace UnityEngine.UIElements
                 s_PlayerPointerLocations[i].SetLocation(Vector2.zero, null);
                 s_PressedButtons[i] = 0;
                 s_PlayerPanelWithSoftPointerCapture[i] = null;
+
+                if (s_WorldSpaceDocumentWithSoftPointerCapture[i] != null)
+                {
+                    s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                    s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                }
             }
         }
 
@@ -67,12 +77,35 @@ namespace UnityEngine.UIElements
                     s_EditorPointerLocations[i].SetLocation(Vector2.zero, null);
                 if (s_PlayerPointerLocations[i].Panel == panel)
                    s_PlayerPointerLocations[i].SetLocation(Vector2.zero, null);
+
                 if (s_PlayerPanelWithSoftPointerCapture[i] == panel)
-                   s_PlayerPanelWithSoftPointerCapture[i] = null;
+                {
+                    s_PlayerPanelWithSoftPointerCapture[i] = null;
+
+                    if (s_WorldSpaceDocumentWithSoftPointerCapture[i] != null)
+                    {
+                        s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                        s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                    }
+                }
             }
         }
 
-        public static void SavePointerPosition(int pointerId, Vector2 position, IPanel panel, ContextType contextType)
+        internal static void RemoveDocumentData(UIDocument document)
+        {
+            if (document.softPointerCaptures == 0) return;
+
+            for (var i = 0; i < PointerId.maxPointers; i++)
+            {
+                if (s_WorldSpaceDocumentWithSoftPointerCapture[i] == document)
+                {
+                    s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
+                    s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
+                }
+            }
+        }
+
+        public static void SavePointerPosition(int pointerId, Vector3 position, IPanel panel, ContextType contextType)
         {
             switch (contextType)
             {
@@ -106,7 +139,7 @@ namespace UnityEngine.UIElements
             s_PressedButtons[pointerId] = 0;
         }
 
-        public static Vector2 GetPointerPosition(int pointerId, ContextType contextType)
+        public static Vector3 GetPointerPosition(int pointerId, ContextType contextType)
         {
             switch (contextType)
             {
@@ -116,6 +149,23 @@ namespace UnityEngine.UIElements
 
                 case ContextType.Player:
                     return s_PlayerPointerLocations[pointerId].Position;
+            }
+        }
+
+        public static Vector3 GetPointerDeltaPosition(int pointerId, ContextType contextType, Vector3 newPosition)
+        {
+            switch (contextType)
+            {
+                case ContextType.Editor:
+                default:
+                    if (s_EditorPointerLocations[pointerId].Panel == null)
+                        return Vector3.zero;
+                    return newPosition - s_EditorPointerLocations[pointerId].Position;
+
+                case ContextType.Player:
+                    if (s_PlayerPointerLocations[pointerId].Panel == null)
+                         return Vector3.zero;
+                    return newPosition - s_PlayerPointerLocations[pointerId].Position;
             }
         }
 
@@ -160,14 +210,29 @@ namespace UnityEngine.UIElements
             return (s_PressedButtons[pointerId] & ~(1 << exceptButtonId)) != 0;
         }
 
-        internal static void SetPlayerPanelWithSoftPointerCapture(int pointerId, IPanel panel)
-        {
-            s_PlayerPanelWithSoftPointerCapture[pointerId] = panel;
-        }
-
-        internal static IPanel GetPlayerPanelWithSoftPointerCapture(int pointerId)
+        internal static RuntimePanel GetPlayerPanelWithSoftPointerCapture(int pointerId)
         {
             return s_PlayerPanelWithSoftPointerCapture[pointerId];
+        }
+
+        internal static UIDocument GetWorldSpaceDocumentWithSoftPointerCapture(int pointerId)
+        {
+            return s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
+        }
+
+        internal static void SetElementWithSoftPointerCapture(int pointerId, VisualElement element)
+        {
+            var runtimePanel = element?.elementPanel as RuntimePanel;
+            s_PlayerPanelWithSoftPointerCapture[pointerId] = runtimePanel;
+
+            ref var document = ref s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
+            if (document != null)
+                document.softPointerCaptures &= ~(1 << pointerId);
+
+            document = runtimePanel?.drawsInCameras == true ? UIDocument.FindParentDocument(element) : null;
+
+            if (document != null)
+                document.softPointerCaptures |= 1 << pointerId;
         }
     }
 }

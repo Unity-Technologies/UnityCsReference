@@ -92,37 +92,34 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             {
                 fixedHeight = k_ToolbarHeight
             };
-            internal static readonly GUIStyle s_ChannelStyle = new GUIStyle(EditorStyles.miniButtonMid)
+            internal static readonly GUIStyle s_ChannelStyle = new GUIStyle(EditorStyles.toolbarButton)
             {
                 fixedWidth = k_ChannelButtonWidth,
+                fixedHeight = k_ToolbarHeight,
+                border = new RectOffset(1,0,0,0)
             };
-            internal static readonly GUIStyle s_ChannelAllStyle = new GUIStyle(EditorStyles.miniButtonLeft)
-            {
-                fixedWidth = k_ChannelButtonWidth,
-            };
-            internal static readonly GUIStyle s_ChannelAStyle = new GUIStyle(EditorStyles.miniButtonRight)
-            {
-                fixedWidth = k_ChannelButtonWidth,
-            };
-            internal static readonly GUIStyle s_PopupLeftStyle = new GUIStyle(EditorStyles.toolbarPopupLeft)
+            internal static readonly GUIStyle s_PopupLeftStyle = new GUIStyle(EditorStyles.toolbarDropDown)
             {
                 fixedHeight = k_ToolbarHeight
             };
             internal static readonly GUIStyle s_LevelsHorizontalStyle = new GUIStyle(EditorStyles.toolbarButton)
             {
-                margin = new RectOffset(4, 4, 0, 0),
-                padding = new RectOffset(4, 4, 0, 0),
+                margin = new RectOffset(0, 4, 0, 0),
+                padding = new RectOffset(0, 4, 0, 0),
                 fixedHeight = k_ToolbarHeight
             };
 
             internal static readonly GUIContent s_DepthLabel = EditorGUIUtility.TrTextContent("Depth", "Show depth buffer");
             internal static readonly GUIContent s_StencilLabel = EditorGUIUtility.TrTextContent("Stencil", "Show stencil buffer");
-            internal static readonly GUIContent s_ChannelHeader = EditorGUIUtility.TrTextContent("Channels", "Which render target color channels to show");
-            internal static readonly GUIContent s_ChannelAll = EditorGUIUtility.TrTextContent("All");
-            internal static readonly GUIContent s_ChannelR = EditorGUIUtility.TrTextContent("R");
-            internal static readonly GUIContent s_ChannelG = EditorGUIUtility.TrTextContent("G");
-            internal static readonly GUIContent s_ChannelB = EditorGUIUtility.TrTextContent("B");
-            internal static readonly GUIContent s_ChannelA = EditorGUIUtility.TrTextContent("A");
+
+            internal static readonly GUIContent[] s_ChannelLabels = new[]
+            {
+                EditorGUIUtility.TrTextContent("R", "Shows the selected channel from the Render Target"),
+                EditorGUIUtility.TrTextContent("G", "Shows the selected channel from the Render Target"),
+                EditorGUIUtility.TrTextContent("B", "Shows the selected channel from the Render Target"),
+                EditorGUIUtility.TrTextContent("A", "Shows the selected channel from the Render Target"),
+            };
+
             internal static readonly GUIContent s_LevelsHeader = EditorGUIUtility.TrTextContent("Levels", "Render target display black/white intensity levels");
             internal static readonly GUIContent[] s_MRTLabels = new[]
             {

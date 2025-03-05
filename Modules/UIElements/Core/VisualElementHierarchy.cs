@@ -604,6 +604,12 @@ namespace UnityEngine.UIElements
                     throw new ArgumentOutOfRangeException("Index out of range: " + index);
 
                 var child = m_Owner.m_Children[index];
+
+                if (child.elementPanel is RuntimePanel { isFlat: false } runtimePanel)
+                {
+                    WorldSpaceDataStore.ClearWorldSpaceData(child);
+                }
+
                 child.InvokeHierarchyChanged(HierarchyChangeType.RemovedFromParent);
                 RemoveChildAtIndex(index);
 
@@ -643,6 +649,12 @@ namespace UnityEngine.UIElements
                     // the panel may trigger modifications (DetachFromPanelEvent callback)
                     // of the same list while we are in the foreach loop.
                     var elements = VisualElementListPool.Copy(m_Owner.m_Children);
+
+                    if (m_Owner.elementPanel is RuntimePanel { isFlat: false } runtimePanel)
+                    {
+                        foreach (var child in m_Owner.m_Children)
+                            WorldSpaceDataStore.ClearWorldSpaceData(child);
+                    }
 
                     ReleaseChildList();
                     m_Owner.layoutNode.Clear();
@@ -935,8 +947,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public T GetFirstOfType<T>() where T : class
         {
-            T casted = this as T;
-            if (casted != null)
+            if (this is T casted)
                 return casted;
             return GetFirstAncestorOfType<T>();
         }
@@ -949,8 +960,7 @@ namespace UnityEngine.UIElements
             VisualElement ancestor = hierarchy.parent;
             while (ancestor != null)
             {
-                T castedAncestor = ancestor as T;
-                if (castedAncestor != null)
+                if (ancestor is T castedAncestor)
                 {
                     return castedAncestor;
                 }

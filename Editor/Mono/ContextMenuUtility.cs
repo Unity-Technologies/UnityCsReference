@@ -169,10 +169,15 @@ namespace UnityEditor.Actions
         internal static DropdownMenu CreateActionMenu()
         {
             var contextMenu = new DropdownMenu();
+
+            Menu.CreateActionMenuBegin();
+
             EditorToolManager.activeToolContext.PopulateMenu(contextMenu);
             AddMenuItemsForType(contextMenu, ToolManager.activeContextType, EditorToolManager.activeToolContext.targets);
             EditorToolManager.activeTool.PopulateMenu(contextMenu);
             AddMenuItemsForType(contextMenu, ToolManager.activeToolType, EditorToolManager.activeTool.targets);
+
+            Menu.CreateActionMenuEnd();
 
             return contextMenu;
         }
