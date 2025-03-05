@@ -105,6 +105,8 @@ namespace UnityEngine.UIElements
 
             m_CollectionView.m_PreviousRefreshedCount = m_CollectionView.itemsSource?.Count ?? 0;
 
+            // During Refresh we expect that the source may have changed so we need to unbind
+            // all the active items and either reuse them or release them. (UUM-78825)
             for (var i = 0; i < m_ActiveItems.Count; i++)
             {
                 var index = firstVisibleIndex + i;
@@ -127,18 +129,18 @@ namespace UnityEngine.UIElements
                     if (!hasValidBindings)
                         continue;
 
+                    if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
+                    {
+                        m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
+                    }
+
                     // Rebind visible items.
                     if (isVisible || alwaysRebindOnRefresh)
                     {
-                        if (recycledItem.index != ReusableCollectionItem.UndefinedIndex)
-                        {
-                            m_CollectionView.viewController.InvokeUnbindItem(recycledItem, recycledItem.index);
-                        }
-
                         Setup(recycledItem, index);
                     }
                 }
-                else if (isVisible)
+                else
                 {
                     ReleaseItem(i--);
                 }

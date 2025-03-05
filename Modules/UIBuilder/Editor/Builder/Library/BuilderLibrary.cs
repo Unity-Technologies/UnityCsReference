@@ -101,6 +101,7 @@ namespace Unity.UI.Builder
             m_HeaderButtonStrip = this.Q<ToggleButtonGroup>();
 
             m_SearchField = this.Q<ToolbarSearchField>(k_SearchFieldName);
+            m_SearchField.textInputField.maxLength = BuilderConstants.LibrarySearchFieldMaxLength;
             m_SearchField.RegisterValueChangedCallback(e => UpdateSearchFilter(e.newValue));
 
             m_NoResultsLabel = this.Q<Label>(k_NoResultsName);
@@ -183,7 +184,7 @@ namespace Unity.UI.Builder
         {
             var newValue = !m_PaneWindow.document.fileSettings.editorExtensionMode;
             m_PaneWindow.document.fileSettings.editorExtensionMode = newValue;
-            m_Selection.NotifyOfStylingChangePostStylingUpdate();
+            m_Selection.NotifyOfHierarchyChange(m_PaneWindow.document);
             SwitchLibraryTab(BuilderLibraryTab.Standard);
 
             if (newValue)

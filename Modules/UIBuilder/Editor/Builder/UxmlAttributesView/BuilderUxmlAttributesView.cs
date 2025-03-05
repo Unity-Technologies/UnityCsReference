@@ -2190,6 +2190,10 @@ namespace Unity.UI.Builder
 
             // Clear override.
             var styleRow = GetLinkedStyleRow(fieldElement);
+
+            // Some fields dont have a style row, e.g Name field.
+            if (styleRow == null)
+                return;
             styleRow.RemoveFromClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
 
             if (currentFieldSource == AttributeFieldSource.UxmlTraits)
@@ -2501,14 +2505,16 @@ namespace Unity.UI.Builder
         }
         #pragma warning restore CS0618 // Type or member is obsolete
 
-        public virtual void CallDeserializeOnElement()
+        public void CallDeserializeOnElement(VisualElement element = null)
         {
             if (currentFieldSource == AttributeFieldSource.UxmlTraits || uxmlSerializedData == null)
                 return;
 
+            element ??= m_CurrentElement;
+
             // We need to clear bindings before calling Init to avoid corrupting the data source.
-            BuilderBindingUtility.ClearUxmlBindings(m_CurrentElement);
-            uxmlSerializedData.Deserialize(m_CurrentElement, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
+            BuilderBindingUtility.ClearUxmlBindings(element);
+            uxmlSerializedData.Deserialize(element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
         }
 
         internal void CallInitOnElement()
@@ -2802,11 +2808,22 @@ namespace Unity.UI.Builder
                         var elementsToChange = templateContainerParent.Query<VisualElement>(currentVisualElementName);
                         elementsToChange.ForEach(x =>
                         {
-                            var templateVea =
-                                x.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) as VisualElementAsset;
-                            var attributeOverrides =
-                                BuilderAssetUtilities.GetAccumulatedAttributeOverrides(m_CurrentElement);
-                            CallInitOnTemplateChild(x, templateVea, attributeOverrides);
+                            var templateVea = x.GetVisualElementAssetInTemplate();
+
+                            if (templateVea == null)
+                                return;
+
+                            if (currentFieldSource == AttributeFieldSource.UxmlSerializedData)
+                            {
+                                UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(m_UxmlDocument), false);
+                                CallDeserializeOnElement(x);
+                            }
+                            else
+                            {
+                                var attributeOverrides =
+                                    BuilderAssetUtilities.GetAccumulatedAttributeOverrides(m_CurrentElement);
+                                CallInitOnTemplateChild(x, templateVea, attributeOverrides);
+                            }
                         });
                     }
                 }

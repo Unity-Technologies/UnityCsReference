@@ -228,6 +228,33 @@ namespace Unity.UI.Builder
             return vea;
         }
 
+        public static VisualTreeAsset GetInstancedVisualTreeAsset(this VisualElement element)
+        {
+            if (element == null)
+                return null;
+
+            var obj = element.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName);
+            if (obj == null)
+                return null;
+
+            var vta = obj as VisualTreeAsset;
+            return vta;
+        }
+
+        public static VisualElementAsset GetVisualElementAssetInTemplate(this VisualElement element)
+        {
+            if (element == null)
+                return null;
+
+            var obj = element.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName);
+
+            if (obj == null)
+                return null;
+
+            var vea = obj as VisualElementAsset;
+            return vea;
+        }
+
         public static void SetVisualElementAsset(this VisualElement element, VisualElementAsset vea)
         {
             element.SetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName, vea);
@@ -289,6 +316,10 @@ namespace Unity.UI.Builder
             var vea = element.GetVisualElementAsset();
             if (vea != null)
                 return vea.IsSelected();
+
+            var veaInTemplate = element.GetVisualElementAssetInTemplate();
+            if (veaInTemplate != null)
+                return veaInTemplate.IsSelected();
 
             var styleSheet = element.GetStyleSheet();
             if (styleSheet != null)

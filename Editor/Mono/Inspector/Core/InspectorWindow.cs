@@ -54,6 +54,11 @@ namespace UnityEditor
                 inspector.PopupPreviewWindow();
             }
 
+            public static void DockPreviewWindow(InspectorWindow inspector)
+            {
+                inspector.DockPreviewWindow();
+            }
+
             public static PreviewWindow GetPreviewWindow(InspectorWindow inspector)
             {
                 return inspector.m_PreviewWindow;
@@ -330,6 +335,9 @@ namespace UnityEditor
             return m_PreviewWindow == null;
         }
 
+        /// <summary>
+        /// Finalize IMGUI based inspectors.
+        /// </summary>
         protected override void EndDrawPreviewAndLabels(Event evt, Rect rect, Rect dragRect)
         {
             if (m_HasPreview || m_PreviewWindow != null)
@@ -345,13 +353,11 @@ namespace UnityEditor
                         {
                             if (m_PreviewWindow == null)
                             {
-                                hasFloatingPreviewWindow = true;
-                                DetachPreview(false);
+                                PopupPreviewWindow(exitGUI: false);
                             }
                             else
                             {
-                                m_PreviewWindow.Close();
-                                hasFloatingPreviewWindow = false;
+                                DockPreviewWindow();
                             }
                         });
                     menu.AddItem(
@@ -370,9 +376,12 @@ namespace UnityEditor
 
             // Detach preview on right click in preview title bar
             if (evt.type == EventType.MouseUp && evt.button == 1 && rect.Contains(evt.mousePosition) && m_PreviewWindow == null)
-                DetachPreview();
+                PopupPreviewWindow(exitGUI: true);
         }
 
+        /// <summary>
+        /// Creates the ellipsis menu for UITK based inspectors.
+        /// </summary>
         protected override void CreatePreviewEllipsisMenu()
         {
             if (previewWindow == null)
@@ -395,14 +404,13 @@ namespace UnityEditor
                     }
                     else
                     {
-                        hasFloatingPreviewWindow = false;
-                        m_PreviewWindow.Close();
+                        DockPreviewWindow();
 
                         previewContainer.style.display = DisplayStyle.Flex;
                         draglineAnchor.style.display = DisplayStyle.Flex;
                     }
                 },
-                a => hasFloatingPreviewWindow ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
+                a => DropdownMenuAction.Status.Normal);
 
             previewWindow.AppendActionToEllipsisMenu(
                 "Minimize in Inspector",
@@ -424,11 +432,15 @@ namespace UnityEditor
             PopupPreviewWindow();
         }
 
-        void PopupPreviewWindow()
+        void PopupPreviewWindow(bool exitGUI = false)
         {
-            DetachPreview(false);
-            hasFloatingPreviewWindow = true;
+            DetachPreview(exitGUI);
             previewWindow.parent?.Remove(previewWindow);
+        }
+
+        void DockPreviewWindow()
+        {
+            m_PreviewWindow?.Close();
         }
 
         private void DetachPreview(bool exitGUI = true)

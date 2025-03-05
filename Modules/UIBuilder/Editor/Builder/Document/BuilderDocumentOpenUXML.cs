@@ -8,7 +8,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using System;
 using System.IO;
+using System.Text;
 using UnityEditor.UIElements;
+using UnityEngine.Pool;
 using UnityEngine.Serialization;
 using Object = UnityEngine.Object;
 
@@ -27,6 +29,12 @@ namespace Unity.UI.Builder
 
         [SerializeField]
         string m_OpenendVisualTreeAssetOldPath;
+
+        [SerializeField]
+        private string m_UxmlPreview;
+
+        [SerializeField]
+        private int m_ContentHash;
 
         [SerializeField, FormerlySerializedAs("m_VisualTreeAsset")]
         LazyLoadReference<VisualTreeAsset> m_VisualTreeAssetRef;
@@ -61,6 +69,12 @@ namespace Unity.UI.Builder
 
         // Used in tests
         internal bool isBackupSet => m_VisualTreeAssetBackup != null;
+
+        internal static Func<string, int> s_UnsavedChangesDialogCallback = PromptForUnsavedChanges;
+        internal static Action<string, string> s_WriteToDiskCallback = WriteToDisk;
+        internal static Func<string, string, string> s_SaveFileDialogCallback = DisplaySaveFileDialogForTempFile;
+        internal static int s_UxmlTempFileCounter = 1;
+        internal static int s_UssTempFileCounter = 1;
 
         public BuilderUXMLFileSettings fileSettings => m_FileSettings ?? (m_FileSettings = new BuilderUXMLFileSettings(visualTreeAsset));
 
@@ -149,6 +163,8 @@ namespace Unity.UI.Builder
             }
         }
 
+        public string uxmlPreview => m_UxmlPreview;
+
         public VisualTreeAsset visualTreeAsset
         {
             get
@@ -161,6 +177,7 @@ namespace Unity.UI.Builder
                 else
                     m_VisualTreeAsset = VisualTreeAssetUtilities.CreateInstance();
 
+                m_ContentHash = m_VisualTreeAsset.contentHash;
                 return m_VisualTreeAsset;
             }
         }
@@ -241,6 +258,8 @@ namespace Unity.UI.Builder
             }
         }
 
+        bool m_IsLoadQueued;
+
         //
         // Initialize / Construct / Enable / Clear
         //
@@ -265,8 +284,14 @@ namespace Unity.UI.Builder
                 m_VisualTreeAssetRef = null;
             }
 
-            m_OpenUSSFiles.Clear();
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                openUSSFile.Clear();
+            }
 
+            m_OpenUSSFiles.Clear();
+            m_UxmlPreview = string.Empty;
+            m_ContentHash = 0;
             m_Settings = null;
         }
 
@@ -404,7 +429,7 @@ namespace Unity.UI.Builder
             ClearUndo();
 
             var startTime = DateTime.UtcNow;
-            var savedUSSFiles = new List<BuilderDocumentOpenUSS>();
+            using var pool = ListPool<BuilderDocumentOpenUSS>.Get(out var savedUSSFiles);
 
             // Save USS files.
             foreach (var openUSSFile in m_OpenUSSFiles)
@@ -434,9 +459,20 @@ namespace Unity.UI.Builder
 
                 if (shouldSave)
                 {
-                    WriteUXMLToFile(newUxmlPath, uxmlText);
+                    BuilderAssetUtilities.WriteTextFileToDisk(newUxmlPath, uxmlText);
                 }
             }
+
+            needsFullRefresh |= ReloadDocument(documentRootElement, newUxmlPath, savedUSSFiles);
+            var assetSize = uxmlText?.Length ?? 0;
+            BuilderAnalyticsUtility.SendSaveEvent(startTime, this, newUxmlPath, assetSize);
+
+            return true;
+        }
+
+        bool ReloadDocument(VisualElement documentRootElement, string newUxmlPath, List<BuilderDocumentOpenUSS> savedUSSFiles)
+        {
+            var needsFullRefresh = false;
 
             // Once we wrote all the files to disk, we refresh the DB and reload
             // the files from the AssetDatabase.
@@ -481,11 +517,7 @@ namespace Unity.UI.Builder
                 ReloadDocumentToCanvas(documentRootElement);
 
             hasUnsavedChanges = false;
-
-            var assetSize = uxmlText?.Length ?? 0;
-            BuilderAnalyticsUtility.SendSaveEvent(startTime, this, newUxmlPath, assetSize);
-
-            return true;
+            return needsFullRefresh;
         }
 
         private void SetInlineStyleRecursively(VisualElement ve)
@@ -576,17 +608,47 @@ namespace Unity.UI.Builder
 
             if (assetModifiedExternally)
             {
-                // TODO: Nothing can be done here yet, other than telling the user
-                // what just happened. Adding the ability to save unsaved changes
-                // after a file has been modified externally will require some
-                // major changes to the document flow.
-                var promptTitle = string.Format(BuilderConstants.SaveDialogExternalChangesPromptTitle,
-                    uxmlPath);
-                BuilderDialogsUtility.DisplayDialog(
-                    promptTitle,
-                    BuilderConstants.SaveDialogExternalChangesPromptMessage);
+                // We can use the UXML and USS previews to detect if a change was really made externally. If not, we can
+                // restore the unsaved changes automatically. If a change was really made, then we offer the user with
+                // the choice of either keeping the UI Builder unsaved changes, use the external changes, or save the
+                // work in progress in the UI Builder to a temporary file and use the external changes.
+                var ussWasModified = false;
+                foreach (var openUssFiles in m_OpenUSSFiles)
+                {
+                    var h = new Hash128();
+                    byte[] b = Encoding.UTF8.GetBytes(openUssFiles.ussPreview);
+                    if (b.Length > 0)
+                    {
+                        HashUtilities.ComputeHash128(b, ref h);
+                    }
 
-                return true;
+                    if (openUssFiles.contentHash != h.GetHashCode())
+                    {
+                        ussWasModified = true;
+                        break;
+                    }
+                }
+
+                if (m_ContentHash == visualTreeAsset.contentHash && !ussWasModified)
+                {
+                    RestoreUnsavedChanges();
+                    return false;
+                }
+
+                var promptTitle = string.Format(BuilderConstants.SaveDialogExternalChangesPromptTitle, uxmlPath);
+                var result = s_UnsavedChangesDialogCallback.Invoke(promptTitle);
+
+                switch (result)
+                {
+                    case 0:
+                        RestoreUnsavedChanges();
+                        return false;
+                    case 1:
+                        return true;
+                    case 2:
+                        WritePreviewToDiskAndUseExternalChanges();
+                        return true;
+                }
             }
             else
             {
@@ -634,6 +696,7 @@ namespace Unity.UI.Builder
             m_VisualTreeAssetBackup = visualTreeAsset.DeepCopy();
             m_VisualTreeAsset = visualTreeAsset;
             m_VisualTreeAssetRef = visualTreeAsset;
+            m_ContentHash = m_VisualTreeAsset.contentHash;
 
             // Re-stamp orderInDocument values using BuilderConstants.VisualTreeAssetOrderIncrement
             VisualTreeAssetUtilities.ReOrderDocument(visualTreeAsset);
@@ -647,6 +710,8 @@ namespace Unity.UI.Builder
             m_Settings = BuilderDocumentSettings.CreateOrLoadSettingsObject(m_Settings, uxmlPath);
 
             ReloadDocumentToCanvas(documentElement);
+            GenerateUxmlPreview();
+            GenerateUssPreview();
         }
 
         public void PostLoadDocumentStyleSheetCleanup()
@@ -711,7 +776,16 @@ namespace Unity.UI.Builder
             if (EditorWindow.HasOpenInstances<Builder>())
             {
                 // LoadVisualTreeAsset needs to be delayed to ensure that this is called later, while in a correct state.
-                EditorApplication.delayCall += () => LoadVisualTreeAsset(newVisualTreeAsset);
+                // If there isn't already a call to LoadVisualTreeAsset in the queue, we add one.
+                if (!m_IsLoadQueued)
+                {
+                    EditorApplication.delayCall += () =>
+                    {
+                        m_IsLoadQueued = false;
+                        LoadVisualTreeAsset(newVisualTreeAsset);
+                    };
+                    m_IsLoadQueued = true;
+                }
             }
         }
 
@@ -736,6 +810,19 @@ namespace Unity.UI.Builder
         // Serialization
         //
 
+        internal void GenerateUxmlPreview()
+        {
+            m_UxmlPreview = visualTreeAsset.GenerateUXML(uxmlPath, true); // Set this to false to see the special selection elements and attributes.
+        }
+
+        void GenerateUssPreview()
+        {
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                openUSSFile.GeneratePreview();
+            }
+        }
+
         void ValidateActiveStyleSheet()
         {
             bool found = false;
@@ -756,7 +843,7 @@ namespace Unity.UI.Builder
         // Serialization
         //
 
-        public void OnAfterBuilderDeserialize(VisualElement documentRootElement)
+        public void OnAfterBuilderDeserialize(VisualElement documentRootElement, bool restoringUnsavedChanges = false)
         {
             // Refresh StyleSheets.
             var styleSheetsUsed = visualTreeAsset.GetAllReferencedStyleSheets();
@@ -773,7 +860,7 @@ namespace Unity.UI.Builder
                     continue;
                 }
 
-                m_OpenUSSFiles[i].Set(styleSheetsUsed[i], null);
+                m_OpenUSSFiles[i].Set(styleSheetsUsed[i], null, !restoringUnsavedChanges);
             }
 
             while (m_OpenUSSFiles.Count > styleSheetsUsed.Count)
@@ -814,6 +901,22 @@ namespace Unity.UI.Builder
         // Private Utilities
         //
 
+        internal static int PromptForUnsavedChanges(string promptTitle)
+        {
+            var result = BuilderDialogsUtility.DisplayDialogComplex(promptTitle,
+                BuilderConstants.SaveDialogExternalChangesPromptMessage,
+                BuilderConstants.SaveDialogExternalChangedOkButton,
+                BuilderConstants.SaveDialogExternalChangedCancelButton,
+                BuilderConstants.SaveDialogExternalChangedAltButton);
+
+            return result;
+        }
+
+        static void WriteToDisk(string path, string content)
+        {
+            BuilderAssetUtilities.WriteTextFileToDisk(path, content);
+        }
+
         public void RestoreAssetsFromBackup()
         {
             foreach (var openUSSFile in m_OpenUSSFiles)
@@ -822,6 +925,8 @@ namespace Unity.UI.Builder
             if (m_VisualTreeAsset != null && m_VisualTreeAssetBackup != null)
             {
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
+                m_ContentHash = m_VisualTreeAsset.contentHash;
+
                 EditorUtility.SetDirty(visualTreeAsset);
                 if (hasUnsavedChanges && !isAnonymousDocument)
                 {
@@ -831,6 +936,56 @@ namespace Unity.UI.Builder
             }
 
             hasUnsavedChanges = false;
+        }
+
+        public void RestoreUnsavedChanges()
+        {
+            ClearUndo();
+            ClearBackups();
+
+            // Save USS files.
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                // Reimport with the uss preview from the UI Builder.
+                openUSSFile.RestoreUnsavedChanges();
+            }
+
+            // Reimport the uxml preview from the UI Builder.
+            var uxmlImporter = new BuilderVisualTreeAssetImporter();
+            uxmlImporter.ImportXmlFromString(uxmlPreview, out var restoredVisualTreeAsset);
+            restoredVisualTreeAsset.DeepOverwrite(visualTreeAsset);
+
+            OnAfterBuilderDeserialize(m_CurrentDocumentRootElement, true);
+
+            hasUnsavedChanges = true;
+        }
+
+        void WritePreviewToDiskAndUseExternalChanges()
+        {
+            // Write the current preview to disk in a TEMP file using timestamp to avoid conflicts.
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                // Ask user for path
+                var indexOfLastSlash = openUSSFile.assetPath.LastIndexOf("/");
+                var ussFileName = openUSSFile.assetPath.Substring(indexOfLastSlash + 1, openUSSFile.assetPath.LastIndexOf(".") - indexOfLastSlash - 1);
+                var ussPath = s_SaveFileDialogCallback($"{ussFileName} ({s_UssTempFileCounter++}).backup", "uss");
+                if (ussPath == null)
+                    continue;
+                s_WriteToDiskCallback.Invoke(ussPath, openUSSFile.ussPreview);
+            }
+
+            var uxmlPath = s_SaveFileDialogCallback($"{visualTreeAsset.name} ({s_UxmlTempFileCounter++}).backup", "uxml");
+            if (uxmlPath == null)
+                return;
+            s_WriteToDiskCallback.Invoke(uxmlPath, uxmlPreview);
+        }
+
+        static string DisplaySaveFileDialogForTempFile(string defaultFileName, string extension)
+        {
+            var title = $"Save Temporary {extension.ToUpper()} File with UI Builder Changes";
+            var path = BuilderDialogsUtility.DisplaySaveFileDialog(
+                title, null, defaultFileName, extension);
+            return path;
         }
 
         // internal because it's used in tests
@@ -877,16 +1032,6 @@ namespace Unity.UI.Builder
             // This will only be null (not empty) if the UXML is invalid in some way.
             if (uxmlText == null)
                 return false;
-
-            return WriteUXMLToFile(uxmlPath, uxmlText);
-        }
-
-        bool WriteUXMLToFile(string uxmlPath, string uxmlText)
-        {
-            // Make sure the folders exist.
-            var uxmlFolder = Path.GetDirectoryName(uxmlPath);
-            if (!Directory.Exists(uxmlFolder))
-                Directory.CreateDirectory(uxmlFolder);
 
             return BuilderAssetUtilities.WriteTextFileToDisk(uxmlPath, uxmlText);
         }
@@ -1053,6 +1198,7 @@ namespace Unity.UI.Builder
             m_VisualTreeAsset = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(localUxmlPath);
             m_VisualTreeAssetRef = m_VisualTreeAsset;
             var newIsDifferentFromOld = m_VisualTreeAsset != oldVTAReference;
+            m_ContentHash = m_VisualTreeAsset.contentHash;
 
             // If we have a new uxmlPath, it means we're saving as and we need to reset the
             // original document to stock.
@@ -1075,7 +1221,11 @@ namespace Unity.UI.Builder
                 // Update hash. Otherwise we end up with the old overwritten contentHash
                 var hash = UXMLImporterImpl.GenerateHash(localUxmlPath);
                 m_VisualTreeAsset.contentHash = hash.GetHashCode();
+                m_ContentHash = m_VisualTreeAsset.contentHash;
             }
+
+            // Reset file settings
+            m_FileSettings.SetRootElementAsset(m_VisualTreeAsset);
 
             return needsFullRefresh;
         }
