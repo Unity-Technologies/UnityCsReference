@@ -144,13 +144,36 @@ namespace UnityEditor.UIElements
             // Ignore UI Builder types
             var builderAssembly = GetType().Assembly;
 
-            foreach (var t in TypeCache.GetTypesDerivedFrom(m_BaseType))
+            foreach (var t in GetTypesDerivedFrom(m_BaseType))
             {
                 if (t.IsGenericType || t.Assembly == builderAssembly)
                     continue;
 
                 m_Assemblies.Add(t.Assembly);
                 yield return t;
+            }
+        }
+
+        static IEnumerable<Type> GetTypesDerivedFrom(Type type)
+        {
+            if (type != typeof(object))
+            {
+                foreach (var t in TypeCache.GetTypesDerivedFrom(type))
+                {
+                    yield return t;
+                }
+            }
+            else
+            {
+                // We need special handling for the System.Object type as TypeCache.GetTypesDerivedFrom(object) misses some types, such as primitives.
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    // Get all types in the assembly
+                    foreach (var t in assembly.GetTypes())
+                    {
+                        yield return t;
+                    }
+                }
             }
         }
 

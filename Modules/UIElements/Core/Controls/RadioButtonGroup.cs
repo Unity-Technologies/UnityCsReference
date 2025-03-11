@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using Unity.Properties;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -75,7 +75,7 @@ namespace UnityEngine.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (RadioButtonGroup)ve;
-                f.choices = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
+                f.choicesList = UxmlUtility.ParseStringListAttribute(m_Choices.GetValueFromBag(bag, cc));
             }
         }
 
@@ -91,90 +91,144 @@ namespace UnityEngine.UIElements
         /// USS class name of container element of this type.
         /// </summary>
         public static readonly string containerUssClassName = ussClassName + "__container";
+        /// <summary>
+        /// Name of the content container element of this type.
+        /// </summary>
+        internal static readonly string containerName =  "contentContainer";
+        /// <summary>
+        /// Name of the container element where the RadioButtons created from choices are added.
+        /// </summary>
+        internal static readonly string choicesContainerName =  "choicesContentContainer";
 
-        List<RadioButton> m_RadioButtons = new List<RadioButton>();
+        VisualElement m_ChoiceRadioButtonContainer;
+        VisualElement m_ContentContainer;
+        UQueryBuilder<RadioButton> m_GetAllRadioButtonsQuery;
+
+        /// <summary>
+        /// List of all RadioButtons registered to this RadioButtonGroup.
+        /// </summary>
+        /// <see cref="choices"/>
+        readonly List<RadioButton> m_RegisteredRadioButtons = new();
+
+        /// <summary>
+        /// The selected RadioButton.
+        /// </summary>
+        RadioButton m_SelectedRadioButton;
+
         EventCallback<ChangeEvent<bool>> m_RadioButtonValueChangedCallback;
+
+        private bool m_UpdatingButtons;
+
+        private List<string> m_Choices = new();
 
         /// <summary>
         /// The list of available choices in the group.
         /// </summary>
         /// <remarks>
-        /// Writing to this property removes existing <see cref="RadioButton"/> elements and
-        /// re-creates them to display the new list.
+        /// Writing to this property removes existing <see cref="RadioButton"/> elements, except those added explicitly
+        /// to hierarchy, and re-creates them to display the new list.
         /// </remarks>
         [CreateProperty]
         public IEnumerable<string> choices
         {
             get
             {
-                foreach (var radioButton in m_RadioButtons)
+                using var _ = ListPool<RadioButton>.Get(out var radioButtons);
+
+                GetAllRadioButtons(radioButtons);
+
+                foreach( var button in radioButtons)
                 {
-                    yield return radioButton.text;
+                    yield return button.text;
                 }
             }
             set
             {
-                if (!value.HasValues())
-                {
-                    m_RadioButtonContainer.Clear();
-
-                    // Only need to clear radio buttons if we're attached to a panel, because we already
-                    // do the cleaning on detach to panel otherwise.
-                    if (panel != null)
-                    {
-                        return;
-                    }
-
-                    foreach (var radioButton in m_RadioButtons)
-                    {
-                        radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-                    }
-                    m_RadioButtons.Clear();
-
+                if ((value != null && AreListEqual(m_Choices, value))
+                    || (value == null && m_Choices.Count == 0))
                     return;
-                }
 
-                var i = 0;
-                foreach (var choice in value)
+                m_Choices.Clear();
+
+                if (value != null)
+                    m_Choices.AddRange(value);
+                RebuildRadioButtonsFromChoices();
+                NotifyPropertyChanged(choicesProperty);
+                return;
+
+                bool AreListEqual(List<string> list1, IEnumerable<string> list2)
                 {
-                    if (i < m_RadioButtons.Count)
+                    var list2Count = 0;
+
+                    using (var enumerator = list2.GetEnumerator())
                     {
-                        m_RadioButtons[i].text = choice;
-                        m_RadioButtonContainer.Insert(i, m_RadioButtons[i]);
+                        while (enumerator.MoveNext())
+                        {
+                            list2Count++;
+                        }
+                    }
+
+                    if (list1.Count != list2Count)
+                        return false;
+
+                    var i = 0;
+                    using (var enumerator = list2.GetEnumerator())
+                    {
+                        while (enumerator.MoveNext())
+                        {
+                            if (!string.Equals(list1[i], enumerator.Current))
+                                return false;
+                            ++i;
+                        }
+                    }
+
+                    return true;
+                }
+            }
+        }
+
+        private void RebuildRadioButtonsFromChoices()
+        {
+            if (m_Choices.Count == 0)
+            {
+                m_ChoiceRadioButtonContainer.Clear();
+            }
+            else
+            {
+                var i = 0;
+                foreach (var choice in m_Choices)
+                {
+                    if (i < m_ChoiceRadioButtonContainer.childCount)
+                    {
+                        (m_ChoiceRadioButtonContainer[i] as RadioButton).text = choice;
+                        ScheduleRadioButtons();
                     }
                     else
                     {
                         var radioButton = new RadioButton { text = choice };
-                        radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-                        m_RadioButtons.Add(radioButton);
-                        m_RadioButtonContainer.Add(radioButton);
-                    }
 
+                        m_ChoiceRadioButtonContainer.Add(radioButton);
+                    }
                     i++;
                 }
 
-                var lastIndex = m_RadioButtons.Count - 1;
+                var lastIndex = m_ChoiceRadioButtonContainer.childCount - 1;
                 for (var j = lastIndex; j >= i; j--)
                 {
-                    // RadioButton will be removed from m_RadioButton in the OnOptionRemoved method below.
+                    // RadioButton will be removed from m_ChoiceRadioButtons in the OnOptionRemoved method below.
                     // The value change callback will be unregistered there as well.
-                    m_RadioButtons[j].RemoveFromHierarchy();
+                    m_ChoiceRadioButtonContainer[j].RemoveFromHierarchy();
                 }
-
-                UpdateRadioButtons();
-                NotifyPropertyChanged(choicesProperty);
             }
         }
 
         internal List<string> choicesList
         {
-            get => choices.ToList();
+            get => m_Choices;
             set => choices = value;
         }
 
-        VisualElement m_RadioButtonContainer;
-
-        public override VisualElement contentContainer => m_RadioButtonContainer ?? this;
+        public override VisualElement contentContainer => m_ContentContainer ?? this;
 
         /// <summary>
         /// Initializes and returns an instance of RadioButtonGroup.
@@ -192,9 +246,16 @@ namespace UnityEngine.UIElements
         {
             AddToClassList(ussClassName);
 
-            visualInput.Add(m_RadioButtonContainer = new VisualElement { name = containerUssClassName });
-            m_RadioButtonContainer.AddToClassList(containerUssClassName);
+            visualInput.Add(m_ChoiceRadioButtonContainer = new VisualElement { name = choicesContainerName });
+            m_ChoiceRadioButtonContainer.AddToClassList(containerUssClassName);
+
+            visualInput.Add(m_ContentContainer = new VisualElement { name = containerName });
+            m_ContentContainer.AddToClassList(containerUssClassName);
+
+            m_GetAllRadioButtonsQuery = this.Query<RadioButton>();
+
             m_RadioButtonValueChangedCallback = RadioButtonValueChangedCallback;
+
             choices = radioButtonChoices;
             value = -1;
             visualInput.focusable = false;
@@ -203,9 +264,16 @@ namespace UnityEngine.UIElements
 
         void RadioButtonValueChangedCallback(ChangeEvent<bool> evt)
         {
+            if (m_UpdatingButtons)
+                return;
+
             if (evt.newValue)
             {
-                value = m_RadioButtons.IndexOf(evt.target as RadioButton);
+                var radioButton = evt.target as RadioButton;
+                using var _ = ListPool<RadioButton>.Get(out var radioButtons);
+                GetAllRadioButtons(radioButtons);
+
+                value = radioButtons.IndexOf(radioButton);
                 evt.StopPropagation();
             }
         }
@@ -216,40 +284,87 @@ namespace UnityEngine.UIElements
             UpdateRadioButtons();
         }
 
+        /// <summary>
+        /// Returns the list of all radio buttons sorted according their hierarchical order.
+        /// </summary>
+        /// <returns>Returns the list of sorted radio buttons</returns>
+        void GetAllRadioButtons(List<RadioButton> radioButtons)
+        {
+            radioButtons.Clear();
+            m_GetAllRadioButtonsQuery.ForEach(radioButtons.Add);
+        }
+
+        /// <summary>
+        /// Updates the toggled state of the all radio buttons according to the current value of this field.
+        /// The RadioButton at the index specified by the value gets toggled while the others get untoggled.
+        /// This index is relative to the list of all radio buttons (generated from choices or explicitly added
+        /// to the hierarchy).
+        /// All the buttons get untoggled if the index is out of bound.
+        /// </summary>
         void UpdateRadioButtons()
         {
-            if (value >= 0 && value < m_RadioButtons.Count)
+            if (panel == null)
+                return;
+
+            using var _ = ListPool<RadioButton>.Get(out var radioButtons);
+            GetAllRadioButtons(radioButtons);
+
+            m_SelectedRadioButton = null;
+            if (value >= 0 && value < radioButtons.Count)
             {
-                m_RadioButtons[value].value = true;
+                m_SelectedRadioButton = radioButtons[value];
+                m_SelectedRadioButton.value = true;
             }
             else
             {
-                foreach (var radioButton in m_RadioButtons)
+                foreach (var radioButton in radioButtons)
                 {
                     radioButton.value = false;
                 }
             }
+
+            m_UpdatingButtons = false;
+        }
+
+        void ScheduleRadioButtons()
+        {
+            if (m_UpdatingButtons)
+                return;
+            schedule.Execute(UpdateRadioButtons);
+            m_UpdatingButtons = true;
+        }
+
+        /// <summary>
+        /// Registers the specified RadioButton to this RadioButtonGroup.
+        /// </summary>
+        /// <param name="radioButton">The button to register</param>
+        private void RegisterRadioButton(RadioButton radioButton)
+        {
+            if (m_RegisteredRadioButtons.Contains(radioButton))
+                return;
+            m_RegisteredRadioButtons.Add(radioButton);
+            radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+            ScheduleRadioButtons();
+        }
+
+        /// <summary>
+        /// Unregister the specified RadioButton from this RadioButtonGroup.
+        /// </summary>
+        /// <param name="radioButton">The button to unregister</param>
+        private void UnregisterRadioButton(RadioButton radioButton)
+        {
+            if (!m_RegisteredRadioButtons.Contains(radioButton))
+                return;
+            m_RegisteredRadioButtons.Remove(radioButton);
+            radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+            ScheduleRadioButtons();
         }
 
         void IGroupBox.OnOptionAdded(IGroupBoxOption option)
         {
             if (!(option is RadioButton radioButton))
                 throw new ArgumentException("[UI Toolkit] Internal group box error. Expected a radio button element. Please report this using Help -> Report a bug...");
-
-            if (m_RadioButtons.Contains(radioButton))
-                return;
-
-            radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-            var indexInContainer = m_RadioButtonContainer.IndexOf(radioButton);
-            if (indexInContainer < 0 || indexInContainer > m_RadioButtons.Count)
-            {
-                m_RadioButtons.Add(radioButton);
-                m_RadioButtonContainer.Add(radioButton);
-            }
-            else
-            {
-                m_RadioButtons.Insert(indexInContainer, radioButton);
-            }
+            RegisterRadioButton(radioButton);
         }
 
         void IGroupBox.OnOptionRemoved(IGroupBoxOption option)
@@ -257,13 +372,13 @@ namespace UnityEngine.UIElements
             if (!(option is RadioButton radioButton))
                 throw new ArgumentException("[UI Toolkit] Internal group box error. Expected a radio button element. Please report this using Help -> Report a bug...");
 
-            var index = m_RadioButtons.IndexOf(radioButton);
-            radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-            m_RadioButtons.Remove(radioButton);
+            UnregisterRadioButton(radioButton);
 
-            // Reset value if the selected option is removed
-            if (value == index)
+            if (m_SelectedRadioButton == radioButton)
+            {
+                m_SelectedRadioButton = null;
                 value = -1;
+            }
         }
     }
 }

@@ -30,7 +30,7 @@ namespace UnityEditor
 
         private SettingsProvider[] m_Providers;
         private SettingsTreeView m_TreeView;
-        private VisualSplitter m_Splitter;
+        private TwoPaneSplitView m_Splitter;
         private VisualElement m_SettingsPanel;
         private VisualElement m_TreeViewContainer;
         private VisualElement m_Toolbar;
@@ -38,6 +38,7 @@ namespace UnityEditor
 
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
+        private const string k_MainSplitterViewDataKey =  "settings-main-splitter__view-data-key";
 
         private static class ImguiStyles
         {
@@ -362,7 +363,11 @@ namespace UnityEditor
             root.Add(m_Toolbar);
 
             m_SplitterFlex = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_Splitter)), m_SplitterFlex);
-            m_Splitter = new VisualSplitter { splitSize = Styles.window.GetInt("-unity-splitter-size") };
+            m_Splitter = new TwoPaneSplitView
+            {
+                name = "SettingsSplitter",
+                viewDataKey = k_MainSplitterViewDataKey
+            };
             m_Splitter.AddToClassList("settings-splitter");
             root.Add(m_Splitter);
             m_TreeViewContainer = new IMGUIContainer(DrawTreeView)
@@ -512,8 +517,8 @@ namespace UnityEditor
             if (m_TreeView == null)
                 InitProviders();
 
-            var splitterRect = m_Splitter.GetSplitterRect(m_Splitter.Children().First());
-            var splitterPos = splitterRect.xMax - (m_Splitter.splitSize / 2f);
+            var splitterRect = m_Splitter.fixedPane.layout;
+            var splitterPos = splitterRect.xMax;
             var treeWidth = splitterPos;
             using (var scrollViewScope = new GUILayout.ScrollViewScope(m_PosLeft, GUILayout.Width(splitterPos), GUILayout.MaxWidth(splitterPos), GUILayout.MinWidth(splitterPos)))
             {

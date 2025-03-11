@@ -1343,14 +1343,44 @@ namespace Unity.UI.Builder
 
         public void BeforeSelectionChanged()
         {
-            // Check whether the focused element is a field in the inspector. If so, then blur it immediately
-            // to commit its value (e.g: delayed text field such as the name field) before the selection changes
-            if (focusController is { focusedElement: VisualElement focusedElement } && Contains(focusedElement))
+            if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
+                return;
+
+            // If we are in undo/redo, we don't want to commit the current value in the text field
+            // Otherwise, the current value will override the value set by the undo stack.
+            var builder = paneWindow as Builder;
+            if (builder != null && builder.isInUndoRedo)
             {
-                focusedElement.BlurImmediately();
+                // Saving the value will ensure "esc" key will not revert the value to the previous value.
+                // Schedule because the value from undo is not yet set in the text edition.
+                schedule.Execute(() =>
+                {
+                    var textField = focusController?.selectedTextElement?.GetFirstAncestorOfType<TextField>();
+                    textField?.textEdition.SaveValueAndText();
+                });
+                return;
             }
 
-            // Force submit the pending committed value changes
+            // Ensures that the value in the field is committed before the selection changes.
+            // For example, a user sets a value in the text field and then clicks on another element.
+            var dimensionStyleField = focusedElement as DimensionStyleField;
+            var previousDispatchMode = dimensionStyleField?.dispatchMode;
+            try
+            {
+                if (dimensionStyleField != null)
+                {
+                    dimensionStyleField.dispatchMode = DispatchMode.Immediate;
+                }
+
+                // Commit the value in the field.
+                focusedElement.BlurImmediately();
+            }
+            finally
+            {
+                if (dimensionStyleField != null)
+                    dimensionStyleField.dispatchMode = previousDispatchMode.Value;
+            }
+
             m_AttributesSection.ProcessBatchedChanges();
         }
 

@@ -145,11 +145,20 @@ namespace UnityEditor.Search
 
         static void QuickSort(Span<T> input, int start, int end, IComparer<T> comparer)
         {
-            if (start < end)
+            var stack = new Stack<(int start, int end)>();
+            stack.Push((start, end));
+
+            while (stack.Count > 0)
             {
-                var pivot = Partition(input, start, end, comparer);
-                QuickSort(input, start, pivot - 1, comparer);
-                QuickSort(input, pivot + 1, end, comparer);
+                var (innerStart, innerEnd) = stack.Pop();
+                if (innerStart < innerEnd)
+                {
+                    var pivot = Partition(input, innerStart, innerEnd, comparer);
+
+                    // Push in reverse order so that (start, pivot-1) gets picked up first
+                    stack.Push((pivot+1, innerEnd));
+                    stack.Push((innerStart, pivot-1));
+                }
             }
         }
 

@@ -116,7 +116,7 @@ namespace UnityEditor.Search
             header.symbolSlots = Math.Max(stringCount * hashFactor, 1);
 
             var bytesPerString = GetStringByteSize(averageStringLength);
-            header.allocatedStringBytes = stringCount * bytesPerString;
+            header.allocatedStringBytes = Math.Max(stringCount * bytesPerString, stringLengthByteSize);
             header.usedStringBytes = stringLengthByteSize;
 
             var buffer = new byte[GetSymbolsByteSize(header.symbolSlots) + header.allocatedStringBytes];
@@ -352,7 +352,7 @@ namespace UnityEditor.Search
                     }
 
 
-                    if (m_Header.count + 1 >= m_Header.symbolSlots || m_Header.symbolSlots / (float)m_Header.count < PropertyStringTable.hashFactor)
+                    if (m_Header.count + 1 >= m_Header.symbolSlots || (m_Header.count > 0 && m_Header.symbolSlots / (float)m_Header.count < PropertyStringTable.hashFactor))
                     {
                         if (m_StringTable.autoGrow)
                         {
