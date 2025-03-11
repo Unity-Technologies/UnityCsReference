@@ -111,7 +111,7 @@ namespace UnityEditor.Build.Profile
 
         static void AddSingleBuildProfile(BuildProfileCard card, string preconfiguredSettingsVariantName, int preconfiguredSettingsVariant, string[] packagesToAdd)
         {
-            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName, preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
+            BuildProfileDataSource.CreateNewAssetWithName(card.platformId, card.displayName.Trim(), preconfiguredSettingsVariantName, preconfiguredSettingsVariant, packagesToAdd);
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,

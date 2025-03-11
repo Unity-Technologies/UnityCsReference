@@ -573,13 +573,6 @@ namespace UnityEngine.UIElements
                     return false;
             }
 
-            // Release pointer capture if capture element is not in a panel.
-            if (capturingElement.panel == null)
-            {
-                panel.ReleasePointer(pointerId);
-                return false;
-            }
-
             if (evt.target != null && evt.target != capturingElement)
             {
                 return false;

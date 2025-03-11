@@ -196,7 +196,7 @@ namespace UnityEditor
                 // If when fitted to screen, the tooltip would overlap the hover area
                 // (and thus potentially mouse) -- for example when the control is near
                 // the bottom of screen, place it atop of the hover area instead.
-                var fittedToScreen = ContainerWindow.FitRectToScreen(popupPosition, true, true);
+                var fittedToScreen = ContainerWindow.FitRectToMouseScreen(popupPosition, true, null);
                 if (fittedToScreen.Overlaps(m_hoverRect))
                 {
                     popupPosition.y = m_hoverRect.y - m_optimalSize.y - 10.0f;

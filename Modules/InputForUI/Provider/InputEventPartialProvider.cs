@@ -61,7 +61,7 @@ namespace UnityEngine.InputForUI
                         }
                         // Trust InputEvent character, which has already been filtered
                         // Some platforms like UWP send the character along with a KeyUp event. We don't want to dispatch TextInput events on KeyUp.
-                        else if (_ev.character != '\0' && _ev.type == EventType.KeyDown)
+                        if (_ev.character != '\0' && _ev.type == EventType.KeyDown)
                         {
                             EventProvider.Dispatch(Event.From(ToTextInputEvent(_ev)));
                         }

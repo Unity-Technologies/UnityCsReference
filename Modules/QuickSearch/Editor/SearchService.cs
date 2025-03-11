@@ -408,6 +408,9 @@ namespace UnityEditor.Search
                 try
                 {
                     var iterator = provider.fetchItems(context, allItems, provider);
+                    if (iterator == allItems)
+                        iterator = null;
+
                     PrepareProviderSession(provider, iterator, context);
                     ++fetchProviderCount;
                 }

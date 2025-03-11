@@ -461,7 +461,7 @@ namespace UnityEngine.UIElements
             rowElement.SetEnabled(isEnabled);
             rowElement.userData = data;
 
-            var itemContent = new VisualElement();
+            var itemContent = new VisualElement { pickingMode = PickingMode.Ignore };
             itemContent.AddToClassList(itemContentUssClassName);
 
             var checkElement = new VisualElement();

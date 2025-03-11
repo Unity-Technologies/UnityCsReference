@@ -470,7 +470,6 @@ namespace UnityEditor
         {
             if(!m_TypeToToolName.ContainsKey(toolType))
             {
-                Debug.LogError($"Terrain Tool of type {toolType} does not exist");
                 return;
             }
 
@@ -543,7 +542,6 @@ namespace UnityEditor
                     return index;
                 }
             }
-            Debug.LogError("GetPaintToolIndex: Cannot find tool '" + toolName + "'");
             return -1;
         }
 
@@ -1211,8 +1209,8 @@ namespace UnityEditor
 
                         s_ActiveTerrainToolIsEditorTool = true;
 
-                        // set it active in the overlay as well
-                        TerrainTransientToolbarOverlay.SetEditorToolActive((ITerrainPaintToolWithOverlays) paintTool);
+                        // set last selected tool here in case TerrainTransientToolbarOverlay is collapsed and needs to keep track of last selected tool
+                        TerrainTransientToolbarOverlay.s_LastSelectedTool = (ITerrainPaintToolWithOverlays)paintTool;
                     }
                     else
                     {

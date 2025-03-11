@@ -550,7 +550,7 @@ namespace UnityEditor.Search
                 if (!c || (c.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                     continue;
 
-                IndexProperty(documentIndex, "t", c.GetType().Name.ToLowerInvariant(), saveKeyword: true);
+                IndexTypes(c.GetType(), documentIndex, false);
 
                 if (options.properties)
                     IndexObject(documentIndex, c, options.dependencies);

@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Experimental.Rendering;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using System;
 
 namespace UnityEngine
 {
@@ -56,11 +57,10 @@ namespace UnityEngine
         extern internal static byte[] EncodeToR2DInternal(this Texture2D tex);
 
         [NativeMethod(Name = "ImageConversionBindings::LoadImage", IsFreeFunction = true)]
-        extern public static bool LoadImage([NotNull] this Texture2D tex, byte[] data, bool markNonReadable);
-        public static bool LoadImage(this Texture2D tex, byte[] data)
-        {
-            return LoadImage(tex, data, false);
-        }
+        extern public static bool LoadImage([NotNull] this Texture2D tex, ReadOnlySpan<byte> data, bool markNonReadable);
+        public static bool LoadImage(this Texture2D tex, ReadOnlySpan<byte> data) => tex.LoadImage(data, false);
+        public static bool LoadImage(this Texture2D tex, byte[] data, bool markNonReadable) => tex.LoadImage(new ReadOnlySpan<byte>(data), markNonReadable);
+        public static bool LoadImage(this Texture2D tex, byte[] data) => tex.LoadImage(new ReadOnlySpan<byte>(data), false);
 
         [FreeFunctionAttribute("ImageConversionBindings::EncodeArrayToTGA", true)]
         extern public static byte[] EncodeArrayToTGA(System.Array array, GraphicsFormat format, uint width, uint height, uint rowBytes = 0);

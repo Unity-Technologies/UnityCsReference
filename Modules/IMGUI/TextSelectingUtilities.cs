@@ -750,6 +750,12 @@ namespace UnityEngine
 
         protected internal void MoveAltCursorToPosition(Vector2 cursorPosition)
         {
+            // This action is invalid if the entire text is selected
+            if (cursorIndex == 0 && selectIndex == characterCount)
+            {
+                iAltCursorPos = -1;
+                return;
+            }
             int index = textHandle.GetCursorIndexFromPosition(cursorPosition);
             iAltCursorPos = Mathf.Min(characterCount, index);
         }

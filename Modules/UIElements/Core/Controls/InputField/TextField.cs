@@ -223,7 +223,17 @@ namespace UnityEngine.UIElements
 
             if (isDelayed && evt?.eventTypeId == FocusOutEvent.TypeId())
             {
-                value = text;
+                var oldDispatchMode = dispatchMode;
+                try
+                {
+                    dispatchMode = DispatchMode.Immediate;
+                    value = text;
+                }
+                finally
+                {
+                    dispatchMode = oldDispatchMode;
+
+                }
             }
         }
 
