@@ -138,6 +138,11 @@ namespace Unity.UI.Builder
                     documentElement.GetStyleComplexSelector() != null);
             evt.StopImmediatePropagation();
 
+            // Ensure selection only affects 1 element. In case of right-click on an item that is not part of the selection.
+            bool isSingleElementAffected = m_Selection.selectionCount == 1 || !m_Selection.selection.Contains(documentElement);
+
+            bool isValidRenameTarget = isValidTarget && isSingleElementAffected;
+
             evt.menu.AppendAction(
                 "Copy",
                 a =>
@@ -170,7 +175,7 @@ namespace Unity.UI.Builder
                     ReselectIfNecessary(documentElement);
                     m_PaneWindow.commandHandler.RenameSelection();
                 },
-                isValidTarget
+                isValidRenameTarget
                 ? DropdownMenuAction.Status.Normal
                 : DropdownMenuAction.Status.Disabled);
 
@@ -213,7 +218,8 @@ namespace Unity.UI.Builder
             var showOpenInPlaceAction = showOpenInIsolationAction;
             var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA;
             var showUnpackAction = isLinkedVEADirectChild;
-            var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.visualElementAssets.Contains(linkedVEA);
+            var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.visualElementAssets.Contains(linkedVEA) &&
+                                           isSingleElementAffected;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)
                 evt.menu.AppendSeparator();

@@ -141,8 +141,7 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = false;
 
             // If focus was given to this element from a mouse click or a Panel.Focus call, allow select on mouse up.
-            if (PointerDeviceState.GetPressedButtons(PointerId.mousePointerId) != 0 ||
-                m_TextElement.panel.contextType == ContextType.Editor && Event.current == null)
+            if (isClicking || m_TextElement.panel.contextType == ContextType.Editor && (Event.current == null || Event.current.type == EventType.Ignore))
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
 
             m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus && !isClicking);

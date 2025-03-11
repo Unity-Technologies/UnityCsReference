@@ -483,7 +483,7 @@ namespace Unity.UI.Builder
                 DeleteElementFromAsset(document, child, false);
             }
 
-            document.visualTreeAsset.RemoveElement(vea);
+            document.visualTreeAsset.RemoveElement(ve);
         }
 
         public static void TransferAssetToAsset(

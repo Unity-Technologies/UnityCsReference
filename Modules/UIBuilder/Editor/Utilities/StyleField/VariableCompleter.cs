@@ -19,7 +19,6 @@ namespace Unity.UI.Builder
         VariableInfoView m_DetailsView;
 
         public VariableCompleter(VariableEditingHandler handler)
-            : base(handler.variableField != null ? handler.variableField.textField : null)
         {
             m_Handler = handler;
             getFilterFromTextCallback = (text) => text != null ? text.TrimStart('-') : null;

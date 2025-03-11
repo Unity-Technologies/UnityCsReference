@@ -158,6 +158,7 @@ namespace UnityEngine
         {
             m_Content.SetTextWithoutNotify(text);
             textWithWhitespace = text;
+            UpdateTextHandle();
         }
 
         private void OnContentTextChangedHandle()
@@ -232,46 +233,21 @@ namespace UnityEngine
         }
 
         // Deletes previous text on the line
-        public bool DeleteLineBack()
-        {
-            var result = m_TextEditing.DeleteLineBack();
-            UpdateTextHandle();
-            return result;
-        }  
+        public bool DeleteLineBack() => m_TextEditing.DeleteLineBack();
 
         // Deletes the previous word
-        public bool DeleteWordBack()
-        {
-            var result = m_TextEditing.DeleteWordBack();
-            UpdateTextHandle();
-            return result;
-        } 
+        public bool DeleteWordBack() => m_TextEditing.DeleteWordBack();
 
         // Deletes the following word
-        public bool DeleteWordForward()
-        {
-            var result = m_TextEditing.DeleteWordForward();
-            UpdateTextHandle();
-            return result;
-        }
+        public bool DeleteWordForward() => m_TextEditing.DeleteWordForward();
 
         // perform a right-delete
-        public bool Delete()
-        {
-            var result = m_TextEditing.Delete();
-            UpdateTextHandle();
-            return result;
-        }
+        public bool Delete() => m_TextEditing.Delete();
 
         public bool CanPaste() => m_TextEditing.CanPaste();
 
         // Perform a left-delete
-        public bool Backspace()
-        {
-            var result = m_TextEditing.Backspace();
-            UpdateTextHandle();
-            return result;
-        } 
+        public bool Backspace() => m_TextEditing.Backspace();
 
         /// Select all the text
         public void SelectAll() => m_TextSelecting.SelectAll();
@@ -287,26 +263,13 @@ namespace UnityEngine
         public string SelectedText => m_TextSelecting.selectedText;
 
         /// Delete the current selection. If there is no selection, this function does not do anything...
-        public bool DeleteSelection()
-        {
-            var result = m_TextEditing.DeleteSelection();
-            UpdateTextHandle();
-            return result;
-        } 
+        public bool DeleteSelection() => m_TextEditing.DeleteSelection();
 
         /// Replace the selection with /replace/. If there is no selection, /replace/ is inserted at the current cursor point.
-        public void ReplaceSelection(string replace)
-        {
-            m_TextEditing.ReplaceSelection(replace);
-            UpdateTextHandle();
-        }
+        public void ReplaceSelection(string replace) => m_TextEditing.ReplaceSelection(replace);
 
         /// Replaced the selection with /c/
-        public void Insert(char c)
-        {
-            m_TextEditing.Insert(c);
-            UpdateTextHandle();
-        }
+        public void Insert(char c) => m_TextEditing.Insert(c);
 
         /// Move selection to alt cursor /position/
         public void MoveSelectionToAltCursor() => m_TextEditing.MoveSelectionToAltCursor();
@@ -528,18 +491,17 @@ namespace UnityEngine
             if (GUIUtility.compositionString.Length > 0)
             {
                 m_Content.text = newText.Substring(0, cursorIndex) + GUIUtility.compositionString + newText.Substring(selectIndex);
-                cursorPos += GUIUtility.compositionString.Length;
             }
             else
                 m_Content.text = newText;
 
-            graphicalCursorPos = style.GetCursorPixelPosition(position, m_Content, cursorPos);
+            graphicalCursorPos = style.GetCursorPixelPosition(position, m_Content, cursorPos) + new Vector2(0, style.lineHeight);
 
             Vector2 originalContentOffset = style.contentOffset;
             style.contentOffset -= scrollOffset;
             style.Internal_clipOffset = scrollOffset;
 
-            GUIUtility.compositionCursorPos = GUIClip.UnclipToWindow(graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset);
+            GUIUtility.compositionCursorPos = GUIClip.UnclipToWindow(graphicalCursorPos - scrollOffset);
 
             if (GUIUtility.compositionString.Length > 0)
                 style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, cursorIndex + GUIUtility.compositionString.Length, true);
@@ -596,12 +558,7 @@ namespace UnityEngine
             return style.GetHyperlinkRects(m_TextHandle, localPosition);
         }
 
-        public bool Paste()
-        {
-            bool result = m_TextEditing.Paste();
-            UpdateTextHandle();
-            return result;
-        }
+        public bool Paste() => m_TextEditing.Paste();
 
         public void DetectFocusChange()
         {

@@ -530,13 +530,7 @@ namespace UnityEngine.UIElements
         public int selectedIndex
         {
             get { return m_Selection.indexCount == 0 ? -1 : m_Selection.FirstIndex(); }
-            set
-            {
-                var previous = selectedIndex;
-                SetSelection(value);
-                if (previous != selectedIndex)
-                    NotifyPropertyChanged(selectedIndexProperty);
-            }
+            set => SetSelection(value);
         }
 
         /// <summary>
@@ -1957,6 +1951,7 @@ namespace UnityEngine.UIElements
             if (MatchesExistingSelection(indices))
                 return;
 
+            var previousSelectedIndex = selectedIndex;
             ClearSelectionWithoutValidation();
 
             // If possible resize indices so we can better handle large selections. (UUM-74996)
@@ -1969,7 +1964,11 @@ namespace UnityEngine.UIElements
                 AddToSelectionWithoutValidation(index);
 
             if (sendNotification)
+            {
+                if (previousSelectedIndex != selectedIndex)
+                    NotifyPropertyChanged(selectedIndexProperty);
                 NotifyOfSelectionChange();
+            }
 
             SaveViewData();
         }

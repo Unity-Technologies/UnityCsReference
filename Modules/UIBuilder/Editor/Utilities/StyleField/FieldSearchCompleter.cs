@@ -473,11 +473,7 @@ namespace Unity.UI.Builder
             }
         }
 
-        public FieldSearchCompleter() : this(null)
-        {
-        }
-
-        public FieldSearchCompleter(TextField field)
+        public FieldSearchCompleter()
         {
             itemHeight = k_ItemHeight;
             makeItem = () =>
