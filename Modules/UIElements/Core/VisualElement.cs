@@ -72,6 +72,8 @@ namespace UnityEngine.UIElements
         LocalBounds3DDirty = 1 << 16,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
         DetachedDataSource = 1 << 17,
+        // Element has capture on one or more pointerIds
+        PointerCapture = 1 << 18,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
@@ -458,6 +460,12 @@ namespace UnityEngine.UIElements
                 if(value && ( renderChainData.pendingRepaint|| renderChainData.pendingHierarchicalRepaint))
                     IncrementVersion(VersionChangeType.Repaint);
             }
+        }
+
+        internal bool hasOneOrMorePointerCaptures
+        {
+            get => (m_Flags & VisualElementFlags.PointerCapture) == VisualElementFlags.PointerCapture;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.PointerCapture : m_Flags & ~VisualElementFlags.PointerCapture;
         }
 
         private static uint s_NextId;
@@ -1452,6 +1460,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal void UpdatePointerCaptureFlag()
+        {
+            bool hasCapture = false;
+            for (int i = 0; i < PointerId.maxPointers; i++)
+                if (this.HasPointerCapture(i))
+                {
+                    hasCapture = true;
+                    break;
+                }
+            hasOneOrMorePointerCaptures = hasCapture;
+        }
+
         private PickingMode m_PickingMode;
 
         /// <summary>
@@ -1752,6 +1772,18 @@ namespace UnityEngine.UIElements
                     //We need to remove this element from the ElementsUnderPointer
                     elementPanel.RemoveElementFromPointerCache(this);
                     elementPanel.CommitElementUnderPointers();
+                }
+
+                if (hasOneOrMorePointerCaptures)
+                {
+                    for (var i = 0; i < PointerId.maxPointers; i++)
+                    {
+                        if (this.HasPointerCapture(i))
+                        {
+                            this.ReleasePointer(i);
+                            elementPanel.ProcessPointerCapture(i);
+                        }
+                    }
                 }
 
                 // Only send this event if the element isn't waiting for an attach event already

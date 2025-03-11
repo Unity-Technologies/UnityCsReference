@@ -148,13 +148,10 @@ namespace UnityEditor.Search
 
         public void Create(int contentCount, int averageContentLength)
         {
-            m_Header = new SearchDocumentListTableHeader(defaultVersion, 0, contentCount * hashFactor, 0, 0, 0);
-
-            if (contentCount == 0)
-                return;
+            m_Header = new SearchDocumentListTableHeader(defaultVersion, 0, Math.Max(contentCount * hashFactor, 1), 0, 0, 0);
 
             var blocksPerContent = GetContentBlockSize(averageContentLength);
-            m_Header.allocatedBlocks = contentCount * blocksPerContent;
+            m_Header.allocatedBlocks = Math.Max(contentCount * blocksPerContent, ContentLengthAndHash.size);
             m_Header.usedBlocks = ContentLengthAndHash.size; // Add the empty array
 
             var size = GetNextBufferSize(GetSymbolsBlockSize(m_Header.symbolSlots) + m_Header.allocatedBlocks);
@@ -186,7 +183,7 @@ namespace UnityEditor.Search
                 }
             }
 
-            if (m_Header.count + 1 >= m_Header.symbolSlots || (m_Header.symbolSlots / (float)m_Header.count < hashFactor))
+            if (m_Header.count + 1 >= m_Header.symbolSlots || (m_Header.count > 0 && (m_Header.symbolSlots / (float)m_Header.count) < hashFactor))
             {
                 if (autoGrow)
                 {
@@ -372,7 +369,7 @@ namespace UnityEditor.Search
             return docTable;
         }
 
-        public void RemapDocuments(Dictionary<int, int> updatedDocIndexes, bool keepSorted = false)
+        public void RemapDocuments(Dictionary<int, int> updatedDocIndexes)
         {
             var totalUsedSize = m_Header.usedBlocks + GetSymbolsBlockSize(m_Header.symbolSlots);
             var index = GetContentOffset() + ContentLengthAndHash.size; // Skip empty array.
@@ -391,9 +388,6 @@ namespace UnityEditor.Search
                     if (updatedDocIndexes.TryGetValue(docs[i], out var newIndex))
                         docs[i] = newIndex;
                 }
-
-                if (keepSorted)
-                    QuickSort(docs, 0, docs.Length - 1);
 
                 currentLengthAndHash = Hash(docs, currentLengthAndHash.allocated);
                 currentLengthAndHash.Write(m_Buffer.AsSpan(), index);
@@ -570,34 +564,6 @@ namespace UnityEditor.Search
                 ++index;
             }
             return true;
-        }
-
-        static void QuickSort(Span<int> input, int start, int end)
-        {
-            if (start < end)
-            {
-                int pivot = Partition(input, start, end);
-                QuickSort(input, start, pivot - 1);
-                QuickSort(input, pivot + 1, end);
-            }
-        }
-
-        static int Partition(Span<int> input, int start, int end)
-        {
-            int pivot = input[end];
-            int pIndex = start;
-
-            for (int i = start; i < end; i++)
-            {
-                if (input[i] <= pivot)
-                {
-                    (input[i], input[pIndex]) = (input[pIndex], input[i]);
-                    pIndex++;
-                }
-            }
-
-            (input[pIndex], input[end]) = (input[end], input[pIndex]);
-            return pIndex;
         }
 
         static void Compress(Span<int> docs)

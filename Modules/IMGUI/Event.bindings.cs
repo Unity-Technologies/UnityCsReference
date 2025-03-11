@@ -32,7 +32,7 @@ namespace UnityEngine
                 var key = isMouse ? KeyCode.Mouse0 + button : Internal_keyCode;
 
                 if(isScrollWheel)
-                    key = delta.y < 0 ? KeyCode.WheelUp : KeyCode.WheelDown;
+                    key = delta.y < 0 || delta.y == 0 && delta.x < 0 ? KeyCode.WheelUp : KeyCode.WheelDown;
 
                 return key;
             }

@@ -1052,7 +1052,7 @@ namespace UnityEditor
                                 // Don't call OnFocus on the tab when it is moved to the new window
                                 EditorWindow.CreateNewWindowForEditorWindow(w, loadPosition: false, showImmediately: false, setFocus: false);
 
-                                w.position = w.m_Parent.window.FitWindowRectToScreen(wPos, true, true);
+                                w.position = ContainerWindow.FitRectToMouseScreen(wPos, true, w.m_Parent.window);
                                 Invoke("OnTabNewWindow", w);
 
                                 GUIUtility.hotControl = 0;

@@ -1134,30 +1134,39 @@ namespace Unity.UI.Builder
             }
             else
             {
-                var propertyField = new PropertyField
+                var property = m_CurrentElementSerializedObject.FindProperty(propertyPath);
+                if (property == null)
                 {
-                    name = builderSerializedPropertyFieldName,
-                    bindingPath = propertyPath,
-                    label = BuilderNameUtilities.ConvertDashToHuman(attribute.name)
-                };
-
-                void TooltipCallback(TooltipEvent e) => OnTooltipEvent(e, propertyField, attribute);
-                propertyField.RegisterCallback<TooltipEvent>(TooltipCallback, TrickleDown.TrickleDown);
-
-                // We only care about changes when not in readOnly mode.
-                if (!readOnly)
-                {
-                    TrackElementPropertyValue(propertyField, propertyPath);
+                    var label = new UnityEngine.UIElements.HelpBox { text = $"Attribute <b>{attribute.name}</b> is not serializable. Attribute type does not follow the <a href=\"https://docs.unity3d.com/Manual/script-serialization-rules.html\">Unity Serialization rules</a>.", messageType = HelpBoxMessageType.Warning };
+                    fieldElement.Add(label);
                 }
-
-                fieldElement.Add(propertyField);
-
-                propertyField.Bind(m_CurrentElementSerializedObject);
-
-                // Special case for ToggleButtonGroup
-                if (m_CurrentElement is ToggleButtonGroup && attribute.name == nameof(ToggleButtonGroup.value))
+                else
                 {
-                    propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnPropertyFieldBound);
+                    var propertyField = new PropertyField
+                    {
+                        name = builderSerializedPropertyFieldName,
+                        bindingPath = propertyPath,
+                        label = BuilderNameUtilities.ConvertDashToHuman(attribute.name)
+                    };
+
+                    void TooltipCallback(TooltipEvent e) => OnTooltipEvent(e, propertyField, attribute);
+                    propertyField.RegisterCallback<TooltipEvent>(TooltipCallback, TrickleDown.TrickleDown);
+
+                    // We only care about changes when not in readOnly mode.
+                    if (!readOnly)
+                    {
+                        TrackElementPropertyValue(propertyField, property);
+                    }
+
+                    fieldElement.Add(propertyField);
+
+                    propertyField.Bind(m_CurrentElementSerializedObject);
+
+                    // Special case for ToggleButtonGroup
+                    if (m_CurrentElement is ToggleButtonGroup && attribute.name == nameof(ToggleButtonGroup.value))
+                    {
+                        propertyField.RegisterCallback<SerializedPropertyBindEvent>(OnPropertyFieldBound);
+                    }
                 }
             }
 
@@ -1708,6 +1717,12 @@ namespace Unity.UI.Builder
 
         protected void TrackElementPropertyValue(VisualElement target, SerializedProperty property)
         {
+            if (property == null)
+            {
+                Debug.LogWarning("Property is null, cannot track property value.");
+                return;
+            }
+
             // We use TrackPropertyValue because it does not send a change event when it is bound and its safer
             // than relying on change events which may not always be sent, such as when using a custom drawer.
             target.TrackPropertyValue(property, OnTrackedPropertyValueChange);

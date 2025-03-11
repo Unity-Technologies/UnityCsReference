@@ -37,6 +37,7 @@ namespace UnityEngine.UIElements
 
             if (editingUtilities.TouchScreenKeyboardShouldBeUsed())
             {
+                bool showPlaceholderText;
                 if (textElement.m_TouchScreenKeyboard == null)
                     return;
 
@@ -66,7 +67,13 @@ namespace UnityEngine.UIElements
                     if (!edition.isDelayed)
                         edition.UpdateValueFromText?.Invoke();
 
-                    edition.UpdateTextFromValue?.Invoke();
+                    // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
+                    showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
+                    if (!showPlaceholderText)
+                    {
+                        edition.UpdateTextFromValue?.Invoke();
+                    }
+                    
                     textElement.Blur();
 
                     return;
@@ -126,7 +133,12 @@ namespace UnityEngine.UIElements
                 if (!edition.isDelayed)
                     edition.UpdateValueFromText?.Invoke();
 
-                edition.UpdateTextFromValue?.Invoke();
+                // If we update the text while the placeholder is active, it may get overridden by the field's default (e.g., 0).
+                showPlaceholderText = string.IsNullOrEmpty(touchKeyboard.text) && !string.IsNullOrEmpty(edition.placeholder);
+                if (!showPlaceholderText)
+                {
+                    edition.UpdateTextFromValue?.Invoke();
+                }
                 textElement.edition.UpdateScrollOffset?.Invoke(false);
             }
             else

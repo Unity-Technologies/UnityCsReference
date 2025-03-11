@@ -739,7 +739,7 @@ namespace UnityEngine.UIElements
                     if (m_ActiveItems[i].rootElement.style.display == DisplayStyle.Flex)
                     {
                         // Items above the viewport bounds need to be sent back to the back of active items.
-                        if (itemContentOffset + itemHeight <= serializedData.scrollOffset.y)
+                        if (itemContentOffset + itemHeight < serializedData.scrollOffset.y)
                         {
                             item.rootElement.BringToFront(); // We send the element to the bottom of the list (front in z-order)
                             HideItem(i);

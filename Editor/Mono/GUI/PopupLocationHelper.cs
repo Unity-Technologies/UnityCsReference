@@ -74,12 +74,9 @@ namespace UnityEditor
             return GetLargestRect(croppedRects);
         }
 
-        private static Rect FitRect(Rect rect, ContainerWindow popupContainerWindow)
+        private static Rect FitRect(Rect rect, Vector2 uiPositionToSelectScreen, ContainerWindow popupContainerWindow)
         {
-            if (popupContainerWindow)
-                return popupContainerWindow.FitWindowRectToScreen(rect, true, true);
-            else
-                return ContainerWindow.FitRectToScreen(rect, true, true);
+            return ContainerWindow.FitRectToScreen(rect, uiPositionToSelectScreen, true, popupContainerWindow);
         }
 
         private static bool PopupRight(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow, out Rect resultRect)
@@ -90,12 +87,12 @@ namespace UnityEditor
             dropDownRectRight.xMax += spaceFromRight;
             dropDownRectRight.height += k_SpaceFromBottom;
 
-            dropDownRectRight = FitRect(dropDownRectRight, popupContainerWindow);
+            dropDownRectRight = FitRect(dropDownRectRight, buttonRect.center, popupContainerWindow);
             float availableWidthRight = Mathf.Max(dropDownRectRight.xMax - buttonRect.xMax - spaceFromRight, 0);
             float windowWidth = Mathf.Min(availableWidthRight, maxSize.x);
             resultRect = new Rect(dropDownRectRight.x, dropDownRectRight.y, windowWidth, dropDownRectRight.height - k_SpaceFromBottom);
 
-            if (availableWidthRight >= minSize.x)
+            if (Mathf.Ceil(availableWidthRight) >= minSize.x)
                 return true;
             return false;
         }
@@ -109,12 +106,12 @@ namespace UnityEditor
             dropDownRectLeft.xMin -= spaceFromLeft;
             dropDownRectLeft.height += k_SpaceFromBottom;
 
-            dropDownRectLeft = FitRect(dropDownRectLeft, popupContainerWindow);
+            dropDownRectLeft = FitRect(dropDownRectLeft, buttonRect.center, popupContainerWindow);
             float availableWidthLeft = Mathf.Max(buttonRect.x - dropDownRectLeft.x - spaceFromLeft, 0);
             float windowWidth = Mathf.Min(availableWidthLeft, maxSize.x);
             resultRect = new Rect(dropDownRectLeft.x, dropDownRectLeft.y, windowWidth, dropDownRectLeft.height - k_SpaceFromBottom);
 
-            if (availableWidthLeft >= minSize.x)
+            if (Mathf.Ceil(availableWidthLeft) >= minSize.x)
                 return true;
             return false;
         }
@@ -141,12 +138,12 @@ namespace UnityEditor
             // Expand dropdown height to include empty space above
             dropDownRectAbove.yMin -= spaceFromTop;
             // Fit rect to screen
-            dropDownRectAbove = FitRect(dropDownRectAbove, popupContainerWindow);
+            dropDownRectAbove = FitRect(dropDownRectAbove, buttonRect.center, popupContainerWindow);
 
             // Calculate how much space is available for the window above the button
             float availableHeightAbove = Mathf.Max(buttonRect.y - dropDownRectAbove.y - spaceFromTop, 0);
             // If there's room for the window at its minimum size above the button, then place it there
-            if (availableHeightAbove >= minSize.y)
+            if (Mathf.Ceil(availableHeightAbove) >= minSize.y)
             {
                 float windowHeight = Mathf.Min(availableHeightAbove, maxSize.y);
                 {
@@ -178,12 +175,12 @@ namespace UnityEditor
             // Expand dropdown height to include empty space below
             dropDownRectBelow.height += k_SpaceFromBottom;
             // Fit rect to screen
-            dropDownRectBelow = FitRect(dropDownRectBelow, popupContainerWindow);
+            dropDownRectBelow = FitRect(dropDownRectBelow, buttonRect.center, popupContainerWindow);
 
             // Calculate how much space is available for the window below the button
             float availableHeightBelow = Mathf.Max(dropDownRectBelow.yMax - buttonRect.yMax - k_SpaceFromBottom, 0);
             // If there's room for the window at its minimum size below the button, then place it there
-            if (availableHeightBelow >= minSize.y)
+            if (Mathf.Ceil(availableHeightBelow) >= minSize.y)
             {
                 float windowHeight = Mathf.Min(availableHeightBelow, maxSize.y);
                 resultRect = new Rect(dropDownRectBelow.x, buttonRect.yMax, dropDownRectBelow.width, windowHeight);
@@ -203,7 +200,7 @@ namespace UnityEditor
         {
             //Stretch the popup over the button Rect if it doesn't fit
             Rect dropDownRectBelow = new Rect(buttonRect.x, buttonRect.yMax, maxSize.x, maxSize.y);
-            resultRect = FitRect(dropDownRectBelow, popupContainerWindow);
+            resultRect = FitRect(dropDownRectBelow, buttonRect.center, popupContainerWindow);
             return true;
         }
 

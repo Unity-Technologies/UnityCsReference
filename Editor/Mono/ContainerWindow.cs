@@ -149,7 +149,7 @@ namespace UnityEditor
                 Internal_BringLiveAfterCreation(true, giveFocus, false);
 
                 // Fit window to screen - needs to be done after bringing the window live
-                position = FitWindowRectToScreen(m_PixelRect, true, false);
+                position = FitRectToScreen(m_PixelRect, m_PixelRect.center, true, this);
                 rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
                 rootView.Reflow();
             }
@@ -231,7 +231,11 @@ namespace UnityEditor
 
         internal void FitWindowToScreen(bool useMousePos)
         {
-            position = FitWindowRectToScreen(m_PixelRect, true, useMousePos);
+            if (useMousePos)
+                position = FitRectToMouseScreen(m_PixelRect, true, this);
+            else
+                position = FitRectToScreen(m_PixelRect, m_PixelRect.center, true, this);
+
             if (rootView)
                 rootView.position = new Rect(0, 0, GUIUtility.RoundToPixelGrid(m_PixelRect.width), GUIUtility.RoundToPixelGrid(m_PixelRect.height));
         }

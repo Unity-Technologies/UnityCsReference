@@ -162,7 +162,7 @@ namespace UnityEditor
             {
                 MaskCallbackInfo.m_Instance = new MaskCallbackInfo(controlID);
                 MaskCallbackInfo.m_Instance.m_DropDown = new MaskFieldDropDown(optionNames, flagValues, optionMaskValues, mask, MaskCallbackInfo.m_Instance.SetMaskValueDelegate, autoSelectEverything);
-                PopupWindowWithoutFocus.Show(position, MaskCallbackInfo.m_Instance.m_DropDown);
+                PopupWindow.Show(position, MaskCallbackInfo.m_Instance.m_DropDown);
             }
 
             return mask;

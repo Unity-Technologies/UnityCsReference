@@ -155,8 +155,8 @@ namespace UnityEditor
             {
                 m_LastWantedSize = size;
                 Rect screenRect = m_Parent.window.GetDropDownRect(m_ActivatorRect, size, size, m_LocationPriorityOrder);
-                minSize = maxSize = new Vector2(screenRect.width, screenRect.height);
                 position = screenRect;
+                minSize = maxSize = new Vector2(screenRect.width, screenRect.height);
             }
         }
 

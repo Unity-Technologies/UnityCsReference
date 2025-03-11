@@ -263,18 +263,9 @@ namespace UnityEditor.ShortcutManagement
             var evt = Event.current;
             if (evt.button == 0)
             {
-                ShortcutManagerWindow shortcutManager;
-                if (EditorWindow.HasOpenInstances<ShortcutManagerWindow>())
-                {
-                    shortcutManager = EditorWindow.GetWindow<ShortcutManagerWindow>();
-                }
-                else
-                {
-                    shortcutManager = EditorWindow.CreateInstance<ShortcutManagerWindow>();
-                    shortcutManager.ShowUtility();
-                }
-
+                ShortcutManagerWindow shortcutManager = EditorWindow.GetWindow<ShortcutManagerWindow>();
                 shortcutManager.rootVisualElement.Q<ToolbarPopupSearchField>().value = shortcut.displayName;
+                
                 ShortcutHelperBarUtility.Reset();
                 GUIUtility.ExitGUI();
             }

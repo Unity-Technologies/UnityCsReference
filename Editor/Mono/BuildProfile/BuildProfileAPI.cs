@@ -33,5 +33,41 @@ namespace UnityEditor.Build.Profile
 
             BuildProfileModuleUtil.SwitchLegacyActiveFromBuildProfile(buildProfile);
         }
+
+        /// <summary>
+        /// Gets a component of type T associated with the build profile, its global fallback,
+        /// or null if the component is not available.
+        /// </summary>
+        public T GetComponent<T>() where T : class
+        {
+            if (typeof(T) == typeof(PlayerSettings))
+            {
+                if (m_PlayerSettings != null)
+                    return m_PlayerSettings as T;
+                return s_GlobalPlayerSettings as T;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets a component of type T associated with the currently active build profile,
+        /// its global fallback, or null if the component is not available.
+        /// </summary>
+        public static T GetActiveComponent<T>() where T : class
+        {
+            var buildProfile = GetActiveBuildProfile();
+            if (buildProfile == null)
+            {
+                if (typeof(T) == typeof(PlayerSettings))
+                    return s_GlobalPlayerSettings as T;
+            }
+            else
+            {
+                return buildProfile.GetComponent<T>();
+            }
+
+            return null;
+        }
     }
 }

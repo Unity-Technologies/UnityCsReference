@@ -158,25 +158,38 @@ namespace UnityEngine.UIElements
 
         public void CapturePointer(IEventHandler handler, int pointerId)
         {
-            if (pointerId == PointerId.mousePointerId && m_PendingPointerCapture[pointerId] != handler && GUIUtility.hotControl != 0)
+            var oldHandler = m_PendingPointerCapture[pointerId];
+            if (oldHandler == handler)
+                return;
+
+            if (pointerId == PointerId.mousePointerId && GUIUtility.hotControl != 0)
             {
                 // Note that this will release the mouse and call ProcessPointerCapture immediately
                 GUIUtility.hotControl = 0;
             }
 
             m_PendingPointerCapture[pointerId] = handler;
+
+            (oldHandler as VisualElement)?.UpdatePointerCaptureFlag();
+            (handler as VisualElement)?.UpdatePointerCaptureFlag();
         }
 
         public void ReleasePointer(int pointerId)
         {
+            var oldHandler = m_PendingPointerCapture[pointerId];
+            if (oldHandler == null)
+                return;
+
             m_PendingPointerCapture[pointerId] = null;
+
+            (oldHandler as VisualElement)?.UpdatePointerCaptureFlag();
         }
 
         public void ReleasePointer(IEventHandler handler, int pointerId)
         {
             if (handler == m_PendingPointerCapture[pointerId])
             {
-                m_PendingPointerCapture[pointerId] = null;
+                ReleasePointer(pointerId);
             }
         }
 

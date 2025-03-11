@@ -818,15 +818,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            if (focusController is { focusedElement: DimensionStyleField })
-            {
-                schedule.Execute(() =>
-                {
-                    ProcessSelectionChange(itemIndices);
-                });
-            }
-            else
-                ProcessSelectionChange(itemIndices);
+            ProcessSelectionChange(itemIndices);
         }
 
         void HighlightAllElementsMatchingSelectorElement(VisualElement selectorElement)

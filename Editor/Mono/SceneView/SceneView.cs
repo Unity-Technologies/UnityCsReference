@@ -2800,12 +2800,15 @@ namespace UnityEditor
             if (mouseOverWindow?.GetType() != typeof(SceneView))
                 return;
 
-            var mousePos = Event.current.mousePosition;
+            var mousePos = PointerDeviceState.GetPointerPosition(PointerId.mousePointerId, ContextType.Editor);
             var ve = focusedWindow.rootVisualElement.panel.Pick(mousePos);
             if (ve == null)
                 return;
 
             var context = args.context as SceneViewViewport;
+            if(context == null)
+                return;
+
             if (ve == context.window.cameraViewVisualElement)
             {
                 ContextMenuUtility.ShowActionMenu();
