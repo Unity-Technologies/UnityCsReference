@@ -635,13 +635,16 @@ namespace UnityEngine.UIElements
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
                 var lastItemViewportOffset = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
-                scrollOffset = lastItemViewportOffset;
+                scrollOffset = Mathf.Clamp(lastItemViewportOffset, 0, scrollableHeight);
             }
 
             // Don't notify to avoid coming back in the scroll update for no reason.
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
             serializedData.scrollOffset.y = m_ScrollView.verticalScroller.slider.value;
+
+            // UUM-96909: Reset any forced scrolling to the last visible item after the scrollOffset has been computed.
+            m_ForcedLastVisibleItem = -1;
 
             if (dimensionsOnly || m_LastChange == VirtualizationChange.Resize)
             {
@@ -704,7 +707,6 @@ namespace UnityEngine.UIElements
                 }
 
                 ScheduleScrollDirectionReset();
-                m_ForcedLastVisibleItem = -1;
                 m_CollectionView.SaveViewData();
             }
         }

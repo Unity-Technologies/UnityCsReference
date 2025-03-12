@@ -81,21 +81,21 @@ namespace Unity.TLS.LowLevel
         public const int UNITYTLS_SSL_HANDSHAKE_SERVER_FINISHED = 13;
         public const int UNITYTLS_SSL_HANDSHAKE_FLUSH_BUFFERS = 14;
         public const int UNITYTLS_SSL_HANDSHAKE_WRAPUP = 15;
-        public const int UNITYTLS_SSL_HANDSHAKE_OVER = 16;
-        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_NEW_SESSION_TICKET = 17;
-        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_VERIFY_REQUIRED = 18;
+        public const int UNITYTLS_SSL_HANDSHAKE_OVER = 27;
+        public const int UNITYTLS_SSL_HANDSHAKE_SERVER_NEW_SESSION_TICKET = 16;
+        public const int UNITYTLS_SSL_HANDSHAKE_HELLO_VERIFY_REQUIRED = 17;
         /// <summary>Number of constant definitions</summary>
-        public const int UNITYTLS_SSL_HANDSHAKE_COUNT = 19;
+        public const int UNITYTLS_SSL_HANDSHAKE_COUNT = 28;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_BEGIN = 0;
         /// <summary>Deprecated: for backward compatibility only</summary>
-        public const int UNITYTLS_SSL_HANDSHAKE_DONE = 16;
+        public const int UNITYTLS_SSL_HANDSHAKE_DONE = 27;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_FLUSH_BUFFERS = 14;
         /// <summary>Deprecated: for backward compatibility only</summary>
         public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_WRAPUP = 15;
         /// <summary>Deprecated: for backward compatibility only</summary>
-        public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_OVER = 16;
+        public const int UNITYTLS_SSL_HANDSHAKE_HANDSHAKE_OVER = 27;
         [StructLayout(LayoutKind.Sequential)]
         public struct unitytls_errorstate
         {

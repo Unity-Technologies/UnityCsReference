@@ -90,6 +90,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 if (editorCompilation == null)
                     return null;
 
+                // This can happen if the Parsing of the error message failed or we dont have a parser to this error type.
+                if (m.file == null)
+                    return null;
+
                 var file = new NPath(m.file).MakeAbsolute(editorCompilation.projectDirectory);
 
                 return editorCompilation

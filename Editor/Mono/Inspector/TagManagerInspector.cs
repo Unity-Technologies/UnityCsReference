@@ -244,12 +244,18 @@ namespace UnityEditor
 
             if (SortingLayer.onLayerAdded != null)
                 SortingLayer.onLayerAdded(SortingLayer.layers[list.index]);
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         public void ReorderSortLayerList(ReorderableList list)
         {
             serializedObject.ApplyModifiedProperties();
             tagManager.UpdateSortingLayersOrder();
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         private void RemoveFromSortLayerList(ReorderableList list)
@@ -261,6 +267,9 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
             serializedObject.Update();
             tagManager.UpdateSortingLayersOrder();
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         private bool CanEditSortLayerEntry(int index)

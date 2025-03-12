@@ -23,6 +23,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private double m_LastInternetCheck;
 
+        [SerializeField]
+        private string m_PathToPing;
+
         public virtual event Action<bool> onInternetReachabilityChange = delegate {};
         public virtual event Action onFinishCompiling = delegate {};
         public virtual event Action<PlayModeStateChange> onPlayModeStateChanged = delegate {};
@@ -64,12 +67,22 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual bool isDeveloperBuild => Unsupported.IsDeveloperBuild();
 
+        private AssetDatabaseProxy m_AssetDatabaseProxy;
+
+        public void ResolveDependencies(AssetDatabaseProxy assetDatabaseProxy)
+        {
+            m_AssetDatabaseProxy = assetDatabaseProxy;
+        }
+
         public void OnEnable()
         {
             m_IsInternetReachable = Application.internetReachability == NetworkReachability.ReachableViaLocalAreaNetwork;
             m_LastInternetCheck = EditorApplication.timeSinceStartup;
             EditorApplication.update += OnUpdate;
             EditorApplication.playModeStateChanged += PlayModeStateChanged;
+
+            if (!string.IsNullOrEmpty(m_PathToPing))
+                Ping(m_PathToPing);
         }
 
         public void OnDisable()
@@ -151,6 +164,30 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual T Load<T>(string path) where T : Object
         {
             return EditorGUIUtility.Load(path) as T;
+        }
+
+        public void PingAtPath(string path) => Ping(path);
+
+        private void Ping(string path)
+        {
+            var asset = m_AssetDatabaseProxy.LoadMainAssetAtPath(path);
+            if (asset == null)
+                return;
+
+            m_PathToPing = path;
+            // This can be called on a frame right before domain reload in which case the following won't execute.
+            // That's why we also call it in OnEnable to make sure the asset is pinged.
+            EditorApplication.delayCall += () =>
+            {
+                EditorWindow.FocusWindowIfItsOpen(typeof(ProjectBrowser));
+                // The second delayCall ensures that the focus operation has been completed.
+                EditorApplication.delayCall += () =>
+                {
+                    Selection.activeObject = asset;
+                    EditorGUIUtility.PingObject(asset);
+                    m_PathToPing = string.Empty;
+                };
+            };
         }
     }
 }
