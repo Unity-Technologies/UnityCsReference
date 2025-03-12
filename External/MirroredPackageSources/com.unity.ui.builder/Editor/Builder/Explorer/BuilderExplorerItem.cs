@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -223,6 +224,10 @@ namespace Unity.UI.Builder
                         });
                         return;
                     }
+                    
+                    var styleSheet = documentElement.GetClosestStyleSheet();
+                    Undo.RegisterCompleteObjectUndo(
+                        styleSheet, BuilderConstants.RenameSelectorUndoMessage);
                 }
 
                 selection.NotifyOfStylingChange();
@@ -250,6 +255,10 @@ namespace Unity.UI.Builder
                 {
                     nameLabel.text = m_RenameTextField.text;
                 }
+                
+                // We get the VTA from the documentRootElement.
+                Undo.RegisterCompleteObjectUndo(
+                    selection.documentRootElement.GetVisualTreeAsset(), BuilderConstants.RenameUIElementUndoMessage);
 
                 documentElement.name = value;
                 vea.SetAttribute("name", value);

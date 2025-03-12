@@ -17,6 +17,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual void Refresh()
         {
+            AssetDatabase.Refresh();
+        }
+
+        public virtual void ScheduleRefresh()
+        {
             AssetDatabase.ScheduleRefresh();
         }
 

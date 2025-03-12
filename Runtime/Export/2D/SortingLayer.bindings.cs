@@ -32,11 +32,12 @@ namespace UnityEngine
             }
         }
 
-        // Delegate for layer add/remove events
+        // Delegate for layer add/remove/changed events
         public delegate void LayerCallback(SortingLayer layer);
 
         public static LayerCallback onLayerAdded;
         public static LayerCallback onLayerRemoved;
+        internal static Action onLayerChanged;
 
         [FreeFunction("GetTagManager().GetSortingLayerIDs")]
         extern private static int[] GetSortingLayerIDsInternal();

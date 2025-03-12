@@ -331,6 +331,8 @@ namespace UnityEditor
             {
                 Terrain => "script-Terrain",
                 AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
+                AudioImporter => "class-AudioClip", // UUM-96832: We don't have an entry in the manual for the audio importer.
+                VideoClipImporter => "class-VideoClip", // We don't have an entry in the manual for the video clip importer.
                 EditorSettings => "class-EditorManager",
                 SceneAsset => "CreatingScenes",
                 PrefabImporter => "Prefabs",

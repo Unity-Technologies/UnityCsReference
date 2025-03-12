@@ -204,6 +204,13 @@ namespace UnityEditor.PackageManager.UI
                     }
 
                     var sourcePath = resolvedPath;
+                    if (!m_IOProxy.DirectoryExists(importPath))
+                    {
+                        // We create the directory by itself to guarantee that we will be able to ping it after import
+                        m_IOProxy.CreateDirectory(importPath);
+                        // It's safe to use immediate Refresh here since it's just a folder creation, and we have not imported any assets yet
+                        m_AssetDatabase.Refresh();
+                    }
                     m_IOProxy.DirectoryCopy(sourcePath, importPath, true,
                         (fileName, progress) =>
                         {
@@ -212,7 +219,9 @@ namespace UnityEditor.PackageManager.UI
                         }
                     );
                     EditorUtility.ClearProgressBar();
-                    m_AssetDatabase.Refresh();
+                    // According to the ADB team, we are incapable of performing a synchronous refresh when it involves modified scripts and assets
+                    // Therefore, we have to schedule a refresh to happen at the end of the frame
+                    m_AssetDatabase.ScheduleRefresh();
                 }
 
                 return true;

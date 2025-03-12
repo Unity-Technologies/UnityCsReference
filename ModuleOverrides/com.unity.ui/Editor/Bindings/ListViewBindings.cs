@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine.UIElements;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings
 {
@@ -177,7 +177,8 @@ namespace UnityEditor.UIElements.Bindings
 
         void BindListViewItem(VisualElement ve, int index)
         {
-            if (m_ListViewArraySize != -1 && m_DataList.ArrayProperty.arraySize != m_ListViewArraySize)
+            if ((m_ListViewArraySize != -1 && m_DataList.ArrayProperty.arraySize != m_ListViewArraySize)
+            || !m_DataList.isCountInSync)
             {
                 // We need to wait for array size to be updated, which triggers a refresh anyway.
                 return;
@@ -387,6 +388,11 @@ namespace UnityEditor.UIElements.Bindings
 
         List<SerializedProperty> properties;
 
+        /// <summary>
+        /// Indicates whether the number of elements in the associated serialized property matches the number of items in the cached property list.
+        /// </summary>
+        public bool isCountInSync => Count == (properties != null ? properties.Count : 0);
+
         public SerializedObjectList(SerializedProperty parentProperty)
         {
             ArrayProperty = parentProperty.Copy();
@@ -439,12 +445,11 @@ namespace UnityEditor.UIElements.Bindings
         public bool IsReadOnly => true;
 
         public bool IsFixedSize => true;
-
         public int Count
         {
             get
             {
-                if (ArrayProperty.serializedObject.isEditingMultipleObjects)
+                if (ArrayProperty != null && ArrayProperty.serializedObject.isValid && ArrayProperty.serializedObject.isEditingMultipleObjects)
                 {
                    if (IsOverMaxMultiEditLimit)
                         return 0;
