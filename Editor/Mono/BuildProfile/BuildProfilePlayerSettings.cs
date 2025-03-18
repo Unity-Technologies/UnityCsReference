@@ -198,11 +198,15 @@ namespace UnityEditor.Build.Profile
             if (!HasSerializedPlayerSettings())
                 return;
 
+            var isDirtyBeforeDeserialize = EditorUtility.IsDirty(m_PlayerSettings);
             if (m_PlayerSettings == null)
                 m_PlayerSettings = PlayerSettings.DeserializeFromYAMLString(m_PlayerSettingsYaml.GetYamlString());
             else
                 UpdatePlayerSettingsObjectFromYAML();
             s_LoadedPlayerSettings.Add(m_PlayerSettings);
+
+            if (!isDirtyBeforeDeserialize)
+                EditorUtility.ClearDirty(m_PlayerSettings);
 
             PlayerSettings.EnsureUnityConnectSettingsEqual(m_PlayerSettings, s_GlobalPlayerSettings);
             UpdateGlobalManagerPlayerSettings();

@@ -24,6 +24,7 @@ namespace UnityEditor.Search
             public static readonly Color labelColor;
             public static readonly GUIStyle label;
             public static readonly GUIStyle textStyle;
+            public static readonly GUIStyle ellipsisTextStyle;
 
             static Styles()
             {
@@ -41,6 +42,11 @@ namespace UnityEditor.Search
                 {
                     padding = new RectOffset(0, 0, 0, 0),
                     alignment = TextAnchor.MiddleCenter
+                };
+                ellipsisTextStyle = new GUIStyle(label)
+                {
+                    alignment = TextAnchor.MiddleCenter,
+                    clipping = TextClipping.Ellipsis
                 };
             }
 
@@ -140,11 +146,19 @@ namespace UnityEditor.Search
             var selected = isHover || on;
             var color = selected ? bgColor * QueryColors.selectedTint : bgColor;
 
+            var headerRectWidthWithOffset = m_HeaderRect.width - 35; // offset for the icon and paddings.
+            var textStyle = Styles.textStyle;
+            if (size > headerRectWidthWithOffset)
+            {
+                textStyle = Styles.ellipsisTextStyle;
+                backgroundRect.width = headerRectWidthWithOffset;
+            }
+
             // Draw block background
             GUI.DrawTexture(backgroundRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, color, Vector4.zero, Styles.borderRadius4);
 
             // Draw Text
-            Styles.textStyle.Draw(backgroundRect, textContent, false, false, false, false);
+            textStyle.Draw(backgroundRect, textContent, false, false, false, false);
 
             if (selected)
             {

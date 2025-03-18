@@ -13,6 +13,7 @@ using UnityEditor.ShortcutManagement;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.Scripting;
 using Directory = System.IO.Directory;
 using UnityObject = UnityEngine.Object;
@@ -444,22 +445,22 @@ namespace UnityEditor
         {
             // steps 1-4
             foreach (var layout in GetLastLayout())
-                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
+                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
                     return;
 
             // step 5
             foreach (var layout in GetCurrentModeLayouts())
-                if (LoadWindowLayout(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
+                if (LoadWindowLayout_Internal(layout, layout != ProjectLayoutPath, false, keepMainWindow, false))
                     return;
 
             // It is not mandatory that modes define a layout. In that case, skip right to the default layout.
             if (!string.IsNullOrEmpty(ModeService.GetDefaultModeLayout())
-                && LoadWindowLayout(ModeService.GetDefaultModeLayout(), true, false, keepMainWindow, false))
+                && LoadWindowLayout_Internal(ModeService.GetDefaultModeLayout(), true, false, keepMainWindow, false))
                 return;
 
             // If all else fails, load the default layout that ships with the editor. If that fails, prompt the user to
             // restore the default layouts.
-            if (!LoadWindowLayout(GetDefaultLayoutPath(), true, false, keepMainWindow, false))
+            if (!LoadWindowLayout_Internal(GetDefaultLayoutPath(), true, false, keepMainWindow, false))
             {
                 int option = 0;
 
@@ -640,7 +641,7 @@ namespace UnityEditor
                 foreach (var layoutPath in layoutPaths)
                 {
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
-                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, true, true), null);
+                    Menu.AddMenuItem("Window/Layouts/" + name, "", false, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false, true, true, true), null);
                 }
 
                 layoutMenuItemPriority += 500;
@@ -681,14 +682,18 @@ namespace UnityEditor
             const string legacyRootMenu = "Window/Layouts/Other Versions";
             const string legacyCurrentLayoutPath = "Library/CurrentLayout-default.dwlt";
             if (File.Exists(legacyCurrentLayoutPath))
-                Menu.AddMenuItem($"{legacyRootMenu}/Default (2020)", "", false, layoutMenuItemPriority++, () => LoadWindowLayout(legacyCurrentLayoutPath, false, true, false, true), null);
+                Menu.AddMenuItem($"{legacyRootMenu}/Default (2020)", "", false, layoutMenuItemPriority++, () => TryLoadWindowLayout(legacyCurrentLayoutPath, false, true, false, true), null);
 
             if (!Directory.Exists(layoutsProjectPath))
                 return;
 
+            var currentMaximizeLayoutPath = FileUtil.CombinePaths(layoutsProjectPath, kMaximizeRestoreFile);
+            using var pooled = HashSetPool<string>.Get(out var forbiddenPaths);
+            forbiddenPaths.Add(GetCurrentLayoutPath());
+            forbiddenPaths.Add(currentMaximizeLayoutPath);
             foreach (var layoutPath in Directory.GetFiles(layoutsProjectPath, "*.dwlt"))
             {
-                if (layoutPath == GetCurrentLayoutPath())
+                if (forbiddenPaths.Contains(layoutPath))
                     continue;
                 var name = Path.GetFileNameWithoutExtension(layoutPath);
                 var names = Path.GetFileName(name).Split('-');
@@ -698,7 +703,7 @@ namespace UnityEditor
                     name = ObjectNames.NicifyVariableName(names[0]);
                     menuName = $"{legacyRootMenu}/{name} ({names[1]})";
                 }
-                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => LoadWindowLayout(layoutPath, false, true, false, true), null);
+                Menu.AddMenuItem(menuName, "", false, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false, true, false, true), null);
             }
         }
 
@@ -1230,7 +1235,21 @@ namespace UnityEditor
         // Attempts to load a layout. If unsuccessful, restores the previous layout.
         public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated)
         {
-            if (LoadWindowLayout(path, newProjectLayoutWasCreated, true, false, true))
+            var flags = GetLoadWindowLayoutFlags(newProjectLayoutWasCreated, true, false, true);
+            return TryLoadWindowLayout(path, flags);
+        }
+
+        // Attempts to load a layout. If unsuccessful, restores the previous layout.
+        public static bool TryLoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
+        {
+            var flags = GetLoadWindowLayoutFlags(newProjectLayoutWasCreated, setLastLoadedLayoutName, keepMainWindow, logErrorsToConsole);
+            return TryLoadWindowLayout(path, flags);
+        }
+
+        // Attempts to load a layout. If unsuccessful, restores the previous layout.
+        public static bool TryLoadWindowLayout(string path, LoadWindowLayoutFlags flags)
+        {
+            if (LoadWindowLayout_Internal(path, flags))
                 return true;
             LoadCurrentModeLayout(FindMainWindow());
             return false;
@@ -1248,7 +1267,31 @@ namespace UnityEditor
             SaveLayoutPreferences = 1 << 5
         }
 
+        // This method is public only because some packages have internal access and use it.
+        [Obsolete("Do not use this method. Use TryLoadWindowLayout instead.")]
         public static bool LoadWindowLayout(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
+        {
+            return TryLoadWindowLayout(path, newProjectLayoutWasCreated, setLastLoadedLayoutName, keepMainWindow, logErrorsToConsole);
+        }
+
+        // This method is public only because some packages have internal access and use it.
+        [Obsolete("Do not use this method. Use TryLoadWindowLayout instead.")]
+        public static bool LoadWindowLayout(string path, LoadWindowLayoutFlags flags)
+        {
+            return TryLoadWindowLayout(path, flags);
+        }
+
+        // IMPORTANT: Do not expose this method outside WindowLayout. Do not use this method as the entry point to load a layout.
+        // Use TryLoadWindowLayout instead. It can put us in a state that is unrecoverable where all windows are gone but Unity
+        // still lives as a background process. Only use this method from another method that handles the recovery process in case
+        // of failure.
+        static bool LoadWindowLayout_Internal(string path, bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
+        {
+            var flags = GetLoadWindowLayoutFlags(newProjectLayoutWasCreated, setLastLoadedLayoutName, keepMainWindow, logErrorsToConsole);
+            return LoadWindowLayout_Internal(path, flags);
+        }
+
+        static LoadWindowLayoutFlags GetLoadWindowLayoutFlags(bool newProjectLayoutWasCreated, bool setLastLoadedLayoutName, bool keepMainWindow, bool logErrorsToConsole)
         {
             var flags = LoadWindowLayoutFlags.SaveLayoutPreferences;
             if (newProjectLayoutWasCreated)
@@ -1259,11 +1302,14 @@ namespace UnityEditor
                 flags |= LoadWindowLayoutFlags.KeepMainWindow;
             if (logErrorsToConsole)
                 flags |= LoadWindowLayoutFlags.LogsErrorToConsole;
-
-            return LoadWindowLayout(path, flags);
+            return flags;
         }
 
-        public static bool LoadWindowLayout(string path, LoadWindowLayoutFlags flags)
+        // IMPORTANT: Do not expose this method outside WindowLayout. Do not use this method as the entry point to load a layout.
+        // Use TryLoadWindowLayout instead. It can put us in a state that is unrecoverable where all windows are gone but Unity
+        // still lives as a background process. Only use this method from another method that handles the recovery process in case
+        // of failure.
+        static bool LoadWindowLayout_Internal(string path, LoadWindowLayoutFlags flags)
         {
             Console.WriteLine($"[LAYOUT] About to load {path}, keepMainWindow={flags.HasFlag(LoadWindowLayoutFlags.KeepMainWindow)}");
 
@@ -1393,6 +1439,15 @@ namespace UnityEditor
                 // get their parent/owner.
                 if (mainWindow)
                 {
+                    // If at this point the mainWindow still doesn't have a rootView, it probably means we loaded a layout without a main window.
+                    // Delete the current mainWindow so that we can load back the previous layout otherwise every attemp at loading a layout will fail.
+                    if (mainWindow.rootView == null || !mainWindow.rootView)
+                    {
+                        mainWindow.Close();
+                        UnityObject.DestroyImmediate(mainWindow, true);
+                        throw new LayoutException("Error while reading window layout: no root view on main window.");
+                    }
+
                     // Don't adjust height to prevent main window shrink during layout on Linux.
                     mainWindow.SetFreeze(true);
                     mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
@@ -1479,7 +1534,7 @@ namespace UnityEditor
             }
             Debug.Assert(File.Exists(ProjectLayoutPath));
 
-            LoadWindowLayout(ProjectLayoutPath, true, true, false, false);
+            LoadWindowLayout_Internal(ProjectLayoutPath, true, true, false, false);
         }
 
         public static void CloseWindows()

@@ -608,19 +608,22 @@ namespace UnityEditor.SceneTemplate
         [MenuItem("File/Save As Scene Template...", false, 172)]
         private static void SaveTemplateFromCurrentScene()
         {
-            var currentScene = SceneManager.GetActiveScene();
-            if (string.IsNullOrEmpty(currentScene.path))
+            var currentScenePath = SceneManager.GetActiveScene().path;
+            if (string.IsNullOrEmpty(currentScenePath))
             {
                 var suggestedScenePath = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), "Assets", "newscene", "unity");
                 if (string.IsNullOrEmpty(suggestedScenePath) || !EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene(), suggestedScenePath))
                     return;
+
+                // now we have a saved valid scene set the new path so we avoid null path in the template save
+                currentScenePath = SceneManager.GetActiveScene().path;
             }
 
-            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), Path.GetDirectoryName(currentScene.path), Path.GetFileNameWithoutExtension(currentScene.path), SceneTemplateAsset.extension);
+            var sceneTemplateFile = SceneTemplateUtils.SaveFilePanelUniqueName(L10n.Tr("Save scene"), Path.GetDirectoryName(currentScenePath), Path.GetFileNameWithoutExtension(currentScenePath), SceneTemplateAsset.extension);
             if (string.IsNullOrEmpty(sceneTemplateFile))
                 return;
 
-            var sourceSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(currentScene.path);
+            var sourceSceneAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>(currentScenePath);
             CreateTemplateFromScene(sourceSceneAsset, sceneTemplateFile, SceneTemplateAnalytics.TemplateCreationType.SaveCurrentSceneAsTemplateMenu);
         }
 

@@ -18,7 +18,7 @@ namespace UnityEngine.CrashReportHandler
         {
         }
 
-        [NativeProperty("Enabled")]
+        [NativeProperty("EnableCloudDiagnosticsReporting")]
         public static extern bool enableCaptureExceptions { get; set; }
 
         [NativeThrows]

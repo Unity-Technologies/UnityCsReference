@@ -50,7 +50,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            public Completer(BindingConvertersField field) : base(field.m_SearchField)
+            public Completer(BindingConvertersField field)
             {
                 m_Field = field;
                 SetupCompleterField(m_Field.searchField, true);

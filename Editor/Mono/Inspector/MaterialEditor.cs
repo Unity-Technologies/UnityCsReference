@@ -24,7 +24,6 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
             public static readonly GUIContent reflectionProbePickerIcon = EditorGUIUtility.TrIconContent("ReflectionProbeSelector");
             public static readonly GUIContent lightmapEmissiveLabelRealtimeGISupport = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime uses Realtime Global Illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is Baked or Realtime.\n\nBaked only has effect in scenes where Baked Global Illumination is enabled.\n\nRealtime won't light up other objects since Realtime Global Illumination is not supported.");
@@ -3092,7 +3091,7 @@ namespace UnityEditor
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
-            OnPreviewGUI(iconRect, Styles.inspectorBigInner);
+            OnPreviewGUI(iconRect, "IN BigTitle inner");
         }
 
         [MenuItem("CONTEXT/Material/Flatten Material Variant", true)]
