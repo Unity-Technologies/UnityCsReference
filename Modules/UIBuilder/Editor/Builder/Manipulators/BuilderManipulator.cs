@@ -65,13 +65,17 @@ namespace Unity.UI.Builder
         {
             m_BoundStyles = TrackedStyles.None;
 
-            foreach (var trackedStyle in s_TrackedStyles)
+            if (m_BindingsCacheSubscriber.cache != null)
             {
-                var styleName = GetStyleName(trackedStyle);
-                var propertyPath = BuilderConstants.StylePropertyPathPrefix + BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+                foreach (var trackedStyle in s_TrackedStyles)
+                {
+                    var styleName = GetStyleName(trackedStyle);
+                    var propertyPath = BuilderConstants.StylePropertyPathPrefix +
+                                       BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
 
-                if (m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, propertyPath))
-                    m_BoundStyles |= trackedStyle;
+                    if (m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, propertyPath))
+                        m_BoundStyles |= trackedStyle;
+                }
             }
         }
 

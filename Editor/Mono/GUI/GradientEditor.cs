@@ -87,6 +87,31 @@ namespace UnityEditor
                 m_SelectedSwatch = m_RGBSwatches[0];
         }
 
+        /// <summary>
+        /// Called when the Gradient has changed and we need to update the swatches.
+        /// </summary>
+        public void RefreshGradientData()
+        {
+            // If we are already editing a Gradient we need to preserve the selected swatch or dragging may be corrupted.
+            int selectedSwatch = 0;
+            bool selectedIsAlpha = false;
+            if (m_SelectedSwatch != null)
+            {
+                selectedIsAlpha = m_SelectedSwatch.m_IsAlpha;
+                selectedSwatch = selectedIsAlpha ? m_AlphaSwatches.IndexOf(m_SelectedSwatch) : m_RGBSwatches.IndexOf(m_SelectedSwatch);
+            }
+
+            BuildArrays();
+
+            var swatches = selectedIsAlpha ? m_AlphaSwatches : m_RGBSwatches;
+            if (swatches.Count > 0)
+            {
+                if (selectedSwatch > swatches.Count - 1 || selectedSwatch == -1)
+                    selectedSwatch = 0;
+                m_SelectedSwatch = swatches[selectedSwatch];
+            }
+        }
+
         public Gradient target
         {
             get { return m_Gradient; }

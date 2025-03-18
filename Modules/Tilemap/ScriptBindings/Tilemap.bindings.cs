@@ -292,7 +292,13 @@ namespace UnityEngine.Tilemaps
 
         public extern void ClearAllTiles();
         public extern void ResizeBounds();
-        public extern void CompressBounds();
+
+        [NativeMethod(Name = "CompressBounds")]
+        private extern void CompressTilemapBounds(bool keepEditorPreview);
+
+        public void CompressBounds() { CompressTilemapBounds(false); }
+
+        internal void CompressBoundsKeepEditorPreview() { CompressTilemapBounds(true); }
 
         public extern Vector3Int editorPreviewOrigin
         {

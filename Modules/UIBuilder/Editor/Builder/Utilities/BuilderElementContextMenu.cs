@@ -313,17 +313,17 @@ namespace Unity.UI.Builder
                     });
             }
 
-            evt.menu.AppendSeparator();
+            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector)
+            {
+                evt.menu.AppendSeparator();
 
-            evt.menu.AppendAction(
-                BuilderConstants.ExplorerHierarchyAddSelector,
-                a =>
-                {
-                    m_PaneWindow.commandHandler.CreateTargetedSelector(documentElement);
-                },
-            documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector
-                ? DropdownMenuAction.Status.Normal
-                : DropdownMenuAction.Status.Hidden);
+                evt.menu.AppendAction(
+                    BuilderConstants.ExplorerHierarchyAddSelector,
+                    a =>
+                    {
+                        m_PaneWindow.commandHandler.CreateTargetedSelector(documentElement);
+                    });
+            }
         }
     }
 }
