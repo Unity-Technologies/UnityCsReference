@@ -13,9 +13,9 @@ namespace UnityEngine.UIElements
         public static bool InterceptEvent(EventBase evt, [NotNull] BaseVisualElementPanel panel)
         {
             // s_GlobalPanelDebug handle picking elements across all panels
-            if (s_GlobalPanelDebug != null && evt is IMouseEvent mouseEvent)
+            if (s_GlobalPanelDebug != null)
             {
-                if (s_GlobalPanelDebug.InterceptMouseEvent(panel, mouseEvent))
+                if (s_GlobalPanelDebug.InterceptEvent(panel, evt))
                 {
                     evt.StopPropagation();
                     return true;

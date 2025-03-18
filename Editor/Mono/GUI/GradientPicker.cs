@@ -2,9 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEditor;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -267,14 +266,22 @@ namespace UnityEditor
             GUI.changed = true;
         }
 
-        public static void CloseWindow()
+        public static void RefreshGradientData()
+        {
+            s_GradientPicker?.m_GradientEditor?.RefreshGradientData();
+            RepaintWindow();
+        }
+
+        public static void CloseWindow(bool throwExitGUI = true)
         {
             if (s_GradientPicker == null)
                 return;
 
             s_GradientPicker.UnregisterEvents();
             s_GradientPicker.Close();
-            GUIUtility.ExitGUI();
+
+            if (throwExitGUI)
+                GUIUtility.ExitGUI();
         }
 
         public static void RepaintWindow()

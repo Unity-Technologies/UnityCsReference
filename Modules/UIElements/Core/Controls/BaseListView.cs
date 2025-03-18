@@ -748,8 +748,7 @@ namespace UnityEngine.UIElements
             {
                 overridingAddButtonBehavior(this, m_AddButton);
             }
-            else
-            if (onAdd != null)
+            else if (onAdd != null)
             {
                 onAdd.Invoke(this);
             }
@@ -758,29 +757,31 @@ namespace UnityEngine.UIElements
                 AddItems(1);
             }
 
-            if ( itemsSource != null
-                && itemsCountPreCallback != itemsSource.Count)
+            // If the list is bound then we need to wait for the change to be applied before updating the selection (UUM-98875)
+            if (GetProperty(internalBindingKey) == null)
             {
-                OnItemsSourceSizeChanged();
-
-                Action fnSetSelection = () =>
-                    {
-                        SetSelection(itemsSource.Count - 1);
-                        ScrollToItem(-1);
-                    };
-
-                if (GetProperty(internalBindingKey) == null)
+                OnAfterAddClicked(itemsCountPreCallback);
+            }
+            else
+            {
+                schedule.Execute(() =>
                 {
-                    fnSetSelection();
-                }
-                else
-                {
-                    schedule.Execute(fnSetSelection).ExecuteLater(100);
-                }
+                    OnAfterAddClicked(itemsCountPreCallback);
+                }).ExecuteLater(100);
             }
 
             if (HasValidDataAndBindings() && m_ArraySizeField != null)
                 m_ArraySizeField.showMixedValue = false;
+        }
+
+        void OnAfterAddClicked(int itemsCountPreCallback)
+        {
+            if (itemsSource != null && itemsCountPreCallback != itemsSource.Count)
+            {
+                OnItemsSourceSizeChanged();
+                SetSelection(itemsSource.Count - 1);
+                ScrollToItem(-1);
+            }
         }
 
         void OnRemoveClicked()
