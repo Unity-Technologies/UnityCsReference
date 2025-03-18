@@ -228,6 +228,24 @@ namespace Unity.UI.Builder
 
                     m_DataSourcePathField.isDelayed = true;
                     m_DataSourcePathCompleter = new BuilderDataSourcePathCompleter(m_DataSourcePathField);
+                    // HACK: We pass the text field as the field to "edit" by the completer.
+                    // When writing directly into the field (so not choosing an item from the auto-complete),
+                    // it triggers a ChangeEvent<string>, which is picked up by the PropertyField to change
+                    // the data inside the UXMLSerializedData. When choosing an item using the completer,
+                    // the event is not sent, so we need to rely on the itemChosen API to be notified of it.
+                    // Since we still need to go through the PropertyField, we fake a change event that will
+                    // be picked up by the PropertyField.
+                    // Changing the behaviour of the completer to send an event would break variable handling
+                    // of the DimensionStyleFields.
+                    m_DataSourcePathCompleter.itemChosen += i =>
+                    {
+                        var path = m_DataSourcePathCompleter.results[i].propertyPath.ToString();
+                        using (var evt = ChangeEvent<string>.GetPooled(path, path))
+                        {
+                            evt.elementTarget = m_DataSourcePathField;
+                            m_DataSourcePathField.SendEvent(evt);
+                        }
+                    };
                     break;
             }
 

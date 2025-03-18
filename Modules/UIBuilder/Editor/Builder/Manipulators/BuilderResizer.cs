@@ -132,6 +132,18 @@ namespace Unity.UI.Builder
         {
             base.UpdateBoundStyles();
 
+            if (m_Target != null && m_Target.parent != null)
+            {
+                if (m_Target.resolvedStyle.position == Position.Relative &&
+                    !Mathf.Approximately(m_Target.resolvedStyle.flexGrow, 0))
+                {
+                    if (m_Target.parent.resolvedStyle.flexDirection == FlexDirection.Column)
+                        m_BoundStyles |= TrackedStyles.Height;
+                    else
+                        m_BoundStyles |= TrackedStyles.Width;
+                }
+            }
+
             void UpdateHandleFromBindings(VisualElement handle)
             {
                 var handleName = handle.name;
@@ -139,7 +151,6 @@ namespace Unity.UI.Builder
                 var handleTooltip = string.Empty;
                 var boundTrackedStyles = m_BoundStyles & trackedStyles;
                 var bound = boundTrackedStyles != 0;
-
                 m_HandleElements[handleName].EnableInClassList(s_DisabledHandleClassName, bound);
 
                 if (bound)
@@ -155,6 +166,12 @@ namespace Unity.UI.Builder
             {
                 UpdateHandleFromBindings(handlePair.Value);
             }
+        }
+
+        protected override void SetStylesFromTargetStyles()
+        {
+            base.SetStylesFromTargetStyles();
+            UpdateBoundStyles();
         }
 
         void OnDrag(

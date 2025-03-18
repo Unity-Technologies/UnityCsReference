@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 
@@ -19,5 +20,8 @@ namespace UnityEngine.TextCore.Text
 
         [Ignore] // This field must be populated on the managed side
         public FontAsset fontAsset;
+
+        [Ignore]
+        public List<List<int>> textElementInfoIndicesByAtlas;
     }
 }

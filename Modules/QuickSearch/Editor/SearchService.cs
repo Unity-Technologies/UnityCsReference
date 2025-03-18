@@ -66,27 +66,13 @@ namespace UnityEditor.Search
 
         static SearchService()
         {
-            Refresh();
-            RefreshObjectSelectors();
-            SetupSearchFirstUse();
+            Initialize();
         }
 
-        internal static void SetupSearchFirstUse()
+        internal static void Initialize()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode)
-                return;
-
-            if (SearchSettings.onBoardingDoNotAskAgain || Utils.IsRunningTests())
-                return;
-
-            if (!Utils.IsMainProcess())
-                return;
-
-            if (!SearchDatabase.Enumerate(SearchDatabase.IndexLocation.assets).Any())
-                SearchDatabase.CreateDefaultIndex();
-
-            SearchSettings.onBoardingDoNotAskAgain = true;
-            SearchSettings.Save();
+            Refresh();
+            RefreshObjectSelectors();
         }
 
         /// <summary>

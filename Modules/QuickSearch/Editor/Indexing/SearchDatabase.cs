@@ -348,11 +348,9 @@ namespace UnityEditor.Search
 
         public static IEnumerable<SearchDatabase> EnumerateAll()
         {
-            if (s_DBs == null)
+            if (s_DBs == null || s_DBs.Count == 0)
             {
                 s_DBs = new List<SearchDatabase>();
-                if (File.Exists(defaultSearchDatabaseIndexPath))
-                    s_DBs.Add(Create(defaultSearchDatabaseIndexPath));
 
                 string searchDataFindAssetQuery = $"t:{nameof(SearchDatabase)}";
                 var dbPaths = AssetDatabase.FindAssets(searchDataFindAssetQuery).Select(AssetDatabase.GUIDToAssetPath)
@@ -362,6 +360,8 @@ namespace UnityEditor.Search
                     .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
                     .Where(db => db));
 
+                AddDefaultIndexDatabaseIfNeeded(s_DBs, defaultSearchDatabaseIndexPath);
+
                 SearchMonitor.contentRefreshed -= TrackAssetIndexChanges;
                 SearchMonitor.contentRefreshed += TrackAssetIndexChanges;
             }
@@ -369,6 +369,34 @@ namespace UnityEditor.Search
             foreach (var g in s_DBs.Where(db => db).GroupBy(db => db.ready).OrderBy(g => !g.Key))
                 foreach (var db in g.OrderBy(db => db.settings.baseScore))
                     yield return db;
+        }
+
+        internal static void AddDefaultIndexDatabaseIfNeeded(List<SearchDatabase> dbs, string defaultSearchDatabasePath)
+        {
+            if (dbs.Count == 0)
+            {
+                SetupDefaultIndexFirstUse(defaultSearchDatabasePath);
+            }
+            if (File.Exists(defaultSearchDatabasePath))
+                dbs.Add(Create(defaultSearchDatabasePath));
+        }
+
+        internal static void SetupDefaultIndexFirstUse(string defaultSearchDatabasePath)
+        {
+            if (SearchSettings.onBoardingDoNotAskAgain || Utils.IsRunningTests())
+                return;
+
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+                return;
+
+            if (!Utils.IsMainProcess())
+                return;
+
+            if (!File.Exists(defaultSearchDatabasePath))
+                CreateDefaultIndex(defaultSearchDatabasePath);
+
+            SearchSettings.onBoardingDoNotAskAgain = true;
+            SearchSettings.Save();
         }
 
         private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
@@ -1135,14 +1163,24 @@ namespace UnityEditor.Search
             return AssetDatabaseExperimental.GetArtifactPaths(id, out paths);
         }
 
-        internal static SearchDatabase CreateDefaultIndex()
+        internal static void CreateDefaultIndex()
         {
-            if (File.Exists(defaultSearchDatabaseIndexPath))
-                File.Delete(defaultSearchDatabaseIndexPath);
-            var defaultIndexFilename = Path.GetFileNameWithoutExtension(defaultSearchDatabaseIndexPath);
-            var defaultIndexFolder = Path.GetDirectoryName(defaultSearchDatabaseIndexPath);
-            var defaultDbIndexPath = SearchDatabaseImporter.CreateTemplateIndex("_Default", defaultIndexFolder, defaultIndexFilename);
-            return ImportAsset(defaultDbIndexPath);
+            CreateDefaultIndex(defaultSearchDatabaseIndexPath);
+        }
+
+        internal static void CreateDefaultIndex(string indexPath)
+        {
+            if (File.Exists(indexPath))
+                File.Delete(indexPath);
+            var defaultIndexFilename = Path.GetFileNameWithoutExtension(indexPath);
+            var defaultIndexFolder = Path.GetDirectoryName(indexPath);
+            SearchDatabaseImporter.CreateTemplateIndex("_Default", defaultIndexFolder, defaultIndexFilename);
+        }
+
+        internal static SearchDatabase CreateDefaultIndexAndImport()
+        {
+            CreateDefaultIndex(defaultSearchDatabaseIndexPath);
+            return ImportAsset(defaultSearchDatabaseIndexPath);
         }
 
         // Don't use on the main thread!

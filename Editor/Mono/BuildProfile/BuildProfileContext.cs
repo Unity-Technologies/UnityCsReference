@@ -808,6 +808,7 @@ namespace UnityEditor.Build.Profile
             activeProfile?.UpdatePlayerSettingsObjectFromYAML();
         }
 
+
         static bool ShouldReturnActiveProfile(GUID platformGuid, string sharedSetting = null)
         {
             if (!string.IsNullOrEmpty(sharedSetting))
