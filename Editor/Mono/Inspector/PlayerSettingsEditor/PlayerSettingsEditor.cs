@@ -167,7 +167,7 @@ namespace UnityEditor
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on-demand resources*");
-            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
+            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC*", "With incremental Garbage Collection, the Garbage Collector will try to time-slice the collection task into multiple steps, to avoid long GC times preventing content from running smoothly.");
             public static readonly GUIContent assemblyVersionValidation = EditorGUIUtility.TrTextContent("Assembly Version Validation", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent assemblyVersionValidationEditorOnly = EditorGUIUtility.TrTextContent("Assembly Version Validation (editor only)", "When Mono Resolves types from a assembly that is Strong Named, versions have to match with the one already loaded.");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
@@ -1995,7 +1995,7 @@ namespace UnityEditor
             }
 
             bool graphicsJobsOptionEnabled = true;
-            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.defaultTarget);
+            bool graphicsJobs = PlayerSettings.GetGraphicsJobsForPlatform(platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
             bool graphicsJobsModeOptionEnabled = graphicsJobs;
 
@@ -2069,7 +2069,8 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
                 {
                     Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
-                    PlayerSettings.SetGraphicsJobsForPlatform(platform.defaultTarget, newGraphicsJobs);
+                    PlayerSettings.SetGraphicsJobsForPlatform(platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget, newGraphicsJobs);
+
                 }
             }
             if (gfxJobModesSupported)

@@ -252,12 +252,18 @@ namespace UnityEditor
                 list.serializedProperty.GetArrayElementAtIndex(list.index).FindPropertyRelative("name").stringValue = "New Layer";
                 list.serializedProperty.serializedObject.ApplyModifiedProperties();
             }
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         public void ReorderSortLayerList(ReorderableList list)
         {
             serializedObject.ApplyModifiedProperties();
             InternalEditorUtility.UpdateSortingLayersOrder();
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         private void RemoveFromSortLayerList(ReorderableList list)
@@ -266,6 +272,9 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
             serializedObject.Update();
             InternalEditorUtility.UpdateSortingLayersOrder();
+
+            if (SortingLayer.onLayerChanged != null)
+                SortingLayer.onLayerChanged();
         }
 
         private bool CanEditSortLayerEntry(int index)
