@@ -75,6 +75,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
+[assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Internal")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]
