@@ -186,7 +186,9 @@ namespace UnityEditor.Actions
             if (dropdownMenu.MenuItems().Count == 0)
                 AddAction(dropdownMenu, "No Actions for this Context", null, false);
 
-            dropdownMenu.DoDisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
+#pragma warning disable CS0618 // Type or member is obsolete
+            EditorMenuExtensions.DoDisplayEditorMenuFromImGUI(dropdownMenu, new Rect(Event.current.mousePosition, Vector2.zero));
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         static T[] ToArray<T>(IEnumerable<T> enumerable) where T : Object

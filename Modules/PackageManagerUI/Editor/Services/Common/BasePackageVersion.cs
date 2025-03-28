@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         protected string m_DisplayName;
-        public virtual string displayName => m_DisplayName;
+        public virtual string displayName => m_DisplayName ?? string.Empty;
 
         [SerializeField]
         protected string m_Description;
@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         IPackage IPackageVersion.package
         {
             get => m_Package;
-            set { m_Package = value; }
+            set => m_Package = value;
         }
 
         [SerializeField]
@@ -78,7 +78,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual RegistryType availableRegistry => RegistryType.None;
 
-        // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements
+        // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements,
         // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
         // other Asset Store packages (as in, if Upm Packages on Asset Store are considered with entitlements, then every
         // package from Asset Store should be considered to have entitlements).
@@ -147,12 +147,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version != null && ((SemVersion)version).Prerelease.IndexOf(prerelease, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            // searching for pre-release if search text matches with search term 'pre', case insensitive
+            // searching for pre-release if search text matches with search term 'pre', case-insensitive
             const string prereleaseSearchText = "Pre";
             if (HasTag(PackageTag.PreRelease) && prereleaseSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
 
-            // searching for experimental if search text matches with search term 'experimental', case insensitive
+            // searching for experimental if search text matches with search term 'experimental', case-insensitive
             const string experimentalSearchText = "Experimental";
             if (HasTag(PackageTag.Experimental) && experimentalSearchText.IndexOf(searchText, StringComparison.CurrentCultureIgnoreCase) >= 0)
                 return true;
@@ -167,10 +167,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var words = searchText.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                 var categories =  category.Split('/');
-                if (words.All(word => word.Length >= 2 && categories.Any(category => category.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
+                if (words.All(word => word.Length >= 2 && categories.Any(c => c.StartsWith(word, StringComparison.CurrentCultureIgnoreCase))))
                     return true;
             }
-
             return false;
         }
     }

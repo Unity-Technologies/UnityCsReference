@@ -474,7 +474,9 @@ namespace UnityEditor.UIElements.Debugger
         void DropDown()
         {
             var root = panel.GetRootVisualElement();
-            root.Add(m_MenuContainer);
+
+            if (m_MenuContainer.parent != root)
+                root.Add(m_MenuContainer);
 
             m_MenuContainer.style.left = root.layout.x;
             m_MenuContainer.style.top = root.layout.y;

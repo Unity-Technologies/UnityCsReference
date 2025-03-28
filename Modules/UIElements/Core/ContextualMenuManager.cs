@@ -50,10 +50,7 @@ namespace UnityEngine.UIElements
             if (UIElementsUtility.isOSXContextualMenuPlatform)
             {
                 displayMenuHandledOSX = true;
-
-                // Reset the button state now, as we might miss PointerUp events to the ContextualMenu window.
-                // UUM-97875: we need to release all buttons, not just the one that showed the menu.
-                PointerDeviceState.ReleaseAllButtons(pointerId);
+                ResetPointerDown(pointerId);
             }
         }
 
@@ -63,5 +60,12 @@ namespace UnityEngine.UIElements
         /// <param name="menu">The menu to display.</param>
         /// <param name="triggerEvent">The event that triggers the display of the contextual menu.</param>
         protected internal abstract void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent);
+
+        internal static void ResetPointerDown(int pointerId)
+        {
+            // Reset the button state now, as we might miss PointerUp events to the ContextualMenu window.
+            // UUM-97875: we need to release all buttons, not just the one that showed the menu.
+            PointerDeviceState.ReleaseAllButtons(pointerId);
+        }
     }
 }

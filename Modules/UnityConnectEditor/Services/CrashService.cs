@@ -49,12 +49,12 @@ namespace UnityEditor.Connect
 
         public override bool IsServiceEnabled()
         {
-            return CrashReportingSettings.canUploadReports;
+            return CrashReportingSettings.enabled;
         }
 
         protected override void InternalEnableService(bool enable, bool shouldUpdateApiFlag)
         {
-            if (CrashReportingSettings.canUploadReports != enable)
+            if (CrashReportingSettings.enabled != enable)
             {
                 CrashReportingSettings.SetEnabledServiceWindow(enable);
                 EditorAnalytics.SendEventServiceInfo(new CrashServiceState() { crash_reporting = enable });

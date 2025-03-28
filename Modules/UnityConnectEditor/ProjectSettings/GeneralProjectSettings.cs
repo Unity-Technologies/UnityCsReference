@@ -85,7 +85,7 @@ namespace UnityEditor.Connect
             Notification.Topic.CrashService,
             Notification.Topic.ProjectBind,
             Notification.Topic.PurchasingService,
-            Notification.Topic.UDPService,
+            Notification.Topic.UDPService
         };
 
         protected override SingleService serviceInstance => null;

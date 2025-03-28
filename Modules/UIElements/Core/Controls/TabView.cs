@@ -488,6 +488,14 @@ namespace UnityEngine.UIElements
             SaveViewData();
         }
 
+        void UpdateIndexes()
+        {
+            for (int i = 0; i < m_Tabs.Count; i++)
+            {
+                m_Tabs[i].index = i;
+            }
+        }
+
         void OnElementAdded(VisualElement ve, int index)
         {
             if (ve is not Tab tab || m_Reordering)
@@ -501,11 +509,12 @@ namespace UnityEngine.UIElements
                 m_TabHeaders.Insert(index, tabHeader);
                 m_Tabs.Insert(index, tab);
                 tab.EnableTabDragHandles(m_Reorderable);
-
-                tab.closed += (t) => OnTabClosed(t, index);
+                tab.closed += OnTabClosed;
             }
 
             tab.selected += OnTabSelected;
+
+            UpdateIndexes();
 
             // Set the first tab to be active
             if (activeTab == null)
@@ -527,6 +536,8 @@ namespace UnityEngine.UIElements
             tab.hierarchy.Insert(0, tabHeaderVisualElement);
             tab.SetInactive();
 
+            UpdateIndexes();
+
             // If we delete an active tab and there are more available, default back to the first one.
             if (activeTab == tab && m_Tabs.Count > 0)
                 activeTab = m_Tabs[0];
@@ -539,9 +550,9 @@ namespace UnityEngine.UIElements
             activeTab = tab;
         }
 
-        void OnTabClosed(Tab tab, int index)
+        void OnTabClosed(Tab tab)
         {
-            tabClosed?.Invoke(tab, index);
+            tabClosed?.Invoke(tab, tab.index);
         }
 
         /// <summary>
@@ -572,6 +583,8 @@ namespace UnityEngine.UIElements
             Insert(to, tab);
 
             m_Reordering = false;
+
+            UpdateIndexes();
 
             tabReordered?.Invoke(from, to);
 

@@ -300,29 +300,6 @@ namespace UnityEditorInternal
             return items;
         }
 
-        private class AssemblyStripperModuleAdder : IPreStrippingModuleAdder
-        {
-            private List<string> m_ForceIncludes;
-
-            public AssemblyStripperModuleAdder(List<string> forceIncludes)
-            {
-                m_ForceIncludes = forceIncludes;
-            }
-
-            public void AddModule(string moduleName)
-            {
-                if (IsModuleIncluded(moduleName))
-                    return;
-
-                m_ForceIncludes.Add(moduleName);
-            }
-
-            public bool IsModuleIncluded(string moduleName)
-                => m_ForceIncludes.Any(i => string.Equals(i, moduleName));
-        }
-
-        public static event Action<IPreStrippingModuleAdder> onCollectIncludedModules;
-
         static void CollectIncludedAndExcludedModules(out List<string> forceInclude, out List<string> forceExclude)
         {
             forceInclude = new List<string>();
@@ -336,9 +313,6 @@ namespace UnityEditorInternal
                 else if (includeSetting == ModuleIncludeSetting.ForceExclude)
                     forceExclude.Add(module);
             }
-
-            var adder = new AssemblyStripperModuleAdder(forceInclude);
-            onCollectIncludedModules?.Invoke(adder);
         }
 
         private static NPath WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr, NPath linkerInputDirectory)

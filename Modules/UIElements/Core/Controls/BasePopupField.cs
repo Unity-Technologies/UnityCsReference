@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
         internal List<TValueChoice> m_Choices;
         TextElement m_TextElement;
         VisualElement m_ArrowElement;
+        IVisualElementScheduledItem m_ScheduledShowMenuItem;
 
         /// <summary>
         /// This is the text displayed.
@@ -155,6 +156,12 @@ namespace UnityEngine.UIElements
         {
             if (evt.button == (int)MouseButton.LeftMouse && ContainsPointer(evt.pointerId))
             {
+                // if the menu is not showing due to inputs on the same frame, force show it (UUM-91306)
+                if (m_ScheduledShowMenuItem != null && m_ScheduledShowMenuItem.isActive)
+                {
+                    m_ScheduledShowMenuItem.Pause();
+                    ShowMenu();
+                }
                 // Prevent propagation to other elements (UUM-85620)
                 evt.StopPropagation();
             }
@@ -184,7 +191,7 @@ namespace UnityEngine.UIElements
             {
                 if (ContainsPointer(evt.pointerId))
                 {
-                    schedule.Execute(ShowMenu);
+                    m_ScheduledShowMenuItem = schedule.Execute(ShowMenu);
                     evt.StopPropagation();
                 }
             }
@@ -199,18 +206,9 @@ namespace UnityEngine.UIElements
         // Used in tests
         internal void ShowMenu()
         {
-            IGenericMenu menu;
-            if (createMenuCallback != null)
-            {
-                menu = createMenuCallback.Invoke();
-            }
-            else
-            {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
-            }
-
-            AddMenuItems(menu);
-            menu.DropDown(visualInput.worldBound, this, true);
+            m_GenericMenu = createMenuCallback != null ? createMenuCallback.Invoke() : elementPanel.CreateMenu();
+            AddMenuItems(m_GenericMenu);
+            m_GenericMenu.DropDown(visualInput.worldBound, this, true);
         }
 
         private class PopupTextElement : TextElement

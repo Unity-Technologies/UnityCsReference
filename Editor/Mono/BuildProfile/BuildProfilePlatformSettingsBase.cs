@@ -117,7 +117,6 @@ namespace UnityEditor.Build.Profile
             set => m_InstallInBuildFolder = value;
         }
 
-
         /// <summary>
         /// Set platform setting based on strings for name and value. Native
         /// calls this to keep build profiles and EditorUserBuildSettings

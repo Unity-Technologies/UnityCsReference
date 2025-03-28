@@ -92,7 +92,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void ShowInputDropdown(InputDropdownArgs args)
         {
-            var position = PackageManagerWindow.instance.CalculateDropdownPosition(this);
+            var position = EditorMenuExtensions.GUIToScreenRect(this, worldBound);
             var dropdown = new GenericInputDropdown(m_ResourceLoader, PackageManagerWindow.instance, args) { position = position };
             DropdownContainer.ShowDropdown(dropdown);
         }

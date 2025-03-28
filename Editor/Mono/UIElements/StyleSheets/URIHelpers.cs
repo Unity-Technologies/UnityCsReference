@@ -198,7 +198,18 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 var query = ExtractUriQueryParameters(absoluteUri);
 
-                // note: we could relax this and support queries with only a guid parameter, resolving the main asset
+                // Guid only
+                if (query.hasGuid && !query.hasFileId && !query.hasType)
+                {
+                    var pathFromGuid = AssetDatabase.GUIDToAssetPath(query.guid);
+                    if (AssetExistsAtPath(pathFromGuid))
+                    {
+                        response.resolvedProjectRelativePath = pathFromGuid;
+                        response.result = URIValidationResult.OK;
+                        return response;
+                    }
+                }
+
                 if (query.hasAllReferenceParams)
                 {
                     // TODO: refactor to avoid the unnecessary JSON serialization

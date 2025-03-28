@@ -597,14 +597,7 @@ namespace UnityEngine.UIElements
 
         internal float ResolveItemHeight(float height = -1)
         {
-            height = height < 0 ? fixedItemHeight : height;
-
-            if (elementPanel == null)
-            {
-                return height;
-            }
-
-            return AlignmentUtils.RoundToPixelGrid(height, scaledPixelsPerPoint);
+            return height < 0 ? fixedItemHeight : height;
         }
 
         /// <summary>
