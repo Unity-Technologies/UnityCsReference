@@ -80,10 +80,10 @@ namespace UnityEditor.UIElements
             UIElementsEditorWindowCreator editorWindow = GetWindow<UIElementsEditorWindowCreator>(true, "UI Toolkit Editor Window Creator");
             editorWindow.maxSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
             editorWindow.minSize = new Vector2(Styles.K_WindowWidth, Styles.K_WindowHeight);
-            editorWindow.init();
+            editorWindow.Init();
         }
 
-        public void init()
+        public void Init()
         {
             m_Folder = string.Empty;
             if (Selection.activeObject != null)
@@ -383,12 +383,12 @@ namespace UnityEditor.UIElements
                         stringBuilder.Append('\t');
                     }
 
-                    stringBuilder.AppendLine(@"<engine:Label text=""Hello World! From UXML"" />");
+                    stringBuilder.AppendLine(@"<ui:Label text=""Hello World! From UXML"" />");
 
                     if (m_IsUssEnable)
                     {
                         stringBuilder.Append('\t');
-                        stringBuilder.AppendLine(@"<engine:Label class=""custom-label"" text=""Hello World! With Style"" />");
+                        stringBuilder.AppendLine(@"<ui:Label class=""custom-label"" text=""Hello World! With Style"" />");
                     }
 
                     File.WriteAllText(uxmlPath, UIElementsTemplate.CreateUXMLTemplate(m_Folder, stringBuilder.ToString()));

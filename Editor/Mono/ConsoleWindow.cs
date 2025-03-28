@@ -787,7 +787,7 @@ namespace UnityEditor
                 float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
 
                 var rect = EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
-                EditorGUI.ScrollableTextAreaInternal(rect, stackWithHyperlinks, ref m_TextScroll, Constants.MessageStyle);
+                EditorGUI.ScrollableLabelAreaInternal(rect, stackWithHyperlinks, ref m_TextScroll, Constants.MessageStyle);
                 EditorGUILayout.EndHorizontal();
 
                 SplitterGUILayout.EndVerticalSplit();

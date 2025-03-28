@@ -11,6 +11,7 @@ using UnityEditor.Build;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Modules;
+using UnityEditor.Build.Profile;
 
 namespace UnityEditor
 {
@@ -1019,6 +1020,8 @@ namespace UnityEditor
             if (!string.IsNullOrEmpty(defines))
                 defines = string.Join(";", ScriptingDefinesHelper.ConvertScriptingDefineStringToArray(defines));
 
+            BuildProfileContext.UpdateScriptingDefineSymbolsInActivePlayerSettingsOverride(buildTarget, defines);
+
             SetScriptingDefineSymbolsInternal(buildTarget.TargetName, defines);
         }
 
@@ -1805,6 +1808,12 @@ namespace UnityEditor
          * Internal instance methods used when accessing settings outside of the global static instance.
          * Referenced by PlayerSettingsEditor when reading/writing to a non-active player settings object.
          */
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern string GetScriptingDefineSymbols_Internal(PlayerSettings instance, string buildTargetName);
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetScriptingDefineSymbols_Internal(PlayerSettings instance, string buildTargetName, string defines);
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void GetBatchingForPlatform_Internal(PlayerSettings instance, BuildTarget platform, out int staticBatching, out int dynamicBatching);

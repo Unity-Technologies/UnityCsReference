@@ -142,7 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var assetStoreOAuth = Register(new AssetStoreOAuth(dateTimeProxy, unityConnectProxy, unityOAuthProxy, httpClientFactory));
             var assetStoreRestAPI = Register(new AssetStoreRestAPI(unityConnectProxy, assetStoreOAuth, jsonParser, httpClientFactory));
             var localInfoHandler = Register(new LocalInfoHandler(assetStoreUtils, ioProxy));
-            var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy, uniqueIdMapper));
+            var assetStoreCache = Register(new AssetStoreCache(applicationProxy, httpClientFactory, ioProxy));
             var operationFactory = Register(new OperationFactory(unityConnectProxy, assetStoreRestAPI, assetStoreCache));
             var assetStoreClient = Register(new AssetStoreClientV2(assetStoreCache, assetStoreRestAPI, fetchStatusTracker, assetDatabaseProxy, operationFactory, localInfoHandler));
             var assetStorePackageInstaller = Register(new AssetStorePackageInstaller(ioProxy, assetStoreCache, assetDatabaseProxy, assetSelectionHandler, applicationProxy));
@@ -164,9 +164,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             Register(new EditorAnalyticsProxy());
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient));
-            Register(new AssetStorePackageFactory(uniqueIdMapper, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
-            Register(new UpmPackageFactory(uniqueIdMapper, upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy));
-            Register(new UpmOnAssetStorePackageFactory(uniqueIdMapper, unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmClient, settingsProxy));
+            Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));
+            Register(new UpmPackageFactory(upmCache, upmClient, backgroundFetchHandler, packageDatabase, settingsProxy));
+            Register(new UpmOnAssetStorePackageFactory(unityConnectProxy, assetStoreCache, backgroundFetchHandler, packageDatabase, fetchStatusTracker, upmCache, upmRegistryClient, settingsProxy));
             Register(new PackageLinkFactory(upmCache, assetStoreCache, applicationProxy, ioProxy));
 
             // We need to save some services as serialized members for them to survive domain reload properly

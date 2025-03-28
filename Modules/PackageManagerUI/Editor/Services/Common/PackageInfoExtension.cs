@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.PackageManager.UI.Internal
@@ -10,6 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal static class PackageInfoExtension
     {
         public const string k_BuiltinPackageDocsUrlKey = "Scripting API: ";
+        private static readonly Dictionary<string, bool> s_IsUnityUrlResults = new();
 
         public static string GetShortVersionId(this PackageInfo packageInfo)
         {
@@ -67,6 +69,56 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static bool IsBuiltIn(this PackageInfo packageInfo)
         {
             return packageInfo.source == PackageSource.BuiltIn && packageInfo.type == "module";
+        }
+
+        public static long ParseProductId(this PackageInfo packageInfo)
+        {
+            var productIdString = packageInfo?.assetStore?.productId;
+            return !string.IsNullOrEmpty(productIdString) && long.TryParse(productIdString, out var productId) ? productId : 0;
+        }
+
+        public static RegistryType GetAvailableRegistryType(this PackageInfo packageInfo)
+        {
+            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
+            if (packageInfo?.source == PackageSource.BuiltIn)
+                return RegistryType.UnityRegistry;
+
+            if (packageInfo?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
+                return RegistryType.AssetStore;
+
+            // Details from the UPM Core team:
+            // We need to check "versions" because RegistryInfo is never null.
+            // It is always populated with the registry info from which the search was performed (usually the main Unity Registry).
+            // The most accurate way to determine that a package's registry is neither "UnityRegistry" nor "MyRegistries"
+            // is by verifying that there are no versions found in the "versions" list.
+            if (packageInfo?.versions == null || packageInfo.versions.all.Length == 0)
+                return RegistryType.None;
+
+            if (!s_IsUnityUrlResults.TryGetValue(packageInfo.registry.url, out var isUnityUrl))
+            {
+                isUnityUrl = IsUnityUrl(packageInfo.registry.url);
+                s_IsUnityUrlResults[packageInfo.registry.url] = isUnityUrl;
+            }
+            return packageInfo.registry.isDefault && isUnityUrl ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
+        }
+
+        private static bool IsUnityUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url))
+                return false;
+
+            try
+            {
+                var uri = new Uri(url);
+                if (uri.IsLoopback)
+                    return false;
+                var host = uri.Host.ToLowerInvariant();
+                return host.EndsWith(".unity.com") || host.EndsWith(".unity3d.com");
+            }
+            catch (UriFormatException)
+            {
+                return false;
+            }
         }
     }
 }

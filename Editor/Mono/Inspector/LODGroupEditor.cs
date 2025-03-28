@@ -1633,14 +1633,24 @@ namespace UnityEditor
             var bounds = new Bounds(Vector3.zero, Vector3.zero);
             bool boundsSet = false;
 
+            Renderer[] renderers = null;
+            if (target is LODGroup targetLODGroup)
+            {
+                LOD[] lodArray = targetLODGroup.GetLODs();
+                int lodIndex = LODSelected ? activeLOD : 0; // display LOD0 if no LOD is selected
+                if (lodIndex >= 0 && lodIndex < lodArray.Length)
+                {
+                    renderers = lodArray[lodIndex].renderers; 
+                }
+            }
+            if (renderers == null)
+                return;
+
             var meshsToRender = new List<MeshFilter>();
             var billboards = new List<BillboardRenderer>();
-            var renderers = serializedObject.FindProperty(string.Format(kRenderRootPath, LODSelected ? activeLOD : 0)); // display LOD0 if no LOD is selected
-            for (int i = 0; i < renderers.arraySize; i++)
+            for (int i = 0; i < renderers.Length; i++)
             {
-                var lodRenderRef = renderers.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
-                var renderer = lodRenderRef.objectReferenceValue as Renderer;
-
+                var renderer = renderers[i];
                 if (renderer == null)
                     continue;
 

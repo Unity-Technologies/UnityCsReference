@@ -527,7 +527,6 @@ namespace UnityEngine.UIElements
         /// <param name="anchored">If true, the menu's width matches the width of the @@position@@; otherwise, the menu expands to the container's full width.</param>
         public void DropDown(Rect position, VisualElement targetElement = null, bool anchored = false)
         {
-            // TODO the argument should not optional. This is because IGenericMenu requires it, but this is not great.
             if (targetElement == null)
             {
                 Debug.LogError("VisualElement Generic Menu needs a target to find a root to attach to.");

@@ -714,6 +714,8 @@ namespace UnityEngine.UIElements
         public ILiveReloadSystem liveReloadSystem { get; set; }
 
         public virtual void Render() => panelRenderer.Render();
+
+        internal virtual IGenericMenu CreateMenu() => new GenericDropdownMenu();
     }
 
     // Strategy to initialize the editor updater

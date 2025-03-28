@@ -96,15 +96,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RefreshName()
         {
-            if (!string.IsNullOrEmpty(m_Version.name))
-            {
-                UIUtils.SetElementDisplay(detailName, true);
-                detailName.SetValueWithoutNotify(m_Version.name);
-            }
-            else
-            {
-                UIUtils.SetElementDisplay(detailName, false);
-            }
+            // We use package.name instead of version.name because `version.name` would be empty for a PlaceholderPackageVersion
+            detailName.SetValueWithoutNotify(m_Package.name);
+            UIUtils.SetElementDisplay(detailName, !string.IsNullOrEmpty(m_Package.name));
         }
 
         private void RefreshFeatureSetElements(VisualState visualState = null)
@@ -326,9 +320,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_Version is { availableRegistry: RegistryType.UnityRegistry or RegistryType.MyRegistries })
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(m_Version.name, m_Version.isInstalled, m_Version.versionString);
-                var registryName = isByUnity ? L10n.Tr("Unity Registry") : packageInfo.registry.name;
+                // Null check for the package info is needed here because sometimes the PackageDetails would be refreshed mid-package generation (due to selection change),
+                // and sometimes an installed package would exist in the PackageDatabase, but the corresponding installed package info has been removed mid-generation.
+                // This won't cause any UI issues as the UI will be refreshed again after all packages are generated (and some packages removed).
+                var registryName = isByUnity ? L10n.Tr("Unity Registry") : packageInfo?.registry?.name ?? string.Empty;
                 if (isByUnity)
-                    registryAndAuthorLabel.tooltip = packageInfo.registry.url;
+                    registryAndAuthorLabel.tooltip = packageInfo?.registry?.url ?? string.Empty;
                 if (!string.IsNullOrEmpty(registryName))
                 {
                     registryAndAuthorLabel.text = string.IsNullOrEmpty(author)

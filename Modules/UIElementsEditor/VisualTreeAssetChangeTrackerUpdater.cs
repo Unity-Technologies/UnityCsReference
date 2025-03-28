@@ -237,7 +237,7 @@ namespace UnityEditor.UIElements
                 {
                     m_LastDirtyCount = dirtyCount,
                     m_LastElementCount = asset.visualElementAssets.Count,
-                    m_LastInlinePropertiesCount = asset.inlineSheet.rules.Sum(r => r.properties.Length),
+                    m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Length > 0 ? asset.inlineSheet.rules.Sum(r => r.properties.Length) : 0,
                     m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
