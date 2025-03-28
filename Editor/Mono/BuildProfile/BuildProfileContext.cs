@@ -714,5 +714,21 @@ namespace UnityEditor.Build.Profile
 
         [VisibleToOtherModules]
         internal static bool IsSharedProfile(BuildTarget target) => target == BuildTarget.NoTarget;
+
+        internal static void UpdateScriptingDefineSymbolsInActivePlayerSettingsOverride(NamedBuildTarget buildTarget, string defines)
+        {
+            var profile = activeProfile;
+
+            if (profile == null)
+                return;
+
+            if (profile.playerSettings == null)
+                return;
+
+            PlayerSettings.SetScriptingDefineSymbols_Internal(profile.playerSettings, buildTarget.TargetName, defines);
+            profile.SerializePlayerSettings();
+            EditorUtility.SetDirty(profile);
+            AssetDatabase.SaveAssetIfDirty(profile);
+        }
     }
 }

@@ -227,6 +227,7 @@ namespace UnityEngine.Rendering
             var worldSpaceSize = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.worldSpaceSize, nativeData.lodGroupCount, Allocator.Invalid);
             var renderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.renderersCount, nativeData.lodGroupCount, Allocator.Invalid);
             var lastLODIsBillboard = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.lastLODIsBillboard, nativeData.lodGroupCount, Allocator.Invalid);
+            var forceLODMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(nativeData.forceLODMask, nativeData.lodGroupCount, Allocator.Invalid);
 
             var invalidLODGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.invalidLODGroupID, nativeData.invalidLODGroupCount, Allocator.Invalid);
 
@@ -242,6 +243,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceSize, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderersCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lastLODIsBillboard, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref forceLODMask, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidLODGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodRenderersCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodScreenRelativeTransitionHeight, AtomicSafetyHandle.Create());
@@ -256,6 +258,7 @@ namespace UnityEngine.Rendering
                 worldSpaceSize = worldSpaceSize,
                 renderersCount = renderersCount,
                 lastLODIsBillboard = lastLODIsBillboard,
+                forceLODMask = forceLODMask,
                 invalidLODGroupID = invalidLODGroupID,
                 lodRenderersCount = lodRenderersCount,
                 lodScreenRelativeTransitionHeight = lodScreenRelativeTransitionHeight,
@@ -274,6 +277,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidLODGroupID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodRenderersCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lastLODIsBillboard));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(forceLODMask));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodScreenRelativeTransitionHeight));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
         };
@@ -379,6 +383,7 @@ namespace UnityEngine.Rendering
         public float* worldSpaceSize;
         public short* renderersCount;
         public bool* lastLODIsBillboard;
+        public byte* forceLODMask;
         public int lodGroupCount;
 
         public int* invalidLODGroupID;
@@ -554,6 +559,7 @@ namespace UnityEngine.Rendering
         public NativeArray<float> worldSpaceSize;
         public NativeArray<short> renderersCount;
         public NativeArray<bool> lastLODIsBillboard;
+        public NativeArray<byte> forceLODMask;
 
         /// <summary>
         /// Invalid or disabled LODGroup IDs.

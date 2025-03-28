@@ -168,14 +168,6 @@ namespace UnityEditor.PackageManager.UI
             m_Root?.OnLostFocus();
         }
 
-        internal Rect CalculateDropdownPosition(VisualElement anchorElement)
-        {
-            // If a background GUI painted before, the coordinates got could be different.
-            // Repaint the package manager to ensure the coordinates retrieved is from Package Manager Window.
-            RepaintImmediately();
-            return GUIUtility.GUIToScreenRect(anchorElement.worldBound);
-        }
-
         [UsedByNativeCode]
         internal static void OpenURL(string url)
         {

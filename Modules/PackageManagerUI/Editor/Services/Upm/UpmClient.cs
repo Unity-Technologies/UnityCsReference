@@ -39,15 +39,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         void ExtraFetchPackageInfo(string packageIdOrName, long productId = 0, Action<PackageInfo> successCallback = null, Action<UIError> errorCallback = null, Action doneCallback = null);
         void ClearCache();
         void Resolve();
-        RegistryType GetAvailableRegistryType(PackageInfo packageInfo);
-        bool IsUnityPackage(PackageInfo packageInfo);
     }
 
     [Serializable]
     internal class UpmClient : BaseService<IUpmClient>, IUpmClient, ISerializationCallbackReceiver
     {
-        private static readonly string[] k_UnityRegistryUrlsHosts = { ".unity.com", ".unity3d.com" };
-
         public event Action<IEnumerable<(string packageIdOrName, PackageProgress progress)>> onPackagesProgressChange = delegate { };
         public event Action<string, UIError> onPackageOperationError = delegate { };
 
@@ -81,15 +77,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         private UpmSearchOperation[] m_SerializedInProgressExtraFetchOperations = Array.Empty<UpmSearchOperation>();
 
-        private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
-
-        [SerializeField]
-        private string[] m_SerializedRegistryUrlsKeys;
-
-        [SerializeField]
-        private RegistryType[] m_SerializedRegistryUrlsValues;
-
-        private Dictionary<string, RegistryType> m_RegistryUrls = new();
+        private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new();
 
         private readonly IUpmCache m_UpmCache;
         private readonly IFetchStatusTracker m_FetchStatusTracker;
@@ -116,17 +104,11 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnBeforeSerialize()
         {
-            m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
-
             m_SerializedInProgressExtraFetchOperations = m_ExtraFetchOperations?.Values.Where(i => i.isInProgress).ToArray() ?? new UpmSearchOperation[0];
         }
 
         public void OnAfterDeserialize()
         {
-            for (var i = 0; i < m_SerializedRegistryUrlsKeys.Length; i++)
-                m_RegistryUrls[m_SerializedRegistryUrlsKeys[i]] = m_SerializedRegistryUrlsValues[i];
-
             m_SearchOperation?.ResolveDependencies(m_ClientProxy, m_Application);
             m_SearchOfflineOperation?.ResolveDependencies(m_ClientProxy, m_Application);
             m_ListOperation?.ResolveDependencies(m_ClientProxy, m_Application);
@@ -440,7 +422,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation = new UpmSearchOperation();
                 operation.ResolveDependencies(m_ClientProxy, m_Application);
                 operation.Search(packageIdOrName, productId);
-                operation.onProcessResult += request => OnProcessExtraFetchResult(request, productId);
+                operation.onProcessResult += request => OnProcessExtraFetchResult(request, operation.dataTimestamp, productId);
                 operation.onOperationFinalized += _ => m_ExtraFetchOperations.Remove(packageIdOrName);
                 m_ExtraFetchOperations[packageIdOrName] = operation;
 
@@ -459,21 +441,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 operation.onOperationFinalized += _ => doneCallback.Invoke();
         }
 
-        private void OnProcessExtraFetchResult(SearchRequest request, long productId = 0)
+        private void OnProcessExtraFetchResult(SearchRequest request, long timestamp, long productId = 0)
         {
             var packageInfo = request.Result.FirstOrDefault();
             if (productId > 0)
             {
-                // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
-                // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
-                // to expose it if it ever happens (rather than letting it pass silently)
-                if (packageInfo?.assetStore?.productId != productId.ToString())
-                {
-                    var error = new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Product Id mismatch between product details and package details."));
-                    m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
-                    return;
-                }
-                m_UpmCache.SetProductSearchPackageInfo(packageInfo);
+                m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo, timestamp);
                 m_FetchStatusTracker.SetFetchSuccess(productId, FetchType.ProductSearchInfo);
             }
             else
@@ -532,53 +505,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public void Resolve()
         {
             m_ClientProxy.Resolve();
-        }
-
-        public RegistryType GetAvailableRegistryType(PackageInfo packageInfo)
-        {
-            // Special handling for packages that's built in/bundled with unity, we always consider them from the Unity registry
-            if (packageInfo?.source == PackageSource.BuiltIn)
-                return RegistryType.UnityRegistry;
-
-            if (packageInfo?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
-                return RegistryType.AssetStore;
-
-            // Details from the UPM Core team:
-            // We need to check "versions" because RegistryInfo is never null.
-            // It is always populated with the registry info from which the search was performed (usually the main Unity Registry).
-            // The most accurate way to determine that a package's registry is neither "UnityRegistry" nor "MyRegistries"
-            // is by verifying that there are no versions found in the "versions" list.
-            if (packageInfo?.versions == null || packageInfo.versions.all.Length == 0)
-                return RegistryType.None;
-
-            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
-                return result;
-
-            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
-            m_RegistryUrls[packageInfo.registry.url] = result;
-            return result;
-        }
-
-        public bool IsUnityPackage(PackageInfo packageInfo)
-        {
-            return packageInfo is { source: PackageSource.BuiltIn or PackageSource.Registry } &&
-                   GetAvailableRegistryType(packageInfo) == RegistryType.UnityRegistry;
-        }
-
-        public static bool IsUnityUrl(string url)
-        {
-            if (string.IsNullOrEmpty(url))
-                return false;
-
-            try
-            {
-                var uri = new Uri(url);
-                return !uri.IsLoopback && k_UnityRegistryUrlsHosts.Any(unityHost => uri.Host.EndsWith(unityHost, StringComparison.InvariantCultureIgnoreCase));
-            }
-            catch (UriFormatException)
-            {
-                return false;
-            }
         }
 
         private T CreateOperation<T>(ref T operation) where T : UpmBaseOperation, new()

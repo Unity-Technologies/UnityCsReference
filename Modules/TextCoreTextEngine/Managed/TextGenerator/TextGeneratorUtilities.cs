@@ -1274,7 +1274,13 @@ namespace UnityEngine.TextCore.Text
 
                             if (ReplaceOpeningStyleTag(ref styleDefinition, i, out int offset, ref charBuffer, ref writeIndex, ref textStyleStackDepth, ref textStyleStacks, ref generationSettings))
                             {
+                                int remainChar = styleLength - offset;
                                 i = offset;
+
+                                //Increase the buffer if the buffer might overflow after processing styles.
+                                if ( writeIndex + remainChar >= charBuffer.Length)
+                                    ResizeInternalArray(ref charBuffer, writeIndex + remainChar);
+                                
                                 continue;
                             }
 

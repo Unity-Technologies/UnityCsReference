@@ -90,7 +90,9 @@ namespace UnityEditor
             }
         }
 
-        // Show the menu under the mouse
+        /// <summary>
+        /// Show the menu under the mouse when used in an OnGUI callback.
+        /// </summary>
         public void ShowAsContext()
         {
             if (Event.current == null)
@@ -98,13 +100,32 @@ namespace UnityEditor
             DropDown(new Rect(Event.current.mousePosition, Vector2.zero));
         }
 
+        /// <summary>
+        /// Show the menu at the given rect relative to the current window in an OnGUI callback.
+        /// </summary>
+        /// <param name="position"></param>
         public void DropDown(Rect position)
         {
             DropDown(position, false);
         }
 
-        // Show the menu at the given screen rect
+        /// <summary>
+        /// Show the menu at the given rect relative to the current window in an OnGUI callback.
+        /// </summary>
+        /// <param name="position"></param>
         internal void DropDown(Rect position, bool shouldDiscardMenuOnSecondClick)
+        {
+            Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
+            position.x = temp.x;
+            position.y = temp.y;
+            DropDownScreenSpace(position, shouldDiscardMenuOnSecondClick);
+        }
+
+        /// <summary>
+        /// Show the menu at the given screen rect.
+        /// </summary>
+        /// <param name="position"></param>
+        internal void DropDownScreenSpace(Rect position, bool shouldDiscardMenuOnSecondClick)
         {
             string[] titles = new string[m_MenuItems.Count];
             bool[] enabled = new bool[m_MenuItems.Count];
@@ -120,8 +141,8 @@ namespace UnityEditor
                 if (item.on)
                     selected.Add(idx);
             }
-
-            EditorUtility.DisplayCustomMenuWithSeparators(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames, shouldDiscardMenuOnSecondClick);
+            
+            EditorUtility.DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames, shouldDiscardMenuOnSecondClick);
         }
 
         // Display as a popup with /selectedIndex/. How this behaves depends on the platform (on Mac, it'll try to scroll the menu to the right place)

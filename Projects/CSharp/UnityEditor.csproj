@@ -5358,6 +5358,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Product.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Product.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs</Link>
     </Compile>
@@ -5657,6 +5660,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmListOperation.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageData.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageFactory.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Upm\UpmPackageFactory.cs</Link>

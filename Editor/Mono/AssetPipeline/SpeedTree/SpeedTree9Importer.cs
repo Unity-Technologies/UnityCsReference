@@ -317,8 +317,8 @@ namespace UnityEditor.SpeedTree.Importer
 
         static void DirtyCustomDependencies()
         {
-            DateTime now = DateTime.Now;
-            if (Application.isPlaying || now - s_LastCheck < k_CheckDependencyFrequency)
+            DateTime now = DateTime.UtcNow;
+            if (Application.isPlaying || ((now - s_LastCheck) < k_CheckDependencyFrequency))
             {
                 return;
             }

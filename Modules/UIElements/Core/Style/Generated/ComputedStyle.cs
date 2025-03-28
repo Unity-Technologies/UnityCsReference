@@ -1959,11 +1959,14 @@ namespace UnityEngine.UIElements
             bool result = false;
             UsageHints usageHints = UsageHints.None;
 
-            if (!oldStyle.inheritedData.Equals(newStyle.inheritedData))
+            bool hasRunningAnimation = element.hasRunningAnimations;
+            if (hasRunningAnimation ||
+                !oldStyle.inheritedData.Equals(newStyle.inheritedData))
             {
                 ref readonly var oldData = ref oldStyle.inheritedData.Read();
                 ref readonly var newData = ref newStyle.inheritedData.Read();
-                if (oldData.color != newData.color)
+                if (hasRunningAnimation ||
+                    oldData.color != newData.color)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.Color, oldData.color, newData.color, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -1974,252 +1977,302 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.fontSize != newData.fontSize)
+                if (hasRunningAnimation ||
+                    oldData.fontSize != newData.fontSize)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.FontSize, oldData.fontSize, newData.fontSize, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.letterSpacing != newData.letterSpacing)
+                if (hasRunningAnimation ||
+                    oldData.letterSpacing != newData.letterSpacing)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.LetterSpacing, oldData.letterSpacing, newData.letterSpacing, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.textShadow != newData.textShadow)
+                if (hasRunningAnimation ||
+                    oldData.textShadow != newData.textShadow)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.TextShadow, oldData.textShadow, newData.textShadow, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityFont != newData.unityFont)
+                if (hasRunningAnimation ||
+                    oldData.unityFont != newData.unityFont)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnityFont, oldData.unityFont, newData.unityFont, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityFontDefinition != newData.unityFontDefinition)
+                if (hasRunningAnimation ||
+                    oldData.unityFontDefinition != newData.unityFontDefinition)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnityFontDefinition, oldData.unityFontDefinition, newData.unityFontDefinition, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityFontStyleAndWeight != newData.unityFontStyleAndWeight)
+                if (hasRunningAnimation ||
+                    oldData.unityFontStyleAndWeight != newData.unityFontStyleAndWeight)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityFontStyleAndWeight, (int)oldData.unityFontStyleAndWeight, (int)newData.unityFontStyleAndWeight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityParagraphSpacing != newData.unityParagraphSpacing)
+                if (hasRunningAnimation ||
+                    oldData.unityParagraphSpacing != newData.unityParagraphSpacing)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnityParagraphSpacing, oldData.unityParagraphSpacing, newData.unityParagraphSpacing, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityTextAlign != newData.unityTextAlign)
+                if (hasRunningAnimation ||
+                    oldData.unityTextAlign != newData.unityTextAlign)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)oldData.unityTextAlign, (int)newData.unityTextAlign, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityTextOutlineColor != newData.unityTextOutlineColor)
+                if (hasRunningAnimation ||
+                    oldData.unityTextOutlineColor != newData.unityTextOutlineColor)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineColor, oldData.unityTextOutlineColor, newData.unityTextOutlineColor, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityTextOutlineWidth != newData.unityTextOutlineWidth)
+                if (hasRunningAnimation ||
+                    oldData.unityTextOutlineWidth != newData.unityTextOutlineWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnityTextOutlineWidth, oldData.unityTextOutlineWidth, newData.unityTextOutlineWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.visibility != newData.visibility)
+                if (hasRunningAnimation ||
+                    oldData.visibility != newData.visibility)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.Visibility, (int)oldData.visibility, (int)newData.visibility, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.whiteSpace != newData.whiteSpace)
+                if (hasRunningAnimation ||
+                    oldData.whiteSpace != newData.whiteSpace)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.WhiteSpace, (int)oldData.whiteSpace, (int)newData.whiteSpace, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.wordSpacing != newData.wordSpacing)
+                if (hasRunningAnimation ||
+                    oldData.wordSpacing != newData.wordSpacing)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.WordSpacing, oldData.wordSpacing, newData.wordSpacing, durationMs, delayMs, easingCurve);
                 }
             }
 
-            if (!oldStyle.layoutData.Equals(newStyle.layoutData))
+            if (hasRunningAnimation ||
+                !oldStyle.layoutData.Equals(newStyle.layoutData))
             {
                 ref readonly var oldData = ref oldStyle.layoutData.Read();
                 ref readonly var newData = ref newStyle.layoutData.Read();
-                if (oldData.alignContent != newData.alignContent)
+                if (hasRunningAnimation ||
+                    oldData.alignContent != newData.alignContent)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.AlignContent, (int)oldData.alignContent, (int)newData.alignContent, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.alignItems != newData.alignItems)
+                if (hasRunningAnimation ||
+                    oldData.alignItems != newData.alignItems)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.AlignItems, (int)oldData.alignItems, (int)newData.alignItems, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.alignSelf != newData.alignSelf)
+                if (hasRunningAnimation ||
+                    oldData.alignSelf != newData.alignSelf)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.AlignSelf, (int)oldData.alignSelf, (int)newData.alignSelf, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderBottomWidth != newData.borderBottomWidth)
+                if (hasRunningAnimation ||
+                    oldData.borderBottomWidth != newData.borderBottomWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderBottomWidth, oldData.borderBottomWidth, newData.borderBottomWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderLeftWidth != newData.borderLeftWidth)
+                if (hasRunningAnimation ||
+                    oldData.borderLeftWidth != newData.borderLeftWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderLeftWidth, oldData.borderLeftWidth, newData.borderLeftWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderRightWidth != newData.borderRightWidth)
+                if (hasRunningAnimation ||
+                    oldData.borderRightWidth != newData.borderRightWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderRightWidth, oldData.borderRightWidth, newData.borderRightWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderTopWidth != newData.borderTopWidth)
+                if (hasRunningAnimation ||
+                    oldData.borderTopWidth != newData.borderTopWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderTopWidth, oldData.borderTopWidth, newData.borderTopWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.bottom != newData.bottom)
+                if (hasRunningAnimation ||
+                    oldData.bottom != newData.bottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Bottom, oldData.bottom, newData.bottom, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.display != newData.display)
+                if (hasRunningAnimation ||
+                    oldData.display != newData.display)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldData.display, (int)newData.display, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.flexBasis != newData.flexBasis)
+                if (hasRunningAnimation ||
+                    oldData.flexBasis != newData.flexBasis)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.FlexBasis, oldData.flexBasis, newData.flexBasis, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.flexDirection != newData.flexDirection)
+                if (hasRunningAnimation ||
+                    oldData.flexDirection != newData.flexDirection)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.FlexDirection, (int)oldData.flexDirection, (int)newData.flexDirection, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.flexGrow != newData.flexGrow)
+                if (hasRunningAnimation ||
+                    oldData.flexGrow != newData.flexGrow)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.FlexGrow, oldData.flexGrow, newData.flexGrow, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.flexShrink != newData.flexShrink)
+                if (hasRunningAnimation ||
+                    oldData.flexShrink != newData.flexShrink)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.FlexShrink, oldData.flexShrink, newData.flexShrink, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.flexWrap != newData.flexWrap)
+                if (hasRunningAnimation ||
+                    oldData.flexWrap != newData.flexWrap)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.FlexWrap, (int)oldData.flexWrap, (int)newData.flexWrap, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.height != newData.height)
+                if (hasRunningAnimation ||
+                    oldData.height != newData.height)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Height, oldData.height, newData.height, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.justifyContent != newData.justifyContent)
+                if (hasRunningAnimation ||
+                    oldData.justifyContent != newData.justifyContent)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.JustifyContent, (int)oldData.justifyContent, (int)newData.justifyContent, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.left != newData.left)
+                if (hasRunningAnimation ||
+                    oldData.left != newData.left)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Left, oldData.left, newData.left, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.marginBottom != newData.marginBottom)
+                if (hasRunningAnimation ||
+                    oldData.marginBottom != newData.marginBottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MarginBottom, oldData.marginBottom, newData.marginBottom, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.marginLeft != newData.marginLeft)
+                if (hasRunningAnimation ||
+                    oldData.marginLeft != newData.marginLeft)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MarginLeft, oldData.marginLeft, newData.marginLeft, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.marginRight != newData.marginRight)
+                if (hasRunningAnimation ||
+                    oldData.marginRight != newData.marginRight)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MarginRight, oldData.marginRight, newData.marginRight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.marginTop != newData.marginTop)
+                if (hasRunningAnimation ||
+                    oldData.marginTop != newData.marginTop)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MarginTop, oldData.marginTop, newData.marginTop, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.maxHeight != newData.maxHeight)
+                if (hasRunningAnimation ||
+                    oldData.maxHeight != newData.maxHeight)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MaxHeight, oldData.maxHeight, newData.maxHeight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.maxWidth != newData.maxWidth)
+                if (hasRunningAnimation ||
+                    oldData.maxWidth != newData.maxWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MaxWidth, oldData.maxWidth, newData.maxWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.minHeight != newData.minHeight)
+                if (hasRunningAnimation ||
+                    oldData.minHeight != newData.minHeight)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MinHeight, oldData.minHeight, newData.minHeight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.minWidth != newData.minWidth)
+                if (hasRunningAnimation ||
+                    oldData.minWidth != newData.minWidth)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.MinWidth, oldData.minWidth, newData.minWidth, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.paddingBottom != newData.paddingBottom)
+                if (hasRunningAnimation ||
+                    oldData.paddingBottom != newData.paddingBottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.PaddingBottom, oldData.paddingBottom, newData.paddingBottom, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.paddingLeft != newData.paddingLeft)
+                if (hasRunningAnimation ||
+                    oldData.paddingLeft != newData.paddingLeft)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.PaddingLeft, oldData.paddingLeft, newData.paddingLeft, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.paddingRight != newData.paddingRight)
+                if (hasRunningAnimation ||
+                    oldData.paddingRight != newData.paddingRight)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.PaddingRight, oldData.paddingRight, newData.paddingRight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.paddingTop != newData.paddingTop)
+                if (hasRunningAnimation ||
+                    oldData.paddingTop != newData.paddingTop)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.PaddingTop, oldData.paddingTop, newData.paddingTop, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.position != newData.position)
+                if (hasRunningAnimation ||
+                    oldData.position != newData.position)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.Position, (int)oldData.position, (int)newData.position, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.right != newData.right)
+                if (hasRunningAnimation ||
+                    oldData.right != newData.right)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Right, oldData.right, newData.right, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.top != newData.top)
+                if (hasRunningAnimation ||
+                    oldData.top != newData.top)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Top, oldData.top, newData.top, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.width != newData.width)
+                if (hasRunningAnimation ||
+                    oldData.width != newData.width)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Width, oldData.width, newData.width, durationMs, delayMs, easingCurve);
                 }
             }
 
-            if (!oldStyle.rareData.Equals(newStyle.rareData))
+            if (hasRunningAnimation ||
+                !oldStyle.rareData.Equals(newStyle.rareData))
             {
                 ref readonly var oldData = ref oldStyle.rareData.Read();
                 ref readonly var newData = ref newStyle.rareData.Read();
-                if (oldData.textOverflow != newData.textOverflow)
+                if (hasRunningAnimation ||
+                    oldData.textOverflow != newData.textOverflow)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.TextOverflow, (int)oldData.textOverflow, (int)newData.textOverflow, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityBackgroundImageTintColor != newData.unityBackgroundImageTintColor)
+                if (hasRunningAnimation ||
+                    oldData.unityBackgroundImageTintColor != newData.unityBackgroundImageTintColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.UnityBackgroundImageTintColor, oldData.unityBackgroundImageTintColor, newData.unityBackgroundImageTintColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2230,47 +2283,56 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.unityOverflowClipBox != newData.unityOverflowClipBox)
+                if (hasRunningAnimation ||
+                    oldData.unityOverflowClipBox != newData.unityOverflowClipBox)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityOverflowClipBox, (int)oldData.unityOverflowClipBox, (int)newData.unityOverflowClipBox, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unitySliceBottom != newData.unitySliceBottom)
+                if (hasRunningAnimation ||
+                    oldData.unitySliceBottom != newData.unitySliceBottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceBottom, oldData.unitySliceBottom, newData.unitySliceBottom, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unitySliceLeft != newData.unitySliceLeft)
+                if (hasRunningAnimation ||
+                    oldData.unitySliceLeft != newData.unitySliceLeft)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceLeft, oldData.unitySliceLeft, newData.unitySliceLeft, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unitySliceRight != newData.unitySliceRight)
+                if (hasRunningAnimation ||
+                    oldData.unitySliceRight != newData.unitySliceRight)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceRight, oldData.unitySliceRight, newData.unitySliceRight, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unitySliceScale != newData.unitySliceScale)
+                if (hasRunningAnimation ||
+                    oldData.unitySliceScale != newData.unitySliceScale)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceScale, oldData.unitySliceScale, newData.unitySliceScale, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unitySliceTop != newData.unitySliceTop)
+                if (hasRunningAnimation ||
+                    oldData.unitySliceTop != newData.unitySliceTop)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldData.unitySliceTop, newData.unitySliceTop, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.unityTextOverflowPosition != newData.unityTextOverflowPosition)
+                if (hasRunningAnimation ||
+                    oldData.unityTextOverflowPosition != newData.unityTextOverflowPosition)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.UnityTextOverflowPosition, (int)oldData.unityTextOverflowPosition, (int)newData.unityTextOverflowPosition, durationMs, delayMs, easingCurve);
                 }
             }
 
-            if (!oldStyle.transformData.Equals(newStyle.transformData))
+            if (hasRunningAnimation ||
+                !oldStyle.transformData.Equals(newStyle.transformData))
             {
                 ref readonly var oldData = ref oldStyle.transformData.Read();
                 ref readonly var newData = ref newStyle.transformData.Read();
-                if (oldData.rotate != newData.rotate)
+                if (hasRunningAnimation ||
+                    oldData.rotate != newData.rotate)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.Rotate, oldData.rotate, newData.rotate, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2281,7 +2343,8 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.scale != newData.scale)
+                if (hasRunningAnimation ||
+                    oldData.scale != newData.scale)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.Scale, oldData.scale, newData.scale, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2292,7 +2355,8 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.transformOrigin != newData.transformOrigin)
+                if (hasRunningAnimation ||
+                    oldData.transformOrigin != newData.transformOrigin)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.TransformOrigin, oldData.transformOrigin, newData.transformOrigin, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2303,7 +2367,8 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.translate != newData.translate)
+                if (hasRunningAnimation ||
+                    oldData.translate != newData.translate)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.Translate, oldData.translate, newData.translate, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2315,11 +2380,13 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            if (!oldStyle.visualData.Equals(newStyle.visualData))
+            if (hasRunningAnimation ||
+                !oldStyle.visualData.Equals(newStyle.visualData))
             {
                 ref readonly var oldData = ref oldStyle.visualData.Read();
                 ref readonly var newData = ref newStyle.visualData.Read();
-                if (oldData.backgroundColor != newData.backgroundColor)
+                if (hasRunningAnimation ||
+                    oldData.backgroundColor != newData.backgroundColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.BackgroundColor, oldData.backgroundColor, newData.backgroundColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2330,32 +2397,38 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.backgroundImage != newData.backgroundImage)
+                if (hasRunningAnimation ||
+                    oldData.backgroundImage != newData.backgroundImage)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundImage, oldData.backgroundImage, newData.backgroundImage, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.backgroundPositionX != newData.backgroundPositionX)
+                if (hasRunningAnimation ||
+                    oldData.backgroundPositionX != newData.backgroundPositionX)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionX, oldData.backgroundPositionX, newData.backgroundPositionX, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.backgroundPositionY != newData.backgroundPositionY)
+                if (hasRunningAnimation ||
+                    oldData.backgroundPositionY != newData.backgroundPositionY)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundPositionY, oldData.backgroundPositionY, newData.backgroundPositionY, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.backgroundRepeat != newData.backgroundRepeat)
+                if (hasRunningAnimation ||
+                    oldData.backgroundRepeat != newData.backgroundRepeat)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundRepeat, oldData.backgroundRepeat, newData.backgroundRepeat, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.backgroundSize != newData.backgroundSize)
+                if (hasRunningAnimation ||
+                    oldData.backgroundSize != newData.backgroundSize)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BackgroundSize, oldData.backgroundSize, newData.backgroundSize, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderBottomColor != newData.borderBottomColor)
+                if (hasRunningAnimation ||
+                    oldData.borderBottomColor != newData.borderBottomColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderBottomColor, oldData.borderBottomColor, newData.borderBottomColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2366,17 +2439,20 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.borderBottomLeftRadius != newData.borderBottomLeftRadius)
+                if (hasRunningAnimation ||
+                    oldData.borderBottomLeftRadius != newData.borderBottomLeftRadius)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderBottomLeftRadius, oldData.borderBottomLeftRadius, newData.borderBottomLeftRadius, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderBottomRightRadius != newData.borderBottomRightRadius)
+                if (hasRunningAnimation ||
+                    oldData.borderBottomRightRadius != newData.borderBottomRightRadius)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderBottomRightRadius, oldData.borderBottomRightRadius, newData.borderBottomRightRadius, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderLeftColor != newData.borderLeftColor)
+                if (hasRunningAnimation ||
+                    oldData.borderLeftColor != newData.borderLeftColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderLeftColor, oldData.borderLeftColor, newData.borderLeftColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2387,7 +2463,8 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.borderRightColor != newData.borderRightColor)
+                if (hasRunningAnimation ||
+                    oldData.borderRightColor != newData.borderRightColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderRightColor, oldData.borderRightColor, newData.borderRightColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2398,7 +2475,8 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.borderTopColor != newData.borderTopColor)
+                if (hasRunningAnimation ||
+                    oldData.borderTopColor != newData.borderTopColor)
                 {
                     bool partialResult = element.styleAnimation.Start(StylePropertyId.BorderTopColor, oldData.borderTopColor, newData.borderTopColor, durationMs, delayMs, easingCurve);
                     if (partialResult)
@@ -2409,22 +2487,26 @@ namespace UnityEngine.UIElements
                     result |= partialResult;
                 }
 
-                if (oldData.borderTopLeftRadius != newData.borderTopLeftRadius)
+                if (hasRunningAnimation ||
+                    oldData.borderTopLeftRadius != newData.borderTopLeftRadius)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderTopLeftRadius, oldData.borderTopLeftRadius, newData.borderTopLeftRadius, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.borderTopRightRadius != newData.borderTopRightRadius)
+                if (hasRunningAnimation ||
+                    oldData.borderTopRightRadius != newData.borderTopRightRadius)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.BorderTopRightRadius, oldData.borderTopRightRadius, newData.borderTopRightRadius, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.opacity != newData.opacity)
+                if (hasRunningAnimation ||
+                    oldData.opacity != newData.opacity)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Opacity, oldData.opacity, newData.opacity, durationMs, delayMs, easingCurve);
                 }
 
-                if (oldData.overflow != newData.overflow)
+                if (hasRunningAnimation ||
+                    oldData.overflow != newData.overflow)
                 {
                     result |= element.styleAnimation.StartEnum(StylePropertyId.Overflow, (int)oldData.overflow, (int)newData.overflow, durationMs, delayMs, easingCurve);
                 }

@@ -150,7 +150,9 @@ namespace UnityEditor
             if (selectionPiercingMenu.MenuItems().Count == 0)
                 selectionPiercingMenu.AppendAction("Nothing to Select Under Pointer", null, DropdownMenuAction.Status.Disabled);
 
-            selectionPiercingMenu.DoDisplayEditorMenu(new Rect(Event.current.mousePosition, Vector2.zero));
+#pragma warning disable CS0618 // Type or member is obsolete
+            selectionPiercingMenu.DoDisplayEditorMenuFromImGUI(new Rect(Event.current.mousePosition, Vector2.zero));
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

@@ -80,7 +80,7 @@ namespace UnityEditor
                 var status = vp.TargetObject.Equals(m_Overlay.viewpoint.TargetObject) ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal;
                 menu.AppendAction(vp.TargetObject.name, (_) => { m_Overlay.viewpoint = vp; }, status);
             }
-            menu.DoDisplayEditorMenu(worldBound);
+            menu.DoDisplayEditorMenu(worldBound, this);
         }
 
         void OnViewpointSelected(IViewpoint vp) => SetCameraName();
