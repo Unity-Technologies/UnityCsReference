@@ -9,6 +9,15 @@ namespace UnityEditor.UIElements
 {
     class EditorContextualMenuManager : ContextualMenuManager
     {
+        static EditorContextualMenuManager()
+        {
+            // UUM-73201: Reset mouse buttons when the ContextualMenu is called from IMGUI
+            EditorUtility.onResetMouseDown += () =>
+            {
+                ResetPointerDown(PointerId.mousePointerId);
+            };
+        }
+
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
             if (UIElementsUtility.isOSXContextualMenuPlatform)

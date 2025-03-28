@@ -40,10 +40,10 @@ namespace UnityEditor.Experimental.GraphView
 
         public void OnBeforeSerialize()
         {
-            if (m_SelectedElements.Count == 0)
-                return;
-
             m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
+            if (m_SelectedElements.Count == 0)
+                return;       
 
             m_SelectedElements.CopyTo(m_SelectedElementsArray);
         }
@@ -140,10 +140,10 @@ namespace UnityEditor.Experimental.GraphView
 
             public void OnBeforeSerialize()
             {
+                m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
                 if (m_SelectedElements.Count == 0)
                     return;
-
-                m_SelectedElementsArray = new string[m_SelectedElements.Count];
 
                 m_SelectedElements.CopyTo(m_SelectedElementsArray);
             }
@@ -666,7 +666,12 @@ namespace UnityEditor.Experimental.GraphView
 
         private bool ClearSelectionNoUndoRecord()
         {
-            foreach (var graphElement in selection.OfType<GraphElement>())
+            var prevSelection = selection.OfType<GraphElement>().ToArray();
+
+            bool selectionWasNotEmpty = selection.Count != 0;
+            selection.Clear();
+
+            foreach (var graphElement in prevSelection)
             {
                 graphElement.selected = false;
 
@@ -674,9 +679,6 @@ namespace UnityEditor.Experimental.GraphView
                 graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
                 graphElement.MarkDirtyRepaint();
             }
-
-            bool selectionWasNotEmpty = selection.Any();
-            selection.Clear();
 
             return selectionWasNotEmpty;
         }

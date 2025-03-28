@@ -57,7 +57,7 @@ namespace UnityEditor.Connect
             CollabService,
             CrashService,
             PurchasingService,
-            UDPService
+            UDPService,
         }
     }
 }

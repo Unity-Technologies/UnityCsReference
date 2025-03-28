@@ -1958,7 +1958,12 @@ namespace UnityEditor.Search
 
             if (matches == null)
                 return null;
-            return matches.Select(r => new SearchResult(r.id ?? (m_Documents[r.index].id ?? r.id), r.index, r.score));
+
+            return matches.Select(r =>
+            {
+                var id = r.id ?? (m_Documents.TryGetValue(r.index, out var doc) ? doc.id : r.id);
+                return new SearchResult(id, r.index, r.score);
+            });
         }
 
         private IEnumerable<SearchResult> SearchDocumentWords(string word, SearchResultCollection subset)

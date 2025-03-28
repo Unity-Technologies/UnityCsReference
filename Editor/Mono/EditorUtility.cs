@@ -79,6 +79,8 @@ namespace UnityEditor
 
         public delegate void SelectMenuItemFunction(object userData, string[] options, int selected);
 
+        internal static event Action onResetMouseDown;
+
         public static bool LoadWindowLayout(string path)
         {
             return WindowLayout.TryLoadWindowLayout(path, false);
@@ -412,6 +414,7 @@ namespace UnityEditor
             GUIUtility.hotControl = 0;
             //Delay call because the freezing of the editor is affecting the active clutch shortcuts resetting properly
             EditorApplication.delayCall += () => ShortcutIntegration.instance.trigger.ResetActiveClutches();
+            onResetMouseDown?.Invoke();
         }
 
         internal static void DisplayCustomMenu(Rect position, string[] options, int[] selected, SelectMenuItemFunction callback, object userData)
@@ -462,12 +465,19 @@ namespace UnityEditor
             DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, showHotkey, false);
         }
 
+
+        //This method is only valid during onGUI callbacks, prefer DisplayCustomMenuWithSeparatorsWithScreenSpacePosition that work al the time. 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false)
         {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
 
+            DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
+        }
+
+        internal static void DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick)
+        {
             Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
             ResetMouseDown();
         }

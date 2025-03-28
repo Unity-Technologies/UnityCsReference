@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 using System;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
+using UnityEditor;
 
 namespace Unity.UI.Builder
 {
@@ -89,6 +90,7 @@ namespace Unity.UI.Builder
             // it here as a dimension to create final proper uss.
             if (!isNewValue && styleProperty.values[0].valueType != StyleValueType.Dimension)
             {
+                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
                 styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }
@@ -110,6 +112,7 @@ namespace Unity.UI.Builder
 
             if (!isNewValue && styleProperty.IsVariable())
             {
+                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
                 styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }
@@ -127,6 +130,7 @@ namespace Unity.UI.Builder
 
             if (!isNewValue && styleProperty.IsVariable())
             {
+                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
                 styleProperty.values = Array.Empty<StyleValueHandle>();
                 isNewValue = true;
             }

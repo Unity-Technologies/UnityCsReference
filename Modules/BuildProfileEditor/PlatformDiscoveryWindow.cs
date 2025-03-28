@@ -223,7 +223,7 @@ namespace UnityEditor.Build.Profile
             packageSelectAll.text = TrText.selectAll;
             packageSelectAll.clicked += () =>
             {
-                for (int i = 0; i <  m_PackagesListView.itemsSource.Count; ++i)
+                for (int i = 0; i < m_PackagesListView.itemsSource.Count; ++i)
                 {
                     var item = m_PackagesListView.GetRootElementForIndex(i);
                     if (item is not PlatformPackageItem packageItemVisualElement)
@@ -245,6 +245,29 @@ namespace UnityEditor.Build.Profile
 
                     packageItemVisualElement.SetShouldInstallToggle(false);
                 }
+            };
+
+            m_PackagesListView.itemsSourceChanged += () =>
+            {
+                var packageList = m_PackagesListView.itemsSource as PlatformPackageEntry[];
+                if (packageList == null)
+                {
+                    Debug.LogWarning("Could not parse list of packages in PlatformDiscoveryWindow");
+                    return;
+                }
+
+                bool allPackagesAreInstalledOrRequired = true;
+                foreach (var package in packageList)
+                {
+                    if (!package.isInstalled && !package.required)
+                    {
+                        allPackagesAreInstalledOrRequired = false;
+                        break;
+                    }
+                }
+
+                packageDeselectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
+                packageSelectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
             };
 
             // Apply localized text to static elements.

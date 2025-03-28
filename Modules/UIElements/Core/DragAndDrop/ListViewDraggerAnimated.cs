@@ -97,7 +97,7 @@ namespace UnityEngine.UIElements
             m_CurrentIndex = -1;
             foreach (var item in targetView.activeItems)
             {
-                if (item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
+                if (item.id < 0 || item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
                     continue;
 
                 if (item.index == m_Item.index && item.index < targetView.itemsSource.Count - 1)

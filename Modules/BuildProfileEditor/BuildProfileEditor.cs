@@ -163,7 +163,6 @@ namespace UnityEditor.Build.Profile
             EditorApplication.update += EditorUpdate;
 
             ShowPlatformSettings(profile, platformSettingsBaseRoot, platformBuildWarningsRoot);
-
             root.Bind(serializedObject);
             return root;
         }
@@ -301,7 +300,6 @@ namespace UnityEditor.Build.Profile
                 serializedObject, platformProperties, platformSettingsState);
             platformSettingsBaseRoot.Add(settings);
         }
-
 
         void AddSceneList(VisualElement root, BuildProfile profile = null)
         {

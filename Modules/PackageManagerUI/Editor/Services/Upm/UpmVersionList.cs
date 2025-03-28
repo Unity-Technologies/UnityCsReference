@@ -86,20 +86,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             sortedVersions.Add(versionToAdd);
         }
 
-        public UpmVersionList(PackageInfo searchInfo, PackageInfo installedInfo, RegistryType availableRegistry, PackageTag tagsToExclude, bool loadAllVersions, Dictionary<string, PackageInfo> extraInfos = null)
+        public UpmVersionList(IUpmPackageData packageData, PackageTag tagsToExclude)
         {
-            // We prioritize searchInfo over installedInfo, because searchInfo is fetched from the server
-            // while installedInfo sometimes only contain local data
-            var mainInfo = searchInfo ?? installedInfo;
-            var allSortedVersions = mainInfo.versions.compatible.Select(versionString =>
+            var allSortedVersions = packageData.availableVersions.compatible.Select(versionString =>
             {
-                SemVersionParser.TryParse(versionString, out var parsedVersion);
-                return new UpmPackageVersion(mainInfo, false, parsedVersion, mainInfo.displayName, availableRegistry);
+                var packageInfo = packageData.GetSearchInfo(versionString);
+                return packageInfo != null ? UpmPackageVersion.CreateWithCompleteInfo(packageData, packageInfo, false) : UpmPackageVersion.CreateWithIncompleteInfo(packageData, versionString);
             }).ToList();
 
-            var installedVersion = installedInfo != null ? new UpmPackageVersion(installedInfo, true, availableRegistry) : null;
-            if (installedVersion != null)
+            UpmPackageVersion installedVersion = null;
+            if (packageData.installedInfo != null)
             {
+                installedVersion = UpmPackageVersion.CreateWithCompleteInfo(packageData, packageData.installedInfo, true);
                 AddToSortedVersions(allSortedVersions, installedVersion);
                 if (installedVersion.HasTag(PackageTag.Experimental))
                     tagsToExclude &= ~(PackageTag.Experimental | PackageTag.PreRelease);
@@ -115,14 +113,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             // For example, if an Upm package from the Asset Store only contains `Pre-release` versions, but in project
             // settings "Show Pre-release versions" is not checked, we will only show the latest `Pre-release` version
             // for the Upm package because we can't hide the whole package.
-            if (versionsToKeep.Count == 0 && allSortedVersions.Count > 0 && availableRegistry == RegistryType.AssetStore)
+            if (versionsToKeep.Count == 0 && allSortedVersions.Count > 0 && packageData.availableRegistryType == RegistryType.AssetStore)
                 versionsToKeep.Add(allSortedVersions.Last());
 
-            var recommendedVersion = versionsToKeep.Find(v => v.HasTag(PackageTag.Unity) && v.versionString == mainInfo.versions.recommended);
+            var recommendedVersion = versionsToKeep.Find(v => v.HasTag(PackageTag.Unity) && v.versionString == packageData.availableVersions.recommended);
             var suggestedUpdateVersion = FindSuggestedUpdate(versionsToKeep, installedVersion, recommendedVersion);
             var numVersionsBeforeUnload = versionsToKeep.Count;
 
-            if (!loadAllVersions && versionsToKeep.Count > 1)
+            if (!packageData.loadAllVersions && versionsToKeep.Count > 1)
             {
                 // We want to trim down the amount of versions we keep in memory to a list of key versions (the installed version, suggested update,
                 // recommended version or the latest version if recommended doesn't exist). We do this to save on memory, and also to avoid long
@@ -133,10 +131,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 AddToSortedVersions(versionsToKeep, recommendedOrLatest);
                 AddToSortedVersions(versionsToKeep, suggestedUpdateVersion);
             }
-
-            foreach (var version in versionsToKeep)
-                if (!version.isFullyFetched && extraInfos?.TryGetValue(version.versionString, out var packageInfo) == true)
-                    version.UpdatePackageInfo(packageInfo, availableRegistry);
 
             m_Versions = versionsToKeep;
             m_InstalledIndex = installedVersion != null ? m_Versions.FindIndex(v => v == installedVersion) : -1;

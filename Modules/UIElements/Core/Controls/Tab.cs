@@ -222,6 +222,11 @@ namespace UnityEngine.UIElements
         internal TabDragger dragger { get; }
 
         /// <summary>
+        /// The current index in the <see cref="TabView"/>.
+        /// </summary>
+        internal int index { get; set; }
+
+        /// <summary>
         /// Sets the label of the Tab's header.
         /// </summary>
         [CreateProperty]

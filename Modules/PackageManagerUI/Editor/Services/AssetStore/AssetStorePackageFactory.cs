@@ -10,14 +10,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AssetStorePackageFactory : Package.Factory
     {
-        private readonly IUniqueIdMapper m_UniqueIdMapper;
+        private readonly IUpmCache m_UpmCache;
         private readonly IUnityConnectProxy m_UnityConnect;
         private readonly IAssetStoreCache m_AssetStoreCache;
         private readonly IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IFetchStatusTracker m_FetchStatusTracker;
         private readonly IBackgroundFetchHandler m_BackgroundFetchHandler;
-        public AssetStorePackageFactory(IUniqueIdMapper uniqueIdMapper,
+        public AssetStorePackageFactory(IUpmCache upmCache,
             IUnityConnectProxy unityConnect,
             IAssetStoreCache assetStoreCache,
             IAssetStoreDownloadManager assetStoreDownloadManager,
@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             IFetchStatusTracker fetchStatusTracker,
             IBackgroundFetchHandler backgroundFetchHandler)
         {
-            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_UpmCache = RegisterDependency(upmCache);
             m_UnityConnect = RegisterDependency(unityConnect);
             m_AssetStoreCache = RegisterDependency(assetStoreCache);
             m_AssetStoreDownloadManager = RegisterDependency(assetStoreDownloadManager);
@@ -235,8 +235,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     continue;
                 }
 
-                var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UniqueIdMapper.GetNameByProductId(productId) : productInfo.packageName;
-                // ProductInfos with package names are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
+                // Asset store products that are potentially UPM packages are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
+                var packageName = productInfo?.packageName ?? m_UpmCache.GetPackageData(productId)?.name;
                 if (!string.IsNullOrEmpty(packageName))
                     continue;
 

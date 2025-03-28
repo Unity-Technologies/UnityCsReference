@@ -973,8 +973,19 @@ namespace UnityEditor.UIElements
 
         static Object ExtractSubAssetFromParent(Object parent, Type assetType, URIHelpers.URIValidationResponse response)
         {
-            if (parent && !assetType.IsAssignableFrom(parent.GetType()))
+            if (parent)
             {
+                // If the type is Object we need to find the asset by name as we can not rely on the type to filter.
+                if (typeof(Object) == assetType)
+                {
+                    if (parent.name == response.resolvedSubAssetPath)
+                        return parent;
+                }
+                else if (assetType.IsAssignableFrom(parent.GetType()))
+                {
+                    return parent;
+                }
+
                 // Force loading using correct attribute type to support cases like Texture2D vs Sprite,
                 if (string.IsNullOrEmpty(response.resolvedSubAssetPath))
                 {

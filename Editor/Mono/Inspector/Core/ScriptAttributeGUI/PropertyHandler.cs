@@ -96,13 +96,25 @@ namespace UnityEditor
                 return;
             }
 
-            // When `attribute.applyToCollection` is set to true, we need to early return for any non-collection fields within a collection.
-            // Collections and fields that are not part of a collection should comply with the attribute.
-            if (attribute.applyToCollection && !propertyType.IsArrayOrList() && property.propertyPath.Contains("["))
-                return;
-
-            // Look for its drawer type of this attribute
-            HandleDrawnType(property, attribute.GetType(), propertyType, field, attribute);
+            // Case 1: If property is a collection, applyToCollection == false, early return to avoid custom drawer;
+            // Case 2: If property is not a collection but within a collection, applyToCollection == true, early return
+            //         to avoid custom drawer;
+            // Case 3: If property is not a collection nor within a collection, applyToCollection value should
+            //         NOT have any effects on it. Custom drawer should be used.
+            // Case 4: Rest of the cases, custom drawer should be used.
+            switch (attribute.applyToCollection)
+            {
+                // Case 1.
+                case false when propertyType.IsArrayOrList():
+                // Case 2.
+                case true when !propertyType.IsArrayOrList() && property.propertyPath.Contains("["):
+                    return;
+                // Case 3 & 4.
+                default:
+                    // Look for its drawer type of this attribute
+                    HandleDrawnType(property, attribute.GetType(), propertyType, field, attribute);
+                    break;
+            }
         }
 
         public void HandleDrawnType(SerializedProperty property, Type drawnType, Type propertyType, FieldInfo field, PropertyAttribute attribute)

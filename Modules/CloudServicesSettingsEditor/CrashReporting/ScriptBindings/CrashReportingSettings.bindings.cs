@@ -13,17 +13,10 @@ namespace UnityEditor.CrashReporting
     [StaticAccessor("GetCrashReportingSettings()")]
     public static partial class CrashReportingSettings
     {
-        [NativeProperty("EnableCloudDiagnosticsReporting")]
         public static extern bool enabled
         {
             [ThreadSafe] get;
             [ThreadSafe] set;
-        }
-
-        [NativeProperty("Enabled")]
-        internal static extern bool canUploadReports
-        {
-            [ThreadSafe] get;
         }
 
         public static extern bool captureEditorExceptions { get; set; }
