@@ -38,7 +38,7 @@ namespace Unity.UI.Builder
 
         protected override void ExplorerPerformDrag()
         {
-            m_TargetElementToReparent.AddToClassList(s_DragPreviewElementClassName);
+            m_TargetElementToReparent?.AddToClassList(s_DragPreviewElementClassName);
         }
 
         protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
@@ -48,7 +48,7 @@ namespace Unity.UI.Builder
 
             base.PerformAction(destination, pane, localMousePosition, index);
 
-            m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
+            m_TargetElementToReparent?.RemoveFromClassList(s_DragPreviewElementClassName);
 
             var newParent = destination;
 
@@ -141,7 +141,7 @@ namespace Unity.UI.Builder
 
         protected override void ResetDragPreviewElement()
         {
-            m_TargetElementToReparent.RemoveFromClassList(s_DragPreviewElementClassName);
+            m_TargetElementToReparent?.RemoveFromClassList(s_DragPreviewElementClassName);
 
             if (m_DragPreviewLastParent == null)
                 return;

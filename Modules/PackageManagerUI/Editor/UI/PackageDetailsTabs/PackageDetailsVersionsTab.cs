@@ -124,7 +124,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (v == primaryVersion)
                         action = new RemoveAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageManagerPrefs, m_PackageDatabase, m_PageManager);
                     else
-                        action = new UpdateAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase, m_PageManager, false);
+                        action = new VersionHistoryUpdateAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase, m_PageManager);
                 }
                 else
                     action = new AddAction(m_OperationDispatcher, m_ApplicationProxy, m_PackageDatabase);

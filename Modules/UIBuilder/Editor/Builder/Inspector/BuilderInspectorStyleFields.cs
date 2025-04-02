@@ -2157,11 +2157,15 @@ namespace Unity.UI.Builder
             }
             else
             {
-                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
+                // UUM-97052
+                // The order of these notifications is important. NotifyOfStylingChange will clear the StyleCache.
+                // Otherwise, we call IncrementVersion without the correct flags due to an inaccurate ComputedStyle comparison.
                 if (!ignoreUnsavedChanges)
                     m_Selection.NotifyOfHierarchyChange(m_Inspector, currentVisualElement, hierarchyChangeType);
                 else
                     m_Selection.ForceVisualAssetUpdateWithoutSave(currentVisualElement, hierarchyChangeType);
+
+                m_Selection.NotifyOfStylingChange(selfNotify ? null : m_Inspector, styles, styleChangeType);
             }
         }
 

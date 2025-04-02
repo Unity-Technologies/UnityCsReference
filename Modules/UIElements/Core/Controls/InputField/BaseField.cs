@@ -156,6 +156,9 @@ namespace UnityEngine.UIElements
 
         private VisualElement m_VisualInput;
 
+        // Event triggered when an expression is evaluated for a numeric field
+        internal Action<ExpressionEvaluator.Expression> expressionEvaluated;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement visualInput
         {
@@ -292,6 +295,11 @@ namespace UnityEngine.UIElements
             {
                 if (value == m_ShowMixedValue) return;
 
+                if (value && !canSwitchToMixedValue)
+                {
+                    return;
+                }
+
                 m_ShowMixedValue = value;
 
                 // Once value has been set, update the field's appearance
@@ -300,6 +308,8 @@ namespace UnityEngine.UIElements
                 NotifyPropertyChanged(showMixedValueProperty);
             }
         }
+
+        private protected virtual bool canSwitchToMixedValue => true;
 
         Label m_MixedValueLabel;
         /// <summary>

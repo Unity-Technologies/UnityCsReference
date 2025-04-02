@@ -340,7 +340,7 @@ namespace UnityEngine.TextCore.Text
         }
 
         [System.Serializable]
-        struct FontReferenceMap
+        internal struct FontReferenceMap
         {
             public Font font;
             public FontAsset fontAsset;
@@ -354,8 +354,7 @@ namespace UnityEngine.TextCore.Text
 
         // Internal for testing purposes
         internal Dictionary<int, FontAsset> m_FontLookup;
-        private List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
-
+        internal List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
         protected FontAsset GetCachedFontAssetInternal(Font font)
         {
@@ -382,7 +381,7 @@ namespace UnityEngine.TextCore.Text
             if (TextGenerator.IsExecutingJob)
                 return null;
 
-            FontAsset fontAsset = FontAssetFactory.CreateDefaultEditorFontAsset(font, shader);
+            FontAsset fontAsset = FontAssetFactory.ConvertFontToFontAsset(font, shader);
 
             if (fontAsset != null)
             {

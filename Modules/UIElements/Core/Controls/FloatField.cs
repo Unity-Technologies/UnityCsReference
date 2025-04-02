@@ -58,7 +58,8 @@ namespace UnityEngine.UIElements
         /// <returns>The float parsed from the string.</returns>
         protected override float StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToFloat(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToFloat(str, textInputBase.originalText, out var v, out var expression);
+            expressionEvaluated?.Invoke(expression);
             return success ? v : rawValue;
         }
 
@@ -148,8 +149,7 @@ namespace UnityEngine.UIElements
 
             protected override float StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToFloat(str, originalText, out var v);
-                return v;
+                return parentFloatField.StringToValue(str);
             }
         }
     }

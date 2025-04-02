@@ -73,6 +73,17 @@ namespace UnityEngine.UIElements
         internal TextField inputTextField { get; private set; }
         internal VisualElement fillElement { get; private set; }
 
+        private protected override bool canSwitchToMixedValue
+        {
+            get
+            {
+                if (inputTextField == null)
+                    return true;
+
+                return !inputTextField.textInputBase.textElement.hasFocus;
+            }
+        }
+
         float m_AdjustedPageSizeFromClick = 0;
         bool m_IsEditingTextField;
         bool m_Fill;
@@ -938,10 +949,18 @@ namespace UnityEngine.UIElements
             if (showMixedValue)
             {
                 dragElement?.RemoveFromHierarchy();
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = true;
+                }
             }
             else
             {
                 dragContainer.Add(dragElement);
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = false;
+                }
             }
         }
 

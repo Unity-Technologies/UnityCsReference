@@ -4,6 +4,7 @@
 
 ﻿using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements.Bindings;
@@ -18,6 +19,8 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
     protected override string bindingId { get; } = BindingExtensions.s_SerializedBindingId;
 
+    protected ExpressionEvaluator.Expression m_LastFieldExpression;
+
     protected TField field
     {
         get { return m_Field as TField; }
@@ -25,9 +28,54 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
         {
             var ve = field as VisualElement;
             ve?.UnregisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
+
+            if (ve is BaseField<TValue> oldTextValueField)
+            {
+                oldTextValueField.expressionEvaluated -= OnExpressionEvaluated;
+                oldTextValueField.UnregisterCallback<BlurEvent>(OnFieldBlur);
+            }
+
             boundElement = value as IBindable;
+
             ve = field as VisualElement;
             ve?.RegisterCallback(m_FieldValueChanged, TrickleDown.TrickleDown);
+
+            if (ve is BaseField<TValue> newTextValueField)
+            {
+                newTextValueField.expressionEvaluated += OnExpressionEvaluated;
+                newTextValueField.RegisterCallback<BlurEvent>(OnFieldBlur);
+            }
+        }
+    }
+
+    private void OnFieldBlur(BlurEvent evt)
+    {
+        // We need to update the mixed value state when the field loses focus since we skip setting this value when typing
+        if (field is IMixedValueSupport mixedValueSupport)
+        {
+            mixedValueSupport.showMixedValue = boundProperty.hasMultipleDifferentValues;
+        }
+    }
+
+    private void OnExpressionEvaluated(ExpressionEvaluator.Expression expression)
+    {
+        // If we are not editing multiple objects, FieldValueChange will take care of the update
+        if (!boundProperty.serializedObject.isEditingMultipleObjects)
+        {
+            return;
+        }
+
+        // If the expression is the same as the last one, we don't need to update the serialized values
+        if (expression != null && expression.Equals(m_LastFieldExpression))
+        {
+            return;
+        }
+
+        m_LastFieldExpression = expression;
+
+        if (m_LastFieldExpression != null)
+        {
+            FieldValueChange(m_Field as IEventHandler);
         }
     }
 
@@ -38,17 +86,28 @@ abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedOb
 
     private void FieldValueChanged(ChangeEvent<TValue> evt)
     {
+        // We skip this case since it will be taken care of by the expression evaluation event
+        if (boundProperty.m_SerializedObject.isEditingMultipleObjects && m_LastFieldExpression != null && m_LastFieldExpression.hasVariables)
+        {
+            return;
+        }
+
+        FieldValueChange(evt.target);
+    }
+
+    void FieldValueChange(IEventHandler target)
+    {
         if (isReleased || isUpdating)
             return;
 
-        if (evt.target != m_Field)
+        if (target != m_Field)
             return;
 
         try
         {
             var undoGroup = Undo.GetCurrentGroup();
 
-            var bindable = evt.target as IBindable;
+            var bindable = target as IBindable;
             var element = (VisualElement) bindable;
 
             if (element?.GetBinding(BindingExtensions.s_SerializedBindingId) == this && ResolveProperty())

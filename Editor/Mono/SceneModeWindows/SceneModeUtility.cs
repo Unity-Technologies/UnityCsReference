@@ -12,8 +12,42 @@ namespace UnityEditor
 {
     public static class SceneModeUtility
     {
+        class SceneModeData : ScriptableSingleton<SceneModeData>
+        {
+            public string focusTypeName = null;
+            public SceneHierarchyWindow hierarchyWindow = null;
+        }
+
         private static Type s_FocusType = null;
-        private static SceneHierarchyWindow s_HierarchyWindow = null;
+        private static Type focusType
+        {
+            get
+            {
+                if(s_FocusType == null && focusTypeName != null)
+                    s_FocusType = Type.GetType(focusTypeName);
+
+                return s_FocusType;
+            }
+            set
+            {
+                s_FocusType = value;
+                focusTypeName = s_FocusType?.AssemblyQualifiedName;
+            }
+        }
+
+        private static string focusTypeName
+        {
+            get => SceneModeData.instance.focusTypeName;
+            set => SceneModeData.instance.focusTypeName = value;
+        }
+
+        private static SceneHierarchyWindow hierarchyWindow
+        {
+            get => SceneModeData.instance.hierarchyWindow;
+            set => SceneModeData.instance.hierarchyWindow = value;
+        }
+
+
         private static GUIContent s_NoneButtonContent = null;
 
         private class Styles
@@ -56,15 +90,15 @@ namespace UnityEditor
 
             if (win)
             {
-                s_HierarchyWindow = win;
+                hierarchyWindow = win;
                 if (type == null || type == typeof(GameObject))
                 {
-                    s_FocusType = null;
+                    focusType = null;
                     win.ClearSearchFilter();
                 }
                 else
                 {
-                    s_FocusType = type;
+                    focusType = type;
                     if (win.searchMode == SearchableEditorWindow.SearchMode.Name)
                         win.searchMode = SearchableEditorWindow.SearchMode.All;
                     win.SetSearchFilter("t:" + type.Name, win.searchMode, false);
@@ -72,7 +106,7 @@ namespace UnityEditor
                 }
             }
             else
-                s_FocusType = null;
+                focusType = null;
         }
 
         public static Type SearchBar(params Type[] types)
@@ -83,8 +117,11 @@ namespace UnityEditor
                 s_NoneButtonContent.text = "None";
             }
 
-            if (s_FocusType != null && (s_HierarchyWindow == null || s_HierarchyWindow.m_SearchFilter != "t:" + s_FocusType.Name))
-                s_FocusType = null;
+            if (s_FocusType != null &&
+                (hierarchyWindow == null || hierarchyWindow.m_SearchFilter != "t:" + s_FocusType.Name))
+            {
+                focusType = null;
+            }
 
             GUILayout.Label("Scene Filter:");
 
@@ -94,7 +131,7 @@ namespace UnityEditor
                 GUIContent label = EditorGUIUtility.TempContent(
                     "All",
                     AssetPreview.GetMiniTypeThumbnail(typeof(GameObject)));
-                if (TypeButton(label, s_FocusType == null, styles.typeButton))
+                if (TypeButton(label, focusType == null, styles.typeButton))
                     SceneModeUtility.SearchForType(null);
             }
 
@@ -110,13 +147,13 @@ namespace UnityEditor
                     icon = AssetPreview.GetMiniTypeThumbnail(type);
                 string name = ObjectNames.NicifyVariableName(type.Name) + "s";
                 GUIContent label = EditorGUIUtility.TempContent(name, icon);
-                if (TypeButton(label, type == s_FocusType, styles.typeButton))
+                if (TypeButton(label, type == focusType, styles.typeButton))
                     SceneModeUtility.SearchForType(type);
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();
 
-            return s_FocusType;
+            return focusType;
         }
 
         private static bool TypeButton(GUIContent label, bool selected, GUIStyle style)

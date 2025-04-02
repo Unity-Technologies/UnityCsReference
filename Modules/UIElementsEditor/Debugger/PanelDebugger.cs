@@ -178,11 +178,13 @@ namespace UnityEditor.UIElements.Debugger
         protected virtual void OnSelectPanelDebug(IPanelDebug pdbg) {}
         protected virtual void OnRestorePanelSelection() {}
 
-        protected virtual void PopulatePanelChoices(List<IPanelChoice> panelChoices)
+        public List<Panel> GetPanels()
         {
             List<GUIView> guiViews = new List<GUIView>();
             GUIViewDebuggerHelper.GetViews(guiViews);
             var it = UIElementsUtility.GetPanelsIterator();
+
+            List<Panel> panels = new();
             while (it.MoveNext())
             {
                 // Skip this debugger window
@@ -190,8 +192,18 @@ namespace UnityEditor.UIElements.Debugger
                 HostView hostView = view as HostView;
                 if (!m_DebuggerWindow.CanDebugView(hostView))
                     continue;
-
                 var p = it.Current.Value;
+                panels.Add(p);
+            }
+
+            return panels;
+        }
+
+        protected virtual void PopulatePanelChoices(List<IPanelChoice> panelChoices)
+        {
+            List<Panel> panels = GetPanels();
+            foreach (var p in panels)
+            {
                 panelChoices.Add(new PanelChoice(p));
             }
         }

@@ -24,7 +24,7 @@ namespace Unity.UI.Builder
         static readonly string s_DraggedPreviewClassName = "unity-builder-dragger-preview--dragged";
 
         static readonly string s_TreeItemHoverHoverClassName = "unity-builder-explorer__item--dragger-hover";
-        static readonly string s_TreeItemHoverWithDragBetweenElementsSupportClassName = "unity-builder-explorer__between-element-item--dragger-hover";
+        public static readonly string s_TreeItemHoverWithDragBetweenElementsSupportClassName = "unity-builder-explorer__between-element-item--dragger-hover";
         static readonly string s_TreeViewItemName = "unity-tree-view__item";
         static readonly int s_DistanceToActivation = 5;
 
@@ -53,6 +53,11 @@ namespace Unity.UI.Builder
         public VisualElement builderStylesheetRoot { get; set; }
 
         public bool active => m_Active;
+
+        /// <summary>
+        /// Indicates whether this dragger prevents other draggers from getting active at the same time.
+        /// </summary>
+        protected bool exclusive { get; set; } = true;
 
         protected BuilderPaneWindow paneWindow { get { return m_PaneWindow; } }
         protected BuilderSelection selection { get { return m_Selection; } }
@@ -430,10 +435,8 @@ namespace Unity.UI.Builder
 
         void OnMouseDown(MouseDownEvent evt)
         {
-            if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this)
-            {
+            if (s_CurrentlyActiveBuilderDragger != null && s_CurrentlyActiveBuilderDragger != this && s_CurrentlyActiveBuilderDragger.exclusive)
                 return;
-            }
 
             var target = evt.currentTarget as VisualElement;
 
@@ -453,7 +456,8 @@ namespace Unity.UI.Builder
 
             m_Start = evt.mousePosition;
             m_WeStartedTheDrag = true;
-            target.CaptureMouse();
+            if (s_CurrentlyActiveBuilderDragger == this)
+                target.CaptureMouse();
         }
 
         void OnMouseMove(MouseMoveEvent evt)
@@ -463,7 +467,7 @@ namespace Unity.UI.Builder
             if (!target.HasMouseCapture())
                 return;
 
-            if (!m_Active)
+            if (!m_Active && m_WeStartedTheDrag)
             {
                 if (Mathf.Abs(m_Start.x - evt.mousePosition.x) > s_DistanceToActivation ||
                     Mathf.Abs(m_Start.y - evt.mousePosition.y) > s_DistanceToActivation)
@@ -477,15 +481,21 @@ namespace Unity.UI.Builder
                     }
                     else
                     {
-                        target.ReleaseMouse();
-                        s_CurrentlyActiveBuilderDragger = null;
+                        if (s_CurrentlyActiveBuilderDragger == this)
+                        {
+                            target.ReleaseMouse();
+                            s_CurrentlyActiveBuilderDragger = null;
+                        }
                     }
                 }
 
                 return;
             }
 
-            PerformDragInner(target, evt.mousePosition);
+            if (m_Active)
+            {
+                PerformDragInner(target, evt.mousePosition);
+            }
 
             evt.StopPropagation();
         }

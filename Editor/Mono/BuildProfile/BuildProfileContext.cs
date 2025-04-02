@@ -677,6 +677,19 @@ namespace UnityEditor.Build.Profile
             activeProfile?.UpdatePlayerSettingsObjectFromYAML();
         }
 
+        [RequiredByNativeCode]
+        static void SerializeActiveProfilePlayerSettings()
+        {
+            var profile = EditorUserBuildSettings.activeBuildProfile;
+            if (profile == null)
+                return;
+
+            if (!EditorUtility.IsDirty(profile.playerSettings))
+                return;
+
+            profile.SerializePlayerSettings();
+        }
+
         static bool ShouldReturnActiveProfile(BuildTarget buildTarget, StandaloneBuildSubtarget subtarget, string sharedSetting = null)
         {
             if (!string.IsNullOrEmpty(sharedSetting))
