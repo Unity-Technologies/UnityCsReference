@@ -18,7 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected override MultiSelectItem CreateMultiSelectItem(IPackage package)
         {
-            var rightInfoText = string.Format(k_UpdateInfoTextFormat, UpdateAction.GetUpdateTarget(package?.versions.primary).versionString);
+            var rightInfoText = string.Format(k_UpdateInfoTextFormat, ((UpdateAction)action).GetUpdateTarget(package.versions.primary).version);
             return new MultiSelectItem(package, rightInfoText);
         }
     }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Text;
 using UnityEngine;
@@ -331,6 +332,15 @@ namespace UnityEditor.UIElements.Debugger
                     if (p != null)
                     {
                         TryFocusCorrespondingWindow(p.ownerObject);
+                    }
+                    else
+                    {
+                        List<Panel> panels = GetPanels();
+
+                        if (panels.Count > 0)
+                        {
+                            TryFocusCorrespondingWindow(panels[0].ownerObject);
+                        }
                     }
                 }
             });

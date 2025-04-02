@@ -83,6 +83,8 @@ namespace Unity.UI.Builder
 
         internal TreeView treeView => m_TreeView;
 
+        public BuilderExplorerDragger explorerDragger => m_ExplorerDragger;
+
         internal string rebuildMarkerName;
 
         public ElementHierarchyView(
