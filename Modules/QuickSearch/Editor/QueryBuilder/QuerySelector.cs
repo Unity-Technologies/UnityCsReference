@@ -146,13 +146,10 @@ namespace UnityEditor.Search
             var selected = isHover || on;
             var color = selected ? bgColor * QueryColors.selectedTint : bgColor;
 
-            var headerRectWidthWithOffset = m_HeaderRect.width - 35; // offset for the icon and paddings.
-            var textStyle = Styles.textStyle;
-            if (size > headerRectWidthWithOffset)
-            {
-                textStyle = Styles.ellipsisTextStyle;
-                backgroundRect.width = headerRectWidthWithOffset;
-            }
+            var maxWidth = m_HeaderRect.width - iconRect.width - 18f; // offset for the icon and paddings.
+            var isTextTooLong = backgroundRect.width > maxWidth;
+            var textStyle = isTextTooLong ? Styles.ellipsisTextStyle : Styles.textStyle;
+            backgroundRect.width = isTextTooLong ? maxWidth : backgroundRect.width;
 
             // Draw block background
             GUI.DrawTexture(backgroundRect, EditorGUIUtility.whiteTexture, ScaleMode.StretchToFill, false, 0f, color, Vector4.zero, Styles.borderRadius4);

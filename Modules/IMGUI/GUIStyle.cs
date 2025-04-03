@@ -471,7 +471,7 @@ namespace UnityEngine
 
         internal Vector2 GetPreferredSize(string content, Rect rect)
         {
-            return IMGUITextHandle.GetTextHandle(this, padding.Remove(rect), content, Color.white).GetPreferredSize();
+            return IMGUITextHandle.GetTextHandle(this, padding.Remove(rect), content, Color.white).preferredSize;
         }
 
         public bool isHeightDependantOnWidth => fixedHeight == 0 && (wordWrap && imagePosition != ImagePosition.ImageOnly);
@@ -495,6 +495,7 @@ namespace UnityEngine
             bool isCached = false;
             var textHandle = IMGUITextHandle.GetTextHandle(style, rect, content, color, ref isCached);
             generationId = TextHandle.settings.GetHashCode();
+            var invScale = 1/GUIUtility.pixelsPerPoint;
             // If not already cached on the native side, we must send the meshInfo
             if (!isCached)
             {
@@ -506,6 +507,11 @@ namespace UnityEngine
                     meshInfos[i].vertexCount = textInfo.meshInfo[i].vertexCount;
                     meshInfos[i].material = textInfo.meshInfo[i].material;
                     Array.Copy(textInfo.meshInfo[i].vertexData, meshInfos[i].vertexData, textInfo.meshInfo[i].vertexCount);
+
+                    for (int j = 0; j < meshInfos[i].vertexData.Length; j++)
+                    {
+                        meshInfos[i].vertexData[j].position *= invScale;
+                    }
                 }
             }
             dimensions = textHandle.preferredSize;

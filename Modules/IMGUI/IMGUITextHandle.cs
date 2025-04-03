@@ -141,23 +141,23 @@ namespace UnityEngine
             return handle;
         }
 
+        protected override float GetPixelsPerPoint() => GUIUtility.pixelsPerPoint;
+
         internal static float GetLineHeight(GUIStyle style)
         {
             ConvertGUIStyleToGenerationSettings(settings, style, Color.white, "", Rect.zero);
-            return GetLineHeightDefault(settings);
+            return GetLineHeightDefault(settings)/GUIUtility.pixelsPerPoint;
         }
 
-        internal Vector2 GetPreferredSize()
-        {
-            return preferredSize;
-        }
-
+        //Width is in saled pixels
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
             AddTextInfoToPermanentCache();
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
+
+            width = PointsToPixels(width);
 
             for (charCount = 0; charCount < characterCount; charCount++)
             {
@@ -176,12 +176,13 @@ namespace UnityEngine
             AddTextInfoToPermanentCache();
 
             List<Rect> rects = new List<Rect>();
+            var scaleinv = 1/ GetPixelsPerPoint();
 
             for (int i = 0; i < textInfo.linkCount; i++)
             {
-                var minPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
-                var maxPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextLength + textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);
-                var lineHeight = textInfo.lineInfo[0].lineHeight;
+                var minPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y); //All scaled
+                var maxPos = GetCursorPositionFromStringIndexUsingLineHeight(textInfo.linkInfo[i].linkTextLength + textInfo.linkInfo[i].linkTextfirstCharacterIndex) + new Vector2(content.x, content.y);//all scaled
+                var lineHeight = textInfo.lineInfo[0].lineHeight * scaleinv;
 
                 if (minPos.y == maxPos.y)
                 {
@@ -190,9 +191,9 @@ namespace UnityEngine
                 else
                 {
                     // Rect for the first line - including end part
-                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, textInfo.lineInfo[0].width - minPos.x, lineHeight));
+                    rects.Add(new Rect(minPos.x, minPos.y - lineHeight, textInfo.lineInfo[0].width*scaleinv - minPos.x, lineHeight));
                     // Rect for the middle part
-                    rects.Add(new Rect(content.x, minPos.y, textInfo.lineInfo[0].width, maxPos.y - minPos.y - lineHeight));
+                    rects.Add(new Rect(content.x, minPos.y, textInfo.lineInfo[0].width * scaleinv, maxPos.y - minPos.y - lineHeight));
                     // Rect for the bottom line - up to selection
                     if (maxPos.x != 0f)
                         rects.Add(new Rect(content.x, maxPos.y - lineHeight, maxPos.x, lineHeight));
@@ -219,34 +220,49 @@ namespace UnityEngine
             {
                 font = GUIStyle.GetDefaultFont();
             }
+            var pixelsPerPoint = GUIUtility.pixelsPerPoint;
 
             if (style.fontSize > 0)
-                settings.fontSize = style.fontSize;
+                settings.fontSize = Mathf.RoundToInt(style.fontSize * pixelsPerPoint);
             else if (font)
-                settings.fontSize = font.fontSize;
+                settings.fontSize = Mathf.RoundToInt(font.fontSize * pixelsPerPoint);
             else
-                settings.fontSize = sFallbackFontSize;
+                settings.fontSize = Mathf.RoundToInt(sFallbackFontSize * pixelsPerPoint);
+
 
             settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
 
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
             if (settings.fontAsset == null)
                 return;
+
             var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
-                settings.fontAsset = GetBlurryFontAssetMapping((int)Math.Round((settings.fontSize * GUIUtility.pixelsPerPoint), MidpointRounding.AwayFromZero), settings.fontAsset);
-                settings.pixelsPerPoint = GUIUtility.pixelsPerPoint;
+                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset);
             }
 
-            settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
-            settings.material = settings.fontAsset.material;
-            if (!shouldRenderBitmap)
+            // If the raster mode is bitmap, we need to have a clean rect for the alignment to work properly. 
+            if (settings.fontAsset.IsBitmap())
             {
-                settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
+                settings.screenRect = new Rect(0, 0, Mathf.Max(0, Mathf.Round(rect.width * pixelsPerPoint)), Mathf.Max(0, Mathf.Round(rect.height * pixelsPerPoint)));
+            }
+            else
+            {
+                settings.screenRect = new Rect(0, 0, Mathf.Max(0, rect.width * pixelsPerPoint), Mathf.Max(0, rect.height * pixelsPerPoint));
+
+                if (settings.fontAsset.IsEditorFont)
+                {
+                    settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
+                }
+                else
+                {
+                    settings.fontAsset.material.SetFloat("_Sharpness", 0.5f);
+                }
+                
             }
 
-            settings.screenRect = new Rect(0, 0, rect.width, rect.height);
+            settings.material = settings.fontAsset.material;
             settings.text = text;
 
             var tempAlignment = style.alignment;
@@ -293,6 +309,9 @@ namespace UnityEngine
             settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
             settings.fontFeatures = m_ActiveFontFeatures;
+
+            settings.emojiFallbackSupport = true;
+            settings.extraPadding = 6.0f;
         }
 
         static TextOverflowMode LegacyClippingToNewOverflow(TextClipping clipping)

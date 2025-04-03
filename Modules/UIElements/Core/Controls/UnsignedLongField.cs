@@ -56,7 +56,8 @@ namespace UnityEngine.UIElements
         /// <returns>The unsigned long integer parsed from the string.</returns>
         protected override ulong StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToULong(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToULong(str, textInputBase.originalText, out var v, out var expression);
+            expressionEvaluated?.Invoke(expression);
             return success ? v : rawValue;
         }
 
@@ -171,8 +172,7 @@ namespace UnityEngine.UIElements
 
             protected override ulong StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToULong(str, originalText, out var v);
-                return v;
+                return parentUnsignedLongField.StringToValue(str);
             }
         }
     }

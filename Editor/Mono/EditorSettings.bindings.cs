@@ -242,6 +242,9 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool useLegacyProbeSampleCount { get; set; }
 
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern bool shadowmaskStitching { get; set; }
+
         [Obsolete("The disableCookiesInLightmapper setting is no longer supported. Cookies are always enabled in the Progressive Lightmapper.", true)]
         public static bool disableCookiesInLightmapper
         {

@@ -10,7 +10,7 @@ namespace UnityEngine.TextCore.Text;
 
 internal class FontAssetFactory
 {
-    const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
+    internal const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
     static readonly HashSet<FontAsset> visitedFontAssets = new();
 
     public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, int fontSize)
@@ -153,7 +153,7 @@ internal class FontAssetFactory
             {
                 fontAsset.InternalDynamicOS = true;
 
-                var boldFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold", 90);
+                var boldFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Semi Bold", 90);
                 if (boldFontAsset != null)
                 {
                     boldFontAsset.InternalDynamicOS = true;
@@ -169,7 +169,7 @@ internal class FontAssetFactory
                     SetupFontAssetSettings(italicFontAsset, shader);
                 }
 
-                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold Italic", 90);
+                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Semi Bold Italic", 90);
                 if (boldItalicFontAsset != null)
                 {
                     boldItalicFontAsset.InternalDynamicOS = true;
@@ -213,7 +213,11 @@ internal class FontAssetFactory
 
         fontAsset.IsEditorFont = true;
         fontAsset.isMultiAtlasTexturesEnabled = true;
-        fontAsset.atlasTexture.filterMode = FilterMode.Point;
+
+        // When the checkerboard switch is enabled, the font atlas texture should be bilinear filtered so that we can see the pattern being blurrred when not perfectly aligned.
+        // The text could be rendered with point filtering all the time for bitmap fonts otherwise.
+        
+        fontAsset.atlasTexture.filterMode = TextGenerator.EnableCheckerboardPattern ? FilterMode.Bilinear : FilterMode.Point;
     }
 
     public static void SetHideFlags(FontAsset fontAsset)

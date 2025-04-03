@@ -433,6 +433,9 @@ namespace UnityEngine.TextCore.Text
         [SerializeField]
         internal GlyphRenderMode m_AtlasRenderMode;
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal bool IsBitmap() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_BITMAP) && !((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
+
         /// <summary>
         /// List of spaces occupied by glyphs in a given texture.
         /// </summary>
@@ -1039,10 +1042,10 @@ namespace UnityEngine.TextCore.Text
                 if (!JobsUtility.IsExecutingJob)
                 {
                     m_FaceInfo.unitsPerEM = FontEngine.GetFaceInfo().unitsPerEM;
-                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.");
+                    Debug.Log("Font Asset [" + name + "] Units Per EM set to " + m_FaceInfo.unitsPerEM + ". Please commit the newly serialized value.", this);
                 }
                 else
-                    Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.");
+                    Debug.LogError("Font Asset [" + name + "] is missing Units Per EM. Please select the 'Reset FaceInfo' menu item on Font Asset [" + name + "] to ensure proper serialization.", this);
             }
 
             // Compute hash codes for various properties of the font asset used for lookup.

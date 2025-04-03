@@ -270,7 +270,7 @@ namespace UnityEngine
         internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }
 
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule","UnityEngine.TextCoreTextEngineModule")]
         internal static DiagnosticSwitch GetDiagnosticSwitch(string name)
         {
             foreach (var diagnosticSwitch in diagnosticSwitches)

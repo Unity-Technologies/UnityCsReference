@@ -39,7 +39,7 @@ namespace UnityEditor
             TextGenerationSettings.IsEditorTextRenderingModeBitmap = () => currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap;
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
             IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
-            UITKTextHandle.GetBlurryMapping = GetBlurryFontAssetMapping;
+            UITKTextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 

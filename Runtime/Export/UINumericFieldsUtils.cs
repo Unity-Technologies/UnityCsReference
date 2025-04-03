@@ -41,9 +41,9 @@ namespace UnityEngine
             return true;
         }
 
-        public static bool TryConvertStringToDouble(string str, string initialValueAsString, out double value)
+        public static bool TryConvertStringToDouble(string str, string initialValueAsString, out double value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToDouble(str, out value, out var expression);
+            var success = TryConvertStringToDouble(str, out value, out expression);
 
             if (!success && expression != null && !string.IsNullOrEmpty(initialValueAsString))
             {
@@ -56,9 +56,9 @@ namespace UnityEngine
             return success;
         }
 
-        public static bool TryConvertStringToFloat(string str, string initialValueAsString, out float value)
+        public static bool TryConvertStringToFloat(string str, string initialValueAsString, out float value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToDouble(str, initialValueAsString, out var v);
+            var success = TryConvertStringToDouble(str, initialValueAsString, out var v, out expression);
             value = Mathf.ClampToFloat(v);
             return success;
         }
@@ -73,9 +73,9 @@ namespace UnityEngine
             return ExpressionEvaluator.Evaluate(str, out value, out expr);
         }
 
-        public static bool TryConvertStringToLong(string str, string initialValueAsString, out long value)
+        public static bool TryConvertStringToLong(string str, string initialValueAsString, out long value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToLong(str, out value, out var expression);
+            var success = TryConvertStringToLong(str, out value, out expression);
 
             if (!success && expression != null && !string.IsNullOrEmpty(initialValueAsString))
             {
@@ -93,9 +93,9 @@ namespace UnityEngine
             return ExpressionEvaluator.Evaluate(str, out value, out expr);
         }
 
-        public static bool TryConvertStringToULong(string str, string initialValueAsString, out ulong value)
+        public static bool TryConvertStringToULong(string str, string initialValueAsString, out ulong value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToULong(str, out value, out var expression);
+            var success = TryConvertStringToULong(str, out value, out expression);
 
             if (!success && expression != null && !string.IsNullOrEmpty(initialValueAsString))
             {
@@ -108,16 +108,16 @@ namespace UnityEngine
             return success;
         }
 
-        public static bool TryConvertStringToInt(string str, string initialValueAsString, out int value)
+        public static bool TryConvertStringToInt(string str, string initialValueAsString, out int value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToLong(str, initialValueAsString, out var v);
+            var success = TryConvertStringToLong(str, initialValueAsString, out var v, out expression);
             value = Mathf.ClampToInt(v);
             return success;
         }
 
-        public static bool TryConvertStringToUInt(string str, string initialValueAsString, out uint value)
+        public static bool TryConvertStringToUInt(string str, string initialValueAsString, out uint value, out ExpressionEvaluator.Expression expression)
         {
-            var success = TryConvertStringToLong(str, initialValueAsString, out var v);
+            var success = TryConvertStringToLong(str, initialValueAsString, out var v, out expression);
             value = Mathf.ClampToUInt(v);
             return success;
         }

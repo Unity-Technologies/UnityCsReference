@@ -629,7 +629,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
         {
             evt.eventLogger = m_Debugger;
             m_EventTimestampDictionary[evt.eventId] = (long)(Time.realtimeSinceStartup * 1000.0f);
-            IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+            IEventHandler capture = panel?.GetCapturingElement(evt is IPointerOrMouseEvent pme ? pme.pointerId : PointerId.mousePointerId);
             m_Debugger.BeginProcessEvent(evt, capture);
             return false;
         }
@@ -641,7 +641,7 @@ namespace UnityEditor.UIElements.Experimental.Debugger
                 var now = (long)(Time.realtimeSinceStartup * 1000.0f);
                 var start = m_EventTimestampDictionary[evt.eventId];
                 m_EventTimestampDictionary.Remove(evt.eventId);
-                IEventHandler capture = panel?.GetCapturingElement(PointerId.mousePointerId);
+                IEventHandler capture = panel?.GetCapturingElement(evt is IPointerOrMouseEvent pme ? pme.pointerId : PointerId.mousePointerId);
                 m_Debugger.EndProcessEvent(evt, now - start, capture);
                 evt.eventLogger = null;
             }
@@ -1007,6 +1007,18 @@ namespace UnityEditor.UIElements.Experimental.Debugger
             if (eventBase.eventTypeId == WheelEvent.TypeId())
             {
                 m_EventBaseInfo.text += "Mouse delta: " + eventBase.delta + "\n";
+            }
+
+            if (eventBase.eventTypeId == PointerMoveEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOverEvent.TypeId() ||
+                eventBase.eventTypeId == PointerOutEvent.TypeId() ||
+                eventBase.eventTypeId == PointerDownEvent.TypeId() ||
+                eventBase.eventTypeId == PointerUpEvent.TypeId() ||
+                eventBase.eventTypeId == PointerCancelEvent.TypeId() ||
+                eventBase.eventTypeId == PointerEnterEvent.TypeId() ||
+                eventBase.eventTypeId == PointerLeaveEvent.TypeId())
+            {
+                m_EventBaseInfo.text += "Pointer Id: " + eventBase.pointerId + "\n";
             }
 
             if (eventBase.eventTypeId == KeyDownEvent.TypeId() ||

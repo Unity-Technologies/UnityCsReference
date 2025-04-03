@@ -1503,7 +1503,7 @@ namespace UnityEngine.TextCore.Text
         /// <param name="i"></param>
         /// <param name="generationSettings"></param>
         /// <param name="textInfo"></param>
-        public static void FillCharacterVertexBuffers(int i, bool convertToLinearSpace, TextGenerationSettings generationSettings, TextInfo textInfo)
+        public static void FillCharacterVertexBuffers(int i, bool convertToLinearSpace, TextGenerationSettings generationSettings, TextInfo textInfo, bool needToRound)
         {
             int materialIndex = textInfo.textElementInfo[i].materialReferenceIndex;
             int indexX4 = textInfo.meshInfo[materialIndex].vertexCount;
@@ -1520,7 +1520,12 @@ namespace UnityEngine.TextCore.Text
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
+
+                // The returned measured value is not yet rounded in all cases and might get passed back for the text generation.
+                // Adding a preventive rounding of the offset in case it is needed.
                 axisOffset.y = generationSettings.screenRect.height;
+                if(needToRound)
+                    axisOffset.y = Mathf.Round(axisOffset.y);
                 axisOffset.z = 0;
 
                 Vector3 position = textElementInfoArray[i].vertexBottomLeft.position;

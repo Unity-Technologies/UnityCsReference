@@ -644,6 +644,16 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.RemoveElementUnderPointer(e);
         }
 
+        internal void SetTopElementUnderPointer(int pointerId, VisualElement element, EventBase triggerEvent)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
+        }
+
+        internal void SetTopElementUnderPointer(VisualElement element, int pointerId, Vector2 position)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, position);
+        }
+
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
         {
             VisualElement element = null;
@@ -721,6 +731,10 @@ namespace UnityEngine.UIElements
         internal event Action<IPanel> beforeUpdate;
         internal void InvokeBeforeUpdate() { beforeUpdate?.Invoke(this); }
 
+        //UUM-58503: In some code paths the mousePosition is converted to a Vector2Int, which causes undefined behavior
+        //           when the x,y coords are float.MinValue()
+        internal static readonly Vector2 s_OutsidePanelCoordinates = new ((float)int.MinValue, (float)int.MinValue);
+
         // returns true if elements under pointer have changed
         internal bool UpdateElementUnderPointers()
         {
@@ -729,9 +743,7 @@ namespace UnityEngine.UIElements
                 if (PointerDeviceState.GetPanel(pointerId, contextType) != this ||
                     PointerDeviceState.HasLocationFlag(pointerId, contextType, PointerDeviceState.LocationFlag.OutsidePanel))
                 {
-                    //UUM-58503: In some code paths the mousePosition is converted to a Vector2Int, which causes undefined behavior
-                    //           when the x,y coords are float.MinValue()
-                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, new Vector2((float)int.MinValue, (float)int.MinValue));
+                    m_TopElementUnderPointers.SetElementUnderPointer(null, pointerId, s_OutsidePanelCoordinates);
                 }
                 else
                 {

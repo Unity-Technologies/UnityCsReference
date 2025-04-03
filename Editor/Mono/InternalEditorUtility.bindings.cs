@@ -1011,5 +1011,8 @@ namespace UnityEditorInternal
         // using this method but if you really need it, consult Desktop team first.
         [StaticAccessor("GetAuxWindowManager()", StaticAccessorType.Dot)]
         internal static extern void RetainAuxWindows();
+
+        [FreeFunction]
+        internal static extern bool IsPlaybackEngineDisabled(string engineName);
     }
 }

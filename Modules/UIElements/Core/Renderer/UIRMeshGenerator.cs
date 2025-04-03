@@ -631,7 +631,7 @@ namespace UnityEngine.UIElements.UIR
             m_Settings.text = text;
             m_Settings.fontAsset = font;
             m_Settings.textSettings = textSettings;
-            m_Settings.fontSize = fontSize;
+            m_Settings.fontSize = (int)Mathf.Round(fontSize);
             m_Settings.color = color;
             m_Settings.material = font.material;
             m_Settings.textWrappingMode = TextWrappingMode.NoWrap;
@@ -662,6 +662,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
+                float inverseScale = 1.0f / currentElement.scaledPixelsPerPoint;
 
                 while (remainingVertexCount > 0)
                 {
@@ -688,17 +689,17 @@ namespace UnityEngine.UIElements.UIR
                         if (isNative)
                         {
                             var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
                         }
                         else
                         {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 0], pos);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 1], pos);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 2], pos);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 3], pos);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale);
                         }
 
                         indices[j + 0] = (ushort)(vDst + 0);
@@ -790,14 +791,14 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vertex ConvertTextVertexToUIRVertex(TextCoreVertex vertex, Vector2 posOffset, bool isDynamicColor = false, bool isColorGlyph = false)
+        internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
             if (vertex.uv2.y < 0.0f) dilate = 1.0f;
             return new Vertex
             {
-                position = new Vector3(vertex.position.x + posOffset.x, vertex.position.y + posOffset.y, UIRUtility.k_MeshPosZ),
+                position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y,  UIRUtility.k_MeshPosZ),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
                 tint = isColorGlyph ? Color.white : vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
