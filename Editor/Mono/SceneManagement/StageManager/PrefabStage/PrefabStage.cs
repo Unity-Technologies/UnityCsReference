@@ -514,6 +514,7 @@ namespace UnityEditor.SceneManagement
             m_PrefabContentsRoot = PrefabStageUtility.LoadPrefabIntoPreviewScene(m_PrefabAssetPath, scene);
             if (m_PrefabContentsRoot != null)
             {
+                scene.SetPathAndGuid(m_PrefabAssetPath, AssetDatabase.AssetPathToGUID(m_PrefabAssetPath));
                 // Corresponds to which breadcrumb this is.
                 var stagePriority = StageNavigationManager.instance.stageHistory.IndexOf(this);
 

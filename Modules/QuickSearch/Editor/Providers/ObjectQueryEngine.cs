@@ -318,6 +318,25 @@ namespace UnityEditor.Search.Providers
             return null;
         }
 
+        static void IndexTypes(Type objType, HashSet<string> types, bool isPrefabDocument)
+        {
+            while (objType != null && objType != typeof(UnityEngine.Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            {
+                if (isPrefabDocument && objType == typeof(GameObject))
+                    types.Add("prefab");
+                else if (objType == typeof(MonoScript))
+                    types.Add("script");
+
+                var shortName = objType.Name;
+                types.Add(shortName.ToLowerInvariant());
+                if (objType.FullName != null && objType.FullName != shortName)
+                    types.Add(objType.FullName.ToLowerInvariant());
+                objType = objType.BaseType;
+            }
+            if (objType == typeof(MonoBehaviour) || objType == typeof(Behaviour))
+                types.Add("script");
+        }
+
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
             if (!obj)
@@ -326,11 +345,12 @@ namespace UnityEditor.Search.Providers
 
             if (god.types == null)
             {
-                var types = new HashSet<string>(new[] { obj.GetType().Name.ToLowerInvariant() });
+                bool isPrefab = false;
+                var types = new HashSet<string>();
                 if (obj is GameObject go)
                 {
                     if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
-                        types.Add("prefab");
+                        isPrefab = true;
 
                     var gocs = go.GetComponents<Component>();
                     for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
@@ -340,13 +360,11 @@ namespace UnityEditor.Search.Providers
                             continue;
 
                         var componentType = c.GetType();
-                        var shortName = componentType.Name;
-                        types.Add(shortName.ToLowerInvariant());
-                        if (componentType.FullName != shortName)
-                            types.Add(componentType.FullName.ToLowerInvariant());
+                        IndexTypes(componentType, types, false);
                     }
                 }
 
+                IndexTypes(obj.GetType(), types, isPrefab);
                 god.types = types.ToArray();
             }
 
@@ -364,7 +382,7 @@ namespace UnityEditor.Search.Providers
                 // Index any prefab reference
                 if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
                     AddReference(go, PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go), refs);
-                
+
                 if (PrefabUtility.IsPrefabAssetMissing(go))
                 {
                     god.missingPrefab = true;

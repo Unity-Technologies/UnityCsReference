@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
             properties.Add(newProperty);
             rule.properties = properties.ToArray();
 
-            styleSheet.UpdateContentHash();
+            styleSheet.SetTemporaryContentHash();
             StyleSheetCache.ClearCaches();
 
             return newProperty;
@@ -66,7 +66,7 @@ namespace Unity.UI.Builder
             var properties = rule.properties.ToList();
             properties.Remove(property);
             rule.properties = properties.ToArray();
-            styleSheet.UpdateContentHash();
+            styleSheet.SetTemporaryContentHash();
         }
 
         public static void RemoveProperty(this StyleSheet styleSheet, StyleRule rule,

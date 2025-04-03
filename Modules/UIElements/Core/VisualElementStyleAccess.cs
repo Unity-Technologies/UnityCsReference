@@ -373,16 +373,8 @@ namespace UnityEngine.UIElements
                     switch (handle.valueType)
                     {
                         case StyleValueType.Enum:
-                        {
-                            var colorName = customProp.sheet.ReadAsString(handle);
-                            return StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out value);
-                        }
                         case StyleValueType.Color:
-                        {
-                            if (customProp.sheet.TryReadColor(customProp.handle, out value))
-                                return true;
-                            break;
-                        }
+                            return customProp.sheet.TryReadColor(customProp.handle, out value);
                         default:
                             LogCustomPropertyWarning(property.name, StyleValueType.Color, customProp);
                             break;

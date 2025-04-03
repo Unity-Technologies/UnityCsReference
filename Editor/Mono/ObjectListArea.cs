@@ -641,7 +641,7 @@ namespace UnityEditor
             SetSelection(instanceIDs.ToArray(), false);
         }
 
-        void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
+        public void SetSelection(int[] selectedInstanceIDs, bool doubleClicked)
         {
             InitSelection(selectedInstanceIDs);
 

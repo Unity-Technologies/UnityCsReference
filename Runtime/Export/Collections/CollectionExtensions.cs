@@ -14,6 +14,40 @@ namespace Unity.Collections
     internal static class CollectionExtensions
     {
         /// <summary>
+        /// Resizes the array and adds the item to the end.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="item">The item to add to the array.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static void AddToArray<T>(ref T[] array, T item)
+        {
+            Array.Resize(ref array, array.Length + 1);
+            array[^1] = item;
+        }
+
+        /// <summary>
+        /// Removes the item from the array and resizes it.
+        /// </summary>
+        /// <typeparam name="T">The item type.</typeparam>
+        /// <param name="array">The array.</param>
+        /// <param name="item">The item to remove from the array.</param>
+        [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
+        internal static void RemoveFromArray<T>(ref T[] array, T item)
+        {
+            var removeIndex = Array.IndexOf(array, item);
+            if (removeIndex == -1)
+                return;
+
+            for (int i = 0, j = 0; i < array.Length; i++)
+            {
+                if (i != removeIndex)
+                    array[j++] = array[i];
+            }
+            Array.Resize(ref array, array.Length - 1);
+        }
+
+        /// <summary>
         /// Add element to the correct position in presorted List. This methods reduce a need to call Sort() on the List.
         /// </summary>
         /// <param name="list">Presorted List</param>

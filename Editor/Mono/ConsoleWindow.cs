@@ -789,16 +789,13 @@ namespace UnityEditor
                 if (rowDoubleClicked != -1)
                     LogEntries.RowGotDoubleClicked(rowDoubleClicked);
 
-
                 // Display active text (We want word wrapped text with a vertical scrollbar)
-                m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
-
                 string stackWithHyperlinks = StacktraceWithHyperlinks(m_ActiveText, m_CallstackTextStart, s_StripLoggingCallstack, m_ActiveMode);
                 float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(stackWithHyperlinks), position.width);
-                EditorGUILayout.SelectableLabel(stackWithHyperlinks, Constants.MessageStyle,
-                    GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
 
-                GUILayout.EndScrollView();
+                var rect = EditorGUILayout.BeginHorizontal(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height + 10));
+                EditorGUI.ScrollableLabelAreaInternal(rect, stackWithHyperlinks, ref m_TextScroll, Constants.MessageStyle);
+                EditorGUILayout.EndHorizontal();
 
                 SplitterGUILayout.EndVerticalSplit();
             }

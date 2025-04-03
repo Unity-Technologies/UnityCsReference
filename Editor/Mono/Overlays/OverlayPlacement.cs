@@ -300,7 +300,9 @@ namespace UnityEditor.Overlays
         internal void UpdateAbsolutePosition()
         {
             if (rootVisualElement.resolvedStyle.position == Position.Absolute)
+#pragma warning disable CS0618 // Type or member is obsolete
                 rootVisualElement.transform.position = floatingPosition;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

@@ -461,7 +461,7 @@ namespace UnityEngine.UIElements
             rowElement.SetEnabled(isEnabled);
             rowElement.userData = data;
 
-            var itemContent = new VisualElement();
+            var itemContent = new VisualElement { pickingMode = PickingMode.Ignore };
             itemContent.AddToClassList(itemContentUssClassName);
 
             var checkElement = new VisualElement();
@@ -536,7 +536,25 @@ namespace UnityEngine.UIElements
             m_TargetElement = targetElement;
             m_TargetElement.RegisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
 
-            m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
+            if (m_TargetElement.panel != null && m_TargetElement.panel.contextType == ContextType.Player)
+            {
+                var uiDocument = UIDocument.FindParentDocument(m_TargetElement);
+                if (uiDocument != null &&
+                    uiDocument.panelSettings != null &&
+                    uiDocument.panelSettings.renderMode == PanelRenderMode.WorldSpace)
+                {
+                    m_PanelRootVisualContainer = uiDocument.rootVisualElement;
+                }
+                else
+                {
+
+                    m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
+                }
+            }
+            else
+            {
+                m_PanelRootVisualContainer = m_TargetElement.GetRootVisualContainer();
+            }
 
             if (m_PanelRootVisualContainer == null)
             {
@@ -555,7 +573,7 @@ namespace UnityEngine.UIElements
             m_MenuContainer.style.unityFontDefinition = m_TargetElement.computedStyle.unityFontDefinition;
 
             var local = m_PanelRootVisualContainer.WorldToLocal(position);
-            m_PositionTop = local.y + position.height - m_PanelRootVisualContainer.layout.y;
+            m_PositionTop = local.y + local.height - m_PanelRootVisualContainer.layout.y;
             m_PositionLeft = local.x - m_PanelRootVisualContainer.layout.x;
 
             m_OuterContainer.style.left = m_PositionLeft;
@@ -563,7 +581,7 @@ namespace UnityEngine.UIElements
             m_OuterContainer.style.maxHeight = Length.None();
             m_OuterContainer.style.maxWidth = Length.None();
 
-            m_DesiredRect = anchored ? position : Rect.zero;
+            m_DesiredRect = anchored ? local : Rect.zero;
 
             m_MenuContainer.schedule.Execute(contentContainer.Focus);
             m_ShownAboveTarget = false;
@@ -660,9 +678,13 @@ namespace UnityEngine.UIElements
 
                 var dropdownHeight = m_OuterContainer.layout.height;
                 var targetElementTop = targetElement.y;
-                var actualTop = m_OuterContainer.worldBound.y;
-                var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.worldBound.height - actualTop;
-                var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.worldBound.height - actualTop : targetElementTop;
+
+
+                var TL = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
+
+                var actualTop = TL.y;
+                var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.layout.height - actualTop;
+                var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.layout.height - actualTop : targetElementTop;
 
                 var adjustTop = spaceBelow < dropdownHeight;
 

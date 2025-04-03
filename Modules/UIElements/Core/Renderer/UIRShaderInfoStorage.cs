@@ -8,7 +8,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    abstract class BaseShaderInfoStorage : IDisposable
+    abstract partial class BaseShaderInfoStorage : IDisposable
     {
         protected static int s_TextureCounter;
         internal static ProfilerMarker s_MarkerCopyTexture = new ProfilerMarker("UIR.ShaderInfoStorage.CopyTexture");

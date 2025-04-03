@@ -74,7 +74,7 @@ namespace Unity.UI.Builder
             if (InitializeSelector(complexSelector, newComplexSelectorStr, out error))
             {
                 if (styleSheet)
-                    styleSheet.UpdateContentHash();
+                    styleSheet.SetTemporaryContentHash();
                 return true;
             }
 

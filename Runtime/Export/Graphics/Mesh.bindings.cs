@@ -64,40 +64,40 @@ namespace UnityEngine
         extern public UnityEngine.Rendering.VertexAttributeDescriptor GetVertexAttribute(int index);
 
         [FreeFunction(Name = "MeshScripting::GetIndexStart", HasExplicitThis = true)]
-        extern private UInt32 GetIndexStartImpl(int submesh);
+        extern private UInt32 GetIndexStartImpl(int submesh, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::GetIndexCount", HasExplicitThis = true)]
-        extern private UInt32 GetIndexCountImpl(int submesh);
+        extern private UInt32 GetIndexCountImpl(int submesh, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::GetTrianglesCount", HasExplicitThis = true)]
-        extern private UInt32 GetTrianglesCountImpl(int submesh);
+        extern private UInt32 GetTrianglesCountImpl(int submesh, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::GetBaseVertex", HasExplicitThis = true)]
         extern private UInt32 GetBaseVertexImpl(int submesh);
 
         [FreeFunction(Name = "MeshScripting::GetTriangles", HasExplicitThis = true)]
-        extern private int[] GetTrianglesImpl(int submesh, bool applyBaseVertex);
+        extern private int[] GetTrianglesImpl(int submesh, bool applyBaseVertex, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::GetIndices", HasExplicitThis = true)]
-        extern private int[] GetIndicesImpl(int submesh, bool applyBaseVertex);
+        extern private int[] GetIndicesImpl(int submesh, bool applyBaseVertex, int meshlod);
 
         [FreeFunction(Name = "SetMeshIndicesFromScript", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetIndicesImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex);
+        extern private void SetIndicesImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex, int meshlod);
 
         [FreeFunction(Name = "SetMeshIndicesFromNativeArray", HasExplicitThis = true, ThrowsException = true)]
-        extern private void SetIndicesNativeArrayImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, IntPtr indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex);
+        extern private void SetIndicesNativeArrayImpl(int submesh, MeshTopology topology, UnityEngine.Rendering.IndexFormat indicesFormat, IntPtr indices, int arrayStart, int arraySize, bool calculateBounds, int baseVertex, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray", HasExplicitThis = true)]
-        extern private void GetTrianglesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
+        extern private void GetTrianglesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::ExtractTrianglesToArray16", HasExplicitThis = true)]
-        extern private void GetTrianglesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex);
+        extern private void GetTrianglesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray", HasExplicitThis = true)]
-        extern private void GetIndicesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex);
+        extern private void GetIndicesNonAllocImpl([Out] int[] values, int submesh, bool applyBaseVertex, int meshlod);
 
         [FreeFunction(Name = "MeshScripting::ExtractIndicesToArray16", HasExplicitThis = true)]
-        extern private void GetIndicesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex);
+        extern private void GetIndicesNonAllocImpl16([Out] ushort[] values, int submesh, bool applyBaseVertex, int meshlod);
 
         // component (channels) setters/getters helpers
 
@@ -296,6 +296,36 @@ namespace UnityEngine
         extern private void SetAllSubMeshesAtOnceFromArray(SubMeshDescriptor[] desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
         [FreeFunction("MeshScripting::SetAllSubMeshesAtOnceFromNativeArray", HasExplicitThis = true, ThrowsException = true)]
         extern private void SetAllSubMeshesAtOnceFromNativeArray(IntPtr desc, int start, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
+
+        [FreeFunction("MeshScripting::SetLodCount", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetLodCount(int numLevels);
+
+        [FreeFunction("MeshScripting::SetLodSelectionCurve",  HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetLodSelectionCurve(LodSelectionCurve lodSelectionCurve);
+
+        [FreeFunction("MeshScripting::SetLods", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetLodsFromArray(MeshLodRange[] levelRanges, int start, int count, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
+
+        [FreeFunction("MeshScripting::SetLodsFromNativeArray", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetLodsFromNativeArray(IntPtr lodLevels, int count, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
+
+        [FreeFunction("MeshScripting::SetLod", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetLodImpl(int subMeshIndex, int level, MeshLodRange levelRange, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default);
+
+        [FreeFunction("MeshScripting::GetLods", HasExplicitThis = true, ThrowsException = true)]
+        extern private MeshLodRange[] GetLodsAlloc(int subMeshIndex);
+
+        [FreeFunction(Name = "MeshScripting::GetLodsNonAlloc", HasExplicitThis = true, ThrowsException = true)]
+        extern private void GetLodsNonAlloc([Out] MeshLodRange[] levels, int subMeshIndex);
+
+        [FreeFunction("MeshScripting::GetLodCount", HasExplicitThis = true)]
+        extern private int GetLodCount();
+
+        [FreeFunction("MeshScripting::GetLodSelectionCurve", HasExplicitThis = true)]
+        extern private LodSelectionCurve GetLodSelectionCurve();
+
+        [FreeFunction("MeshScripting::GetLod", HasExplicitThis = true, ThrowsException = true)]
+        extern public MeshLodRange GetLod(int subMeshIndex, int levelIndex);
 
         extern public Bounds bounds { get; set; }
 

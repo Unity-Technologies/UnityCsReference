@@ -23,6 +23,7 @@ namespace UnityEditor
         private string m_Label;
         private string m_Name;
         private HashSet<string> m_Keywords;
+        bool m_Activated;
 
         internal SettingsWindow settingsWindow { get; set; }
         internal string[] pathTokens { get; }
@@ -141,6 +142,29 @@ namespace UnityEditor
         {
         }
 
+        internal void Activate(string searchContext, VisualElement rootElement)
+        {
+            // If OnActivate fails, it should not be considered activated
+            if (!m_Activated)
+                OnActivate(searchContext, rootElement);
+            m_Activated = true;
+        }
+
+        internal void Deactivate()
+        {
+            if (m_Activated)
+            {
+                // Set activated=false first, so even if OnDeactivate fails it will be considered deactivated.
+                m_Activated = false;
+                OnDeactivate();
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{GetType().Name} - {settingsPath}";
+        }
+
         #region Helper
         public static IEnumerable<string> GetSearchKeywordsFromGUIContentProperties<T>()
         {
@@ -156,12 +180,15 @@ namespace UnityEditor
         }
 
         public static IEnumerable<string> GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject)
+            => GetSearchKeywordsFromSerializedObject(serializedObject, sp => sp.displayName);
+        
+        internal static IEnumerable<string> GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject, Func<SerializedProperty, string> resolveName)
         {
             var keywords = new HashSet<string>();
             var property = serializedObject.GetIterator();
             while (property.NextVisible(true))
             {
-                keywords.Add(property.displayName);
+                keywords.Add(resolveName(property));
             }
             return keywords;
         }

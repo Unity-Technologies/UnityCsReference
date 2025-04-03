@@ -63,7 +63,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.PathTracing.Editor")]
 
 // This should move with the AnimationWindow to a module at some point
-[assembly: InternalsVisibleTo("UnityEditor.Modules.Animation.tests.AnimationWindow")]
+[assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
 
@@ -96,6 +96,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Scripting")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Serialization")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.StandaloneBuilds")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UIToolkit")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ExternalVersionControl")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]

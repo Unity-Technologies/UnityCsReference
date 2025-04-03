@@ -483,7 +483,7 @@ namespace Unity.UI.Builder
                 DeleteElementFromAsset(document, child, false);
             }
 
-            document.visualTreeAsset.RemoveElement(vea);
+            document.visualTreeAsset.RemoveElement(ve);
         }
 
         public static void TransferAssetToAsset(
@@ -498,8 +498,7 @@ namespace Unity.UI.Builder
             document.visualTreeAsset.Swallow(parent, otherVta);
         }
 
-        public static void TransferAssetToAsset(
-            BuilderDocument document, StyleSheet styleSheet, StyleSheet otherStyleSheet)
+        public static void TransferAssetToAsset(StyleSheet styleSheet, StyleSheet otherStyleSheet)
         {
             Undo.RegisterCompleteObjectUndo(
                 styleSheet, BuilderConstants.AddNewSelectorUndoMessage);

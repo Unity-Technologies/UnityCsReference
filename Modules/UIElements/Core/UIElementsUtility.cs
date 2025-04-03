@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
+using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEngine.UIElements
 {
@@ -229,8 +230,9 @@ namespace UnityEngine.UIElements
                     // Instead of allocating a new Event object every time
                     // we reuse this instance and copy event data into it
                     s_EventInstance.CopyFromPtr(nativeEventPtr);
+                    using var scope = new UITKScope(false);
+                    eventHandled = DoDispatch(panel);
 
-                    eventHandled =  DoDispatch(panel);
                 }
                 return true;
             }

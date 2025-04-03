@@ -584,7 +584,7 @@ namespace Unity.UI.Builder
                     if (value is string strValue)
                     {
                         // Add value data to data array.
-                        var index = styleSheet.AddValueToArray(strValue);
+                        var index = styleSheet.AddValue(strValue);
 
                         // Add value object to property.
                         return styleSheet.AddValueHandle(styleProperty, index, StyleValueType.Enum);

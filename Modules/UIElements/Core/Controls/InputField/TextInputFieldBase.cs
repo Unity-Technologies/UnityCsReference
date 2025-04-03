@@ -352,9 +352,13 @@ namespace UnityEngine.UIElements
 
             RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
             textInputBase.textElement.OnPlaceholderChanged += OnPlaceholderChanged;
+
+            m_UpdateTextFromValue = true;
         }
 
         TextInputBase m_TextInputBase;
+        internal bool m_UpdateTextFromValue;
+
         /// <undoc/>
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
@@ -791,11 +795,17 @@ namespace UnityEngine.UIElements
         /// <returns>A value converted from the string.</returns>
         protected abstract TValueType StringToValue(string str);
 
+        private protected override bool canSwitchToMixedValue => !textInputBase.textElement.hasFocus;
+
         protected override void UpdateMixedValueContent()
         {
             if (showMixedValue)
             {
-                ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
+                if (m_UpdateTextFromValue)
+                {
+                    ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
+                }
+
                 AddToClassList(mixedValueLabelUssClassName);
                 visualInput?.AddToClassList(mixedValueLabelUssClassName);
             }
@@ -1139,15 +1149,15 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
-                    var t = textElement.transform.position;
+                    var t = textElement.resolvedStyle.translate;
 
                     scrollOffset = GetScrollOffset(scrollOffset.x, scrollOffset.y, contentRect.width, isBackspace, widthChanged);
 
                     t.y = -Mathf.Min(scrollOffset.y, Math.Abs(textElement.contentRect.height - contentRect.height));
                     t.x = -scrollOffset.x;
 
-                    if (!t.Equals(textElement.transform.position))
-                        textElement.transform.position = t;
+                    if (!t.Equals(textElement.resolvedStyle.translate))
+                        textElement.style.translate = t;
                 }
             }
 
@@ -1272,7 +1282,7 @@ namespace UnityEngine.UIElements
                 if (multilineContainer != null)
                 {
                     // Make sure we reset the transform
-                    textElement.transform.position = Vector3.zero;
+                    textElement.style.translate = Vector3.zero;
 
                     multilineContainer.RemoveFromHierarchy();
                     textElement.UnregisterCallback<GeometryChangedEvent>(TextElementOnGeometryChangedEvent);

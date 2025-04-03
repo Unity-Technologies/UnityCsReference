@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements.StyleSheets.Syntax
         Resource, // <resource>
         Url, // <url>
         Time, // <time>
+        FilterFunction, // <filter-function>
         Angle, //<angle>
         CustomIdent // <custom-ident>
     }

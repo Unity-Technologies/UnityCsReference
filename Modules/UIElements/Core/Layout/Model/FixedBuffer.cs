@@ -2,18 +2,19 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿// ReSharper disable FieldCanBeMadeReadOnly.Local
+// ReSharper disable FieldCanBeMadeReadOnly.Local
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace UnityEngine.UIElements.Layout;
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
 unsafe struct FixedBuffer2<T> where T : unmanaged
 {
-    T __0;
-    T __1;
+    [SerializeField] T __0;
+    [SerializeField] T __1;
 
     public const int Length = 2;
 
@@ -34,13 +35,14 @@ unsafe struct FixedBuffer2<T> where T : unmanaged
     }
 }
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
 unsafe struct FixedBuffer4<T> where T : unmanaged
 {
-    T __0;
-    T __1;
-    T __2;
-    T __3;
+    [SerializeField] T __0;
+    [SerializeField] T __1;
+    [SerializeField] T __2;
+    [SerializeField] T __3;
 
     public FixedBuffer4(T x, T y, T z, T w)
     {
@@ -69,15 +71,16 @@ unsafe struct FixedBuffer4<T> where T : unmanaged
     }
 }
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
 unsafe struct FixedBuffer6<T> where T : unmanaged
 {
-    T __0;
-    T __1;
-    T __2;
-    T __3;
-    T __4;
-    T __5;
+    [SerializeField] T __0;
+    [SerializeField] T __1;
+    [SerializeField] T __2;
+    [SerializeField] T __3;
+    [SerializeField] T __4;
+    [SerializeField] T __5;
 
     public const int Length = 6;
 
@@ -98,18 +101,19 @@ unsafe struct FixedBuffer6<T> where T : unmanaged
     }
 }
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
 unsafe struct FixedBuffer9<T> where T : unmanaged
 {
-    T __0;
-    T __1;
-    T __2;
-    T __3;
-    T __4;
-    T __5;
-    T __6;
-    T __7;
-    T __8;
+    [SerializeField] T __0;
+    [SerializeField] T __1;
+    [SerializeField] T __2;
+    [SerializeField] T __3;
+    [SerializeField] T __4;
+    [SerializeField] T __5;
+    [SerializeField] T __6;
+    [SerializeField] T __7;
+    [SerializeField] T __8;
 
     public const int Length = 9;
 
@@ -130,25 +134,26 @@ unsafe struct FixedBuffer9<T> where T : unmanaged
     }
 }
 
+[Serializable]
 [StructLayout(LayoutKind.Sequential)]
 unsafe struct FixedBuffer16<T> where T : unmanaged
 {
-    T __0;
-    T __1;
-    T __2;
-    T __3;
-    T __4;
-    T __5;
-    T __6;
-    T __7;
-    T __8;
-    T __9;
-    T _10;
-    T _11;
-    T _12;
-    T _13;
-    T _14;
-    T _15;
+    [SerializeField] T __0;
+    [SerializeField] T __1;
+    [SerializeField] T __2;
+    [SerializeField] T __3;
+    [SerializeField] T __4;
+    [SerializeField] T __5;
+    [SerializeField] T __6;
+    [SerializeField] T __7;
+    [SerializeField] T __8;
+    [SerializeField] T __9;
+    [SerializeField] T _10;
+    [SerializeField] T _11;
+    [SerializeField] T _12;
+    [SerializeField] T _13;
+    [SerializeField] T _14;
+    [SerializeField] T _15;
 
     public const int Length = 16;
 

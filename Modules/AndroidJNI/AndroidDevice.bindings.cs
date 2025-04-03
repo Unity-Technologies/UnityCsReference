@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Android
 {

@@ -22,8 +22,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         IEnumerable<Asset> importedAssets { get; }
 
         void SetCategory(string category, long count);
-        Texture2D LoadImage(long productId, string url);
-        void SaveImage(long productId, string url, Texture2D texture);
         void DownloadImageAsync(long productID, string url, Action<long, Texture2D> doneCallbackAction = null);
         void ClearOnlineCache();
         AssetStorePurchaseInfo GetPurchaseInfo(long? productId);
@@ -91,16 +89,13 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IApplicationProxy m_Application;
         private readonly IHttpClientFactory m_HttpClientFactory;
         private readonly IIOProxy m_IOProxy;
-        private readonly IUniqueIdMapper m_UniqueIdMapper;
         public AssetStoreCache(IApplicationProxy application,
             IHttpClientFactory httpClientFactory,
-            IIOProxy iOProxy,
-            IUniqueIdMapper uniqueIdMapper)
+            IIOProxy iOProxy)
         {
             m_Application = RegisterDependency(application);
             m_HttpClientFactory = RegisterDependency(httpClientFactory);
             m_IOProxy = RegisterDependency(iOProxy);
-            m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
         }
 
         public void OnBeforeSerialize()
@@ -266,7 +261,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             var oldProductInfo = GetProductInfo(productInfo.productId);
             m_ProductInfos[productInfo.productId] = productInfo;
-            m_UniqueIdMapper.MapProductIdAndName(productInfo);
             if (!productInfo.Equals(oldProductInfo))
                 onProductInfoChanged?.Invoke(productInfo);
         }

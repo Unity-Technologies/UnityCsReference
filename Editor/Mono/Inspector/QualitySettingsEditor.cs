@@ -69,8 +69,9 @@ namespace UnityEditor
             public static readonly GUIContent kUseLegacyDistribution = EditorGUIUtility.TrTextContent("Use Legacy Details Distribution", "When enabled, terrain details will be scattered using the old scattering algorithm that often resulted in overlapping details. Included for backwards compatibility with terrain authored in Unity 2022.1 and earlier.");
             public static readonly GUIContent kVSyncCountLabel = EditorGUIUtility.TrTextContent("VSync Count", "Specifies how Unity synchronizes rendering with the refresh rate of the display device.");
             public static readonly GUIContent kRealtimeLGiCpuUsageLabel = EditorGUIUtility.TrTextContent("Realtime GI CPU Usage", "How many CPU worker threads to create for Realtime Global Illumination lighting calculations in the Player. Increasing this makes the system react faster to changes in lighting at a cost of using more CPU time. The higher the CPU Usage value, the more worker threads are created for solving Realtime GI.");
-            public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
-            public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Level", "The highest LOD to use in the application.");
+            public static readonly GUIContent kLODBiasLabel = EditorGUIUtility.TrTextContent("LOD Group Bias", "The bias Unity uses to determine which model to render when a GameObject’s on-screen size is between two LOD levels. Values between 0 and 1 favor the less detailed model. Values greater than 1 favor the more detailed model.");
+            public static readonly GUIContent kMaximumLODLevelLabel = EditorGUIUtility.TrTextContent("Maximum LOD Group Level", "The highest LOD to use in the application.");
+            public static readonly GUIContent kMeshLODThresholdLabel = EditorGUIUtility.TrTextContent("Mesh LOD Threshold", "Unity uses this parameter when selecting the Mesh LOD index to render. Increasing this setting makes Unity favor less detailed LODs in the evaluation process.");
             public static readonly GUIContent kEnableLODCrossFadeLabel = EditorGUIUtility.TrTextContent("LOD Cross Fade", "Enables or disables LOD Cross Fade.");
             public static readonly GUIContent kMipStrippingHint = EditorGUIUtility.TrTextContent("Detected platforms with textures that never use their highest resolution mipmap levels. Enable Texture Mipmap Stripping in the Player Settings to reduce the package size of those platforms.");
 
@@ -755,6 +756,7 @@ namespace UnityEditor
             var adaptiveVsyncExtraAProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraA");
             var adaptiveVsyncExtraBProperty = currentSettings.FindPropertyRelative("adaptiveVsyncExtraB");
             var lodBiasProperty = currentSettings.FindPropertyRelative("lodBias");
+            var meshLodThresholdProperty = currentSettings.FindPropertyRelative("meshLodThreshold");
             var maximumLODLevelProperty = currentSettings.FindPropertyRelative("maximumLODLevel");
             var enableLODCrossFadeProperty = currentSettings.FindPropertyRelative("enableLODCrossFade");
             var particleRaycastBudgetProperty = currentSettings.FindPropertyRelative("particleRaycastBudget");
@@ -1043,6 +1045,7 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(lodBiasProperty, Content.kLODBiasLabel);
             if (!SupportedRenderingFeatures.active.overridesMaximumLODLevel)
                 EditorGUILayout.PropertyField(maximumLODLevelProperty, Content.kMaximumLODLevelLabel);
+            EditorGUILayout.PropertyField(meshLodThresholdProperty, Content.kMeshLODThresholdLabel);
             if (!SupportedRenderingFeatures.active.overridesEnableLODCrossFade)
                 EditorGUILayout.PropertyField(enableLODCrossFadeProperty, Content.kEnableLODCrossFadeLabel);
 

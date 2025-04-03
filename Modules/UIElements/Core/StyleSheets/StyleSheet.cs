@@ -59,7 +59,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        StyleRule[] m_Rules;
+        StyleRule[] m_Rules = Array.Empty<StyleRule>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleRule[] rules
@@ -73,7 +73,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        StyleComplexSelector[] m_ComplexSelectors;
+        StyleComplexSelector[] m_ComplexSelectors = Array.Empty<StyleComplexSelector>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleComplexSelector[] complexSelectors
@@ -90,23 +90,23 @@ namespace UnityEngine.UIElements
         // Normal usage should only go through ReadXXX methods
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal float[] floats;
+        internal float[] floats = Array.Empty<float>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal Dimension[] dimensions;
+        internal Dimension[] dimensions = Array.Empty<Dimension>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal Color[] colors;
+        internal Color[] colors = Array.Empty<Color>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal string[] strings;
+        internal string[] strings = Array.Empty<string>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal Object[] assets;
+        internal Object[] assets = Array.Empty<Object>();
 
         [Serializable]
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -118,14 +118,14 @@ namespace UnityEngine.UIElements
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
-        internal ImportStruct[] imports;
+        internal ImportStruct[] imports = Array.Empty<ImportStruct>();
 
         [SerializeField]
-        List<StyleSheet> m_FlattenedImportedStyleSheets;
+        List<StyleSheet> m_FlattenedImportedStyleSheets = new();
         internal List<StyleSheet> flattenedRecursiveImports
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get { return m_FlattenedImportedStyleSheets; }
+            get => m_FlattenedImportedStyleSheets;
         }
 
         [SerializeField]
@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
         }
 
         [SerializeField]
-        internal ScalableImage[] scalableImages;
+        internal ScalableImage[] scalableImages = Array.Empty<ScalableImage>();
 
         // This enum is used to retrieve a given "TableType" at specific index in the related array
         internal enum OrderedSelectorType
@@ -186,19 +186,13 @@ namespace UnityEngine.UIElements
 
         bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle, out T value)
         {
-            bool result = false;
-            value = default(T);
-
-            if (handle.valueType == type && handle.valueIndex >= 0 && handle.valueIndex < list.Length)
+            if (handle.valueType != type || handle.valueIndex < 0 || handle.valueIndex >= list.Length)
             {
-                value = list[handle.valueIndex];
-                result = true;
+                value = default(T);
+                return false;
             }
-            else
-            {
-                Debug.LogErrorFormat(this, "Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
-            }
-            return result;
+            value = list[handle.valueIndex];
+            return true;
         }
 
         T CheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle handle)
@@ -249,7 +243,7 @@ namespace UnityEngine.UIElements
 
         void SetupReferences()
         {
-            if (complexSelectors == null || rules == null)
+            if (complexSelectors == null || rules == null || (complexSelectors.Length == 0 && rules.Length == 0))
                 return;
 
             // Setup rules and properties for var
@@ -365,10 +359,67 @@ namespace UnityEngine.UIElements
             }
         }
 
+        int AddValueToArray<T>(ref T[] array, T value)
+        {
+            Unity.Collections.CollectionExtensions.AddToArray(ref array, value);
+            SetTemporaryContentHash();
+            return array.Length - 1;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(StyleValueKeyword keyword)
+        {
+            // Keywords are not stored as a regular enum. Instead, we use the
+            // integer value of the keyword as the index.
+            SetTemporaryContentHash();
+            return (int)keyword;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(StyleValueFunction function)
+        {
+            // Functions are not stored as a regular enum. Instead, we use the
+            // integer value of the function as the index.
+            SetTemporaryContentHash();
+            return (int)function;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(float value) => AddValueToArray(ref floats, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(Dimension value) => AddValueToArray(ref dimensions, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(Color value) => AddValueToArray(ref colors, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(ScalableImage value) => AddValueToArray(ref scalableImages, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(string value) => AddValueToArray(ref strings, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(Object value) => AddValueToArray(ref assets, value);
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int AddValue(Enum value)
+        {
+            var valueStr = StyleSheetUtility.GetEnumExportString(value);
+            return AddValueToArray(ref strings, valueStr);
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal StyleValueKeyword ReadKeyword(StyleValueHandle handle)
         {
             return (StyleValueKeyword)handle.valueIndex;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool TryReadKeyword(StyleValueHandle handle, out StyleValueKeyword value)
+        {
+            value = (StyleValueKeyword)handle.valueIndex;
+            return handle.valueType == StyleValueType.Keyword;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -389,8 +440,7 @@ namespace UnityEngine.UIElements
                 return true;
 
             // Handle dimension for properties with optional unit
-            Dimension dimensionValue;
-            bool isDimension = TryCheckAccess(dimensions, StyleValueType.Float, handle, out dimensionValue);
+            var isDimension = TryCheckAccess(dimensions, StyleValueType.Float, handle, out var dimensionValue);
             value = dimensionValue.value;
             return isDimension;
         }
@@ -401,7 +451,7 @@ namespace UnityEngine.UIElements
             // If the value is 0 (without unit) it's stored as a float
             if (handle.valueType == StyleValueType.Float)
             {
-                float value = CheckAccess(floats, StyleValueType.Float, handle);
+                var value = CheckAccess(floats, StyleValueType.Float, handle);
                 return new Dimension(value, Dimension.Unit.Unitless);
             }
             return CheckAccess(dimensions, StyleValueType.Dimension, handle);
@@ -413,8 +463,7 @@ namespace UnityEngine.UIElements
                 return true;
 
             // If the value is 0 (without unit) it's stored as a float
-            float floatValue = 0f;
-            bool isFloat = TryCheckAccess(floats, StyleValueType.Float, handle, out floatValue);
+            var isFloat = TryCheckAccess(floats, StyleValueType.Float, handle, out var floatValue);
             value = new Dimension(floatValue, Dimension.Unit.Unitless);
             return isFloat;
         }
@@ -422,12 +471,26 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Color ReadColor(StyleValueHandle handle)
         {
+            if (handle.valueType == StyleValueType.Enum)
+            {
+                var colorName = ReadEnum(handle);
+                StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out var value);
+                return value;
+            }
+
             return CheckAccess(colors, StyleValueType.Color, handle);
         }
 
         internal bool TryReadColor(StyleValueHandle handle, out Color value)
         {
-            return TryCheckAccess(colors, StyleValueType.Color, handle, out value);
+            if (TryCheckAccess(colors, StyleValueType.Color, handle, out value))
+                return true;
+
+            if (TryCheckAccess(strings, StyleValueType.Enum, handle, out var colorName))
+                return StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out value);
+
+            value = default;
+            return false;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -450,6 +513,29 @@ namespace UnityEngine.UIElements
         internal bool TryReadEnum(StyleValueHandle handle, out string value)
         {
             return TryCheckAccess(strings, StyleValueType.Enum, handle, out value);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal TEnum ReadEnum<TEnum>(StyleValueHandle handle)
+            where TEnum: struct, Enum
+        {
+            var enumStr = ReadEnum(handle);
+            return Enum.TryParse(StyleSheetUtility.ConvertDashToHungarian(enumStr), out TEnum value)
+                ? value
+                : default;
+        }
+
+        internal bool TryReadEnum<TEnum>(StyleValueHandle handle, out TEnum value)
+            where TEnum: struct, Enum
+        {
+            if (TryReadEnum(handle, out var enumString) &&
+                Enum.TryParse(StyleSheetUtility.ConvertDashToHungarian(enumString), out value))
+            {
+                return true;
+            }
+
+            value = default;
+            return false;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -486,6 +572,11 @@ namespace UnityEngine.UIElements
             return CheckAccess(strings, StyleValueType.MissingAssetReference, handle);
         }
 
+        internal bool TryReadMissingAssetReferenceUrl(StyleValueHandle handle, out string value)
+        {
+            return TryCheckAccess(strings, StyleValueType.MissingAssetReference, handle, out value);
+        }
+
         internal bool TryReadAssetReference(StyleValueHandle handle, out Object value)
         {
             return TryCheckAccess(assets, StyleValueType.AssetReference, handle, out value);
@@ -495,6 +586,13 @@ namespace UnityEngine.UIElements
         internal StyleValueFunction ReadFunction(StyleValueHandle handle)
         {
             return (StyleValueFunction)handle.valueIndex;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool TryReadFunction(StyleValueHandle handle, out StyleValueFunction value)
+        {
+            value = (StyleValueFunction)handle.valueIndex;
+            return handle.valueType == StyleValueType.Function;
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -516,6 +614,135 @@ namespace UnityEngine.UIElements
             return CheckAccess(scalableImages, StyleValueType.ScalableImage, handle);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool TryReadScalableImage(StyleValueHandle handle, out ScalableImage value)
+        {
+            return TryCheckAccess(scalableImages, StyleValueType.ScalableImage, handle, out value);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StylePropertyName ReadStylePropertyName(StyleValueHandle handle)
+        {
+            return new StylePropertyName(CheckAccess(strings, StyleValueType.Enum, handle));
+        }
+
+        internal bool TryReadStylePropertyName(StyleValueHandle handle, out StylePropertyName value)
+        {
+            if (TryCheckAccess(strings, StyleValueType.Enum, handle, out var strValue))
+            {
+                value = new StylePropertyName(strValue);
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+
+        internal Length ReadLength(StyleValueHandle handle)
+        {
+            if (handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = ReadKeyword(handle);
+                return keyword switch
+                {
+                    StyleValueKeyword.Auto => Length.Auto(),
+                    StyleValueKeyword.None => Length.None(),
+                    _ => default
+                };
+            }
+            var dimension = ReadDimension(handle);
+            return dimension.IsLength()
+                ? dimension.ToLength()
+                : default;
+        }
+
+        internal bool TryReadLength(StyleValueHandle handle, out Length value)
+        {
+            if (TryReadKeyword(handle, out var keyword))
+            {
+                switch (keyword)
+                {
+                    case StyleValueKeyword.Auto:
+                        value = Length.Auto();
+                        return true;
+                    case StyleValueKeyword.None:
+                        value = Length.None();
+                        return true;
+                    default:
+                        value = default;
+                        return false;
+                }
+            }
+
+            if (TryReadDimension(handle, out var dimension) && dimension.IsLength())
+            {
+                value = dimension.ToLength();
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        internal Angle ReadAngle(StyleValueHandle handle)
+        {
+            if (handle.valueType == StyleValueType.Keyword)
+            {
+                var keyword = ReadKeyword(handle);
+                return keyword switch
+                {
+                    StyleValueKeyword.None => Angle.None(),
+                    _ => default
+                };
+            }
+            var dimension = ReadDimension(handle);
+            return dimension.IsAngle()
+                ? dimension.ToAngle()
+                : default;
+        }
+
+        internal bool TryReadAngle(StyleValueHandle handle, out Angle value)
+        {
+            if (TryReadKeyword(handle, out var keyword))
+            {
+                switch (keyword)
+                {
+                    case StyleValueKeyword.None:
+                        value = Angle.None();
+                        return true;
+                    default:
+                        value = default;
+                        return false;
+                }
+            }
+
+            if (TryReadDimension(handle, out var dimension) && dimension.IsAngle())
+            {
+                value = dimension.ToAngle();
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
+        internal TimeValue ReadTimeValue(StyleValueHandle handle)
+        {
+            var dimension = ReadDimension(handle);
+            return dimension.IsTimeValue()
+                ? dimension.ToTime()
+                : default;
+        }
+
+        internal bool TryReadTimeValue(StyleValueHandle handle, out TimeValue value)
+        {
+            if (TryReadDimension(handle, out var dimension) && dimension.IsTimeValue())
+            {
+                value = dimension.ToTime();
+                return true;
+            }
+            value = default;
+            return false;
+        }
+
         private static bool CustomStartsWith(string originalString, string pattern)
         {
             int originalLength = originalString.Length;
@@ -530,6 +757,246 @@ namespace UnityEngine.UIElements
             }
 
             return (patternPos == patternLength && originalLength >= patternLength) || (originalPos == originalLength && patternLength >= originalLength);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteKeyword(ref StyleValueHandle handle, StyleValueKeyword value)
+        {
+            handle.valueType = StyleValueType.Keyword;
+            handle.valueIndex = (int)value;
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteFloat(ref StyleValueHandle handle, float value)
+        {
+            if (handle.valueType == StyleValueType.Float)
+            {
+                floats[handle.valueIndex] = value;
+            }
+            else
+            {
+                var valueIndex = AddValue(value);
+                handle.valueType = StyleValueType.Float;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteDimension(ref StyleValueHandle handle, Dimension dimension)
+        {
+            if (handle.valueType == StyleValueType.Dimension)
+            {
+                dimensions[handle.valueIndex] = dimension;
+            }
+            else
+            {
+                var valueIndex = AddValue(dimension);
+                handle.valueType = StyleValueType.Dimension;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteColor(ref StyleValueHandle handle, Color color)
+        {
+            if (handle.valueType == StyleValueType.Color)
+            {
+                colors[handle.valueIndex] = color;
+            }
+            else
+            {
+                var valueIndex = AddValue(color);
+                handle.valueType = StyleValueType.Color;
+                handle.valueIndex = valueIndex;
+            }
+
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteString(ref StyleValueHandle handle, string value)
+        {
+            if (handle.valueType == StyleValueType.String)
+            {
+                strings[handle.valueIndex] = value;
+            }
+            else
+            {
+                var valueIndex = AddValue(value);
+                handle.valueType = StyleValueType.String;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteEnum<TEnum>(ref StyleValueHandle handle, TEnum value)
+            where TEnum : Enum
+        {
+            var valueStr = StyleSheetUtility.GetEnumExportString(value);
+            if (handle.valueType == StyleValueType.Enum)
+            {
+                strings[handle.valueIndex] = valueStr;
+            }
+            else
+            {
+                var valueIndex = AddValue(valueStr);
+                handle.valueType = StyleValueType.Enum;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteVariable(ref StyleValueHandle handle, string variableName)
+        {
+            if (handle.valueType == StyleValueType.Variable)
+            {
+                strings[handle.valueIndex] = variableName;
+            }
+            else
+            {
+                var valueIndex = AddValue(variableName);
+                handle.valueType = StyleValueType.Variable;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteResourcePath(ref StyleValueHandle handle, string resourcePath)
+        {
+            if (handle.valueType == StyleValueType.ResourcePath)
+            {
+                strings[handle.valueIndex] = resourcePath;
+            }
+            else
+            {
+                var valueIndex = AddValue(resourcePath);
+                handle.valueType = StyleValueType.ResourcePath;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteAssetReference(ref StyleValueHandle handle, Object value)
+        {
+            if (handle.valueType == StyleValueType.AssetReference)
+            {
+                assets[handle.valueIndex] = value;
+            }
+            else
+            {
+                var valueIndex = AddValue(value);
+                handle.valueType = StyleValueType.AssetReference;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteMissingAssetReferenceUrl(ref StyleValueHandle handle, string assetReference)
+        {
+            if (handle.valueType == StyleValueType.MissingAssetReference)
+            {
+                strings[handle.valueIndex] = assetReference;
+            }
+            else
+            {
+                var valueIndex = AddValue(assetReference);
+                handle.valueType = StyleValueType.MissingAssetReference;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteFunction(ref StyleValueHandle handle, StyleValueFunction function)
+        {
+            handle.valueType = StyleValueType.Function;
+            handle.valueIndex = (int)function;
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteScalableImage(ref StyleValueHandle handle, ScalableImage scalableImage)
+        {
+            if (handle.valueType == StyleValueType.ScalableImage)
+            {
+                scalableImages[handle.valueIndex] = scalableImage;
+            }
+            else
+            {
+                var valueIndex = AddValue(scalableImage);
+                handle.valueType = StyleValueType.ScalableImage;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteStylePropertyName(ref StyleValueHandle handle, StylePropertyName propertyName)
+        {
+            if (handle.valueType == StyleValueType.Enum)
+            {
+                strings[handle.valueIndex] = propertyName.ToString();
+            }
+            else
+            {
+                var valueIndex = AddValue(propertyName.ToString());
+                handle.valueType = StyleValueType.Enum;
+                handle.valueIndex = valueIndex;
+            }
+            SetTemporaryContentHash();
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteCommaSeparator(ref StyleValueHandle handle)
+        {
+            handle.valueIndex = 0;
+            handle.valueType = StyleValueType.CommaSeparator;
+            SetTemporaryContentHash();
+        }
+
+        internal void WriteLength(ref StyleValueHandle handle, Length value)
+        {
+            if (value.IsAuto())
+                WriteKeyword(ref handle, StyleValueKeyword.Auto);
+            else if (value.IsNone())
+                WriteKeyword(ref handle, StyleValueKeyword.None);
+            else
+                WriteDimension(ref handle, value.ToDimension());
+        }
+
+        internal void WriteAngle(ref StyleValueHandle handle, Angle value)
+        {
+            if (value.IsNone())
+                WriteKeyword(ref handle, StyleValueKeyword.None);
+            else
+                WriteDimension(ref handle, value.ToDimension());
+        }
+
+        internal void WriteTimeValue(ref StyleValueHandle handle, TimeValue value)
+        {
+            WriteDimension(ref handle, value.ToDimension());
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetTemporaryContentHash()
+        {
+            // Set the contentHash to 0 if the style sheet is empty
+            if (rules == null || rules.Length == 0)
+                contentHash = 0;
+            else
+                // Use a random value instead of computing the real contentHash.
+                // This is faster (for large content) and safe enough to avoid conflicts with other style sheets
+                // since contentHash is used internally as a optimized way to compare style sheets.
+                // However, note that the real contentHash will still be computed on import.
+                contentHash = UnityEngine.Random.Range(1, int.MaxValue);
         }
     }
 }

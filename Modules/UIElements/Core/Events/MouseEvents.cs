@@ -283,11 +283,21 @@ namespace UnityEngine.UIElements
         {
             base.PreDispatch(panel);
 
-            // UUM-4156: save pointer position only for Mouse events that don't have an equivalent Pointer event.
-            if (sourcePointerEvent == null && recomputeTopElementUnderMouse)
+            if (recomputeTopElementUnderMouse)
             {
-                PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
-                ((BaseVisualElementPanel)panel).RecomputeTopElementUnderPointer(PointerId.mousePointerId, mousePosition, this);
+                // UUM-4156: save pointer position only for Mouse events that don't have an equivalent Pointer event.
+                if (sourcePointerEvent == null)
+                {
+                    PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, mousePosition, panel, panel.contextType);
+                    ((BaseVisualElementPanel)panel).RecomputeTopElementUnderPointer(PointerId.mousePointerId, mousePosition, this);
+                }
+                // UUM-91321: discard OS-driven compatibility mouse position when receiving other primary pointer data.
+                else if (sourcePointerEvent.pointerId != PointerId.mousePointerId)
+                {
+                    var position = BaseVisualElementPanel.s_OutsidePanelCoordinates;
+                    PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, position, null, panel.contextType);
+                    ((BaseVisualElementPanel)panel).SetTopElementUnderPointer(null, PointerId.mousePointerId, position);
+                }
             }
         }
 

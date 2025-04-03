@@ -573,6 +573,16 @@ namespace UnityEngine.UIElements
                     return false;
             }
 
+            // UUM-99628: sending events to preassigned targets that don't match the regular propagation rules
+            // may lead to unexpected results, like desync between focus and selection/edit operations, inconsistent
+            // enter/leave or hover states, or the capturing element missing changes in pressedButtons state.
+            // However, this behavior has been here for years and there is some user content that relies on it,
+            // so we are keeping it enabled until we do another larger refactor where we allow some rules to be broken.
+            if (evt.target != null && evt.target != capturingElement)
+            {
+                return false;
+            }
+
             // Case 1342115: mouse position is in local panel coordinates; sending event to a target from a different
             // panel will lead to a wrong position, so we don't allow it. Note that in general the mouse-down-move-up
             // sequence still works properly because the OS captures the mouse on the starting EditorWindow.
@@ -582,7 +592,7 @@ namespace UnityEngine.UIElements
             }
 
             evt.skipDisabledElements = false;
-            evt.elementTarget = capturingElement; // Ignore any pre-assigned target
+            evt.elementTarget = capturingElement;
             PropagateEvent(evt, panel, capturingElement, true);
 
             return true;

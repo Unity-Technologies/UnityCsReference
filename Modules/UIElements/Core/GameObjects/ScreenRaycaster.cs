@@ -12,19 +12,24 @@ namespace UnityEngine.UIElements;
 internal interface IScreenRaycaster
 {
     void Update();
-    IEnumerable<Ray> MakeRay(Vector2 mousePosition, int? targetDisplay);
+    IEnumerable<(Ray ray, Camera camera)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay);
 }
 
 internal class CameraScreenRaycaster : IScreenRaycaster
 {
     public Camera[] cameras = Array.Empty<Camera>();
+    public Camera[] singleCamera = new Camera[1];
     public int layerMask = ~0;
 
-    public virtual void Update() { }
-
-    public IEnumerable<Ray> MakeRay(Vector2 mousePosition, int? targetDisplay)
+    public virtual void Update()
     {
-        return CameraRayEnumerator.GetPooled(this, mousePosition, targetDisplay);
+        Array.Sort(cameras, (a, b) => -a.depth.CompareTo(b.depth));
+    }
+
+    public IEnumerable<(Ray, Camera)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay)
+    {
+        var capturingCamera = singleCamera[0] = PointerDeviceState.GetCameraWithSoftPointerCapture(pointerId);
+        return CameraRayEnumerator.GetPooled(capturingCamera != null ? singleCamera : cameras, layerMask, mousePosition, targetDisplay);
     }
 
     private static bool IsValid(Camera camera, int layerMask, int? targetDisplay)
@@ -40,7 +45,7 @@ internal class CameraScreenRaycaster : IScreenRaycaster
         return camera.ScreenPointToRay(screenPosition);
     }
 
-    public class CameraRayEnumerator : IEnumerator<Ray>, IEnumerable<Ray>
+    public class CameraRayEnumerator : IEnumerator<(Ray, Camera)>, IEnumerable<(Ray, Camera)>
     {
         private Camera[] m_Cameras;
         private int m_LayerMask;
@@ -57,16 +62,16 @@ internal class CameraScreenRaycaster : IScreenRaycaster
         }
 
         public void Reset() => m_Index = -1;
-        public Ray Current => MakeRay(m_Cameras[m_Index], m_MousePosition);
+        public (Ray, Camera) Current => (MakeRay(m_Cameras[m_Index], m_MousePosition), m_Cameras[m_Index]);
         object IEnumerator.Current => Current;
-        public IEnumerator<Ray> GetEnumerator() => this;
+        public IEnumerator<(Ray, Camera)> GetEnumerator() => this;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        public static CameraRayEnumerator GetPooled(CameraScreenRaycaster raycaster, Vector2 mousePosition, int? targetDisplay)
+        public static CameraRayEnumerator GetPooled(Camera[] cameras, int layerMask, Vector2 mousePosition, int? targetDisplay)
         {
             var result = GenericPool<CameraRayEnumerator>.Get();
-            result.m_Cameras = raycaster.cameras;
-            result.m_LayerMask = raycaster.layerMask;
+            result.m_Cameras = cameras;
+            result.m_LayerMask = layerMask;
             result.m_MousePosition = mousePosition;
             result.m_TargetDisplay = targetDisplay;
             return result;

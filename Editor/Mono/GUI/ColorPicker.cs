@@ -23,6 +23,8 @@ namespace UnityEditor
 
         public static string presetsEditorPrefID { get { return "Color"; } }
 
+        internal static readonly Color32 SwatchSelectionColor = new Color32(57, 121, 187, 255);
+
         [SerializeField]
         bool m_HDR;
 
@@ -881,181 +883,22 @@ namespace UnityEditor
             GUI.contentColor = contentColor;
         }
 
-        // used in TestColorPicker.OpeningColorPicker_InitialisesCorrectDefaultColors
-        internal static (Color, string)[] TESTdefaultColors => instance?.m_DefaultColors;
-        readonly (Color, string)[] m_DefaultColors = new (Color, string)[]
-        {
-            (Color.red, nameof(Color.red)),
-            (Color.green, nameof(Color.green)),
-            (Color.blue, nameof(Color.blue)),
-            (Color.yellow, nameof(Color.yellow)),
-            (Color.cyan, nameof(Color.cyan)),
-            (Color.magenta, nameof(Color.magenta)),
-            (Color.gray1, nameof(Color.gray1)),
-            (Color.gray2, nameof(Color.gray2)),
-            (Color.gray3, nameof(Color.gray3)),
-            (Color.gray4, nameof(Color.gray4)),
-            (Color.gray5, nameof(Color.gray5)),
-            (Color.gray6, nameof(Color.gray6)),
-            (Color.gray7, nameof(Color.gray7)),
-            (Color.gray8, nameof(Color.gray8)),
-            (Color.gray9, nameof(Color.gray9)),
-            (Color.white, nameof(Color.white)),
-            (Color.whiteSmoke, nameof(Color.whiteSmoke)),
-            (Color.gainsboro, nameof(Color.gainsboro)),
-            (Color.lightGray, nameof(Color.lightGray)),
-            (Color.silver, nameof(Color.silver)),
-            (Color.darkGray, nameof(Color.darkGray)),
-            (Color.dimGray, nameof(Color.dimGray)),
-            (Color.black, nameof(Color.black)),
-            (Color.darkRed, nameof(Color.darkRed)),
-            (Color.brown, nameof(Color.brown)),
-            (Color.firebrick, nameof(Color.firebrick)),
-            (Color.crimson, nameof(Color.crimson)),
-            (Color.softRed, nameof(Color.softRed)),
-            (Color.indianRed, nameof(Color.indianRed)),
-            (Color.violetRed, nameof(Color.violetRed)),
-            (Color.mediumVioletRed, nameof(Color.mediumVioletRed)),
-            (Color.deepPink, nameof(Color.deepPink)),
-            (Color.hotPink, nameof(Color.hotPink)),
-            (Color.lightPink, nameof(Color.lightPink)),
-            (Color.pink, nameof(Color.pink)),
-            (Color.paleVioletRed, nameof(Color.paleVioletRed)),
-            (Color.maroon, nameof(Color.maroon)),
-            (Color.rosyBrown, nameof(Color.rosyBrown)),
-            (Color.lightCoral, nameof(Color.lightCoral)),
-            (Color.salmon, nameof(Color.salmon)),
-            (Color.tomato, nameof(Color.tomato)),
-            (Color.darkSalmon, nameof(Color.darkSalmon)),
-            (Color.coral, nameof(Color.coral)),
-            (Color.orangeRed, nameof(Color.orangeRed)),
-            (Color.lightSalmon, nameof(Color.lightSalmon)),
-            (Color.sienna, nameof(Color.sienna)),
-            (Color.saddleBrown, nameof(Color.saddleBrown)),
-            (Color.chocolate, nameof(Color.chocolate)),
-            (Color.sandyBrown, nameof(Color.sandyBrown)),
-            (Color.peru, nameof(Color.peru)),
-            (Color.darkOrange, nameof(Color.darkOrange)),
-            (Color.burlywood, nameof(Color.burlywood)),
-            (Color.tan, nameof(Color.tan)),
-            (Color.moccasin, nameof(Color.moccasin)),
-            (Color.peachPuff, nameof(Color.peachPuff)),
-            (Color.bisque, nameof(Color.bisque)),
-            (Color.navajoWhite, nameof(Color.navajoWhite)),
-            (Color.wheat, nameof(Color.wheat)),
-            (Color.orange, nameof(Color.orange)),
-            (Color.darkGoldenRod, nameof(Color.darkGoldenRod)),
-            (Color.goldenRod, nameof(Color.goldenRod)),
-            (Color.lightGoldenRod, nameof(Color.lightGoldenRod)),
-            (Color.gold, nameof(Color.gold)),
-            (Color.softYellow, nameof(Color.softYellow)),
-            (Color.lightGoldenRodYellow, nameof(Color.lightGoldenRodYellow)),
-            (Color.beige, nameof(Color.beige)),
-            (Color.lemonChiffon, nameof(Color.lemonChiffon)),
-            (Color.lightYellow, nameof(Color.lightYellow)),
-            (Color.yellowNice, nameof(Color.yellowNice)),
-            (Color.khaki, nameof(Color.khaki)),
-            (Color.paleGoldenRod, nameof(Color.paleGoldenRod)),
-            (Color.darkKhaki, nameof(Color.darkKhaki)),
-            (Color.olive, nameof(Color.olive)),
-            (Color.oliveDrab, nameof(Color.oliveDrab)),
-            (Color.yellowGreen, nameof(Color.yellowGreen)),
-            (Color.darkOliveGreen, nameof(Color.darkOliveGreen)),
-            (Color.softGreen, nameof(Color.softGreen)),
-            (Color.greenYellow, nameof(Color.greenYellow)),
-            (Color.chartreuse, nameof(Color.chartreuse)),
-            (Color.lawnGreen, nameof(Color.lawnGreen)),
-            (Color.darkGreen, nameof(Color.darkGreen)),
-            (Color.forestGreen, nameof(Color.forestGreen)),
-            (Color.limeGreen, nameof(Color.limeGreen)),
-            (Color.darkSeaGreen, nameof(Color.darkSeaGreen)),
-            (Color.lightGreen, nameof(Color.lightGreen)),
-            (Color.paleGreen, nameof(Color.paleGreen)),
-            (Color.seaGreen, nameof(Color.seaGreen)),
-            (Color.mediumSeaGreen, nameof(Color.mediumSeaGreen)),
-            (Color.springGreen, nameof(Color.springGreen)),
-            (Color.mediumSpringGreen, nameof(Color.mediumSpringGreen)),
-            (Color.aquamarine, nameof(Color.aquamarine)),
-            (Color.mediumAquamarine, nameof(Color.mediumAquamarine)),
-            (Color.turquoise, nameof(Color.turquoise)),
-            (Color.mediumTurquoise, nameof(Color.mediumTurquoise)),
-            (Color.lightSeaGreen, nameof(Color.lightSeaGreen)),
-            (Color.lightSlateGray, nameof(Color.lightSlateGray)),
-            (Color.slateGray, nameof(Color.slateGray)),
-            (Color.darkSlateGray, nameof(Color.darkSlateGray)),
-            (Color.teal, nameof(Color.teal)),
-            (Color.darkCyan, nameof(Color.darkCyan)),
-            (Color.lightCyan, nameof(Color.lightCyan)),
-            (Color.mintCream, nameof(Color.mintCream)),
-            (Color.honeydew, nameof(Color.honeydew)),
-            (Color.azure, nameof(Color.azure)),
-            (Color.paleTurquoise, nameof(Color.paleTurquoise)),
-            (Color.darkTurquoise, nameof(Color.darkTurquoise)),
-            (Color.cadetBlue, nameof(Color.cadetBlue)),
-            (Color.powderBlue, nameof(Color.powderBlue)),
-            (Color.softBlue, nameof(Color.softBlue)),
-            (Color.lightBlue, nameof(Color.lightBlue)),
-            (Color.deepSkyBlue, nameof(Color.deepSkyBlue)),
-            (Color.skyBlue, nameof(Color.skyBlue)),
-            (Color.lightSkyBlue, nameof(Color.lightSkyBlue)),
-            (Color.steelBlue, nameof(Color.steelBlue)),
-            (Color.dodgerBlue, nameof(Color.dodgerBlue)),
-            (Color.lightSteelBlue, nameof(Color.lightSteelBlue)),
-            (Color.ghostWhite, nameof(Color.ghostWhite)),
-            (Color.aliceBlue, nameof(Color.aliceBlue)),
-            (Color.lavender, nameof(Color.lavender)),
-            (Color.cornflowerBlue, nameof(Color.cornflowerBlue)),
-            (Color.royalBlue, nameof(Color.royalBlue)),
-            (Color.navyBlue, nameof(Color.navyBlue)),
-            (Color.midnightBlue, nameof(Color.midnightBlue)),
-            (Color.darkBlue, nameof(Color.darkBlue)),
-            (Color.mediumBlue, nameof(Color.mediumBlue)),
-            (Color.slateBlue, nameof(Color.slateBlue)),
-            (Color.lightSlateBlue, nameof(Color.lightSlateBlue)),
-            (Color.mediumSlateBlue, nameof(Color.mediumSlateBlue)),
-            (Color.darkSlateBlue, nameof(Color.darkSlateBlue)),
-            (Color.mediumPurple, nameof(Color.mediumPurple)),
-            (Color.rebeccaPurple, nameof(Color.rebeccaPurple)),
-            (Color.blueViolet, nameof(Color.blueViolet)),
-            (Color.indigo, nameof(Color.indigo)),
-            (Color.purple, nameof(Color.purple)),
-            (Color.darkOrchid, nameof(Color.darkOrchid)),
-            (Color.darkViolet, nameof(Color.darkViolet)),
-            (Color.mediumOrchid, nameof(Color.mediumOrchid)),
-            (Color.darkMagenta, nameof(Color.darkMagenta)),
-            (Color.violet, nameof(Color.violet)),
-            (Color.plum, nameof(Color.plum)),
-            (Color.thistle, nameof(Color.thistle)),
-            (Color.orchid, nameof(Color.orchid)),
-            (Color.lavenderBlush, nameof(Color.lavenderBlush)),
-            (Color.seashell, nameof(Color.seashell)),
-            (Color.blanchedAlmond, nameof(Color.blanchedAlmond)),
-            (Color.papayaWhip, nameof(Color.papayaWhip)),
-            (Color.cornsilk, nameof(Color.cornsilk)),
-            (Color.ivory, nameof(Color.ivory)),
-            (Color.linen, nameof(Color.linen)),
-            (Color.floralWhite, nameof(Color.floralWhite)),
-            (Color.antiqueWhite, nameof(Color.antiqueWhite)),
-            (Color.oldLace, nameof(Color.oldLace)),
-            (Color.mistyRose, nameof(Color.mistyRose)),
-            (Color.snow, nameof(Color.snow)),
-        };
-
         Texture2D m_SwatchTex;
+        Texture2D m_SelectionTex;
         void DoDefaultsGUI()
         {
-            if (m_SwatchTex == null) m_SwatchTex = ColorPresetLibrary.CreateColorSwatchWithBorder(14, 14, false);
-
             m_ShowDefaults = EditorGUILayout.Foldout(m_ShowDefaults, Styles.defaultsToggle, true);
 
             if (m_ShowDefaults)
             {
+                if (m_SwatchTex == null) m_SwatchTex = ColorPresetLibrary.CreateColorSwatchWithBorder(14, 14, false);
+
                 using (new EditorGUILayout.VerticalScope())
                 {
                     EditorGUILayout.BeginHorizontal();
-                    for (int i = 0; i < m_DefaultColors.Length; ++i)
+                    var i = 0;
+                    foreach (var (color, name) in Color.defaultColorNames)
                     {
-                        var (color, name) = m_DefaultColors[i];
                         if (i != 0 && i % 15 == 0)
                         {
                             GUILayout.FlexibleSpace();
@@ -1069,23 +912,31 @@ namespace UnityEditor
                             if (m_SliderMode == SliderMode.HSV)
                             {
                                 Color.RGBToHSV(color, out var h, out var s, out var v);
-                                tooltip = $"{name} HSVA({Mathf.RoundToInt(h * 360)}, {Mathf.RoundToInt(s * 100)}, {Mathf.RoundToInt(v * 100)}, {Mathf.RoundToInt(color.a * 100)})";
+                                tooltip = $"{ObjectNames.CapitaliseFirstLetter(name)} HSVA({Mathf.RoundToInt(h * 360).ToString()}, {Mathf.RoundToInt(s * 100).ToString()}, {Mathf.RoundToInt(v * 100).ToString()}, {Mathf.RoundToInt(color.a * 100).ToString()})";
                             }
                             else if (m_SliderMode == SliderMode.RGB)
-                            {
-                                tooltip = $"{name} {(Color32)color}";;
-                            }
+                                tooltip = $"{ObjectNames.CapitaliseFirstLetter(name)} {((Color32)color).ToString()}";
                             else
-                                tooltip = $"{name} {color}";
+                                tooltip = $"{ObjectNames.CapitaliseFirstLetter(name)} {color.ToString()}";
 
                             var clicked = GUILayout.Button(
-                                new GUIContent(m_SwatchTex, tooltip),
+                                GUIContent.Temp(m_SwatchTex, tooltip),
                                 GUIStyle.none,
                                 new GUILayoutOption(GUILayoutOption.Type.fixedWidth, 14f));
+
+                            if (m_Color.color.Equals((Color32)color))
+                            {
+                                if (m_SelectionTex == null) m_SelectionTex = ColorPresetLibrary.CreateSelectionTexture(14, 14);
+
+                                using (new GUI.ColorScope(SwatchSelectionColor))
+                                    GUI.DrawTexture(GUILayoutUtility.GetLastRect(), m_SelectionTex);
+                            }
 
                             if (clicked)
                                 SetColor(color);
                         }
+
+                        i++;
                     }
                     GUILayout.FlexibleSpace();
                     EditorGUILayout.EndHorizontal();
@@ -1430,6 +1281,8 @@ namespace UnityEditor
                 DestroyImmediate(m_AlphaTexture);
             if (m_SwatchTex)
                 DestroyImmediate(m_SwatchTex);
+            if (m_SelectionTex)
+                DestroyImmediate(m_SelectionTex);
             s_Instance = null;
 
             if (m_ColorLibraryEditorState != null)

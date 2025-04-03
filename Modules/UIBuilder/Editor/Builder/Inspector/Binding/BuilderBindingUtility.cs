@@ -159,7 +159,7 @@ namespace Unity.UI.Builder
 
             if (property.StartsWith(BuilderConstants.StylePropertyPathPrefix))
             {
-                var styleName = BuilderNameUtilities.ConvertCamelToDash(property.Substring(BuilderConstants.StylePropertyPathPrefix.Length));
+                var styleName = StyleSheetUtility.ConvertCamelToDash(property.Substring(BuilderConstants.StylePropertyPathPrefix.Length));
                 builder.selection.NotifyOfStylingChange(null, new() {styleName});
             }
             // Refresh the UXML preview

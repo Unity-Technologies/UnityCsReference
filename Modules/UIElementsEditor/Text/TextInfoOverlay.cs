@@ -157,6 +157,7 @@ namespace UnityEditor.UIElements.Text
 
         private void DrawCharacters(MeshGenerationContext mgc)
         {
+            //TODO add scaling here
             var textInfo = m_TargetTextElement.uitkTextHandle.textInfo;
             int characterCount = textInfo.characterCount;
 
@@ -239,7 +240,7 @@ namespace UnityEditor.UIElements.Text
                     DrawHorizontalDottedLine(mgc, meanLine, m_DottedLineSpaceSize, Color.cyan);
 
                     // Draw labels if zoomed in to a certain scale
-                    if (m_TargetTextElement.parent.transform.scale.x > 2)
+                    if (m_TargetTextElement.parent.resolvedStyle.scale.value.x > 2)
                     {
                         DrawLabelForLine(mgc, "Ascent Line", asc_start);
                         DrawLabelForLine(mgc, "Descent Line", desc_start);
@@ -505,7 +506,7 @@ namespace UnityEditor.UIElements.Text
                 DrawHorizontalDottedLine(mgc, meanLine, m_DottedLineSpaceSize, Color.cyan);
 
                 // Draw labels if zoomed in to a certain scale
-                if (m_TargetTextElement.parent.transform.scale.x > 2)
+                if (m_TargetTextElement.parent.resolvedStyle.scale.value.x > 2)
                 {
                     DrawLabelForLine(mgc, "Ascent Line", asc_start);
                     DrawLabelForLine(mgc, "Descent Line", desc_start);

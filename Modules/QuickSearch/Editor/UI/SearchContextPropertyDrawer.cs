@@ -80,7 +80,7 @@ namespace UnityEditor.Search
                 providers = SearchUtils.GetMergedProviders(providers, searchQuery.providerIds);
             }
 
-            var context = SearchService.CreateContext(providers, searchText);
+            var context = SearchService.CreateContext(providers, searchText, SearchFlags.Default | SearchFlags.UseSessionSettings);
             return context;
         }
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor.Build.Content;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -88,6 +89,12 @@ namespace UnityEditor
             }
         }
 
+        // file names must match m_Name of the main asset in a duplicate
+        // therefore object names may not contain invalid characters or path separators
+        static readonly Regex k_MatchInvalidObjAssetNameChars = new(
+            $@"({string.Join('|', Path.GetInvalidFileNameChars().Select(c=> Regex.Escape(c.ToString())))}|/|\\)"
+        );
+
         static IEnumerable<Object> PasteCopiedAssets(string destination = null)
         {
             Object firstDuplicatedObjectToFail = null;
@@ -109,25 +116,31 @@ namespace UnityEditor
 
                     var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
 
-                    // We dot sanitize or block unclean the asset filename (asset.name)
-                    // since the assertdb will do it for us and has a whole tailored logic for that.
+                    // sanitize and warn about object names that are not valid asset names
+                    var newAssetName = asset.name;
+                    bool invalidName = false;
+                    // use the same replacement character, '_' that the asset database uses for other invalid characters
+                    const string kReplacement = "_";
 
-                    // It feels wrong that the asset name (that can apparently contain any char)
-                    // is conflated with the orthogonal notion of filename. From the user's POV
-                    // it will force an asset dup but with mangled names if the original name contained
-                    // "invalid chars" for filenames.
-                    // Path.Combine is not used here to avoid blocking asset names that might
-                    // contain chars not allowed in filenames.
-                    if ((new HashSet<char>(Path.GetInvalidFileNameChars())).Intersect(asset.name).Count() != 0)
+                    if (string.IsNullOrEmpty(newAssetName))
                     {
-                        Debug.LogWarning(string.Format("Duplicated asset name '{0}' contains invalid characters. Those will be replaced in the duplicated asset name.", asset.name));
+                        newAssetName = kReplacement;
+                        invalidName = true;
                     }
+                    else if (k_MatchInvalidObjAssetNameChars.IsMatch(newAssetName))
+                    {
+                        newAssetName = k_MatchInvalidObjAssetNameChars.Replace(newAssetName, kReplacement);
+                        invalidName = true;
+                    }
+
+                    if (invalidName)
+                        Debug.LogWarning($"Duplicated object '{asset.name}' does not have a valid name for an asset. The new asset will be called '{newAssetName}'.");
 
                     var newPath = AssetDatabase.GenerateUniqueAssetPath(
                         string.Format("{0}{1}{2}.{3}",
                             Path.GetDirectoryName(assetPath),
                             Path.DirectorySeparatorChar,
-                            string.IsNullOrEmpty(asset.name) ? "_" : asset.name,
+                            newAssetName,
                             extension)
                     );
 

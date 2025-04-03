@@ -44,6 +44,7 @@ namespace UnityEngine.Rendering
         ComputeMaterialsCRC     = (1 << 3),
         IgnoreReflectionProbes  = (1 << 4),
         EnableSolidAngleCulling = (1 << 5),
+        EnableMeshLOD           = (1 << 6),
     }
 
     [MovedFrom("UnityEngine.Experimental.Rendering")]
@@ -165,6 +166,7 @@ namespace UnityEngine.Rendering
             lightProbeProxyVolume = null;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
+            meshLod = 0;
         }
 
         public RayTracingMeshInstanceConfig(Mesh mesh, uint subMeshIndex, Material material)
@@ -186,6 +188,7 @@ namespace UnityEngine.Rendering
             lightProbeProxyVolume = null;
             accelerationStructureBuildFlags = RayTracingAccelerationStructureBuildFlags.PreferFastTrace;
             accelerationStructureBuildFlagsOverride = false;
+            meshLod = 0;
         }
 
         public Mesh mesh;
@@ -205,7 +208,8 @@ namespace UnityEngine.Rendering
         public LightProbeProxyVolume lightProbeProxyVolume;
         public RayTracingAccelerationStructureBuildFlags accelerationStructureBuildFlags { get; set; }
         public bool accelerationStructureBuildFlagsOverride { get; set; }
-}
+        public int meshLod;
+    }
 
     public struct RayTracingAABBsInstanceConfig
     {
@@ -519,6 +523,9 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
+            if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
+                throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
+
             if (prevMatrix.HasValue)
             {
                 Matrix4x4 temp = prevMatrix.Value;
@@ -603,6 +610,9 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
+            if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
+                throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
+
             RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Length : instanceCount;
@@ -635,6 +645,9 @@ namespace UnityEngine.Rendering
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
 
+            if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
+                throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
+
             RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
 
             instanceCount = instanceCount == -1 ? instanceData.Count : instanceCount;
@@ -663,6 +676,9 @@ namespace UnityEngine.Rendering
 
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
+                throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
             RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
 
@@ -839,6 +855,9 @@ namespace UnityEngine.Rendering
 
             if (config.lightProbeUsage == LightProbeUsage.UseProxyVolume && config.lightProbeProxyVolume == null)
                 throw new ArgumentException("config.lightProbeProxyVolume argument must not be null if config.lightProbeUsage is set to UseProxyVolume.");
+
+            if (config.meshLod > 0 && config.meshLod >= config.mesh.lodCount)
+                throw new ArgumentOutOfRangeException("config.meshLod", "config.meshLod is out of range");
 
             RenderInstancedDataLayout layout = new RenderInstancedDataLayout(typeof(T));
 

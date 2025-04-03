@@ -565,9 +565,6 @@ namespace Unity.SerializationLogic
                 return true;
             if (typeDeclaration.MetadataType == MetadataType.Object)
                 return true;
-            var fullName = typeDeclaration.FullName;
-            if (fullName.StartsWith("System.")) //can this be done better?
-                return true;
             if (typeDeclaration.IsArray)
                 return true;
             if (typeDeclaration.FullName == UnityEngineTypePredicates.MonoBehaviour)

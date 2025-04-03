@@ -2001,6 +2001,96 @@ namespace UnityEditor
             return text;
         }
 
+        struct ScrollableAreaScope : IDisposable
+        {
+            GUIStyle style;
+            Vector2 scrollPosition;
+            Vector2 oldScrollValue;
+
+            public ScrollableAreaScope(int id, ref Rect position, string text, ref Vector2 scrollPosition, ref GUIStyle style)
+            {
+                this.style = style;
+                this.scrollPosition = scrollPosition;
+
+                float fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
+                Rect viewRect = new Rect(0, 0, position.width, fullTextHeight);
+
+                oldScrollValue = style.contentOffset;
+
+                position = IndentedRect(position);
+                if (position.height < viewRect.height)
+                {
+                    //Scroll bar position
+                    Rect scrollbarPosition = position;
+                    scrollbarPosition.width = GUI.skin.verticalScrollbar.fixedWidth;
+                    scrollbarPosition.height -= 2;
+                    scrollbarPosition.y += 1;
+                    scrollbarPosition.x = position.x + position.width - scrollbarPosition.width;
+
+                    position.width -= scrollbarPosition.width;
+
+                    //textEditor width changed, recalculate Text and viewRect areas.
+                    fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
+                    viewRect = new Rect(0, 0, position.width, fullTextHeight);
+
+                    if (position.Contains(Event.current.mousePosition) && Event.current.type == EventType.ScrollWheel)
+                    {
+                        const float mouseWheelMultiplier = 10f;
+                        float desiredY = scrollPosition.y + Event.current.delta.y * mouseWheelMultiplier;
+                        scrollPosition.y = Mathf.Clamp(desiredY, 0f, viewRect.height);
+                        Event.current.Use();
+                    }
+
+                    scrollPosition.y = GUI.VerticalScrollbar(scrollbarPosition, scrollPosition.y, position.height, 0, viewRect.height);
+
+                    if (!s_RecycledEditor.IsEditingControl(id))
+                    {
+                        //When not editing we use the style.draw, so we need to change the offset on the style instead of the RecycledEditor.
+                        style.contentOffset -= scrollPosition;
+                        style.Internal_clipOffset = scrollPosition;
+                    }
+                    else
+                    {
+                        //Move the Editor offset to match our scrollbar
+                        s_RecycledEditor.scrollOffset = scrollPosition;
+                    }
+                }
+            }
+
+            public void Dispose()
+            {
+                style.contentOffset = oldScrollValue;
+                style.Internal_clipOffset = Vector2.zero;
+            }
+        }
+
+        internal static void ScrollableLabelAreaInternal(Rect position, string text, ref Vector2 scrollPosition, GUIStyle style)
+        {
+            if (Event.current.type == EventType.Layout)
+                return;
+
+            int id = GUIUtility.GetControlID(s_SelectableLabelHash, FocusType.Keyboard, position);
+            var sendEventToTextEditor = SendEventToTextEditor(id, Event.current);
+
+            using (new ScrollableAreaScope(id, ref position, text, ref scrollPosition, ref style))
+            {
+                //Events cannot be handled at the scope level
+                EventType beforeTextFieldEventType = Event.current.type;
+                // It's possible that DoTextField will throw so we use a scoped cursor that we can safely reset the color.
+                using (new CursorColorScope(Color.clear))
+                {
+
+                    RecycledTextEditor.s_AllowContextCutOrPaste = false;
+                    if (sendEventToTextEditor)
+                        DoTextField(s_RecycledEditor, id, position, text, style, string.Empty, out _, false, true, false);
+                }
+
+                //Only update the out scrollPosition if the user has interacted with the TextArea (the current event was used)
+                if (beforeTextFieldEventType != Event.current.type)
+                    scrollPosition = s_RecycledEditor.scrollOffset;
+            }
+        }
+
         internal static string ScrollableTextAreaInternal(Rect position, string text, ref Vector2 scrollPosition, GUIStyle style)
         {
             if (Event.current.type == EventType.Layout)
@@ -2008,64 +2098,19 @@ namespace UnityEditor
 
             int id = GUIUtility.GetControlID(s_TextAreaHash, FocusType.Keyboard, position);
 
-            position = IndentedRect(position);
-            float fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
-            Rect viewRect = new Rect(0, 0, position.width, fullTextHeight);
-
-            Vector2 oldStyleScrollValue = style.contentOffset;
-
-
-            if (position.height < viewRect.height)
+            string newValue = string.Empty;
+            using (new ScrollableAreaScope(id, ref position, text, ref scrollPosition, ref style))
             {
-                //Scroll bar position
-                Rect scrollbarPosition = position;
-                scrollbarPosition.width = GUI.skin.verticalScrollbar.fixedWidth;
-                scrollbarPosition.height -= 2;
-                scrollbarPosition.y += 1;
-                scrollbarPosition.x = position.x + position.width - scrollbarPosition.width;
+                //Events cannot be handled at the scope level
+                EventType beforeTextFieldEventType = Event.current.type;
+                newValue = DoTextField(s_RecycledEditor, id, position, text, style, null, out _, false, true,
+                    false);
 
-                position.width -= scrollbarPosition.width;
-
-                //textEditor width changed, recalculate Text and viewRect areas.
-                fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
-                viewRect = new Rect(0, 0, position.width, fullTextHeight);
-
-                if (position.Contains(Event.current.mousePosition) && Event.current.type == EventType.ScrollWheel)
-                {
-                    const float mouseWheelMultiplier = 10f;
-                    float desiredY = scrollPosition.y + Event.current.delta.y * mouseWheelMultiplier;
-                    scrollPosition.y = Mathf.Clamp(desiredY, 0f, viewRect.height);
-                    Event.current.Use();
-                }
-
-
-                scrollPosition.y = GUI.VerticalScrollbar(scrollbarPosition, scrollPosition.y, position.height, 0, viewRect.height);
-
-
-                if (!s_RecycledEditor.IsEditingControl(id))
-                {
-                    //When not editing we use the style.draw, so we need to change the offset on the style instead of the RecycledEditor.
-                    style.contentOffset -= scrollPosition;
-                    style.Internal_clipOffset = scrollPosition;
-                }
-                else
-                {
-                    //Move the Editor offset to match our scrollbar
-                    s_RecycledEditor.scrollOffset = scrollPosition;
-                }
-            }
-            bool dummy;
-            EventType beforeTextFieldEventType = Event.current.type;
-            string newValue = DoTextField(s_RecycledEditor, id, position, text, style, null, out dummy, false, true, false);
-
-            //Only update the our scrollPosition if the user has interacted with the TextArea (the current event was used)
-            if (beforeTextFieldEventType != Event.current.type)
-            {
-                scrollPosition = s_RecycledEditor.scrollOffset;
+                //Only update the out scrollPosition if the user has interacted with the TextArea (the current event was used)
+                if (beforeTextFieldEventType != Event.current.type)
+                    scrollPosition = s_RecycledEditor.scrollOffset;
             }
 
-            style.contentOffset = oldStyleScrollValue;
-            style.Internal_clipOffset = Vector2.zero;
             return newValue;
         }
 
@@ -2078,12 +2123,8 @@ namespace UnityEditor
             return text;
         }
 
-        // Make a selectable label field. (Useful for showing read-only info that can be copy-pasted.)
-        internal static void SelectableLabelInternal(Rect position, string text, GUIStyle style)
+        static bool SendEventToTextEditor(int id, Event e)
         {
-            int id = GUIUtility.GetControlID(s_SelectableLabelHash, FocusType.Keyboard, position);
-            Event e = Event.current;
-
             var sendEventToTextEditor = true;
             if (GUIUtility.keyboardControl == id && e.GetTypeForControl(id) == EventType.KeyDown)
             {
@@ -2113,15 +2154,24 @@ namespace UnityEditor
                 sendEventToTextEditor = false;
             }
 
-            // Its possible that DoTextField will throw so we use a scoped cursor that we can safely reset the color.
+            return sendEventToTextEditor;
+        }
+
+        // Make a selectable label field. (Useful for showing read-only info that can be copy-pasted.)
+        internal static void SelectableLabelInternal(Rect position, string text, GUIStyle style)
+        {
+            int id = GUIUtility.GetControlID(s_SelectableLabelHash, FocusType.Keyboard, position);
+
+            var sendEventToTextEditor = SendEventToTextEditor(id, Event.current);
+
+            // It's possible that DoTextField will throw so we use a scoped cursor that we can safely reset the color.
             using (new CursorColorScope(Color.clear))
             {
                 RecycledTextEditor.s_AllowContextCutOrPaste = false;
 
                 if (sendEventToTextEditor)
                 {
-                    bool dummy;
-                    DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out dummy, false, true, false);
+                    DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out _, false, true, false);
                 }
             }
         }

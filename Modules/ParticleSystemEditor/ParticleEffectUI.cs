@@ -1315,7 +1315,7 @@ namespace UnityEditor
             }
         }
 
-        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName, defaultDisplay = false)]
         class SceneViewParticleOverlay : TransientSceneViewOverlay
         {
             const string k_OverlayId = "Scene View/Particles";

@@ -586,7 +586,9 @@ namespace UnityEditor.Overlays
             else
             {
                 rootVisualElement.style.position = Position.Relative;
+#pragma warning disable CS0618 // Type or member is obsolete
                 rootVisualElement.transform.position = Vector3.zero;
+#pragma warning restore CS0618 // Type or member is obsolete
                 rootVisualElement.RemoveFromClassList(k_Floating);
             }
 

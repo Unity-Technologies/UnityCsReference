@@ -94,9 +94,9 @@ namespace UnityEngine.UIElements
             public int meshFlags;
         }
 
-        [ThreadSafe] public static extern MeshWriteDataInterface MakeBorder(NativeBorderParams borderParams, float posZ);
-        [ThreadSafe] public static extern MeshWriteDataInterface MakeSolidRect(NativeRectParams rectParams, float posZ);
-        [ThreadSafe] public static extern MeshWriteDataInterface MakeTexturedRect(NativeRectParams rectParams, float posZ);
+        [ThreadSafe] public static extern MeshWriteDataInterface MakeBorder(ref NativeBorderParams borderParams);
+        [ThreadSafe] public static extern MeshWriteDataInterface MakeSolidRect(ref NativeRectParams rectParams);
+        [ThreadSafe] public static extern MeshWriteDataInterface MakeTexturedRect(ref NativeRectParams rectParams);
         [ThreadSafe] public static extern MeshWriteDataInterface MakeVectorGraphicsStretchBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Rect sourceUV, ScaleMode scaleMode, Color tint, NativeColorPage colorPage);
         [ThreadSafe] public static extern MeshWriteDataInterface MakeVectorGraphics9SliceBackground(Vertex[] svgVertices, UInt16[] svgIndices, float svgWidth, float svgHeight, Rect targetRect, Vector4 sliceLTRB, Color tint, NativeColorPage colorPage);
     }

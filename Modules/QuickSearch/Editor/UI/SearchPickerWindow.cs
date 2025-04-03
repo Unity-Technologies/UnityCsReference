@@ -26,17 +26,20 @@ namespace UnityEditor.Search
 
         protected override void LoadSessionSettings()
         {
-            var visibilityFlags = (SearchFlags)SearchSettings.GetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(SearchFlags.WantsMore | SearchFlags.Packages));
+            var visibilityFlags = SearchFlags.None;
+            if (HasSessionSettings())
+                visibilityFlags = (SearchFlags)SearchSettings.GetScopeValue(k_PickerVisibilityFlags, m_ContextHash, (int)(SearchFlags.WantsMore | SearchFlags.Packages));
             m_ViewState.context.options |= visibilityFlags;
-            m_ViewState.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, (int)DisplayMode.Grid);
-            if (SearchSettings.GetScopeValue(k_PickerInspector, m_ContextHash, 0) != 0)
+            if (HasSessionSettings())
+                m_ViewState.itemSize = SearchSettings.GetScopeValue(k_PickerItemSize, m_ContextHash, m_ViewState.itemSize);
+            if (HasSessionSettings() && SearchSettings.GetScopeValue(k_PickerInspector, m_ContextHash, 0) != 0)
             {
                 m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
             }
             RestoreSearchText();
 
-            var group = GroupedSearchList.allGroupId;
-            if (m_ViewState.selectedIds.Length > 0)
+            var group = m_ViewState.group ?? GroupedSearchList.allGroupId;
+            if (!m_ViewState.hideTabs && m_ViewState.group == null && m_ViewState.selectedIds.Length > 0)
             {
                 var id = m_ViewState.selectedIds[0];
                 group = SearchUtils.GetGroupFromId(id);
@@ -68,7 +71,10 @@ namespace UnityEditor.Search
 
         protected override void ComputeContextHash()
         {
-            m_ContextHash = k_UniquePickerHash;
+            if (context.options.HasFlag(SearchFlags.UseSessionSettings))
+                m_ContextHash = k_UniquePickerHash;
+            else
+                m_ContextHash = 0;
         }
 
         protected override void HandleEscapeKeyDown(EventBase evt)

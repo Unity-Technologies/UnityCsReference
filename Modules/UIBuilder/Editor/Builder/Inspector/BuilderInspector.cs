@@ -1201,7 +1201,7 @@ namespace Unity.UI.Builder
             m_ScrollView.verticalScroller.value = cached.scrollPosition;
         }
 
-        public void RefreshUI()
+        public void RefreshUI(bool refreshAttributes = true)
         {
             using var marker = k_RefreshUIMarker.Auto();
 
@@ -1294,18 +1294,9 @@ namespace Unity.UI.Builder
                 m_AttributesSection.Enable();
             }
 
-            // Reselect Icon, Type & Name in Header
-            m_HeaderSection.Refresh();
-
-            if (m_AttributesSection.refreshScheduledItem != null)
+            if (refreshAttributes)
             {
-                // Pause to stop it in case it's already running; and then restart it to execute it.
-                m_AttributesSection.refreshScheduledItem.Pause();
-                m_AttributesSection.refreshScheduledItem.Resume();
-            }
-            else
-            {
-                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                RefreshAttributes();
             }
 
             // Reset current style rule.
@@ -1325,6 +1316,23 @@ namespace Unity.UI.Builder
             if (selectionInTemplateInstance)
             {
                 m_HeaderSection.Disable();
+            }
+        }
+
+        void RefreshAttributes()
+        {
+            // Reselect Icon, Type & Name in Header
+            m_HeaderSection.Refresh();
+
+            if (m_AttributesSection.refreshScheduledItem != null)
+            {
+                // Pause to stop it in case it's already running; and then restart it to execute it.
+                m_AttributesSection.refreshScheduledItem.Pause();
+                m_AttributesSection.refreshScheduledItem.Resume();
+            }
+            else
+            {
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
             }
         }
 
@@ -1356,14 +1364,44 @@ namespace Unity.UI.Builder
 
         public void BeforeSelectionChanged()
         {
-            // Check whether the focused element is a field in the inspector. If so, then blur it immediately
-            // to commit its value (e.g: delayed text field such as the name field) before the selection changes
-            if (focusController is { focusedElement: VisualElement focusedElement } && Contains(focusedElement))
+            if (focusController is not { focusedElement: VisualElement focusedElement } || !Contains(focusedElement))
+                return;
+
+            // If we are in undo/redo, we don't want to commit the current value in the text field
+            // Otherwise, the current value will override the value set by the undo stack.
+            var builder = paneWindow as Builder;
+            if (builder != null && builder.isInUndoRedo)
             {
-                focusedElement.BlurImmediately();
+                // Saving the value will ensure "esc" key will not revert the value to the previous value.
+                // Schedule because the value from undo is not yet set in the text edition.
+                schedule.Execute(() =>
+                {
+                    var textField = focusController?.selectedTextElement?.GetFirstAncestorOfType<TextField>();
+                    textField?.textEdition.SaveValueAndText();
+                });
+                return;
             }
 
-            // Force submit the pending committed value changes
+            // Ensures that the value in the field is committed before the selection changes.
+            // For example, a user sets a value in the text field and then clicks on another element.
+            var dimensionStyleField = focusedElement as DimensionStyleField;
+            var previousDispatchMode = dimensionStyleField?.dispatchMode;
+            try
+            {
+                if (dimensionStyleField != null)
+                {
+                    dimensionStyleField.dispatchMode = DispatchMode.Immediate;
+                }
+
+                // Commit the value in the field.
+                focusedElement.BlurImmediately();
+            }
+            finally
+            {
+                if (dimensionStyleField != null)
+                    dimensionStyleField.dispatchMode = previousDispatchMode.Value;
+            }
+
             m_AttributesSection.ProcessBatchedChanges();
         }
 
@@ -1420,7 +1458,9 @@ namespace Unity.UI.Builder
             if (m_CurrentVisualElement != null && BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement))
             {
                 StyleSheetUtilities.AddFakeSelector(m_CurrentVisualElement);
+                // Need to delay the refresh of the inspector for selectors to ensure the variables are resolved
                 m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
+                RefreshAttributes();
             }
             else
             {
@@ -1527,7 +1567,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                RefreshUI();
+                RefreshUI(false);
             }
         }
 

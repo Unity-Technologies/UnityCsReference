@@ -104,10 +104,12 @@ namespace UnityEditor.Experimental.GraphView
             clientRect.x = 0;
             clientRect.y = 0;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             var containerScale = new Vector3(m_Container.transform.matrix.GetColumn(0).magnitude,
                 m_Container.transform.matrix.GetColumn(1).magnitude,
                 m_Container.transform.matrix.GetColumn(2).magnitude);
             var containerTranslation = m_Container.transform.matrix.GetColumn(3);
+#pragma warning restore CS0618 // Type or member is obsolete
             var containerPosition = m_Container.layout;
 
             // background

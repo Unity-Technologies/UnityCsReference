@@ -230,10 +230,14 @@ namespace Unity.UI.Builder
 
         bool UnityWantsToQuit() => CheckForUnsavedChanges();
 
-        void OnEnable()
+        public BuilderDocument()
         {
             hasUnsavedChanges = false;
             activeOpenUXMLFile.Clear();
+        }
+
+        void OnEnable()
+        {
             EditorApplication.wantsToQuit += UnityWantsToQuit;
             BuilderAssetPostprocessor.Register(this);
         }

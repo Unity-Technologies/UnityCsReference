@@ -46,7 +46,8 @@ internal class PhysicsDocumentPicker
         var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId);
         if (capturingElement is VisualElement capturingVE)
         {
-            if (!capturingVE.elementPanel.isFlat)
+            var capturingElementPanel = capturingVE.elementPanel;
+            if (capturingElementPanel != null && !capturingElementPanel.isFlat)
             {
                 capturingDocument = UIDocument.FindParentDocument(capturingVE);
                 return true;

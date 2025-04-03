@@ -1053,6 +1053,7 @@ namespace UnityEngine.Rendering
         DontResetBoneBounds = 1 << 1,
         DontNotifyMeshUsers = 1 << 2,
         DontRecalculateBounds = 1 << 3,
+        DontValidateLodRanges = 1 << 4,
     }
 
     // Match VertexFormat on C++ side

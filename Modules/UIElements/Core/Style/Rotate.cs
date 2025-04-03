@@ -13,7 +13,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial struct Rotate : IEquatable<Rotate>
     {
-        internal Rotate(Angle angle, Vector3 axis)
+        /// <summary>
+        /// Create a Rotate struct that corresponds to a rotation around the specified axis by the provided <see cref="Angle"/>.
+        /// </summary>
+        /// <remarks>3D rotations are only expected to work on world space panels and will cause masking issues on overlay panels.</remarks>
+        public Rotate(Angle angle, Vector3 axis)
         {
             m_Angle = angle;
             m_Axis = axis;
@@ -30,7 +34,11 @@ namespace UnityEngine.UIElements
             m_IsNone = false;
         }
 
-        internal Rotate(Quaternion quaternion)
+        /// <summary>
+        /// Create a Rotate struct that corresponds to a rotation specified by the provided <see cref="Quaternion"/>.
+        /// </summary>
+        /// <remarks>3D rotations are only expected to work on world space panels and will cause masking issues on overlay panels.</remarks>
+        public Rotate(Quaternion quaternion)
         {
 
             quaternion.ToAngleAxis(out float angle, out Vector3 axis);
@@ -63,6 +71,8 @@ namespace UnityEngine.UIElements
             get => m_Angle;
             set => m_Angle = value;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal Vector3 axis
         {
             get => m_Axis;
@@ -116,6 +126,18 @@ namespace UnityEngine.UIElements
         internal Quaternion ToQuaternion()
         {
             return Quaternion.AngleAxis(m_Angle.ToDegrees(), m_Axis);
+        }
+
+        /// <undoc/>
+        public static implicit operator Rotate(Quaternion v)
+        {
+            return new Rotate(v);
+        }
+
+        /// <undoc/>
+        public static implicit operator Rotate(Angle a)
+        {
+            return new Rotate(a);
         }
     }
 }

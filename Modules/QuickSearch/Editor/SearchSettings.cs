@@ -141,6 +141,7 @@ namespace UnityEditor.Search
         // Per project settings
         public bool trackSelection { get; set; }
         public bool fetchPreview { get; set; }
+        // TODO defaultFlags: Review the defaultFlags, and all global/scoped settings.
         public SearchFlags defaultFlags { get; set; }
         public bool keepOpen { get; set; }
         public string queryFolder { get; set; }
@@ -1040,7 +1041,7 @@ namespace UnityEditor.Search
                         {
                             pickerAdvancedUI = Toggle(Content.pickerAdvancedUIContent, nameof(pickerAdvancedUI), pickerAdvancedUI);
                         }
-                        
+
                         var newDebounceMs = EditorGUILayout.IntSlider(Content.debounceThreshold, debounceMs, 0, 1000);
                         if (newDebounceMs != debounceMs)
                             debounceMs = newDebounceMs;

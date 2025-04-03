@@ -123,7 +123,8 @@ internal class ATGTextJobSystem
     }
 
 
-    List<Material> materials = new List<Material>();
+    List<Texture2D> atlases = new List<Texture2D>();
+    List<float> sdfScalesArray = new List<float>();
     List<NativeSlice<Vertex>> verticesArray = new List<NativeSlice<Vertex>>();
     List<NativeSlice<ushort>> indicesArray = new List<NativeSlice<ushort>>();
     List<GlyphRenderMode> renderModes = new List<GlyphRenderMode>();
@@ -146,21 +147,22 @@ internal class ATGTextJobSystem
                 // Trying to keep the codepath separated for now.
 
                 // Finally, calling this once per text element is not optimal but the code underneath
-                // should simply retrun if there is nothing to apply
+                // should simply return if there is nothing to apply
                 FontAsset.UpdateFontAssetsInUpdateQueue();
 
                 mgc.GetTempMeshAllocator(out var alloc);
-                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, managedJobData.textElement, ref materials, ref verticesArray, ref indicesArray, ref renderModes);
+                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, managedJobData.textElement, ref atlases, ref verticesArray, ref indicesArray, ref renderModes, ref sdfScalesArray);
 
-                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement);
+                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
 
-                mgc.meshGenerator.DrawText(verticesArray, indicesArray, materials, renderModes);
+                mgc.meshGenerator.DrawText(verticesArray, indicesArray, atlases, renderModes, sdfScalesArray);
                 managedJobData.textElement.OnGenerateTextOverNative(mgc);
 
-                materials.Clear();
+                atlases.Clear();
                 verticesArray.Clear();
                 indicesArray.Clear();
                 renderModes.Clear();
+                sdfScalesArray.Clear();
                 mgc.End();
             }
 
@@ -173,17 +175,16 @@ internal class ATGTextJobSystem
         textJobDatasHandle.Free();
     }
 
-    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
+    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
     {
-        var pos = (visualElement).contentRect.min;
-
+        float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
         // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
         // since we cannot store multiple colors for a given text element.
         bool hasMultipleColors = visualElement.uitkTextHandle.textInfo.hasMultipleColors;
         if (hasMultipleColors)
-            visualElement.renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+            visualElement.renderData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
         else
-            visualElement.renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
+            visualElement.renderData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
         for (int i = 0; i < meshInfos.Length; i++)
         {
@@ -191,47 +192,56 @@ internal class ATGTextJobSystem
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
-            int remainingVertexCount = meshInfo.textElementInfos.Length * 4;
-            while (remainingVertexCount > 0)
+            for (int j = 0; j < meshInfo.textElementInfoIndicesByAtlas.Count; ++j)
             {
-                int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
-                int quadCount = vertexCount >> 2;
-                int indexCount = quadCount * 6;
-
-                var fa = meshInfo.fontAsset;
-
-                materials.Add(fa.material);
-                renderModes.Add(fa.atlasRenderMode);
-
-                bool hasGradientScale = fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
-                // TODO, update once ATG supports SpriteAssets
-                bool isDynamicColor = /*meshInfo.applySDF &&*/ !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
-
-                alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
-
-                for (int vDst = 0,vSrc = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 1, j += 6)
+                var textElementInfoInAtlas = meshInfo.textElementInfoIndicesByAtlas[j];
+                int remainingVertexCount = textElementInfoInAtlas.Count * 4;
+                while (remainingVertexCount > 0)
                 {
-                    var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
-                    vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.textElementInfos[vSrc].bottomLeft, pos, isDynamicColor: false, isColorFont);
-                    vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.textElementInfos[vSrc].topLeft, pos, isDynamicColor: false, isColorFont);
-                    vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.textElementInfos[vSrc].topRight, pos, isDynamicColor: false, isColorFont);
-                    vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.textElementInfos[vSrc].bottomRight, pos, isDynamicColor: false, isColorFont);
+                    int vertexCount = Mathf.Min(remainingVertexCount, verticesPerAlloc);
+                    int quadCount = vertexCount >> 2;
+                    int indexCount = quadCount * 6;
 
-                    indices[j + 0] = (ushort)(vDst + 0);
-                    indices[j + 1] = (ushort)(vDst + 1);
-                    indices[j + 2] = (ushort)(vDst + 2);
-                    indices[j + 3] = (ushort)(vDst + 2);
-                    indices[j + 4] = (ushort)(vDst + 3);
-                    indices[j + 5] = (ushort)(vDst + 0);
+                    var fa = meshInfo.fontAsset;
+                    atlases.Add(fa.atlasTextures[j]);
+                    renderModes.Add(fa.atlasRenderMode);
+
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[^1]) && atlases[^1].format == TextureFormat.Alpha8)
+                        sdfScale = fa.atlasPadding + 1;
+                    sdfScales.Add(sdfScale);
+
+                    bool hasGradientScale = fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
+                    // TODO, update once ATG supports SpriteAssets
+                    bool isDynamicColor = /*meshInfo.applySDF &&*/ !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
+
+                    alloc.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
+
+                    var pos = (visualElement).contentRect.min;
+                    for (int vDst = 0,vSrc = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
+                    {
+                        var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
+                        var tei = meshInfo.textElementInfos[textElementInfoInAtlas[vSrc]];
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+
+                        indices[k + 0] = (ushort)(vDst + 0);
+                        indices[k + 1] = (ushort)(vDst + 1);
+                        indices[k + 2] = (ushort)(vDst + 2);
+                        indices[k + 3] = (ushort)(vDst + 2);
+                        indices[k + 4] = (ushort)(vDst + 3);
+                        indices[k + 5] = (ushort)(vDst + 0);
+                    }
+
+                    verticesArray.Add(vertices);
+                    indicesArray.Add(indices);
+
+                    remainingVertexCount -= vertexCount;
                 }
-
-                verticesArray.Add(vertices);
-                indicesArray.Add(indices);
-
-                remainingVertexCount -= vertexCount;
+                Debug.Assert(remainingVertexCount == 0);
             }
-
-            Debug.Assert(remainingVertexCount == 0);
         }
     }
 }

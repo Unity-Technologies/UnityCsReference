@@ -28,17 +28,23 @@ namespace UnityEngine
             [NativeMethod(IsThreadSafe = true)] static extern int GetVertexBufferStride(IntPtr self, int stream);
 
             [NativeMethod(IsThreadSafe = true)] static extern void CopyAttributeIntoPtr(IntPtr self, VertexAttribute attr, VertexAttributeFormat format, int dim, IntPtr dst);
-            [NativeMethod(IsThreadSafe = true)] static extern void CopyIndicesIntoPtr(IntPtr self, int submesh, bool applyBaseVertex, int dstStride, IntPtr dst);
+            [NativeMethod(IsThreadSafe = true)] static extern void CopyIndicesIntoPtr(IntPtr self, int submesh, int meshLod, bool applyBaseVertex, int dstStride, IntPtr dst);
 
             [NativeMethod(IsThreadSafe = true)] static extern IndexFormat GetIndexFormat(IntPtr self);
-            [NativeMethod(IsThreadSafe = true)] static extern int GetIndexCount(IntPtr self, int submesh);
+            [NativeMethod(IsThreadSafe = true)] static extern int GetIndexCount(IntPtr self, int submesh, int meshlod);
 
             [NativeMethod(IsThreadSafe = true)] static extern IntPtr GetIndexDataPtr(IntPtr self);
             [NativeMethod(IsThreadSafe = true)] static extern ulong GetIndexDataSize(IntPtr self);
 
             [NativeMethod(IsThreadSafe = true)] static extern int GetSubMeshCount(IntPtr self);
-            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern SubMeshDescriptor GetSubMesh(IntPtr self, int index);
 
+            [NativeMethod(IsThreadSafe = true)] static extern int GetLodCount(IntPtr self);
+            [NativeMethod(IsThreadSafe = true)] static extern void SetLodCount(IntPtr self, int count);
+            [NativeMethod(IsThreadSafe = true)] static extern LodSelectionCurve GetLodSelectionCurve(IntPtr self);
+            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetLodSelectionCurve(IntPtr self, LodSelectionCurve lodSelectionCurve);
+            [NativeMethod(IsThreadSafe = true)] static extern MeshLodRange GetLod(IntPtr self, int submesh, int level);
+            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetLod(IntPtr self, int submesh, int level, MeshLodRange levelRange, MeshUpdateFlags flags);
+            [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern SubMeshDescriptor GetSubMesh(IntPtr self, int index);
             [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetVertexBufferParamsFromPtr(IntPtr self, int vertexCount, IntPtr attributesPtr, int attributesCount);
             [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetVertexBufferParamsFromArray(IntPtr self, int vertexCount, params VertexAttributeDescriptor[] attributes);
             [NativeMethod(IsThreadSafe = true, ThrowsException = true)] static extern void SetIndexBufferParamsImpl(IntPtr self, int indexCount, IndexFormat indexFormat);

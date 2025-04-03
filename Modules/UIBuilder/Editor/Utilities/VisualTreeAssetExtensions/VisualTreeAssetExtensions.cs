@@ -9,6 +9,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
@@ -394,12 +395,19 @@ namespace Unity.UI.Builder
         }
 
         public static void RemoveElement(
-            this VisualTreeAsset vta, VisualElementAsset element)
+            this VisualTreeAsset vta, VisualElement element)
         {
-            if (element is TemplateAsset)
-                vta.templateAssets.Remove(element as TemplateAsset);
+            var vea = element.GetVisualElementAsset();
+            if (vea == null)
+                return;
+
+            if (element is TemplateContainer templateContainer && vea is TemplateAsset templateAsset)
+            {
+                vta.templateAssets.Remove(templateAsset);
+                vta.UnregisterTemplate(templateContainer.templateSource);
+            }
             else
-                vta.RemoveElementAndDependencies(element);
+                vta.RemoveElementAndDependencies(vea);
         }
 
         public static void ReparentElement(
@@ -596,27 +604,20 @@ namespace Unity.UI.Builder
             var toStyleSheet = vta.inlineSheet;
             var fromStyleSheet = other.inlineSheet;
 
-            var rule = fromStyleSheet.rules[vea.ruleIndex];
+            var fromRule = fromStyleSheet.rules[vea.ruleIndex];
 
-            // Add rule to StyleSheet.
-            var rulesList = toStyleSheet.rules.ToList();
-            var index = rulesList.Count;
-            rulesList.Add(rule);
-            toStyleSheet.rules = rulesList.ToArray();
+            var ruleIndex = toStyleSheet.AddRule();
+            var toRule = toStyleSheet.GetRule(ruleIndex);
 
-            // Add property values to sheet.
-            foreach (var property in rule.properties)
+            foreach (var fromProperty in fromRule.properties)
             {
-                for (int i = 0; i < property.values.Length; ++i)
-                {
-                    var valueHandle = property.values[i];
-                    valueHandle.valueIndex =
-                        toStyleSheet.SwallowStyleValue(fromStyleSheet, valueHandle);
-                    property.values[i] = valueHandle;
-                }
+                var toProperty = toStyleSheet.AddProperty(toRule, fromProperty.name);
+                StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, fromProperty, toStyleSheet, toProperty);
             }
 
-            vea.ruleIndex = index;
+            // If rule was created
+            if (ruleIndex < toStyleSheet.rules.Length)
+                vea.ruleIndex = ruleIndex;
         }
 
         public static void ClearUndo(this VisualTreeAsset vta)

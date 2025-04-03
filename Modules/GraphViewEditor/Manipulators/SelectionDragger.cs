@@ -456,7 +456,9 @@ namespace UnityEditor.Experimental.GraphView
 
         private void Pan(TimerState ts)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             m_GraphView.viewTransform.position -= m_PanDiff;
+#pragma warning restore CS0618 // Type or member is obsolete
             m_ItemPanDiff += m_PanDiff;
 
             // Handle the selected element
@@ -508,8 +510,12 @@ namespace UnityEditor.Experimental.GraphView
             Rect newPos = new Rect(0, 0, originalPos.width, originalPos.height);
 
             // Compute the new position of the selected element using the mouse delta position and panning info
+#pragma warning disable CS0618 // Type or member is obsolete
             newPos.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x * element.transform.scale.x;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
             newPos.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y * element.transform.scale.y;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.hierarchy.parent, newPos));
         }
@@ -563,8 +569,12 @@ namespace UnityEditor.Experimental.GraphView
 
                     if (m_ItemPanDiff != Vector3.zero)
                     {
+#pragma warning disable CS0618 // Type or member is obsolete
                         Vector3 p = m_GraphView.contentViewContainer.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
                         Vector3 s = m_GraphView.contentViewContainer.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
                         m_GraphView.UpdateViewTransform(p, s);
                     }
 
@@ -638,8 +648,12 @@ namespace UnityEditor.Experimental.GraphView
 
             if (m_ItemPanDiff != Vector3.zero)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 Vector3 p = m_GraphView.contentViewContainer.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
                 Vector3 s = m_GraphView.contentViewContainer.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
                 m_GraphView.UpdateViewTransform(p, s);
             }
 

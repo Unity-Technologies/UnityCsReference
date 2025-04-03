@@ -47,6 +47,10 @@ namespace UnityEditor
 
         // This function allows to retrieve AudioPlatformProperties derived from IPlatformProperties as quick access
         IVRPlatformProperties VRPlatformProperties { get; }
+        // This function retrieves the texture subtarget derived from IPlatformProperties. It should be the same as
+        // the native subtarget used for each build target with a subtarget related to texture. Note this is different
+        // from a StandaloneSubtarget.
+        ISubtargetPlatformProperties TextureSubtargetPlatformProperties { get; }
 
         // This function allows to retrieve properties of a give type, derived from IPlatformProperties
         // if they are available.

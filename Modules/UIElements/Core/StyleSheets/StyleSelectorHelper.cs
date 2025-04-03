@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
     // Each struct represents on match for a visual element against a complex
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal struct SelectorMatchRecord
+    internal struct SelectorMatchRecord : IEquatable<SelectorMatchRecord>
     {
         public StyleSheet sheet;
         public int styleSheetIndexInStack;
@@ -59,6 +59,21 @@ namespace UnityEngine.UIElements.StyleSheets
             }
 
             return res;
+        }
+
+        public bool Equals(SelectorMatchRecord other)
+        {
+            return Equals(sheet, other.sheet) && styleSheetIndexInStack == other.styleSheetIndexInStack && Equals(complexSelector, other.complexSelector);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is SelectorMatchRecord other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(sheet, styleSheetIndexInStack, complexSelector);
         }
     }
 

@@ -30,7 +30,6 @@ namespace UnityEditor
         EditorWindow m_Owner;
         TreeViewController m_TreeView;
         TreeViewState m_TreeViewState;
-        bool m_FocusSearchFilter;
         int m_ErrorCounter;
         int m_OriginalSelectedID;
         int m_UserData;
@@ -38,7 +37,7 @@ namespace UnityEditor
         string m_SelectedPath = "";
         const string kSearchFieldTag = "TreeSearchField";
         const float kBottomBarHeight = 17f;
-        const float kTopBarHeight = 27f;
+        const float kTopBarHeight = 0; // top bar rendered with UI-Toolkit
         SelectionEvent m_SelectionEvent;
         TreeViewNeededEvent m_TreeViewNeededEvent;
         DoubleClickedEvent m_DoubleClickedEvent;
@@ -86,8 +85,6 @@ namespace UnityEditor
             m_OriginalSelectedID = initialSelectedTreeViewItemID;
             m_UserData = userData;
 
-            m_FocusSearchFilter = true; // start by focusing search field
-
             // Initial setup
             EnsureTreeViewIsValid(GetTreeViewRect(position));
             if (m_TreeView != null)
@@ -118,7 +115,6 @@ namespace UnityEditor
             m_TreeView = null;
             m_TreeViewState = null;
             m_ErrorCounter = 0;
-            m_FocusSearchFilter = false;
 
             m_Debounce?.Dispose();
             m_Debounce = null;
@@ -130,6 +126,17 @@ namespace UnityEditor
                 return m_TreeView.GetSelection();
 
             return new int[0];
+        }
+
+        public void SetSearchFilter(string searchString)
+        {
+            m_SearchString = searchString;
+            m_Debounce.Execute();
+        }
+
+        public void SetSelection(int[] selectedIDs)
+        {
+            m_TreeView.SetSelection(selectedIDs, false);
         }
 
         // Call this when requested by ObjectTreeSelector (it calls treeViewNeededCallback)
@@ -204,7 +211,6 @@ namespace UnityEditor
 
             HandleCommandEvents();
             HandleKeyboard(treeViewControlID);
-            SearchArea(toolbarRect);
             TreeViewArea(treeViewRect, treeViewControlID);
             BottomBar(bottomRect);
         }
@@ -313,14 +319,6 @@ namespace UnityEditor
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
-            if (evt.commandName == EventCommandNames.Find)
-            {
-                if (evt.type == EventType.ExecuteCommand)
-                {
-                    FocusSearchField();
-                }
-                evt.Use();
-            }
         }
 
         void FireSelectionEvent(TreeViewItem item)
@@ -336,43 +334,6 @@ namespace UnityEditor
             {
                 m_TreeView.OnGUI(treeViewRect, treeViewControlID);
             }
-        }
-
-        void SearchArea(Rect toolbarRect)
-        {
-            GUI.Label(toolbarRect, GUIContent.none, s_Styles.searchBg);
-
-            // ESC clears search field and removes it's focus. But if we get an esc event we only want to clear search field.
-            // So we need special handling afterwards.
-            bool wasEscape = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape;
-            GUI.SetNextControlName(kSearchFieldTag);
-            string newSearchFilter = EditorGUI.SearchField(new Rect(5, 5, toolbarRect.width - 10, 15), m_SearchString);
-
-            if (wasEscape && Event.current.type == EventType.Used)
-            {
-                // If we hit esc and the string WAS empty, it's an actual cancel event.
-                if (m_SearchString != string.Empty)
-                    // Otherwise the string has been cleared and focus has been lost. We don't have anything else to recieve focus, so we want to refocus the search field.
-                    m_FocusSearchFilter = true;
-            }
-
-            if (newSearchFilter != m_SearchString || m_FocusSearchFilter)
-            {
-                m_SearchString = newSearchFilter;
-                m_Debounce.Execute();
-            }
-
-            if (m_FocusSearchFilter)
-            {
-                EditorGUI.FocusTextInControl(kSearchFieldTag);
-                if (Event.current.type == EventType.Repaint)
-                    m_FocusSearchFilter = false;
-            }
-        }
-
-        internal void FocusSearchField()
-        {
-            m_FocusSearchFilter = true;
         }
 
         private void DoSearchFilter()

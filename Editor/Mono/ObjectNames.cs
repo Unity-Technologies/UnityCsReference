@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using JetBrains.Annotations;
 using UnityEngine;
@@ -162,5 +163,7 @@ namespace UnityEditor
         {
             return GetInspectorTitle(obj);
         }
+
+        internal static string CapitaliseFirstLetter(string srt) => $"{char.ToUpper(srt[0], CultureInfo.InvariantCulture).ToString()}{srt.Substring(1)}";
     }
 }

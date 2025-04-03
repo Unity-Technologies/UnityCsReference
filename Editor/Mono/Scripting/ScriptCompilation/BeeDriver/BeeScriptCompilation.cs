@@ -13,7 +13,6 @@ using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
-using UnityEditor.PackageManager;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
@@ -34,7 +33,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget buildTarget,
             bool buildingForEditor,
             bool enableScriptUpdater,
-            string[] extraScriptingDefines = null)
+            string[] extraScriptingDefines = null, ScriptAssemblySettings settings = null)
         {
             // Need to call AssemblyDataFrom before calling CompilationPipeline.GetScriptAssemblies,
             // as that acts on the same ScriptAssemblies, and modifies them with different build settings.
@@ -55,12 +54,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (LocalizationDatabase.currentEditorLanguage != SystemLanguage.English && EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false))
                 localization = LocalizationDatabase.GetCulture(LocalizationDatabase.currentEditorLanguage);
 
-
             var assembliesToScanForTypeDB = new HashSet<string>();
             var searchPaths = new HashSet<string>(BuildPlayerDataGenerator.GetStaticSearchPaths(buildTarget));
-            var options = EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
-            if (buildingForEditor)
-                options |= EditorScriptCompilationOptions.BuildingForEditor;
+            EditorScriptCompilationOptions options;
+
+            if (settings is null)
+            {
+                options = EditorScriptCompilationOptions.BuildingIncludingTestAssemblies;
+                if (buildingForEditor)
+                    options |= EditorScriptCompilationOptions.BuildingForEditor;
+            }
+            else
+            {
+                options = settings.CompilationOptions;
+            }
+
             foreach (var a in editorCompilation.GetAllScriptAssemblies(options, extraScriptingDefines))
             {
                 if (!a.Flags.HasFlag(AssemblyFlags.EditorOnly))

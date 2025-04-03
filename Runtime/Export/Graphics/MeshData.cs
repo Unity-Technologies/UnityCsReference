@@ -346,29 +346,43 @@ namespace UnityEngine
 
             public void GetIndices(NativeArray<ushort> outIndices, int submesh, [DefaultValue("true")] bool applyBaseVertex = true)
             {
+                GetIndices(outIndices, submesh, 0, applyBaseVertex);
+            }
+
+            public void GetIndices(NativeArray<ushort> outIndices, int submesh, int meshlod, [DefaultValue("true")] bool applyBaseVertex = true)
+            {
                 CheckReadAccess();
                 if (submesh < 0 || submesh >= subMeshCount)
                     throw new IndexOutOfRangeException($"Specified submesh ({submesh}) is out of range. Must be greater or equal to 0 and less than subMeshCount ({subMeshCount}).");
-                int indexCount = GetIndexCount(m_Ptr, submesh);
+                if (meshlod > 0 && meshlod >= lodCount)
+                    throw new IndexOutOfRangeException($"Specified Mesh LOD index ({meshlod}) is out of range. Must be less than the lodCount value ({lodCount})");
+                int indexCount = GetIndexCount(m_Ptr, submesh, meshlod);
                 if (outIndices.Length < indexCount)
                     throw new InvalidOperationException($"Not enough space in output buffer (need {indexCount}, has {outIndices.Length})");
                 unsafe
                 {
-                    CopyIndicesIntoPtr(m_Ptr, submesh, applyBaseVertex, 2, (IntPtr)outIndices.GetUnsafePtr());
+                    CopyIndicesIntoPtr(m_Ptr, submesh, meshlod, applyBaseVertex, 2, (IntPtr)outIndices.GetUnsafePtr());
                 }
             }
 
             public void GetIndices(NativeArray<int> outIndices, int submesh, [DefaultValue("true")] bool applyBaseVertex = true)
             {
+                GetIndices(outIndices, submesh, 0, applyBaseVertex);
+            }
+
+            public void GetIndices(NativeArray<int> outIndices, int submesh, int meshlod, [DefaultValue("true")] bool applyBaseVertex = true)
+            {
                 CheckReadAccess();
                 if (submesh < 0 || submesh >= subMeshCount)
                     throw new IndexOutOfRangeException($"Specified submesh ({submesh}) is out of range. Must be greater or equal to 0 and less than subMeshCount ({subMeshCount}).");
-                int indexCount = GetIndexCount(m_Ptr, submesh);
+                if (meshlod > 0 && meshlod >= lodCount)
+                    throw new IndexOutOfRangeException($"Specified Mesh LOD index ({meshlod}) is out of range. Must be less than the lodCount value ({lodCount})");
+                int indexCount = GetIndexCount(m_Ptr, submesh, meshlod);
                 if (outIndices.Length < indexCount)
                     throw new InvalidOperationException($"Not enough space in output buffer (need {indexCount}, has {outIndices.Length})");
                 unsafe
                 {
-                    CopyIndicesIntoPtr(m_Ptr, submesh, applyBaseVertex, 4, (IntPtr)outIndices.GetUnsafePtr());
+                    CopyIndicesIntoPtr(m_Ptr, submesh, meshlod, applyBaseVertex, 4, (IntPtr)outIndices.GetUnsafePtr());
                 }
             }
 
@@ -387,6 +401,28 @@ namespace UnityEngine
                     NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, m_Safety);
                     return array;
                 }
+            }
+
+            public MeshLodRange GetLod(int submesh, int level)
+            {
+                CheckReadAccess();
+                ValidateSubMeshIndex(submesh);
+                ValidateLodIndex(level);
+
+                return GetLod(m_Ptr, submesh, level);
+            }
+
+            public void SetLod(int submesh, int level, MeshLodRange levelRange, MeshUpdateFlags flags = MeshUpdateFlags.Default)
+            {
+                CheckWriteAccess();
+
+                if (!isLodSelectionActive)
+                    throw new InvalidOperationException("Unable to modify LOD0. Please enable Mesh LOD selection first by setting lodCount to a value greater than 1 or modify the submesh descriptors directly.");
+
+                ValidateSubMeshIndex(submesh);
+                ValidateLodIndex(level);
+
+                SetLod(m_Ptr, submesh, level, levelRange, flags);
             }
 
             public int subMeshCount
@@ -415,6 +451,50 @@ namespace UnityEngine
                 SetSubMeshImpl(m_Ptr, index, desc, flags);
             }
 
+            public int lodCount
+            {
+                get
+                {
+                    CheckReadAccess();
+                    return GetLodCount(m_Ptr);
+                }
+                set
+                {
+                    CheckWriteAccess();
+
+                    if (value < 1)
+                        throw new ArgumentException("LOD count must be greater than zero.");
+
+                    // Check that all submeshes are triangles if we are going to have more than one LOD
+                    if (value > 1)
+                    {
+                        for (int i = 0; i < subMeshCount; i++)
+                        {
+                            if (GetSubMesh(i).topology != MeshTopology.Triangles)
+                                throw new InvalidOperationException("Mesh LOD selection only works for triangle topology. The LOD count value cannot be higher than 1 if the topology is not set to triangles for all submeshes.");
+                        }
+                    }
+
+                    SetLodCount(m_Ptr, value);
+                }
+            }
+
+            internal bool isLodSelectionActive => lodCount > 1;
+
+            public LodSelectionCurve lodSelectionCurve
+            {
+                get
+                {
+                    CheckReadAccess();
+                    return GetLodSelectionCurve(m_Ptr);
+                }
+                set
+                {
+                    CheckWriteAccess();
+                    SetLodSelectionCurve(m_Ptr, value);
+                }
+            }
+
             [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
             void CheckReadAccess()
             {
@@ -425,6 +505,19 @@ namespace UnityEngine
             void CheckWriteAccess()
             {
                 AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+            }
+
+            void ValidateSubMeshIndex(int submesh)
+            {
+                if (submesh < 0 || submesh >= subMeshCount)
+                    throw new IndexOutOfRangeException($"Specified submesh index ({submesh}) is out of range. Must be greater or equal to 0 and less than the subMeshCount value ({subMeshCount}).");
+            }
+
+            void ValidateLodIndex(int level)
+            {
+                var count = lodCount;
+                if (level < 0 || level >= count)
+                    throw new IndexOutOfRangeException($"Specified Mesh LOD index ({level}) is out of range. Must be greater than or equal to 0 and less than the lodCount value ({count}).");
             }
         }
     }

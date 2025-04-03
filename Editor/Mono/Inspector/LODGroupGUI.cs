@@ -91,6 +91,7 @@ namespace UnityEditor
 
             public static GUIContent m_BlueBorderTextureSelected = EditorGUIUtility.TrIconContent("AnimationRowOddSelected");
             public static GUIContent m_BlueBorderTextureNormal = EditorGUIUtility.TrIconContent("OL title act");
+            public static GUIContent m_MeshLodInfo = EditorGUIUtility.TrTextContent("Mesh LOD is active and has been applied to ");
 
             public GUIStyles()
             {
@@ -205,19 +206,26 @@ namespace UnityEditor
             lods[lod].RawScreenPercent = Mathf.Clamp(newScreenPercentage, minimum, maximum);
         }
 
-        public static void DrawLODSlider(Rect area, IList<LODInfo> lods, int selectedLevel)
+        public static void DrawLODSlider(Rect area, IList<LODInfo> lods, int selectedLevel, bool[] enabledMeshLods = null)
         {
             Styles.m_LODSliderBG.Draw(area, GUIContent.none, false, false, false, false);
             for (int i = 0; i < lods.Count; i++)
             {
                 var lod = lods[i];
-                DrawLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, i == selectedLevel);
+                if (enabledMeshLods != null)
+                {
+                    DrawLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, i == selectedLevel, enabledMeshLods[i]);
+                }
+                else
+                {
+                    DrawLODRange(lod, i == 0 ? 1.0f : lods[i - 1].RawScreenPercent, i == selectedLevel);
+                }
                 DrawLODButton(lod);
             }
 
-            // Draw the last range (culled)
             DrawCulledRange(area, lods.Count > 0 ? lods[lods.Count - 1].RawScreenPercent : 1.0f);
         }
+
 
         public static void DrawMixedValueLODSlider(Rect area)
         {
@@ -249,10 +257,10 @@ namespace UnityEditor
             EditorGUIUtility.AddCursorRect(currentLOD.m_ButtonPosition, MouseCursor.ResizeHorizontal);
         }
 
-        private static void DrawLODRange(LODInfo currentLOD, float previousLODPercentage, bool isSelected)
+        private static void DrawLODRange(LODInfo currentLOD, float previousLODPercentage, bool isSelected, bool isMeshLodEnabled = false)
         {
             var tempColor = GUI.backgroundColor;
-            var startPercentageString = UnityString.Format("{0}\n{1:0}%", currentLOD.LODName, previousLODPercentage * 100);
+            var startPercentageString = UnityString.Format("{0}\n{1:0}%", currentLOD.LODName + (isMeshLodEnabled ? " (Mesh LOD)" : ""), previousLODPercentage * 100);
             if (isSelected)
             {
                 var foreground = currentLOD.m_RangePosition;

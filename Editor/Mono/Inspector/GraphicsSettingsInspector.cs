@@ -122,6 +122,8 @@ namespace UnityEditor
             BindEnumFieldWithFadeGroup(m_CurrentRoot, "Fog", ShaderUtil.CalculateFogStrippingFromCurrentScene);
             BindEnumFieldToLightProbe(m_CurrentRoot);
 
+            BindShaderPreload(m_CurrentRoot);
+
             if (globalSettingsExist)
             {
                 m_TabbedView = m_CurrentRoot.MandatoryQ<TabbedView>("PipelineSpecificSettings");
@@ -146,6 +148,64 @@ namespace UnityEditor
             m_ScrollView.contentContainer.RegisterCallback<GeometryChangedEvent>(OnMainScrollViewGeometryChanged);
 
             m_CurrentRoot.Bind(serializedObject);
+        }
+
+        void BindShaderPreload(VisualElement root)
+        {
+            var shaderPreloadProperty = serializedObject.FindProperty("m_PreloadedShaders");
+            shaderPreloadProperty.isExpanded = false;
+
+            var shaderPreloadPropertyField = root.MandatoryQ<IMGUIContainer>("PreloadedShaders");
+            shaderPreloadPropertyField.onGUIHandler = () =>
+            {
+                //for some reason, converting the display of this native array to UITK make MacOS crash when domain reload after user add a new script
+                EditorGUILayout.PropertyField(shaderPreloadProperty, EditorGUIUtility.TrTextContent("Preload Shaders"));
+            };
+            
+            var delayedShaderTimeLimitProperty = serializedObject.FindProperty("m_PreloadShadersBatchTimeLimit");
+            var shaderPreloadToggle = root.MandatoryQ<Toggle>("ShaderPreloadToggle");
+            var delayedShaderTimeLimitGroup = root.MandatoryQ<VisualElement>("DelayedShaderTimeLimitGroup");
+            var delayedShaderTimeLimit = root.MandatoryQ<IntegerField>("DelayedShaderTimeLimit");
+            shaderPreloadToggle.RegisterValueChangedCallback(evt => {
+                delayedShaderTimeLimitGroup.style.display = evt.newValue ? DisplayStyle.Flex : DisplayStyle.None;
+                var newVal = evt.newValue ? delayedShaderTimeLimit.value : -1;
+                if (delayedShaderTimeLimitProperty.intValue != newVal)
+                {
+                    delayedShaderTimeLimitProperty.intValue = newVal;
+                    delayedShaderTimeLimitProperty.serializedObject.ApplyModifiedProperties();
+                }
+            });
+            delayedShaderTimeLimit.RegisterValueChangedCallback(evt =>
+            {
+                if (delayedShaderTimeLimitProperty.intValue != evt.newValue)
+                {
+                    delayedShaderTimeLimitProperty.intValue = evt.newValue;
+                    delayedShaderTimeLimitProperty.serializedObject.ApplyModifiedProperties();
+                }
+            });
+            shaderPreloadToggle.SetValueWithoutNotify(delayedShaderTimeLimitProperty.intValue >= 0);
+            delayedShaderTimeLimit.SetValueWithoutNotify(Mathf.Max(0, delayedShaderTimeLimitProperty.intValue));
+            delayedShaderTimeLimitGroup.style.display = delayedShaderTimeLimitProperty.intValue >= 0 ? DisplayStyle.Flex : DisplayStyle.None;
+            
+            var shaderTracking = root.MandatoryQ<HelpBox>("ShaderTrackingInfoBox");
+            shaderTracking.schedule.Execute(() =>
+                shaderTracking.text =
+                    $"Currently tracked: {ShaderUtil.GetCurrentShaderVariantCollectionShaderCount()} shaders {ShaderUtil.GetCurrentShaderVariantCollectionVariantCount()} total variants").Every(500);
+
+            var saveButton = root.MandatoryQ<Button>("SaveShaderVariants");
+            saveButton.clickable = new Clickable(() =>
+            {
+                var assetPath = EditorUtility.SaveFilePanelInProject(
+                    L10n.Tr("Save Shader Variant Collection"),
+                    "NewShaderVariants",
+                    "shadervariants",
+                    L10n.Tr("Save shader variant collection"),
+                    ProjectWindowUtil.GetActiveFolderPath());
+                if (!string.IsNullOrEmpty(assetPath))
+                    ShaderUtil.SaveCurrentShaderVariantCollection(assetPath);
+            });
+            var clearButton = root.MandatoryQ<Button>("ClearCurrentShaderVariants");
+            clearButton.clickable = new Clickable(ShaderUtil.ClearCurrentShaderVariantCollection);
         }
 
         void GenerateTabs()
@@ -523,11 +583,10 @@ namespace UnityEditor
         {
             var keywordsList = new List<string>();
             keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorTierSettings.Styles>());
-            keywordsList.AddRange(GetSearchKeywordsFromGUIContentProperties<GraphicsSettingsInspectorShaderPreload.Styles>());
 
             var graphicsSettings = GraphicsSettings.GetGraphicsSettings();
             var graphicsSettingsSO = new SerializedObject(graphicsSettings);
-            keywordsList.AddRange(GetSearchKeywordsFromSerializedObject(graphicsSettingsSO));
+            keywordsList.AddRange(GetSearchKeywordsFromSerializedObject(graphicsSettingsSO, ResolveName));
 
             var globalSettingsExist = GraphicsSettingsInspectorUtility.GatherGlobalSettingsFromSerializedObject(graphicsSettingsSO, out var globalSettingsContainers);
             if (globalSettingsExist)
@@ -538,6 +597,44 @@ namespace UnityEditor
 
             keywords = keywordsList;
             return (graphicsSettings, globalSettingsExist, globalSettingsContainers);
+        }
+
+        // Important: GraphicsSettings only exists on C++ side.
+        // As there is no C# representation of the field, there is no way to decorate them with attribute.
+        // C++ variable name are used to build the path of the SerializedProperty, but do not match the displayed name.
+        // Introducing a C# bindings may be a good solution for long therm maintenance but for limited cost, let's just remap.
+        static readonly Dictionary<string, string> k_CPPToLabels = new()
+        {
+            //below are labels set in the UXML GraphicsSettingsEditor-Common.uxml
+            { "m_LightmapStripping" , "Lightmap Modes" },
+            { "m_LightmapKeepPlain" , "Baked Non-Directional" },
+            { "m_LightmapKeepDirCombined" , "Baked Directional" },
+            { "m_LightmapKeepDynamicPlain" , "Realtime Non-Directional" },
+            { "m_LightmapKeepDynamicDirCombined" , "Realtime Directional" },
+            { "m_LightmapKeepShadowMask" , "Baked Shadowmask" },
+            { "m_LightmapKeepSubtractive" , "Baked Subtractive" },
+            { "m_FogStripping" , "Fog Modes" },
+            { "m_FogKeepLinear" , "Linear" },
+            { "m_FogKeepExp" , "Exponential" },
+            { "m_FogKeepExp2" , "Exponential Squared" },
+            { "m_InstancingStripping" , "Instancing Variants" },
+            { "m_BrgStripping" , "Batch Renderer Group Variants" },
+            { "m_LogWhenShaderIsCompiled" , "Log Shader Compilation" },
+            { "m_CameraRelativeLightCulling" , "Lights" },
+            { "m_CameraRelativeShadowCulling" , "Shadows" },
+            { "m_VideoShadersIncludeMode" , "Video" },
+            { "m_AlwaysIncludedShaders" , "Always Included Shaders" },
+            { "m_LightProbeOutsideHullStrategy" , "Renderer Light Probe Selection" },
+            { "m_PreloadedShaders" , "Preload Shaders" },
+            // Below: 1 serialized property is for 2 field of the inspector. Adding all to the search keys
+            { "m_PreloadShadersBatchTimeLimit" , $"Preload Shaders After Showing First Scene Preload Time Limit Per Frame (ms)" },
+        };
+
+        string ResolveName(SerializedProperty property)
+        {
+            if (k_CPPToLabels.ContainsKey(property.name))
+                return k_CPPToLabels[property.name];
+            return property.displayName;
         }
 
         internal void Reload()

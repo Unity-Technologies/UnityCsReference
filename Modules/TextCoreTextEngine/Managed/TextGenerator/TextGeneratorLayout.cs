@@ -280,6 +280,7 @@ namespace UnityEngine.TextCore.Text
                 #endregion End Text Justification
 
                 offset = anchorOffset + justificationOffset;
+                offset = new(Round(offset.x), Round(offset.y));
 
                 // Handle UV2 mapping options and packing of scale information into UV2.
                 #region Handling of UV2 mapping & Scale packing
@@ -473,7 +474,7 @@ namespace UnityEngine.TextCore.Text
                     // Fill Vertex Buffers for the various types of element
                     if (elementType == TextElementType.Character)
                     {
-                        TextGeneratorUtilities.FillCharacterVertexBuffers(i, convertToLinearSpace, generationSettings, textInfo);
+                        TextGeneratorUtilities.FillCharacterVertexBuffers(i, convertToLinearSpace, generationSettings, textInfo, NeedToRound);
                     }
                     else if (elementType == TextElementType.Sprite)
                     {
@@ -481,6 +482,7 @@ namespace UnityEngine.TextCore.Text
                     }
                 }
                 #endregion
+
 
                 // Apply Alignment and Justification Offset
                 textInfo.textElementInfo[i].bottomLeft += offset;

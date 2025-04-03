@@ -26,6 +26,7 @@ namespace UnityEngine.UIElements.UIR
         public int stencilRef;
         public float sdfScale;
         public float sharpness;
+        public bool isPremultiplied;
     }
 
     internal enum CommandType
@@ -34,8 +35,6 @@ namespace UnityEngine.UIElements.UIR
         ImmediateCull, Immediate,
         PushView, PopView,
         PushScissor, PopScissor,
-        PushRenderTexture, PopRenderTexture,
-        BlitToPreviousRT, //From Active target to previous on RT stack
         PushDefaultMaterial, PopDefaultMaterial,
         BeginDisable, EndDisable,
         CutRenderChain
@@ -53,25 +52,17 @@ namespace UnityEngine.UIElements.UIR
             view.Push(Matrix4x4.identity);
             scissor.Clear();
             scissor.Push(k_UnlimitedRect);
-            renderTexture.Clear();
             defaultMaterial.Clear();
         }
 
         internal readonly Stack<Matrix4x4> view = new Stack<Matrix4x4>(8);
         internal readonly Stack<Rect> scissor = new Stack<Rect>(8);
-
-        // Using list instead of stack to allow access to all elements in previson for the blit of any RT into any RT.
-        // Right now, because blit change the active RT, pop use this to release the temporary RT before removing it from the stack.
-        // The workaround would be that blit restore the active RT=> may have a performance impact.
-        internal readonly List<RenderTexture> renderTexture = new List<RenderTexture>(8);
-
-
         internal readonly List<Material> defaultMaterial = new List<Material>(8);
     }
 
     internal class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
     {
-        internal VisualElement owner;
+        internal RenderData owner;
         internal RenderChainCommand prev, next;
         internal bool isTail; // Is this a tail command
 
@@ -104,7 +95,8 @@ namespace UnityEngine.UIElements.UIR
             {
                 case CommandType.ImmediateCull:
                 {
-                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.worldBound, pixelsPerPoint);
+                    // TODO: Validate VisualElement access for RenderTrees
+                    RectInt worldRect = RectPointsToPixelsAndFlipYAxis(owner.owner.worldBound, pixelsPerPoint);
                     if (!worldRect.Overlaps(Utility.GetActiveViewport()))
                         break;
 
@@ -124,7 +116,8 @@ namespace UnityEngine.UIElements.UIR
                     if (hasScissor)
                         Utility.DisableScissor(); // Disable scissor since most IMGUI code assume it's inactive
 
-                    using (new GUIClip.ParentClipScope(owner.worldTransform, owner.worldClip))
+                    // TODO: Validate VisualElement access for RenderTrees
+                    using (new GUIClip.ParentClipScope(owner.owner.worldTransform, owner.owner.worldClip))
                     {
                         s_ImmediateOverheadMarker.End();
                         try
@@ -151,18 +144,20 @@ namespace UnityEngine.UIElements.UIR
                 }
                 case CommandType.PushView:
                 {
+                    // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
+
                     // Transform
-                    drawParams.view.Push(owner.worldTransform);
-                    GL.modelview = owner.worldTransform;
+                    UIRUtility.ComputeMatrixRelativeToRenderTree(owner, out var matrix);
+                    drawParams.view.Push(matrix);
+                    GL.modelview = matrix;
                     // Scissors
-                    var parent = owner.hierarchy.parent;
                     Rect clipRect;
+                    var parent = owner.parent;
                     if (parent != null)
-                        clipRect = parent.worldClip;
+                        clipRect = parent.clippingRect;
                     else
                         clipRect = DrawParams.k_FullNormalizedRect;
-                    drawParams.scissor.Push(clipRect);
-                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(clipRect, pixelsPerPoint));
+                    PushScissor(drawParams, clipRect, pixelsPerPoint);
                     break;
                 }
                 case CommandType.PopView:
@@ -171,89 +166,46 @@ namespace UnityEngine.UIElements.UIR
                     drawParams.view.Pop();
                     GL.modelview = drawParams.view.Peek();
                     // Scissors
-                    drawParams.scissor.Pop();
-                    Rect prevRect = drawParams.scissor.Peek();
-                    if (prevRect.x == DrawParams.k_UnlimitedRect.x)
-                        Utility.DisableScissor();
-                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
+                    PopScissor(drawParams, pixelsPerPoint);
                     break;
                 }
                 case CommandType.PushScissor:
                 {
-                    Rect elemRect = CombineScissorRects(owner.worldClip, drawParams.scissor.Peek());
-                    drawParams.scissor.Push(elemRect);
-                    Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+                    PushScissor(drawParams, owner.clippingRect, pixelsPerPoint);
                     break;
                 }
                 case CommandType.PopScissor:
                 {
-                    drawParams.scissor.Pop();
-                    Rect prevRect = drawParams.scissor.Peek();
-                    if (prevRect.x == DrawParams.k_UnlimitedRect.x)
-                        Utility.DisableScissor();
-                    else Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
-                    break;
-                }
-                case CommandType.PushRenderTexture:
-                {
-                    RectInt viewport = Utility.GetActiveViewport();
-                    RenderTexture rt = RenderTexture.GetTemporary(viewport.width, viewport.height, 24, RenderTextureFormat.ARGBHalf);
-                    RenderTexture.active = rt;
-                    GL.Clear(true, true, new Color(0, 0, 0, 0), UIRUtility.k_ClearZ);
-                    drawParams.renderTexture.Add(RenderTexture.active);
+                    PopScissor(drawParams, pixelsPerPoint);
                     break;
                 }
 
-                case CommandType.PopRenderTexture:
-                {
-                    int index = drawParams.renderTexture.Count - 1;
-                    Debug.Assert(index > 0);    //Check that we have something to pop, We should never pop the last(original)one
-
-                    // Only supported use case for now is to do a blit befor the pop.
-                    // This should set the active RenderTexture to index-1 and we should not have this warning.
-                    Debug.Assert(drawParams.renderTexture[index - 1] == RenderTexture.active, "Content of previous render texture was probably not blitted");
-
-                    var rt = drawParams.renderTexture[index];
-                    if (rt != null)
-                        RenderTexture.ReleaseTemporary(rt);
-                    drawParams.renderTexture.RemoveAt(index);
-                }
-                break;
-
-                case CommandType.BlitToPreviousRT:
-                {
-                    // Currently the command only blit to the previous RT, but this could be expanded if we use
-                    // indexCount and indexOffset to point to specific indices in the renderTextureBuffer.
-                    // The main difficulty is to memorize the current renderTexture depth to get the indices in the RenderChain
-                    // as we can edit the stack in the middle and that would requires rewriting previous/ subsequent commands
-
-                    //Also, there is currently no way to have a permanently assigned rt to be used as cache.
-
-                    var source = drawParams.renderTexture[drawParams.renderTexture.Count - 1];
-                    var destination = drawParams.renderTexture[drawParams.renderTexture.Count - 2];
-
-
-                    // Note: Graphics.Blit set the arctive RT => RT is not restored and it is expected to be chaged before PopRenderTexture
-                    //TODO check blit code for other side effect
-                    Debug.Assert(source == RenderTexture.active, "Unexpected render target change: Current renderTarget is not the one on the top of the stack");
-
-                    //The following lines are equivalent to
-                    //Graphics.Blit(source, destination, state.material);
-                    //except the vertex are at the specified depth
-                    Blit(source, destination, UIRUtility.k_MeshPosZ);
-                }
-                break;
-
-//Logic of both command is entirely in UIRenderDevice as it need access to the local variable defaultMat
+                // Logic of both command is entirely in UIRenderDevice as it need access to the local variable defaultMat
                 case CommandType.PushDefaultMaterial:
-                    break;
-
                 case CommandType.PopDefaultMaterial:
                     break;
             }
         }
 
-        private void Blit(Texture source, RenderTexture destination, float depth)
+        internal static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
+        {
+            // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
+            Rect elemRect = CombineScissorRects(scissor, drawParams.scissor.Peek());
+            drawParams.scissor.Push(elemRect);
+            Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
+        }
+
+        internal static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
+        {
+            drawParams.scissor.Pop();
+            Rect prevRect = drawParams.scissor.Peek();
+            if (prevRect.x == DrawParams.k_UnlimitedRect.x)
+                Utility.DisableScissor();
+            else
+                Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
+        }
+
+        void Blit(Texture source, RenderTexture destination, float depth)
         {
             GL.PushMatrix();
             GL.LoadOrtho();

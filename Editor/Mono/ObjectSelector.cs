@@ -11,9 +11,12 @@ using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.SearchService;
+using UnityEditor.ShortcutManagement;
+using UnityEditor.UIElements;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
 
@@ -41,6 +44,24 @@ namespace UnityEditor
             public static GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
 
             public static readonly GUIContent packagesVisibilityContent = EditorGUIUtility.TrIconContent("SceneViewVisibility", "Number of hidden packages, click to toggle packages visibility");
+
+            public const string rootName = "unity-object-selector";
+            public const string headerName = rootName + "__header";
+            public const string searchBarName = rootName + "__search-bar";
+            public const string searchFieldName = rootName + "__search-field";
+            public const string toolbarName = rootName + "__toolbar";
+            public const string tabViewName = rootName + "__tab-view";
+            public const string assetsTabName = rootName + "__assets-tab";
+            public const string sceneTabName = rootName + "__scene-tab";
+            public const string gridSizeSliderName = rootName + "__grid-size-slider";
+            public const string skipHiddenPackagesToggleName = rootName + "__skip-hidden-packages-toggle";
+            public const string imguiContainerName = rootName + "__imgui-container";
+
+            public const string mainStyleSheetPath = "StyleSheets/ObjectSelector/ObjectSelector.uss";
+            public const string darkThemeStyleSheetPath = "StyleSheets/ObjectSelector/ObjectSelectorDark.uss";
+            public const string lightThemeStyleSheetPath = "StyleSheets/ObjectSelector/ObjectSelectorLight.uss";
+
+            public const string treeViewVariantClassName = rootName + "--treeview";
         }
 
         public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
@@ -50,14 +71,21 @@ namespace UnityEditor
 
         // Filters
         string[]        m_RequiredTypes;
+        Type[]          m_RequiredRawTypes;
         string          m_SearchFilter;
 
         // Display state
-        bool            m_FocusSearchFilter;
         bool            m_AllowSceneObjects;
         bool            m_IsShowingAssets;
         bool            m_SkipHiddenPackages;
         SavedInt        m_StartGridSize = new SavedInt("ObjectSelector.GridSize", 64);
+
+        // UI Elememts
+        UnityEditor.UIElements.Toolbar  m_Toolbar;
+        ToolbarSearchField              m_SearchField;
+        ToolbarToggle                   m_SkipHiddenPackagesToggle;
+        IMGUIContainer                  m_ImGUIContainer;
+        Rect                            m_Position;
 
         // Misc
         internal int    objectSelectorID = 0;
@@ -81,6 +109,7 @@ namespace UnityEditor
         bool m_ShowNoneItem;
 
         bool m_SelectionCancelled;
+        bool m_PreventSetSelectionOnClose;
         int m_LastSelectedInstanceId = 0;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
@@ -91,7 +120,7 @@ namespace UnityEditor
         const float kPreviewMargin = 5;
         const float kPreviewExpandedAreaHeight = 75;
         static float kToolbarHeight => EditorGUI.kWindowToolbarHeight;
-        static float kTopAreaHeight => kToolbarHeight * 2;
+        static float kTopAreaHeight => 0; // top area is rendered with UI-Toolkit
         const float kResizerHeight = 20f;
 
         float           m_PreviewSize = 0;
@@ -108,7 +137,7 @@ namespace UnityEditor
         {
             get
             {
-                return new Rect(0, kTopAreaHeight, position.width, Mathf.Max(0f, m_TopSize - kTopAreaHeight));
+                return new Rect(0, kTopAreaHeight, m_Position.width, Mathf.Max(0f, m_TopSize - kTopAreaHeight));
             }
         }
 
@@ -120,6 +149,15 @@ namespace UnityEditor
         public UnityObject objectBeingEdited
         {
             get { return m_ObjectBeingEdited; }
+        }
+
+        internal static void DestroySharedSelector()
+        {
+            if (s_SharedObjectSelector != null)
+            {
+                EditorWindow.DestroyImmediate(s_SharedObjectSelector);
+                s_SharedObjectSelector = null;
+            }
         }
 
         // get an existing ObjectSelector or create one
@@ -146,6 +184,30 @@ namespace UnityEditor
             {
                 return s_SharedObjectSelector != null;
             }
+        }
+
+        // used by AI-toolkit to inject UI elements when the window is shown.
+        [UsedImplicitly]
+        public static event Action<EditorWindow> shown;
+
+        // used by AI-toolkit to set the allowed types for the current object selector (if any).
+        [UsedImplicitly]
+        public static Type[] allowedTypes => s_SharedObjectSelector ? s_SharedObjectSelector.m_RequiredRawTypes : null;
+
+        // used by AI-toolkit to set the selection without user interaction.
+        [UsedImplicitly]
+        public static void SetSelection(int instanceID)
+        {
+            if (s_SharedObjectSelector)
+                s_SharedObjectSelector.SetSelectionInternal(instanceID);
+        }
+
+        // This will notify for a selection change but without repainting the window
+        void SetSelectionInternal(int instanceID)
+        {
+            SetSelectedInstanceID(instanceID);
+            NotifySelectionChanged(false);
+            m_PreventSetSelectionOnClose = true;
         }
 
         bool IsUsingTreeView()
@@ -249,7 +311,6 @@ namespace UnityEditor
             }
             else
             {
-                m_FocusSearchFilter = false;
                 NotifySelectionChanged(true);
             }
         }
@@ -265,7 +326,10 @@ namespace UnityEditor
                     return;
                 }
                 m_SearchFilter = value;
-                m_Debounce?.Execute();
+                if (m_ObjectTreeWithSearch.IsInitialized())
+                    m_ObjectTreeWithSearch.SetSearchFilter(m_SearchFilter);
+                else
+                    m_Debounce?.Execute();
             }
         }
 
@@ -325,6 +389,12 @@ namespace UnityEditor
                 }
                 return 0;
             }, m_LegacySearchSessionOptions);
+        }
+
+        void Frame()
+        {
+            if (m_ListArea.GetSelection() is { Length: > 0 } selection)
+                m_ListArea.Frame(selection[0], true, false);
         }
 
         SearchFilter GetSearchFilter()
@@ -468,6 +538,7 @@ namespace UnityEditor
             m_ObjectBeingEdited = objectBeingEdited;
             SetSelectedInstanceID(obj?.GetInstanceID() ?? 0);
             m_SelectionCancelled = false;
+            m_PreventSetSelectionOnClose = false;
             m_ShowNoneItem = showNoneItem;
 
             m_OnObjectSelectorClosed = onObjectSelectorClosed;
@@ -502,6 +573,7 @@ namespace UnityEditor
 
             // Set member variables
             m_DelegateView = GUIView.current;
+            m_RequiredRawTypes = requiredTypes;
             // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
             if (m_RequiredTypes == null || m_RequiredTypes.Length != requiredTypes.Length)
                 m_RequiredTypes = new string[requiredTypes.Length];
@@ -546,7 +618,7 @@ namespace UnityEditor
                         SetSelectedInstanceID(0);
                         m_SelectionCancelled = true;
                     }
-                    else
+                    else if (!m_PreventSetSelectionOnClose) // prevent re-set selection if it has been set programmatically before closing
                     {
                         SetSelectedInstanceID(selectedObj == null ? 0 : selectedObj.GetInstanceID());
                         NotifySelectionChanged(false);
@@ -554,6 +626,8 @@ namespace UnityEditor
 
                     m_EditedProperty = null;
                     NotifySelectorClosed(false);
+
+                    ObjectSelector.DestroySharedSelector();
                 };
 
                 if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))
@@ -590,8 +664,6 @@ namespace UnityEditor
             Focus();
             ContainerWindow.SetFreezeDisplay(false);
 
-            m_FocusSearchFilter = true;
-
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we get 'got/lost'- focus calls.
             if (m_Parent != null)
                 m_Parent.AddToAuxWindowList();
@@ -618,6 +690,13 @@ namespace UnityEditor
                 if (initialSelection != 0)
                     m_ListArea.Frame(initialSelection, true, false);
             }
+
+            InvokeWindowShown(this);
+        }
+
+        internal static void InvokeWindowShown(EditorWindow editorWindow)
+        {
+            shown?.Invoke(editorWindow);
         }
 
         void CloseOpenedWindow()
@@ -715,108 +794,6 @@ namespace UnityEditor
             return ObjectSelector.get.m_OriginalSelection;
         }
 
-        // This is our search field
-        void SearchArea()
-        {
-            GUI.Label(new Rect(0, 0, position.width, kToolbarHeight), GUIContent.none, EditorStyles.toolbar);
-
-            // ESC clears search field and removes it's focus. But if we get an esc event we only want to clear search field.
-            // So we need special handling afterwards.
-            bool wasEscape = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape;
-
-            GUI.SetNextControlName("SearchFilter");
-            string searchFilter = EditorGUI.ToolbarSearchField(new Rect(2, 2, position.width - 2, 16), m_SearchFilter, false);
-
-            if (wasEscape && Event.current.type == EventType.Used)
-            {
-                // If we hit esc and the string WAS empty, it's an actual cancel event.
-                if (m_SearchFilter == "")
-                    Cancel();
-
-                // Otherwise the string has been cleared and focus has been lost. We don't have anything else to recieve focus, so we want to refocus the search field.
-                m_FocusSearchFilter = true;
-            }
-
-            if (searchFilter != m_SearchFilter || m_FocusSearchFilter)
-            {
-                m_SearchFilter = searchFilter;
-                m_Debounce.Execute();
-            }
-
-            if (m_FocusSearchFilter)
-            {
-                EditorGUI.FocusTextInControl("SearchFilter");
-                m_FocusSearchFilter = false;
-            }
-
-            GUI.changed = false;
-
-            GUI.Label(new Rect(0, kToolbarHeight, position.width, kToolbarHeight), GUIContent.none, EditorStyles.toolbar);
-
-            // TAB BAR
-            GUILayout.BeginArea(new Rect(4, kToolbarHeight, position.width - 4, kToolbarHeight));
-            GUILayout.BeginHorizontal();
-
-            // Asset Tab
-            bool showAssets = GUILayout.Toggle(m_IsShowingAssets, Styles.assetsTabLabel, Styles.tab);
-            if (!m_IsShowingAssets && showAssets)
-                m_IsShowingAssets = true;
-
-
-            // The Scene Tab
-            if (!m_AllowSceneObjects)
-            {
-                GUI.enabled = false;
-                GUI.color = new Color(1, 1, 1, 0);
-            }
-
-            bool showingSceneTab = !m_IsShowingAssets;
-            showingSceneTab = GUILayout.Toggle(showingSceneTab, Styles.sceneTabLabel, Styles.tab);
-            if (m_IsShowingAssets && showingSceneTab)
-                m_IsShowingAssets = false;
-
-
-            if (!m_AllowSceneObjects)
-            {
-                GUI.color = new Color(1, 1, 1, 1);
-                GUI.enabled = true;
-            }
-
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
-
-            if (GUI.changed)
-                m_Debounce.Execute();
-
-            var size = new Vector2(0, 0);
-            if (m_IsShowingAssets)
-            {
-                Styles.packagesVisibilityContent.text = PackageManagerUtilityInternal.HiddenPackagesCount.ToString();
-                size = EditorStyles.toolbarButton.CalcSize(Styles.packagesVisibilityContent);
-            }
-
-            if (m_ListArea.CanShowThumbnails())
-            {
-                EditorGUI.BeginChangeCheck();
-                var newGridSize = (int)GUI.HorizontalSlider(new Rect(position.width - (60 + size.x), kToolbarHeight + GUI.skin.horizontalSlider.margin.top, 55, EditorGUI.kSingleLineHeight), m_ListArea.gridSize, m_ListArea.minGridSize, m_ListArea.maxGridSize);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_ListArea.gridSize = newGridSize;
-                }
-            }
-
-            if (m_IsShowingAssets)
-            {
-                EditorGUI.BeginChangeCheck();
-                var skipHiddenPackages = GUI.Toggle(new Rect(position.width - size.x, kToolbarHeight, size.x, EditorStyles.toolbarButton.fixedHeight), m_SkipHiddenPackages, Styles.packagesVisibilityContent, EditorStyles.toolbarButtonRight);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_SkipHiddenPackages = skipHiddenPackages;
-                    FilterSettingsChanged();
-                }
-            }
-        }
-
         [UsedImplicitly]
         void OnInspectorUpdate()
         {
@@ -827,7 +804,7 @@ namespace UnityEditor
         // This is the preview area at the bottom of the screen
         void PreviewArea()
         {
-            GUI.Box(new Rect(0, m_TopSize, position.width, m_PreviewSize), "", Styles.previewBackground);
+            GUI.Box(new Rect(0, m_TopSize, m_Position.width, m_PreviewSize), "", Styles.previewBackground);
 
             if (m_ListArea.GetSelection().Length == 0)
                 return;
@@ -923,7 +900,7 @@ namespace UnityEditor
         void OverlapPreview(float actualSize, string s, UnityObject o, EditorWrapper p)
         {
             float margin = kPreviewMargin;
-            Rect previewRect = new Rect(margin, m_TopSize + margin, position.width - margin * 2, actualSize - margin * 2);
+            Rect previewRect = new Rect(margin, m_TopSize + margin, m_Position.width - margin * 2, actualSize - margin * 2);
 
             if (p != null && p.HasPreviewGUI())
                 p.OnPreviewGUI(previewRect, Styles.previewTextureBackground);
@@ -940,7 +917,7 @@ namespace UnityEditor
         {
             if (m_ListArea.m_SelectedObjectIcon != null)
                 GUI.DrawTexture(new Rect(2, (int)(m_TopSize + 2), 16, 16), m_ListArea.m_SelectedObjectIcon, ScaleMode.StretchToFill);
-            Rect labelRect = new Rect(20, m_TopSize + 1, position.width - 22, 18);
+            Rect labelRect = new Rect(20, m_TopSize + 1, m_Position.width - 22, 18);
             if (EditorGUIUtility.isProSkin)
                 EditorGUI.DropShadowLabel(labelRect, s, Styles.smallStatus);
             else
@@ -967,8 +944,8 @@ namespace UnityEditor
             GUI.changed = false;
 
             // Handle preview size
-            m_PreviewSize = m_PreviewResizer.ResizeHandle(position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, kMinTopSize + kResizerHeight, kResizerHeight) + kResizerHeight;
-            m_TopSize = position.height - m_PreviewSize;
+            m_PreviewSize = m_PreviewResizer.ResizeHandle(m_Position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, kMinTopSize + kResizerHeight, kResizerHeight) + kResizerHeight;
+            m_TopSize = m_Position.height - m_PreviewSize;
 
             bool open = PreviewIsOpen();
             bool wide = PreviewIsWide();
@@ -1055,10 +1032,11 @@ namespace UnityEditor
             m_ObjectTreeWithSearch.Clear();
         }
 
-        [UsedImplicitly]
-        void OnGUI()
+        void OnGUIHandler()
         {
             HandleKeyboard();
+
+            m_Position = m_ImGUIContainer.worldBound;
 
             if (m_ObjectTreeWithSearch.IsInitialized())
                 OnObjectTreeGUI();
@@ -1076,9 +1054,145 @@ namespace UnityEditor
             }
         }
 
+        [UsedImplicitly]
+        void CreateGUI()
+        {
+            InitIfNeeded();
+
+            // root
+            rootVisualElement.name = Styles.rootName;
+            rootVisualElement.AddToClassList(Styles.rootName);
+
+            // header
+            var header = new VisualElement
+            {
+                name = Styles.headerName
+            };
+
+            // header - search bar
+            var searchBar = new UnityEditor.UIElements.Toolbar
+            {
+                name = Styles.searchBarName
+            };
+            m_SearchField = new ToolbarSearchField
+            {
+                name = Styles.searchFieldName
+            };
+            m_SearchField.SetValueWithoutNotify(m_SearchFilter);
+            m_SearchField.RegisterCallback<KeyDownEvent>(OnSearchFieldKeyDown, TrickleDown.TrickleDown);
+            m_SearchField.RegisterValueChangedCallback(OnSearchFieldChanged);
+            m_SearchField.RegisterCallback<AttachToPanelEvent>(evt => ((VisualElement)evt.target).Focus());
+            searchBar.Add(m_SearchField);
+            header.Add(searchBar);
+
+            // header - toolbar
+            m_Toolbar = new UnityEditor.UIElements.Toolbar
+            {
+                name = Styles.toolbarName
+            };
+
+            // header - toolbar - left side
+            var tabView = new TabView
+            {
+                name = Styles.tabViewName
+            };
+            var assetsButton = new Tab(Styles.assetsTabLabel.text)
+            {
+                name = Styles.assetsTabName
+            };
+            tabView.Add(assetsButton);
+            if (m_AllowSceneObjects)
+            {
+                var sceneButton = new Tab(Styles.sceneTabLabel.text)
+                {
+                    name = Styles.sceneTabName
+                };
+                tabView.Add(sceneButton);
+                tabView.activeTab = m_IsShowingAssets ? assetsButton : sceneButton;
+            }
+            else
+            {
+                tabView.activeTab = assetsButton;
+            }
+            tabView.activeTabChanged += OnActiveTabChanged;
+            m_Toolbar.Add(tabView);
+            var spacer = new ToolbarSpacer();
+            m_Toolbar.Add(spacer);
+
+            // header - toolbar - right side
+            var gridSizeSlider = new SliderInt(null, m_ListArea.minGridSize, m_ListArea.maxGridSize)
+            {
+                name = Styles.gridSizeSliderName
+            };
+            gridSizeSlider.EnableInClassList(UIElementsUtility.hiddenClassName, !m_ListArea.CanShowThumbnails());
+            gridSizeSlider.SetValueWithoutNotify(m_ListArea.gridSize);
+            gridSizeSlider.RegisterValueChangedCallback(evt => m_ListArea.gridSize = evt.newValue);
+            m_Toolbar.Add(gridSizeSlider);
+
+            m_SkipHiddenPackagesToggle = new ToolbarToggle
+            {
+                name = Styles.skipHiddenPackagesToggleName,
+                tooltip = Styles.packagesVisibilityContent.tooltip
+            };
+            var skipLabel = new Label(PackageManagerUtilityInternal.HiddenPackagesCount.ToString());
+            var skipIcon = new Image();
+            m_SkipHiddenPackagesToggle.Add(skipIcon);
+            m_SkipHiddenPackagesToggle.Add(skipLabel);
+            m_SkipHiddenPackagesToggle.EnableInClassList(UIElementsUtility.hiddenClassName, !m_IsShowingAssets);
+            m_SkipHiddenPackagesToggle.SetValueWithoutNotify(m_SkipHiddenPackages);
+            m_SkipHiddenPackagesToggle.RegisterValueChangedCallback(OnSkipHiddenPackagesToggleChanged);
+            m_Toolbar.Add(m_SkipHiddenPackagesToggle);
+            header.Add(m_Toolbar);
+
+            // imgui view
+            m_ImGUIContainer = new IMGUIContainer(OnGUIHandler)
+            {
+                name = Styles.imguiContainerName
+            };
+
+            rootVisualElement.Add(header);
+            rootVisualElement.Add(m_ImGUIContainer);
+            rootVisualElement.AddStyleSheetPath(Styles.mainStyleSheetPath);
+            var theme = EditorGUIUtility.isProSkin ? Styles.darkThemeStyleSheetPath : Styles.lightThemeStyleSheetPath;
+            rootVisualElement.AddStyleSheetPath(theme);
+        }
+
+        void OnSkipHiddenPackagesToggleChanged(ChangeEvent<bool> evt)
+        {
+            m_SkipHiddenPackages = evt.newValue;
+            FilterSettingsChanged();
+            Frame();
+        }
+
+        void OnActiveTabChanged(Tab previous, Tab current)
+        {
+            m_IsShowingAssets = current.parent.IndexOf(current) == 0;
+            m_SkipHiddenPackagesToggle.EnableInClassList(UIElementsUtility.hiddenClassName, !m_IsShowingAssets);
+            FilterSettingsChanged();
+            Frame();
+        }
+
+        void OnSearchFieldKeyDown(KeyDownEvent evt)
+        {
+            if (evt.keyCode == KeyCode.Escape)
+            {
+                // If we hit esc and the string WAS empty, it's an actual cancel event.
+                if (string.IsNullOrEmpty(m_SearchFilter))
+                    Cancel();
+            }
+        }
+
+        void OnSearchFieldChanged(ChangeEvent<string> evt)
+        {
+            searchFilter = evt.newValue;
+        }
+
         void OnObjectTreeGUI()
         {
-            m_ObjectTreeWithSearch.OnGUI(new Rect(0, 0, position.width, position.height));
+            // the toolbar should not be visible when the tree is visible
+            rootVisualElement.AddToClassList(Styles.treeViewVariantClassName);
+
+            m_ObjectTreeWithSearch.OnGUI(new Rect(0, 0, m_Position.width, m_Position.height));
         }
 
         void OnObjectGridGUI()
@@ -1091,17 +1205,14 @@ namespace UnityEditor
             // Handle window/preview stuff
             ResizeBottomPartOfWindow();
 
-            Rect p = position;
-            EditorPrefs.SetFloat("ObjectSelectorWidth", p.width);
-            EditorPrefs.SetFloat("ObjectSelectorHeight", p.height);
+            EditorPrefs.SetFloat("ObjectSelectorWidth", position.width);
+            EditorPrefs.SetFloat("ObjectSelectorHeight", position.height);
 
-            GUI.BeginGroup(new Rect(0, 0, position.width, position.height), GUIContent.none);
+            GUI.BeginGroup(new Rect(0, 0, m_Position.width, m_Position.height), GUIContent.none);
 
             // Let grid/list area take priority over search area on up/down arrow keys
             if (s_GridAreaPriorityKeyboardEvents.Contains(Event.current))
                 m_ListArea.HandleKeyboard(false);
-
-            SearchArea();
 
             // Let grid/list area handle any keyboard events not used by search area
             m_ListArea.HandleKeyboard(false);
@@ -1112,7 +1223,7 @@ namespace UnityEditor
             GUI.EndGroup();
 
             // overlay preview resize widget
-            GUI.Label(new Rect(position.width * .5f - 16, position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);
+            GUI.Label(new Rect(m_Position.width * .5f - 16, m_Position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);
         }
 
         void GridListArea()
@@ -1162,6 +1273,13 @@ namespace UnityEditor
             SendEvent(ObjectSelectorClosedCommand, exitGUI);
             Undo.CollapseUndoOperations(m_ModalUndoGroup);
             m_ModalUndoGroup = -1;
+        }
+
+        [Shortcut(EventCommandNames.Find, typeof(ObjectSelector), KeyCode.F, ShortcutModifiers.Action)]
+        static void FindShortcut(ShortcutArguments args)
+        {
+            if (args.context is ObjectSelector selector)
+                selector.m_SearchField?.Focus();
         }
     }
 }

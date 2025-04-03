@@ -319,12 +319,15 @@ namespace UnityEditor
         private SerializedProperty m_RayTracingAccelStructBuildFlags;
         private SerializedProperty m_RayTracingAccelStructBuildFlagsOverride;
         protected SerializedProperty m_Materials;
+        private SerializedProperty m_ForceMeshLod;
+        private SerializedProperty m_MeshLodSelectionBias;
 
         class Styles
         {
             public static readonly GUIContent materials = EditorGUIUtility.TrTextContent("Materials");
             public static readonly GUIContent probeSettings = EditorGUIUtility.TrTextContent("Probes");
             public static readonly GUIContent otherSettings = EditorGUIUtility.TrTextContent("Additional Settings");
+            public static readonly GUIContent meshLodSettings = EditorGUIUtility.TrTextContent("Mesh LOD");
 
             public static readonly GUIContent dynamicOcclusion = EditorGUIUtility.TrTextContent("Dynamic Occlusion", "Controls if dynamic occlusion culling should be performed for this renderer.");
             public static readonly GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh Renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
@@ -335,6 +338,9 @@ namespace UnityEditor
             public static readonly GUIContent[] rayTracingModeOptions = (Enum.GetNames(typeof(RayTracingMode)).Select(x => ObjectNames.NicifyVariableName(x)).ToArray()).Select(x => new GUIContent(x)).ToArray();
             public static readonly GUIContent rayTracingGeomStyle = EditorGUIUtility.TrTextContent("Procedural Geometry", "Specifies whether to treat geometry as procedurally defined by an intersection shader or as a Mesh.");
             public static readonly GUIContent rayTracingAccelStructBuildFlagsStyle = EditorGUIUtility.TrTextContent("Acceleration Structure Build Flags", "Specifies whether this renderer overrides the default build flags that you specified when you created a RayTracingAccelerationStructure.");
+            public static readonly GUIContent forceMeshLodStyle = EditorGUIUtility.TrTextContent("LOD Override", "Disable automatic LOD selection and set the LOD index to the value in the Override Level property.");
+            public static readonly GUIContent forcedMeshLodLevelStyle = EditorGUIUtility.TrTextContent("Override Level", "Set the LOD index to this value.");
+            public static readonly GUIContent meshLodSelectionBiasStyle = EditorGUIUtility.TrTextContent("LOD Selection Bias", "The value that Unity adds to the calculated LOD index. Increasing this value results in Unity selecting less detailed LODs, reducing the value - in more detailed LODs.");
         }
 
         protected Probes m_Probes;
@@ -343,6 +349,7 @@ namespace UnityEditor
         protected SavedBool m_ShowMaterials;
         protected SavedBool m_ShowProbeSettings;
         protected SavedBool m_ShowOtherSettings;
+        protected SavedBool m_ShowMeshLodSettings;
         protected SavedBool m_ShowRayTracingSettings;
 
         public virtual void OnEnable()
@@ -359,10 +366,13 @@ namespace UnityEditor
             m_MotionVectors = serializedObject.FindProperty("m_MotionVectors");
             m_SkinnedMotionVectors = serializedObject.FindProperty("m_SkinnedMotionVectors");
             m_Materials = serializedObject.FindProperty("m_Materials");
+            m_ForceMeshLod = serializedObject.FindProperty("m_ForceMeshLod");
+            m_MeshLodSelectionBias = serializedObject.FindProperty("m_MeshLodSelectionBias");
 
             m_ShowMaterials = new SavedBool($"{target.GetType()}.ShowMaterials", true);
             m_ShowProbeSettings = new SavedBool($"{target.GetType()}.ShowProbeSettings", true);
             m_ShowOtherSettings = new SavedBool($"{target.GetType()}.ShowOtherSettings", true);
+            m_ShowMeshLodSettings = new SavedBool($"{target.GetType()}.ShowLodSettings", true);
             m_ShowRayTracingSettings = new SavedBool($"{target.GetType()}.ShowRayTracingSettings", true);
 
             m_Lighting = new RendererLightingSettings(serializedObject);
@@ -378,7 +388,12 @@ namespace UnityEditor
 
         protected void LightingSettingsGUI(bool showLightmappSettings)
         {
-            m_Lighting.RenderSettings(showLightmappSettings);
+            LightingSettingsGUI(showLightmappSettings, false, 1);
+        }
+
+        protected void LightingSettingsGUI(bool showLightmappSettings, bool showMeshLODSettings, int lodCount)
+        {
+            m_Lighting.RenderSettings(showLightmappSettings, showMeshLODSettings, lodCount);
 
             if (SupportedRenderingFeatures.active.rendererProbes)
             {
@@ -408,6 +423,45 @@ namespace UnityEditor
                 DrawRenderingLayer();
 
                 EditorGUI.indentLevel--;
+            }
+
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        protected void MeshLodSettingsGUI(int lodCount)
+        {
+            m_ShowMeshLodSettings.value = EditorGUILayout.BeginFoldoutHeaderGroup(m_ShowMeshLodSettings.value, Styles.meshLodSettings);
+
+            if (m_ShowMeshLodSettings.value)
+            {
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    EditorGUI.BeginChangeCheck();
+
+                    var forceMeshLODEnabled = EditorGUILayout.Toggle(Styles.forceMeshLodStyle, m_ForceMeshLod.intValue != -1);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        if (forceMeshLODEnabled)
+                            m_ForceMeshLod.intValue = 0;
+                        else
+                            m_ForceMeshLod.intValue = -1;
+                    }
+
+                    if (forceMeshLODEnabled)
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            EditorGUILayout.IntSlider(m_ForceMeshLod, 0, lodCount - 1, Styles.forcedMeshLodLevelStyle);
+                        }
+                    }
+
+                    using (new EditorGUI.DisabledScope(forceMeshLODEnabled))
+                    {
+                        int maxLevel = lodCount - 1;
+                        EditorGUILayout.Slider(m_MeshLodSelectionBias, -maxLevel, maxLevel, Styles.meshLodSelectionBiasStyle);
+                    }
+                }
             }
 
             EditorGUILayout.EndFoldoutHeaderGroup();

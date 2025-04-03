@@ -1246,9 +1246,16 @@ namespace UnityEngine.UIElements
             return e;
         }
 
+        internal virtual IMouseEvent GetPooledCompatibilityMouseEvent() => null;
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
+
+            if (panel.ShouldSendCompatibilityMouseEvents(this))
+            {
+                compatibilityMouseEvent = GetPooledCompatibilityMouseEvent();
+            }
 
             if (recomputeTopElementUnderPointer)
             {
@@ -1404,14 +1411,11 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        internal override IMouseEvent GetPooledCompatibilityMouseEvent() => MouseDownEvent.GetPooled(this);
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
-            }
         }
 
         protected internal override void PostDispatch(IPanel panel)
@@ -1487,25 +1491,25 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        internal override IMouseEvent GetPooledCompatibilityMouseEvent()
+        {
+            if (imguiEvent != null && imguiEvent.rawType == EventType.MouseDown)
+            {
+                return MouseDownEvent.GetPooled(this);
+            }
+            else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
+            {
+                return MouseUpEvent.GetPooled(this);
+            }
+            else
+            {
+                return MouseMoveEvent.GetPooled(this);
+            }
+        }
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                if (imguiEvent != null && imguiEvent.rawType == EventType.MouseDown)
-                {
-                    compatibilityMouseEvent = MouseDownEvent.GetPooled(this);
-                }
-                else if (imguiEvent != null && imguiEvent.rawType == EventType.MouseUp)
-                {
-                    compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
-                }
-                else
-                {
-                    compatibilityMouseEvent = MouseMoveEvent.GetPooled(this);
-                }
-            }
         }
 
         protected internal override void PostDispatch(IPanel panel)
@@ -1613,14 +1617,11 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        internal override IMouseEvent GetPooledCompatibilityMouseEvent() => MouseUpEvent.GetPooled(this);
+
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
-            }
         }
 
         protected internal override void PostDispatch(IPanel panel)
@@ -1686,15 +1687,11 @@ namespace UnityEngine.UIElements
             LocalInit();
         }
 
+        internal override IMouseEvent GetPooledCompatibilityMouseEvent() => MouseUpEvent.GetPooled(this);
 
         protected internal override void PreDispatch(IPanel panel)
         {
             base.PreDispatch(panel);
-
-            if (panel.ShouldSendCompatibilityMouseEvents(this))
-            {
-                compatibilityMouseEvent = MouseUpEvent.GetPooled(this);
-            }
         }
 
         protected internal override void PostDispatch(IPanel panel)

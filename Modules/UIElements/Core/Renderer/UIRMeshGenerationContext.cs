@@ -80,6 +80,28 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// An enum used to describe the texture used in a <see cref="MeshGenerationContext"/> allocation.
+    /// </summary>
+    [Flags]
+    internal enum TextureOptions
+    {
+        /// <summary>
+        /// The texture has no special properties.
+        /// </summary>
+        None = 0,
+
+        /// <summary>
+        /// The texture should not be included in the dynamic atlas.
+        /// </summary>
+        SkipDynamicAtlas = 1 << 0,
+
+        /// <summary>
+        /// The texture content is alpha-premultiplied.
+        /// </summary>
+        PremultipliedAlpha = 1 << 1,
+    }
+
+    /// <summary>
     /// Represents the vertex and index data allocated for drawing the content of a <see cref="VisualElement"/>.
     /// </summary>
     /// <remarks>
@@ -223,12 +245,12 @@ namespace UnityEngine.UIElements
         public bool isValid;
         public Color32 pageAndID;
 
-        public static ColorPage Init(UIR.RenderChain renderChain, UIR.BMPAlloc alloc)
+        public static ColorPage Init(RenderTreeManager renderTreeManager, BMPAlloc alloc)
         {
             bool isValid = alloc.IsValid();
             return new ColorPage() {
                 isValid = isValid,
-                pageAndID = isValid ? renderChain.shaderInfoAllocator.ColorAllocToVertexData(alloc) : new Color32()
+                pageAndID = isValid ? renderTreeManager.shaderInfoAllocator.ColorAllocToVertexData(alloc) : new Color32()
             };
         }
 
@@ -269,12 +291,14 @@ namespace UnityEngine.UIElements
             None = 0,
             SkipDynamicAtlas = 1 << 1,
             IsUsingVectorImageGradients = 1 << 2,
+            SliceTiled = 1 << 3,
         }
 
         /// <summary>
         /// The element for which <see cref="VisualElement.generateVisualContent"/> was invoked.
         /// </summary>
         public VisualElement visualElement { get; private set; }
+        internal RenderData renderData { get; private set; }
 
         /// <summary>
         /// The painter object used to issue 2D drawing commands. Use this object to draw vector shapes such as lines, arcs and Bezier curves.
@@ -377,7 +401,7 @@ namespace UnityEngine.UIElements
 
                 mwd.Reset(vertices, indices);
 
-                entryRecorder.DrawMesh(parentEntry, mwd.m_Vertices, mwd.m_Indices, texture, false);
+                entryRecorder.DrawMesh(parentEntry, mwd.m_Vertices, mwd.m_Indices, texture, TextureOptions.None);
 
                 return mwd;
             }
@@ -403,7 +427,7 @@ namespace UnityEngine.UIElements
             if (vertices.Length == 0 || indices.Length == 0)
                 return;
 
-            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, false);
+            entryRecorder.DrawMesh(parentEntry, vertices, indices, texture, TextureOptions.None);
         }
 
         /// <summary>
@@ -491,7 +515,7 @@ namespace UnityEngine.UIElements
             m_MeshGenerationDeferrer.AddMeshGenerationCallback(callback, userData, callbackType, isJobDependent);
         }
 
-        internal void Begin(Entry parentEntry, VisualElement ve)
+        internal void Begin(Entry parentEntry, VisualElement ve, RenderData renderData)
         {
             if (visualElement != null)
                 throw new InvalidOperationException($"{nameof(Begin)} can only be called when there is no target set. Did you forget to call {nameof(End)}?");
@@ -503,7 +527,8 @@ namespace UnityEngine.UIElements
                 throw new ArgumentException(nameof(ve));
 
             this.parentEntry = parentEntry;
-            visualElement = ve;
+            this.visualElement = ve;
+            this.renderData = renderData;
             meshGenerator.currentElement = ve;
         }
 

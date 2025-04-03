@@ -40,10 +40,10 @@ namespace UnityEditor.Experimental.GraphView
 
         public void OnBeforeSerialize()
         {
-            if (m_SelectedElements.Count == 0)
-                return;
-
             m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
+            if (m_SelectedElements.Count == 0)
+                return;       
 
             m_SelectedElements.CopyTo(m_SelectedElementsArray);
         }
@@ -140,10 +140,10 @@ namespace UnityEditor.Experimental.GraphView
 
             public void OnBeforeSerialize()
             {
+                m_SelectedElementsArray = new string[m_SelectedElements.Count];
+
                 if (m_SelectedElements.Count == 0)
                     return;
-
-                m_SelectedElementsArray = new string[m_SelectedElements.Count];
 
                 m_SelectedElements.CopyTo(m_SelectedElementsArray);
             }
@@ -185,7 +185,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public ITransform viewTransform
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             get { return contentViewContainer.transform; }
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public void UpdateViewTransform(Vector3 newPosition, Vector3 newScale)
@@ -197,8 +199,12 @@ namespace UnityEditor.Experimental.GraphView
             newPosition.x = GUIUtility.RoundToPixelGrid(newPosition.x);
             newPosition.y = GUIUtility.RoundToPixelGrid(newPosition.y);
 
+#pragma warning disable CS0618 // Type or member is obsolete
             contentViewContainer.transform.position = newPosition;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
             contentViewContainer.transform.scale = newScale;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             UpdatePersistedViewTransform();
 
@@ -485,7 +491,9 @@ namespace UnityEditor.Experimental.GraphView
 
         public float scale
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             get { return viewTransform.scale.x; }
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public int zoomerMaxElementCountWithPixelCacheRegen
@@ -539,8 +547,12 @@ namespace UnityEditor.Experimental.GraphView
             if (m_PersistedViewTransform == null)
                 return;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             m_PersistedViewTransform.position = contentViewContainer.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
             m_PersistedViewTransform.scale = contentViewContainer.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             SaveViewData();
         }
@@ -587,12 +599,14 @@ namespace UnityEditor.Experimental.GraphView
         {
             if (contentViewContainer == null)
                 return;
+#pragma warning disable CS0618 // Type or member is obsolete
             Vector3 transformScale = viewTransform.scale;
 
             transformScale.x = Mathf.Clamp(transformScale.x, minScale, maxScale);
             transformScale.y = Mathf.Clamp(transformScale.y, minScale, maxScale);
 
             viewTransform.scale = transformScale;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         // ISelection implementation
@@ -666,7 +680,12 @@ namespace UnityEditor.Experimental.GraphView
 
         private bool ClearSelectionNoUndoRecord()
         {
-            foreach (var graphElement in selection.OfType<GraphElement>())
+            var prevSelection = selection.OfType<GraphElement>().ToArray();
+
+            bool selectionWasNotEmpty = selection.Count != 0;
+            selection.Clear();
+
+            foreach (var graphElement in prevSelection)
             {
                 graphElement.selected = false;
 
@@ -674,9 +693,6 @@ namespace UnityEditor.Experimental.GraphView
                 graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
                 graphElement.MarkDirtyRepaint();
             }
-
-            bool selectionWasNotEmpty = selection.Any();
-            selection.Clear();
 
             return selectionWasNotEmpty;
         }

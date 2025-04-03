@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements.UIR
     {
         VisualElement currentElement { get; set; }
         TextJobSystem textJobSystem { get; set; }
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales);
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
@@ -99,9 +100,9 @@ namespace UnityEngine.UIElements.UIR
             internal ColorPage rightColorPage;
             internal ColorPage bottomColorPage;
 
-            internal MeshBuilderNative.NativeBorderParams ToNativeParams()
+            internal void ToNativeParams(out MeshBuilderNative.NativeBorderParams nativeBorderParams)
             {
-                return new MeshBuilderNative.NativeBorderParams() {
+                nativeBorderParams = new MeshBuilderNative.NativeBorderParams() {
                     rect = rect,
                     leftColor = leftColor,
                     topColor = topColor,
@@ -534,9 +535,9 @@ namespace UnityEngine.UIElements.UIR
                 return (leftSlice > epsilon) || (topSlice > epsilon) || (rightSlice > epsilon) || (bottomSlice > epsilon);
             }
 
-            internal MeshBuilderNative.NativeRectParams ToNativeParams()
+            internal void ToNativeParams(out MeshBuilderNative.NativeRectParams nativeRectParams)
             {
-                return new MeshBuilderNative.NativeRectParams() {
+                nativeRectParams = new MeshBuilderNative.NativeRectParams() {
                     rect = rect,
                     subRect = subRect,
                     backgroundRepeatRect = backgroundRepeatRect,
@@ -608,11 +609,6 @@ namespace UnityEngine.UIElements.UIR
             rectParams.rectInset = inset;
         }
 
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
-        {
-            DrawTextInfo(vertices, indices, materials, renderModes);
-        }
-
         TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo(VertexDataLayout.VBO);
         TextCore.Text.TextGenerationSettings m_Settings = new TextCore.Text.TextGenerationSettings()
         {
@@ -623,7 +619,8 @@ namespace UnityEngine.UIElements.UIR
 
         List<NativeSlice<Vertex>> m_VerticesArray = new List<NativeSlice<Vertex>>();
         List<NativeSlice<ushort>> m_IndicesArray = new List<NativeSlice<ushort>>();
-        List<Material> m_Materials = new List<Material>();
+        List<Texture2D> m_Atlases = new List<Texture2D>();
+        List<float> m_SdfScales = new List<float>();
         List<GlyphRenderMode> m_RenderModes = new List<GlyphRenderMode>();
 
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
@@ -634,7 +631,7 @@ namespace UnityEngine.UIElements.UIR
             m_Settings.text = text;
             m_Settings.fontAsset = font;
             m_Settings.textSettings = textSettings;
-            m_Settings.fontSize = fontSize;
+            m_Settings.fontSize = (int)Mathf.Round(fontSize);
             m_Settings.color = color;
             m_Settings.material = font.material;
             m_Settings.textWrappingMode = TextWrappingMode.NoWrap;
@@ -665,6 +662,7 @@ namespace UnityEngine.UIElements.UIR
                 }
 
                 int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
+                float inverseScale = 1.0f / currentElement.scaledPixelsPerPoint;
 
                 while (remainingVertexCount > 0)
                 {
@@ -672,8 +670,17 @@ namespace UnityEngine.UIElements.UIR
                     int quadCount = vertexCount >> 2;
                     int indexCount = quadCount * 6;
 
-                    m_Materials.Add(isNative ? fa.material : meshInfo.material);
+                    m_Atlases.Add(isNative ? (Texture2D)fa.material.mainTexture : (Texture2D)meshInfo.material.mainTexture);
                     m_RenderModes.Add(isNative ? fa.atlasRenderMode : meshInfo.glyphRenderMode);
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(m_RenderModes[^1]) && m_Atlases[^1].format == TextureFormat.Alpha8)
+                    {
+                        if (isNative)
+                            sdfScale = fa.atlasPadding + 1;
+                        else
+                            sdfScale = meshInfo.material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    }
+                    m_SdfScales.Add(sdfScale);
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
@@ -682,17 +689,17 @@ namespace UnityEngine.UIElements.UIR
                         if (isNative)
                         {
                             var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos, isDynamicColor: false, isColorFont);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref nativeTextInfo.meshInfos[i].textElementInfos[vSrc].bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
                         }
                         else
                         {
-                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 0], pos);
-                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 1], pos);
-                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 2], pos);
-                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(meshInfo.vertexData[vDst + 3], pos);
+                            vertices[vDst + 0] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 0], pos, inverseScale);
+                            vertices[vDst + 1] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 1], pos, inverseScale);
+                            vertices[vDst + 2] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 2], pos, inverseScale);
+                            vertices[vDst + 3] = ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vDst + 3], pos, inverseScale);
                         }
 
                         indices[j + 0] = (ushort)(vDst + 0);
@@ -711,15 +718,34 @@ namespace UnityEngine.UIElements.UIR
                 Debug.Assert(remainingVertexCount == 0);
             }
 
-            DrawTextInfo(m_VerticesArray, m_IndicesArray, m_Materials, m_RenderModes);
+            DrawText(m_VerticesArray, m_IndicesArray, m_Atlases, m_RenderModes, m_SdfScales);
 
             m_VerticesArray.Clear();
             m_IndicesArray.Clear();
-            m_Materials.Clear();
+            m_Atlases.Clear();
+            m_SdfScales.Clear();
             m_RenderModes.Clear();
         }
 
-        void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
+        {
+            for (int i = 0; i < materials.Count; ++i)
+            {
+                var material = materials[i];
+                m_Atlases.Add(material.mainTexture as Texture2D);
+                float sdfScale = 0;
+                if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]) && m_Atlases[^1].format == TextureFormat.Alpha8)
+                    sdfScale = material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                m_SdfScales.Add(sdfScale);
+            }
+
+            DrawText(vertices, indices, m_Atlases, renderModes, m_SdfScales);
+
+            m_Atlases.Clear();
+            m_SdfScales.Clear();
+        }
+
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales)
         {
             if (vertices == null)
                 return;
@@ -730,11 +756,11 @@ namespace UnityEngine.UIElements.UIR
                     continue;
 
                 // SpriteAssets and Color Glyphs use an RGBA texture
-                if (((Texture2D)materials[i].mainTexture).format != TextureFormat.Alpha8)
+                if (atlases[i].format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset or Color Glyph
                     MakeText(
-                        materials[i].mainTexture,
+                        atlases[i],
                         vertices[i],
                         indices[i],
                         false,
@@ -744,28 +770,20 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
-                    // GradientScale property which results in sdfScale always being 0.
-
-                    float sdfScale = 0;
-                    if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]))
-                        sdfScale = materials[i].GetFloat(TextShaderUtilities.ID_GradientScale);
-
-                    var sharpnessId = TextShaderUtilities.ID_Sharpness;
-                    var sharpness = materials[i].HasProperty(sharpnessId) ? materials[i].GetFloat(sharpnessId) : 0.0f;
+                    var sharpness = 0.0f;
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
                     if (sharpness == 0.0f && currentElement.panel.contextType == ContextType.Editor)
-                    {
                         sharpness = TextUtilities.textSettings.GetEditorTextSharpness();
-                    }
 
+                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
+                    // GradientScale property which results in sdfScale always being 0.
                     MakeText(
-                        materials[i].mainTexture,
+                        atlases[i],
                         vertices[i],
                         indices[i],
                         true,
-                        sdfScale,
+                        sdfScales[i],
                         sharpness,
                         false);
                 }
@@ -773,14 +791,14 @@ namespace UnityEngine.UIElements.UIR
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static Vertex ConvertTextVertexToUIRVertex(TextCoreVertex vertex, Vector2 posOffset, bool isDynamicColor = false, bool isColorGlyph = false)
+        internal static Vertex ConvertTextVertexToUIRVertex(ref TextCoreVertex vertex, Vector2 posOffset, float inverseScale, bool isDynamicColor = false, bool isColorGlyph = false)
         {
             float dilate = 0.0f;
             // If Bold, dilate the shape (this value is hardcoded, should be set from the font actual bold weight)
             if (vertex.uv2.y < 0.0f) dilate = 1.0f;
             return new Vertex
             {
-                position = new Vector3(vertex.position.x + posOffset.x, vertex.position.y + posOffset.y, UIRUtility.k_MeshPosZ),
+                position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
                 tint = isColorGlyph ? Color.white : vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
@@ -805,7 +823,8 @@ namespace UnityEngine.UIElements.UIR
             if (currentElement.panel.contextType == ContextType.Editor)
                 rectParams.color *= rectParams.playmodeTintColor;
 
-            var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false, rectParams = rectParams.ToNativeParams() };
+            var rectangleJobParameters = new TessellationJobParameters() { isBorderJob = false };
+            rectParams.ToNativeParams(out rectangleJobParameters.rectParams);
 
             rectangleJobParameters.rectParams.texture = m_GCHandlePool.GetIntPtr(rectParams.texture);
             rectangleJobParameters.rectParams.sprite = m_GCHandlePool.GetIntPtr(rectParams.sprite);
@@ -1594,7 +1613,8 @@ namespace UnityEngine.UIElements.UIR
 
             void DrawBorder(UnsafeMeshGenerationNode node, ref BorderParams borderParams)
             {
-                var meshData = MeshBuilderNative.MakeBorder(borderParams.ToNativeParams(), UIRUtility.k_MeshPosZ);
+                borderParams.ToNativeParams(out MeshBuilderNative.NativeBorderParams nativeBorderParams);
+                var meshData = MeshBuilderNative.MakeBorder(ref nativeBorderParams);
 
                 if (meshData.vertexCount == 0 || meshData.indexCount == 0)
                     return;
@@ -1651,9 +1671,9 @@ namespace UnityEngine.UIElements.UIR
                         rectParams.uv = rect.uv;
 
                         if (rectParams.texture != IntPtr.Zero)
-                            meshData = MeshBuilderNative.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ);
+                            meshData = MeshBuilderNative.MakeTexturedRect(ref rectParams);
                         else
-                            meshData = MeshBuilderNative.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ);
+                            meshData = MeshBuilderNative.MakeSolidRect(ref rectParams);
 
                         if (meshData.vertexCount == 0 || meshData.indexCount == 0)
                             continue;
@@ -1720,9 +1740,9 @@ namespace UnityEngine.UIElements.UIR
                 {
                     MeshWriteDataInterface meshData;
                     if (rectParams.texture != IntPtr.Zero)
-                        meshData = MeshBuilderNative.MakeTexturedRect(rectParams, UIRUtility.k_MeshPosZ);
+                        meshData = MeshBuilderNative.MakeTexturedRect(ref rectParams);
                     else
-                        meshData = MeshBuilderNative.MakeSolidRect(rectParams, UIRUtility.k_MeshPosZ);
+                        meshData = MeshBuilderNative.MakeSolidRect(ref rectParams);
 
                     if (meshData.vertexCount == 0 || meshData.indexCount == 0)
                         return;
@@ -1796,7 +1816,7 @@ void DrawSprite(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectP
                 var meshFlags = (MeshGenerationContext.MeshFlags)rectParams.meshFlags;
                 bool skipAtlas = (meshFlags == MeshGenerationContext.MeshFlags.SkipDynamicAtlas);
 
-                node.DrawMeshInternal(vertices, indices, spriteTexture, skipAtlas);
+                node.DrawMeshInternal(vertices, indices, spriteTexture, skipAtlas ? TextureOptions.SkipDynamicAtlas : TextureOptions.None);
             }
 
             void DrawVectorImage(UnsafeMeshGenerationNode node, ref MeshBuilderNative.NativeRectParams rectParams, VectorImage vi)

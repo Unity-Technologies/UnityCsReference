@@ -13,6 +13,7 @@ using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEditor.Profiling;
+using InternalEditorUtility = UnityEditorInternal.InternalEditorUtility;
 
 namespace UnityEditor.Build.Profile
 {
@@ -33,6 +34,7 @@ namespace UnityEditor.Build.Profile
         public const int k_MaxAssetFileNameLengthWithoutExtension = k_MaxAssetFileNameLength - 6;
         static readonly string k_NoModuleLoaded = L10n.Tr("No {0} module loaded.");
         static readonly string k_DerivedPlatformInactive = L10n.Tr("{0} is currently disabled.");
+        static readonly string k_DerivedPlatformDisabled = L10n.Tr("{0} was disabled via command-line arguments.");
         static readonly string k_EditorWillNeedToBeReloaded = L10n.Tr("Note: Editor will need to be restarted to load any newly installed modules");
         static readonly string k_BuildProfileRecompileReason = L10n.Tr("Active build profile scripting defines changes.");
         static readonly GUIContent k_OpenDownloadPage = EditorGUIUtility.TrTextContent("Open Download Page");
@@ -187,9 +189,27 @@ namespace UnityEditor.Build.Profile
                 });
             }
 
+            if (IsBuildProfileDisabledViaArguments(platformId))
+                return new IMGUIContainer(() =>
+                {
+                    GUILayout.Label(EditorGUIUtility.TextContent(string.Format(k_DerivedPlatformDisabled, BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
+                });
+
             return new IMGUIContainer(
                 () => BuildPlayerWindow.ShowNoModuleLabel(platformId,
                     k_NoModuleLoaded, k_OpenDownloadPage, k_InstallModuleWithHub, k_EditorWillNeedToBeReloaded));
+        }
+
+        static bool IsBuildProfileDisabledViaArguments(GUID platformId)
+        {
+            var (buildTarget, _) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformId);
+            var buildTargetInfoList = BuildTargetDiscovery.GetBuildTargetInfoList();
+
+            foreach (var info in buildTargetInfoList)
+                if (info.buildTargetPlatformVal.Equals(buildTarget))
+                    return InternalEditorUtility.IsPlaybackEngineDisabled(info.dirName);
+
+            return false;
         }
 
         /// <summary>
@@ -247,7 +267,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)
         {
-            EditorUserBuildSettings.SwitchActiveBuildTargetGuid(profile.platformGuid);
+            EditorUserBuildSettings.SwitchActiveBuildTargetGuid(profile);
         }
 
         public static void SwitchLegacySelectedBuildTargets(BuildProfile profile)

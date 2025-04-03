@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Rendering;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -106,12 +107,10 @@ namespace UnityEditor
         [NativeMethod]
         internal extern string RenderingLayerToString(int index);
 
-        internal static Action onRenderingLayersChanged;
-
         [RequiredByNativeCode]
         internal static void OnRenderingLayersChanged()
         {
-            onRenderingLayersChanged?.Invoke();
+            RenderPipelineEditorUtility.onRenderingLayerCountChanged?.Invoke();
         }
 
     }

@@ -34,18 +34,6 @@ namespace Unity.UI.Builder
                         data.transitionDelay.Count)));
         }
 
-        public static Dimension ToDimension(this TimeValue timeValue)
-        {
-            return new Dimension(timeValue.value, timeValue.unit == TimeUnit.Millisecond
-                ? Dimension.Unit.Millisecond
-                : Dimension.Unit.Second);
-        }
-
-        public static bool IsTimeUnit(this Dimension.Unit unit)
-        {
-            return unit == Dimension.Unit.Millisecond || unit == Dimension.Unit.Second;
-        }
-
         public static string UssName(this StylePropertyId id)
         {
             return StylePropertyUtil.stylePropertyIdToPropertyName.TryGetValue(id, out var name) ? name : id.ToString();

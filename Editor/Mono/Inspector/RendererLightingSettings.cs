@@ -76,7 +76,7 @@ namespace UnityEditor
             public static readonly GUIContent contributeGI = EditorGUIUtility.TrTextContent("Contribute Global Illumination", "When enabled, this GameObject influences lightmaps and Light Probes. If you want this object itself to be lightmapped, you must enable this property.");
             public static readonly GUIContent receiveGITitle = EditorGUIUtility.TrTextContent("Receive Global Illumination", "If enabled, this GameObject receives global illumination from lightmaps or Light Probes. To use lightmaps, Contribute Global Illumination must be enabled.");
             public static readonly GUIContent lightmapParametersDefault = EditorGUIUtility.TrTextContent("Scene Default Parameters");
-
+            public static readonly GUIContent globalIlluminationMeshLod = EditorGUIUtility.TrTextContent("Mesh LOD for Global Illumination", "The Mesh LOD index to use for Global Illumination.");
             public static readonly GUIContent resolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
             public static readonly GUIContent resolutionTooLowWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too low. If the Clustering stage takes a long time, try using a higher realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a higher resolution setting.");
             public static readonly GUIContent giNotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
@@ -113,6 +113,7 @@ namespace UnityEditor
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
         SerializedProperty m_StaticShadowCaster;
+        SerializedProperty m_GlobalIlluminationMeshLod;
 
         Renderer[] m_Renderers;
         Terrain[] m_Terrains;
@@ -178,6 +179,7 @@ namespace UnityEditor
             m_ReceiveShadows = m_SerializedObject.FindProperty("m_ReceiveShadows");
             m_StaticShadowCaster = m_SerializedObject.FindProperty("m_StaticShadowCaster");
             m_ReceiveGI = m_SerializedObject.FindProperty("m_ReceiveGI");
+            m_GlobalIlluminationMeshLod = m_SerializedObject.FindProperty("m_GlobalIlluminationMeshLod");
 
             m_Renderers = m_SerializedObject.targetObjects.OfType<Renderer>().ToArray();
             m_Terrains = m_SerializedObject.targetObjects.OfType<Terrain>().ToArray();
@@ -190,7 +192,7 @@ namespace UnityEditor
                 isPreset = Preset.IsEditorTargetAPreset(m_SerializedObject.targetObject);
         }
 
-        public void RenderSettings(bool showLightmapSettings)
+        public void RenderSettings(bool showLightmapSettings, bool showMeshLODSettings, int meshLodCount)
         {
             if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
@@ -258,34 +260,45 @@ namespace UnityEditor
                     return;
                 }
 
-                if (contributeGI)
+                using (new EditorGUI.IndentLevelScope())
                 {
-                    var rect = EditorGUILayout.GetControlRect();
-                    EditorGUI.BeginProperty(rect, Styles.receiveGITitle, m_ReceiveGI);
-                    EditorGUI.BeginChangeCheck();
-
-                    receiveGI = (ReceiveGI)EditorGUI.IntPopup(rect, Styles.receiveGITitle, (int)receiveGI, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
-
-                    if (EditorGUI.EndChangeCheck())
-                        m_ReceiveGI.intValue = (int)receiveGI;
-
-                    EditorGUI.EndProperty();
-
-                    if (showEnlightenSettings)
-                        EditorGUILayout.PropertyField(m_ImportantGI, Styles.importantGI);
-
-                    if (receiveGI == ReceiveGI.LightProbes && !showMixedGIValue)
+                    if (contributeGI)
                     {
-                        LightmapScaleGUI(true, Styles.albedoScale, true);
+                        var rect = EditorGUILayout.GetControlRect();
+                        EditorGUI.BeginProperty(rect, Styles.receiveGITitle, m_ReceiveGI);
+                        EditorGUI.BeginChangeCheck();
+
+                        receiveGI = (ReceiveGI)EditorGUI.IntPopup(rect, Styles.receiveGITitle, (int)receiveGI, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
+
+                        if (EditorGUI.EndChangeCheck())
+                            m_ReceiveGI.intValue = (int)receiveGI;
+
+                        EditorGUI.EndProperty();
+
+                        if (showEnlightenSettings)
+                            EditorGUILayout.PropertyField(m_ImportantGI, Styles.importantGI);
+
+                        if (receiveGI == ReceiveGI.LightProbes && !showMixedGIValue)
+                        {
+                            LightmapScaleGUI(true, Styles.albedoScale, true);
+                        }
                     }
-                }
-                else
-                {
-                    using (new EditorGUI.DisabledScope(true))
+                    else
                     {
-                        EditorGUI.showMixedValue = showMixedGIValue;
-                        receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.receiveGITitle, (int)ReceiveGI.LightProbes, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
-                        EditorGUI.showMixedValue = false;
+                        using (new EditorGUI.DisabledScope(true))
+                        {
+                            EditorGUI.showMixedValue = showMixedGIValue;
+                            receiveGI = (ReceiveGI)EditorGUILayout.IntPopup(Styles.receiveGITitle, (int)ReceiveGI.LightProbes, Styles.receiveGILightmapStrings, Styles.receiveGILightmapValues);
+                            EditorGUI.showMixedValue = false;
+                        }
+                    }
+
+                    if (contributeGI && showMeshLODSettings)
+                    {
+                        using (new EditorGUI.DisabledScope(meshLodCount == 1))
+                        {
+                            EditorGUILayout.IntSlider(m_GlobalIlluminationMeshLod, 0, meshLodCount - 1, Styles.globalIlluminationMeshLod);
+                        }
                     }
                 }
 

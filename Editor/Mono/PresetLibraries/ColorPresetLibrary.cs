@@ -17,6 +17,7 @@ namespace UnityEditor
         Texture2D m_ColorSwatchTriangular;
         Texture2D m_MiniColorSwatchTriangular;
         Texture2D m_CheckerBoard;
+        Texture2D m_Selection;
         public const int kSwatchSize = 14;
         public const int kMiniSwatchSize = 8;
 
@@ -33,6 +34,9 @@ namespace UnityEditor
 
             if (m_CheckerBoard != null)
                 DestroyImmediate(m_CheckerBoard);
+
+            if (m_Selection != null)
+                DestroyImmediate(m_Selection);
         }
 
         public override int Count()
@@ -77,6 +81,12 @@ namespace UnityEditor
             DrawInternal(rect, (Color)presetObject);
         }
 
+        public void DrawSelection(Rect rect)
+        {
+            using (new GUI.ColorScope(ColorPicker.SwatchSelectionColor))
+                GUI.DrawTexture(rect, m_Selection);
+        }
+
         private void Init()
         {
             if (m_ColorSwatch == null)
@@ -90,6 +100,9 @@ namespace UnityEditor
 
             if (m_CheckerBoard == null)
                 m_CheckerBoard = GradientEditor.CreateCheckerTexture(2, 2, 3, new Color(0.8f, 0.8f, 0.8f), new Color(0.5f, 0.5f, 0.5f));
+
+            if (m_Selection == null)
+                m_Selection = CreateSelectionTexture(14, 14);
         }
 
         private void DrawInternal(Rect rect, Color preset)
@@ -118,6 +131,11 @@ namespace UnityEditor
                 // The Add preset button swatch
                 RenderSwatchWithAlpha(rect, preset, m_MiniColorSwatchTriangular);
             }
+
+            // comparing as Color32 is more robust due to floating point precision issues in Color comparison
+            if (((Color32)ColorPicker.color).Equals((Color32)preset))
+                DrawSelection(rect);
+
             GUI.color = orgColor;
         }
 
@@ -161,6 +179,32 @@ namespace UnityEditor
                 m_Presets.Add(new ColorPreset(new Color(Random.Range(0.2f, 1f), Random.Range(0.2f, 1f), Random.Range(0.2f, 1f), 1f), "Preset Color " + i));
         }
 
+        internal static Texture2D CreateSelectionTexture(int width, int height)
+        {
+            var selectionTex = new Texture2D(width, height);
+            var colors = new Color[selectionTex.width * selectionTex.height];
+
+            const int borderWidth = 2;
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    var col = Color.clear;
+                    if (i < borderWidth || j < borderWidth ||
+                        i > width - borderWidth - 1 || j > height - borderWidth - 1)
+                    {
+                        col = Color.white;
+                    }
+                    colors[j + i * width] = col;
+                }
+            }
+
+            selectionTex.SetPixels(colors);
+            selectionTex.Apply();
+
+            return selectionTex;
+        }
+
         internal static Texture2D CreateColorSwatchWithBorder(int width, int height, bool triangular)
         {
             Texture2D texture = new Texture2D(width, height, TextureFormat.RGBA32, false);
@@ -186,19 +230,19 @@ namespace UnityEditor
 
             // first row
             for (int i = 0; i < width; i++)
-                pixels[i] = Color.black;
+                pixels[i] = Color.gray3;
 
             // last row
             for (int i = 0; i < width; i++)
-                pixels[(height - 1) * width + i] = Color.black;
+                pixels[(height - 1) * width + i] = Color.gray3;
 
             // first col
             for (int i = 0; i < height; i++)
-                pixels[i * width] = Color.black;
+                pixels[i * width] = Color.gray3;
 
             // last col
             for (int i = 0; i < height; i++)
-                pixels[i * width + width - 1] = Color.black;
+                pixels[i * width + width - 1] = Color.gray3;
 
             texture.SetPixels(pixels);
             texture.Apply();

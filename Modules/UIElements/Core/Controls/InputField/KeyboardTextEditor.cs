@@ -104,6 +104,20 @@ namespace UnityEngine.UIElements
                 if (evt.actionKey && !(evt.altKey && c != '\0'))
                     return;
 
+                // Ignore F keys
+                if (evt.keyCode >= KeyCode.F1 && evt.keyCode <= KeyCode.F15 ||
+                    // KeyCode.F15 (296) and KeyCode.F16 (670) are not contiguous
+                    evt.keyCode >= KeyCode.F16 && evt.keyCode <= KeyCode.F24)
+                {
+                    return;
+                }
+
+                // Ignore Alt + key combinations with no output character
+                if (evt.altKey && c == '\0')
+                {
+                    return;
+                }
+
                 // We rely on KeyCode.Tab for both navigation and inserting tabulation.
                 // On Linux Platform regular tab event occupies both keycode and character fields
                 if (c == '\t' && evt.keyCode == KeyCode.None && evt.modifiers == EventModifiers.None)
@@ -131,7 +145,15 @@ namespace UnityEngine.UIElements
                 }
 
                 if (!textElement.edition.multiline && (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return))
+                {
+                    string prevText = editingUtilities.text;
                     textElement.edition.UpdateValueFromText?.Invoke();
+
+                    // Revert the text to its previous value when using a delayed textfield to fix a bug with IME inputs (e.g. Japanese).
+                    // Hitting enter with an IME could trigger multiple events, causing duplicated characters otherwise.
+                    if (textElement.edition.isDelayed)
+                        editingUtilities.text = prevText;
+                }
 
                 evt.StopPropagation();
 

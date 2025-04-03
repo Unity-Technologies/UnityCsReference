@@ -471,6 +471,23 @@ namespace UnityEditor.UIElements.Debugger
 
                 Add(m_SpecificityLabel);
             }
+            else if (val is List<FilterFunction> filter)
+            {
+                // There are two types of filters: builtin and custom.
+                // We display the builtin filters as they are defined in USS (e.g. blur(5px))
+                StringBuilder filterString = new StringBuilder();
+                for (int i = 0; i < filter.Count; i++)
+                {
+                    if (i > 0)
+                        filterString.Append(" ");
+                    var f = filter[i];
+                    filterString.Append(f.ToString());
+                }
+
+                TextField field = GetOrCreateField<TextField, string>();
+                if (!IsFocused(field))
+                    field.SetValueWithoutNotify(filterString.ToString());
+            }
             else
             {
                 var type = val.GetType();

@@ -15,9 +15,16 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent wireframeToggle = EditorGUIUtility.TrTextContent("Wireframe", "Show wireframe");
+            const string k_DisplayModeTooltip = "Change display mode";
+
+            public static readonly GUIContent meshLodIcon = EditorGUIUtility.TrIconContent("MeshLOD", "Select a LOD to view.");
+            public static readonly GUIContent wireframeToggle = EditorGUIUtility.TrIconContent(EditorGUIUtility.LoadIconRequired("Toolbars/wireframe"), "Show wireframe");
+
             public static GUIContent displayModeDropdown = EditorGUIUtility.TrTextContent("", "Change display mode");
-            public static GUIContent uvChannelDropdown = EditorGUIUtility.TrTextContent("", "Change active UV channel");
+            public static readonly GUIContent shadedIcon = EditorGUIUtility.TrIconContent("Toolbars/Shaded", k_DisplayModeTooltip);
+            public static readonly GUIContent uvIcon = EditorGUIUtility.TrIconContent("PreTextureMipMapLow", k_DisplayModeTooltip);
+
+            public static GUIContent uvChannelDropdown = EditorGUIUtility.TrTextContent("", k_DisplayModeTooltip);
 
             public static GUIStyle preSlider = "preSlider";
             public static GUIStyle preSliderThumb = "preSliderThumb";
@@ -30,6 +37,9 @@ namespace UnityEditor
 
             public int activeUVChannel { get => m_ActiveUVChannel; set => SetValue(ref m_ActiveUVChannel, value); }
             int m_ActiveUVChannel = 0;
+
+            public int activeLod { get => m_SelectedLod; set => SetValue(ref m_SelectedLod, value); }
+            int m_SelectedLod;
 
             public int activeBlendshape { get => m_ActiveBlendshape; set => SetValue(ref m_ActiveBlendshape, value); }
             int m_ActiveBlendshape = 0;
@@ -89,6 +99,7 @@ namespace UnityEditor
                 previewDir = new Vector2(130, 0);
                 lightDir = new Vector2(-40, -40);
                 zoomFactor = 1.0f;
+                activeLod = 0;
             }
 
             public void Dispose()
@@ -125,6 +136,7 @@ namespace UnityEditor
                 pivotPositionOffset = other.pivotPositionOffset;
                 zoomFactor = other.zoomFactor;
                 checkerTextureMultiplier = other.checkerTextureMultiplier;
+                activeLod = other.activeLod;
 
                 shadedPreviewMaterial = other.shadedPreviewMaterial;
                 activeMaterial = other.activeMaterial;
@@ -273,6 +285,7 @@ namespace UnityEditor
             m_Settings.meshMultiPreviewMaterial.SetTexture("_MainTex", null);
 
             m_Settings.activeBlendshape = 0;
+            m_Settings.activeLod = 0;
         }
 
         void FrameObject()
@@ -512,7 +525,8 @@ namespace UnityEditor
             PreviewRenderUtility previewUtility,
             Settings settings,
             MaterialPropertyBlock customProperties,
-            int meshSubset) // -1 for whole mesh
+            int meshSubset // -1 for whole mesh
+            ) 
         {
             if (mesh == null || previewUtility == null)
                 return;
@@ -533,8 +547,12 @@ namespace UnityEditor
                 colorPropID = Shader.PropertyToID("_Color");
             }
 
+            var activeLod = Mathf.Clamp(settings.activeLod, 0, mesh.lodCount - 1);
+
             if (settings.activeMaterial != null)
             {
+                var transformation = Matrix4x4.TRS(pos, rot, Vector3.one);
+
                 previewUtility.camera.clearFlags = CameraClearFlags.Nothing;
                 if (meshSubset < 0 || meshSubset >= submeshes)
                 {
@@ -542,11 +560,15 @@ namespace UnityEditor
                     {
                         if (tintSubmeshes)
                             customProperties.SetColor(colorPropID, GetSubMeshTint(i));
-                        previewUtility.DrawMesh(mesh, pos, rot, settings.activeMaterial, i, customProperties);
+
+                        previewUtility.RenderMesh(mesh, transformation, settings.activeMaterial, i, customProperties, activeLod);
                     }
                 }
                 else
-                    previewUtility.DrawMesh(mesh, pos, rot, settings.activeMaterial, meshSubset, customProperties);
+                {
+                    previewUtility.RenderMesh(mesh, transformation, settings.activeMaterial, meshSubset, customProperties, activeLod);
+                }
+
                 previewUtility.Render();
             }
 
@@ -554,8 +576,12 @@ namespace UnityEditor
             {
                 previewUtility.camera.clearFlags = CameraClearFlags.Nothing;
                 GL.wireframe = true;
+
                 if (tintSubmeshes)
                     customProperties.SetColor(colorPropID, settings.wireMaterial.color);
+
+                var transformation = Matrix4x4.TRS(pos, rot, Vector3.one);
+
                 if (meshSubset < 0 || meshSubset >= submeshes)
                 {
                     for (int i = 0; i < submeshes; ++i)
@@ -565,11 +591,15 @@ namespace UnityEditor
                         var topology = mesh.GetTopology(i);
                         if (topology == MeshTopology.Lines || topology == MeshTopology.LineStrip || topology == MeshTopology.Points)
                             continue;
-                        previewUtility.DrawMesh(mesh, pos, rot, settings.wireMaterial, i, customProperties);
+
+                        previewUtility.RenderMesh(mesh, transformation, settings.wireMaterial, i, customProperties, activeLod);
                     }
                 }
                 else
-                    previewUtility.DrawMesh(mesh, pos, rot, settings.wireMaterial, meshSubset, customProperties);
+                {
+                    previewUtility.RenderMesh(mesh, transformation, settings.wireMaterial, meshSubset, customProperties, activeLod);
+                }
+
                 previewUtility.Render();
 
                 GL.wireframe = false;
@@ -703,12 +733,46 @@ namespace UnityEditor
             m_PreviewUtility.EndAndDrawPreview(rect);
         }
 
+        int DrawLodSelectionControls(int value, int min, int max)
+        {
+            var labelWidth = EditorStyles.label.CalcSize(Styles.meshLodIcon).x + 2;
+            var sliderWidth = 60f;
+            var fieldWidth = 30f;
+
+            var controlRect = EditorGUILayout.GetControlRect(GUILayout.Width(labelWidth + sliderWidth + fieldWidth));
+            var controlId = GUIUtility.GetControlID(FocusType.Keyboard);
+
+            var labelRect = new Rect(controlRect.position, new Vector2(labelWidth, controlRect.height));
+            controlRect.x += labelRect.width;
+            controlRect.width -= labelRect.width + 2;
+            GUI.Label(labelRect, Styles.meshLodIcon);
+
+            var sliderRect = new Rect(controlRect.position, new Vector2(sliderWidth, controlRect.height));
+            controlRect.x += sliderRect.width + 2;
+            controlRect.width -= sliderRect.width;
+            value = (int)GUI.Slider(sliderRect, value, 0, min, max, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, true, 0);
+
+            value = EditorGUI.DoIntField(EditorGUI.s_RecycledEditor, controlRect, labelRect, controlId, value, EditorGUI.kIntFieldFormatString, EditorStyles.numberField, false, 0);
+
+            return Mathf.Clamp(value, min, max);
+        }
+
         public void OnPreviewSettings()
         {
             if (!ShaderUtil.hardwareSupportsRectRenderTexture)
                 return;
 
             GUI.enabled = true;
+
+            if(mesh.isLodSelectionActive)
+            {
+                // Hide the LOD slider when in UVLayout mode
+                // As this mode uses Graphics.DrawMeshNow - this does not support LODs
+                if (m_Settings.displayMode != DisplayMode.UVLayout)
+                {
+                    m_Settings.activeLod = DrawLodSelectionControls(m_Settings.activeLod, 0, mesh.lodCount - 1);
+                }
+            }
 
             if (m_Settings.displayMode == DisplayMode.UVChecker)
             {
@@ -749,12 +813,19 @@ namespace UnityEditor
                         m_Settings.activeBlendshape, SetBlendshape, null);
             }
 
-            // calculate width based on the longest value in display modes
-            float displayModeDropDownWidth = EditorStyles.toolbarDropDown.CalcSize(new GUIContent(m_DisplayModes[(int)DisplayMode.VertexColor])).x;
+            GUIContent displayModeDropdownContent = m_Settings.displayMode switch
+            {
+                DisplayMode.Shaded => Styles.shadedIcon,
+                DisplayMode.UVChecker => Styles.uvIcon,
+                DisplayMode.UVLayout => Styles.uvIcon,
+                _ => new GUIContent(m_DisplayModes[(int)m_Settings.displayMode], Styles.displayModeDropdown.tooltip)
+            };
+
+            float displayModeDropDownWidth = EditorStyles.toolbarDropDown.CalcSize(displayModeDropdownContent).x;
+
             Rect displayModeDropdownRect = EditorGUILayout.GetControlRect(GUILayout.Width(displayModeDropDownWidth));
             displayModeDropdownRect.y -= 1;
             displayModeDropdownRect.x += 2;
-            GUIContent displayModeDropdownContent = new GUIContent(m_DisplayModes[(int)m_Settings.displayMode], Styles.displayModeDropdown.tooltip);
 
             if (EditorGUI.DropdownButton(displayModeDropdownRect, displayModeDropdownContent, FocusType.Passive, EditorStyles.toolbarDropDown))
                 DoPopup(displayModeDropdownRect, m_DisplayModes, (int)m_Settings.displayMode, SetDisplayMode, m_Settings.availableDisplayModes);
@@ -851,8 +922,53 @@ namespace UnityEditor
             if (blendShapeCount > 0)
                 info += $", {blendShapeCount} Blend Shapes";
 
+            if (mesh.isLodSelectionActive)
+                info += $", {mesh.lodCount} LODs";
+
             info += " | " + InternalMeshUtil.GetVertexFormat(mesh);
             return info;
         }
+
+        internal string GetInfoString()
+        {
+            if(mesh == null)
+                return "";
+
+            if (!mesh.isLodSelectionActive)
+            {
+                return GetInfoString(mesh);
+            }
+            else
+            {
+                var selectLod = Mathf.Clamp(m_Settings.activeLod, 0, mesh.lodCount);
+                var info = $"Mesh LOD {selectLod} - {mesh.vertexCount} Vertices, {GetPrimitiveCount(selectLod)} Triangles";
+
+                int submeshes = mesh.subMeshCount;
+                if (submeshes > 1)
+                    info += $", {submeshes} Sub Meshes";
+
+                int blendShapeCount = mesh.blendShapeCount;
+                if (blendShapeCount > 0)
+                    info += $", {blendShapeCount} Blend Shapes";
+
+                info += " | " + InternalMeshUtil.GetVertexFormat(mesh);
+                return info;
+            }
+
+            uint GetPrimitiveCount(int lod)
+            {
+                uint count = 0;
+
+                for (int i = 0; i < mesh.subMeshCount; i++)
+                {
+                    var range = mesh.GetLod(i, lod);
+
+                    // Assume triangle topology for now
+                    count += range.indexCount / 3;
+                }
+
+                return count;
+            }
+        }        
     }
 }

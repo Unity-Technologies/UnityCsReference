@@ -243,7 +243,7 @@ namespace UnityEditor
                         m_AncestorItems[i].overrideCount = m_OverridesCounter.GetCurrentOverrideCount(i);
                     }
 
-                    editorWindow.Repaint();
+                    editorWindow?.Repaint();
                 }
             }
             else

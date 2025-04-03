@@ -15,9 +15,11 @@ using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
 using UnityEditor.AssetImporters;
+using UnityEditor.UIElements;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
 using Object = UnityEngine.Object;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
@@ -84,7 +86,6 @@ namespace UnityEditor.UIElements.StyleSheets
             if (path.StartsWith(kThemePrefix))
             {
                 var themeName = path.Substring(kThemePrefix.Length);
-
 
                 if (!ThemeRegistry.themes.TryGetValue(themeName, out var themePath))
                     return null;
@@ -385,6 +386,24 @@ namespace UnityEditor.UIElements.StyleSheets
 
             string path = argTerm.Value as string;
             m_Builder.AddValue(path, StyleValueType.ResourcePath);
+        }
+
+        protected void VisitCustomFilter(GenericFunction funcTerm)
+        {
+            if (funcTerm.Name == StyleValueFunctionExtension.k_NoneFilter)
+                m_Builder.AddValue(StyleValueFunction.NoneFilter);
+            else
+                m_Builder.AddValue(StyleValueFunction.CustomFilter);
+
+            m_Builder.AddValue(funcTerm.Arguments.Count(a => !(a is Whitespace)));
+            if (funcTerm.Arguments.Length > 0)
+            {
+                var pathTerm = funcTerm.Arguments[0] as PrimitiveTerm;
+                VisitUrlFunction(pathTerm);
+            }
+
+            for (int i = 1; i < funcTerm.Arguments.Length; ++i)
+                VisitValue(funcTerm.Arguments[i]);
         }
 
         internal static (StyleSheetImportErrorCode, string) ConvertErrorCode(URIValidationResult result)
@@ -727,6 +746,10 @@ namespace UnityEditor.UIElements.StyleSheets
                 if (funcTerm.Name == k_ResourcePathFunctionName)
                 {
                     VisitResourceFunction(funcTerm);
+                }
+                else if (funcTerm.Name == StyleValueFunctionExtension.k_NoneFilter || funcTerm.Name == StyleValueFunctionExtension.k_CustomFilter)
+                {
+                    VisitCustomFilter(funcTerm);
                 }
                 else
                 {

@@ -65,13 +65,17 @@ namespace Unity.UI.Builder
         {
             m_BoundStyles = TrackedStyles.None;
 
-            foreach (var trackedStyle in s_TrackedStyles)
+            if (m_BindingsCacheSubscriber.cache != null)
             {
-                var styleName = GetStyleName(trackedStyle);
-                var propertyPath = BuilderConstants.StylePropertyPathPrefix + BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
+                foreach (var trackedStyle in s_TrackedStyles)
+                {
+                    var styleName = GetStyleName(trackedStyle);
+                    var propertyPath = BuilderConstants.StylePropertyPathPrefix +
+                                       BuilderNameUtilities.ConvertStyleUssNameToCSharpName(styleName);
 
-                if (m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, propertyPath))
-                    m_BoundStyles |= trackedStyle;
+                    if (m_BindingsCacheSubscriber.cache.HasResolvedBinding(m_Target, propertyPath))
+                        m_BoundStyles |= trackedStyle;
+                }
             }
         }
 
@@ -170,7 +174,7 @@ namespace Unity.UI.Builder
 
         bool IsComputedStyleNoneOrAuto(Length length)
         {
-            return length.CallBoolMethodByReflection("IsNone") || length.CallBoolMethodByReflection("IsAuto");
+            return length.IsNone() || length.IsAuto();
         }
 
         bool IsComputedStyleNoneOrAuto(StyleLength styleLength)
@@ -283,7 +287,7 @@ namespace Unity.UI.Builder
             if (styleProperty.values.Length == 0)
                 return 0;
             else // TODO: Assume only one value.
-                return styleSheet.GetFloat(styleProperty.values[0]);
+                return styleSheet.ReadFloat(styleProperty.values[0]);
         }
 
         protected void SetStyleSheetValue(TrackedStyles trackedStyles, float value)

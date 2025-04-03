@@ -15,7 +15,7 @@ namespace UnityEngine.UIElements
     // This is basically the same as the standard layout update except for 1 thing :
     // - Only call dirty repaint when the layout rect has changed instead of "layoutNode.HasNewLayout"
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class UIRLayoutUpdater : BaseVisualTreeUpdater
+    internal partial class UIRLayoutUpdater : BaseVisualTreeUpdater
     {
          // When changing this value, we always consider that some controls may require multiple passes to compute their layout.
          // We also consider that these controls can also be nested inside other similar controls.

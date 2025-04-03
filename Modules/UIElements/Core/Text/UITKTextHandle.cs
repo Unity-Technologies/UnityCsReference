@@ -20,12 +20,42 @@ namespace UnityEngine.UIElements
             m_TextEventHandler = new TextEventHandler(te);
         }
 
-        public Vector2 MeasuredSizes { get; set; }
-        public Vector2 RoundedSizes { get; set; }
-        public Vector2 ATGMeasuredSizes { get; set; }
-        public Vector2 ATGRoundedSizes { get; set; }
+        protected override float GetPixelsPerPoint()
+        {
+            return m_TextElement?.scaledPixelsPerPoint ?? 1;
+        }
 
-        internal static Func<int, FontAsset, FontAsset> GetBlurryMapping;
+        // Should be set every time we set the measured/rounded sizes
+        internal float LastPixelPerPoint { get; set; }
+        public override void SetDirty()
+        {
+            // This is called for live reload, but not for property changes or when the editor text is change from sdf to bitmap
+            MeasuredWidth = null;
+            base.SetDirty();
+        }
+        /// <summary>
+        /// Stored in Scaled/GUI pixels size
+        /// Nullable to distinguish explicitly cases where we don't want to store the generation size (or discard the previous one).
+        /// </summary>
+        internal float? MeasuredWidth { get; set; }
+
+        /// <summary>
+        /// Stored in Scaled/GUI pixels size
+        /// </summary>
+        internal float RoundedWidth { get; set; }
+
+        /// <summary>
+        /// Stored in Scaled/GUI pixels size
+        /// </summary>
+        internal Vector2 ATGMeasuredSizes { get; set; }
+
+        /// <summary>
+        /// Stored in Scaled/GUI pixels size
+        /// </summary>
+        internal Vector2 ATGRoundedSizes { get; set; }
+
+
+        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
         internal static Func<int, bool> CanGenerateFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
@@ -33,13 +63,17 @@ namespace UnityEngine.UIElements
 
         public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
         {
+            var scale = GetPixelsPerPoint();
+            width = Mathf.Round(width * scale);
+            height = Mathf.Round(height * scale);
+
             if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
                 ComputeNativeTextSize(textToMeasure, width, height);
             }
             else
             {
-                ConvertUssToTextGenerationSettings();
+                ConvertUssToTextGenerationSettings(populateScreenRect:false);
                 settings.renderedText = textToMeasure;
                 settings.screenRect = new Rect(0, 0, width, height);
                 UpdatePreferredValues(settings);
@@ -73,7 +107,7 @@ namespace UnityEngine.UIElements
 
         public void UpdateMesh()
         {
-            ConvertUssToTextGenerationSettings();
+            ConvertUssToTextGenerationSettings(populateScreenRect: true);
             var hashCode = settings.GetHashCode();
 
             // this should be a dynamic asset
@@ -97,7 +131,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (ConvertUssToTextGenerationSettings())
+            if (ConvertUssToTextGenerationSettings(populateScreenRect: true))
                 base.AddTextInfoToPermanentCache();
         }
 
@@ -120,7 +154,7 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal virtual bool ConvertUssToTextGenerationSettings()
+        internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect)
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
@@ -134,36 +168,35 @@ namespace UnityEngine.UIElements
             if (tgs.fontAsset == null)
                 return false;
 
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            tgs.screenRect = new Rect(0, 0, m_TextElement.contentRect.width, m_TextElement.contentRect.height);
             tgs.extraPadding = GetVertexPadding(tgs.fontAsset);
             tgs.renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             tgs.isPlaceholder = m_TextElement.showPlaceholderText;
 
-            tgs.fontSize = style.fontSize.value;
+            var uiScale = GetPixelsPerPoint();
+            //this rounding should be moved to the resolved style so user could get the result...
+            tgs.fontSize = (int)Math.Round(((style.fontSize.value * uiScale)), MidpointRounding.AwayFromZero);
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
-
-
+            
+            // When we render in bitmap mode, we need provide proper coordinates to textCore so that the alignment is done properly
+            // The output of freetype is in pixels corrdinate on screen, unlike UIToolkit. 
             var shouldRenderBitmap = TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap && tgs.fontAsset.IsEditorFont;
             if (shouldRenderBitmap)
             {
+                
                 // ScalePixelsPerPoint is invalid if the VisualElement is not in a panel
-                if (m_TextElement.panel != null)
-                    settings.pixelsPerPoint = m_TextElement.scaledPixelsPerPoint;
-
-                var pixelSize = (int)Math.Round(((tgs.fontSize * settings.pixelsPerPoint)), MidpointRounding.AwayFromZero);
-                FontAsset fa = GetBlurryMapping(pixelSize, tgs.fontAsset);
+                FontAsset fa = GetBlurryFontAssetMapping( tgs.fontSize, tgs.fontAsset);
 
                 // Fallbacks also need to be generated on the Main Thread
-                var canGenerateFallbacks = CanGenerateFallbackFontAssets(pixelSize);
+                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize);
                 if (!canGenerateFallbacks || !fa)
                     return false;
 
-                settings.fontAsset = fa;
+
+                tgs.fontAsset = fa;
+               
             }
-            settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
 
             tgs.material = tgs.fontAsset.material;
 
@@ -185,22 +218,36 @@ namespace UnityEngine.UIElements
             tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
-            // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
-            var size = m_TextElement.contentRect.size;
 
-            // If the size is the last rounded size, we use the cached size before the rounding that was calculated
-            if (Mathf.Abs(size.x - RoundedSizes.x) < 0.01f && Mathf.Abs(size.y - RoundedSizes.y) < 0.01f)
+            if (populateScreenRect)
             {
-                size = MeasuredSizes;
-            }
-            else
-            {
-                //the size has change, we need to save that information
-                RoundedSizes = size;
-                MeasuredSizes = size;
+                var size = m_TextElement.contentRect.size;
+
+                // If the size is the last rounded size, we use the cached size before the rounding that was calculated
+                if (MeasuredWidth.HasValue && Mathf.Abs(size.x - RoundedWidth) < 0.01f && LastPixelPerPoint == uiScale)
+                {
+                    size.x = MeasuredWidth.Value;
+                }
+                else
+                {
+                    //the size has changed, we need to discard previous measurement
+                    RoundedWidth = size.x;
+                    MeasuredWidth = null; 
+                    LastPixelPerPoint = uiScale;
+                }
+
+                size.x *= uiScale;
+                size.y *= uiScale;
+
+                if (tgs.fontAsset.IsBitmap())
+                {
+                    size.x = Mathf.Round(size.x);
+                    size.y = Mathf.Round(size.y);
+                }
+
+                tgs.screenRect = new Rect(Vector2.zero, size);
             }
 
-            tgs.screenRect = new Rect(Vector2.zero, size);
             return true;
         }
 
@@ -273,6 +320,14 @@ namespace UnityEngine.UIElements
         public override bool IsPlaceholder
         {
             get => useAdvancedText ? m_TextElement.showPlaceholderText : base.IsPlaceholder;
+        }
+
+        public bool IsElided()
+        {
+            if (string.IsNullOrEmpty(m_TextElement.text)) // impossible to differentiate between an empty string and a fully truncated string.
+                return true;
+
+            return m_IsEllided;
         }
     }
 }

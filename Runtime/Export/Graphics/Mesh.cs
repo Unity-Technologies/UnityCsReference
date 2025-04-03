@@ -206,6 +206,39 @@ namespace UnityEngine
             set { SetArrayForChannel(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4, value); }
         }
 
+        public int lodCount
+        {
+            get
+            {
+                return GetLodCount();
+            }
+            set
+            {
+                if (value < 1)
+                    throw new ArgumentException("The number of Mesh LODs must be greater than zero.");
+
+                // Check that all submeshes are triangles if we are going to have more than one LOD
+                if (value > 1)
+                {
+                    for (int i = 0; i < subMeshCount; i++)
+                    {
+                        if (GetSubMesh(i).topology != MeshTopology.Triangles)
+                            throw new InvalidOperationException("Mesh LOD selection only works for triangle topology. The LOD count value cannot be higher than 1 if the topology is not set to triangles for all submeshes.");
+                    }
+                }
+
+                SetLodCount(value);
+            }
+        }
+
+        internal bool isLodSelectionActive => lodCount > 1;
+
+        public LodSelectionCurve lodSelectionCurve
+        {
+            get { return GetLodSelectionCurve(); }
+            set { SetLodSelectionCurve(value); }
+        }
+
         public void GetVertices(List<Vector3> vertices)
         {
             if (vertices == null)
@@ -877,13 +910,13 @@ namespace UnityEngine
         {
             get
             {
-                if (canAccess)  return GetTrianglesImpl(-1, true);
+                if (canAccess)  return GetTrianglesImpl(-1, true, 0);
                 else            PrintErrorCantAccessIndices();
                 return new int[0];
             }
             set
             {
-                if (canAccess)  SetTrianglesImpl(-1, UnityEngine.Rendering.IndexFormat.UInt32, value, NoAllocHelpers.SafeLength(value), 0, NoAllocHelpers.SafeLength(value), true, 0);
+                if (canAccess)  SetTrianglesImpl(-1, UnityEngine.Rendering.IndexFormat.UInt32, value, NoAllocHelpers.SafeLength(value), 0, NoAllocHelpers.SafeLength(value), true, 0, 0);
                 else            PrintErrorCantAccessIndices();
             }
         }
@@ -895,27 +928,31 @@ namespace UnityEngine
 
         public int[] GetTriangles(int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
-            return CheckCanAccessSubmeshTriangles(submesh) ? GetTrianglesImpl(submesh, applyBaseVertex) : new int[0];
+            return GetTriangles(submesh, 0, applyBaseVertex);
+        }
+
+        public int[] GetTriangles(int submesh, int meshLod, bool applyBaseVertex)
+        {
+            if (!CheckCanAccessSubmeshTriangles(submesh))
+                return new int[0];
+
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
+
+            return GetTrianglesImpl(submesh, applyBaseVertex, meshLod);
         }
 
         public void GetTriangles(List<int> triangles, int submesh)
         {
-            GetTriangles(triangles, submesh, true);
+            GetTriangles(triangles, submesh, 0, true);
         }
 
         public void GetTriangles(List<int> triangles, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
-            if (triangles == null)
-                throw new ArgumentNullException(nameof(triangles), "The result triangles list cannot be null.");
-
-            if (submesh < 0 || submesh >= subMeshCount)
-                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
-
-            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh));
-            GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex);
+            GetTriangles(triangles, submesh, 0, applyBaseVertex);
         }
 
-        public void GetTriangles(List<ushort> triangles, int submesh, bool applyBaseVertex = true)
+        public void GetTriangles(List<int> triangles, int submesh, int meshLod, bool applyBaseVertex = true)
         {
             if (triangles == null)
                 throw new ArgumentNullException(nameof(triangles), "The result triangles list cannot be null.");
@@ -923,40 +960,67 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
-            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh));
-            GetTrianglesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex);
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
+
+            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh, meshLod));
+            GetTrianglesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex, meshLod);
+        }
+
+        public void GetTriangles(List<ushort> triangles, int submesh, bool applyBaseVertex = true)
+        {
+            GetTriangles(triangles, submesh, 0, applyBaseVertex);
+        }
+
+        public void GetTriangles(List<ushort> triangles, int submesh, int meshLod, bool applyBaseVertex = true)
+        {
+            if (triangles == null)
+                throw new ArgumentNullException(nameof(triangles), "The result triangles list cannot be null.");
+
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
+
+            NoAllocHelpers.EnsureListElemCount(triangles, 3 * (int)GetTrianglesCountImpl(submesh, meshLod));
+            GetTrianglesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromList(triangles), submesh, applyBaseVertex, meshLod);
         }
 
         [uei.ExcludeFromDocs]
         public int[] GetIndices(int submesh)
         {
-            return GetIndices(submesh, true);
+            return GetIndices(submesh, 0, true);
         }
 
         public int[] GetIndices(int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
-            return CheckCanAccessSubmeshIndices(submesh) ? GetIndicesImpl(submesh, applyBaseVertex) : new int[0];
+            return GetIndices(submesh, 0, applyBaseVertex);
+        }
+
+        public int[] GetIndices(int submesh, int meshLod, bool applyBaseVertex = true)
+        {
+            if (!CheckCanAccessSubmeshIndices(submesh))
+                return new int[0];
+
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
+
+            return GetIndicesImpl(submesh, applyBaseVertex, meshLod);
         }
 
         [uei.ExcludeFromDocs]
         public void GetIndices(List<int> indices, int submesh)
         {
-            GetIndices(indices, submesh, true);
+            GetIndices(indices, submesh, 0, true);
         }
 
         public void GetIndices(List<int> indices, int submesh, [DefaultValue("true")] bool applyBaseVertex)
         {
-            if (indices == null)
-                throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");
-
-            if (submesh < 0 || submesh >= subMeshCount)
-                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
-
-            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
-            GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex);
+            GetIndices(indices, submesh, 0, applyBaseVertex);
         }
 
-        public void GetIndices(List<ushort> indices, int submesh, bool applyBaseVertex = true)
+        public void GetIndices(List<int> indices, int submesh, int meshLod, bool applyBaseVertex = false)
         {
             if (indices == null)
                 throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");
@@ -964,8 +1028,28 @@ namespace UnityEngine
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
 
-            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh));
-            GetIndicesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex);
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"The Mesh LOD index ({meshLod}) must be less than the lodCount value ({lodCount}).");
+
+            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh, meshLod));
+            GetIndicesNonAllocImpl(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex, meshLod);
+        }
+
+        public void GetIndices(List<ushort> indices, int submesh, bool applyBaseVertex = true)
+        {
+            GetIndices(indices, submesh, 0, applyBaseVertex);
+        }
+
+        public void GetIndices(List<ushort> indices, int submesh, int meshLod, bool applyBaseVertex = true)
+        {
+            if (indices == null)
+                throw new ArgumentNullException(nameof(indices), "The result indices list cannot be null.");
+
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            NoAllocHelpers.EnsureListElemCount(indices, (int)GetIndexCount(submesh, meshLod));
+            GetIndicesNonAllocImpl16(NoAllocHelpers.ExtractArrayFromList(indices), submesh, applyBaseVertex, meshLod);
         }
 
         public unsafe void SetIndexBufferData<T>(NativeArray<T> data, int dataStart, int meshBufferStart, int count, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct
@@ -1016,14 +1100,36 @@ namespace UnityEngine
         {
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
-            return GetIndexStartImpl(submesh);
+            return GetIndexStartImpl(submesh, 0);
+        }
+
+        public UInt32 GetIndexStart(int submesh, int meshLod)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"Specified Mesh LOD index ({meshLod}) is out of range. Must be less than the lodCount value ({lodCount}).");
+
+            return GetIndexStartImpl(submesh, meshLod);
         }
 
         public UInt32 GetIndexCount(int submesh)
         {
             if (submesh < 0 || submesh >= subMeshCount)
                 throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
-            return GetIndexCountImpl(submesh);
+            return GetIndexCountImpl(submesh, 0);
+        }
+
+        public UInt32 GetIndexCount(int submesh, int meshLod)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException("Specified sub mesh is out of range. Must be greater or equal to 0 and less than subMeshCount.");
+
+            if (meshLod >= lodCount)
+                throw new IndexOutOfRangeException($"Specified Mesh LOD index ({meshLod}) is out of range. Must be less than the lodCount value ({lodCount}).");
+
+            return GetIndexCountImpl(submesh, meshLod);
         }
 
         public UInt32 GetBaseVertex(int submesh)
@@ -1045,10 +1151,10 @@ namespace UnityEngine
                 throw new ArgumentOutOfRangeException(nameof(length), start + length, "Mesh indices array start+count is outside of array size.");
         }
 
-        private void SetTrianglesImpl(int submesh, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array triangles, int trianglesArrayLength, int start, int length, bool calculateBounds, int baseVertex)
+        private void SetTrianglesImpl(int submesh, UnityEngine.Rendering.IndexFormat indicesFormat, System.Array triangles, int trianglesArrayLength, int start, int length, bool calculateBounds, int baseVertex, int meshLod)
         {
             CheckIndicesArrayRange(trianglesArrayLength, start, length);
-            SetIndicesImpl(submesh, MeshTopology.Triangles, indicesFormat, triangles, start, length, calculateBounds, baseVertex);
+            SetIndicesImpl(submesh, MeshTopology.Triangles, indicesFormat, triangles, start, length, calculateBounds, baseVertex, meshLod);
         }
 
         // Note: we do have many overloads where seemingly "just use default arg values"
@@ -1072,10 +1178,20 @@ namespace UnityEngine
             SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
         }
 
+        public void SetTriangles(int[] triangles, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetTriangles(int[] triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
         {
+            SetTriangles(triangles, trianglesStart, trianglesLength, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(int[] triangles, int trianglesStart, int trianglesLength, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex, meshLod);
         }
 
         public void SetTriangles(ushort[] triangles, int submesh, bool calculateBounds = true, int baseVertex = 0)
@@ -1083,10 +1199,20 @@ namespace UnityEngine
             SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
         }
 
+        public void SetTriangles(ushort[] triangles, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetTriangles(ushort[] triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
         {
+            SetTriangles(triangles, trianglesStart, trianglesLength, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(ushort[] triangles, int trianglesStart, int trianglesLength, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, triangles, NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex, meshLod);
         }
 
         [uei.ExcludeFromDocs]
@@ -1106,10 +1232,20 @@ namespace UnityEngine
             SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
         }
 
+        public void SetTriangles(List<int> triangles, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetTriangles(List<int> triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
         {
+            SetTriangles(triangles, trianglesStart, trianglesLength, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(List<int> triangles, int trianglesStart, int trianglesLength, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt32, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex, meshLod);
         }
 
         public void SetTriangles(List<ushort> triangles, int submesh, bool calculateBounds = true, int baseVertex = 0)
@@ -1117,10 +1253,20 @@ namespace UnityEngine
             SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, calculateBounds, baseVertex);
         }
 
+        public void SetTriangles(List<ushort> triangles, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetTriangles(triangles, 0, NoAllocHelpers.SafeLength(triangles), submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetTriangles(List<ushort> triangles, int trianglesStart, int trianglesLength, int submesh, bool calculateBounds = true, int baseVertex = 0)
         {
+            SetTriangles(triangles, trianglesStart, trianglesLength, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetTriangles(List<ushort> triangles, int trianglesStart, int trianglesLength, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
             if (CheckCanAccessSubmeshTriangles(submesh))
-                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex);
+                SetTrianglesImpl(submesh, UnityEngine.Rendering.IndexFormat.UInt16, NoAllocHelpers.ExtractArrayFromList(triangles), NoAllocHelpers.SafeLength(triangles), trianglesStart, trianglesLength, calculateBounds, baseVertex, meshLod);
         }
 
         [uei.ExcludeFromDocs]
@@ -1140,12 +1286,22 @@ namespace UnityEngine
             SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
         }
 
+        public void SetIndices(int[] indices, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetIndices(int[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, indicesStart, indicesLength, topology, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(int[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
         {
             if (CheckCanAccessSubmeshIndices(submesh))
             {
                 CheckIndicesArrayRange(NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
-                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indices, indicesStart, indicesLength, calculateBounds, baseVertex);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indices, indicesStart, indicesLength, calculateBounds, baseVertex, meshLod);
             }
         }
 
@@ -1154,12 +1310,22 @@ namespace UnityEngine
             SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
         }
 
+        public void SetIndices(ushort[] indices, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetIndices(ushort[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, indicesStart, indicesLength, topology, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(ushort[] indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
         {
             if (CheckCanAccessSubmeshIndices(submesh))
             {
                 CheckIndicesArrayRange(NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
-                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indices, indicesStart, indicesLength, calculateBounds, baseVertex);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indices, indicesStart, indicesLength, calculateBounds, baseVertex, meshLod);
             }
         }
 
@@ -1168,7 +1334,17 @@ namespace UnityEngine
             SetIndices(indices, 0, indices.Length, topology, submesh, calculateBounds, baseVertex);
         }
 
+        public void SetIndices<T>(NativeArray<T> indices, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0) where T : struct
+        {
+            SetIndices(indices, 0, indices.Length, topology, submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public unsafe void SetIndices<T>(NativeArray<T> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0) where T : struct
+        {
+            SetIndices(indices, indicesStart, indicesLength, topology, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public unsafe void SetIndices<T>(NativeArray<T> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0) where T : struct
         {
             if (CheckCanAccessSubmeshIndices(submesh))
             {
@@ -1177,7 +1353,7 @@ namespace UnityEngine
                     throw new ArgumentException($"{nameof(SetIndices)} with NativeArray should use type is 2 or 4 bytes in size");
 
                 CheckIndicesArrayRange(indices.Length, indicesStart, indicesLength);
-                SetIndicesNativeArrayImpl(submesh, topology, tSize == 2 ? UnityEngine.Rendering.IndexFormat.UInt16 : UnityEngine.Rendering.IndexFormat.UInt32, (IntPtr)indices.GetUnsafeReadOnlyPtr(), indicesStart, indicesLength, calculateBounds, baseVertex);
+                SetIndicesNativeArrayImpl(submesh, topology, tSize == 2 ? UnityEngine.Rendering.IndexFormat.UInt16 : UnityEngine.Rendering.IndexFormat.UInt32, (IntPtr)indices.GetUnsafeReadOnlyPtr(), indicesStart, indicesLength, calculateBounds, baseVertex, meshLod);
             }
         }
 
@@ -1186,13 +1362,23 @@ namespace UnityEngine
             SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
         }
 
+        public void SetIndices(List<int> indices, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetIndices(List<int> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, indicesStart, indicesLength, topology, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(List<int> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
         {
             if (CheckCanAccessSubmeshIndices(submesh))
             {
                 var indicesArray = NoAllocHelpers.ExtractArrayFromList(indices);
                 CheckIndicesArrayRange(NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
-                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt32, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex, meshLod);
             }
         }
 
@@ -1201,13 +1387,23 @@ namespace UnityEngine
             SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, calculateBounds, baseVertex);
         }
 
+        public void SetIndices(List<ushort> indices, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, 0, NoAllocHelpers.SafeLength(indices), topology, submesh, meshLod, calculateBounds, baseVertex);
+        }
+
         public void SetIndices(List<ushort> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, bool calculateBounds = true, int baseVertex = 0)
+        {
+            SetIndices(indices, indicesStart, indicesLength, topology, submesh, 0, calculateBounds, baseVertex);
+        }
+
+        public void SetIndices(List<ushort> indices, int indicesStart, int indicesLength, MeshTopology topology, int submesh, int meshLod, bool calculateBounds = true, int baseVertex = 0)
         {
             if (CheckCanAccessSubmeshIndices(submesh))
             {
                 var indicesArray = NoAllocHelpers.ExtractArrayFromList(indices);
                 CheckIndicesArrayRange(NoAllocHelpers.SafeLength(indices), indicesStart, indicesLength);
-                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex);
+                SetIndicesImpl(submesh, topology, UnityEngine.Rendering.IndexFormat.UInt16, indicesArray, indicesStart, indicesLength, calculateBounds, baseVertex, meshLod);
             }
         }
 
@@ -1231,6 +1427,8 @@ namespace UnityEngine
                     throw new ArgumentException(nameof(desc), $"{i}-th submesh descriptor has invalid topology ({(int)t}).");
                 if (t == (MeshTopology)1)
                     throw new ArgumentException(nameof(desc), $"{i}-th submesh descriptor has triangles strip topology, which is no longer supported.");
+                if (isLodSelectionActive && t != MeshTopology.Triangles)
+                    throw new ArgumentException(nameof(desc), $"Submesh descriptor with index {i} has topology {t} which is not supported by Mesh LOD.");
             }
 
             SetAllSubMeshesAtOnceFromArray(desc, start, count, flags);
@@ -1265,6 +1463,154 @@ namespace UnityEngine
         public unsafe void SetSubMeshes<T>(NativeArray<T> desc, UnityEngine.Rendering.MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default) where T : struct
         {
             SetSubMeshes(desc, 0, desc.Length, flags);
+        }
+
+        // MeshLOD
+
+        void ValidateLodIndex(int level)
+        {
+            var count = lodCount;
+            if (level < 0 || level >= count)
+                throw new IndexOutOfRangeException($"Specified Mesh LOD index ({level}) is out of range. Must be greater or equal to 0 and less than the lodCount value ({count}).");
+        }
+
+        void ValidateSubMeshIndex(int submesh)
+        {
+            if (submesh < 0 || submesh >= subMeshCount)
+                throw new IndexOutOfRangeException($"Specified submesh index ({submesh}) is out of range. Must be greater or equal to 0 and less than the subMeshCount value ({subMeshCount}).");
+        }
+
+        void ValidateCanWriteToLods()
+        {
+            if (!isLodSelectionActive)
+                throw new InvalidOperationException("Unable to modify LOD0. Please enable Mesh LOD selection first by setting lodCount to a value greater than 1 or modify the submesh descriptors directly.");
+        }
+
+        public void SetLod(int submesh, int level, MeshLodRange levelRange, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+            ValidateLodIndex(level);
+
+            SetLodImpl(submesh, level, levelRange, flags);
+        }
+
+        public void SetLods(List<MeshLodRange> levels, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (levels == null)
+                throw new ArgumentNullException(nameof(levels), "The result levelRanges list cannot be null.");
+
+            var length = NoAllocHelpers.SafeLength(levels);
+            if (length > lodCount)
+                throw new ArgumentException(nameof(levels), $"The number of levels ({length}) in the list cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels.");
+
+            SetLods(NoAllocHelpers.ExtractArrayFromList(levels), 0, length, submesh, flags);
+        }
+
+        public void SetLods(List<MeshLodRange> levels, int start, int count, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (levels == null)
+                throw new ArgumentNullException(nameof(levels), "The Mesh LOD ranges cannot be set to null.");
+
+            var length = NoAllocHelpers.SafeLength(levels);
+            if (start < 0 || count < 0 || start + count > length)
+                throw new ArgumentOutOfRangeException(nameof(start), $"The start ({start}) and the count ({count}) values must be greater than 0, the combined value ({start + count}) must be less than the list length ({length}).");
+
+            if(count > lodCount)
+                throw new ArgumentException(nameof(count), $"The count value ({length}) cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels of detail.");
+
+            SetLodsFromArray(NoAllocHelpers.ExtractArrayFromList(levels), start, count, submesh, flags);
+        }
+
+        public void SetLods(MeshLodRange[] levels, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (levels == null)
+                throw new ArgumentNullException(nameof(levels), "The Mesh LOD ranges cannot be set to null.");
+
+            var length = NoAllocHelpers.SafeLength(levels);
+            if (length > lodCount)
+                throw new ArgumentException(nameof(levels), $"The array length ({length}) cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels.");
+
+            SetLodsFromArray(levels, 0, length, submesh, flags);
+        }
+
+        public void SetLods(MeshLodRange[] levels, int start, int count, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (levels == null)
+                throw new ArgumentNullException(nameof(levels), "The Mesh LOD ranges cannot be set to null.");
+
+            var length = NoAllocHelpers.SafeLength(levels);
+            if (start < 0 || count < 0 || start + count > length)
+                throw new ArgumentOutOfRangeException(nameof(start), $"The start ({start}) and the count ({count}) values must be greater than 0, the combined value ({start + count}) must be less than the list length ({length}).");
+
+            if (count > lodCount)
+                throw new ArgumentException(nameof(count), $"The count value ({count}) cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels.");
+
+            SetLodsFromArray(levels, start, count, submesh, flags);
+        }
+
+        public unsafe void SetLods(NativeArray<MeshLodRange> levels, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (!levels.IsCreated)
+                throw new ArgumentException(nameof(levels), "The NativeArray levels is not created.");
+
+            var length = levels.Length;
+            if (length > lodCount)
+                throw new ArgumentException(nameof(levels), $"The array length ({length}) cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels.");
+
+            SetLodsFromNativeArray((IntPtr)levels.GetUnsafeReadOnlyPtr(), length, submesh, flags);
+        }
+
+        public unsafe void SetLods(NativeArray<MeshLodRange> levels, int start, int count, int submesh, MeshUpdateFlags flags = UnityEngine.Rendering.MeshUpdateFlags.Default)
+        {
+            ValidateCanWriteToLods();
+            ValidateSubMeshIndex(submesh);
+
+            if (!levels.IsCreated)
+                throw new ArgumentException(nameof(levels), "The NativeArray levels is not created.");
+
+            var length = levels.Length;
+            if (start < 0 || count < 0 || start + count > length)
+                throw new ArgumentOutOfRangeException(nameof(start), $"The start ({start}) and the count ({count}) values must be greater than 0, the combined value ({start + count}) must be less than the list length ({length}).");
+
+            if (count > lodCount)
+                throw new ArgumentException(nameof(levels), $"The count value ({count}) cannot exceed the lodCount value ({lodCount}) of the mesh. Please increase the lodCount value first if you need additional levels.");
+
+            SetLodsFromNativeArray((IntPtr)levels.GetUnsafeReadOnlyPtr() + start * sizeof(MeshLodRange), count, submesh, flags);
+        }
+
+        public MeshLodRange[] GetLods(int submesh)
+        {
+            ValidateSubMeshIndex(submesh);
+
+            return GetLodsAlloc(submesh);
+        }
+
+        public void GetLods(List<MeshLodRange> levels, int submesh)
+        {
+            if (levels == null)
+                throw new ArgumentNullException(nameof(levels), "The result levels list cannot be null.");
+
+            ValidateSubMeshIndex(submesh);
+
+            NoAllocHelpers.EnsureListElemCount(levels, lodCount);
+
+            GetLodsNonAlloc(NoAllocHelpers.ExtractArrayFromList(levels), submesh);
         }
 
         //
@@ -1426,6 +1772,31 @@ namespace UnityEngine
         {
             CombineMeshesImpl(combine, true, true, false);
         }
+
+        [Serializable]
+        [UsedByNativeCode]
+        public struct LodSelectionCurve
+        {
+            public LodSelectionCurve(float slope, float bias)
+            {
+                m_LodSlope = slope;
+                m_LodBias = bias;
+            }
+
+            [SerializeField]
+            float m_LodSlope;
+
+            [SerializeField]
+            float m_LodBias;
+            
+            public bool IsValid()
+            {
+                return m_LodSlope > 0.001f;
+            }
+
+            public float lodSlope { get { return m_LodSlope; } set { m_LodSlope = value; } }
+            public float lodBias { get { return m_LodBias; } set { m_LodBias = value; } }
+        }
     }
 
     [Serializable]
@@ -1567,5 +1938,32 @@ namespace UnityEngine
         public Matrix4x4 transform { get { return m_Transform; } set { m_Transform = value; } }
         public Vector4 lightmapScaleOffset { get { return m_LightmapScaleOffset; } set { m_LightmapScaleOffset = value; } }
         public Vector4 realtimeLightmapScaleOffset { get { return m_RealtimeLightmapScaleOffset; } set { m_RealtimeLightmapScaleOffset = value; } }
+    }
+
+    [Serializable]
+    [UsedByNativeCode]
+    public struct MeshLodRange
+    {
+        public uint indexStart { get { return m_IndexStart; } set { m_IndexStart = value; } }
+        public uint indexCount { get { return m_IndexCount; } set { m_IndexCount = value; } }
+
+        // For each level, the start index
+        [SerializeField]
+        uint m_IndexStart;
+
+        // For each level, the number of indices
+        [SerializeField]
+        uint m_IndexCount;
+
+        public MeshLodRange(uint indexStart, uint indexCount)
+        {
+            m_IndexStart = indexStart;
+            m_IndexCount = indexCount;
+        }
+
+        public override string ToString()
+        {
+            return String.Format("MeshLodRange start:{0} count:{1})", m_IndexStart, m_IndexCount);
+        }
     }
 }

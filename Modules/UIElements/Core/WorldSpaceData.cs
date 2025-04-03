@@ -16,6 +16,7 @@ namespace UnityEngine.UIElements
         public static readonly Bounds k_Empty3DBounds = new(Vector3.zero, Vector3.one * Mathf.NegativeInfinity);
 
         public Bounds localBounds3D;
+        public Bounds localBoundsPicking3D;
     }
 
     internal static class WorldSpaceDataStore

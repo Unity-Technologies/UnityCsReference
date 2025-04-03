@@ -172,8 +172,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            bool wasChanged = GUI.changed;
-
+            bool templateChanged = false;
             using (var vertical = new EditorGUILayout.VerticalScope())
             {
                 using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, templateProp))
@@ -200,6 +199,7 @@ namespace UnityEditor
                                 TemplateGUIThumbnails,
                                 numCols
                             );
+                            templateChanged = selectedTemplateIndex != updatedSelectedTemplateIndex;
 
                             // Only set/update templateProp and selectedTemplateIndex if there is a valid template selection.
                             if (updatedSelectedTemplateIndex > -1)
@@ -209,8 +209,6 @@ namespace UnityEditor
                             }
                         }
                     }
-
-                    bool templateChanged = !wasChanged && GUI.changed;
 
                     bool orgChanged = GUI.changed;
                     GUI.changed = false;

@@ -183,10 +183,6 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
-// This should move with the AnimationWindow to a module at some point
-[assembly: InternalsVisibleTo("UnityEditor.Modules.Animation.tests.AnimationWindow")]
-
-[assembly: InternalsVisibleTo("UnityEditor.Modules.Physics.Tests")]
 
 [assembly: InternalsVisibleTo("UnityEditor.Switch.Tests")]
 
@@ -200,4 +196,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Automation.Players.QNX")]
 
 [assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
+
+// Module test assemblies
+[assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
+// This should move with the AnimationWindow to a module at some point
+[assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 

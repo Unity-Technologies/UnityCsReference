@@ -4,9 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements.StyleSheets
 {
@@ -36,6 +39,7 @@ namespace UnityEngine.UIElements.StyleSheets
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
         internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
+
         internal static GetCursorIdFunction getCursorIdFunc = null;
 
         private List<StylePropertyValue> m_Values = new List<StylePropertyValue>();
@@ -190,17 +194,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public Color ReadColor(int index)
         {
             var value = m_Values[m_CurrentValueIndex + index];
-            Color c = Color.clear;
-            if (value.handle.valueType == StyleValueType.Enum)
-            {
-                var colorName = value.sheet.ReadAsString(value.handle);
-                StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out c);
-            }
-            else
-            {
-                c = value.sheet.ReadColor(value.handle);
-            }
-            return c;
+            return value.sheet.ReadColor(value.handle);
         }
 
         public int ReadEnum(StyleEnumType enumType, int index)
@@ -223,6 +217,28 @@ namespace UnityEngine.UIElements.StyleSheets
             return intValue;
         }
 
+        public Object ReadAsset(int index)
+        {
+            Object o = null;
+            var value = m_Values[m_CurrentValueIndex + index];
+            switch (value.handle.valueType)
+            {
+                case StyleValueType.ResourcePath:
+                {
+                    string path = value.sheet.ReadResourcePath(value.handle);
+                    if (!string.IsNullOrEmpty(path))
+                        o = Panel.LoadResource(path, typeof(Object), dpiScaling);
+                    break;
+                }
+                case StyleValueType.AssetReference:
+                {
+                    o = value.sheet.ReadAssetReference(value.handle);
+                    break;
+                }
+            }
+            return o;
+        }
+
         public FontDefinition ReadFontDefinition(int index)
         {
             FontAsset fontAsset = null;
@@ -241,7 +257,7 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     if (fontAsset == null && font == null)
-                        Debug.LogWarning(string.Format("Font not found for path: {0}", path));
+                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", path));
 
                     break;
                 }
@@ -291,7 +307,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         font = Panel.LoadResource(path, typeof(Font), dpiScaling) as Font;
 
                     if (font == null)
-                        Debug.LogWarning(string.Format("Font not found for path: {0}", path));
+                        Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Font not found for path: {0}", path));
                     break;
                 }
 
@@ -317,6 +333,47 @@ namespace UnityEngine.UIElements.StyleSheets
 
             return font;
         }
+
+        public Material ReadMaterial(int index)
+        {
+            Material material = null;
+            var value = m_Values[m_CurrentValueIndex + index];
+            switch (value.handle.valueType)
+            {
+                case StyleValueType.ResourcePath:
+                    {
+                        string path = value.sheet.ReadResourcePath(value.handle);
+                        if (!string.IsNullOrEmpty(path))
+                            material = Panel.LoadResource(path, typeof(Material), dpiScaling) as Material;
+
+                        if (material == null)
+                            Debug.LogWarning(string.Format(CultureInfo.InvariantCulture, "Material not found for path: {0}", path));
+                        break;
+                    }
+
+                case StyleValueType.AssetReference:
+                    {
+                        material = value.sheet.ReadAssetReference(value.handle) as Material;
+
+                        break;
+                    }
+
+                case StyleValueType.Keyword:
+                    {
+                        if (value.handle.valueIndex != (int)StyleValueKeyword.None)
+                            Debug.LogWarning("Invalid keyword for material " + (StyleValueKeyword)value.handle.valueIndex);
+
+                        break;
+                    }
+
+                default:
+                    Debug.LogWarning("Invalid value for material " + value.handle.valueType);
+                    break;
+            }
+
+            return material;
+        }
+
 
         public Background ReadBackground(int index)
         {
@@ -355,118 +412,19 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public Cursor ReadCursor(int index)
         {
-            float hotspotX = 0f;
-            float hotspotY = 0f;
-            int cursorId = 0;
-            Texture2D texture = null;
-
-            var valueType = GetValueType(index);
-            bool isCustom = valueType == StyleValueType.ResourcePath || valueType == StyleValueType.AssetReference || valueType == StyleValueType.ScalableImage || valueType == StyleValueType.MissingAssetReference;
-
-            if (isCustom)
-            {
-                if (valueCount < 1)
-                {
-                    Debug.LogWarning($"USS 'cursor' has invalid value at {index}.");
-                }
-                else
-                {
-                    var source = new ImageSource();
-                    var value = GetValue(index);
-                    if (TryGetImageSourceFromValue(value, dpiScaling, out source))
-                    {
-                        texture = source.texture;
-                        if (valueCount >= 3)
-                        {
-                            var valueX = GetValue(index + 1);
-                            var valueY = GetValue(index + 2);
-                            if (valueX.handle.valueType != StyleValueType.Float || valueY.handle.valueType != StyleValueType.Float)
-                            {
-                                Debug.LogWarning("USS 'cursor' property requires two integers for the hot spot value.");
-                            }
-                            else
-                            {
-                                hotspotX = valueX.sheet.ReadFloat(valueX.handle);
-                                hotspotY = valueY.sheet.ReadFloat(valueY.handle);
-                            }
-                        }
-                    }
-                }
-            }
-            else
-            {
-                // Default cursor
-                if (getCursorIdFunc != null)
-                {
-                    var value = GetValue(index);
-                    cursorId = getCursorIdFunc(value.sheet, value.handle);
-                }
-            }
-
-            return new Cursor() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            return ReadCursor(valueCount, val1, val2, val3, dpiScaling);
         }
 
         public TextShadow ReadTextShadow(int index)
         {
-            float offsetX = 0.0f;
-            float offsetY = 0.0f;
-            float blurRadius = 0.0f;
-            var color = Color.clear;
-
-            if (valueCount >= 2)
-            {
-                int i = index;
-                var valueType = GetValueType(i);
-                bool isColorRead = false;
-                if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                {
-                    color = ReadColor(i++);
-                    isColorRead = true;
-                }
-
-                if ((i + 1) < valueCount)
-                {
-                    valueType = GetValueType(i);
-                    var valueType2 = GetValueType(i + 1);
-                    if ((valueType == StyleValueType.Dimension || valueType == StyleValueType.Float) &&
-                        (valueType2 == StyleValueType.Dimension || valueType2 == StyleValueType.Float))
-                    {
-                        var valueX = GetValue(i++);
-                        var valueY = GetValue(i++);
-
-                        offsetX = valueX.sheet.ReadDimension(valueX.handle).value;
-                        offsetY = valueY.sheet.ReadDimension(valueY.handle).value;
-                    }
-                }
-
-                if (i < valueCount)
-                {
-                    valueType = GetValueType(i);
-                    if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
-                    {
-                        var valueBlur = GetValue(i++);
-                        blurRadius = valueBlur.sheet.ReadDimension(valueBlur.handle).value;
-                    }
-                    else if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                    {
-                        if (!isColorRead)
-                            color = ReadColor(i);
-                    }
-                }
-
-                if (i < valueCount)
-                {
-                    valueType = GetValueType(i);
-                    if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
-                    {
-                        if (!isColorRead)
-                            color = ReadColor(i);
-                    }
-                }
-            }
-
-            var textShadow = new TextShadow() { offset = new Vector2(offsetX, offsetY), blurRadius = blurRadius, color = color };
-            return textShadow;
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            var val4 = valueCount > 3 ? m_Values[m_CurrentValueIndex + index + 3] : default;
+            return ReadTextShadow(valueCount, val1, val2, val3, val4);
         }
 
         public BackgroundPosition ReadBackgroundPositionX(int index)
@@ -546,14 +504,110 @@ namespace UnityEngine.UIElements.StyleSheets
             while (index < valueCount);
         }
 
+        private FilterFunctionType ToFilterFunctionType(StyleValueFunction function)
+        {
+            switch (function)
+            {
+                case StyleValueFunction.CustomFilter:    return FilterFunctionType.Custom;
+                case StyleValueFunction.FilterTint:      return FilterFunctionType.Tint;
+                case StyleValueFunction.FilterOpacity:   return FilterFunctionType.Opacity;
+                case StyleValueFunction.FilterInvert:    return FilterFunctionType.Invert;
+                case StyleValueFunction.FilterGrayscale: return FilterFunctionType.Grayscale;
+                case StyleValueFunction.FilterSepia:     return FilterFunctionType.Sepia;
+                case StyleValueFunction.FilterBlur:      return FilterFunctionType.Blur;
+                default: return FilterFunctionType.None;
+            }
+        }
+
+        public void ReadListFilterFunction(List<FilterFunction> list, int index)
+        {
+            list.Clear();
+            do
+            {
+                var filterType = (StyleValueFunction)GetValue(index++).handle.valueIndex;
+                int argCount = ReadInt(index++);
+
+                bool isCustom = false;
+                FilterFunctionDefinition filterDef = null;
+                if (filterType == StyleValueFunction.CustomFilter && argCount > 0)
+                {
+                    isCustom = true;
+                    filterDef = ReadAsset(index++) as FilterFunctionDefinition;
+                    --argCount;
+                }
+
+                var args = new FixedBuffer4<FilterParameter>();
+                for (int i = 0; i < argCount; i++)
+                {
+                    var valueType = GetValueType(index);
+                    if (valueType == StyleValueType.Color || valueType == StyleValueType.Enum)
+                    {
+                        var color = ReadColor(index++);
+                        args[i] = new FilterParameter()
+                        {
+                            type = FilterParameterType.Color,
+                            colorValue = color
+                        };
+                    }
+                    else if (valueType == StyleValueType.Dimension || valueType == StyleValueType.Float)
+                    {
+                        var dimValue = GetValue(index++);
+                        var dim = dimValue.sheet.ReadDimension(dimValue.handle);
+                        args[i] = new FilterParameter()
+                        {
+                            type = FilterParameterType.Float,
+                            floatValue = ConvertDimensionToFilterFloat(dim)
+                        };
+                    }
+                    else if (valueType == StyleValueType.CommaSeparator)
+                    {
+                        // Not technically a valid syntax, but we'll allow it
+                        continue;
+                    }
+                    else
+                    {
+                        Debug.LogError($"Unexpected value type {valueType} in filter function argument");
+                    }
+                }
+
+                if (isCustom)
+                    list.Add(new FilterFunction(filterDef, args, argCount));
+                else
+                    list.Add(new FilterFunction(ToFilterFunctionType(filterType), args, argCount));
+            }
+            while (index < valueCount);
+        }
+
+        float ConvertDimensionToFilterFloat(Dimension dim)
+        {
+            // Convert percentages to 0-1 range.
+            // Convert angles to radians.
+            // Convert time to seconds.
+            switch (dim.unit)
+            {
+                case Dimension.Unit.Percent:
+                    return dim.value * 0.01f;
+                case Dimension.Unit.Degree:
+                    return dim.value * Mathf.Deg2Rad;
+                case Dimension.Unit.Turn:
+                    return dim.value * Mathf.PI * 2.0f;
+                case Dimension.Unit.Gradian:
+                    return dim.value * Mathf.PI / 200.0f;
+                case Dimension.Unit.Millisecond:
+                    return dim.value * 0.001f;
+                default:
+                    return dim.value;
+            }
+        }
+
         public void ReadListStylePropertyName(List<StylePropertyName> list, int index)
         {
             list.Clear();
             do
             {
                 var value = m_Values[m_CurrentValueIndex + index];
-                var str = value.sheet.ReadAsString(value.handle);
-                list.Add(new StylePropertyName(str));
+                var propertyName = value.sheet.ReadStylePropertyName(value.handle);
+                list.Add(propertyName);
                 ++index;
 
                 if (index < valueCount)

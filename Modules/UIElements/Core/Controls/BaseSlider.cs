@@ -73,6 +73,18 @@ namespace UnityEngine.UIElements
         internal TextField inputTextField { get; private set; }
         internal VisualElement fillElement { get; private set; }
 
+        private protected override bool canSwitchToMixedValue
+        {
+            get
+            {
+                if (inputTextField == null)
+                    return true;
+
+                return !inputTextField.textInputBase.textElement.hasFocus;
+            }
+        }
+
+        float m_AdjustedPageSizeFromClick = 0;
         bool m_IsEditingTextField;
         bool m_Fill;
 
@@ -582,7 +594,7 @@ namespace UnityEngine.UIElements
                         var targetXPos = clampedDragger.startMousePosition.x - (dragElementLength / 2f);
 
                         x = Mathf.Max(0f, Mathf.Min(targetXPos, totalRange));
-                        y = dragElement.transform.position.y;
+                        y = dragElement.resolvedStyle.translate.y;
                         dragElementStartPos = x;
                     }
                     else
@@ -593,15 +605,15 @@ namespace UnityEngine.UIElements
                         var totalRange = sliderLength - dragElementLength;
                         var targetYPos = clampedDragger.startMousePosition.y - (dragElementLength / 2f);
 
-                        x = dragElement.transform.position.x;
+                        x = dragElement.resolvedStyle.translate.x;
                         y = Mathf.Max(0f, Mathf.Min(targetYPos, totalRange));
                         dragElementStartPos = y;
                     }
 
                     var pos = new Vector3(x, y, 0);
 
-                    dragElement.transform.position = pos;
-                    dragBorderElement.transform.position = pos;
+                    dragElement.style.translate = pos;
+                    dragBorderElement.style.translate = pos;
                     m_DragElementStartPos = new Rect(x, y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
 
                     // Manipulation becomes a free form drag
@@ -610,13 +622,14 @@ namespace UnityEngine.UIElements
                     return;
                 }
 
-                m_DragElementStartPos = new Rect(dragElement.transform.position.x, dragElement.transform.position.y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
+                m_DragElementStartPos = new Rect(dragElement.resolvedStyle.translate.x, dragElement.resolvedStyle.translate.y, dragElement.resolvedStyle.width, dragElement.resolvedStyle.height);
             }
 
             if (direction == SliderDirection.Horizontal)
-                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.transform.position.x, clampedDragger.lastMousePosition.x);
+                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.width, dragElement.resolvedStyle.width, dragElement.resolvedStyle.translate.x, clampedDragger.lastMousePosition.x);
             else
-                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.transform.position.y, clampedDragger.lastMousePosition.y);
+                ComputeValueAndDirectionFromClick(dragContainer.resolvedStyle.height, dragElement.resolvedStyle.height, dragElement.resolvedStyle.translate.y, clampedDragger.lastMousePosition.y);
+
         }
 
         void OnKeyDown(KeyDownEvent evt)
@@ -678,18 +691,20 @@ namespace UnityEngine.UIElements
             var isPositionIncreasing = dragElementLastPos > (dragElementPos + dragElementLength);
             var isDraggingHighToLow = inverted ? isPositionIncreasing : isPositionDecreasing;
             var isDraggingLowToHigh = inverted ? isPositionDecreasing : isPositionIncreasing;
-            var adjustedPageSize = inverted ? -pageSize : pageSize;
+
+            // We maintain a cumulative page size value to handle scenarios where the page size is too small to produce noticeable movement with a single click (UUM-86425).
+            m_AdjustedPageSizeFromClick = inverted ? m_AdjustedPageSizeFromClick - pageSize : m_AdjustedPageSizeFromClick + pageSize;
 
             if (isDraggingHighToLow && (clampedDragger.dragDirection != ClampedDragger<TValueType>.DragDirection.LowToHigh))
             {
                 clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.HighToLow;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - adjustedPageSize, totalRange)) / totalRange;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - m_AdjustedPageSizeFromClick, totalRange)) / totalRange;
                 value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
             else if (isDraggingLowToHigh && (clampedDragger.dragDirection != ClampedDragger<TValueType>.DragDirection.HighToLow))
             {
                 clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.LowToHigh;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + adjustedPageSize, totalRange)) / totalRange;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + m_AdjustedPageSizeFromClick, totalRange)) / totalRange;
                 value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
         }
@@ -776,13 +791,16 @@ namespace UnityEngine.UIElements
                 if (float.IsNaN(newLeft)) //This can happen when layout is not computed yet
                     return;
 
-                float currentLeft = dragElement.transform.position.x;
+                float currentLeft = dragElement.resolvedStyle.translate.x;
 
                 if (!SameValues(currentLeft, newLeft, halfPixel))
                 {
                     var newPos = new Vector3(newLeft, 0, 0);
-                    dragElement.transform.position = newPos;
-                    dragBorderElement.transform.position = newPos;
+                    dragElement.style.translate = newPos;
+                    dragBorderElement.style.translate = newPos;
+                    
+                    // When the dragElement moves we can reset our cumlative page size
+                    m_AdjustedPageSizeFromClick = 0;
                 }
             }
             else
@@ -797,12 +815,15 @@ namespace UnityEngine.UIElements
                 if (float.IsNaN(newTop)) //This can happen when layout is not computed yet
                     return;
 
-                float currentTop = dragElement.transform.position.y;
+                float currentTop = dragElement.resolvedStyle.translate.y;
                 if (!SameValues(currentTop, newTop, halfPixel))
                 {
                     var newPos = new Vector3(0, newTop, 0);
-                    dragElement.transform.position = newPos;
-                    dragBorderElement.transform.position = newPos;
+                    dragElement.style.translate = newPos;
+                    dragBorderElement.style.translate = newPos;
+                    
+                    // When the dragElement moves we can reset our cumlative page size
+                    m_AdjustedPageSizeFromClick = 0;
                 }
             }
 
@@ -929,10 +950,18 @@ namespace UnityEngine.UIElements
             if (showMixedValue)
             {
                 dragElement?.RemoveFromHierarchy();
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = true;
+                }
             }
             else
             {
                 dragContainer.Add(dragElement);
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = false;
+                }
             }
         }
 

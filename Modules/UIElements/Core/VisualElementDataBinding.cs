@@ -325,6 +325,16 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Gets information on all the bindings of the current element.
+        /// </summary>
+        /// <param name="bindingInfos">A list to contain the binding infos.</param>
+        /// <remarks>The order in which the binding information is returned is undefined.</remarks>
+        public void GetBindingInfos(List<BindingInfo> bindingInfos)
+        {
+            DataBindingUtility.GetBindingsForElement(this, bindingInfos);
+        }
+
+        /// <summary>
         /// Allows to know if a target property has a binding associated to it.
         /// </summary>
         /// <param name="bindingId">The binding ID.</param>

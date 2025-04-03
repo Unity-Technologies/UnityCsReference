@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using JetBrains.Annotations;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -146,86 +145,6 @@ namespace Unity.UI.Builder
             Length newY = new Length(m_BackgroundSizeYField.length, ConvertUnits(m_BackgroundSizeYField.unit));
 
             value = new BackgroundSize(newX, newY);
-        }
-
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
-        {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
-
-            bool valid1 = stylePropertyValueCount == 1 &&
-                (styleProperty.values[0].valueType == StyleValueType.Dimension || styleProperty.values[0].valueType == StyleValueType.Keyword);
-
-            bool valid2 = stylePropertyValueCount == 2 &&
-                (styleProperty.values[0].valueType == StyleValueType.Dimension || styleProperty.values[0].valueType == StyleValueType.Keyword) &&
-                (styleProperty.values[1].valueType == StyleValueType.Dimension);
-
-            if (!isNewValue && !valid1 && !valid2)
-            {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            if (!isNewValue)
-            {
-                if (value.sizeType == BackgroundSizeType.Length)
-                {
-                    if (stylePropertyValueCount > 1)
-                    {
-                        styleSheet.RemoveValue(styleProperty, styleProperty.values[1]);
-                    }
-
-                    styleSheet.RemoveValue(styleProperty, styleProperty.values[0]);
-
-                    Dimension x = new Dimension(value.x.value, StyleSheetUtilities.ConvertToDimensionUnit(value.x.unit));
-                    Dimension y = new Dimension(value.y.value, StyleSheetUtilities.ConvertToDimensionUnit(value.y.unit));
-                    styleSheet.AddValue(styleProperty, x);
-                    styleSheet.AddValue(styleProperty, y);
-                }
-                else
-                {
-                    if (stylePropertyValueCount > 1)
-                    {
-                        styleSheet.RemoveValue(styleProperty, styleProperty.values[1]);
-                    }
-
-                    styleSheet.RemoveValue(styleProperty, styleProperty.values[0]);
-
-
-                    if (value.sizeType == BackgroundSizeType.Contain)
-                    {
-                        styleSheet.AddValue(styleProperty, StyleValueKeyword.Contain);
-                    }
-                    else
-                    {
-                        styleSheet.AddValue(styleProperty, StyleValueKeyword.Cover);
-                    }
-                }
-            }
-            else
-            {
-                if (value.sizeType == BackgroundSizeType.Length)
-                {
-                    Dimension x = new Dimension(value.x.value, StyleSheetUtilities.ConvertToDimensionUnit(value.x.unit));
-                    Dimension y = new Dimension(value.y.value, StyleSheetUtilities.ConvertToDimensionUnit(value.y.unit));
-                    styleSheet.AddValue(styleProperty, x);
-                    styleSheet.AddValue(styleProperty, y);
-                }
-                else
-                {
-                    if (value.sizeType == BackgroundSizeType.Contain)
-                    {
-                        styleSheet.AddValue(styleProperty, StyleValueKeyword.Contain);
-                    }
-                    else
-                    {
-                        styleSheet.AddValue(styleProperty, StyleValueKeyword.Cover);
-                    }
-                }
-            }
-
-            return isNewValue;
         }
     }
 }

@@ -29,6 +29,24 @@ namespace UnityEngine.UIElements
     public partial struct TimeValue : IEquatable<TimeValue>
     {
         /// <summary>
+        /// Creates a second <see cref="TimeValue"/> from a float.
+        /// </summary>
+        /// <returns>The created time value.</returns>
+        public static TimeValue Seconds(float value)
+        {
+            return new TimeValue(value, TimeUnit.Second);
+        }
+
+        /// <summary>
+        /// Creates a millisecond <see cref="TimeValue"/> from a float.
+        /// </summary>
+        /// <returns>The created time value.</returns>
+        public static TimeValue Milliseconds(float value)
+        {
+            return new TimeValue(value, TimeUnit.Millisecond);
+        }
+
+        /// <summary>
         /// The time value.
         /// </summary>
         public float value

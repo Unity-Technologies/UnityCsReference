@@ -12,7 +12,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class EntryProcessor
+    partial class EntryProcessor
     {
         struct MaskMesh
         {
@@ -23,8 +23,8 @@ namespace UnityEngine.UIElements.UIR
 
         EntryPreProcessor m_PreProcessor = new EntryPreProcessor();
 
-        RenderChain m_RenderChain;
-        VisualElement m_CurrentElement;
+        RenderTreeManager m_RenderTreeManager;
+        RenderData m_CurrentRenderData;
 
         int m_MaskDepth; // The currently used depth
         int m_MaskDepthPopped;
@@ -76,40 +76,40 @@ namespace UnityEngine.UIElements.UIR
         public RenderChainCommand firstTailCommand { get; private set; }
         public RenderChainCommand lastTailCommand { get; private set; }
 
-        public void Init(Entry root, RenderChain renderChain, VisualElement ve)
+        public void Init(Entry root, RenderTreeManager renderTreeManager, RenderData renderData)
         {
-            UIRenderDevice device = renderChain.device;
-            m_RenderChain = renderChain;
-            m_CurrentElement = ve;
+            UIRenderDevice device = renderTreeManager.device;
+            m_RenderTreeManager = renderTreeManager;
+            m_CurrentRenderData = renderData;
 
             m_PreProcessor.PreProcess(root);
 
             // Free the allocated meshes, if necessary
-            if (m_PreProcessor.headAllocs.Count == 0 && ve.renderChainData.headMesh != null)
+            if (m_PreProcessor.headAllocs.Count == 0 && renderData.headMesh != null)
             {
-                device.Free(ve.renderChainData.headMesh);
-                ve.renderChainData.headMesh = null;
+                device.Free(renderData.headMesh);
+                renderData.headMesh = null;
             }
 
-            if (m_PreProcessor.tailAllocs.Count == 0 && ve.renderChainData.tailMesh != null)
+            if (m_PreProcessor.tailAllocs.Count == 0 && renderData.tailMesh != null)
             {
-                device.Free(ve.renderChainData.tailMesh);
-                ve.renderChainData.tailMesh = null;
+                device.Free(renderData.tailMesh);
+                renderData.tailMesh = null;
             }
 
-            if (ve.renderChainData.hasExtraMeshes)
-                renderChain.FreeExtraMeshes(ve);
+            if (renderData.hasExtraMeshes)
+                renderTreeManager.FreeExtraMeshes(renderData);
 
-            renderChain.ResetTextures(ve);
+            renderTreeManager.ResetTextures(renderData);
 
-            var parent = m_CurrentElement.hierarchy.parent;
-            bool isGroupTransform = m_CurrentElement.renderChainData.isGroupTransform;
+            var parent = renderData.parent;
+            bool isGroupTransform = renderData.isGroupTransform;
 
             if (parent != null)
             {
-                m_MaskDepthPopped = parent.renderChainData.childrenMaskDepth;
-                m_StencilRefPopped = parent.renderChainData.childrenStencilRef;
-                m_ClipRectIdPopped = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.renderChainData.clipRectID;
+                m_MaskDepthPopped = parent.childrenMaskDepth;
+                m_StencilRefPopped = parent.childrenStencilRef;
+                m_ClipRectIdPopped = isGroupTransform ? UIRVEShaderInfoAllocator.infiniteClipRect : parent.clipRectID;
             }
             else
             {
@@ -120,7 +120,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_MaskDepthPushed = m_MaskDepthPopped + 1;
             m_StencilRefPushed = m_MaskDepthPopped;
-            m_ClipRectIdPushed = m_CurrentElement.renderChainData.clipRectID;
+            m_ClipRectIdPushed = renderData.clipRectID;
 
             m_MaskDepth = m_MaskDepthPopped;
             m_StencilRef = m_StencilRefPopped;
@@ -140,8 +140,8 @@ namespace UnityEngine.UIElements.UIR
         {
             m_PreProcessor.ClearReferences();
 
-            m_RenderChain = null;
-            m_CurrentElement = null;
+            m_RenderTreeManager = null;
+            m_CurrentRenderData = null;
             m_Mesh = null;
 
             m_FirstCommand = null;
@@ -156,7 +156,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_IsTail = false;
 
-            ProcessFirstAlloc(m_PreProcessor.headAllocs, ref m_CurrentElement.renderChainData.headMesh);
+            ProcessFirstAlloc(m_PreProcessor.headAllocs, ref m_CurrentRenderData.headMesh);
 
             m_FirstCommand = null;
             m_LastCommand = null;
@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements.UIR
         {
             m_IsTail = true;
 
-            ProcessFirstAlloc(m_PreProcessor.tailAllocs, ref m_CurrentElement.renderChainData.tailMesh);
+            ProcessFirstAlloc(m_PreProcessor.tailAllocs, ref m_CurrentRenderData.tailMesh);
 
             m_FirstCommand = null;
             m_LastCommand = null;
@@ -207,18 +207,18 @@ namespace UnityEngine.UIElements.UIR
                         if (texture != null)
                         {
                             // Attempt to override with an atlas
-                            if (m_RenderChain.atlas != null && m_RenderChain.atlas.TryGetAtlas(m_CurrentElement, texture as Texture2D, out textureId, out RectInt atlasRect))
+                            if (m_RenderTreeManager.atlas != null && m_RenderTreeManager.atlas.TryGetAtlas(m_CurrentRenderData.owner, texture as Texture2D, out textureId, out RectInt atlasRect))
                             {
                                 m_RenderType = VertexFlags.IsDynamic;
                                 m_AtlasRect = new Rect(atlasRect.x, atlasRect.y, atlasRect.width, atlasRect.height);
                                 m_RemapUVs = true;
-                                m_RenderChain.InsertTexture(m_CurrentElement, texture, textureId, true);
+                                m_RenderTreeManager.InsertTexture(m_CurrentRenderData, texture, textureId, true);
                             }
                             else
                             {
                                 m_RenderType = VertexFlags.IsTextured;
                                 textureId = TextureRegistry.instance.Acquire(texture);
-                                m_RenderChain.InsertTexture(m_CurrentElement, texture, textureId, false);
+                                m_RenderTreeManager.InsertTexture(m_CurrentRenderData, texture, textureId, false);
                             }
                         }
                         else
@@ -232,15 +232,21 @@ namespace UnityEngine.UIElements.UIR
                     {
                         m_RenderType = VertexFlags.IsTextured;
                         TextureId textureId = TextureRegistry.instance.Acquire(entry.texture);
-                        m_RenderChain.InsertTexture(m_CurrentElement, entry.texture, textureId, false);
+                        m_RenderTreeManager.InsertTexture(m_CurrentRenderData, entry.texture, textureId, false);
                         ProcessMeshEntry(entry, textureId);
+                        break;
+                    }
+                    case EntryType.DrawDynamicTexturedMesh:
+                    {
+                        m_RenderType = VertexFlags.IsTextured;
+                        ProcessMeshEntry(entry, entry.textureId);
                         break;
                     }
                     case EntryType.DrawTextMesh:
                     {
                         m_RenderType = VertexFlags.IsText;
                         TextureId textureId = TextureRegistry.instance.Acquire(entry.texture);
-                        m_RenderChain.InsertTexture(m_CurrentElement, entry.texture, textureId, false);
+                        m_RenderTreeManager.InsertTexture(m_CurrentRenderData, entry.texture, textureId, false);
                         ProcessMeshEntry(entry, textureId);
                         break;
                     }
@@ -251,7 +257,7 @@ namespace UnityEngine.UIElements.UIR
 
                         // The vector image has embedded textures/gradients and we have a manager that can accept the settings.
                         // Register the settings and assume that it works.
-                        var gradientRemap = m_RenderChain.vectorImageManager.AddUser(entry.gradientsOwner, m_CurrentElement);
+                        var gradientRemap = m_RenderTreeManager.vectorImageManager.AddUser(entry.gradientsOwner, m_CurrentRenderData.owner);
                         m_GradientSettingIndexOffset = gradientRemap.destIndex;
                         if (gradientRemap.atlas != TextureId.invalid)
 
@@ -261,7 +267,7 @@ namespace UnityEngine.UIElements.UIR
                         {
                             // Only the settings were atlased
                             textureId = TextureRegistry.instance.Acquire(entry.gradientsOwner.atlas);
-                            m_RenderChain.InsertTexture(m_CurrentElement, entry.gradientsOwner.atlas, textureId, false);
+                            m_RenderTreeManager.InsertTexture(m_CurrentRenderData, entry.gradientsOwner.atlas, textureId, false);
                         }
 
                         ProcessMeshEntry(entry, textureId);
@@ -270,9 +276,9 @@ namespace UnityEngine.UIElements.UIR
                     }
                     case EntryType.DrawImmediate:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.Immediate;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         cmd.callback = entry.immediateCallback;
                         AppendCommand(cmd);
@@ -280,9 +286,9 @@ namespace UnityEngine.UIElements.UIR
                     }
                     case EntryType.DrawImmediateCull:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.ImmediateCull;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         cmd.callback = entry.immediateCallback;
                         AppendCommand(cmd);
@@ -329,75 +335,45 @@ namespace UnityEngine.UIElements.UIR
                         break;
                     case EntryType.PushScissors:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushScissor;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
                     case EntryType.PopScissors:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopScissor;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
                     case EntryType.PushGroupMatrix:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushView;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
                     case EntryType.PopGroupMatrix:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopView;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
-                        break;
-                    }
-                    case EntryType.PushRenderTexture:
-                    {
-                        Debug.Assert(m_MaskDepth == 0, "The RenderTargetMode feature must not be used within a stencil mask.");
-                        var cmd = m_RenderChain.AllocCommand();
-                        cmd.type = CommandType.PushRenderTexture;
-                        cmd.owner = m_CurrentElement;
-                        cmd.isTail = m_IsTail;
-                        AppendCommand(cmd);
-                        break;
-                    }
-                    case EntryType.BlitAndPopRenderTexture:
-                    {
-                        {
-                            var cmd = m_RenderChain.AllocCommand();
-                            cmd.type = CommandType.BlitToPreviousRT;
-                            cmd.owner = m_CurrentElement;
-                            cmd.isTail = m_IsTail;
-                            cmd.state.material = GetBlitMaterial(m_CurrentElement.subRenderTargetMode);
-                            Debug.Assert(cmd.state.material != null);
-                            AppendCommand(cmd);
-                        }
-                        {
-                            var cmd = m_RenderChain.AllocCommand();
-                            cmd.type = CommandType.PopRenderTexture;
-                            cmd.owner = m_CurrentElement;
-                            cmd.isTail = m_IsTail;
-                            AppendCommand(cmd);
-                        }
                         break;
                     }
                     case EntryType.PushDefaultMaterial:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushDefaultMaterial;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         cmd.state.material = entry.material;
                         AppendCommand(cmd);
@@ -405,18 +381,18 @@ namespace UnityEngine.UIElements.UIR
                     }
                     case EntryType.PopDefaultMaterial:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopDefaultMaterial;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
                     case EntryType.CutRenderChain:
                     {
-                        var cmd = m_RenderChain.AllocCommand();
+                        var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.CutRenderChain;
-                        cmd.owner = m_CurrentElement;
+                        cmd.owner = m_CurrentRenderData;
                         cmd.isTail= m_IsTail;
                         AppendCommand(cmd);
                         break;
@@ -443,15 +419,15 @@ namespace UnityEngine.UIElements.UIR
 
                 if (!m_VertexDataComputed)
                 {
-                    UIRUtility.GetVerticesTransformInfo(m_CurrentElement, out m_Transform);
-                    m_CurrentElement.renderChainData.verticesSpace = m_Transform; // This is the space for the generated vertices below
-                    m_TransformData = m_RenderChain.shaderInfoAllocator.TransformAllocToVertexData(m_CurrentElement.renderChainData.transformID);
-                    m_OpacityData = m_RenderChain.shaderInfoAllocator.OpacityAllocToVertexData(m_CurrentElement.renderChainData.opacityID);
+                    UIRUtility.GetVerticesTransformInfo(m_CurrentRenderData, out m_Transform);
+                    m_CurrentRenderData.verticesSpace = m_Transform; // This is the space for the generated vertices below
+                    m_TransformData = m_RenderTreeManager.shaderInfoAllocator.TransformAllocToVertexData(m_CurrentRenderData.transformID);
+                    m_OpacityData = m_RenderTreeManager.shaderInfoAllocator.OpacityAllocToVertexData(m_CurrentRenderData.opacityID);
                     m_VertexDataComputed = true;
                 }
 
                 Color32 opacityPage = new Color32(m_OpacityData.r, m_OpacityData.g, 0, 0);
-                Color32 clipRectData = m_RenderChain.shaderInfoAllocator.ClipRectAllocToVertexData(m_ClipRectId);
+                Color32 clipRectData = m_RenderTreeManager.shaderInfoAllocator.ClipRectAllocToVertexData(m_ClipRectId);
                 Color32 ids = new Color32(m_TransformData.b, clipRectData.b, m_OpacityData.b, 0);
                 Color32 xformClipPages = new Color32(m_TransformData.r, m_TransformData.g, clipRectData.r, clipRectData.g);
                 Color32 addFlags = new Color32((byte)m_RenderType, 0, 0, 0);
@@ -461,7 +437,7 @@ namespace UnityEngine.UIElements.UIR
                     // It's important to avoid writing these values when the vertices aren't for text,
                     // as some of these settings are shared with the vector graphics gradients.
                     // The same applies to the CopyTransformVertsPos* methods below.
-                    Color32 textCoreSettingsData = m_RenderChain.shaderInfoAllocator.TextCoreSettingsToVertexData(m_CurrentElement.renderChainData.textCoreSettingsID);
+                    Color32 textCoreSettingsData = m_RenderTreeManager.shaderInfoAllocator.TextCoreSettingsToVertexData(m_CurrentRenderData.textCoreSettingsID);
                     m_TextCoreSettingsPage.r = textCoreSettingsData.r;
                     m_TextCoreSettingsPage.g = textCoreSettingsData.g;
                     ids.a = textCoreSettingsData.b;
@@ -473,7 +449,8 @@ namespace UnityEngine.UIElements.UIR
                 int entryIndexOffset = m_VertsFilled + m_IndexOffset;
                 var targetIndicesSlice = m_Indices.Slice(m_IndicesFilled, entryIndexCount);
                 bool shapeWindingIsClockwise = UIRUtility.ShapeWindingIsClockwise(m_MaskDepth, m_StencilRef);
-                bool transformFlipsWinding = m_CurrentElement.renderChainData.worldFlipsWinding;
+                bool transformFlipsWinding = m_CurrentRenderData.worldFlipsWinding;
+
 
                 var job = new ConvertMeshJobData
                 {
@@ -496,13 +473,13 @@ namespace UnityEngine.UIElements.UIR
                     indexOffset = entryIndexOffset,
 
                     flipIndices = shapeWindingIsClockwise == transformFlipsWinding ? 1 : 0,
-                    forceZ = m_RenderChain.isFlat ? 1 : 0,
+                    forceZ = m_RenderTreeManager.isFlat ? 1 : 0,
                     positionZ = m_IsDrawingMask ? UIRUtility.k_MaskPosZ : UIRUtility.k_MeshPosZ,
 
                     remapUVs = m_RemapUVs ? 1 : 0,
                     atlasRect = m_AtlasRect,
                 };
-                m_RenderChain.jobManager.Add(ref job);
+                m_RenderTreeManager.jobManager.Add(ref job);
 
                 if (m_IsDrawingMask)
                 {
@@ -523,6 +500,8 @@ namespace UnityEngine.UIElements.UIR
                     cmd.state.sdfScale = entry.textScale;
                     cmd.state.sharpness = entry.fontSharpness;
                 }
+
+                cmd.state.isPremultiplied = (entry.flags & EntryFlags.IsPremultiplied) != 0;
 
                 m_VertsFilled += entryVertexCount;
                 m_IndicesFilled += entryIndexCount;
@@ -557,7 +536,7 @@ namespace UnityEngine.UIElements.UIR
                             indexCount = mesh.indices.Length,
                             indexOffset = m_IndexOffset + m_VertsFilled - mesh.indexOffset
                         };
-                        m_RenderChain.jobManager.Add(ref job);
+                        m_RenderTreeManager.jobManager.Add(ref job);
                     }
 
                     m_IndicesFilled += mesh.indices.Length;
@@ -568,13 +547,13 @@ namespace UnityEngine.UIElements.UIR
 
         RenderChainCommand CreateMeshDrawCommand(MeshHandle mesh, int indexCount, int indexOffset, Material material, TextureId texture)
         {
-            var cmd = m_RenderChain.AllocCommand();
+            var cmd = m_RenderTreeManager.AllocCommand();
             cmd.type = CommandType.Draw;
             cmd.state = new State { material = material, texture = texture, stencilRef = m_StencilRef };
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;
-            cmd.owner = m_CurrentElement;
+            cmd.owner = m_CurrentRenderData;
             cmd.isTail = m_IsTail;
             return cmd;
         }
@@ -600,7 +579,7 @@ namespace UnityEngine.UIElements.UIR
             if (allocList.Count > 0)
             {
                 EntryPreProcessor.AllocSize allocSize = allocList[0];
-                UpdateOrAllocate(ref mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderChain.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderChain.statsByRef);
+                UpdateOrAllocate(ref mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderTreeManager.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderTreeManager.statsByRef);
                 m_AllocVertexCount = (int)mesh.allocVerts.size;
             }
             else
@@ -627,10 +606,10 @@ namespace UnityEngine.UIElements.UIR
 
             EntryPreProcessor.AllocSize allocSize = allocList[++m_AllocIndex];
             m_Mesh = null; // Extra allocations have been previously freed, so we don't have any mesh to update
-            UpdateOrAllocate(ref m_Mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderChain.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderChain.statsByRef);
+            UpdateOrAllocate(ref m_Mesh, allocSize.vertexCount, allocSize.indexCount, m_RenderTreeManager.device, out m_Verts, out m_Indices, out m_IndexOffset, ref m_RenderTreeManager.statsByRef);
             m_AllocVertexCount = (int)m_Mesh.allocVerts.size;
 
-            m_RenderChain.InsertExtraMesh(m_CurrentElement, m_Mesh);
+            m_RenderTreeManager.InsertExtraMesh(m_CurrentRenderData, m_Mesh);
 
             m_VertsFilled = 0;
             m_IndicesFilled = 0;
@@ -659,48 +638,6 @@ namespace UnityEngine.UIElements.UIR
             {
                 data = device.Allocate((uint)vertexCount, (uint)indexCount, out verts, out indices, out indexOffset);
                 stats.newMeshAllocations++;
-            }
-        }
-
-        static Material s_blitMaterial_LinearToGamma;
-        static Material s_blitMaterial_GammaToLinear;
-        static Material s_blitMaterial_NoChange;
-        static Shader s_blitShader;
-
-        static Material CreateBlitShader(float colorConversion)
-        {
-            if (s_blitShader == null)
-                s_blitShader = Shader.Find(Shaders.k_ColorConversionBlit);
-
-            Debug.Assert(s_blitShader != null, "UI Tollkit Render Event: Shader Not found");
-            var blitMaterial = new Material(s_blitShader);
-            blitMaterial.hideFlags |= HideFlags.DontSaveInEditor;
-            blitMaterial.SetFloat("_ColorConversion", colorConversion);
-            return blitMaterial;
-        }
-
-        static Material GetBlitMaterial(VisualElement.RenderTargetMode mode)
-        {
-            switch (mode)
-            {
-                case VisualElement.RenderTargetMode.GammaToLinear:
-                    if (s_blitMaterial_GammaToLinear == null)
-                        s_blitMaterial_GammaToLinear = CreateBlitShader(-1);
-                    return s_blitMaterial_GammaToLinear;
-
-                case VisualElement.RenderTargetMode.LinearToGamma:
-                    if (s_blitMaterial_LinearToGamma == null)
-                        s_blitMaterial_LinearToGamma = CreateBlitShader(1);
-                    return s_blitMaterial_LinearToGamma;
-
-                case VisualElement.RenderTargetMode.NoColorConversion:
-                    if (s_blitMaterial_NoChange == null)
-                        s_blitMaterial_NoChange = CreateBlitShader(0);
-                    return s_blitMaterial_NoChange;
-
-                default:
-                    Debug.LogError($"No Shader for Unsupported RenderTargetMode: {mode}");
-                    return null;
             }
         }
     }

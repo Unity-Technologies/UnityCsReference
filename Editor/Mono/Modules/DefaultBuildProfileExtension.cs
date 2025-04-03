@@ -89,6 +89,11 @@ namespace UnityEditor.Modules
         }
 
         public virtual bool ShouldDrawDevelopmentPlayerCheckbox() => true;
+
+        public virtual bool ShouldDrawLinkTimeOptimization()
+        {
+            return BuildTargetDiscovery.TryGetBuildTarget(m_BuildTarget, out var buildTarget) && buildTarget.BuildPlatformProperties?.SupportLinkTimeOptimization == true;
+        }
         public virtual bool ShouldDrawProfilerCheckbox() => true;
         public virtual bool ShouldDrawScriptDebuggingCheckbox() => true;
         // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
@@ -211,6 +216,11 @@ namespace UnityEditor.Modules
                 ShowDevelopmentPlayerCheckbox();
             }
 
+            if (ShouldDrawLinkTimeOptimization())
+            {
+                ShowLinkTimeOptimization();
+            }
+
             using (new EditorGUI.DisabledScope(!m_Development.boolValue))
             {
                 if (ShouldDrawProfilerCheckbox())
@@ -310,6 +320,13 @@ namespace UnityEditor.Modules
             {
                 m_SharedSettings.development = m_Development.boolValue;
             }
+        }
+
+        /// <summary>
+        /// Show Link Time Optimization. Platforms can override this method to show/customize the UI.
+        /// </summary>
+        public virtual void ShowLinkTimeOptimization()
+        {
         }
 
         /// <summary>

@@ -44,6 +44,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class ResolvedFixedList4Property<T> : ResolvedStyleProperty<IEnumerable<T>>
+        {
+        }
+
         abstract class ResolvedFontProperty : ResolvedStyleProperty<Font>
         {
         }
@@ -77,6 +81,10 @@ namespace UnityEngine.UIElements
         }
 
         abstract class ResolvedBackgroundSizeProperty : ResolvedStyleProperty<BackgroundSize>
+        {
+        }
+
+        abstract class ResolvedMaterialProperty : ResolvedStyleProperty<Material>
         {
         }
 

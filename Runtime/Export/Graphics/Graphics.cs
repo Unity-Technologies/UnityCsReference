@@ -167,6 +167,8 @@ namespace UnityEngine
             overrideSceneCullingMask = false;
             sceneCullingMask = 0;
             instanceID = 0;
+            forceMeshLod = -1;
+            meshLodSelectionBias = 0.0f;
         }
 
         public int layer {get; set;}
@@ -189,6 +191,9 @@ namespace UnityEngine
 
         public bool overrideSceneCullingMask { get; set; }
         public ulong sceneCullingMask { get; set; }
+
+        public int forceMeshLod { get; set; }
+        public float meshLodSelectionBias { get; set; }
     }
 
     internal readonly struct RenderInstancedDataLayout

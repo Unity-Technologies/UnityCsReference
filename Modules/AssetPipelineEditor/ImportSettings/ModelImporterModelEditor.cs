@@ -42,6 +42,16 @@ namespace UnityEditor
         [CacheProperty("meshOptimizationFlags")]
         SerializedProperty m_MeshOptimizationFlags;
 
+        [CacheProperty("generateMeshLods")]
+        SerializedProperty m_GenerateMeshLods;
+
+        [CacheProperty("meshLodGenerationFlags")]
+        SerializedProperty m_MeshLodGenerationFlags;
+
+        [CacheProperty("maximumMeshLod")]
+        SerializedProperty m_MaximumMeshLod;
+
+
         // Geometry
         [CacheProperty("keepQuads")]
         SerializedProperty m_KeepQuads;
@@ -137,8 +147,13 @@ namespace UnityEditor
             public static GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
             public static GUIContent IsReadable = EditorGUIUtility.TrTextContent("Read/Write", "Allow vertices and indices to be accessed from script.");
             public static GUIContent OptimizationFlags = EditorGUIUtility.TrTextContent("Optimize Mesh", "Reorder vertices and/or polygons for better GPU performance.");
-
+            public static GUIContent MeshLods = EditorGUIUtility.TrTextContent("Mesh LODs");
+            public static GUIContent MeshLodsInfoBox = EditorGUIUtility.TrTextContent("The quality of simplified meshes depends on the complexity and structure of the original mesh. To achieve the best outcomes, read the documentation to understand the feature's capabilities, limitations, and optimal workflows.", EditorGUIUtility.GetHelpIcon(MessageType.Info));
+            public static GUIContent GenerateMeshLods = EditorGUIUtility.TrTextContent("Generate Mesh LODs", "Generate Mesh LODs during the import process.");
+            public static GUIContent MeshLodLimit = EditorGUIUtility.TrTextContent("Limit LODs", "Enable to limit the number of LODs that Unity generates.");
+            public static GUIContent MaximumMeshLod = EditorGUIUtility.TrTextContent("Maximum Level", "Enter the maximum index number of generated LODs.");
             public static GUIContent GenerateColliders = EditorGUIUtility.TrTextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.");
+            public static GUIContent MeshLodDiscardOddLevels = EditorGUIUtility.TrTextContent("Discard Odd Levels", "Limits the number of generated LODs by discarding all odd LOD indices.");
 
             public static GUIContent Geometry = EditorGUIUtility.TrTextContent("Geometry", "Detailed mesh data");
             public static GUIContent KeepQuads = EditorGUIUtility.TrTextContent("Keep Quads", "If model contains quad faces, they are kept for DX11 tessellation.");
@@ -200,6 +215,56 @@ namespace UnityEditor
             m_MeshOptimizationFlags.intValue = (int)(MeshOptimizationFlags)EditorGUILayout.EnumFlagsField(Styles.OptimizationFlags, (MeshOptimizationFlags)m_MeshOptimizationFlags.intValue);
 
             EditorGUILayout.PropertyField(m_AddColliders, Styles.GenerateColliders);
+
+            EditorGUILayout.LabelField(Styles.MeshLods, EditorStyles.boldLabel);
+
+            using (new EditorGUI.DisabledGroupScope(m_KeepQuads.boolValue))
+            {
+                EditorGUILayout.PropertyField(m_GenerateMeshLods, Styles.GenerateMeshLods);
+
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    if (m_GenerateMeshLods.boolValue)
+                    {
+                        EditorGUILayout.HelpBox(Styles.MeshLodsInfoBox);
+
+                        EditorGUI.BeginChangeCheck();
+
+                        bool discardOddLevelsFlag = (m_MeshLodGenerationFlags.intValue &
+                                                     (int) MeshLodUtility.LodGenerationFlags.DiscardOddLevels) != 0;
+                        discardOddLevelsFlag =
+                            EditorGUILayout.Toggle(Styles.MeshLodDiscardOddLevels, discardOddLevelsFlag);
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            m_MeshLodGenerationFlags.intValue = discardOddLevelsFlag
+                                ? m_MeshLodGenerationFlags.intValue | (int)MeshLodUtility.LodGenerationFlags.DiscardOddLevels
+                                : m_MeshLodGenerationFlags.intValue & ~(int)MeshLodUtility.LodGenerationFlags.DiscardOddLevels;
+                        }
+
+                        EditorGUI.BeginChangeCheck();
+
+                        var shouldShowField = EditorGUILayout.Toggle(Styles.MeshLodLimit, m_MaximumMeshLod.intValue != -1);
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            if (shouldShowField)
+                                m_MaximumMeshLod.intValue = 32;
+                            else
+                                m_MaximumMeshLod.intValue = -1;
+                        }
+
+                        if (shouldShowField)
+                        {
+                            using (new EditorGUI.IndentLevelScope())
+                            {
+                                var newValue = EditorGUILayout.IntField(Styles.MaximumMeshLod, m_MaximumMeshLod.intValue);
+                                m_MaximumMeshLod.intValue = Mathf.Max(newValue, 0);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         void SceneGUI()
@@ -261,7 +326,10 @@ namespace UnityEditor
         protected void GeometryGUI()
         {
             GUILayout.Label(Styles.Geometry, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_KeepQuads, Styles.KeepQuads);
+
+            using (new EditorGUI.DisabledScope(m_GenerateMeshLods.boolValue))
+                EditorGUILayout.PropertyField(m_KeepQuads, Styles.KeepQuads);
+
             EditorGUILayout.PropertyField(m_WeldVertices, Styles.WeldVertices);
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {

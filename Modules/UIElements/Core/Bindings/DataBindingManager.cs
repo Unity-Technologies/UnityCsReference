@@ -1093,12 +1093,12 @@ namespace UnityEngine.UIElements
             return requests.Count > 0;
         }
 
-        internal static IEnumerable<(Binding binding, BindingId bindingId)> GetBindingRequests(VisualElement element)
+        internal static void GetBindingRequests(VisualElement element, List<(Binding binding, BindingId bindingId)> bindingRequests)
         {
             var requests = (List<BindingRequest>) element.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)
             {
-                yield break;
+                return;
             }
 
             // We'll only return at most a single request per target property, as all the other requests will be discarded in the end.
@@ -1109,7 +1109,7 @@ namespace UnityEngine.UIElements
                 {
                     var request = requests[i];
                     if (visited.Add(request.bindingId))
-                        yield return (request.binding, request.bindingId);
+                        bindingRequests.Add((request.binding, request.bindingId));
                 }
             }
             finally

@@ -302,13 +302,18 @@ namespace UnityEditor.ShortcutManagement
             }
 
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
+            var wasOverridden = shortcutEntry.overridden;
             var oldBinding = new ShortcutBinding(shortcutEntry.combinations);
 
             shortcutEntry.SetOverride(combinationSequence);
 
             if (!m_BindingValidator.IsBindingValid(shortcutEntry, out invalidBindingMessage))
             {
-                shortcutEntry.ResetToDefault();
+                if(wasOverridden)
+                    shortcutEntry.SetOverride(oldBinding.keyCombinationSequence);
+                else
+                    shortcutEntry.ResetToDefault();
+
                 Debug.LogError(invalidBindingMessage);
                 shortcutBindingChanged?.Invoke(this, identifier, oldBinding, oldBinding);
                 return;

@@ -65,7 +65,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    class TextureRegistry
+    partial class TextureRegistry
     {
         struct TextureInfo
         {

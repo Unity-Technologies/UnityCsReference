@@ -224,7 +224,7 @@ namespace UnityEngine.UIElements
 
     //keep in sync with RenderHints in C++ (Modules/UIElements/RenderHints.h)
     [Flags]
-    internal enum RenderHints
+    enum RenderHints
     {
         None = 0,
 
@@ -233,16 +233,18 @@ namespace UnityEngine.UIElements
         ClipWithScissors = 1 << 2, // If clipping is requested on this element, prefer scissoring
         MaskContainer = 1 << 3, // Use to prevent the next nested masks from modifying the stencil ref
         DynamicColor = 1 << 4, // Use to store the color in shaderInfo storage
+        DynamicPostProcessing = 1 << 5, // Use to force the creation of a nested render tree
 
         // Whenever we change a render hint, we also set a dirty flag to indicate that it has changed
         // This way, we don't need an additional field to store pending changes
-        DirtyOffset = 5,
+        DirtyOffset = 6,
         DirtyGroupTransform = GroupTransform << DirtyOffset,
         DirtyBoneTransform = BoneTransform << DirtyOffset,
         DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
         DirtyMaskContainer = MaskContainer << DirtyOffset,
         DirtyDynamicColor = DynamicColor << DirtyOffset,
-        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor,
+        DirtyDynamicPostProcessing = DynamicPostProcessing << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor | DirtyDynamicPostProcessing,
     }
 
     struct PanelClearSettings
@@ -264,7 +266,7 @@ namespace UnityEngine.UIElements
 
     internal interface IGlobalPanelDebugger
     {
-        bool InterceptMouseEvent(IPanel panel, IMouseEvent ev);
+        bool InterceptEvent(IPanel panel, EventBase ev);
         void OnContextClick(IPanel panel, ContextClickEvent ev);
     }
 
@@ -647,6 +649,11 @@ namespace UnityEngine.UIElements
         internal void SetTopElementUnderPointer(int pointerId, VisualElement element, EventBase triggerEvent)
         {
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
+        }
+
+        internal void SetTopElementUnderPointer(VisualElement element, int pointerId, Vector2 position)
+        {
+            m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, position);
         }
 
         internal VisualElement RecomputeTopElementUnderPointer(int pointerId, Vector2 pointerPos, EventBase triggerEvent)
@@ -1569,6 +1576,12 @@ namespace UnityEngine.UIElements
             if (drawsInCameras)
             {
                 Debug.LogError("Panel.Render() must not be called on a panel that draws in cameras.");
+                return;
+            }
+
+            // UIE-1432 temporarily use this check there until a permanent solution to dispose panel is implemented
+            if (ownerObject == null)
+            {
                 return;
             }
 

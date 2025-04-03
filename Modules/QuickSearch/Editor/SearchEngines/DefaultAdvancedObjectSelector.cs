@@ -70,7 +70,7 @@ namespace UnityEditor.Search
         static void SelectObject(in AdvancedObjectSelectorParameters parameters)
         {
             var selectContext = parameters.context;
-            var searchFlags = SearchFlags.OpenPicker;
+            var searchFlags = SearchFlags.OpenPicker | SearchFlags.UseSessionSettings;
             if (Utils.IsRunningTests())
                 searchFlags |= SearchFlags.Dockable;
 
@@ -87,6 +87,9 @@ namespace UnityEditor.Search
                 searchEngineContext = selectContext,
                 pickerType = SearchPickerType.AdvancedSearchPicker };
             s_Window = SearchService.ShowPicker(viewState) as SearchWindow;
+
+            // Notify the window is shown like in the legacy ObjectSelector
+            ObjectSelector.InvokeWindowShown(s_Window);
         }
 
         static void EndSession(in AdvancedObjectSelectorParameters parameters)

@@ -136,7 +136,7 @@ namespace UnityEditor.Search
             m_ShowMoreGroup = new VisualElement() { name = "SearchMoreGroupTab" };
             m_ShowMoreGroup.AddToClassList(moreGroupTabClassName);
 
-            m_ResultViewButtonContainer = new VisualElement();
+            m_ResultViewButtonContainer = new VisualElement() { name = "ResultViewButtonContainer" }; // name used by AI-Toolkit to find the element
             m_ResultViewButtonContainer.AddToClassList(resultViewButtonContainerClassName);
 
             Add(m_TabsContainer);
@@ -556,11 +556,13 @@ namespace UnityEditor.Search
         {
             if (m_ViewModel.context.showPackages)
             {
+                // TODO defaultFlags:
                 SearchSettings.defaultFlags &= ~SearchFlags.Packages;
                 m_ViewModel.context.showPackages = false;
             }
             else
             {
+                // TODO defaultFlags:
                 SearchSettings.defaultFlags |= SearchFlags.Packages;
                 m_ViewModel.context.showPackages = true;
             }
@@ -579,11 +581,13 @@ namespace UnityEditor.Search
         {
             if (m_ViewModel.context.wantsMore)
             {
+                // TODO defaultFlags: Remove this
                 SearchSettings.defaultFlags &= ~SearchFlags.WantsMore;
                 m_ViewModel.context.wantsMore = false;
             }
             else
             {
+                // TODO defaultFlags: Remove this
                 SearchSettings.defaultFlags |= SearchFlags.WantsMore;
                 m_ViewModel.context.wantsMore = true;
             }

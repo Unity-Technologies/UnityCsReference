@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace UnityEngine.UIElements.UIR
 {
-    class TextureSlotManager
+    partial class TextureSlotManager
     {
         static TextureSlotManager()
         {
@@ -18,8 +18,7 @@ namespace UnityEngine.UIElements.UIR
 
         internal static readonly int k_SlotCount;
         internal static readonly int k_SlotSize = 2; // Number of float4 per slot
-
-        internal static readonly int[] slotIds;
+        internal static int[] slotIds;
         internal static readonly int textureTableId = Shader.PropertyToID("_TextureInfo");
 
         TextureId[] m_Textures;
@@ -47,7 +46,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_Textures[i] = TextureId.invalid;
                 m_Tickets[i] = -1;
-                SetGpuData(i, TextureId.invalid, 1, 1, 0, 0);
+                SetGpuData(i, TextureId.invalid, 1, 1, 0, 0, false);
             }
         }
 
@@ -96,7 +95,7 @@ namespace UnityEngine.UIElements.UIR
             return slot;
         }
 
-        public void Bind(TextureId id, float sdfScale, float sharpness, int slot, MaterialPropertyBlock mat, CommandList commandList = null)
+        public void Bind(TextureId id, float sdfScale, float sharpness, bool isPremultiplied, int slot, MaterialPropertyBlock mat, CommandList commandList = null)
         {
             Texture tex = textureRegistry.GetTexture(id);
             if (tex == null) // Case 1364578: Texture may have been destroyed
@@ -104,7 +103,7 @@ namespace UnityEngine.UIElements.UIR
 
             m_Textures[slot] = id;
             MarkUsed(slot);
-            SetGpuData(slot, id, tex.width, tex.height, sdfScale, sharpness);
+            SetGpuData(slot, id, tex.width, tex.height, sdfScale, sharpness, isPremultiplied);
             if (commandList == null)
             {
                 mat.SetTexture(slotIds[slot], tex);
@@ -117,13 +116,13 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale, float sharpness)
+        public void SetGpuData(int slotIndex, TextureId id, int textureWidth, int textureHeight, float sdfScale, float sharpness, bool isPremultiplied)
         {
             int offset = slotIndex * k_SlotSize;
             float texelWidth = 1f / textureWidth;
             float texelHeight = 1f / textureHeight;
             m_GpuTextures[offset + 0] = new Vector4(id.ConvertToGpu(), texelWidth, texelHeight, sdfScale);
-            m_GpuTextures[offset + 1] = new Vector4(textureWidth, textureHeight, sharpness, 0);
+            m_GpuTextures[offset + 1] = new Vector4(textureWidth, textureHeight, sharpness, isPremultiplied ? 1.0f : 0.0f);
         }
 
         // Overridable for tests

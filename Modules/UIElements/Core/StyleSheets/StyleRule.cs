@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements
     internal class StyleRule
     {
         [SerializeField]
-        StyleProperty[] m_Properties;
+        StyleProperty[] m_Properties = Array.Empty<StyleProperty>();
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]

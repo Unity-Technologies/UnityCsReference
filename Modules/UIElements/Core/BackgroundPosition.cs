@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -14,6 +15,13 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial struct BackgroundPosition : IEquatable<BackgroundPosition>
     {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal enum Axis
+        {
+            Horizontal,
+            Vertical
+        }
+
         /// <summary>
         /// Background position type
         /// </summary>

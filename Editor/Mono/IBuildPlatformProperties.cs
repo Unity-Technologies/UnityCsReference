@@ -21,4 +21,7 @@ internal interface IBuildPlatformProperties : IPlatformProperties
     // The BuildProfileWindow uses this property to determine if required packages should be installed
     // when activating the classic platform for a given build target.
     public bool ShouldInstallRequiredPackagesOnActivationOfClassicPlatform => false;
+
+    // Determines whether to apply/respect the Android.UserBuildSettings.linkTimeOptimization value in the build pipeline.
+    public bool SupportLinkTimeOptimization => false;
 }

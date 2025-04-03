@@ -24,7 +24,7 @@ namespace UnityEngine.UIElements
     class UIRRepaintUpdater : BaseVisualTreeUpdater, IPanelRenderer
     {
         BaseVisualElementPanel attachedPanel;
-        internal RenderChain renderChain; // May be recreated any time.
+        internal RenderTreeManager renderTreeManager; // May be recreated any time.
 
         public UIRRepaintUpdater()
         {
@@ -70,7 +70,7 @@ namespace UnityEngine.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if (renderChain == null)
+            if (renderTreeManager == null)
                 return;
 
             bool transformChanged = (versionChangeType & VersionChangeType.Transform) != 0;
@@ -82,55 +82,65 @@ namespace UnityEngine.UIElements
             bool disableRenderingChanged = (versionChangeType & VersionChangeType.DisableRendering) != 0;
             bool repaintChanged = (versionChangeType & VersionChangeType.Repaint) != 0;
 
-            if (renderHintsChanged)
-                renderChain.UIEOnRenderHintsChanged(ve);
+            // Check if we now need to render to a texture or not. If this change, this is equivalent to
+            // changing the DynamicPostprocessing render hint.
+            bool stackingContextChanged = false;
+            if (ve.renderData != null)
+            {
+                stackingContextChanged =
+                    (ve.useRenderTexture && ((ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) == 0)) ||
+                    (!ve.useRenderTexture && (ve.renderData.flags & RenderDataFlags.IsSubTreeQuad) != 0);
+            }
+
+            if (renderHintsChanged || stackingContextChanged)
+                renderTreeManager.UIEOnRenderHintsChanged(ve);
 
             if (transformChanged || sizeChanged || borderWidthChanged)
-                renderChain.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged || borderWidthChanged);
+                renderTreeManager.UIEOnTransformOrSizeChanged(ve, transformChanged, sizeChanged || borderWidthChanged);
 
             if (overflowChanged || borderRadiusChanged)
-                renderChain.UIEOnClippingChanged(ve, false);
+                renderTreeManager.UIEOnClippingChanged(ve, false);
 
             if ((versionChangeType & VersionChangeType.Opacity) != 0)
-                renderChain.UIEOnOpacityChanged(ve);
+                renderTreeManager.UIEOnOpacityChanged(ve);
 
             if ((versionChangeType & VersionChangeType.Color) != 0)
-                renderChain.UIEOnColorChanged(ve);
+                renderTreeManager.UIEOnColorChanged(ve);
 
             if (repaintChanged)
-                renderChain.UIEOnVisualsChanged(ve, false);
+                renderTreeManager.UIEOnVisualsChanged(ve, false);
 
             if (disableRenderingChanged && !repaintChanged) // The disable rendering will be taken care of by the repaint (it clear all commands)
-                renderChain.UIEOnDisableRenderingChanged(ve);
+                renderTreeManager.UIEOnDisableRenderingChanged(ve);
         }
 
         public override void Update()
         {
-            if (renderChain == null)
+            if (renderTreeManager == null)
                 InitRenderChain();
 
-            if (renderChain == null || renderChain.device == null)
+            if (renderTreeManager == null || renderTreeManager.device == null)
                 return;
 
-            renderChain.ProcessChanges();
+            renderTreeManager.ProcessChanges();
 
             // Apply these debug values every frame because the render chain may have been recreated.
-            renderChain.drawStats = drawStats;
-            renderChain.device.breakBatches = breakBatches;
+            renderTreeManager.drawStats = drawStats;
+            renderTreeManager.device.breakBatches = breakBatches;
         }
 
         public void Render()
         {
             // Since the calls to Update and Render can be disjoint, this check seems reasonable.
-            if (renderChain == null)
+            if (renderTreeManager == null)
                 return;
 
-            Debug.Assert(!renderChain.drawInCameras);
-            renderChain.Render();
+            Debug.Assert(!renderTreeManager.drawInCameras);
+            renderTreeManager.RenderRootTree();
         }
 
         // Overriden in tests
-        protected virtual RenderChain CreateRenderChain() { return new RenderChain(panel); }
+        protected virtual RenderTreeManager CreateRenderChain() { return new RenderTreeManager(panel); }
 
         static UIRRepaintUpdater()
         {
@@ -200,19 +210,20 @@ namespace UnityEngine.UIElements
         {
             Debug.Assert(attachedPanel != null);
 
-            renderChain = CreateRenderChain();
-            renderChain.UIEOnChildAdded(attachedPanel.visualTree);
+            renderTreeManager = CreateRenderChain();
+            renderTreeManager.UIEOnChildAdded(attachedPanel.visualTree);
         }
 
         public void Reset() => DestroyRenderChain();
 
         void DestroyRenderChain()
         {
-            if (renderChain == null)
+            if (renderTreeManager == null)
                 return;
 
-            renderChain.Dispose();
-            renderChain = null;
+            renderTreeManager.Dispose();
+            renderTreeManager = null;
+
             ResetAllElementsDataRecursive(attachedPanel.visualTree);
         }
 
@@ -233,28 +244,31 @@ namespace UnityEngine.UIElements
 
         void OnPanelHierarchyChanged(VisualElement ve, HierarchyChangeType changeType, IReadOnlyList<VisualElement> additionalContext = null)
         {
-            if (renderChain == null)
+            if (renderTreeManager == null)
                 return;
 
             switch (changeType)
             {
                 case HierarchyChangeType.AddedToParent:
-                    renderChain.UIEOnChildAdded(ve);
+                    renderTreeManager.UIEOnChildAdded(ve);
                     break;
 
                 case HierarchyChangeType.RemovedFromParent:
-                    renderChain.UIEOnChildRemoving(ve);
+                    renderTreeManager.UIEOnChildRemoving(ve);
                     break;
 
                 case HierarchyChangeType.ChildrenReordered:
-                    renderChain.UIEOnChildrenReordered(ve);
+                    renderTreeManager.UIEOnChildrenReordered(ve);
                     break;
             }
         }
 
         void ResetAllElementsDataRecursive(VisualElement ve)
         {
-            ve.renderChainData = new RenderChainVEData(); // Fast reset, no need to go through device freeing
+            // NOTE: There is no need to return the renderChainData to the pool,
+            // this is called while destroying the renderChain, which will dispose of the pool anyway.
+            ve.renderData = null;
+            ve.nestedRenderData = null;
 
             // Recurse on children
             int childrenCount = ve.hierarchy.childCount - 1;

@@ -314,10 +314,13 @@ namespace UnityEditor.Search
             if (this == state)
                 return;
 
+            hideTabs = state.hideTabs;
             sessionId = state.sessionId;
             sessionName = state.sessionName;
             excludeClearItem = state.excludeClearItem;
             ignoreSaveSearches = state.ignoreSaveSearches;
+            hideAllGroup = state.hideAllGroup;
+            windowTitle = state.windowTitle;
             activeQuery = state.activeQuery;
             initialQuery = state.initialQuery;
             title = state.title;

@@ -498,7 +498,7 @@ namespace UnityEditor.Search
                 SearchSettings.SortActionsPriority();
 
                 m_SearchMonitorView = SearchMonitor.GetView();
-                m_SearchView = new SearchView(m_ViewState, GetInstanceID()) { multiselect = true };
+                m_SearchView = new SearchView(m_ViewState, GetInstanceID());
 
                 UpdateWindowTitle();
 
@@ -814,11 +814,13 @@ namespace UnityEditor.Search
         {
             if (context.debug)
             {
+                // TODO defaultFlags: Remove this
                 SearchSettings.defaultFlags &= ~SearchFlags.Debug;
                 context.debug = false;
             }
             else
             {
+                // TODO defaultFlags: Remove this
                 SearchSettings.defaultFlags |= SearchFlags.Debug;
                 context.debug = true;
             }

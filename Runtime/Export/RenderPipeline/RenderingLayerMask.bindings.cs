@@ -13,6 +13,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/RenderingLayerMask.h")]
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     [NativeClass("RenderingLayerMask", "struct RenderingLayerMask;")]
+    [Serializable]
     public struct RenderingLayerMask
     {
         [NativeName("m_Bits")] uint m_Bits;

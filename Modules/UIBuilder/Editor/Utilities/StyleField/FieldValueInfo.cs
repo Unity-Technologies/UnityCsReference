@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor;
 using UnityEditor.UIElements.Debugger;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -378,7 +379,7 @@ namespace Unity.UI.Builder
                             {
                                 complexSelector = inspector.currentVisualElement.GetStyleComplexSelector()
                             };
-                        valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.LocalUSSSelector, new MatchedRule(selectorMatchRecord));
+                        valueSource = new FieldValueSourceInfo(FieldValueSourceInfoType.LocalUSSSelector, new MatchedRule(selectorMatchRecord, AssetDatabase.GetAssetPath(selectorMatchRecord.sheet)));
                     }
                     else
                     {

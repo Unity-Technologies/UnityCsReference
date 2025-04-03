@@ -47,6 +47,7 @@ namespace UnityEngine.UIElements.StyleSheets
         protected abstract bool MatchResource();
         protected abstract bool MatchUrl();
         protected abstract bool MatchTime();
+        protected abstract bool MatchFilterFunction();
         protected abstract bool MatchAngle();
         protected abstract bool MatchCustomIdent();
 
@@ -405,6 +406,9 @@ namespace UnityEngine.UIElements.StyleSheets
                     case DataType.Time:
                         result = MatchTime();
                         break;
+                    case DataType.FilterFunction:
+                        result = MatchFilterFunction();
+                        break;
                     case DataType.Angle:
                         result = MatchAngle();
                         break;
@@ -426,7 +430,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private string current => hasCurrent ? m_PropertyParts[currentIndex] : null;
 
         public override int valueCount => m_PropertyParts.Length;
-        public override bool isCurrentVariable => hasCurrent && current.StartsWith("var(");
+        public override bool isCurrentVariable => hasCurrent && current.StartsWith("var(", StringComparison.Ordinal);
         public override bool isCurrentComma => hasCurrent && current == ",";
 
         private void Initialize(string propertyValue)
@@ -450,7 +454,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
             // Handle global keyword and env()
             var firstValue = current;
-            if (firstValue == "initial" || firstValue.StartsWith("env("))
+            if (firstValue == "initial" || firstValue.StartsWith("env(", StringComparison.Ordinal))
             {
                 MoveNext();
                 match = true;
@@ -581,6 +585,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
+        static readonly Regex s_FilterFunctionRegex = new Regex(@"^([a-zA-Z0-9\-]+)\([^\)]*\)$", RegexOptions.Compiled);
+        protected override bool MatchFilterFunction()
+        {
+            var value = current;
+            Match match = s_FilterFunctionRegex.Match(value);
+            return match.Success;
+        }
+
         static readonly Regex s_AngleRegex = new Regex(@"^[+-]?\d+(?:\.\d+)?(?:deg|grad|rad|turn)$", RegexOptions.Compiled);
         protected override bool MatchAngle()
         {
@@ -661,13 +673,13 @@ namespace UnityEngine.UIElements.StyleSheets
             if (value.handle.valueType == StyleValueType.Keyword)
             {
                 var svk = (StyleValueKeyword)value.handle.valueIndex;
-                return svk.ToUssString() == keyword.ToLowerInvariant();
+                return svk.ToUssString().Equals(keyword, StringComparison.OrdinalIgnoreCase);
             }
 
             if (value.handle.valueType == StyleValueType.Enum)
             {
                 var s = value.sheet.ReadEnum(value.handle);
-                return s == keyword.ToLowerInvariant();
+                return s.Equals(keyword, StringComparison.OrdinalIgnoreCase);
             }
 
             return false;
@@ -729,7 +741,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {
                 Color c = Color.clear;
                 var colorName = value.sheet.ReadAsString(value.handle);
-                if (StyleSheetColor.TryGetColor(colorName.ToLowerInvariant(), out c))
+                if (StyleSheetColor.TryGetColor(colorName, out c))
                     return true;
             }
 
@@ -755,6 +767,19 @@ namespace UnityEngine.UIElements.StyleSheets
                 return dimension.unit == Dimension.Unit.Second || dimension.unit == Dimension.Unit.Millisecond;
             }
             return false;
+        }
+
+        protected override bool MatchFilterFunction()
+        {
+            var filterType = current.handle.valueIndex;
+            MoveNext();
+
+            var value = current;
+            int argCount = (int)value.sheet.ReadFloat(value.handle);
+            for (int i = 0; i < argCount; ++i)
+                MoveNext();
+
+            return true;
         }
 
         protected override bool MatchCustomIdent()

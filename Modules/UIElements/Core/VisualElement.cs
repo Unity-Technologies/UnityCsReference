@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Unity.Properties;
 using UnityEngine.Internal;
@@ -74,6 +75,8 @@ namespace UnityEngine.UIElements
         DetachedDataSource = 1 << 17,
         // Element has capture on one or more pointerIds
         PointerCapture = 1 << 18,
+        // Element is a root UIDocument
+        isWorldSpaceRootUIDocument = 1 << 19,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
@@ -457,7 +460,10 @@ namespace UnityEngine.UIElements
             {
                 m_Flags = value ? m_Flags | VisualElementFlags.HierarchyDisplayed : m_Flags & ~VisualElementFlags.HierarchyDisplayed;
 
-                if(value && ( renderChainData.pendingRepaint|| renderChainData.pendingHierarchicalRepaint))
+                if (renderData == null)
+                    return;
+
+                if (value && (renderData.pendingRepaint|| renderData.pendingHierarchicalRepaint))
                     IncrementVersion(VersionChangeType.Repaint);
             }
         }
@@ -485,8 +491,17 @@ namespace UnityEngine.UIElements
         private VisualElementFlags m_Flags;
         internal VisualElementFlags flags
         {
-            get => m_Flags;
-            set => m_Flags = value;
+            get { return m_Flags; }
+            set
+            {
+                m_Flags = value;
+                if (renderData != null)
+                {
+                    // Forward relevant flags to render data
+                    if ((value & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty)
+                        renderData.flags |= RenderDataFlags.IsClippingRectDirty;
+                }
+            }
         }
 
         // Used for view data persistence (ie. scroll position or tree view expanded states)
@@ -625,10 +640,12 @@ namespace UnityEngine.UIElements
             get
             {
                 return
-                    (((renderHints & RenderHints.GroupTransform) != 0) ? UsageHints.GroupTransform : 0) |
-                    (((renderHints & RenderHints.BoneTransform) != 0) ? UsageHints.DynamicTransform : 0) |
-                    (((renderHints & RenderHints.MaskContainer) != 0) ? UsageHints.MaskContainer : 0) |
-                    (((renderHints & RenderHints.DynamicColor) != 0) ? UsageHints.DynamicColor : 0);
+                    ((renderHints & RenderHints.GroupTransform) != 0 ? UsageHints.GroupTransform : 0) |
+                    ((renderHints & RenderHints.BoneTransform) != 0 ? UsageHints.DynamicTransform : 0) |
+                    ((renderHints & RenderHints.MaskContainer) != 0 ? UsageHints.MaskContainer : 0) |
+                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0)
+                    ;
+
             }
             set
             {
@@ -648,6 +665,7 @@ namespace UnityEngine.UIElements
                 if ((value & UsageHints.DynamicColor) != 0)
                     renderHints |= RenderHints.DynamicColor;
                 else renderHints &= ~RenderHints.DynamicColor;
+
 
                 NotifyPropertyChanged(usageHintsProperty);
             }
@@ -688,18 +706,47 @@ namespace UnityEngine.UIElements
 
         internal Rect lastLayout;
         internal Rect lastPseudoPadding;
-        internal RenderChainVEData renderChainData;
-        internal bool shouldCutRenderChain;
-        internal UIRenderer uiRenderer; // Null for non-world panels
+        internal RenderData renderData; // TODO: Search for every usage of this, should be minimal!!
+        internal RenderData nestedRenderData; // Non-null when rendering into a render texture
+        internal int hierarchyDepth;
+        internal int insertionIndex = -1;
+
+        // TODO: Do some validation to make sure all effects actually have a material
+        internal bool useRenderTexture
+        {
+            get {
+                return false;
+            }
+        }
 
         /// <summary>
         /// Returns a transform styles object for this VisualElement.
-        /// <seealso cref="ITransform"/>
         /// </summary>
         /// <remarks>
         /// The transform styles object contains the position, rotation, scale style properties of this VisualElement.
         /// __Note__: This transform object is different and separate from the GameObject Transform MonoBehaviour.
+        /// The three interface members write to the visual element's inline style and read from the resolved style.
+        /// However, the [[VisualElement.style]] API offers more features and is the recommended approach.
+        /// For example, you can set translate and position as percentages through the [[VisualElement.style]] API.
         /// </remarks>
+        /// <example nocheck="true">
+        /// The following example reads the current position, rotation, and scale from the resolvedStyle of a 
+        /// VisualElement, then updates the style properties with these values.
+        /// <code lang="cs">
+        /// <![CDATA[
+        ///         var visualElement = new VisualElement();
+        ///         Vector3 position = visualElement.resolvedStyle.translate;
+        ///         visualElement.style.translate = new Translate(position.x, position.y, position.z);
+        ///         Quaternion rotation = visualElement.resolvedStyle.rotate.ToQuaternion();
+        ///         visualElement.style.rotate = new Rotate(rotation);
+        ///         Vector3 scale = visualElement.resolvedStyle.scale.value;
+        ///         visualElement.style.scale = new Scale((Vector2) scale);
+        /// 
+        /// ]]>
+        /// </code>
+        /// </example>
+        ///
+        [Obsolete("When writing the value, use VisualElement.style.translate, VisualElement.style.rotate or VisualElement.style.scale instead. When reading the value, use VisualElement.resolvedStyle.translate, scale and rotate")]
         public ITransform transform
         {
             get { return this; }
@@ -1033,13 +1080,28 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal Bounds localBoundsPicking3D
+        {
+            get
+            {
+                if (isLocalBounds3DDirty)
+                {
+                    UpdateLocalBoundsAndPickingBounds3D();
+                    isLocalBounds3DDirty = false;
+                }
+
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsPicking3D;
+            }
+        }
+
         void UpdateLocalBoundsAndPickingBounds3D()
         {
             if (!areAncestorsAndSelfDisplayed)
             {
                 WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
                 {
-                    localBounds3D = WorldSpaceData.k_Empty3DBounds
+                    localBounds3D = WorldSpaceData.k_Empty3DBounds,
+                    localBoundsPicking3D = WorldSpaceData.k_Empty3DBounds
                 });
                 return;
             }
@@ -1051,12 +1113,14 @@ namespace UnityEngine.UIElements
                 var localBounds = new Bounds(bbox.center, bbox.size);
                 WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
                 {
-                    localBounds3D = localBounds
+                    localBounds3D = localBounds,
+                    localBoundsPicking3D = localBounds
                 });
                 return;
             }
 
             var bounds = new Bounds(rect.center, rect.size);
+            var pickingBounds = pickingMode == PickingMode.Position ? bounds : WorldSpaceData.k_Empty3DBounds;
 
             if (!ShouldClip())
             {
@@ -1069,12 +1133,20 @@ namespace UnityEngine.UIElements
                         hierarchy[i].TransformAlignedBoundsToParentSpace(ref childBounds);
                         bounds.Encapsulate(childBounds);
                     }
+
+                    var childPickingBounds = hierarchy[i].localBoundsPicking3D;
+                    if (childPickingBounds.extents.x >= 0)
+                    {
+                        hierarchy[i].TransformAlignedBoundsToParentSpace(ref childPickingBounds);
+                        pickingBounds.Encapsulate(childPickingBounds);
+                    }
                 }
             }
 
             WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
             {
-                localBounds3D = bounds
+                localBounds3D = bounds,
+                localBoundsPicking3D = pickingBounds
             });
         }
 
@@ -1114,6 +1186,14 @@ namespace UnityEngine.UIElements
                 var l = layout;
                 return new Rect(0.0f, 0.0f, l.width, l.height);
             }
+        }
+
+        internal bool isWorldSpaceRootUIDocument
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (m_Flags & VisualElementFlags.isWorldSpaceRootUIDocument) == VisualElementFlags.isWorldSpaceRootUIDocument;
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            set => m_Flags = value ? m_Flags | VisualElementFlags.isWorldSpaceRootUIDocument : m_Flags & ~VisualElementFlags.isWorldSpaceRootUIDocument;
         }
 
         internal bool isWorldTransformDirty
@@ -1222,8 +1302,9 @@ namespace UnityEngine.UIElements
         }
 
         private Rect m_WorldClip = Rect.zero;
-        private Rect m_WorldClipMinusGroup = Rect.zero;
+        private Rect m_NestedTreeWorldClip = Rect.zero;
         private bool m_WorldClipIsInfinite = false;
+
         internal Rect worldClip
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -1238,7 +1319,8 @@ namespace UnityEngine.UIElements
                 return m_WorldClip;
             }
         }
-        internal Rect worldClipMinusGroup
+
+        internal Rect nestedTreeWorldClip
         {
             get
             {
@@ -1247,7 +1329,8 @@ namespace UnityEngine.UIElements
                     UpdateWorldClip();
                     isWorldClipDirty = false;
                 }
-                return m_WorldClipMinusGroup;
+
+                return m_NestedTreeWorldClip;
             }
         }
 
@@ -1281,18 +1364,9 @@ namespace UnityEngine.UIElements
         {
             if (hierarchy.parent != null)
             {
-                m_WorldClip = hierarchy.parent.worldClip;
-
                 bool parentWorldClipIsInfinite = hierarchy.parent.worldClipIsInfinite;
-                if (hierarchy.parent != renderChainData.groupTransformAncestor) // Accessing render data here?
-                {
-                    m_WorldClipMinusGroup = hierarchy.parent.worldClipMinusGroup;
-                }
-                else
-                {
-                    parentWorldClipIsInfinite = true;
-                    m_WorldClipMinusGroup = s_InfiniteRect;
-                }
+                if (hierarchy.parent == renderData?.groupTransformAncestor?.owner)
+                    parentWorldClipIsInfinite = true; // Group transforms marks the beginning of a new clipping space
 
                 if (ShouldClip())
                 {
@@ -1301,19 +1375,26 @@ namespace UnityEngine.UIElements
                     // be the last operation that's performed.
                     Rect wb = SubstractBorderPadding(worldBound);
 
-                    m_WorldClip = CombineClipRects(wb, m_WorldClip);
-                    m_WorldClipMinusGroup = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, m_WorldClipMinusGroup);
+                    m_WorldClip = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, hierarchy.parent.worldClip);
+                    m_NestedTreeWorldClip = m_WorldClip;
 
                     m_WorldClipIsInfinite = false;
                 }
                 else
                 {
+                    m_WorldClip = hierarchy.parent.worldClip;
+
+                    if (nestedRenderData != null)
+                        m_NestedTreeWorldClip = s_InfiniteRect;
+                    else
+                        m_NestedTreeWorldClip = m_WorldClip;
+
                     m_WorldClipIsInfinite = parentWorldClipIsInfinite;
                 }
             }
             else
             {
-                m_WorldClipMinusGroup = m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;;
+                m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
                 m_WorldClipIsInfinite = true;
             }
         }
@@ -2718,28 +2799,6 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal enum RenderTargetMode
-        {
-            None,
-            NoColorConversion,
-            LinearToGamma,
-            GammaToLinear
-        }
-
-        RenderTargetMode m_SubRenderTargetMode = RenderTargetMode.None;
-        internal RenderTargetMode subRenderTargetMode
-        {
-            get { return m_SubRenderTargetMode; }
-            set
-            {
-                if (m_SubRenderTargetMode == value)
-                    return;
-
-                m_SubRenderTargetMode = value;
-                IncrementVersion(VersionChangeType.Repaint);
-            }
-        }
-
         static Material s_runtimeMaterial;
         Material getRuntimeMaterial()
         {
@@ -2770,14 +2829,6 @@ namespace UnityEngine.UIElements
                 IncrementVersion(VersionChangeType.Repaint | VersionChangeType.Layout);
             }
         }
-
-        internal void ApplyPlayerRenderingToEditorElement()
-        {
-            bool isLinear = QualitySettings.activeColorSpace == ColorSpace.Linear;
-            subRenderTargetMode = isLinear ? RenderTargetMode.LinearToGamma : RenderTargetMode.None;
-            defaultMaterial = isLinear ? getRuntimeMaterial() : null;
-        }
-
     }
 
     /// <summary>

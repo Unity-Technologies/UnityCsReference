@@ -413,6 +413,7 @@ namespace UnityEngine.UIElements
 
         TextElement m_SelectedTextElement;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TextElement selectedTextElement
         {
             get => m_SelectedTextElement;

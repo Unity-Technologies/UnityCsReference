@@ -175,6 +175,7 @@ namespace UnityEngine
         extern public static Vector3          shadowCascade4Split   { get; set; }
 
         [NativeProperty("LODBias")] extern public static float lodBias { get; set; }
+        [NativeProperty("MeshLODThreshold")] extern public static float meshLodThreshold { get; set; }
         [NativeProperty("AnisotropicTextures")] extern public static AnisotropicFiltering anisotropicFiltering { get; set; }
 
         [Obsolete("masterTextureLimit has been deprecated. Use globalTextureMipmapLimit instead (UnityUpgradable) -> globalTextureMipmapLimit", false)]
@@ -315,7 +316,7 @@ namespace UnityEngine
                     uniqueRenderPipelineAssets.Add(rpAsset);
             }
         }
-        
+
         public static void GetRenderPipelineAssetsForPlatform<T>(string buildTargetGroupName, out HashSet<T> uniqueRenderPipelineAssets, out bool allLevelsAreOverridden)
             where T : RenderPipelineAsset
         {

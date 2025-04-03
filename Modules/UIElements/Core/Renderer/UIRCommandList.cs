@@ -40,27 +40,30 @@ namespace UnityEngine.UIElements.UIR
         public MaterialPropertyBlock constantProps = new();
         public MaterialPropertyBlock batchProps = new();
         public GCHandle handle; // GCHandle for native-side interactions
+        public Material m_Material;
 
         List<SerializedCommand> m_Commands = new();
         Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_SlotCount];
         NativeList<DrawBufferRange> m_DrawRanges;
 
-        public CommandList(VisualElement owner, IntPtr vertexDecl, IntPtr stencilState)
+        public CommandList(VisualElement owner, IntPtr vertexDecl, IntPtr stencilState, Material material)
         {
             m_Owner = owner;
             m_VertexDecl = vertexDecl;
             m_StencilState = stencilState;
             m_DrawRanges = new(1024);
             handle = GCHandle.Alloc(this);
+            m_Material = material;
         }
 
         public int Count => m_Commands.Count;
 
-        public void Reset(VisualElement newOwner)
+        public void Reset(VisualElement newOwner, Material material)
         {
             m_Owner = newOwner;
             m_Commands.Clear();
             m_DrawRanges.Clear();
+            m_Material = material;
 
             for (int i = 0; i < m_GpuTextureData.Length; ++i)
                 m_GpuTextureData[i] = Vector4.zero;

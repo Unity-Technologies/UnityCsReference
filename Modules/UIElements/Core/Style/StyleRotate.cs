@@ -46,18 +46,28 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Creates a StyleRotate from either a <see cref="Rotate"/> or a <see cref="StyleKeyword"/>.
+        /// Creates a StyleRotate from a <see cref="Rotate"/>.
         /// </summary>
         public StyleRotate(Rotate v)
             : this(v, StyleKeyword.Undefined)
         {}
 
         /// <summary>
-        /// Creates a StyleRotate from either a <see cref="Rotate"/> or a <see cref="StyleKeyword"/>.
+        /// Creates a StyleRotate from a <see cref="StyleKeyword"/>.
         /// </summary>
         public StyleRotate(StyleKeyword keyword)
             : this(default(Rotate), keyword)
         {}
+
+
+        /// <summary>
+        /// Creates a StyleRotate from a <see cref="Quaternion"/>.
+        /// </summary>
+        /// <remarks>3D rotations are only expected to work on world space panels and will cause masking issues on overlay panels.</remarks>
+        public StyleRotate(Quaternion quaternion)
+            : this(quaternion, StyleKeyword.Undefined)
+        { }
+
 
         internal StyleRotate(Rotate v, StyleKeyword keyword)
         {

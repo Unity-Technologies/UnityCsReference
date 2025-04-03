@@ -22,6 +22,7 @@ namespace UnityEditor
                 yield return "Editor Utility/Store";
                 //Editor/Mono/GUI/Toolbars/MainToolbarImguiContainer.cs
                 yield return "Editor Utility/Imgui Subtoolbars";
+                yield return "Services/AI";
             }
         }
 

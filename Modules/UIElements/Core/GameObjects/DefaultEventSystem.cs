@@ -259,7 +259,7 @@ namespace UnityEngine.UIElements
             }
 
             FindTargetAtPosition(mousePosition, delta, pointerId, targetDisplay, out var target, out var targetPanel,
-                out var targetPanelPosition, out var elementUnderPointer);
+                out var targetPanelPosition, out var elementUnderPointer, out var camera);
 
             RuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
 
@@ -296,9 +296,9 @@ namespace UnityEngine.UIElements
                     }
 
                     if (evt.eventTypeId == PointerDownEvent.TypeId())
-                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree, camera);
                     else if (evt.eventTypeId == PointerUpEvent.TypeId() && ((PointerUpEvent)evt).pressedButtons == 0)
-                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null, null);
                 }
             }
             else
@@ -357,9 +357,9 @@ namespace UnityEngine.UIElements
                     }
 
                     if (evt.eventTypeId == PointerDownEvent.TypeId())
-                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, target ?? targetPanel.visualTree, null);
                     else if (evt.eventTypeId == PointerUpEvent.TypeId() && ((PointerUpEvent)evt).pressedButtons == 0)
-                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null);
+                        PointerDeviceState.SetElementWithSoftPointerCapture(pointerId, null, null);
                 }
             }
             else
@@ -389,7 +389,7 @@ namespace UnityEngine.UIElements
 
         internal void FindTargetAtPosition(Vector2 mousePosition, Vector2 delta, int pointerId, int? targetDisplay,
             out VisualElement target, out RuntimePanel targetPanel, out Vector3 targetPanelPosition,
-            out VisualElement elementUnderPointer)
+            out VisualElement elementUnderPointer, out Camera camera)
         {
             // Try panels from closest to deepest.
             var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
@@ -401,13 +401,15 @@ namespace UnityEngine.UIElements
                     target = elementUnderPointer = null;
                     targetPanel = (RuntimePanel)panels[i];
                     targetPanel.ScreenToPanel(mousePosition, delta, out targetPanelPosition, true);
+                    camera = null;
                     return;
                 }
             }
 
-            foreach (var worldRay in raycaster.MakeRay(mousePosition, targetDisplay))
+            foreach (var worldRay in raycaster.MakeRay(mousePosition, pointerId, targetDisplay))
             {
-                if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, worldSpaceMaxDistance, worldSpaceLayers,
+                var layerMask = worldRay.camera.cullingMask & worldSpaceLayers;
+                if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
                         out var document, out elementUnderPointer, out _, out _))
                 {
                     // We hit a non-UI GameObject
@@ -416,7 +418,8 @@ namespace UnityEngine.UIElements
                     var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
                     target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;
                     targetPanel = document.containerPanel;
-                    targetPanelPosition = GetPanelPosition(target, document, worldRay);
+                    targetPanelPosition = GetPanelPosition(target, document, worldRay.ray);
+                    camera = worldRay.camera;
                     return;
                 }
             }
@@ -424,6 +427,7 @@ namespace UnityEngine.UIElements
             target = elementUnderPointer = null;
             targetPanel = null;
             targetPanelPosition = s_InvalidPanelCoordinates;
+            camera = null;
         }
 
         internal void FindTargetAtRay(Ray worldRay, int pointerId, out VisualElement target,

@@ -13,47 +13,22 @@ using System.Diagnostics;
 
 namespace Unity.UI.Builder
 {
-    internal struct BuilderTextShadow
-    {
-        public Dimension offsetX;
-        public Dimension offsetY;
-        public Dimension blurRadius;
-        public Color color;
-
-        public BuilderTextShadow(StyleTextShadow styleTextShadow)
-        {
-            var textShadow = styleTextShadow.value;
-            offsetX = new Dimension(textShadow.offset.x, Dimension.Unit.Pixel);
-            offsetY = new Dimension(textShadow.offset.y, Dimension.Unit.Pixel);
-            blurRadius = new Dimension(textShadow.blurRadius, Dimension.Unit.Pixel);
-            color = textShadow.color;
-        }
-
-        public BuilderTextShadow(TextShadow textShadow)
-        {
-            offsetX = new Dimension(textShadow.offset.x, Dimension.Unit.Pixel);
-            offsetY = new Dimension(textShadow.offset.y, Dimension.Unit.Pixel);
-            blurRadius = new Dimension(textShadow.blurRadius, Dimension.Unit.Pixel);
-            color = textShadow.color;
-        }
-    }
-
     [UsedImplicitly]
-    class TextShadowStyleField : BaseField<BuilderTextShadow>
+    class TextShadowStyleField : BaseField<TextShadow>
     {
-        public class TextShadowStyleFieldConverter : UxmlAttributeConverter<BuilderTextShadow>
+        public class TextShadowStyleFieldConverter : UxmlAttributeConverter<TextShadow>
         {
-            public override BuilderTextShadow FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BuilderTextShadow value) => throw new NotImplementedException();
+            public override TextShadow FromString(string value) => throw new NotImplementedException();
+            public override string ToString(TextShadow value) => throw new NotImplementedException();
         }
 
         [Serializable]
-        public new class UxmlSerializedData : BaseField<BuilderTextShadow>.UxmlSerializedData
+        public new class UxmlSerializedData : BaseField<TextShadow>.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                BaseField<BuilderTextShadow>.UxmlSerializedData.Register();
+                BaseField<TextShadow>.UxmlSerializedData.Register();
             }
 
             public override object CreateInstance() => new TextShadowStyleField();
@@ -117,7 +92,7 @@ namespace Unity.UI.Builder
             });
         }
 
-        public override void SetValueWithoutNotify(BuilderTextShadow newValue)
+        public override void SetValueWithoutNotify(TextShadow newValue)
         {
             base.SetValueWithoutNotify(newValue);
             RefreshSubFields();
@@ -125,63 +100,20 @@ namespace Unity.UI.Builder
 
         void RefreshSubFields()
         {
-            m_OffsetXField.SetValueWithoutNotify(value.offsetX.ToString());
-            m_OffsetYField.SetValueWithoutNotify(value.offsetY.ToString());
+            m_OffsetXField.SetValueWithoutNotify(value.offset.x.ToString());
+            m_OffsetYField.SetValueWithoutNotify(value.offset.y.ToString());
             m_BlurRadiusField.SetValueWithoutNotify(value.blurRadius.ToString());
             m_ColorField.SetValueWithoutNotify(value.color);
         }
 
         void UpdateTextShadowField()
         {
-            // Rebuild value from sub fields
-            BuilderTextShadow builderTextShadow;
-            builderTextShadow.offsetX = new Dimension { value = m_OffsetXField.length, unit = m_OffsetXField.unit };
-            builderTextShadow.offsetY = new Dimension { value = m_OffsetYField.length, unit = m_OffsetYField.unit };
-            builderTextShadow.blurRadius = new Dimension { value = m_BlurRadiusField.length, unit = m_BlurRadiusField.unit };
-            builderTextShadow.color = m_ColorField.value;
-            value = builderTextShadow;
-        }
-
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
-        {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
-
-            // Assume that TextShadow style property is made of 2+ values at all times at this point
-            // If the current style property is saved as a different type than the new style type,
-            // we need to re-save it here as the new type. We do this by just removing the current value.
-            if (!isNewValue && stylePropertyValueCount != 4 ||
-                !isNewValue && styleProperty.values[0].valueType != StyleValueType.Dimension ||
-                !isNewValue && styleProperty.values[1].valueType != StyleValueType.Dimension ||
-                !isNewValue && styleProperty.values[2].valueType != StyleValueType.Dimension ||
-                !isNewValue && styleProperty.values[3].valueType != StyleValueType.Color)
+            value = new TextShadow
             {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            var offsetX = new Dimension {value = m_OffsetXField.length, unit = m_OffsetXField.unit};
-            var offsetY = new Dimension {value = m_OffsetYField.length, unit = m_OffsetYField.unit};
-            var blurRadius = new Dimension {value = m_BlurRadiusField.length, unit = m_BlurRadiusField.unit};
-
-            if (isNewValue)
-            {
-                styleSheet.AddValue(styleProperty, offsetX);
-                styleSheet.AddValue(styleProperty, offsetY);
-                styleSheet.AddValue(styleProperty, blurRadius);
-                styleSheet.AddValue(styleProperty, m_ColorField.value);
-            }
-            else
-            {
-                styleSheet.SetValue(styleProperty.values[0], offsetX);
-                styleSheet.SetValue(styleProperty.values[1], offsetY);
-                styleSheet.SetValue(styleProperty.values[2], blurRadius);
-                styleSheet.SetValue(styleProperty.values[3], m_ColorField.value);
-            }
-
-            return isNewValue;
+                offset = new Vector2(m_OffsetXField.length, m_OffsetYField.length),
+                blurRadius = m_BlurRadiusField.length,
+                color = m_ColorField.value
+            };
         }
 
         internal void UpdateSubFieldVisualInputTooltips(string offsetXTooltip, string offsetYTooltip, string blurRadiusTooltip, string colorTooltip)

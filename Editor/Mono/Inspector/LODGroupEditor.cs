@@ -8,6 +8,7 @@ using UnityEditor.AnimatedValues;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEditor.Presets;
 
 namespace UnityEditor
@@ -51,6 +52,9 @@ namespace UnityEditor
         private int m_ReorderableListIndex = 0;
 
         private Transform m_TargetTransform;
+
+        private bool m_HasMeshLod;
+        private bool[] m_EnabledMeshLods;
 
         void InitAndSetFoldoutLabelTextures()
         {
@@ -113,9 +117,44 @@ namespace UnityEditor
             Repaint();
         }
 
+        private void UpdateEnabledMeshLods()
+        {
+            if (m_EnabledMeshLods == null || m_EnabledMeshLods.Length != m_LODs.arraySize)
+            {
+                m_EnabledMeshLods = new bool[m_LODs.arraySize];
+            }
+            else
+            {
+                Array.Clear(m_EnabledMeshLods, 0, m_EnabledMeshLods.Length);
+            }
+
+            m_HasMeshLod = false;
+
+            for (int i = 0; i < m_LODs.arraySize; i++)
+            {
+                var property = m_RendererMeshLists[i].serializedProperty;
+                for (int r = 0; r < property.arraySize; r++)
+                {
+                    var entry = property.GetArrayElementAtIndex(r).FindPropertyRelative("renderer");
+                    var renderer = entry.objectReferenceValue as Renderer;
+                    if (renderer != null)
+                    {
+                        var mesh = GetMeshFromRendererIfAvailable(renderer);
+                        if (mesh != null && mesh.isLodSelectionActive)
+                        {
+                            m_EnabledMeshLods[i] = true;
+                            m_HasMeshLod = true;
+                        }
+                    }
+                }
+            }
+        }
+
+
         void UpdateRendererMeshListCounts()
         {
             m_ReoderableMeshListCounts = m_RendererMeshLists.Select(i => i.count).ToArray();
+            UpdateEnabledMeshLods();
         }
 
         protected virtual void DrawLODRendererMeshListItems(Rect rect, int index, bool isActive, bool isFocused)
@@ -131,7 +170,13 @@ namespace UnityEditor
 
             var prop = m_RendererMeshLists[m_ReorderableListIndex].serializedProperty.GetArrayElementAtIndex(index).FindPropertyRelative("renderer");
 
+            EditorGUI.BeginChangeCheck();
             EditorGUI.ObjectField(objectFieldRect, prop, typeof(Renderer), GUIContent.none);
+            if (EditorGUI.EndChangeCheck())
+            {
+                serializedObject.ApplyModifiedProperties();
+                UpdateRendererMeshListCounts();
+            }
 
             string labelText = $"{m_PrimitiveCounts[m_ReorderableListIndex][index]} Tris.";
             var size = EditorStyles.label.CalcSize(new GUIContent(labelText));
@@ -631,12 +676,42 @@ namespace UnityEditor
             return false;
         }
 
+        private string MeshLodHelpboxText(bool[] isEnabled)
+        {
+            StringBuilder resultBuilder = new StringBuilder();
+            bool first = true; // Track if we're appending the first item
+
+            for (int i = 0; i < isEnabled.Length; i++)
+            {
+                if (isEnabled[i])
+                {
+                    if (!first)
+                    {
+                        resultBuilder.Append(", ");
+                    }
+                    else
+                    {
+                        first = false;
+                    }
+                    resultBuilder.Append($"LOD {i}");
+                }
+            }
+
+            resultBuilder.Append('.');
+            return LODGroupGUI.GUIStyles.m_MeshLodInfo.text + resultBuilder.ToString();
+        }
+
         public override void OnInspectorGUI()
         {
             var initiallyEnabled = GUI.enabled;
 
             // Grab the latest data from the object
             serializedObject.Update();
+
+            if (m_HasMeshLod)
+            {
+                EditorGUILayout.HelpBox(MeshLodHelpboxText(m_EnabledMeshLods), MessageType.Info);
+            }
 
             // Flush this editor's state when it's out of sync with serialized data.
             if (m_LODs.arraySize != m_LODGroupFoldoutHeaderValues.Length || m_LODs.arraySize != m_RendererMeshLists.Length)
@@ -1211,7 +1286,7 @@ namespace UnityEditor
             {
                 case EventType.Repaint:
                 {
-                    LODGroupGUI.DrawLODSlider(sliderPosition, lods, activeLOD);
+                    LODGroupGUI.DrawLODSlider(sliderPosition, lods, activeLOD, m_EnabledMeshLods);
                     break;
                 }
                 case EventType.MouseDown:
@@ -1641,14 +1716,24 @@ namespace UnityEditor
             var bounds = new Bounds(Vector3.zero, Vector3.zero);
             bool boundsSet = false;
 
+            Renderer[] renderers = null;
+            if (target is LODGroup targetLODGroup)
+            {
+                LOD[] lodArray = targetLODGroup.GetLODs();
+                int lodIndex = LODSelected ? activeLOD : 0; // display LOD0 if no LOD is selected
+                if (lodIndex >= 0 && lodIndex < lodArray.Length)
+                {
+                    renderers = lodArray[lodIndex].renderers; 
+                }
+            }
+            if (renderers == null)
+                return;
+
             var meshsToRender = new List<MeshFilter>();
             var billboards = new List<BillboardRenderer>();
-            var renderers = serializedObject.FindProperty(string.Format(kRenderRootPath, LODSelected ? activeLOD : 0)); // display LOD0 if no LOD is selected
-            for (int i = 0; i < renderers.arraySize; i++)
+            for (int i = 0; i < renderers.Length; i++)
             {
-                var lodRenderRef = renderers.GetArrayElementAtIndex(i).FindPropertyRelative("renderer");
-                var renderer = lodRenderRef.objectReferenceValue as Renderer;
-
+                var renderer = renderers[i];
                 if (renderer == null)
                     continue;
 

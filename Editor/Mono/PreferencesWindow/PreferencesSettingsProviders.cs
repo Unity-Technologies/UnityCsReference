@@ -545,8 +545,10 @@ By default, Windows will combine these under a single taskbar item.");
 
                     // Refresh skin to get new font
                     Unsupported.ClearSkinCache();
-                    UnityEditor.EditorUtility.RequestScriptReload();
-                    EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
+
+                    // Force a domain reload to get arround caching issue
+                    EditorUtility.RequestScriptReload();
+                    //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
                 }
             }
 
@@ -556,14 +558,15 @@ By default, Windows will combine these under a single taskbar item.");
             {
                 EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
                 EditorTextSettings.currentEditorTextRenderingMode = m_EditorTextRenderingMode;
-                EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
                 EditorApplication.UpdateEditorTextRenderingMode(m_EditorTextRenderingMode);
+
+                // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
+                //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
+                EditorUtility.RequestScriptReload();
             }
 
             if (m_EditorTextRenderingMode == EditorTextRenderingMode.SDF)
                 m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
-            else
-                EditorGUILayout.HelpBox("Bitmap fonts are only supported at full resolutions (100%, 200%). Scaling to fractional resolutions is not supported yet.", MessageType.Warning);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {

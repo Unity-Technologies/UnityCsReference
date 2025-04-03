@@ -8,7 +8,6 @@ using Unity.Jobs.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEditor.Experimental;
-using UnityEngine.Assertions;
 using UnityEngine.UIElements;
 using TextGenerationSettings = UnityEngine.TextCore.Text.TextGenerationSettings;
 
@@ -39,7 +38,7 @@ namespace UnityEditor
             TextGenerationSettings.IsEditorTextRenderingModeBitmap = () => currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap;
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
             IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
-            UITKTextHandle.GetBlurryMapping = GetBlurryFontAssetMapping;
+            UITKTextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
@@ -96,6 +95,7 @@ namespace UnityEditor
                     {
                         UpdateLocalizationFontAsset();
                         UpdateDefaultTextStyleSheet();
+                        s_DefaultTextSettings.CreateDefaultEditorFontAsset();
                         GUISkin.m_SkinChanged += UpdateDefaultTextStyleSheet;
                     }
                 }
@@ -103,6 +103,44 @@ namespace UnityEditor
                 return s_DefaultTextSettings;
             }
         }
+
+    void CreateDefaultEditorFontAsset()
+    {
+        if (m_FontLookup == null)
+        {
+            m_FontLookup = new Dictionary<int, FontAsset>();
+            InitializeFontReferenceLookup();
+        }
+
+        // The default Editor Font Asset have already been created.
+        if (m_FontReferences.Count > 0)
+            return;
+
+        Shader shader = TextShaderUtilities.ShaderRef_MobileSDF_IMGUI;
+
+        var systemFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_SystemFontConfig;
+        FontAsset systemRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(systemFontConfig, shader);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemRegularFontAsset, shader,
+            new[]
+            {
+                FontPaths.System.Normal,
+                FontPaths.System.Big,
+                FontPaths.System.Small,
+                FontPaths.System.Warning
+            });
+
+        FontAsset systemBoldFontAsset = EditorFontAssetFactory.CreateFontAsset(EditorFontAssetFactory.SystemFontName, "Bold", 90, shader);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemBoldFontAsset, shader,
+            new[]
+            {
+                FontPaths.System.NormalBold,
+                FontPaths.System.SmallBold
+            });
+
+        var interFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_InterFontConfig;
+        FontAsset interRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(interFontConfig, shader);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, interRegularFontAsset, shader, new[] { FontPaths.Inter.Regular });
+    }
 
         const int k_MinSupportedPointSize = 5;
         const int k_MaxSupportedPointSize = 19;
@@ -210,4 +248,21 @@ namespace UnityEditor
         internal static readonly string s_LightEditorTextStyleSheetPath = "UIPackageResources/Light Editor Text StyleSheet.asset";
     }
 
+    internal static class FontPaths
+    {
+        public static class System
+        {
+            public const string Big = "Fonts/System/System Big.ttf";
+            public const string Normal = "Fonts/System/System Normal.ttf";
+            public const string NormalBold = "Fonts/System/System Normal Bold.ttf";
+            public const string Small = "Fonts/System/System Small.ttf";
+            public const string SmallBold = "Fonts/System/System Small Bold.ttf";
+            public const string Warning = "Fonts/System/System Warning.ttf";
+        }
+
+        public static class Inter
+        {
+            public const string Regular = "Fonts/Inter/Inter-Regular.ttf";
+        }
+    }
 }

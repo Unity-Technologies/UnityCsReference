@@ -365,8 +365,12 @@ namespace Unity.UI.Builder
             var data = result.serializedData as Binding.UxmlSerializedData;
             data.property = boundProperty;
 
-            // Apply the serialized data back to the original view
-            property.managedReferenceValue = result.serializedData;
+            // Reapply the serialized data to the original view.
+            // Note: We create a copy of the serialized data to avoid both views referencing the same instance.
+            // This ensures that changes, such as modifications to the UxmlAssetID during SynchronizePath,
+            // do not inadvertently break nested object connections. Without this safeguard, connections may be lost
+            // during the CopyAttributesRecursively process (UUM-99975).
+            property.managedReferenceValue = UxmlUtility.CloneObject(result.serializedData);
             property.serializedObject.ApplyModifiedPropertiesWithoutUndo();
 
             Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, undoMessage);

@@ -45,7 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var q = Quaternion.Euler(0, 0, s_Rotation);
                 foreach (var spinner in s_CurrentSpinners)
-                    spinner.transform.rotation = q;
+                    spinner.style.rotate = q;
                 s_Rotation += (int)(k_RotationSpeed * deltaTime);
                 s_Rotation %= 360;
                 if (s_Rotation < 0) s_Rotation += 360;

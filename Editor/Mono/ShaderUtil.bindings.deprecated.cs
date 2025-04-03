@@ -27,21 +27,19 @@ namespace UnityEditor
             TexDimAny = 6,
         }
 
-        // We can't deprecate them yet (Sept 2019): Some integration tests expect no compile warning/error from built-in packages but TextMeshPro uses
-        // these APIs and emits deprecation warnings. We'll land the new APIs without deprecation first and then see if we can upgrade TextMeshPro afterwards.
-
-        //[Obsolete("Use UnityEngine.ShaderPropertyType instead.", false)]
+        [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyType", false)]
         public enum ShaderPropertyType
         {
             Color,
             Vector,
             Float,
             Range,
+            [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType.Texture instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyType.Texture", false)]
             TexEnv,
             Int,
         }
 
-        //[Obsolete("Use Shader.GetPropertyCount instead.", false)]
+        [Obsolete("Use Shader.GetPropertyCount instead.", false)]
         public static int GetPropertyCount(Shader s)
         {
             if (s == null)
@@ -49,7 +47,7 @@ namespace UnityEditor
             return s.GetPropertyCount();
         }
 
-        //[Obsolete("Use Shader.GetPropertyName instead.", false)]
+        [Obsolete("Use Shader.GetPropertyName instead.", false)]
         public static string GetPropertyName(Shader s, int propertyIdx)
         {
             if (s == null)
@@ -57,7 +55,7 @@ namespace UnityEditor
             return s.GetPropertyName(propertyIdx);
         }
 
-        //[Obsolete("Use Shader.GetPropertyType instead.", false)]
+        [Obsolete("Use Shader.GetPropertyType instead.", false)]
         public static ShaderPropertyType GetPropertyType(Shader s, int propertyIdx)
         {
             if (s == null)
@@ -65,7 +63,7 @@ namespace UnityEditor
             return (ShaderPropertyType)s.GetPropertyType(propertyIdx);
         }
 
-        //[Obsolete("Use Shader.GetPropertyDescription instead.", false)]
+        [Obsolete("Use Shader.GetPropertyDescription instead.", false)]
         public static string GetPropertyDescription(Shader s, int propertyIdx)
         {
             if (s == null)
@@ -73,7 +71,7 @@ namespace UnityEditor
             return s.GetPropertyDescription(propertyIdx);
         }
 
-        //[Obsolete("Use Shader.GetPropertyRangeLimits and Shader.GetDefaultValue instead.", false)]
+        [Obsolete("Use Shader.GetPropertyRangeLimits and Shader.GetDefaultValue instead.", false)]
         public static float GetRangeLimits(Shader s, int propertyIdx, int defminmax)
         {
             if (s == null)
@@ -85,7 +83,7 @@ namespace UnityEditor
                 : s.GetPropertyDefaultFloatValue(propertyIdx);
         }
 
-        //[Obsolete("Use Shader.GetPropertyTextureDimension instead.", false)]
+        [Obsolete("Use Shader.GetPropertyTextureDimension instead.", false)]
         public static TextureDimension GetTexDim(Shader s, int propertyIdx)
         {
             if (s == null)
@@ -93,7 +91,7 @@ namespace UnityEditor
             return s.GetPropertyTextureDimension(propertyIdx);
         }
 
-        //[Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.HideInInspector instead.", false)]
+        [Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.HideInInspector instead.", false)]
         public static bool IsShaderPropertyHidden(Shader s, int propertyIdx)
         {
             if (s == null)
@@ -101,7 +99,7 @@ namespace UnityEditor
             return (s.GetPropertyFlags(propertyIdx) & ShaderPropertyFlags.HideInInspector) != 0;
         }
 
-        //[Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.NonModifiableTextureData instead.", false)]
+        [Obsolete("Use Shader.GetPropertyFlags and test against ShaderPropertyFlags.NonModifiableTextureData instead.", false)]
         public static bool IsShaderPropertyNonModifiableTexureProperty(Shader s, int propertyIdx)
         {
             if (s == null)

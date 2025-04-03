@@ -10,7 +10,7 @@ using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
 {
-    static class UIRUtility
+    static partial class UIRUtility
     {
         static readonly ProfilerMarker k_ComputeTransformMatrixMarker = new("UIR.ComputeTransformMatrix");
 
@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
         public const float k_MeshPosZ = 0.0f; // The correct z value to draw a shape
         public const float k_MaskPosZ = 1.0f; // The correct z value to push/pop a mask
         public const int k_MaxMaskDepth = 7; // Requires 3 bits in the stencil
+        public const float k_RenderTextureMargin = 1;
 
         // Keep in sync with UIRVertexUtility.h
         public const byte k_DynamicColorDisabled = 0;
@@ -38,33 +39,61 @@ namespace UnityEngine.UIElements
             return maskDepth == stencilRef;
         }
 
-        // Returns the transform to be applied to vertices that are in their local space
-        public static void GetVerticesTransformInfo(VisualElement ve, out Matrix4x4 transform)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect Encapsulate(Rect a, Rect b)
         {
-            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.renderChainData.isGroupTransform)
-            {
-                transform = Matrix4x4.identity;
-            }
-            else if (ve.renderChainData.boneTransformAncestor != null)
-            {
-                if (ve.renderChainData.boneTransformAncestor.renderChainData.worldTransformScaleZero)
-                    ComputeTransformMatrix(ve, ve.renderChainData.boneTransformAncestor, out transform);
-                else
-                    VisualElement.MultiplyMatrix34(ref ve.renderChainData.boneTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
-            }
-            else if (ve.renderChainData.groupTransformAncestor != null)
-            {
-                if (ve.renderChainData.groupTransformAncestor.renderChainData.worldTransformScaleZero)
-                    ComputeTransformMatrix(ve, ve.renderChainData.groupTransformAncestor, out transform);
-                else
-                    VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
-            }
-            else
-            {
-                transform = ve.worldTransform;
-            }
+            Vector2 min = Vector2.Min(a.min, b.min);
+            Vector2 max = Vector2.Max(a.max, b.max);
+            return new Rect(min, max - min);
+        }
 
-            if (ve.elementPanel is { isFlat: true })
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect Inflate(Rect r, float i)
+        {
+            return new Rect(r.xMin - i, r.yMin - i, r.width + i + i, r.height + i + i);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect InflateByMargins(Rect r, PostProcessingMargins margins)
+        {
+            return new Rect(
+                r.xMin - margins.left,
+                r.yMin - margins.top,
+                r.width + margins.left + margins.right,
+                r.height + margins.top + margins.bottom);
+        }
+
+        static void ComputeMatrixRelativeToAncestor(RenderData renderData, RenderData ancestor, out Matrix4x4 transform)
+        {
+            if (ancestor.worldTransformScaleZero)
+                ComputeTransformMatrix(renderData, ancestor, out transform);
+            else
+                VisualElement.MultiplyMatrix34(ref ancestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+        }
+
+        public static void ComputeMatrixRelativeToRenderTree(RenderData renderData, out Matrix4x4 transform)
+        {
+            var treeRoot = renderData.renderTree.rootRenderData;
+            if (treeRoot.isNestedRenderTreeRoot)
+                ComputeMatrixRelativeToAncestor(renderData, treeRoot, out transform); // TODO: Cache the inverse in the RenderTree to speed this up
+            else
+                // We are in the topmost render tree
+                transform = renderData.owner.worldTransform;
+        }
+
+        // Returns the transform to be applied to vertices that are in their local space
+        public static void GetVerticesTransformInfo(RenderData renderData, out Matrix4x4 transform)
+        {
+            if (RenderData.AllocatesID(renderData.transformID) || renderData.isGroupTransform || renderData.isNestedRenderTreeRoot)
+                transform = Matrix4x4.identity;
+            else if (renderData.boneTransformAncestor != null)
+                ComputeMatrixRelativeToAncestor(renderData, renderData.boneTransformAncestor, out transform);
+            else if (renderData.groupTransformAncestor != null)
+                ComputeMatrixRelativeToAncestor(renderData, renderData.groupTransformAncestor, out transform);
+            else
+                ComputeMatrixRelativeToRenderTree(renderData, out transform);
+
+            if (renderData.owner.elementPanel is { isFlat: true })
                 transform.m22 = 1.0f; // Scaling in z means nothing for 2d ui, and break masking
         }
 
@@ -88,12 +117,15 @@ namespace UnityEngine.UIElements
         //
         // 3) Simply repaint all the hierarchy when the dynamic transform or group transform scale transition from 0 to != 0. This would be the simplest solution
         //    but it is the most costly.
-        internal static void ComputeTransformMatrix(VisualElement ve, VisualElement ancestor, out Matrix4x4 result)
+        internal static void ComputeTransformMatrix(RenderData renderData, RenderData ancestor, out Matrix4x4 result)
         {
+            Debug.Assert(renderData.renderTree == ancestor.renderTree);
+
             k_ComputeTransformMatrixMarker.Begin();
 
-            ve.GetPivotedMatrixWithLayout(out result);
-            VisualElement currentAncestor = ve.hierarchy.parent;
+            // TODO: Adjust this matrix for nested RenderTrees
+            renderData.owner.GetPivotedMatrixWithLayout(out result);
+            var currentAncestor = renderData.parent;
             if ((currentAncestor == null) || (ancestor == currentAncestor))
             {
                 k_ComputeTransformMatrixMarker.End();
@@ -106,13 +138,14 @@ namespace UnityEngine.UIElements
 
             do
             {
-                currentAncestor.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
+                // TODO: Adjust this matrix for nested RenderTrees
+                currentAncestor.owner.GetPivotedMatrixWithLayout(out Matrix4x4 ancestorMatrix);
                 if (destIsTemp)
                     VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref result, out temp);
                 else
                     VisualElement.MultiplyMatrix34(ref ancestorMatrix, ref temp, out result);
 
-                currentAncestor = currentAncestor.hierarchy.parent;
+                currentAncestor = currentAncestor.parent;
 
                 destIsTemp = !destIsTemp;
             } while ((currentAncestor != null) && (ancestor != currentAncestor));
@@ -124,11 +157,41 @@ namespace UnityEngine.UIElements
             k_ComputeTransformMatrixMarker.End();
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector4 ToVector4(Rect rc)
         {
             return new Vector4(rc.xMin, rc.yMin, rc.xMax, rc.yMax);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool RectHasArea(Rect rect)
+        {
+            return rect.width > k_Epsilon && rect.height > k_Epsilon;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool RectHasArea(RectInt rect)
+        {
+            return rect.width > 0 && rect.height > 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Rect CastToRect(RectInt rect)
+        {
+            return new Rect(rect.xMin, rect.yMin, rect.width, rect.height);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static RectInt CastToRectInt(Rect rect)
+        {
+            return new RectInt(
+                Mathf.FloorToInt(rect.xMin),
+                Mathf.FloorToInt(rect.yMin),
+                Mathf.CeilToInt(rect.width),
+                Mathf.CeilToInt(rect.height));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsRoundRect(VisualElement ve)
         {
             var style = ve.resolvedStyle;
@@ -138,6 +201,7 @@ namespace UnityEngine.UIElements
                 style.borderBottomRightRadius < k_Epsilon);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void Multiply2D(this Quaternion rotation, ref Vector2 point)
         {
             // Even though Quaternion coordinates aren't the same as Euler angles, it so happens that a rotation only
@@ -149,11 +213,13 @@ namespace UnityEngine.UIElements
             point = new Vector2(zz * point.x - wz * point.y, wz * point.x + zz * point.y);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsVectorImageBackground(VisualElement ve)
         {
             return ve.computedStyle.backgroundImage.vectorImage != null;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsElementSelfHidden(VisualElement ve)
         {
             return ve.resolvedStyle.visibility == Visibility.Hidden;

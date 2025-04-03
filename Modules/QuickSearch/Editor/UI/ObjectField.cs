@@ -99,6 +99,7 @@ namespace UnityEditor.Search
 
         public SearchContext searchContext { get; set; }
         public SearchViewFlags searchViewFlags { get; set; }
+        public SearchViewState searchViewState { get; set; }
 
 
         private class ObjectFieldDisplay : VisualElement
@@ -341,8 +342,6 @@ namespace UnityEditor.Search
                 EditorApplication.projectChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
                 EditorApplication.hierarchyChanged -= m_AsyncOnProjectOrHierarchyChangedCallback;
             });
-
-            searchViewFlags = SearchViewFlags.ObjectPicker;
         }
 
         private void OnObjectChanged(Object obj)
@@ -359,7 +358,9 @@ namespace UnityEditor.Search
         internal void ShowObjectSelector()
         {
             m_OriginalObject = value;
-            var runtimeContext = new RuntimeSearchContext
+            var runtimeContext = searchViewState?.context?.runtimeContext ??
+                searchContext?.runtimeContext ??
+                new RuntimeSearchContext
             {
                 contextId = bindingPath ?? name ?? label,
                 pickerType = SearchPickerType.ObjectField,
@@ -373,11 +374,21 @@ namespace UnityEditor.Search
                 searchContext = SearchService.CreateContext(runtimeContext, "", SearchFlags.None);
             }
 
-            var newContext = new SearchContext(searchContext.providers, searchContext.searchText, searchContext.options, runtimeContext);
-            var searchViewState = SearchViewState.CreatePickerState($"{objectType.Name}", newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType, searchViewFlags);
+            var sourceContext = searchViewState?.context ?? searchContext;
+
+            var newContext = new SearchContext(sourceContext.providers, sourceContext.searchText, sourceContext.options, runtimeContext);
+            var title = $"{objectType.Name}";
+            SearchViewState newSearchViewState = SearchViewState.CreatePickerState(title, newContext, OnSelection, OnObjectChanged, objectType.ToString(), objectType, searchViewFlags);
+            if (searchViewState != null)
+            {
+                // Assign existing searchViewState, but override some needed flags
+                newSearchViewState.Assign(searchViewState, newContext);
+                newSearchViewState.SetSearchViewFlags(newSearchViewState.flags | SearchViewFlags.ObjectPicker | searchViewFlags);
+                newSearchViewState.title = title;
+            }
             if (m_OriginalObject)
-                searchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
-            SearchService.ShowPicker(searchViewState);
+                newSearchViewState.selectedIds = new int[] { m_OriginalObject.GetInstanceID() };
+            SearchService.ShowPicker(newSearchViewState);
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.QuickSearchPickerOpens, searchContext.searchText, "object", "objectfield");
         }
 
@@ -955,8 +966,7 @@ namespace UnityEditor.Search
             var title = property != null ? $"{property.displayName} ({objType.Name})" : objType.Name;
             var searchViewState = SearchViewState.CreatePickerState(title, context,
                 (item, canceled) => SendSelectionEvent(item, canceled, id),
-                item => SendTrackingEvent(item, id), objType.ToString(), objType)
-            .SetSearchViewFlags(searchViewFlags);
+                item => SendTrackingEvent(item, id), objType.ToString(), objType, searchViewFlags);
             if (property != null && property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue)
             {
                 searchViewState.selectedIds = new int[] { property.objectReferenceValue.GetInstanceID() };

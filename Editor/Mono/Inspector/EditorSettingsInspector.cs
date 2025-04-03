@@ -54,6 +54,9 @@ namespace UnityEditor
             public static GUIContent ucbpEnableAssetBundles = EditorGUIUtility.TrTextContent("Multi-Process AssetBundle Building", "Enable experimental improvements to the AssetBundle Build Pipeline aimed at reducing build times with multi-process importing and providing more efficient incremental content building");
             public static readonly GUIContent ucbpLearnMore = new GUIContent("Learn more...", "Review official Unity documentation for important considerations around these experimental improvements.");
 
+            public static GUIContent sceneHandlingHeader = EditorGUIUtility.TrTextContent("Scene Handling");
+            public static GUIContent forceAssetUnloadAndGCOnSceneLoad = EditorGUIUtility.TrTextContent("Force Asset Unload & GC on Scene Load", "Force a managed heap garbage collection and unload unused assets after loading scenes in single mode in the Editor or exiting Prefab Mode. In complex projects, this can slow down performance. Disable this if you do not require class finalizers to run at the end of scene loading. Note that regular dynamic GC and unused asset unloading still occur when memory usage is high, but without this option, class finalizers might not run immediately after each scene load.");
+
             public static GUIContent graphics = EditorGUIUtility.TrTextContent("Graphics");
             public static GUIContent showLightmapResolutionOverlay = EditorGUIUtility.TrTextContent("Show Lightmap Resolution Overlay");
             public static GUIContent useLegacyProbeSampleCount = EditorGUIUtility.TrTextContent("Use legacy Light Probe sample counts", "Uses fixed Light Probe sample counts for baking with the Progressive Lightmapper. The sample counts are: 64 direct samples, 2048 indirect samples and 2048 environment samples.");
@@ -478,6 +481,13 @@ namespace UnityEditor
                 EditorBuildSettings.UseParallelAssetBundleBuilding = parallelAssetBundleBuilding;
             if(parallelAssetBundleBuilding)
                 EditorGUILayout.HelpBox("Please review official documentation before building any content with these experimental improvements enabled. These improvements apply only to AssetBundles built with BuildPipeline.BuildAssetBundles() and do not apply to AssetBundles built with Scriptable Build Pipeline or Addressables.", MessageType.Info);
+
+            GUILayout.Label(Content.sceneHandlingHeader, EditorStyles.boldLabel);
+            EditorGUI.BeginChangeCheck();
+            bool forceAssetUnloadAndGCOnSceneLoad = EditorSettings.forceAssetUnloadAndGCOnSceneLoad;
+            forceAssetUnloadAndGCOnSceneLoad = EditorGUILayout.Toggle(Content.forceAssetUnloadAndGCOnSceneLoad, forceAssetUnloadAndGCOnSceneLoad);
+            if (EditorGUI.EndChangeCheck())
+                EditorSettings.forceAssetUnloadAndGCOnSceneLoad = forceAssetUnloadAndGCOnSceneLoad;
 
             GUILayout.Space(10);
 

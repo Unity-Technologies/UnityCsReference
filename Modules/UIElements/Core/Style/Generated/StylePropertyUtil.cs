@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-right", StylePropertyId.UnitySliceRight},
             {"-unity-slice-scale", StylePropertyId.UnitySliceScale},
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
+            {"-unity-slice-type", StylePropertyId.UnitySliceType},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
             {"-unity-text-generator", StylePropertyId.UnityTextGenerator},
             {"-unity-text-outline", StylePropertyId.UnityTextOutline},
@@ -202,6 +203,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnitySliceRight, "-unity-slice-right"},
             {StylePropertyId.UnitySliceScale, "-unity-slice-scale"},
             {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
+            {StylePropertyId.UnitySliceType, "-unity-slice-type"},
             {StylePropertyId.UnityTextAlign, "-unity-text-align"},
             {StylePropertyId.UnityTextGenerator, "-unity-text-generator"},
             {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
@@ -300,6 +302,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-right", "unitySliceRight"},
             {"-unity-slice-scale", "unitySliceScale"},
             {"-unity-slice-top", "unitySliceTop"},
+            {"-unity-slice-type", "unitySliceType"},
             {"-unity-text-align", "unityTextAlign"},
             {"-unity-text-generator", "unityTextGenerator"},
             {"-unity-text-outline", "unityTextOutline"},
@@ -398,6 +401,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"unitySliceRight", "-unity-slice-right"},
             {"unitySliceScale", "-unity-slice-scale"},
             {"unitySliceTop", "-unity-slice-top"},
+            {"unitySliceType", "-unity-slice-type"},
             {"unityTextAlign", "-unity-text-align"},
             {"unityTextGenerator", "-unity-text-generator"},
             {"unityTextOutline", "-unity-text-outline"},
@@ -411,7 +415,7 @@ namespace UnityEngine.UIElements.StyleSheets
         };
 
         internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>()
-        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
 
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
         {
@@ -912,6 +916,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     }
 
                     break;
+                case StyleEnumType.SliceType:
+                    if (string.Equals(value, "sliced", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)SliceType.Sliced;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "tiled", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)SliceType.Tiled;
+                        return true;
+                    }
+
+                    break;
                 case StyleEnumType.TextAnchor:
                     if (string.Equals(value, "upper-left", StringComparison.OrdinalIgnoreCase))
                     {
@@ -1158,6 +1176,25 @@ namespace UnityEngine.UIElements.StyleSheets
                     return new[]{typeof(UnityEngine.Object)};
                 default:
                     return System.Linq.Enumerable.Empty<Type>();
+            }
+        }
+
+        public static bool StyleValueCanHoldResource(StylePropertyId id)
+        {
+            switch (id)
+            {
+                case StylePropertyId.BackgroundImage:
+                    return true;
+                case StylePropertyId.Cursor:
+                    return true;
+                case StylePropertyId.UnityFont:
+                    return true;
+                case StylePropertyId.UnityFontDefinition:
+                    return true;
+                case StylePropertyId.Custom:
+                    return true;
+                default:
+                    return false;
             }
         }
     }

@@ -221,14 +221,16 @@ namespace Unity.UI.Builder
             {
                 var val = StyleDebug.GetComputedStyleValue(inspector.currentVisualElement.computedStyle, styleName);
                 var lengthUnit = BuilderInspectorStyleFields.GetComputedStyleLengthUnit(val);
-                return StyleSheetUtilities.ConvertToDimensionUnit(lengthUnit);
+                return lengthUnit is LengthUnit.Percent or LengthUnit.Pixel
+                    ? lengthUnit.ToDimensionUnit()
+                    : Dimension.Unit.Percent;
             }
 
             var styleValue = styleProperty.values[0];
-            
+
             if (styleValue.valueType == StyleValueType.Dimension)
             {
-                var dimension = inspector.styleSheet.GetDimension(styleValue);
+                var dimension = inspector.styleSheet.ReadDimension(styleValue);
                 return dimension.unit;
             }
             

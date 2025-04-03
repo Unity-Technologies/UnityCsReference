@@ -492,6 +492,21 @@ namespace UnityEditor
             Graphics.DrawMesh(mesh, Matrix4x4.TRS(pos, rot, scale), mat, 0, camera, subMeshIndex, customProperties, ShadowCastingMode.Off, false, probeAnchor, useLightProbe);
         }
 
+        public void RenderMesh(Mesh mesh, Matrix4x4 matrix4X4, Material material, int submeshIndex, MaterialPropertyBlock materialProp = null, int meshLodIndex = -1)
+        {
+            RenderParams renderParams = new RenderParams(material);
+            renderParams.camera = camera;
+            renderParams.matProps = materialProp;
+            renderParams.layer = 0;
+            renderParams.shadowCastingMode = ShadowCastingMode.Off;
+            renderParams.receiveShadows = false;
+            renderParams.forceMeshLod = meshLodIndex;
+            renderParams.lightProbeUsage = LightProbeUsage.Off;
+            renderParams.reflectionProbeUsage = ReflectionProbeUsage.Off;
+
+            Graphics.RenderMesh(renderParams, mesh, submeshIndex, matrix4X4);
+        }
+
         internal static Mesh GetPreviewSphere()
         {
             var handleGo = (GameObject)EditorGUIUtility.LoadRequired("Previews/PreviewMaterials.fbx");

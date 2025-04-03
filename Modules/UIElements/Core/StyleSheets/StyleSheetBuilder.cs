@@ -146,6 +146,12 @@ namespace UnityEngine.UIElements.StyleSheets
             m_CurrentValues.Add(new StyleValueHandle((int)function, StyleValueType.Function));
         }
 
+        public void AddValue(FilterFunctionType filterType)
+        {
+            // for filters we use the index to store the enum value
+            m_CurrentValues.Add(new StyleValueHandle((int)filterType, StyleValueType.Function));
+        }
+
         public void AddCommaSeparator()
         {
             m_CurrentValues.Add(new StyleValueHandle(0, StyleValueType.CommaSeparator));

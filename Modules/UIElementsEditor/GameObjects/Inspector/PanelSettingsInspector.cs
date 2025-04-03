@@ -28,7 +28,6 @@ namespace UnityEditor.UIElements.Inspector
         private EnumField m_RenderModeField;
         private EnumField m_WorldInputModeField;
         private LayerField m_WorldSpaceLayerField;
-        private HelpBox m_WorldSpaceBox;
         private ObjectField m_TargetTextureField;
         private FloatField m_SortingOrderField;
 
@@ -73,7 +72,6 @@ namespace UnityEditor.UIElements.Inspector
             m_RenderModeField = m_RootVisualElement.MandatoryQ<EnumField>("render-mode");
             m_WorldInputModeField = m_RootVisualElement.MandatoryQ<EnumField>("worldinput-mode");
             m_WorldSpaceLayerField = m_RootVisualElement.MandatoryQ<LayerField>("worldspace-layer");
-            m_WorldSpaceBox = m_RootVisualElement.MandatoryQ<HelpBox>("worldspace-box");
 
             m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("target-texture");
             m_TargetTextureField.objectType = typeof(RenderTexture);
@@ -229,20 +227,8 @@ namespace UnityEditor.UIElements.Inspector
 
             if (newRenderMode == PanelRenderMode.WorldSpace)
             {
-                m_RenderModeField.style.display = DisplayStyle.Flex;
-                m_WorldSpaceBox.style.display = DisplayStyle.Flex;
                 displayStyleForWorldProperties = DisplayStyle.Flex;
                 displayStyleForOverlayProperties = DisplayStyle.None;
-            }
-            else if(UIToolkitProjectSettings.enableWorldSpaceRendering)
-            {
-                m_RenderModeField.style.display = DisplayStyle.Flex;
-                m_WorldSpaceBox.style.display = DisplayStyle.None;
-            }
-            else
-            {
-                m_RenderModeField.style.display = DisplayStyle.None;
-                m_WorldSpaceBox.style.display = DisplayStyle.None;
             }
 
             m_WorldSpaceLayerField.style.display = displayStyleForWorldProperties;

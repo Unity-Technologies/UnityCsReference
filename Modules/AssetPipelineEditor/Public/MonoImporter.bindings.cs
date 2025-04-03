@@ -33,7 +33,7 @@ namespace UnityEditor
         {
             return GetDefaultReference(name, out _);
         }
-        internal extern Object GetDefaultReference(string name, out int instanceId);
+        internal extern Object GetDefaultReference(string name, out EntityId instanceId);
 
         public extern void SetIcon(Texture2D icon);
         public extern Texture2D GetIcon();

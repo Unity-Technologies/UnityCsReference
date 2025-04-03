@@ -6,86 +6,28 @@ using System;
 using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEngine.UIElements;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal struct BuilderRotate : IEquatable<BuilderRotate>
-    {
-        public Dimension x;
-        public BuilderRotate(StyleRotate styleRotate)
-            : this(styleRotate.value)
-        {
-        }
-
-        public BuilderRotate(Rotate rotate)
-        {
-            x = new Dimension(rotate.angle.value, StyleSheetUtilities.ConvertToDimensionUnit(rotate.angle.unit));
-        }
-
-        public BuilderRotate(float xValue, Dimension.Unit xUnit)
-        {
-            x = new Dimension(xValue, xUnit);
-        }
-
-        public static bool operator ==(BuilderRotate lhs, BuilderRotate rhs)
-        {
-            return lhs.x == rhs.x;
-        }
-
-        public static bool operator !=(BuilderRotate lhs, BuilderRotate rhs)
-        {
-            return !(lhs == rhs);
-        }
-
-        public bool Equals(BuilderRotate other)
-        {
-            return other == this;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (!(obj is BuilderRotate))
-            {
-                return false;
-            }
-
-            var v = (BuilderRotate)obj;
-            return v == this;
-        }
-
-        public override int GetHashCode()
-        {
-            var hashCode = -799583767;
-            hashCode = hashCode * -1521134295 + x.GetHashCode();
-            return hashCode;
-        }
-
-        public override string ToString()
-        {
-            return x.ToString();
-        }
-    }
-
     [UsedImplicitly]
-    class RotateStyleField : BaseField<BuilderRotate>
+    class RotateStyleField : BaseField<Rotate>
     {
-        public class BuilderRotateConverter : UxmlAttributeConverter<BuilderRotate>
+        public class BuilderRotateConverter : UxmlAttributeConverter<Rotate>
         {
-            public override BuilderRotate FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BuilderRotate value) => throw new NotImplementedException();
+            public override Rotate FromString(string value) => throw new NotImplementedException();
+            public override string ToString(Rotate value) => throw new NotImplementedException();
         }
 
         [Serializable]
-        public new class UxmlSerializedData : BaseField<BuilderRotate>.UxmlSerializedData
+        public new class UxmlSerializedData : BaseField<Rotate>.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                BaseField<BuilderRotate>.UxmlSerializedData.Register();
+                BaseField<Rotate>.UxmlSerializedData.Register();
             }
 
             public override object CreateInstance() => new RotateStyleField();
@@ -94,16 +36,16 @@ namespace Unity.UI.Builder
         static readonly string s_FieldClassName = "unity-rotate-style-field";
         static readonly string s_UxmlPath = BuilderConstants.UtilitiesPath + "/StyleField/RotateStyleField.uxml";
         static readonly string s_UssPath = BuilderConstants.UtilitiesPath + "/StyleField/RotateStyleField.uss";
-        static readonly string s_VisualInputName = "unity-visual-input";
-        public static readonly string s_RotateXFieldName = "x-field";
+        public static readonly string s_AngleFieldName = "angle-field";
+        public static readonly string s_AxisFieldName = "axis-field";
 
-        AngleStyleField m_RotateXField;
+        AngleStyleField m_AngleField;
+        Vector3Field m_AxisField;
 
         public RotateStyleField() : this(null) { }
 
         public RotateStyleField(string label) : base(label)
         {
-            AddToClassList(BuilderConstants.InspectorContainerClassName);
             AddToClassList(s_FieldClassName);
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPath));
@@ -112,23 +54,29 @@ namespace Unity.UI.Builder
 
             template.CloneTree(this);
 
-            visualInput = this.Q(s_VisualInputName);
+            m_AngleField = this.Q<AngleStyleField>(s_AngleFieldName);
+            m_AxisField = this.Q<Vector3Field>(s_AxisFieldName);
 
-            m_RotateXField = this.Q<AngleStyleField>(s_RotateXFieldName);
-
-            m_RotateXField.RegisterValueChangedCallback(e =>
+            m_AngleField.RegisterValueChangedCallback(e =>
             {
                 UpdateRotateField();
                 e.StopPropagation();
             });
 
-            value = new BuilderRotate()
+            m_AxisField.RegisterValueChangedCallback(e =>
             {
-                x = new Dimension { value = 0, unit = Dimension.Unit.Degree }
+                UpdateRotateField();
+                e.StopPropagation();
+            });
+
+            value = new Rotate()
+            {
+                angle = Angle.Degrees(0),
+                axis = Vector3.forward
             };
         }
 
-        public override void SetValueWithoutNotify(BuilderRotate newValue)
+        public override void SetValueWithoutNotify(Rotate newValue)
         {
             base.SetValueWithoutNotify(newValue);
             RefreshSubFields();
@@ -136,56 +84,34 @@ namespace Unity.UI.Builder
 
         void RefreshSubFields()
         {
-            m_RotateXField.SetValueWithoutNotify(value.x.ToString());
+            m_AngleField.SetValueWithoutNotify(value.angle.ToString());
+            m_AxisField.SetValueWithoutNotify(value.axis);
 
             float step = 1;
 
-            switch (value.x.unit)
+            switch (value.angle.unit)
             {
-                case Dimension.Unit.Turn:
+                case AngleUnit.Turn:
                     step = 0.05f;
                     break;
-                case Dimension.Unit.Radian:
+                case AngleUnit.Radian:
                     step = Mathf.Deg2Rad;
                     break;
                 default:
                     break;
             }
 
-            m_RotateXField.dragStep = step;
+            m_AngleField.dragStep = step;
         }
 
         void UpdateRotateField()
         {
             // Rebuild value from sub fields
-            value = new BuilderRotate()
+            value = new Rotate()
             {
-                x = new Dimension { value = m_RotateXField.length, unit = m_RotateXField.unit }
+                angle = new Dimension { value = m_AngleField.length, unit = m_AngleField.unit }.ToAngle(),
+                axis = m_AxisField.value
             };
-        }
-
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
-        {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
-
-            if (!isNewValue && styleProperty.values[0].valueType != StyleValueType.Dimension)
-            {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            // if the rotate property was already defined then ...
-            if (!isNewValue)
-            {
-                styleSheet.SetValue(styleProperty.values[0], value.x);
-            }
-            else
-            {
-                styleSheet.AddValue(styleProperty, value.x);
-            }
-            return isNewValue;
         }
     }
 }

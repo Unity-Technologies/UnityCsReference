@@ -1990,7 +1990,7 @@ namespace UnityEditor
 
                     bool apiFieldDisabled = false;
 
-                    if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
+                    if (UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports)
                     {
                         // CrashReport API must be enabled if cloud crash reporting is enabled,
                         // so don't let them change the value of the checkbox

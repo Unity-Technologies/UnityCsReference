@@ -78,6 +78,16 @@ namespace UnityEditor
             DrawMaterials();
             LightingSettingsGUI(false);
             RayTracingSettingsGUI();
+
+            SkinnedMeshRenderer renderer = (SkinnedMeshRenderer)target;
+            if (renderer != null && renderer.sharedMesh != null)
+            {               
+                if (renderer.sharedMesh.isLodSelectionActive)
+                {
+                    MeshLodSettingsGUI(renderer.sharedMesh.lodCount);
+                }
+            }
+
             OtherSettingsGUI(false, true);
 
             serializedObject.ApplyModifiedProperties();

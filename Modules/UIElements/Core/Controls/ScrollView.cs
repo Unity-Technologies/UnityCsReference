@@ -758,7 +758,7 @@ namespace UnityEngine.UIElements
         internal void UpdateContentViewTransform()
         {
             // Adjust contentContainer's position
-            var t = contentContainer.transform.position;
+            var t = contentContainer.resolvedStyle.translate;
 
             var offset = scrollOffset;
             if (needsVertical)
@@ -766,10 +766,11 @@ namespace UnityEngine.UIElements
 
             t.x = this.RoundToPanelPixelSize(-offset.x);
             t.y = this.RoundToPanelPixelSize(-offset.y);
-            contentContainer.transform.position = t;
+            contentContainer.style.translate = t;
 
             // TODO: Can we get rid of this?
             this.IncrementVersion(VersionChangeType.Repaint);
+
         }
 
         /// <summary>
@@ -810,7 +811,7 @@ namespace UnityEngine.UIElements
 
         private float GetXDeltaOffset(VisualElement child)
         {
-            float xTransform = contentContainer.transform.position.x * -1;
+            float xTransform = contentContainer.resolvedStyle.translate.x * -1;
 
             var contentWB = contentViewport.worldBound;
             float viewMin = contentWB.xMin + xTransform;
@@ -830,7 +831,7 @@ namespace UnityEngine.UIElements
 
         private float GetYDeltaOffset(VisualElement child)
         {
-            float yTransform = contentContainer.transform.position.y * -1;
+            float yTransform = contentContainer.resolvedStyle.translate.y * -1;
 
             var contentWB = contentViewport.worldBound;
             float viewMin = contentWB.yMin + yTransform;

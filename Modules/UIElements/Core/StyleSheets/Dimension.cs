@@ -132,5 +132,25 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";
         }
+
+        public bool IsLength()
+        {
+            return unit is Unit.Pixel or Unit.Percent;
+        }
+
+        public bool IsTimeValue()
+        {
+            return unit is Unit.Millisecond or Unit.Second;
+        }
+
+        public bool IsAngle()
+        {
+            return unit is Unit.Degree or Unit.Gradian or Unit.Radian or Unit.Turn;
+        }
+
+        public bool IsUnitless()
+        {
+            return unit is Unit.Unitless;
+        }
     }
 }

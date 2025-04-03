@@ -2,12 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEngine.Scripting;
 using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Collections.Generic;
+using System.Text;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -259,7 +258,7 @@ namespace UnityEngine
         // these methods must be in camel case, because that's how they are defined in java.
         public virtual bool equals(AndroidJavaObject obj)
         {
-            IntPtr anotherObject = (obj == null) ? System.IntPtr.Zero : obj.GetRawObject();
+            IntPtr anotherObject = (obj == null) ? IntPtr.Zero : obj.GetRawObject();
             return AndroidJNI.IsSameObject(proxyObject, anotherObject);
         }
 
@@ -551,7 +550,7 @@ namespace UnityEngine
         {
             if (!enableDebugPrints)
                 return;
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new StringBuilder();
             foreach (object obj in args)
             {
                 sb.Append(", ");
@@ -687,7 +686,7 @@ namespace UnityEngine
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
                     return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaObject(jobject);
                 }
-                else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
+                else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallObjectMethod(m_jobject, methodID, jniArgs);
                     return FromJavaArray<ReturnType>(jobject);
@@ -750,7 +749,7 @@ namespace UnityEngine
                 IntPtr jobject = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
                 return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
             }
-            else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
+            else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetObjectField(m_jobject, fieldID);
                 return FromJavaArrayDeleteLocalRef<FieldType>(jobject);
@@ -810,7 +809,7 @@ namespace UnityEngine
             {
                 AndroidJNISafe.SetObjectField(m_jobject, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaProxy)(object)val).GetRawProxy());
             }
-            else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
+            else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNIHelper.ConvertToJNIArray((Array)(object)val);
                 AndroidJNISafe.SetObjectField(m_jobject, fieldID, jobject);
@@ -897,7 +896,7 @@ namespace UnityEngine
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
                     return (jobject == IntPtr.Zero) ? default(ReturnType) : (ReturnType)(object)new AndroidJavaObject(jobject);
                 }
-                else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(ReturnType)))
+                else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(ReturnType)))
                 {
                     IntPtr jobject = AndroidJNISafe.CallStaticObjectMethod(m_jclass, methodID, jniArgs);
                     return FromJavaArray<ReturnType>(jobject);
@@ -961,7 +960,7 @@ namespace UnityEngine
                 IntPtr jobject = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
                 return (jobject == IntPtr.Zero) ? default(FieldType) : (FieldType)(object)AndroidJavaObjectDeleteLocalRef(jobject);
             }
-            else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
+            else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNISafe.GetStaticObjectField(m_jclass, fieldID);
                 return FromJavaArrayDeleteLocalRef<FieldType>(jobject);
@@ -1019,7 +1018,7 @@ namespace UnityEngine
             {
                 AndroidJNISafe.SetStaticObjectField(m_jclass, fieldID, val == null ? IntPtr.Zero : ((AndroidJavaProxy)(object)val).GetRawProxy());
             }
-            else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), typeof(FieldType)))
+            else if (AndroidReflection.IsAssignableFrom(typeof(Array), typeof(FieldType)))
             {
                 IntPtr jobject = AndroidJNIHelper.ConvertToJNIArray((Array)(object)val);
                 AndroidJNISafe.SetStaticObjectField(m_jclass, fieldID, jobject);
@@ -1113,12 +1112,12 @@ namespace UnityEngine
 
     internal class AndroidReflection
     {
-        public static bool IsPrimitive(System.Type t)
+        public static bool IsPrimitive(Type t)
         {
             return t.IsPrimitive;
         }
 
-        public static bool IsAssignableFrom(System.Type t, System.Type from)
+        public static bool IsAssignableFrom(Type t, Type from)
         {
             return t.IsAssignableFrom(from);
         }
@@ -1272,34 +1271,34 @@ namespace UnityEngine
             foreach (object obj in args)
             {
                 if (obj == null)
-                    ret[i].l = System.IntPtr.Zero;
+                    ret[i].l = IntPtr.Zero;
                 else if (AndroidReflection.IsPrimitive(obj.GetType()))
                 {
-                    if (obj is System.Int32)
-                        ret[i].i = (System.Int32)obj;
-                    else if (obj is System.Boolean)
-                        ret[i].z = (System.Boolean)obj;
-                    else if (obj is System.Byte)
+                    if (obj is Int32)
+                        ret[i].i = (Int32)obj;
+                    else if (obj is Boolean)
+                        ret[i].z = (Boolean)obj;
+                    else if (obj is Byte)
                     {
                         Debug.LogWarning("Passing Byte arguments to Java methods is obsolete, pass SByte parameters instead");
-                        ret[i].b = (System.SByte)(System.Byte)obj;
+                        ret[i].b = (SByte)(Byte)obj;
                     }
-                    else if (obj is System.SByte)
-                        ret[i].b = (System.SByte)obj;
-                    else if (obj is System.Int16)
-                        ret[i].s = (System.Int16)obj;
-                    else if (obj is System.Int64)
-                        ret[i].j = (System.Int64)obj;
-                    else if (obj is System.Single)
-                        ret[i].f = (System.Single)obj;
-                    else if (obj is System.Double)
-                        ret[i].d = (System.Double)obj;
-                    else if (obj is System.Char)
-                        ret[i].c = (System.Char)obj;
+                    else if (obj is SByte)
+                        ret[i].b = (SByte)obj;
+                    else if (obj is Int16)
+                        ret[i].s = (Int16)obj;
+                    else if (obj is Int64)
+                        ret[i].j = (Int64)obj;
+                    else if (obj is Single)
+                        ret[i].f = (Single)obj;
+                    else if (obj is Double)
+                        ret[i].d = (Double)obj;
+                    else if (obj is Char)
+                        ret[i].c = (Char)obj;
                 }
-                else if (obj is System.String)
+                else if (obj is String)
                 {
-                    ret[i].l = AndroidJNISafe.NewString((System.String)obj);
+                    ret[i].l = AndroidJNISafe.NewString((String)obj);
                 }
                 else if (obj is AndroidJavaClass)
                 {
@@ -1309,9 +1308,9 @@ namespace UnityEngine
                 {
                     ret[i].l = ((AndroidJavaObject)obj).GetRawObject();
                 }
-                else if (obj is System.Array)
+                else if (obj is Array)
                 {
-                    ret[i].l = ConvertToJNIArray((System.Array)obj);
+                    ret[i].l = ConvertToJNIArray((Array)obj);
                 }
                 else if (obj is AndroidJavaProxy)
                 {
@@ -1385,23 +1384,23 @@ namespace UnityEngine
             {
                 string className = clazz.Call<string>("getName");
                 if ("java.lang.Integer" == className)
-                    return obj.Call<System.Int32>("intValue");
+                    return obj.Call<Int32>("intValue");
                 else if ("java.lang.Boolean" == className)
-                    return obj.Call<System.Boolean>("booleanValue");
+                    return obj.Call<Boolean>("booleanValue");
                 else if ("java.lang.Byte" == className)
-                    return obj.Call<System.SByte>("byteValue");
+                    return obj.Call<SByte>("byteValue");
                 else if ("java.lang.Short" == className)
-                    return obj.Call<System.Int16>("shortValue");
+                    return obj.Call<Int16>("shortValue");
                 else if ("java.lang.Long" == className)
-                    return obj.Call<System.Int64>("longValue");
+                    return obj.Call<Int64>("longValue");
                 else if ("java.lang.Float" == className)
-                    return obj.Call<System.Single>("floatValue");
+                    return obj.Call<Single>("floatValue");
                 else if ("java.lang.Double" == className)
-                    return obj.Call<System.Double>("doubleValue");
+                    return obj.Call<Double>("doubleValue");
                 else if ("java.lang.Character" == className)
-                    return obj.Call<System.Char>("charValue");
+                    return obj.Call<Char>("charValue");
                 else if ("java.lang.String" == className)
-                    return obj.Call<System.String>("toString"); // um, can obvoiusly be performed in a better fasion
+                    return obj.Call<String>("toString"); // um, can obvoiusly be performed in a better fasion
                 else if ("java.lang.Class" == className)
                     return new AndroidJavaClass(obj.GetRawObject());
                 else if (clazz.Call<bool>("isArray"))
@@ -1417,30 +1416,30 @@ namespace UnityEngine
                 return null;
             else if (AndroidReflection.IsPrimitive(obj.GetType()))
             {
-                if (obj is System.Int32)
-                    return new AndroidJavaObject("java.lang.Integer", (System.Int32)obj);
-                else if (obj is System.Boolean)
-                    return new AndroidJavaObject("java.lang.Boolean", (System.Boolean)obj);
-                else if (obj is System.Byte)
-                    return new AndroidJavaObject("java.lang.Byte", (System.SByte)obj);
-                else if (obj is System.SByte)
-                    return new AndroidJavaObject("java.lang.Byte", (System.SByte)obj);
-                else if (obj is System.Int16)
-                    return new AndroidJavaObject("java.lang.Short", (System.Int16)obj);
-                else if (obj is System.Int64)
-                    return new AndroidJavaObject("java.lang.Long", (System.Int64)obj);
-                else if (obj is System.Single)
-                    return new AndroidJavaObject("java.lang.Float", (System.Single)obj);
-                else if (obj is System.Double)
-                    return new AndroidJavaObject("java.lang.Double", (System.Double)obj);
-                else if (obj is System.Char)
-                    return new AndroidJavaObject("java.lang.Character", (System.Char)obj);
+                if (obj is Int32)
+                    return new AndroidJavaObject("java.lang.Integer", (Int32)obj);
+                else if (obj is Boolean)
+                    return new AndroidJavaObject("java.lang.Boolean", (Boolean)obj);
+                else if (obj is Byte)
+                    return new AndroidJavaObject("java.lang.Byte", (SByte)obj);
+                else if (obj is SByte)
+                    return new AndroidJavaObject("java.lang.Byte", (SByte)obj);
+                else if (obj is Int16)
+                    return new AndroidJavaObject("java.lang.Short", (Int16)obj);
+                else if (obj is Int64)
+                    return new AndroidJavaObject("java.lang.Long", (Int64)obj);
+                else if (obj is Single)
+                    return new AndroidJavaObject("java.lang.Float", (Single)obj);
+                else if (obj is Double)
+                    return new AndroidJavaObject("java.lang.Double", (Double)obj);
+                else if (obj is Char)
+                    return new AndroidJavaObject("java.lang.Character", (Char)obj);
                 else
                     throw new Exception("JNI; Unknown argument type '" + obj.GetType() + "'");
             }
-            else if (obj is System.String)
+            else if (obj is String)
             {
-                return new AndroidJavaObject("java.lang.String", (System.String)obj);
+                return new AndroidJavaObject("java.lang.String", (String)obj);
             }
             else if (obj is AndroidJavaClass)
             {
@@ -1450,9 +1449,9 @@ namespace UnityEngine
             {
                 return (AndroidJavaObject)obj;
             }
-            else if (obj is System.Array)
+            else if (obj is Array)
             {
-                return AndroidJavaObject.AndroidJavaObjectDeleteLocalRef(ConvertToJNIArray((System.Array)obj));
+                return AndroidJavaObject.AndroidJavaObjectDeleteLocalRef(ConvertToJNIArray((Array)obj));
             }
             else if (obj is AndroidJavaProxy)
             {
@@ -1475,7 +1474,7 @@ namespace UnityEngine
             int i = 0;
             foreach (object obj in args)
             {
-                if (obj is System.String || obj is AndroidJavaRunnable || obj is AndroidJavaProxy || obj is System.Array)
+                if (obj is String || obj is AndroidJavaRunnable || obj is AndroidJavaProxy || obj is Array)
                     AndroidJNISafe.DeleteLocalRef(jniArgs[i].l);
 
                 ++i;
@@ -1484,7 +1483,7 @@ namespace UnityEngine
 
         private static int FRAME_SIZE_FOR_ARRAYS = 100;
 
-        public static IntPtr ConvertToJNIArray(System.Array array)
+        public static IntPtr ConvertToJNIArray(Array array)
         {
             Type type = array.GetType().GetElementType();
             if (AndroidReflection.IsPrimitive(type))
@@ -1728,22 +1727,22 @@ namespace UnityEngine
             return default(ArrayType);
         }
 
-        public static System.IntPtr GetConstructorID(System.IntPtr jclass, object[] args)
+        public static IntPtr GetConstructorID(IntPtr jclass, object[] args)
         {
             return AndroidJNIHelper.GetConstructorID(jclass, GetSignature(args));
         }
 
-        public static System.IntPtr GetMethodID(System.IntPtr jclass, string methodName, object[] args, bool isStatic)
+        public static IntPtr GetMethodID(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return AndroidJNIHelper.GetMethodID(jclass, methodName, GetSignature(args), isStatic);
         }
 
-        public static System.IntPtr GetMethodID<ReturnType>(System.IntPtr jclass, string methodName, object[] args, bool isStatic)
+        public static IntPtr GetMethodID<ReturnType>(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return AndroidJNIHelper.GetMethodID(jclass, methodName, GetSignature<ReturnType>(args), isStatic);
         }
 
-        public static System.IntPtr GetFieldID<ReturnType>(System.IntPtr jclass, string fieldName, bool isStatic)
+        public static IntPtr GetFieldID<ReturnType>(IntPtr jclass, string fieldName, bool isStatic)
         {
             return AndroidJNIHelper.GetFieldID(jclass, fieldName, GetSignature(typeof(ReturnType)), isStatic);
         }
@@ -1846,32 +1845,32 @@ namespace UnityEngine
         {
             if (obj == null)
                 return "Ljava/lang/Object;";
-            System.Type type = (obj is System.Type) ? (System.Type)obj : obj.GetType();
+            Type type = (obj is Type) ? (Type)obj : obj.GetType();
             if (AndroidReflection.IsPrimitive(type))
             {
-                if (type.Equals(typeof(System.Int32)))
+                if (type.Equals(typeof(Int32)))
                     return "I";
-                else if (type.Equals(typeof(System.Boolean)))
+                else if (type.Equals(typeof(Boolean)))
                     return "Z";
-                else if (type.Equals(typeof(System.Byte)))
+                else if (type.Equals(typeof(Byte)))
                 {
                     Debug.LogWarning("AndroidJNIHelper.GetSignature: using Byte parameters is obsolete, use SByte parameters instead");
                     return "B";
                 }
-                else if (type.Equals(typeof(System.SByte)))
+                else if (type.Equals(typeof(SByte)))
                     return "B";
-                else if (type.Equals(typeof(System.Int16)))
+                else if (type.Equals(typeof(Int16)))
                     return "S";
-                else if (type.Equals(typeof(System.Int64)))
+                else if (type.Equals(typeof(Int64)))
                     return "J";
-                else if (type.Equals(typeof(System.Single)))
+                else if (type.Equals(typeof(Single)))
                     return "F";
-                else if (type.Equals(typeof(System.Double)))
+                else if (type.Equals(typeof(Double)))
                     return "D";
-                else if (type.Equals(typeof(System.Char)))
+                else if (type.Equals(typeof(Char)))
                     return "C";
             }
-            else if (type.Equals(typeof(System.String)))
+            else if (type.Equals(typeof(String)))
             {
                 return "Ljava/lang/String;";
             }
@@ -1879,7 +1878,7 @@ namespace UnityEngine
             {
                 using (var javaClass = new AndroidJavaObject(((AndroidJavaProxy)obj).javaInterface.GetRawClass()))
                 {
-                    return "L" + javaClass.Call<System.String>("getName") + ";";
+                    return "L" + javaClass.Call<String>("getName") + ";";
                 }
             }
             else if (obj == (object)type && AndroidReflection.IsAssignableFrom(typeof(AndroidJavaProxy), type))
@@ -1902,20 +1901,20 @@ namespace UnityEngine
                 AndroidJavaObject javaObject = (AndroidJavaObject)obj;
                 using (AndroidJavaObject javaClass = javaObject.Call<AndroidJavaObject>("getClass"))
                 {
-                    return "L" + javaClass.Call<System.String>("getName") + ";";
+                    return "L" + javaClass.Call<String>("getName") + ";";
                 }
             }
             else if (obj == (object)type && AndroidReflection.IsAssignableFrom(typeof(AndroidJavaObject), type))
             {
                 return "Ljava/lang/Object;";
             }
-            else if (AndroidReflection.IsAssignableFrom(typeof(System.Array), type))
+            else if (AndroidReflection.IsAssignableFrom(typeof(Array), type))
             {
                 if (type.GetArrayRank() != 1)
                 {
                     throw new Exception("JNI: System.Array in n dimensions is not allowed");
                 }
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 sb.Append('[');
                 sb.Append(GetSignature(type.GetElementType()));
                 return sb.Length > 1 ? sb.ToString() : "";
@@ -1931,7 +1930,7 @@ namespace UnityEngine
         {
             if (args == null || args.Length == 0)
                 return "()V";
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.Append('(');
             foreach (object obj in args)
             {
@@ -1945,7 +1944,7 @@ namespace UnityEngine
         {
             if (args == null || args.Length == 0)
                 return "()" + GetSignature(typeof(ReturnType));
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            StringBuilder sb = new StringBuilder();
             sb.Append('(');
             foreach (object obj in args)
             {

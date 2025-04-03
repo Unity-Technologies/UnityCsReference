@@ -293,9 +293,9 @@ namespace Unity.UI.Builder
             foreach (var selector in pasteStyleSheet.complexSelectors)
                 BuilderAssetUtilities.AddStyleComplexSelectorToSelection(pasteStyleSheet, selector);
 
-            BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, mainStyleSheet, pasteStyleSheet);
+            BuilderAssetUtilities.TransferAssetToAsset(mainStyleSheet, pasteStyleSheet);
 
-            ScriptableObject.DestroyImmediate(pasteStyleSheet);
+            pasteStyleSheet.Destroy();
         }
 
         public void Paste()

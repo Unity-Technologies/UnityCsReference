@@ -18,13 +18,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void AddToFetchProductInfoQueue(long productId);
         void RemoveFromFetchProductInfoQueue(long productId);
-        void ClearFetchProductInfo();
         void AddToExtraFetchPackageInfoQueue(string packageNameOrId, long productId = 0);
-        void ClearExtraFetchPackageInfo();
         void AddToFetchPurchaseInfoQueue(long productId);
-        void ClearFetchPurchaseInfo();
         void PushToCheckUpdateStack(long productId, bool forceCheckUpdate = false);
-        void PushToCheckUpdateStack(IEnumerable<long> productIds, bool forceCheckUpdate = false);
         void ForceCheckUpdateAllCachedAndImportedPackages();
         void CancelCheckUpdates();
         void CheckUpdateForUncheckedLocalInfos();
@@ -268,11 +264,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             while (m_ExtraFetchPackageInfoQueue.Any() && numItemsAdded < k_ExtraFetchPackageInfoCountPerUpdate && m_ExtraFetchPackageInfoInProgress.Count < k_MaxExtraFetchPackageInfoCount)
             {
                 var packageNameOrId = m_ExtraFetchPackageInfoQueue.Dequeue();
-                if (m_ExtraFetchPackageInfoInProgress.Contains(packageNameOrId) || m_UpmCache.GetProductSearchPackageInfo(packageNameOrId) != null || m_UpmCache.GetExtraPackageInfo(packageNameOrId) != null)
+                m_PackageNameToProductIdMap.TryGetValue(packageNameOrId, out var productId);
+                if (m_ExtraFetchPackageInfoInProgress.Contains(packageNameOrId) || m_UpmCache.GetProductSearchPackageInfo(productId) != null || m_UpmCache.GetExtraPackageInfo(packageNameOrId) != null)
                     continue;
                 m_ExtraFetchPackageInfoInProgress.Add(packageNameOrId);
                 numItemsAdded++;
-                m_PackageNameToProductIdMap.TryGetValue(packageNameOrId, out var productId);
                 m_UpmClient.ExtraFetchPackageInfo(packageNameOrId, productId, doneCallback: () =>
                 {
                     m_ExtraFetchPackageInfoInProgress.Remove(packageNameOrId);

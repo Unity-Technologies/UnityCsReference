@@ -215,9 +215,9 @@ namespace UnityEngine.UIElements
 
         internal override float ParseStringToValue(string previousValue, string newValue)
         {
-            if (UINumericFieldsUtils.TryConvertStringToFloat(newValue, previousValue, out var value))
-                return value;
-            return 0;
+            var success = UINumericFieldsUtils.TryConvertStringToFloat(newValue, previousValue, out var value, out var expression);
+            expressionEvaluated?.Invoke(expression);
+            return success ? value : 0;
         }
 
         internal override void ComputeValueFromKey(SliderKey sliderKey, bool isShift)

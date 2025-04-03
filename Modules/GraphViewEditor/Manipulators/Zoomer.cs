@@ -139,8 +139,10 @@ namespace UnityEditor.Experimental.GraphView
             if (panel.GetCapturingElement(PointerId.mousePointerId) != null)
                 return;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             Vector3 position = graphView.viewTransform.position;
             Vector3 scale = graphView.viewTransform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             // TODO: augment the data to have the position as well, so we don't have to read in data from the target.
             // 0-1 ranged center relative to size

@@ -46,6 +46,8 @@ namespace UnityEngine.UIElements.Experimental
         public int button { get; private set; }
         [field: SerializeField]
         public int pressedButtons { get; private set; }
+        [field: SerializeField]
+        public int pointerId { get; private set; }
 
         // Wheel event specific
         [field: SerializeField]
@@ -110,6 +112,7 @@ namespace UnityEngine.UIElements.Experimental
                 button = pointerEvent.button;
                 pressedButtons = pointerEvent.pressedButtons;
                 clickCount = pointerEvent.clickCount;
+                pointerId = pointerEvent.pointerId;
             }
 
             if (evt is IKeyboardEvent keyboardEvent)

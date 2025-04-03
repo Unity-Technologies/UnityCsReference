@@ -165,7 +165,6 @@ namespace UnityEditor
 
                     if (validatedPathCount != paths.Length)
                     {
-                        Debug.LogError("Prefabs should just have one artifact");
                         return false;
                     }
                 }

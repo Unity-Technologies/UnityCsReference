@@ -740,7 +740,7 @@ namespace UnityEngine.UIElements.Internal
 
         public void ScrollHorizontally(float horizontalOffset)
         {
-            transform.position = new Vector3(-horizontalOffset, transform.position.y, transform.position.z);
+            style.translate = new Vector3(-horizontalOffset, resolvedStyle.translate.y, resolvedStyle.translate.z);
         }
 
         void RaiseColumnResized(int columnIndex)

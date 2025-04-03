@@ -10,7 +10,7 @@ namespace UnityEngine.TextCore.Text;
 
 internal class FontAssetFactory
 {
-    const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
+    internal const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
     static readonly HashSet<FontAsset> visitedFontAssets = new();
 
     public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, int fontSize)
@@ -97,95 +97,14 @@ internal class FontAssetFactory
         }
     }
 
-        static readonly string k_SystemFontName =
-            "Lucida Grande"
-        ;
-    internal static FontAsset? CreateDefaultEditorFontAsset(Font font, Shader shader)
+    internal static FontAsset? ConvertFontToFontAsset(Font font, Shader shader)
     {
         if(font == null)
             return null;
 
-        FontAsset? fontAsset=null;
-        if (font.name == "System Normal" || font.name == "System Small" || font.name == "System Big" || font.name == "System Warning")
-        {
-            fontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Regular", 90);
-            if (fontAsset != null)
-            {
-                fontAsset.InternalDynamicOS = true;
+        FontAsset? fontAsset = null;
 
-                var boldFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold", 90);
-                if (boldFontAsset != null)
-                {
-                    boldFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
-                    SetupFontAssetSettings(boldFontAsset, shader);
-                }
-
-                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold Italic", 90);
-                if (boldItalicFontAsset != null)
-                {
-                    boldItalicFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
-                    SetupFontAssetSettings(boldItalicFontAsset, shader);
-                }
-
-                var italicFontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Italic", 90);
-                if (italicFontAsset != null)
-                {
-                    italicFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
-                    SetupFontAssetSettings(italicFontAsset, shader);
-                }
-            }
-        }
-        else if (font.name == "System Normal Bold" || font.name == "System Small Bold")
-        {
-            fontAsset = FontAsset.CreateFontAssetInternal(k_SystemFontName, "Bold", 90);
-            if (fontAsset != null)
-            {
-                fontAsset.InternalDynamicOS = true;
-            }
-        }
-        else if (font.name == "Inter-Regular")
-        {
-            fontAsset = FontAsset.CreateFontAssetInternal("Inter", "Regular", 90);
-            if (fontAsset != null)
-            {
-                fontAsset.InternalDynamicOS = true;
-
-                var boldFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold", 90);
-                if (boldFontAsset != null)
-                {
-                    boldFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
-                    SetupFontAssetSettings(boldFontAsset, shader);
-                }
-
-                var italicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Italic", 90);
-                if (italicFontAsset != null)
-                {
-                    italicFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
-                    SetupFontAssetSettings(italicFontAsset, shader);
-                }
-
-                var boldItalicFontAsset = FontAsset.CreateFontAssetInternal("Inter", "Bold Italic", 90);
-                if (boldItalicFontAsset != null)
-                {
-                    boldItalicFontAsset.InternalDynamicOS = true;
-                    fontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
-                    SetupFontAssetSettings(boldItalicFontAsset, shader);
-                }
-            }
-            else
-            {
-                fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
-            }
-        }
-        else
-        {
-            fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
-        }
+        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
             SetupFontAssetSettings(fontAsset, shader);
@@ -193,7 +112,7 @@ internal class FontAssetFactory
         return fontAsset;
     }
 
-    static void SetupFontAssetSettings(FontAsset fontAsset, Shader shader)
+    internal static void SetupFontAssetSettings(FontAsset fontAsset, Shader shader)
     {
         if (!fontAsset)
             return;
@@ -213,7 +132,11 @@ internal class FontAssetFactory
 
         fontAsset.IsEditorFont = true;
         fontAsset.isMultiAtlasTexturesEnabled = true;
-        fontAsset.atlasTexture.filterMode = FilterMode.Point;
+
+        // When the checkerboard switch is enabled, the font atlas texture should be bilinear filtered so that we can see the pattern being blurrred when not perfectly aligned.
+        // The text could be rendered with point filtering all the time for bitmap fonts otherwise.
+
+        fontAsset.atlasTexture.filterMode = TextGenerator.EnableCheckerboardPattern ? FilterMode.Bilinear : FilterMode.Point;
     }
 
     public static void SetHideFlags(FontAsset fontAsset)

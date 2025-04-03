@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor.Overlays
 {
-    sealed class OverlayPreset : ScriptableObject, ISerializationCallbackReceiver
+    sealed class OverlayPreset : ScriptableObject, IOverlayPreset, ISerializationCallbackReceiver
     {
         [SerializeField, HideInInspector]
         string m_RawWindowType;
@@ -43,6 +43,8 @@ namespace UnityEditor.Overlays
         {
             targetWindowType = Type.GetType(m_RawWindowType);
         }
+
+        public void ApplyCustomData(OverlayCanvas canvas) {}
 
         public bool CanApplyToWindow(Type windowType)
         {

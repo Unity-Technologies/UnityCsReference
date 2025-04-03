@@ -207,7 +207,9 @@ namespace UnityEngine.UIElements
         }
 
         internal static Object activeEventSystem { get; private set; }
-        internal static bool useDefaultEventSystem => activeEventSystem == null;
+        internal static bool useDefaultEventSystem => overrideUseDefaultEventSystem ?? activeEventSystem == null;
+
+        internal static bool? overrideUseDefaultEventSystem { get; set; }
 
         private static bool s_IsPlayMode = false;
 

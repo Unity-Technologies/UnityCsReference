@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements.UIR
         DrawSolidMesh,
         DrawTexturedMesh,
         DrawTexturedMeshSkipAtlas,
+        DrawDynamicTexturedMesh,
         DrawTextMesh,
         DrawGradients,
         DrawImmediate,
@@ -27,8 +28,6 @@ namespace UnityEngine.UIElements.UIR
         PopScissors,
         PushGroupMatrix,
         PopGroupMatrix,
-        PushRenderTexture,
-        BlitAndPopRenderTexture,
         PushDefaultMaterial,
         PopDefaultMaterial,
         CutRenderChain,
@@ -39,6 +38,7 @@ namespace UnityEngine.UIElements.UIR
     enum EntryFlags : ushort
     {
         UsesTextCoreSettings = 1 << 0,
+        IsPremultiplied = 1 << 1
     }
 
     class Entry
@@ -56,6 +56,7 @@ namespace UnityEngine.UIElements.UIR
         public VectorImage gradientsOwner;
         public Material material;
         public Action immediateCallback;
+        public TextureId textureId;
 
         public Entry nextSibling;
 
@@ -90,21 +91,37 @@ namespace UnityEngine.UIElements.UIR
 
         public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices)
         {
-            DrawMesh(parentEntry, vertices, indices, null, false);
+            DrawMesh(parentEntry, vertices, indices, null);
         }
 
-        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, bool skipAtlas)
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, TextureOptions textureOptions = TextureOptions.None)
         {
             var entry = m_EntryPool.Get();
             entry.vertices = vertices;
             entry.indices = indices;
             entry.texture = texture;
+            entry.flags = ((textureOptions & TextureOptions.PremultipliedAlpha) != 0) ? EntryFlags.IsPremultiplied : 0;
 
             if (object.ReferenceEquals(null, texture))
                 entry.type = EntryType.DrawSolidMesh;
             else
+            {
+                bool skipAtlas = ((entry.flags & EntryFlags.IsPremultiplied) != 0) || (textureOptions & TextureOptions.SkipDynamicAtlas) != 0;
                 entry.type = skipAtlas ? EntryType.DrawTexturedMeshSkipAtlas : EntryType.DrawTexturedMesh;
+            }
 
+            AppendMeshEntry(parentEntry, entry);
+        }
+
+        public void DrawMesh(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, TextureId textureId, bool isPremultiplied = false)
+        {
+            Debug.Assert(textureId.IsValid());
+            var entry = m_EntryPool.Get();
+            entry.vertices = vertices;
+            entry.indices = indices;
+            entry.textureId = textureId;
+            entry.flags = isPremultiplied ? EntryFlags.IsPremultiplied : 0;
+            entry.type = EntryType.DrawDynamicTexturedMesh;
             AppendMeshEntry(parentEntry, entry);
         }
 
@@ -120,6 +137,7 @@ namespace UnityEngine.UIElements.UIR
             entry.fontSharpness = 0; // N/A
             AppendMeshEntry(parentEntry, entry);
         }
+
 
         public void DrawSdfText(Entry parentEntry, NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture, float scale, float sharpness)
         {
@@ -230,22 +248,6 @@ namespace UnityEngine.UIElements.UIR
         {
             var entry = m_EntryPool.Get();
             entry.type = EntryType.PopGroupMatrix;
-            Append(parentEntry, entry);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void PushRenderTexture(Entry parentEntry)
-        {
-            var entry = m_EntryPool.Get();
-            entry.type = EntryType.PushRenderTexture;
-            Append(parentEntry, entry);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void BlitAndPopRenderTexture(Entry parentEntry)
-        {
-            var entry = m_EntryPool.Get();
-            entry.type = EntryType.BlitAndPopRenderTexture;
             Append(parentEntry, entry);
         }
 

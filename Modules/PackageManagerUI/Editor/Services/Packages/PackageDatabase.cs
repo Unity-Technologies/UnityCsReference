@@ -89,19 +89,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return GetPackage(productId.ToString());
         }
 
-        public IPackage GetPackage(string uniqueId)
-        {
-            if (string.IsNullOrEmpty(uniqueId))
-                return null;
-            var package = m_Packages.Get(uniqueId);
-            if (package != null)
-                return package;
-
-            // We only retry with productId now because in the case where productId and package Name both exist for a package
-            // we use productId as the primary key.
-            var productId = m_UniqueIdMapper.GetProductIdByName(uniqueId);
-            return productId > 0 ? m_Packages.Get(productId.ToString()) : null;
-        }
+        public IPackage GetPackage(string uniqueId) => m_Packages.Get(uniqueId);
 
         // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
         // but we still might be able to find a package and a version that matches the criteria
@@ -271,22 +259,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
                 else
                     packagesAdded.Add(package);
-
-                // It could happen that before the productId info was available, another package was created with packageName as the uniqueId
-                // Once the productId becomes available it should be the new uniqueId, we want to old package such that there won't be two
-                // entries of the same package with different uniqueIds (one productId, one with packageName)
-                if (package.product != null && !string.IsNullOrEmpty(package.name))
-                {
-                    {
-                        var packageWithNameAsUniqueId = GetPackage(package.name);
-                        if (packageWithNameAsUniqueId != null)
-                        {
-                            packagesRemoved.Add(packageWithNameAsUniqueId);
-                            RemovePackage(package.name);
-                            onPackageUniqueIdFinalize?.Invoke(package.name, package.uniqueId);
-                        }
-                    }
-                }
 
                 var tempId = m_UniqueIdMapper.GetTempIdByFinalizedId(package.uniqueId);
                 if (!string.IsNullOrEmpty(tempId))

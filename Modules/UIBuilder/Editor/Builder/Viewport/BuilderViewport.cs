@@ -629,9 +629,32 @@ namespace Unity.UI.Builder
             }
         }
 
+        /// <summary>
+        /// Returns the display style of the specified visual element compounded with the display style of its parents up
+        /// to the root element of the document.
+        /// Returns DisplayStyle.Flex if the visual element and all its parent have a resolved display style equal
+        /// to DisplayStyle.Flex but returns DisplayStyle.None if one of them has a display style equal to DisplayStyle.None.
+        /// </summary>
+        /// <param name="element">The visual element to evaluate</param>
+        /// <returns>The compounded resolved display style</returns>
+        static DisplayStyle GetCompoundedDisplayStyle(VisualElement documentRootElement, VisualElement element)
+        {
+            var currentElement = element;
+
+            while (currentElement != null && currentElement != documentRootElement)
+            {
+                if (currentElement.resolvedStyle.display == DisplayStyle.None)
+                    return DisplayStyle.None;
+                currentElement = currentElement.parent;
+            }
+            return DisplayStyle.Flex;
+        }
+
         void SetInnerSelection(VisualElement selectedElement)
         {
-            if (selectedElement.resolvedStyle.display == DisplayStyle.None)
+            var builder = m_PaneWindow as Builder;
+
+            if (builder != null && GetCompoundedDisplayStyle(builder.documentRootElement, selectedElement) == DisplayStyle.None)
             {
                 ClearInnerSelection();
                 return;

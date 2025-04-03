@@ -54,17 +54,21 @@ namespace UnityEditor.Overlays
                 e.m_SupportedOverlayLayouts = Layout.Panel;
                 if (ShouldWriteAttributeValue(supportedOverlayLayout_UxmlAttributeFlags))
                 {
-                    foreach (var layout in supportedOverlayLayout.Split(' '))
+                    var split = supportedOverlayLayout?.Split(' ');
+                    if (split?.Length > 0)
                     {
-                        switch (layout.ToLower())
+                        foreach (var layout in split)
                         {
-                            case "horizontal":
-                                e.m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
-                                break;
+                            switch (layout.ToLower())
+                            {
+                                case "horizontal":
+                                    e.m_SupportedOverlayLayouts |= Layout.HorizontalToolbar;
+                                    break;
 
-                            case "vertical":
-                                e.m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
-                                break;
+                                case "vertical":
+                                    e.m_SupportedOverlayLayouts |= Layout.VerticalToolbar;
+                                    break;
+                            }
                         }
                     }
                 }

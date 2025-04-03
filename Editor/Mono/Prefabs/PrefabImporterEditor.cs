@@ -109,7 +109,7 @@ namespace UnityEditor
                 var asset = EditorUtility.InstanceIDToObject(instanceId);
                 if (IsTargetAsset(asset))
                 {
-                    if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
+                    if (CanSave())
                     {
                         SaveDirtyPrefabAssets(true);
                     }
@@ -150,6 +150,17 @@ namespace UnityEditor
                 SaveDirtyPrefabAssets(false);
         }
 
+        /// <summary>
+        /// Determines whether auto-saving of the Prefab Asset is currently allowed.
+        /// Auto-saving is disabled if a UI field is focused or the CurveEditorWindow, ColorPicker or GradientPicker is visible.
+        /// </summary>
+        /// <returns>Returns true if auto-saving is allowed; otherwise, returns false.</returns>
+        internal bool CanSave() => !EditorFocusMonitor.AreBindableElementsSelected() &&
+            readyToAutoSave &&
+            !CurveEditorWindow.visible &&
+            !ColorPicker.visible &&
+            !GradientPicker.visible;
+
         void WaitToApplyChanges()
         {
             var time = EditorApplication.timeSinceStartup;
@@ -157,7 +168,7 @@ namespace UnityEditor
             {
                 m_NextUpdate = time + 0.2;
 
-                if (!EditorFocusMonitor.AreBindableElementsSelected() && readyToAutoSave)
+                if (CanSave())
                     SaveDirtyPrefabAssets(true);
             }
         }
@@ -170,6 +181,9 @@ namespace UnityEditor
 
             if (assetTarget == null)
                 return;
+
+            if (reloadInspectors && !CanSave())
+                Debug.LogWarning("SaveDirtyPrefabAssets should not be called when CanSave is false and reloading inspectors.");
 
             m_DirtyPrefabAssets.Clear();
             foreach (var asset in assetTargets)

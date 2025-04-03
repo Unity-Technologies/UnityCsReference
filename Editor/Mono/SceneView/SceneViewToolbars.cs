@@ -16,7 +16,7 @@ namespace UnityEditor
      // - UIServiceEditor/SceneView/SceneViewToolbarElements.cs
      // - UIServiceEditor/EditorToolbar/ToolbarElements/BuiltinTools.cs
 
-    [Overlay(typeof(SceneView), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools)]
+    [Overlay(typeof(SceneView), k_Id, "Tools", true, priority = (int)OverlayPriority.Tools, defaultDockZone = DockZone.LeftColumn, defaultDockPosition = DockPosition.Top, defaultLayout = Layout.VerticalToolbar, defaultDockIndex = 0)]
     [Icon("Icons/Overlays/ToolsToggle.png")]
     class TransformToolsOverlayToolBar : ToolbarOverlay
     {
@@ -71,7 +71,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "View Options", true, priority = (int)OverlayPriority.ViewOptions)]
+    [Overlay(typeof(SceneView), k_Id, "View Options", true, priority = (int)OverlayPriority.ViewOptions, defaultDockIndex = 0, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewToolBar : ToolbarOverlay
     {
@@ -88,7 +88,7 @@ namespace UnityEditor
             "SceneView/Gizmos") {}
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultLayout = Layout.HorizontalToolbar, defaultDockZone = DockZone.TopToolbar)]
+    [Overlay(typeof(SceneView), k_Id, "Draw Modes", true, priority = (int)OverlayPriority.DrawModes, defaultDockIndex = 1, defaultDockPosition = DockPosition.Bottom, defaultDockZone = DockZone.TopToolbar)]
     [Icon("Icons/Overlays/ViewOptions.png")]
     class SceneViewCameraModeToolbar : ToolbarOverlay
     {
@@ -134,7 +134,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Search", true, priority = (int)OverlayPriority.Search)]
+    [Overlay(typeof(SceneView), k_Id, "Search", false, priority = (int)OverlayPriority.Search, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Bottom, defaultDockIndex = 2)]
     [Icon("Icons/Overlays/SearchOverlay.png")]
     class SearchToolBar : Overlay, ICreateHorizontalToolbar
     {
@@ -156,7 +156,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true, priority = (int)OverlayPriority.GridAndSnap)]
+    [Overlay(typeof(SceneView), k_Id, "Grid and Snap", true, priority = (int)OverlayPriority.GridAndSnap, defaultDockZone = DockZone.TopToolbar, defaultDockPosition = DockPosition.Top, defaultDockIndex = 1)]
     [Icon("Icons/Overlays/GridAndSnap.png")]
     class GridAndSnapToolBar : ToolbarOverlay
     {

@@ -2109,6 +2109,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\FieldMouseDragger.cs">
       <Link>Modules\UIElements\Core\FieldMouseDragger.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\FilterFunctionDefinition.cs">
+      <Link>Modules\UIElements\Core\FilterFunctionDefinition.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\FilterFunctionDefinitionUtils.cs">
+      <Link>Modules\UIElements\Core\FilterFunctionDefinitionUtils.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\FocusController.cs">
       <Link>Modules\UIElements\Core\FocusController.cs</Link>
     </Compile>
@@ -2129,6 +2135,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs">
       <Link>Modules\UIElements\Core\GameObjects\NavigateFocusRing.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs">
+      <Link>Modules\UIElements\Core\GameObjects\PanelInputConfiguration.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\GameObjects\PanelSettings.cs">
       <Link>Modules\UIElements\Core\GameObjects\PanelSettings.cs</Link>
@@ -2442,11 +2451,20 @@
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRPainter2D.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRPainter2D.cs</Link>
     </Compile>
-    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderChain.cs">
-      <Link>Modules\UIElements\Core\Renderer\UIRRenderChain.cs</Link>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderData.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderData.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderEvents.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRenderEvents.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTree.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTree.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeCompositor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs">
+      <Link>Modules\UIElements\Core\Renderer\UIRRenderTreeManager.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs">
       <Link>Modules\UIElements\Core\Renderer\UIRRepaintUpdater.cs</Link>
@@ -2526,6 +2544,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Dimension.cs">
       <Link>Modules\UIElements\Core\StyleSheets\Dimension.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\MatchedRulesExtractor.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\MatchedRulesExtractor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\ScalableImage.cs">
       <Link>Modules\UIElements\Core\StyleSheets\ScalableImage.cs</Link>
     </Compile>
@@ -2576,6 +2597,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleSheetExtensions.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleSheetUtility.cs">
+      <Link>Modules\UIElements\Core\StyleSheets\StyleSheetUtility.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\StyleValue.cs">
       <Link>Modules\UIElements\Core\StyleSheets\StyleValue.cs</Link>
@@ -2646,6 +2670,12 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\EasingFunction.cs">
       <Link>Modules\UIElements\Core\Style\EasingFunction.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\FilterFunction.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\Style\FilterFunction.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\FilterFunction.cs">
+      <Link>Modules\UIElements\Core\Style\FilterFunction.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\FontDefinition.PropertyBag.cs">
       <Link>Modules\UIElements\Core\Style\FontDefinition.PropertyBag.cs</Link>
     </Compile>
@@ -2687,6 +2717,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDebug.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StyleDebug.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleDiff.cs">
+      <Link>Modules\UIElements\Core\Style\Generated\StyleDiff.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Generated\StyleProperties.cs">
       <Link>Modules\UIElements\Core\Style\Generated\StyleProperties.cs</Link>
@@ -2760,6 +2793,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDebug.cs">
       <Link>Modules\UIElements\Core\Style\StyleDebug.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleDiff.cs">
+      <Link>Modules\UIElements\Core\Style\StyleDiff.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleEnum.cs">
       <Link>Modules\UIElements\Core\Style\StyleEnum.cs</Link>
     </Compile>
@@ -2780,6 +2816,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StyleList.cs">
       <Link>Modules\UIElements\Core\Style\StyleList.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Style\StyleMaterial.cs">
+      <Link>Modules\UIElements\Core\Style\StyleMaterial.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\StylePropertyUtil.cs">
       <Link>Modules\UIElements\Core\Style\StylePropertyUtil.cs</Link>

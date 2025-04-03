@@ -9,6 +9,8 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
+using UnityEngine.Assertions;
+using UnityEngine.Pool;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -201,37 +203,21 @@ namespace Unity.UI.Builder
             var complexSelectorsList = styleSheet.complexSelectors.ToList();
             complexSelectorsList.Add(complexSelector);
             styleSheet.complexSelectors = complexSelectorsList.ToArray();
-            styleSheet.UpdateContentHash();
+            styleSheet.SetTemporaryContentHash();
 
             return complexSelector;
         }
 
         public static void TransferRulePropertiesToSelector(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleSheet fromStyleSheet, StyleRule fromRule)
         {
-            foreach (var property in fromRule.properties)
+            // We're going to iterate on a copy of the properties list, because each property that will be transferred
+            // will be removed from the rule.
+            using var _ = ListPool<StyleProperty>.Get(out var properties);
+            properties.AddRange(fromRule.properties);
+
+            foreach (var property in properties)
             {
-                toStyleSheet.RemoveProperty(toSelector.rule, property.name);
-                var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
-                foreach (var value in property.values)
-                {
-                    switch (value.valueType)
-                    {
-                        case StyleValueType.Float: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetFloat(value)); break;
-                        case StyleValueType.Dimension: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetDimension(value)); break;
-                        case StyleValueType.Enum: toStyleSheet.AddValueAsEnum(newProperty, fromStyleSheet.GetEnum(value)); break;
-                        case StyleValueType.String: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetString(value)); break;
-                        case StyleValueType.Color: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetColor(value)); break;
-                        case StyleValueType.AssetReference: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
-                        case StyleValueType.ResourcePath: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
-                        case StyleValueType.Variable: toStyleSheet.AddVariable(newProperty, fromStyleSheet.GetString(value)); break;
-                        case StyleValueType.Keyword: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetKeyword(value)); break;
-                        case StyleValueType.Function: toStyleSheet.AddVariable(newProperty, fromStyleSheet.GetString(value)); break;
-                    }
-                }
-            }
-            foreach (var property in fromRule.properties)
-            {
-                fromStyleSheet.RemoveProperty(fromRule, property);
+                toStyleSheet.TransferPropertyToSelector(toSelector, fromStyleSheet, fromRule, property);
             }
         }
 
@@ -239,66 +225,24 @@ namespace Unity.UI.Builder
         {
             // remove the property if it exists in the destination
             toStyleSheet.RemoveProperty(toSelector.rule, property.name);
-            var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
-            foreach (var value in property.values)
-            {
-                switch (value.valueType)
-                {
-                    case StyleValueType.Float: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetFloat(value)); break;
-                    case StyleValueType.Dimension: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetDimension(value)); break;
-                    case StyleValueType.Enum: toStyleSheet.AddValueAsEnum(newProperty, fromStyleSheet.GetEnum(value)); break;
-                    case StyleValueType.String: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetString(value)); break;
-                    case StyleValueType.Color: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetColor(value)); break;
-                    case StyleValueType.AssetReference: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
-                    case StyleValueType.ResourcePath: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetAsset(value)); break;
-                    case StyleValueType.Variable: toStyleSheet.AddVariable(newProperty, fromStyleSheet.GetString(value)); break;
-                    case StyleValueType.Keyword: toStyleSheet.AddValue(newProperty, fromStyleSheet.GetKeyword(value)); break;
-                }
-            }
+
+            var toProperty = toStyleSheet.AddProperty(toSelector, property.name);
+            StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, property, toStyleSheet, toProperty);
 
             fromStyleSheet.RemoveProperty(fromRule, property);
         }
 
-        public static void TransferPropertyToSelector(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleRule fromRule, StyleProperty property)
+        public static void TransferPropertyToSelector(this StyleSheet styleSheet, StyleComplexSelector toSelector, StyleRule fromRule, StyleProperty property)
         {
-            var newProperty = toStyleSheet.AddProperty(toSelector, property.name);
-            foreach (var value in property.values)
-            {
-                switch (value.valueType)
-                {
-                    case StyleValueType.Float: toStyleSheet.AddValue(newProperty, toStyleSheet.GetFloat(value)); break;
-                    case StyleValueType.Dimension: toStyleSheet.AddValue(newProperty, toStyleSheet.GetDimension(value)); break;
-                    case StyleValueType.Enum: toStyleSheet.AddValueAsEnum(newProperty, toStyleSheet.GetEnum(value)); break;
-                    case StyleValueType.String: toStyleSheet.AddValue(newProperty, toStyleSheet.GetString(value)); break;
-                    case StyleValueType.Color: toStyleSheet.AddValue(newProperty, toStyleSheet.GetColor(value)); break;
-                    case StyleValueType.AssetReference: toStyleSheet.AddValue(newProperty, toStyleSheet.GetAsset(value)); break;
-                    case StyleValueType.ResourcePath: toStyleSheet.AddValue(newProperty, toStyleSheet.GetAsset(value)); break;
-                    case StyleValueType.Variable: toStyleSheet.AddVariable(newProperty, toStyleSheet.GetString(value)); break;
-                    case StyleValueType.Keyword: toStyleSheet.AddValue(newProperty, toStyleSheet.GetKeyword(value)); break;
-                }
-            }
-
-            toStyleSheet.RemoveProperty(fromRule, property);
+            var toProperty = styleSheet.AddProperty(toSelector, property.name);
+            StyleSheetUtility.TransferStylePropertyHandles(styleSheet, property, styleSheet, toProperty);
+            styleSheet.RemoveProperty(fromRule, property);
         }
 
         public static void DuplicatePropertyInSelector(this StyleSheet styleSheet, StyleComplexSelector selector, StyleProperty property, string name)
         {
-            var newProperty = styleSheet.AddProperty(selector, name);
-            foreach (var value in property.values)
-            {
-                switch (value.valueType)
-                {
-                    case StyleValueType.Float: styleSheet.AddValue(newProperty, styleSheet.GetFloat(value)); break;
-                    case StyleValueType.Dimension: styleSheet.AddValue(newProperty, styleSheet.GetDimension(value)); break;
-                    case StyleValueType.Enum: styleSheet.AddValueAsEnum(newProperty, styleSheet.GetEnum(value)); break;
-                    case StyleValueType.String: styleSheet.AddValue(newProperty, styleSheet.GetString(value)); break;
-                    case StyleValueType.Color: styleSheet.AddValue(newProperty, styleSheet.GetColor(value)); break;
-                    case StyleValueType.AssetReference: styleSheet.AddValue(newProperty, styleSheet.GetAsset(value)); break;
-                    case StyleValueType.ResourcePath: styleSheet.AddValue(newProperty, styleSheet.GetAsset(value)); break;
-                    case StyleValueType.Variable: styleSheet.AddVariable(newProperty, styleSheet.GetString(value)); break;
-                    case StyleValueType.Keyword: styleSheet.AddValue(newProperty, styleSheet.GetKeyword(value)); break;
-                }
-            }
+            var toProperty = styleSheet.AddProperty(selector, name);
+            StyleSheetUtility.TransferStylePropertyHandles(styleSheet, property, styleSheet, toProperty);
         }
 
         public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleValueType valueType, string variableName, string value)
@@ -328,7 +272,7 @@ namespace Unity.UI.Builder
             }
 
             property.isCustomProperty = true;
-            toStyleSheet.UpdateContentHash();
+            toStyleSheet.SetTemporaryContentHash();
         }
 
         // Add color variable.
@@ -337,7 +281,7 @@ namespace Unity.UI.Builder
             var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
-            toStyleSheet.UpdateContentHash();
+            toStyleSheet.SetTemporaryContentHash();
         }
 
         // Add image variable.
@@ -346,7 +290,7 @@ namespace Unity.UI.Builder
             var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
-            toStyleSheet.UpdateContentHash();
+            toStyleSheet.SetTemporaryContentHash();
         }
 
         // Add dimension variable.
@@ -355,7 +299,7 @@ namespace Unity.UI.Builder
             var property = toStyleSheet.AddProperty(toSelector, variableName);
             toStyleSheet.AddValue(property, value);
             property.isCustomProperty = true;
-            toStyleSheet.UpdateContentHash();
+            toStyleSheet.SetTemporaryContentHash();
         }
 
         public static bool IsSelected(this StyleSheet styleSheet)
@@ -379,17 +323,7 @@ namespace Unity.UI.Builder
             foreach (var fromProperty in fromRule.properties)
             {
                 var toProperty = toStyleSheet.AddProperty(toRule, fromProperty.name);
-                toProperty.requireVariableResolve = fromProperty.requireVariableResolve;
-                toProperty.isCustomProperty = fromProperty.isCustomProperty;
-                for (int i = 0; i < fromProperty.values.Length; ++i)
-                {
-                    var fromValueHandle = fromProperty.values[i];
-                    var toValueIndex = toStyleSheet.SwallowStyleValue(fromStyleSheet, fromValueHandle);
-                    // have to use the same value index for function handles
-                    if (fromValueHandle.valueType == StyleValueType.Function)
-                        toValueIndex = fromValueHandle.valueIndex;
-                    toStyleSheet.AddValueHandle(toProperty, toValueIndex, fromValueHandle.valueType);
-                }
+                StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, fromProperty, toStyleSheet, toProperty);
             }
         }
 
@@ -426,19 +360,6 @@ namespace Unity.UI.Builder
                 return;
 
             ScriptableObject.DestroyImmediate(styleSheet);
-        }
-
-        public static void UpdateContentHash(this StyleSheet styleSheet)
-        {
-            // Set the contentHash to 0 if the style sheet is empty
-            if (styleSheet.rules == null || styleSheet.rules.Length == 0)
-                styleSheet.contentHash = 0;
-            else
-                // Use a random value instead of computing the real contentHash.
-                // This is faster (for large content) and safe enough to avoid conflicts with other style sheets
-                // since contentHash is used internally as a optimized way to compare style sheets.
-                // However, note that the real contentHash will still be computed on import.
-                styleSheet.contentHash = UnityEngine.Random.Range(1, int.MaxValue);
         }
     }
 }

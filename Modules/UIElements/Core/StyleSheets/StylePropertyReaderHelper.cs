@@ -400,6 +400,117 @@ namespace UnityEngine.UIElements.StyleSheets
             return BackgroundSize;
         }
 
+        public static TextShadow ReadTextShadow(int valCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3, StylePropertyValue val4)
+        {
+            if (valCount < 2)
+                return default;
+
+            var readColorFirst = val1.handle.valueType is StyleValueType.Color or StyleValueType.Enum;
+
+            var value = new TextShadow{ color = Color.clear, offset = Vector2.zero, blurRadius = 0.0f };
+
+            switch (valCount)
+            {
+                // Offset with no blurRadius and no color
+                case 2:
+                {
+                    var offset = value.offset;
+                    if (val1.sheet.TryReadDimension(val1.handle, out var offsetX))
+                        offset.x = offsetX.value;
+
+                    if (val2.sheet.TryReadDimension(val2.handle, out var offsetY))
+                        offset.y = offsetY.value;
+                    value.offset = offset;
+                    break;
+                }
+                // Either color + offset or offset + color
+                case 3:
+                {
+                    var colorHandle = readColorFirst ? val1 : val3;
+                    var offsetXHandle = readColorFirst ? val2 : val1;
+                    var offsetYHandle = readColorFirst ? val3 : val2;
+
+                    if (colorHandle.sheet.TryReadColor(colorHandle.handle, out var color))
+                        value.color = color;
+
+                    var offset = default(Vector2);
+                    if (offsetXHandle.sheet.TryReadDimension(offsetXHandle.handle, out var offsetX))
+                        offset.x = offsetX.value;
+
+                    if (offsetYHandle.sheet.TryReadDimension(offsetYHandle.handle, out var offsetY))
+                        offset.y = offsetY.value;
+                    value.offset = offset;
+
+                    break;
+                }
+                // Either color + offset + blurRadius or offset + blurRadius + color
+                case >= 4:
+                {
+                    var colorHandle = readColorFirst ? val1 : val4;
+                    var offsetXHandle = readColorFirst ? val2 : val1;
+                    var offsetYHandle = readColorFirst ? val3 : val2;
+                    var blurRadiusHandle = readColorFirst ? val4 : val3;
+
+                    if (colorHandle.sheet.TryReadColor(colorHandle.handle, out var color))
+                        value.color = color;
+
+                    var offset = default(Vector2);
+                    if (offsetXHandle.sheet.TryReadDimension(offsetXHandle.handle, out var offsetX))
+                        offset.x = offsetX.value;
+
+                    if (offsetYHandle.sheet.TryReadDimension(offsetYHandle.handle, out var offsetY))
+                        offset.y = offsetY.value;
+                    value.offset = offset;
+
+                    if (blurRadiusHandle.sheet.TryReadDimension(blurRadiusHandle.handle, out var blurRadius))
+                        value.blurRadius = blurRadius.value;
+                    break;
+                }
+            }
+            return value;
+        }
+
+        internal static Cursor ReadCursor(int valueCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3, float dpiScaling = 1.0f)
+        {
+            var cursor = new Cursor();
+
+            var valueType = val1.handle.valueType;
+            var isCustom = valueType is StyleValueType.ResourcePath or StyleValueType.AssetReference or StyleValueType.ScalableImage or StyleValueType.MissingAssetReference;
+            if (isCustom)
+            {
+                var source = new ImageSource();
+                if (TryGetImageSourceFromValue(val1, dpiScaling, out source))
+                {
+                    cursor.texture = source.texture;
+                    if (valueCount >= 3)
+                    {
+                        if (val2.handle.valueType != StyleValueType.Float ||
+                            val3.handle.valueType != StyleValueType.Float)
+                        {
+                            Debug.LogWarning("USS 'cursor' property requires two integers for the hot spot value.");
+                        }
+                        else
+                        {
+                            cursor.hotspot = new Vector2(
+                                val2.sheet.ReadFloat(val2.handle),
+                                val3.sheet.ReadFloat(val3.handle)
+                            );
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Default cursor
+                if (getCursorIdFunc != null)
+                {
+                    cursor.defaultCursorId = getCursorIdFunc(val1.sheet, val1.handle);
+                }
+            }
+
+            return cursor;
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static bool TryGetImageSourceFromValue(StylePropertyValue propertyValue, float dpiScaling, out ImageSource source)
         {

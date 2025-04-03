@@ -245,7 +245,9 @@ namespace UnityEditor.Overlays
             if (delayPositionUpdate)
                 m_Overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate, targetRect);
             else
+#pragma warning disable CS0618 // Type or member is obsolete
                 m_Overlay.rootVisualElement.transform.position = OverlayUtilities.ClampRectToRect(targetRect, floatingContainer.rect).position;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             m_DockOperation.UpdateHover(dropZone);
 
@@ -254,7 +256,9 @@ namespace UnityEditor.Overlays
 
         void DelayedPositionUpdate(GeometryChangedEvent evt, Rect targetRect)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Overlay.rootVisualElement.transform.position = OverlayUtilities.ClampRectToRect(targetRect, floatingContainer.rect).position;
+#pragma warning restore CS0618 // Type or member is obsolete
             m_Overlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent, Rect>(DelayedPositionUpdate);
         }
 
@@ -278,13 +282,17 @@ namespace UnityEditor.Overlays
                 }
 
                 m_Overlay.container?.RemoveOverlay(m_Overlay);
+#pragma warning disable CS0618 // Type or member is obsolete
                 m_Overlay.rootVisualElement.transform.position = Vector2.zero;
+#pragma warning restore CS0618 // Type or member is obsolete
                 dropZone.DropOverlay(m_Overlay);
             }
 
             if (m_Overlay.floating)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 var pos = m_Overlay.rootVisualElement.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
                 m_Overlay.floatingPosition = new Vector2(pos.x, pos.y);
             }
 
@@ -311,7 +319,9 @@ namespace UnityEditor.Overlays
         {
             if (m_WasFloating)
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 m_Overlay.rootVisualElement.transform.position = m_InitialLayoutPosition;
+#pragma warning restore CS0618 // Type or member is obsolete
             }
             else
             {

@@ -20,6 +20,8 @@ namespace UnityEditor
 
         static Vector2 m_ScrollPos;
 
+        static readonly GUIContent s_LevelOfDetailLabel = new GUIContent("Level of Detail", "The number of Mesh LODs within each sub-mesh.");
+
         void OnEnable()
         {
             foreach (var previewTarget in targets)
@@ -126,6 +128,7 @@ namespace UnityEditor
             EditorGUILayout.LabelField("Bounds Center", mesh.bounds.center.ToString("g4"));
             EditorGUILayout.LabelField("Bounds Size", mesh.bounds.size.ToString("g4"));
             EditorGUILayout.LabelField("Read/Write Enabled", mesh.isReadable.ToString());
+            EditorGUILayout.LabelField(s_LevelOfDetailLabel, GUIContent.Temp(mesh.isLodSelectionActive? $"{mesh.lodCount} levels" : $"{mesh.lodCount} level"));
             EditorGUI.indentLevel--;
         }
 
@@ -293,6 +296,22 @@ namespace UnityEditor
                 meshPreview.OnPreviewGUI(r, background);
         }
 
-        public override string GetInfoString() => MeshPreview.GetInfoString(target as Mesh);
+        public override string GetInfoString()
+        {
+            var mesh = target as Mesh;
+
+            if (mesh == null)
+                return "";
+
+            // When enough mesh lods are present attempt to show more detailed info
+            if(mesh.isLodSelectionActive && m_MeshPreviews.TryGetValue(target, out var meshPreview))
+            {
+                // Sanity check, fall back to default string if fail
+                if(meshPreview.mesh == mesh)
+                    return meshPreview.GetInfoString();
+            }
+
+            return MeshPreview.GetInfoString(mesh);
+        }
     }
 }

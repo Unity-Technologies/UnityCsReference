@@ -21,7 +21,6 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "UIToolkit.EnableEventDebugger";
         const string k_EnableLayoutDebugger = "UIToolkit.EnableLayoutDebugger";
         const string k_EnableAdvancedText = "UIToolkit.EnableAdvancedText";
-        const string k_EnableWorldSpaceRendering = "UIToolkit.EnableWorldSpaceRendering";
 
         [SerializeField]
         private bool m_EnableAdvancedText = false;
@@ -118,18 +117,6 @@ namespace UnityEditor.UIElements
             {
                 Menu.RemoveMenuItem(UILayoutDebuggerWindow.k_WindowPath);
                 Menu.RebuildAllMenus();
-            }
-        }
-
-        public static bool enableWorldSpaceRendering
-        {
-            get => GetBool(k_EnableWorldSpaceRendering);
-            set {
-                SetBool(k_EnableWorldSpaceRendering, value);
-
-                // The PanelSettings inspector shows settings that depends on this value,
-                // so we force a refresh in case it is open.
-                InspectorWindow.RefreshInspectors();
             }
         }
 

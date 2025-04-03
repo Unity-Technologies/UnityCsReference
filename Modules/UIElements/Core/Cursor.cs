@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -21,6 +22,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Vector2 hotspot { get; set; }
         // Used to support default cursor in the editor (map to MouseCursor enum)
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int defaultCursorId { get; set; }
 
         public override bool Equals(object obj)

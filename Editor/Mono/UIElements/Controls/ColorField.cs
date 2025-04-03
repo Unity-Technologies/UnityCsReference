@@ -399,6 +399,11 @@ namespace UnityEditor.UIElements
 
             color = new Color(color.r, color.g, color.b, 1.0f);
 
+            if(Color.defaultColorNames.TryGetValue(color, out var name))
+                m_ColorContainer.tooltip = $"{ObjectNames.CapitaliseFirstLetter(name)} {color.ToString()}";
+            else
+                m_ColorContainer.tooltip = color.ToString();
+
             if (hdr)
             {
                 color = color.gamma;

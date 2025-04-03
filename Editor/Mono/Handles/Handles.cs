@@ -242,6 +242,12 @@ namespace UnityEditor
 
         internal static bool IsHovering(int controlID, Event evt)
         {
+            // If the mouse position is over an overlay, return false since we don't want to indicate interactivity with any handles.
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.sceneViewMotion == null)
+                return false;
+            if (!SceneView.lastActiveSceneView.sceneViewMotion.viewportsUnderMouse)
+                return false;
+
             return controlID == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !Tools.viewToolActive;
         }
 
@@ -1450,7 +1456,7 @@ namespace UnityEditor
         {
             if(Event.current.type != EventType.Repaint)
                 return;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, fillOpacity, fillOpacity);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 
@@ -1510,7 +1516,7 @@ namespace UnityEditor
             var childOutlineAlpha = childNodeColor.a;
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
-            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers, childRenderers, outlineMode, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, 0, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), outlineMode, parentOutlineAlpha, childOutlineAlpha);
         }
 
         internal static void DrawSubmeshOutline(Color parentNodeColor, Color childNodeColor, float outlineAlpha, int submeshOutlineMaterialId)
@@ -1524,7 +1530,7 @@ namespace UnityEditor
             parentNodeColor.a = outlineAlpha;
             childNodeColor.a = outlineAlpha;
 
-            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers, childRenderers, OutlineDrawMode.SelectionOutline, parentOutlineAlpha, childOutlineAlpha);
+            Internal_DrawOutline(parentNodeColor, childNodeColor, submeshOutlineMaterialId, parentRenderers.ToEntityIdArray(), childRenderers.ToEntityIdArray(), OutlineDrawMode.SelectionOutline, parentOutlineAlpha, childOutlineAlpha);
             Internal_FinishDrawingCamera(Camera.current, true);
         }
 

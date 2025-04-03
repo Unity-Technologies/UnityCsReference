@@ -124,8 +124,8 @@ namespace UnityEditor.UIElements
             UpdateChoices(defaultMask);
             SetValueWithoutNotify(defaultMask);
 
-            RegisterCallback<AttachToPanelEvent>(_ => TagManager.onRenderingLayersChanged += OnRenderingLayersChanged);
-            RegisterCallback<DetachFromPanelEvent>(_ => TagManager.onRenderingLayersChanged -= OnRenderingLayersChanged);
+            RegisterCallback<AttachToPanelEvent>(_ => RenderPipelineEditorUtility.onRenderingLayerCountChanged += OnRenderingLayersChanged);
+            RegisterCallback<DetachFromPanelEvent>(_ => RenderPipelineEditorUtility.onRenderingLayerCountChanged -= OnRenderingLayersChanged);
             RegisterCallback<GeometryChangedEvent>(RecalculateHelpBoxSize);
         }
 

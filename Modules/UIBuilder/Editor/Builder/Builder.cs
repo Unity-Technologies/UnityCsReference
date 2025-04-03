@@ -304,6 +304,9 @@ namespace Unity.UI.Builder
 
         public override void DiscardChanges()
         {
+            // Ensure stylesheet cache will be up to date.
+            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
+
             // Restore UXML and USS assets from backup
             document.RestoreAssetsFromBackup();
 
@@ -395,20 +398,21 @@ namespace Unity.UI.Builder
                 builderWindow.Focus();
             }
 
-            bool validAsset;
-            if (builderWindow.document.visualTreeAsset != asset)
-            {
-                validAsset = builderWindow.LoadDocument(asset);
-            }
-            else
-            {
-                validAsset = builderWindow.ReloadDocument();
-            }
+            var validAsset = BuilderAssetUtilities.ValidateAsset(asset, null);
 
             if (!validAsset)
             {
                 builderWindow.NewDocument();
                 return false; // Let user open the asset in the IDE.
+            }
+
+            if (builderWindow.document.visualTreeAsset != asset)
+            {
+                builderWindow.LoadDocument(asset);
+            }
+            else
+            {
+                builderWindow.ReloadDocument();
             }
 
             return true;

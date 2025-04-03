@@ -630,6 +630,7 @@ namespace UnityEditorInternal
                 case KeyCode.F19: text = "F19"; break;
                 case KeyCode.F20: text = "F20"; break;
                 case KeyCode.F21: text = "F21"; break;
+                case KeyCode.F22: text = "F22"; break;
                 case KeyCode.F23: text = "F23"; break;
                 case KeyCode.F24: text = "F24"; break;
 
@@ -1010,5 +1011,8 @@ namespace UnityEditorInternal
         // using this method but if you really need it, consult Desktop team first.
         [StaticAccessor("GetAuxWindowManager()", StaticAccessorType.Dot)]
         internal static extern void RetainAuxWindows();
+
+        [FreeFunction]
+        internal static extern bool IsPlaybackEngineDisabled(string engineName);
     }
 }

@@ -154,7 +154,7 @@ namespace Unity.UI.Builder
             m_ImageScaleModeField = root.Q<ToggleButtonGroup>("background-image-scale-mode-field");
             m_ImageScaleModeField.userData = typeof(ScaleMode);
             var backgroundScaleModeValues = Enum.GetValues(typeof(ScaleMode))
-                .OfType<ScaleMode>().Select((v) => BuilderNameUtilities.ConvertCamelToDash(v.ToString())).ToList();
+                .OfType<ScaleMode>().Select((v) => StyleSheetUtility.ConvertCamelToDash(v.ToString())).ToList();
             foreach (var value in backgroundScaleModeValues)
             {
                 m_ImageScaleModeField.Add(new Button() { iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertDashToHuman(value), "Background/"), tooltip = value });

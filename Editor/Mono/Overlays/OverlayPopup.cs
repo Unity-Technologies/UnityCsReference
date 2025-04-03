@@ -194,7 +194,9 @@ namespace UnityEditor.Overlays
         {
             style.maxHeight = placement.height;
             style.maxWidth = placement.width;
+#pragma warning disable CS0618 // Type or member is obsolete
             transform.position = placement.position;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

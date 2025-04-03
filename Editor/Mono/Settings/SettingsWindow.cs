@@ -9,7 +9,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Experimental;
 using UnityEditor.IMGUI.Controls;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
@@ -39,6 +38,24 @@ namespace UnityEditor
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
         private const string k_MainSplitterViewDataKey =  "settings-main-splitter__view-data-key";
+
+        internal bool GuiCreated => m_SettingsPanel != null;
+
+        struct ProviderChangingScope : IDisposable
+        {
+            SettingsWindow m_Window;
+
+            public ProviderChangingScope(SettingsWindow window)
+            {
+                m_Window = window;
+                window.m_ProviderChanging = true;
+            }
+
+            public void Dispose()
+            {
+                m_Window.m_ProviderChanging = false;
+            }
+        }
 
         private static class ImguiStyles
         {
@@ -91,7 +108,7 @@ namespace UnityEditor
 
         internal SettingsProvider GetCurrentProvider()
         {
-            return m_TreeView?.currentProvider;
+            return m_TreeView.currentProvider;
         }
 
         public void AddItemsToMenu(GenericMenu menu)
@@ -106,8 +123,12 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void SelectProviderByName(string name, bool ignoreLastSelected = true)
         {
-            if (m_TreeView == null)
-                Init();
+            if (m_SettingsPanel == null)
+            {
+                SaveCurrentProvider(name);
+                return;
+            }
+
             var currentSelection = m_TreeView.GetSelection();
             var selectionID = name.GetHashCode();
             // Check if the section is already selected to avoid the scroll bar to reset at the top of the window.
@@ -117,7 +138,7 @@ namespace UnityEditor
 
         internal void OnLostFocus()
         {
-            m_TreeView?.currentProvider?.OnFocusLost();
+            m_TreeView.currentProvider?.OnFocusLost();
         }
 
         internal void FilterProviders(string search)
@@ -141,8 +162,19 @@ namespace UnityEditor
         {
             titleContent.image = EditorGUIUtility.IconContent("Settings").image;
 
+            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
+            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
+            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
+            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
+            Undo.undoRedoEvent -= OnUndoRedoPerformed;
+            Undo.undoRedoEvent += OnUndoRedoPerformed;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
-            SetupUI();
+            InitProviders();
+
+            // TODO : testing purposes to remove
+            // EditorApplication.delayCall += SetupGUI;
         }
 
         internal void OnDisable()
@@ -152,41 +184,81 @@ namespace UnityEditor
                 EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_SplitterPos)), m_Splitter.fixedPaneDimension);
             }
 
-            if (m_TreeView != null && m_TreeView.currentProvider != null)
-            {
-                m_TreeView.currentProvider.OnDeactivate();
-                EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
-            }
+            DeactivateAndSaveCurrentProvider();
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+        }
+
+        void CreateGUI()
+        {
+            // TODO : testing purposes to reenable
+            SetupGUI();
+        }
+
+        void SetupGUI()
+        {
+            var root = rootVisualElement;
+            root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");
+            root.AddStyleSheetPath($"StyleSheets/SettingsWindow{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}.uss");
+
+            root.style.flexDirection = FlexDirection.Column;
+
+            m_Toolbar = new IMGUIContainer(DrawToolbar);
+            root.Add(m_Toolbar);
+
+            m_SplitterPos = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_SplitterPos)), 150f);
+            m_Splitter = new TwoPaneSplitView(0, m_SplitterPos, TwoPaneSplitViewOrientation.Horizontal)
+            {
+                name = "SettingsSplitter",
+                viewDataKey = k_MainSplitterViewDataKey
+            };
+            m_Splitter.AddToClassList("settings-splitter");
+            root.Add(m_Splitter);
+
+            m_TreeViewContainer = new IMGUIContainer(DrawTreeView)
+            {
+                focusOnlyIfHasFocusableControls = false,
+            };
+            m_TreeViewContainer.AddToClassList("settings-tree-imgui-container");
+            m_Splitter.Add(m_TreeViewContainer);
+
+            m_SettingsPanel = new VisualElement();
+            m_SettingsPanel.AddToClassList("settings-panel");
+            m_Splitter.Add(m_SettingsPanel);
+
+
+            // Restore selection after setting the ProviderChanged callback so we can activate the initial selected provider
+            RestoreSelection();
         }
 
         internal void InitProviders()
         {
-            if (m_Providers != null)
-                return;
-            Init();
-            RestoreSelection();
+            m_Providers = SettingsService.FetchSettingsProviders(m_Scope);
+            foreach (var provider in m_Providers)
+            {
+                provider.settingsWindow = this;
+                if (!provider.icon)
+                {
+                    provider.icon = EditorGUIUtility.FindTexture("UnityEditor/EditorSettings Icon");
+                }
+            }
 
-            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
-            SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
-
-            SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
-            SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
-
-            Undo.undoRedoEvent -= OnUndoRedoPerformed;
-            Undo.undoRedoEvent += OnUndoRedoPerformed;
-
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            if (m_TreeView != null)
+            {
+                m_TreeView.currentProviderChanged -= ProviderChanged;
+            }
+            m_TreeViewState = m_TreeViewState ?? new TreeViewState();
+            m_TreeView = new SettingsTreeView(m_TreeViewState, m_Providers);
+            m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
+            m_TreeView.currentProviderChanged += ProviderChanged;
         }
 
         internal void OnInspectorUpdate()
         {
-            m_TreeView?.currentProvider?.OnInspectorUpdate();
+            m_TreeView.currentProvider?.OnInspectorUpdate();
         }
 
         private void OnUndoRedoPerformed(in UndoRedoInfo info)
@@ -203,7 +275,7 @@ namespace UnityEditor
         {
             if (m_TreeView.currentProvider != null)
             {
-                if (state == PlayModeStateChange.ExitingPlayMode)
+                if (state == PlayModeStateChange.ExitingEditMode)
                 {
                     ProviderChanged(m_TreeView.currentProvider, null);
                 }
@@ -233,14 +305,15 @@ namespace UnityEditor
         {
             if (m_ProviderChanging)
                 return;
-            Init();
+            DeactivateAndSaveCurrentProvider();
+            InitProviders();
             RestoreSelection();
             Repaint();
         }
 
         private void RestoreSelection()
         {
-            var lastSelectedProvider = EditorPrefs.GetString(GetPrefKeyName(titleContent.text + "_current_provider"), "");
+            var lastSelectedProvider = GetSavedCurrentProvider();
             if (!string.IsNullOrEmpty(lastSelectedProvider) && Array.Find(m_Providers, provider => provider.settingsPath == lastSelectedProvider) != null)
             {
                 SelectProviderByName(lastSelectedProvider);
@@ -251,42 +324,41 @@ namespace UnityEditor
             }
         }
 
-        private void Init()
-        {
-            m_Providers = SettingsService.FetchSettingsProviders(m_Scope);
-            foreach (var provider in m_Providers)
-            {
-                provider.settingsWindow = this;
-                if (!provider.icon)
-                {
-                    provider.icon = EditorGUIUtility.FindTexture("UnityEditor/EditorSettings Icon");
-                }
-            }
-
-            m_TreeViewState = m_TreeViewState ?? new TreeViewState();
-            m_TreeView = new SettingsTreeView(m_TreeViewState, m_Providers);
-            m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
-            RestoreSelection();
-            m_TreeView.currentProviderChanged += ProviderChanged;
-        }
-
-        private void ProviderChanged(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider)
+        private bool ProviderChanged(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider)
         {
             if (m_SettingsPanel == null)
-                return;
+                return false;
 
-            m_ProviderChanging = true;
-            lastSelectedProvider?.OnDeactivate();
+            using var pcd = new ProviderChangingScope(this);
+            // If we fail to deactivate the last provider, still continue to select the new one.
+            try
+            {
+                lastSelectedProvider?.Deactivate();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
             m_SettingsPanel.Clear();
 
             if (newlySelectedProvider != null)
             {
-                newlySelectedProvider?.OnActivate(m_SearchText, m_SettingsPanel);
-                EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
+                // If activating the new provider fails, restore the last selected provider.
+                try
+                {
+                    newlySelectedProvider?.Activate(m_SearchText, m_SettingsPanel);
+                    EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    RestoreSelection();
+                    return false;
+                }
             }
 
             SetupIMGUIForCurrentProviderIfNeeded();
-            m_ProviderChanging = false;
+            return true;
         }
 
         internal void SetupIMGUIForCurrentProviderIfNeeded()
@@ -345,39 +417,6 @@ namespace UnityEditor
                 text = $"{Styles.TextColorTag}{text}{Styles.TextColorEndTag}";
                 label.text = text;
             });
-        }
-
-        private void SetupUI()
-        {
-            SetupWindowPosition();
-
-            var root = rootVisualElement;
-            root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");
-            root.AddStyleSheetPath($"StyleSheets/SettingsWindow{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}.uss");
-
-            root.style.flexDirection = FlexDirection.Column;
-
-            m_Toolbar = new IMGUIContainer(DrawToolbar);
-            root.Add(m_Toolbar);
-
-            m_SplitterPos = EditorPrefs.GetFloat(GetPrefKeyName(nameof(m_SplitterPos)), 150f);
-            m_Splitter = new TwoPaneSplitView(0, m_SplitterPos, TwoPaneSplitViewOrientation.Horizontal)
-            {
-                name = "SettingsSplitter",
-                viewDataKey = k_MainSplitterViewDataKey
-            };
-            m_Splitter.AddToClassList("settings-splitter");
-            root.Add(m_Splitter);
-            m_TreeViewContainer = new IMGUIContainer(DrawTreeView)
-            {
-                focusOnlyIfHasFocusableControls = false,
-            };
-            m_TreeViewContainer.AddToClassList("settings-tree-imgui-container");
-            m_Splitter.Add(m_TreeViewContainer);
-
-            m_SettingsPanel = new VisualElement();
-            m_SettingsPanel.AddToClassList("settings-panel");
-            m_Splitter.Add(m_SettingsPanel);
         }
 
         private void DrawToolbar()
@@ -500,10 +539,8 @@ namespace UnityEditor
 
         private void DrawTreeView()
         {
-            if (m_TreeView == null)
-                InitProviders();
-
-            var splitterRect = m_Splitter.fixedPane.layout;
+            // Splitter's fixedPane might only be available in the next `GeometryChangedEvent`.
+            var splitterRect = m_Splitter.fixedPane?.layout ?? Rect.zero;
             var splitterPos = splitterRect.xMax;
             var treeWidth = splitterPos;
             using (var scrollViewScope = new GUILayout.ScrollViewScope(m_PosLeft, GUILayout.Width(splitterPos), GUILayout.MaxWidth(splitterPos), GUILayout.MinWidth(splitterPos)))
@@ -517,6 +554,33 @@ namespace UnityEditor
         {
             m_TreeView.searchString = m_SearchText;
             UpdateSearchHighlight(m_SettingsPanel, m_SearchText);
+        }
+
+        void DeactivateAndSaveCurrentProvider()
+        {
+            if (m_TreeView.currentProvider != null)
+            {
+                using var _ = new ProviderChangingScope(this);
+                try
+                {
+                    m_TreeView.currentProvider.Deactivate();
+                    SaveCurrentProvider(m_TreeView.currentProvider.settingsPath);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
+        }
+
+        string GetSavedCurrentProvider()
+        {
+            return EditorPrefs.GetString(GetPrefKeyName(titleContent.text + "_current_provider"), "");
+        }
+
+        void SaveCurrentProvider(string settingsPath)
+        {
+            EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), settingsPath);
         }
 
         [MenuItem("Edit/Project Settings...", false, 20000, false)]
@@ -573,7 +637,7 @@ namespace UnityEditor
             if (!settingsWindow.hasFocus)
             {
                 settingsWindow.Show();
-                settingsWindow.InitProviders();
+                settingsWindow.SetupWindowPosition();
                 settingsWindow.Focus();
                 ignoreLastSelection = true;
             }

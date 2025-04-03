@@ -154,7 +154,7 @@ namespace Unity.UI.Builder
             else
             {
                 m_Inspector.styleFields.OnFieldVariableChange(variableName, targetField, styleName, index);
-                m_Inspector.RefreshUI();
+                m_Inspector.RefreshUI(false);
             }
         }
 

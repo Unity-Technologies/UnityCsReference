@@ -9,9 +9,9 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    partial class RenderChain
+    partial class RenderTreeManager
     {
-        class VisualChangesProcessor : IDisposable
+        internal class VisualChangesProcessor : IDisposable
         {
             enum VisualsProcessingType
             {
@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements.UIR
 
             struct EntryProcessingInfo
             {
-                public VisualElement visualElement;
+                public RenderData renderData;
                 public VisualsProcessingType type;
                 public Entry rootEntry;
             }
@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements.UIR
             static readonly ProfilerMarker k_ConvertEntriesToCommandsMarker = new("UIR.ConvertEntriesToCommands");
             static readonly ProfilerMarker k_UpdateOpacityIdMarker = new ("UIR.UpdateOpacityId");
 
-            RenderChain m_RenderChain;
+            RenderTreeManager m_RenderTreeManager;
             MeshGenerationContext m_MeshGenerationContext;
             BaseElementBuilder m_ElementBuilder;
             List<EntryProcessingInfo> m_EntryProcessingList;
@@ -39,16 +39,16 @@ namespace UnityEngine.UIElements.UIR
             public BaseElementBuilder elementBuilder => m_ElementBuilder;
             public MeshGenerationContext meshGenerationContext => m_MeshGenerationContext;
 
-            public VisualChangesProcessor(RenderChain renderChain)
+            public VisualChangesProcessor(RenderTreeManager renderTreeManager)
             {
-                m_RenderChain = renderChain;
+                m_RenderTreeManager = renderTreeManager;
                 m_MeshGenerationContext = new MeshGenerationContext(
-                    m_RenderChain.meshWriteDataPool,
-                    m_RenderChain.entryRecorder,
-                    m_RenderChain.tempMeshAllocator,
-                    m_RenderChain.meshGenerationDeferrer,
-                    m_RenderChain.meshGenerationNodeManager);
-                m_ElementBuilder = new DefaultElementBuilder(m_RenderChain);
+                    m_RenderTreeManager.meshWriteDataPool,
+                    m_RenderTreeManager.entryRecorder,
+                    m_RenderTreeManager.tempMeshAllocator,
+                    m_RenderTreeManager.meshGenerationDeferrer,
+                    m_RenderTreeManager.meshGenerationNodeManager);
+                m_ElementBuilder = new DefaultElementBuilder(m_RenderTreeManager);
                 m_EntryProcessingList = new List<EntryProcessingInfo>();
                 m_Processors = new List<EntryProcessor>(4);
             }
@@ -58,66 +58,68 @@ namespace UnityEngine.UIElements.UIR
                 m_ElementBuilder.ScheduleMeshGenerationJobs(m_MeshGenerationContext);
             }
 
-            public void ProcessOnVisualsChanged(VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+            public void ProcessOnVisualsChanged(RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
             {
-                bool hierarchical = ve.renderChainData.pendingHierarchicalRepaint || (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+                bool hierarchical = renderData.pendingHierarchicalRepaint || (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
                 if (hierarchical)
                     stats.recursiveVisualUpdates++;
-                else stats.nonRecursiveVisualUpdates++;
-                DepthFirstOnVisualsChanged(ve, dirtyID, hierarchical, ref stats);
+                else
+                    stats.nonRecursiveVisualUpdates++;
+
+                DepthFirstOnVisualsChanged(renderData, dirtyID, hierarchical, ref stats);
             }
 
-            void DepthFirstOnVisualsChanged(VisualElement ve, uint dirtyID, bool hierarchical, ref ChainBuilderStats stats)
+            void DepthFirstOnVisualsChanged(RenderData renderData, uint dirtyID, bool hierarchical, ref ChainBuilderStats stats)
             {
-                if (dirtyID == ve.renderChainData.dirtyID)
+                if (dirtyID == renderData.dirtyID)
                     return;
-                ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+                renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
                 if (hierarchical)
                     stats.recursiveVisualUpdatesExpanded++;
 
-                if (!ve.areAncestorsAndSelfDisplayed)
+                if (!renderData.owner.areAncestorsAndSelfDisplayed)
                 {
                     if (hierarchical)
-                        ve.renderChainData.pendingHierarchicalRepaint = true;
+                        renderData.pendingHierarchicalRepaint = true;
                     else
-                        ve.renderChainData.pendingRepaint = true;
+                        renderData.pendingRepaint = true;
                     return;
                 }
 
-                ve.renderChainData.pendingHierarchicalRepaint = false;
-                ve.renderChainData.pendingRepaint = false;
+                renderData.pendingHierarchicalRepaint = false;
+                renderData.pendingRepaint = false;
 
-                if (!hierarchical && (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
+                if (!hierarchical && (renderData.dirtiedValues & RenderDataDirtyTypes.AllVisuals) == RenderDataDirtyTypes.VisualsOpacityId)
                 {
                     stats.opacityIdUpdates++;
-                    UpdateOpacityId(ve, m_RenderChain);
+                    UpdateOpacityId(renderData, m_RenderTreeManager);
                     return;
                 }
 
-                UpdateWorldFlipsWinding(ve);
+                UpdateWorldFlipsWinding(renderData);
 
-                Debug.Assert(ve.renderChainData.clipMethod != ClipMethod.Undetermined);
-                Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.hierarchy.parent == null || ve.renderChainData.transformID.Equals(ve.hierarchy.parent.renderChainData.transformID) || ve.renderChainData.isGroupTransform);
+                Debug.Assert(renderData.clipMethod != ClipMethod.Undetermined);
+                Debug.Assert(RenderData.AllocatesID(renderData.transformID) || renderData.parent == null || renderData.transformID.Equals(renderData.parent.transformID) || renderData.isGroupTransform);
 
-                if (ve is TextElement)
-                    RenderEvents.UpdateTextCoreSettings(m_RenderChain, ve);
+                if (renderData.owner is TextElement)
+                    RenderEvents.UpdateTextCoreSettings(m_RenderTreeManager, renderData.owner);
 
-                if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor)
-                    RenderEvents.SetColorValues(m_RenderChain, ve);
+                if ((renderData.owner.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor)
+                    RenderEvents.SetColorValues(m_RenderTreeManager, renderData.owner);
 
-                var rootEntry = m_RenderChain.entryPool.Get();
+                var rootEntry = m_RenderTreeManager.entryPool.Get();
                 rootEntry.type = EntryType.DedicatedPlaceholder;
 
                 m_EntryProcessingList.Add(new EntryProcessingInfo
                 {
                     type = VisualsProcessingType.Head,
-                    visualElement = ve,
+                    renderData = renderData,
                     rootEntry = rootEntry
                 });
 
                 k_GenerateEntriesMarker.Begin();
-                m_MeshGenerationContext.Begin(rootEntry, ve);
+                m_MeshGenerationContext.Begin(rootEntry, renderData.owner, renderData);
                 m_ElementBuilder.Build(m_MeshGenerationContext);
                 m_MeshGenerationContext.End();
                 k_GenerateEntriesMarker.End();
@@ -125,29 +127,28 @@ namespace UnityEngine.UIElements.UIR
                 if (hierarchical)
                 {
                     // Recurse on children
-                    int childrenCount = ve.hierarchy.childCount;
-                    for (int i = 0; i < childrenCount; i++)
-                        DepthFirstOnVisualsChanged(ve.hierarchy[i], dirtyID, true, ref stats);
+                    var child = renderData.firstChild;
+                    while (child != null)
+                    {
+                        DepthFirstOnVisualsChanged(child, dirtyID, true, ref stats);
+                        child = child.nextSibling;
+                    }
                 }
 
                 m_EntryProcessingList.Add(new EntryProcessingInfo
                 {
                     type = VisualsProcessingType.Tail,
-                    visualElement = ve,
+                    renderData = renderData,
                     rootEntry = rootEntry
                 });
             }
 
             // This can only be called when the element local and the parent world states are clean.
-            static void UpdateWorldFlipsWinding(VisualElement ve)
+            static void UpdateWorldFlipsWinding(RenderData renderData)
             {
-                bool flipsWinding = ve.renderChainData.localFlipsWinding;
-                bool parentFlipsWinding = false;
-                VisualElement parent = ve.hierarchy.parent;
-                if (parent != null)
-                    parentFlipsWinding = parent.renderChainData.worldFlipsWinding;
-
-                ve.renderChainData.worldFlipsWinding = parentFlipsWinding ^ flipsWinding;
+                bool flipsWinding = renderData.localFlipsWinding;
+                bool parentFlipsWinding = renderData.parent?.worldFlipsWinding ?? false;
+                renderData.worldFlipsWinding = parentFlipsWinding ^ flipsWinding;
             }
 
             public void ConvertEntriesToCommands(ref ChainBuilderStats stats)
@@ -172,19 +173,16 @@ namespace UnityEngine.UIElements.UIR
                         }
 
                         ++depth;
-                        processor.Init(processingInfo.rootEntry, m_RenderChain, processingInfo.visualElement);
+                        processor.Init(processingInfo.rootEntry, m_RenderTreeManager, processingInfo.renderData);
                         processor.ProcessHead();
+                        CommandManipulator.ReplaceHeadCommands(m_RenderTreeManager, processingInfo.renderData, processor);
                     }
                     else
                     {
                         --depth;
                         EntryProcessor processor = m_Processors[depth];
                         processor.ProcessTail();
-
-                        bool hasCommands = processor.firstHeadCommand != null || processor.firstTailCommand != null;
-                        if (hasCommands) { }
-
-                        CommandManipulator.ReplaceCommands(m_RenderChain, processingInfo.visualElement, processor);
+                        CommandManipulator.ReplaceTailCommands(m_RenderTreeManager, processingInfo.renderData, processor);
                     }
                 }
 
@@ -197,23 +195,23 @@ namespace UnityEngine.UIElements.UIR
             }
 
 
-            public static void UpdateOpacityId(VisualElement ve, RenderChain renderChain)
+            public static void UpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager)
             {
                 k_UpdateOpacityIdMarker.Begin();
 
-                if (ve.renderChainData.headMesh != null)
-                    DoUpdateOpacityId(ve, renderChain, ve.renderChainData.headMesh);
+                if (renderData.headMesh != null)
+                    DoUpdateOpacityId(renderData, renderTreeManager, renderData.headMesh);
 
-                if (ve.renderChainData.tailMesh != null)
-                    DoUpdateOpacityId(ve, renderChain, ve.renderChainData.tailMesh);
+                if (renderData.tailMesh != null)
+                    DoUpdateOpacityId(renderData, renderTreeManager, renderData.tailMesh);
 
-                if (ve.renderChainData.hasExtraMeshes)
+                if (renderData.hasExtraMeshes)
                 {
-                    ExtraRenderChainVEData extraData = renderChain.GetOrAddExtraData(ve);
+                    ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
                     BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
                     while (extraMesh != null)
                     {
-                        DoUpdateOpacityId(ve, renderChain, extraMesh.data);
+                        DoUpdateOpacityId(renderData, renderTreeManager, extraMesh.data);
                         extraMesh = extraMesh.next;
                     }
                 }
@@ -221,13 +219,13 @@ namespace UnityEngine.UIElements.UIR
                 k_UpdateOpacityIdMarker.End();
             }
 
-            static void DoUpdateOpacityId(VisualElement ve, RenderChain renderChain, MeshHandle mesh)
+            static void DoUpdateOpacityId(RenderData renderData, RenderTreeManager renderTreeManager, MeshHandle mesh)
             {
                 int vertCount = (int)mesh.allocVerts.size;
                 NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
-                renderChain.device.Update(mesh, (uint)vertCount, out NativeSlice<Vertex> newVerts);
-                Color32 opacityData = renderChain.shaderInfoAllocator.OpacityAllocToVertexData(ve.renderChainData.opacityID);
-                renderChain.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityData, vertCount);
+                renderTreeManager.device.Update(mesh, (uint)vertCount, out NativeSlice<Vertex> newVerts);
+                Color32 opacityData = renderTreeManager.shaderInfoAllocator.OpacityAllocToVertexData(renderData.opacityID);
+                renderTreeManager.opacityIdAccelerator.CreateJob(oldVerts, newVerts, opacityData, vertCount);
             }
 
             #region Dispose Pattern

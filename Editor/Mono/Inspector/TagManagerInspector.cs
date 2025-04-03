@@ -442,7 +442,7 @@ namespace UnityEditor
                 if (tagManager.IsIndexReservedForDefaultRenderingLayer(lastIndex))
                     return;
 
-                listView.viewController.RemoveItem(lastIndex);
+                tagManager.TryRemoveLastRenderingLayerName();
                 serializedObject.ApplyModifiedProperties();
 
                 listView.selectedIndex = lastIndex - 1; // select just added one

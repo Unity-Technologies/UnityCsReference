@@ -72,8 +72,12 @@ namespace UnityEditor.Experimental.GraphView
             {
                 if (!resetPositionOnPan || didConnect)
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     Vector3 p = m_GraphView.contentViewContainer.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
                     Vector3 s = m_GraphView.contentViewContainer.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
                     m_GraphView.UpdateViewTransform(p, s);
                 }
             }
@@ -259,7 +263,9 @@ namespace UnityEditor.Experimental.GraphView
 
         private void Pan(TimerState ts)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             m_GraphView.viewTransform.position -= m_PanDiff;
+#pragma warning restore CS0618 // Type or member is obsolete
             edgeCandidate.ForceUpdateEdgeControl();
             m_WasPanned = true;
         }

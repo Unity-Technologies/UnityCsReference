@@ -55,9 +55,9 @@ namespace UnityEditor
             // Evaluate displayMaterialWarning before drawing properties to avoid mismatched layout group
             bool displayMaterialWarning = false;
 
+            MeshFilter mf = ((MeshRenderer)serializedObject.targetObject).GetComponent<MeshFilter>();
             if (!m_Materials.hasMultipleDifferentValues)
             {
-                MeshFilter mf = ((MeshRenderer)serializedObject.targetObject).GetComponent<MeshFilter>();
                 displayMaterialWarning = mf != null && mf.sharedMesh != null && m_Materials.arraySize > mf.sharedMesh.subMeshCount;
             }
 
@@ -88,8 +88,21 @@ namespace UnityEditor
                 }
             }
 
-            LightingSettingsGUI(true);
+            if (mf != null && mf.sharedMesh != null)
+                LightingSettingsGUI(true, mf.sharedMesh.isLodSelectionActive, mf.sharedMesh.lodCount);
+            else
+                LightingSettingsGUI(true);
+
             RayTracingSettingsGUI();
+
+            if (mf != null && mf.sharedMesh != null)
+            {
+                if (mf.sharedMesh.isLodSelectionActive)
+                {
+                    MeshLodSettingsGUI(mf.sharedMesh.lodCount);
+                }
+            }
+
             OtherSettingsGUI(true, false, false);
 
             if (targets.Length == 1)

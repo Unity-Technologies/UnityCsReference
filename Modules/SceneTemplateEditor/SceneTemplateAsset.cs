@@ -123,7 +123,7 @@ namespace UnityEditor.SceneTemplate
             if (newDependenciesAdded && !isAssetReadOnly)
             {
                 EditorUtility.SetDirty(this);
-                AssetDatabase.SaveAssets();
+                EditorApplication.delayCall += AssetDatabase.SaveAssets;
             }
 
             return newDependenciesAdded;

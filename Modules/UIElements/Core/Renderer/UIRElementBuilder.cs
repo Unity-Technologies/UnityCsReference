@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.UIElements.UIR
 {
@@ -12,19 +14,54 @@ namespace UnityEngine.UIElements.UIR
 
         public void Build(MeshGenerationContext mgc)
         {
+            if (mgc.renderData.isSubTreeQuad)
+                BuildRenderTreeQuadElement(mgc);
+            else
+                BuildStandardElement(mgc);
+        }
+
+        void BuildRenderTreeQuadElement(MeshGenerationContext mgc)
+        {
             var ve = mgc.visualElement;
+            RenderTree nestedRenderTree = ve.nestedRenderData.renderTree;
+            RectInt quad = nestedRenderTree.quadRect;
+            if (quad != RectInt.zero)
+            {
+                var color = Color.white;
+
+                mgc.AllocateTempMesh(4, 6, out NativeSlice<Vertex> vertices, out NativeSlice<ushort> indices);
+
+                vertices[0] = new Vertex { position = new Vector3(quad.xMin, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(0, 0) }; // BL
+                vertices[1] = new Vertex { position = new Vector3(quad.xMin, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(0, 1) }; // TL
+                vertices[2] = new Vertex { position = new Vector3(quad.xMax, quad.yMin, Vertex.nearZ), tint = color, uv = new Vector2(1, 1) }; // TR
+                vertices[3] = new Vertex { position = new Vector3(quad.xMax, quad.yMax, Vertex.nearZ), tint = color, uv = new Vector2(1, 0) }; // BR
+
+                indices[0] = 0;
+                indices[1] = 1;
+                indices[2] = 2;
+                indices[3] = 2;
+                indices[4] = 3;
+                indices[5] = 0;
+
+                mgc.entryRecorder.DrawMesh(mgc.parentEntry, vertices, indices, nestedRenderTree.quadTextureId, true);
+            }
+
+            mgc.entryRecorder.DrawChildren(mgc.parentEntry);
+        }
+
+        void BuildStandardElement(MeshGenerationContext mgc)
+        {
+            var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
+
             Debug.Assert(ve.areAncestorsAndSelfDisplayed);
 
-            if (ve.shouldCutRenderChain)
+            if (ve.isWorldSpaceRootUIDocument)
                 mgc.entryRecorder.CutRenderChain(mgc.parentEntry);
 
-            bool isGroupTransform = ve.renderChainData.isGroupTransform;
+            bool isGroupTransform = renderData.isGroupTransform;
             if (isGroupTransform)
                 mgc.entryRecorder.PushGroupMatrix(mgc.parentEntry);
-
-            bool usesSubRenderTargetMode = ve.subRenderTargetMode != VisualElement.RenderTargetMode.None;
-            if (usesSubRenderTargetMode)
-                mgc.entryRecorder.PushRenderTexture(mgc.parentEntry);
 
             bool changesDefaultMaterial = ve.defaultMaterial != null;
             if (changesDefaultMaterial)
@@ -42,8 +79,8 @@ namespace UnityEngine.UIElements.UIR
             }
             else
             {
-                var isClippingWithStencil = ve.renderChainData.clipMethod == ClipMethod.Stencil;
-                var isClippingWithScissors = ve.renderChainData.clipMethod == ClipMethod.Scissor;
+                var isClippingWithStencil = renderData.clipMethod == ClipMethod.Stencil;
+                var isClippingWithScissors = renderData.clipMethod == ClipMethod.Scissor;
 
                 // Even though the element hidden, we still have to push the stencil shape or setup the scissors in case any children are visible.
                 if (isClippingWithScissors || isClippingWithStencil)
@@ -52,6 +89,7 @@ namespace UnityEngine.UIElements.UIR
                     PushVisualElementClipping(mgc);
                 }
             }
+
 
             mgc.entryRecorder.DrawChildren(mgc.parentEntry);
 
@@ -63,9 +101,6 @@ namespace UnityEngine.UIElements.UIR
 
             if (isGroupTransform)
                 mgc.entryRecorder.PopGroupMatrix(mgc.parentEntry);
-
-            if (usesSubRenderTargetMode)
-                mgc.entryRecorder.BlitAndPopRenderTexture(mgc.parentEntry);
         }
 
         protected abstract void DrawVisualElementBackground(MeshGenerationContext mgc);
@@ -78,13 +113,13 @@ namespace UnityEngine.UIElements.UIR
 
         void PushVisualElementClipping(MeshGenerationContext mgc)
         {
-            var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
 
-            if (ve.renderChainData.clipMethod == ClipMethod.Scissor)
+            if (renderData.clipMethod == ClipMethod.Scissor)
             {
                 mgc.entryRecorder.PushScissors(mgc.parentEntry);
             }
-            else if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+            else if (renderData.clipMethod == ClipMethod.Stencil)
             {
                 mgc.entryRecorder.BeginStencilMask(mgc.parentEntry);
                 DrawVisualElementStencilMask(mgc);
@@ -95,13 +130,13 @@ namespace UnityEngine.UIElements.UIR
 
         static void PopVisualElementClipping(MeshGenerationContext mgc)
         {
-            var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
 
             mgc.entryRecorder.PopClippingRect(mgc.parentEntry);
 
-            if (ve.renderChainData.clipMethod == ClipMethod.Scissor)
+            if (renderData.clipMethod == ClipMethod.Scissor)
                 mgc.entryRecorder.PopScissors(mgc.parentEntry);
-            else if (ve.renderChainData.clipMethod == ClipMethod.Stencil)
+            else if (renderData.clipMethod == ClipMethod.Stencil)
                 mgc.entryRecorder.PopStencilMask(mgc.parentEntry);
         }
 
@@ -117,11 +152,11 @@ namespace UnityEngine.UIElements.UIR
 
     class DefaultElementBuilder : BaseElementBuilder
     {
-        RenderChain m_RenderChain;
+        RenderTreeManager m_RenderTreeManager;
 
-        public DefaultElementBuilder(RenderChain renderChain)
+        public DefaultElementBuilder(RenderTreeManager renderTreeManager)
         {
-            m_RenderChain = renderChain;
+            m_RenderTreeManager = renderTreeManager;
         }
 
         public override bool RequiresStencilMask(VisualElement ve)
@@ -132,6 +167,7 @@ namespace UnityEngine.UIElements.UIR
         protected override void DrawVisualElementBackground(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
 
             if (ve.layout.width <= UIRUtility.k_Epsilon || ve.layout.height <= UIRUtility.k_Epsilon)
                 return;
@@ -141,7 +177,7 @@ namespace UnityEngine.UIElements.UIR
             // UUM-40007 Store the cached background color. This will prevent the DynamicColor from forcing a
             // full repaint if the color didn't actually change.
             var backgroundColor = style.backgroundColor;
-            ve.renderChainData.backgroundAlpha = backgroundColor.a;
+            renderData.backgroundAlpha = backgroundColor.a;
 
             if (backgroundColor.a > UIRUtility.k_Epsilon)
             {
@@ -150,8 +186,10 @@ namespace UnityEngine.UIElements.UIR
                 {
                     rect = ve.rect,
                     color = backgroundColor,
-                    colorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.backgroundColorID),
+                    colorPage = ColorPage.Init(m_RenderTreeManager, renderData.backgroundColorID),
+#pragma warning disable UAL0018 // Capture is safe
                     playmodeTintColor = ve.playModeTintColor
+#pragma warning restore UAL0018
                 };
                 MeshGenerator.GetVisualElementRadii(ve,
                     out rectParams.topLeftRadius,
@@ -267,6 +305,8 @@ namespace UnityEngine.UIElements.UIR
                     rectParams.rightSlice = Mathf.RoundToInt(slices.z);
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
                     rectParams.sliceScale = sliceScale;
+                    if (style.unitySliceType == SliceType.Tiled)
+                        rectParams.meshFlags |= MeshGenerationContext.MeshFlags.SliceTiled;
 
                     // Make sure we are using a valid scale mode otherwise default to StretchtoFill
                     if (!validScaleMode)
@@ -294,7 +334,7 @@ namespace UnityEngine.UIElements.UIR
 
 
                 rectParams.color = style.unityBackgroundImageTintColor;
-                rectParams.colorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.tintColorID);
+                rectParams.colorPage = ColorPage.Init(m_RenderTreeManager, ve.renderData.tintColorID);
 
                 MeshGenerator.AdjustBackgroundSizeForBorders(ve, ref rectParams);
 
@@ -312,6 +352,7 @@ namespace UnityEngine.UIElements.UIR
         protected override void DrawVisualElementBorder(MeshGenerationContext mgc)
         {
             var ve = mgc.visualElement;
+            var renderData = mgc.renderData;
 
             if (ve.layout.width >= UIRUtility.k_Epsilon && ve.layout.height >= UIRUtility.k_Epsilon)
             {
@@ -332,11 +373,13 @@ namespace UnityEngine.UIElements.UIR
                         topWidth = style.borderTopWidth,
                         rightWidth = style.borderRightWidth,
                         bottomWidth = style.borderBottomWidth,
-                        leftColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderLeftColorID),
-                        topColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderTopColorID),
-                        rightColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderRightColorID),
-                        bottomColorPage = ColorPage.Init(m_RenderChain, ve.renderChainData.borderBottomColorID),
+                        leftColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderLeftColorID),
+                        topColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderTopColorID),
+                        rightColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderRightColorID),
+                        bottomColorPage = ColorPage.Init(m_RenderTreeManager, renderData.borderBottomColorID),
+#pragma warning disable UAL0018 // Capture is safe
                         playmodeTintColor = ve.playModeTintColor
+#pragma warning restore UAL0018
                     };
                     MeshGenerator.GetVisualElementRadii(
                         ve,
@@ -385,7 +428,9 @@ namespace UnityEngine.UIElements.UIR
                 topRightRadius = Vector2.Max(Vector2.zero, radTR - new Vector2(widthR, widthT)),
                 bottomLeftRadius = Vector2.Max(Vector2.zero, radBL - new Vector2(widthL, widthB)),
                 bottomRightRadius = Vector2.Max(Vector2.zero, radBR - new Vector2(widthR, widthB)),
+#pragma warning disable UAL0018 // Capture is safe
                 playmodeTintColor = ve.playModeTintColor
+#pragma warning restore UAL0018
             };
 
             // Only clip the interior shape, skipping the border

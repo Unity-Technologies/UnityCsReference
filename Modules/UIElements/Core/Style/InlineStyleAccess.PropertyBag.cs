@@ -138,6 +138,7 @@ namespace UnityEngine.UIElements
         {
         }
 
+
         void AddProperty<TStyleValue, TValue>(InlineStyleProperty<TStyleValue, TValue> property)
             where TStyleValue : IStyleValue<TValue>, new()
         {

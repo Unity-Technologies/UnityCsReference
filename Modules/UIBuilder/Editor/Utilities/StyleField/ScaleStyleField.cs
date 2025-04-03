@@ -6,84 +6,28 @@ using JetBrains.Annotations;
 using System;
 using System.Diagnostics;
 using System.Globalization;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
-    internal struct BuilderScale : IEquatable<BuilderScale>
-    {
-        public Vector3 value;
-        public BuilderScale(StyleScale styleScale)
-            : this(styleScale.value)
-        {
-        }
-
-        public BuilderScale(Scale scaleValue)
-        {
-            value = scaleValue.value;
-        }
-
-        public BuilderScale(float xValue, float yValue)
-        {
-            value = new Vector3(xValue, yValue, 1);
-        }
-
-        public static bool operator ==(BuilderScale lhs, BuilderScale rhs)
-        {
-            return lhs.value == rhs.value;
-        }
-
-        public static bool operator !=(BuilderScale lhs, BuilderScale rhs)
-        {
-            return !(lhs == rhs);
-        }
-
-        public bool Equals(BuilderScale other)
-        {
-            return other == this;
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (!(obj is BuilderScale))
-            {
-                return false;
-            }
-
-            var v = (BuilderScale)obj;
-            return v == this;
-        }
-
-        public override int GetHashCode()
-        {
-            return value.GetHashCode();
-        }
-
-        public override string ToString()
-        {
-            return $"(x:{value.x}, y:{value.y})";
-        }
-    }
-
     [UsedImplicitly]
-    class ScaleStyleField : BaseField<BuilderScale>
+    class ScaleStyleField : BaseField<Scale>
     {
-        public class BuilderScaleConverter : UxmlAttributeConverter<BuilderScale>
+        public class BuilderScaleConverter : UxmlAttributeConverter<Scale>
         {
-            public override BuilderScale FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BuilderScale value) => throw new NotImplementedException();
+            public override Scale FromString(string value) => throw new NotImplementedException();
+            public override string ToString(Scale value) => throw new NotImplementedException();
         }
 
         [Serializable]
-        public new class UxmlSerializedData : BaseField<BuilderScale>.UxmlSerializedData
+        public new class UxmlSerializedData : BaseField<Scale>.UxmlSerializedData
         {
             [Conditional("UNITY_EDITOR")]
             public new static void Register()
             {
-                BaseField<BuilderScale>.UxmlSerializedData.Register();
+                BaseField<Scale>.UxmlSerializedData.Register();
             }
 
             public override object CreateInstance() => new ScaleStyleField();
@@ -94,9 +38,11 @@ namespace Unity.UI.Builder
         static readonly string s_VisualInputName = "unity-visual-input";
         public static readonly string s_ScaleXFieldName = "x-field";
         public static readonly string s_ScaleYFieldName = "y-field";
+        public static readonly string s_ScaleZFieldName = "z-field";
 
         DimensionStyleField m_ScaleXField;
         DimensionStyleField m_ScaleYField;
+        DimensionStyleField m_ScaleZField;
 
         public ScaleStyleField() : this(null) { }
 
@@ -113,6 +59,7 @@ namespace Unity.UI.Builder
 
             m_ScaleXField = this.Q<DimensionStyleField>(s_ScaleXFieldName);
             m_ScaleYField = this.Q<DimensionStyleField>(s_ScaleYFieldName);
+            m_ScaleZField = this.Q<DimensionStyleField>(s_ScaleZFieldName);
 
             m_ScaleXField.RegisterValueChangedCallback(e =>
             {
@@ -124,14 +71,16 @@ namespace Unity.UI.Builder
                 UpdateScaleField();
                 e.StopPropagation();
             });
-
-            value = new BuilderScale()
+            m_ScaleZField.RegisterValueChangedCallback(e =>
             {
-                value = Vector3.zero
-            };
+                UpdateScaleField();
+                e.StopPropagation();
+            });
+
+            value = Vector3.one;
         }
 
-        public override void SetValueWithoutNotify(BuilderScale newValue)
+        public override void SetValueWithoutNotify(Scale newValue)
         {
             base.SetValueWithoutNotify(newValue);
             RefreshSubFields();
@@ -141,44 +90,16 @@ namespace Unity.UI.Builder
         {
             m_ScaleXField.SetValueWithoutNotify(value.value.x.ToString(CultureInfo.InvariantCulture.NumberFormat));
             m_ScaleYField.SetValueWithoutNotify(value.value.y.ToString(CultureInfo.InvariantCulture.NumberFormat));
+            m_ScaleZField.SetValueWithoutNotify(value.value.z.ToString(CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void UpdateScaleField()
         {
             // Rebuild value from sub fields
-            value = new BuilderScale()
+            value = new Scale()
             {
-                value = new Vector3(m_ScaleXField.length, m_ScaleYField.length, 1)
+                value = new Vector3(m_ScaleXField.length, m_ScaleYField.length, m_ScaleZField.length)
             };
-        }
-
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
-        {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
-
-            if (!isNewValue && (
-                stylePropertyValueCount < 2 ||
-                styleProperty.values[0].valueType != StyleValueType.Dimension ||
-                styleProperty.values[1].valueType != StyleValueType.Dimension))
-            {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            // if the scale property was already defined then ...
-            if (!isNewValue)
-            {
-                styleSheet.SetValue(styleProperty.values[0], value.value.x);
-                styleSheet.SetValue(styleProperty.values[1], value.value.y);
-            }
-            else
-            {
-                styleSheet.AddValue(styleProperty, value.value.x);
-                styleSheet.AddValue(styleProperty, value.value.y);
-            }
-            return isNewValue;
         }
     }
 }

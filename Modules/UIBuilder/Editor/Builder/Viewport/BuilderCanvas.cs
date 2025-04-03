@@ -227,7 +227,7 @@ namespace Unity.UI.Builder
 
             if (documentRootElement != null)
             {
-                documentRootElement.transform.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
+                documentRootElement.style.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
                 documentRootElement.style.transformOrigin = new TransformOrigin(0, 0, 0);
                 documentRootElement.style.right = -(m_Width - newWidth);
                 documentRootElement.style.bottom = -(m_Height - newHeight);
@@ -235,7 +235,7 @@ namespace Unity.UI.Builder
 
             if (editorLayer != null)
             {
-                editorLayer.transform.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
+                editorLayer.style.scale = new Vector3(m_ZoomScale, m_ZoomScale, 1);
                 editorLayer.style.transformOrigin = new TransformOrigin(0, 0, 0);
                 editorLayer.style.right = -(m_Width - newWidth);
                 editorLayer.style.bottom = -(m_Height - newHeight);

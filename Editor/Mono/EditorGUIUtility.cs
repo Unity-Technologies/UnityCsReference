@@ -209,6 +209,7 @@ namespace UnityEditor
 
         public static Rect PointsToPixels(Rect rect)
         {
+            GUIUtility.WarnOnGUI();
             var cachedPixelsPerPoint = pixelsPerPoint;
             rect.x *= cachedPixelsPerPoint;
             rect.y *= cachedPixelsPerPoint;
@@ -229,6 +230,7 @@ namespace UnityEditor
 
         public static Vector2 PointsToPixels(Vector2 position)
         {
+            GUIUtility.WarnOnGUI();
             var cachedPixelsPerPoint = pixelsPerPoint;
             position.x *= cachedPixelsPerPoint;
             position.y *= cachedPixelsPerPoint;

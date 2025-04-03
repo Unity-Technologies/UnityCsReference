@@ -79,6 +79,8 @@ namespace UnityEditor
 
         public delegate void SelectMenuItemFunction(object userData, string[] options, int selected);
 
+        internal static event Action onResetMouseDown;
+
         public static bool LoadWindowLayout(string path)
         {
             return WindowLayout.TryLoadWindowLayout(path, false);
@@ -412,6 +414,7 @@ namespace UnityEditor
             GUIUtility.hotControl = 0;
             //Delay call because the freezing of the editor is affecting the active clutch shortcuts resetting properly
             EditorApplication.delayCall += () => ShortcutIntegration.instance.trigger.ResetActiveClutches();
+            onResetMouseDown?.Invoke();
         }
 
         internal static void DisplayCustomMenu(Rect position, string[] options, int[] selected, SelectMenuItemFunction callback, object userData)

@@ -642,6 +642,25 @@ namespace UnityEditor
             set;
         }
 
+        public extern bool generateMeshLods
+        {
+            get;
+            set;
+        }
+
+        public extern MeshLodUtility.LodGenerationFlags meshLodGenerationFlags
+        {
+            get;
+            set;
+        }
+
+
+        public extern int maximumMeshLod
+        {
+            get;
+            set;
+        }
+
         public extern ModelImporterGenerateAnimations generateAnimations
         {
             [NativeMethod("GetLegacyGenerateAnimations")]

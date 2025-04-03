@@ -155,7 +155,7 @@ namespace Unity.UI.Builder
                 m_PaneWindow.document, currentVisualElement, className);
 
             // We actually want to get the notification back and refresh ourselves.
-            m_Selection.NotifyOfHierarchyChange(null);
+            m_Selection.NotifyOfHierarchyChange(null, currentVisualElement, BuilderHierarchyChangeType.ClassList);
             m_Selection.NotifyOfStylingChange(null);
         }
 
@@ -405,7 +405,7 @@ namespace Unity.UI.Builder
                 for (int j = 0; j < props.Length; j++)
                 {
                     sb.Length = 0;
-                    StyleSheetToUss.ToUssString(rule.matchRecord.sheet, options, props[j], sb);
+                    StyleSheetToUss.StylePropertyValueToString(rule.matchRecord.sheet, options, props[j], sb);
                     string s = sb.ToString();
 
                     s = s?.ToLowerInvariant();

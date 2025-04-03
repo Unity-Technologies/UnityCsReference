@@ -70,9 +70,9 @@ namespace UnityEngine.UIElements
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal void DrawMeshInternal(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, bool skipAtlas = false)
+        internal void DrawMeshInternal(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
         {
-            GetManaged().DrawMesh(vertices, indices, texture, skipAtlas);
+            GetManaged().DrawMesh(vertices, indices, texture, textureOptions);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -152,12 +152,12 @@ namespace UnityEngine.UIElements
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Entry GetParentEntry() => m_ParentEntry;
 
-        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, bool skipAtlas = false)
+        public void DrawMesh(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, Texture texture = null, TextureOptions textureOptions = TextureOptions.None)
         {
             if (vertices.Length == 0 || indices.Length == 0)
                 return;
 
-            m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, skipAtlas);
+            m_EntryRecorder.DrawMesh(m_ParentEntry, vertices, indices, texture, textureOptions);
         }
 
         public void DrawGradients(NativeSlice<Vertex> vertices, NativeSlice<ushort> indices, VectorImage gradientsOwner)

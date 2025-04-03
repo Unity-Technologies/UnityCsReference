@@ -24,58 +24,61 @@ namespace UnityEngine.UIElements.UIR
 
         private static readonly float VisibilityTreshold = UIRUtility.k_Epsilon;
 
-        internal static void ProcessOnClippingChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        internal static void ProcessOnClippingChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
-            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
+            bool hierarchical = (renderData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
             if (hierarchical)
                 stats.recursiveClipUpdates++;
-            else stats.nonRecursiveClipUpdates++;
-            DepthFirstOnClippingChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, hierarchical, true, false, false, false, renderChain.device, ref stats);
+            else
+                stats.nonRecursiveClipUpdates++;
+
+            DepthFirstOnClippingChanged(renderTreeManager, renderData.parent, renderData, dirtyID, hierarchical, true, false, false, false, renderTreeManager.device, ref stats);
         }
 
-        internal static void ProcessOnOpacityChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        internal static void ProcessOnOpacityChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
-            bool hierarchical = (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.OpacityHierarchy) != 0;
+            bool hierarchical = (renderData.dirtiedValues & RenderDataDirtyTypes.OpacityHierarchy) != 0;
             stats.recursiveOpacityUpdates++;
-            DepthFirstOnOpacityChanged(renderChain, ve.hierarchy.parent != null ? ve.hierarchy.parent.renderChainData.compositeOpacity : 1.0f, ve, dirtyID, hierarchical, ref stats);
+            DepthFirstOnOpacityChanged(renderTreeManager, renderData.parent != null ? renderData.parent.compositeOpacity : 1.0f, renderData, dirtyID, hierarchical, ref stats);
         }
 
-        internal static void ProcessOnColorChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        internal static void ProcessOnColorChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
             stats.colorUpdates++;
-            OnColorChanged(renderChain, ve, dirtyID, ref stats);
+            OnColorChanged(renderTreeManager, renderData, dirtyID, ref stats);
         }
 
-        internal static void ProcessOnTransformOrSizeChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        internal static void ProcessOnTransformOrSizeChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
             stats.recursiveTransformUpdates++;
-            DepthFirstOnTransformOrSizeChanged(renderChain, ve.hierarchy.parent, ve, dirtyID, renderChain.device, false, false, ref stats);
+            DepthFirstOnTransformOrSizeChanged(renderTreeManager, renderData, dirtyID, renderTreeManager.device, false, false, ref stats);
         }
 
-        static Matrix4x4 GetTransformIDTransformInfo(VisualElement ve)
+        static Matrix4x4 GetTransformIDTransformInfo(RenderData renderData)
         {
-            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.transformID) || ve.renderChainData.isGroupTransform);
+            Debug.Assert(RenderData.AllocatesID(renderData.transformID) || renderData.isGroupTransform);
+
             Matrix4x4 transform;
-            if (ve.renderChainData.groupTransformAncestor != null)
-                VisualElement.MultiplyMatrix34(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref ve.worldTransformRef, out transform);
-            else transform = ve.worldTransform;
+            var groupTransformAncestor = renderData.groupTransformAncestor;
+            if (groupTransformAncestor != null)
+                VisualElement.MultiplyMatrix34(ref groupTransformAncestor.owner.worldTransformInverse, ref renderData.owner.worldTransformRef, out transform);
+            else
+                UIRUtility.ComputeMatrixRelativeToRenderTree(renderData, out transform);
+
             transform.m22 = 1.0f; // Once world-space mode is introduced, this should become conditional
             return transform;
         }
 
-        static Vector4 GetClipRectIDClipInfo(VisualElement ve)
+        static Vector4 GetClipRectIDClipInfo(RenderData renderData)
         {
             Rect rect;
 
-            Debug.Assert(RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID));
-            if (ve.renderChainData.groupTransformAncestor == null)
-                rect = ve.worldClip;
+            Debug.Assert(RenderData.AllocatesID(renderData.clipRectID));
+
+            if (renderData.groupTransformAncestor == null)
+                rect = renderData.clippingRect;
             else
-            {
-                rect = ve.worldClipMinusGroup;
-                // Subtract the transform of the group transform ancestor
-                VisualElement.TransformAlignedRect(ref ve.renderChainData.groupTransformAncestor.worldTransformInverse, ref rect);
-            }
+                rect = renderData.clippingRectMinusGroup;
 
             // See ComputeRelativeClipRectCoords in the shader for details on this computation
             Vector2 min = rect.min;
@@ -87,206 +90,380 @@ namespace UnityEngine.UIElements.UIR
             return new Vector4(a.x, a.y, b.x, b.y);
         }
 
-        internal static uint DepthFirstOnChildAdded(RenderChain renderChain, VisualElement parent, VisualElement ve, int index, bool resetState)
+        internal static uint DepthFirstOnChildAdded(RenderTreeManager renderTreeManager, VisualElement parent, VisualElement ve, int index)
         {
             Debug.Assert(ve.panel != null);
+            Debug.Assert(ve.renderData == null);
+            Debug.Assert(ve.nestedRenderData == null);
 
-            if (ve.renderChainData.isInChain)
-                return 0; // Already added, redundant call
+            if (ve.insertionIndex >= 0)
+                // We may be adding an element that was previously added by an ancestor in the same frame
+                renderTreeManager.CancelInsertion(ve);
 
-            if (resetState)
-                ve.renderChainData = new RenderChainVEData();
+            RenderData renderData;
+            RenderData parentRenderData = null;
 
-            ve.renderChainData.flags = RenderDataFlags.IsInChain;
-            ve.renderChainData.verticesSpace = Matrix4x4.identity;
-            ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
-            ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
-            ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
-            ve.renderChainData.colorID = BMPAlloc.Invalid;
-            ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderRightColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderBottomColorID = BMPAlloc.Invalid;
-            ve.renderChainData.tintColorID = BMPAlloc.Invalid;
-            ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
-            ve.renderChainData.compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
-            UpdateLocalFlipsWinding(ve);
+            // Regular RenderData
+            renderData = renderTreeManager.GetPooledRenderData();
+            renderData.owner = ve;
+            ve.renderData = renderData;
 
-            if ((ve.renderHints & RenderHints.GroupTransform) != 0 && !renderChain.drawInCameras)
-                ve.renderChainData.flags |= RenderDataFlags.IsGroupTransform;
+            if (ve.useRenderTexture)
+                renderData.flags |= RenderDataFlags.IsSubTreeQuad;
 
-            if (parent != null)
+            if (parent == null)
             {
-                if (parent.renderChainData.isGroupTransform)
-                    ve.renderChainData.groupTransformAncestor = parent;
-                else ve.renderChainData.groupTransformAncestor = parent.renderChainData.groupTransformAncestor;
-                ve.renderChainData.hierarchyDepth = parent.renderChainData.hierarchyDepth + 1;
+                renderData.renderTree = renderTreeManager.GetPooledRenderTree(renderTreeManager, renderData);
+                renderTreeManager.rootRenderTree = renderData.renderTree;
             }
             else
             {
-                ve.renderChainData.groupTransformAncestor = null;
-                ve.renderChainData.hierarchyDepth = 0;
+                parentRenderData = parent.nestedRenderData ?? parent.renderData;
+                renderData.parent = parentRenderData;
+                renderData.renderTree = renderData.parent.renderTree;
+                renderData.depthInRenderTree = renderData.parent.depthInRenderTree + 1;
+
+                if (parentRenderData.isGroupTransform)
+                    renderData.groupTransformAncestor = parentRenderData;
+                else
+                    renderData.groupTransformAncestor = parentRenderData.groupTransformAncestor;
             }
 
-            renderChain.EnsureFitsDepth(ve.renderChainData.hierarchyDepth);
+            renderData.renderTree.dirtyTracker.EnsureFits(renderData.depthInRenderTree);
 
-            if (index > 0)
+            if ((ve.renderHints & RenderHints.GroupTransform) != 0 && !renderData.isSubTreeQuad && !renderTreeManager.drawInCameras)
+                // TODO: For SubTreeQuads, we should convert this to a DynamicTransform
+                renderData.flags |= RenderDataFlags.IsGroupTransform;
+
+            // Nested RenderData
+            if (renderData.isSubTreeQuad)
             {
-                Debug.Assert(parent != null);
-                ve.renderChainData.prev = GetLastDeepestChild(parent.hierarchy[index - 1]);
-            }
-            else ve.renderChainData.prev = parent;
-            ve.renderChainData.next = ve.renderChainData.prev != null ? ve.renderChainData.prev.renderChainData.next : null;
+                var nestedData = renderTreeManager.GetPooledRenderData();
+                ve.nestedRenderData = nestedData;
+                nestedData.owner = ve;
+                nestedData.flags |= RenderDataFlags.IsNestedRenderTreeRoot;
+                nestedData.transformID = UIRVEShaderInfoAllocator.identityTransform; // This is defining a new coordinate space
 
-            if (ve.renderChainData.prev != null)
-                ve.renderChainData.prev.renderChainData.next = ve;
-            if (ve.renderChainData.next != null)
-                ve.renderChainData.next.renderChainData.prev = ve;
+                nestedData.renderTree = renderTreeManager.GetPooledRenderTree(renderTreeManager, nestedData);
+                nestedData.renderTree.dirtyTracker.EnsureFits(nestedData.depthInRenderTree);
+
+                renderTreeManager.UIEOnClippingChanged(ve, true);
+                renderTreeManager.UIEOnOpacityChanged(ve);
+                renderTreeManager.UIEOnVisualsChanged(ve, true);
+
+                var parentTree = renderData.renderTree;
+                Debug.Assert(parentTree != null); // Because we're in the nested case
+
+                // Insert the nested tree as the first child in the parent tree.
+                // This implies children are not ordered.
+                var nextSiblingTree = parentTree.firstChild;
+                parentTree.firstChild = nestedData.renderTree;
+                nestedData.renderTree.nextSibling = nextSiblingTree;
+
+                nestedData.renderTree.parent = parentTree;
+            }
+
+            UpdateLocalFlipsWinding(renderData);
+
+            // TODO: Refactor this so that we can process the whole subtree first,
+            // then connect it with the renderTree.
+
+            // If parent is null, we're a root, and roots by definition have no siblings
+            // and initially have no children.
+            if (parentRenderData != null)
+            {
+                // Search for the previous sibling in our parent. They are potentially not yet in the render tree
+                // because of the delayed VisualElement additions. Consider the following example:
+                //
+                //        Root
+                //        /  \
+                //       C    A
+                //           /
+                //          B
+                //
+                // If element B is added first, followed by C, then even though C is part of the VisualElement
+                // hierarchy, it is not yet in the render tree because of the postponed additions. Because of that,
+                // we search through the parent's left siblings to find the first one that's actually part of the
+                // render tree. If none is found, we fallback to the parent case.
+                RenderData prevSibling = null;
+                for (int i = index - 1; i >= 0; --i)
+                {
+                    prevSibling = parent.hierarchy[i].renderData;
+                    if (prevSibling != null)
+                        break;
+                }
+
+                RenderData nextSibling;
+                if (prevSibling != null)
+                {
+                    nextSibling = prevSibling.nextSibling;
+                    prevSibling.nextSibling = renderData;
+                    renderData.prevSibling = prevSibling;
+                }
+                else
+                {
+                    nextSibling = parentRenderData.firstChild;
+                    parentRenderData.firstChild = renderData;
+                }
+
+                if (nextSibling != null)
+                {
+                    renderData.nextSibling = nextSibling;
+                    nextSibling.prevSibling = renderData;
+                }
+                else
+                    parentRenderData.lastChild = renderData;
+            }
 
             // TransformID
             // Since transform type is controlled by render hints which are locked on the VE by now, we can
             // go ahead and prep transform data now and never check on it again under regular circumstances
-            Debug.Assert(!RenderChainVEData.AllocatesID(ve.renderChainData.transformID));
+            Debug.Assert(!RenderData.AllocatesID(renderData.transformID));
             if (NeedsTransformID(ve))
-                ve.renderChainData.transformID = renderChain.shaderInfoAllocator.AllocTransform(); // May fail, that's ok
-            else ve.renderChainData.transformID = BMPAlloc.Invalid;
-            ve.renderChainData.boneTransformAncestor = null;
+                renderData.transformID = renderTreeManager.shaderInfoAllocator.AllocTransform(); // May fail, that's ok
+            else
+                renderData.transformID = BMPAlloc.Invalid;
+            renderData.boneTransformAncestor = null;
 
             if (NeedsColorID(ve))
             {
-                InitColorIDs(renderChain, ve);
-                SetColorValues(renderChain, ve);
+                InitColorIDs(renderTreeManager, ve);
+                SetColorValues(renderTreeManager, ve);
             }
 
-            if (!RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
+            if (!RenderData.AllocatesID(renderData.transformID))
             {
-                if (parent != null && !ve.renderChainData.isGroupTransform)
+                if (renderData.parent != null && !renderData.isGroupTransform)
                 {
-                    if (RenderChainVEData.AllocatesID(parent.renderChainData.transformID))
-                        ve.renderChainData.boneTransformAncestor = parent;
+                    if (RenderData.AllocatesID(renderData.parent.transformID))
+                        renderData.boneTransformAncestor = renderData.parent;
                     else
-                        ve.renderChainData.boneTransformAncestor = parent.renderChainData.boneTransformAncestor;
+                        renderData.boneTransformAncestor = renderData.parent.boneTransformAncestor;
 
-                    ve.renderChainData.transformID = parent.renderChainData.transformID;
-                    ve.renderChainData.transformID.ownedState = OwnedState.Inherited; // Mark this allocation as not owned by us (inherited)
+                    renderData.transformID = renderData.parent.transformID;
+                    renderData.transformID.ownedState = OwnedState.Inherited; // Mark this allocation as not owned by us (inherited)
                 }
-                else ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+                else
+                    renderData.transformID = UIRVEShaderInfoAllocator.identityTransform;
             }
-            else renderChain.shaderInfoAllocator.SetTransformValue(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve));
+            else
+                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, GetTransformIDTransformInfo(renderData));
 
             // Recurse on children
             int childrenCount = ve.hierarchy.childCount;
             uint deepCount = 0;
             for (int i = 0; i < childrenCount; i++)
-                deepCount += DepthFirstOnChildAdded(renderChain, ve, ve.hierarchy[i], i, resetState);
+                deepCount += DepthFirstOnChildAdded(renderTreeManager, ve, ve.hierarchy[i], i);
             return 1 + deepCount;
         }
 
-        internal static uint DepthFirstOnChildRemoving(RenderChain renderChain, VisualElement ve)
+        internal static uint DepthFirstOnElementRemoving(RenderTreeManager renderTreeManager, VisualElement ve)
         {
-            // Recurse on children
+            // NOTE: When we support Z-index, when recursing on the renderData, if a renderData
+            // doesn't change the Z-index, we should skip the reconnections of the renderData's hierarchy.
+
+            if (ve.insertionIndex >= 0)
+            {
+                // This element is pending insertion, cancel it
+                renderTreeManager.CancelInsertion(ve);
+            }
+
+            // Recurse and process children first, to make sure we can safely
+            // disconnect the nested trees from their parents.
             int childrenCount = ve.hierarchy.childCount - 1;
             uint deepCount = 0;
             while (childrenCount >= 0)
-                deepCount += DepthFirstOnChildRemoving(renderChain, ve.hierarchy[childrenCount--]);
+                deepCount += DepthFirstOnElementRemoving(renderTreeManager, ve.hierarchy[childrenCount--]);
 
-            if (ve.renderChainData.isInChain)
+            var renderData = ve.renderData;
+            var nestedRenderData = ve.nestedRenderData;
+
+            if (renderData != null)
             {
-                renderChain.ChildWillBeRemoved(ve);
-                CommandManipulator.ResetCommands(renderChain, ve);
-                renderChain.ResetTextures(ve);
-                if (ve.renderChainData.hasExtraData)
-                {
-                    renderChain.FreeExtraMeshes(ve);
-                    renderChain.FreeExtraData(ve);
-                }
-
-                ve.renderChainData.flags &= ~RenderDataFlags.IsInChain;
-                ve.renderChainData.clipMethod = ClipMethod.Undetermined;
-
-                if (ve.renderChainData.next != null)
-                    ve.renderChainData.next.renderChainData.prev = ve.renderChainData.prev;
-                if (ve.renderChainData.prev != null)
-                    ve.renderChainData.prev.renderChainData.next = ve.renderChainData.next;
-
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
-                {
-                    renderChain.shaderInfoAllocator.FreeTextCoreSettings(ve.renderChainData.textCoreSettingsID);
-                    ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.opacityID))
-                {
-                    renderChain.shaderInfoAllocator.FreeOpacity(ve.renderChainData.opacityID);
-                    ve.renderChainData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.colorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.colorID);
-                    ve.renderChainData.colorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.backgroundColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.backgroundColorID);
-                    ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.borderLeftColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.borderLeftColorID);
-                    ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.borderTopColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.borderTopColorID);
-                    ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.borderRightColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.borderRightColorID);
-                    ve.renderChainData.borderRightColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.borderBottomColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.borderBottomColorID);
-                    ve.renderChainData.borderBottomColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.tintColorID))
-                {
-                    renderChain.shaderInfoAllocator.FreeColor(ve.renderChainData.tintColorID);
-                    ve.renderChainData.tintColorID = BMPAlloc.Invalid;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
-                {
-                    renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
-                    ve.renderChainData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
-                }
-                if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
-                {
-                    renderChain.shaderInfoAllocator.FreeTransform(ve.renderChainData.transformID);
-                    ve.renderChainData.transformID = UIRVEShaderInfoAllocator.identityTransform;
-                }
-                ve.renderChainData.boneTransformAncestor = ve.renderChainData.groupTransformAncestor = null;
-                if (ve.renderChainData.tailMesh != null)
-                {
-                    renderChain.device.Free(ve.renderChainData.tailMesh);
-                    ve.renderChainData.tailMesh = null;
-                }
-                if (ve.renderChainData.headMesh != null)
-                {
-                    renderChain.device.Free(ve.renderChainData.headMesh);
-                    ve.renderChainData.headMesh = null;
-                }
+                DepthFirstRemoveRenderData(renderTreeManager, renderData);
+                Debug.Assert(ve.renderData == null);
             }
 
-            ve.renderChainData.prev = null;
-            ve.renderChainData.next = null;
+            if (nestedRenderData != null)
+            {
+                DepthFirstRemoveRenderData(renderTreeManager, nestedRenderData);
+                Debug.Assert(ve.nestedRenderData == null);
+            }
 
             return deepCount + 1;
         }
 
-        static void DepthFirstOnClippingChanged(RenderChain renderChain,
-            VisualElement parent,
-            VisualElement ve,
+        static void DepthFirstRemoveRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            DisconnectSubTree(renderData);
+
+            if (renderData.isNestedRenderTreeRoot)
+                renderData.owner.nestedRenderData = null;
+            else
+                renderData.owner.renderData = null;
+            RenderData child = renderData.firstChild;
+            ResetRenderData(renderTreeManager, renderData);
+
+            while (child != null)
+            {
+                RenderData nextChild = child.nextSibling;
+                DoDepthFirstRemoveRenderData(renderTreeManager, child);
+                child = nextChild;
+            }
+        }
+
+        static void DoDepthFirstRemoveRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            Debug.Assert(!renderData.isNestedRenderTreeRoot);
+
+            renderData.owner.renderData = null;
+            RenderData child = renderData.firstChild;
+            ResetRenderData(renderTreeManager, renderData);
+
+            while (child != null)
+            {
+                RenderData nextChild = child.nextSibling;
+                DoDepthFirstRemoveRenderData(renderTreeManager, child);
+                child = nextChild;
+            }
+        }
+
+        static void DisconnectSubTree(RenderData renderData)
+        {
+            RenderData parentRenderData = renderData.parent;
+            if (parentRenderData != null)
+            {
+                if (renderData.prevSibling == null)
+                    parentRenderData.firstChild = renderData.nextSibling;
+
+                if (renderData.nextSibling == null)
+                    parentRenderData.lastChild = renderData.prevSibling;
+            }
+
+            if (renderData.prevSibling != null)
+                renderData.prevSibling.nextSibling = renderData.nextSibling;
+
+            if (renderData.nextSibling != null)
+                renderData.nextSibling.prevSibling = renderData.prevSibling;
+        }
+
+        static void DisconnectRenderTreeFromParent(RenderTree parentTree, RenderTree nestedTree)
+        {
+            if (nestedTree == null || parentTree == null || parentTree == nestedTree)
+                return;
+
+            if (parentTree.firstChild == nestedTree)
+                parentTree.firstChild = nestedTree.nextSibling;
+            else
+            {
+                var prev = parentTree.firstChild;
+                while (prev.nextSibling != nestedTree)
+                    prev = prev.nextSibling;
+                prev.nextSibling = nestedTree.nextSibling;
+            }
+        }
+
+        static void ResetRenderData(RenderTreeManager renderTreeManager, RenderData renderData)
+        {
+            renderData.renderTree.ChildWillBeRemoved(renderData);
+            CommandManipulator.ResetCommands(renderTreeManager, renderData);
+
+            if (renderData.parent == null)
+            {
+                var parentTree = renderData.renderTree.parent;
+                DisconnectRenderTreeFromParent(parentTree, renderData.renderTree);
+                renderTreeManager.ReturnPoolRenderTree(renderData.renderTree);
+            }
+
+            renderData.parent = null;
+            renderData.prevSibling = null;
+            renderData.nextSibling = null;
+            renderData.firstChild = null;
+            renderData.lastChild = null;
+            renderData.renderTree = null;
+
+            renderTreeManager.ResetTextures(renderData);
+            if (renderData.hasExtraData)
+            {
+                renderTreeManager.FreeExtraMeshes(renderData);
+                renderTreeManager.FreeExtraData(renderData);
+            }
+
+            renderData.clipMethod = ClipMethod.Undetermined;
+
+            if (RenderData.AllocatesID(renderData.textCoreSettingsID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeTextCoreSettings(renderData.textCoreSettingsID);
+                renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+            }
+            if (RenderData.AllocatesID(renderData.opacityID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeOpacity(renderData.opacityID);
+                renderData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+            }
+            if (RenderData.AllocatesID(renderData.colorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.colorID);
+                renderData.colorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.backgroundColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.backgroundColorID);
+                renderData.backgroundColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.borderLeftColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.borderLeftColorID);
+                renderData.borderLeftColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.borderTopColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.borderTopColorID);
+                renderData.borderTopColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.borderRightColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.borderRightColorID);
+                renderData.borderRightColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.borderBottomColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.borderBottomColorID);
+                renderData.borderBottomColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.tintColorID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeColor(renderData.tintColorID);
+                renderData.tintColorID = BMPAlloc.Invalid;
+            }
+            if (RenderData.AllocatesID(renderData.clipRectID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeClipRect(renderData.clipRectID);
+                renderData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+            }
+            if (RenderData.AllocatesID(renderData.transformID))
+            {
+                renderTreeManager.shaderInfoAllocator.FreeTransform(renderData.transformID);
+                renderData.transformID = UIRVEShaderInfoAllocator.identityTransform;
+            }
+            renderData.boneTransformAncestor = renderData.groupTransformAncestor = null;
+            if (renderData.tailMesh != null)
+            {
+                renderTreeManager.device.Free(renderData.tailMesh);
+                renderData.tailMesh = null;
+            }
+            if (renderData.headMesh != null)
+            {
+                renderTreeManager.device.Free(renderData.headMesh);
+                renderData.headMesh = null;
+            }
+
+            renderTreeManager.ReturnPoolRenderData(renderData);
+        }
+
+        static void DepthFirstOnClippingChanged(RenderTreeManager renderTreeManager,
+            RenderData parentRenderData,
+            RenderData renderData,
             uint dirtyID,
             bool hierarchical,
             bool isRootOfChange,                // MUST be true  on the root call.
@@ -296,16 +473,16 @@ namespace UnityEngine.UIElements.UIR
             UIRenderDevice device,
             ref ChainBuilderStats stats)
         {
-            bool upToDate = dirtyID == ve.renderChainData.dirtyID;
+            bool upToDate = dirtyID == renderData.dirtyID;
             if (upToDate && !inheritedClipRectIDChanged && !inheritedMaskingChanged)
                 return;
 
-            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+            renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
             if (!isRootOfChange)
                 stats.recursiveClipUpdatesExpanded++;
 
-            isPendingHierarchicalRepaint |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            isPendingHierarchicalRepaint |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
 
             // Internal operations (done in this call) to do:
             bool mustUpdateClipRectID = hierarchical || isRootOfChange || inheritedClipRectIDChanged;
@@ -321,19 +498,19 @@ namespace UnityEngine.UIElements.UIR
             // As a result, hierarchical implies mustRecurse
             bool mustRecurse = hierarchical;
 
-            ClipMethod oldClippingMethod = ve.renderChainData.clipMethod;
-            ClipMethod newClippingMethod = mustUpdateClippingMethod ? DetermineSelfClipMethod(renderChain, ve) : oldClippingMethod;
+            ClipMethod oldClippingMethod = renderData.clipMethod;
+            ClipMethod newClippingMethod = mustUpdateClippingMethod ? DetermineSelfClipMethod(renderTreeManager, renderData) : oldClippingMethod;
 
             // Shader discard support
             bool clipRectIDChanged = false;
             if (mustUpdateClipRectID)
             {
-                BMPAlloc newClipRectID = ve.renderChainData.clipRectID;
+                BMPAlloc newClipRectID = renderData.clipRectID;
                 if (newClippingMethod == ClipMethod.ShaderDiscard)
                 {
-                    if (!RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
+                    if (!RenderData.AllocatesID(renderData.clipRectID))
                     {
-                        newClipRectID = renderChain.shaderInfoAllocator.AllocClipRect();
+                        newClipRectID = renderTreeManager.shaderInfoAllocator.AllocClipRect();
                         if (!newClipRectID.IsValid())
                         {
                             newClippingMethod = ClipMethod.Scissor; // Fallback to scissor since we couldn't allocate a clipRectID
@@ -345,28 +522,28 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
-                        renderChain.shaderInfoAllocator.FreeClipRect(ve.renderChainData.clipRectID);
+                    if (RenderData.AllocatesID(renderData.clipRectID))
+                        renderTreeManager.shaderInfoAllocator.FreeClipRect(renderData.clipRectID);
 
                     // Inherit parent's clipRectID if possible.
                     // Group transforms shouldn't inherit the clipRectID since they have a new frame of reference,
                     // they provide a new baseline with the _PixelClipRect instead.
-                    if (!ve.renderChainData.isGroupTransform)
+                    if (!renderData.isGroupTransform)
                     {
-                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parent != null)) ? parent.renderChainData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
+                        newClipRectID = ((newClippingMethod != ClipMethod.Scissor) && (parentRenderData != null)) ? parentRenderData.clipRectID : UIRVEShaderInfoAllocator.infiniteClipRect;
                         newClipRectID.ownedState = OwnedState.Inherited;
                     }
                 }
 
-                clipRectIDChanged = !ve.renderChainData.clipRectID.Equals(newClipRectID);
-                Debug.Assert(!ve.renderChainData.isGroupTransform || !clipRectIDChanged);
-                ve.renderChainData.clipRectID = newClipRectID;
+                clipRectIDChanged = !renderData.clipRectID.Equals(newClipRectID);
+                Debug.Assert(!renderData.isGroupTransform || !clipRectIDChanged);
+                renderData.clipRectID = newClipRectID;
             }
 
             bool maskingChanged = false;
             if (oldClippingMethod != newClippingMethod)
             {
-                ve.renderChainData.clipMethod = newClippingMethod;
+                renderData.clipMethod = newClippingMethod;
 
                 if (oldClippingMethod == ClipMethod.Stencil || newClippingMethod == ClipMethod.Stencil)
                 {
@@ -378,7 +555,7 @@ namespace UnityEngine.UIElements.UIR
                     // We need to add/remove scissor push/pop commands
                     mustRepaintThis = true;
 
-                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
+                if (newClippingMethod == ClipMethod.ShaderDiscard || oldClippingMethod == ClipMethod.ShaderDiscard && RenderData.AllocatesID(renderData.clipRectID))
                     // We must update the clipping rects.
                     mustProcessSizeChange = true;
             }
@@ -396,29 +573,30 @@ namespace UnityEngine.UIElements.UIR
             {
                 int newChildrenMaskDepth = 0;
                 int newChildrenStencilRef = 0;
-                if (parent != null)
+                if (parentRenderData != null)
                 {
-                    newChildrenMaskDepth = parent.renderChainData.childrenMaskDepth;
-                    newChildrenStencilRef = parent.renderChainData.childrenStencilRef;
-                    if (newClippingMethod == ClipMethod.Stencil)
-                    {
-                        if (newChildrenMaskDepth > newChildrenStencilRef)
-                            ++newChildrenStencilRef;
-                        ++newChildrenMaskDepth;
-                    }
-
-                    // When applying the MaskContainer hint, we skip because the last depth level because even though we
-                    // could technically increase the reference value, it would be useless since there won't be more
-                    // deeply nested masks that could benefit from it.
-                    if ((ve.renderHints & RenderHints.MaskContainer) == RenderHints.MaskContainer && newChildrenMaskDepth < UIRUtility.k_MaxMaskDepth)
-                        newChildrenStencilRef = newChildrenMaskDepth;
+                    newChildrenMaskDepth = parentRenderData.childrenMaskDepth;
+                    newChildrenStencilRef = parentRenderData.childrenStencilRef;
                 }
 
-                if (ve.renderChainData.childrenMaskDepth != newChildrenMaskDepth || ve.renderChainData.childrenStencilRef != newChildrenStencilRef)
+                if (newClippingMethod == ClipMethod.Stencil)
+                {
+                    if (newChildrenMaskDepth > newChildrenStencilRef)
+                        ++newChildrenStencilRef;
+                    ++newChildrenMaskDepth;
+                }
+
+                // When applying the MaskContainer hint, we skip because the last depth level because even though we
+                // could technically increase the reference value, it would be useless since there won't be more
+                // deeply nested masks that could benefit from it.
+                if ((renderData.owner.renderHints & RenderHints.MaskContainer) == RenderHints.MaskContainer && newChildrenMaskDepth < UIRUtility.k_MaxMaskDepth)
+                    newChildrenStencilRef = newChildrenMaskDepth;
+
+                if (renderData.childrenMaskDepth != newChildrenMaskDepth || renderData.childrenStencilRef != newChildrenStencilRef)
                     maskingChanged = true;
 
-                ve.renderChainData.childrenMaskDepth = newChildrenMaskDepth;
-                ve.renderChainData.childrenStencilRef = newChildrenStencilRef;
+                renderData.childrenMaskDepth = newChildrenMaskDepth;
+                renderData.childrenStencilRef = newChildrenStencilRef;
             }
 
             if (maskingChanged)
@@ -434,21 +612,22 @@ namespace UnityEngine.UIElements.UIR
 
             if ((mustRepaintThis || mustRepaintHierarchy) && !isPendingHierarchicalRepaint)
             {
-                renderChain.UIEOnVisualsChanged(ve, mustRepaintHierarchy);
+                renderData.renderTree.OnRenderDataVisualsChanged(renderData, mustRepaintHierarchy);
                 isPendingHierarchicalRepaint = true;
             }
 
             if (mustProcessSizeChange)
-                renderChain.UIEOnTransformOrSizeChanged(ve, false, true);
+                renderData.renderTree.OnRenderDataTransformOrSizeChanged(renderData, false, true);
 
             if (mustRecurse)
             {
-                int childrenCount = ve.hierarchy.childCount;
-                for (int i = 0; i < childrenCount; i++)
+                var child = renderData.firstChild;
+                while (child != null)
+                {
                     DepthFirstOnClippingChanged(
-                        renderChain,
-                        ve,
-                        ve.hierarchy[i],
+                        renderTreeManager,
+                        renderData,
+                        child,
                         dirtyID,
                         // Having to recurse doesn't mean that we need to process ALL descendants. For example, the
                         // propagation of the transformId may stop if a group or a bone is encountered.
@@ -459,19 +638,26 @@ namespace UnityEngine.UIElements.UIR
                         maskingChanged,
                         device,
                         ref stats);
+
+                    child = child.nextSibling;
+                }
             }
         }
 
-        static void DepthFirstOnOpacityChanged(RenderChain renderChain, float parentCompositeOpacity, VisualElement ve,
+        static void DepthFirstOnOpacityChanged(RenderTreeManager renderTreeManager, float parentCompositeOpacity, RenderData renderData,
             uint dirtyID, bool hierarchical, ref ChainBuilderStats stats, bool isDoingFullVertexRegeneration = false)
         {
-            if (dirtyID == ve.renderChainData.dirtyID)
+            if (dirtyID == renderData.dirtyID)
                 return;
 
-            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+            renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+
+            if (renderData.isSubTreeQuad)
+                return; // TODO: We will need to process the opacity when implementing the real composite opacity
+
             stats.recursiveOpacityUpdatesExpanded++;
-            float oldOpacity = ve.renderChainData.compositeOpacity;
-            float newOpacity = ve.resolvedStyle.opacity * parentCompositeOpacity;
+            float oldOpacity = renderData.compositeOpacity;
+            float newOpacity = renderData.owner.resolvedStyle.opacity * parentCompositeOpacity;
 
             const float meaningfullOpacityChange = 0.0001f;
 
@@ -482,123 +668,141 @@ namespace UnityEngine.UIElements.UIR
                 // Avoid updating cached opacity if it changed too little, because we don't want slow changes to
                 // update the cache and never trigger the compositeOpacityChanged condition.
                 // The only small change allowed is when we cross the "visible" boundary of VisibilityTreshold
-                ve.renderChainData.compositeOpacity = newOpacity;
+                renderData.compositeOpacity = newOpacity;
             }
 
             bool changedOpacityID = false;
             bool hasDistinctOpacity = newOpacity < parentCompositeOpacity - meaningfullOpacityChange; //assume 0 <= opacity <= 1
             if (hasDistinctOpacity)
             {
-                if (ve.renderChainData.opacityID.ownedState == OwnedState.Inherited)
+                if (renderData.opacityID.ownedState == OwnedState.Inherited)
                 {
                     changedOpacityID = true;
-                    ve.renderChainData.opacityID = renderChain.shaderInfoAllocator.AllocOpacity();
+                    renderData.opacityID = renderTreeManager.shaderInfoAllocator.AllocOpacity();
                 }
 
-                if ((changedOpacityID || compositeOpacityChanged) && ve.renderChainData.opacityID.IsValid())
-                    renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
+                if ((changedOpacityID || compositeOpacityChanged) && renderData.opacityID.IsValid())
+                    renderTreeManager.shaderInfoAllocator.SetOpacityValue(renderData.opacityID, newOpacity);
             }
-            else if (ve.renderChainData.opacityID.ownedState == OwnedState.Inherited)
+            else if (renderData.opacityID.ownedState == OwnedState.Inherited)
             {
                 // Just follow my parent's alloc
-                if (ve.hierarchy.parent != null &&
-                    !ve.renderChainData.opacityID.Equals(ve.hierarchy.parent.renderChainData.opacityID))
+                if (renderData.parent != null &&
+                    !renderData.opacityID.Equals(renderData.parent.opacityID))
                 {
                     changedOpacityID = true;
-                    ve.renderChainData.opacityID = ve.hierarchy.parent.renderChainData.opacityID;
-                    ve.renderChainData.opacityID.ownedState = OwnedState.Inherited;
+                    renderData.opacityID = renderData.parent.opacityID;
+                    renderData.opacityID.ownedState = OwnedState.Inherited;
                 }
             }
             else
             {
                 // I have an owned allocation, but I must match my parent's opacity, just set the opacity rather than free and inherit our parent's
-                if (compositeOpacityChanged && ve.renderChainData.opacityID.IsValid())
-                    renderChain.shaderInfoAllocator.SetOpacityValue(ve.renderChainData.opacityID, newOpacity);
+                if (compositeOpacityChanged && renderData.opacityID.IsValid())
+                    renderTreeManager.shaderInfoAllocator.SetOpacityValue(renderData.opacityID, newOpacity);
             }
+
+            if ((renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0)
+                isDoingFullVertexRegeneration = true;
 
             if (isDoingFullVertexRegeneration)
             {
                 // A parent already called UIEOnVisualsChanged with hierarchical=true
             }
-            else if (changedOpacityID && ((ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0) &&
-                     (ve.renderChainData.headMesh != null || ve.renderChainData.tailMesh != null))
+            else if (changedOpacityID && ((renderData.dirtiedValues & RenderDataDirtyTypes.Visuals) == 0) &&
+                     (renderData.headMesh != null || renderData.tailMesh != null))
             {
-                renderChain.UIEOnOpacityIdChanged(ve); // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
+                // Changed opacity ID, must update vertices.. we don't do it hierarchical here since our children will go through this too
+                renderData.renderTree.OnRenderDataOpacityIdChanged(renderData);
             }
 
             if (compositeOpacityChanged || changedOpacityID || hierarchical)
             {
                 // Recurse on children
-                int childrenCount = ve.hierarchy.childCount;
-                for (int i = 0; i < childrenCount; i++)
+                var child = renderData.firstChild;
+                while (child != null)
                 {
-                    DepthFirstOnOpacityChanged(renderChain, newOpacity, ve.hierarchy[i], dirtyID, hierarchical, ref stats,
+                    DepthFirstOnOpacityChanged(renderTreeManager, newOpacity, child, dirtyID, hierarchical, ref stats,
                         isDoingFullVertexRegeneration);
+
+                    child = child.nextSibling;
                 }
             }
         }
 
-        static void OnColorChanged(RenderChain renderChain, VisualElement ve, uint dirtyID, ref ChainBuilderStats stats)
+        static void OnColorChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, ref ChainBuilderStats stats)
         {
-            if (dirtyID == ve.renderChainData.dirtyID)
+            if (dirtyID == renderData.dirtyID)
                 return;
 
-            ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+            renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+
+            if (renderData.isSubTreeQuad)
+                return;
+
             stats.colorUpdatesExpanded++;
 
-            var newColor = ve.resolvedStyle.backgroundColor;
+            var newColor = renderData.owner.resolvedStyle.backgroundColor;
 
             // UUM-21405: Fully-transparent backgrounds don't generate any geometry. So, we need to
             // force a dirty-repaint if we were transparent before, otherwise we may be trying to
             // change the color of a mesh that doesn't exists.
-            if (ve.renderChainData.backgroundAlpha == 0.0f && newColor.a > 0.0f)
-                renderChain.UIEOnVisualsChanged(ve, false);
+            if (renderData.backgroundAlpha == 0.0f && newColor.a > 0.0f)
+                renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
 
-            ve.renderChainData.backgroundAlpha = newColor.a;
+            renderData.backgroundAlpha = newColor.a;
 
             bool shouldUpdateVisuals = false;
-            if ((ve.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor && !ve.renderChainData.isIgnoringDynamicColorHint)
+            if ((renderData.owner.renderHints & RenderHints.DynamicColor) == RenderHints.DynamicColor && !renderData.isIgnoringDynamicColorHint)
             {
-                if (InitColorIDs(renderChain, ve))
+                if (InitColorIDs(renderTreeManager, renderData.owner))
                     // New colors were allocated, we need to update the visuals
                     shouldUpdateVisuals = true;
 
-                SetColorValues(renderChain, ve);
+                SetColorValues(renderTreeManager, renderData.owner);
 
-                if (ve is TextElement && !RenderEvents.UpdateTextCoreSettings(renderChain, ve))
+                if (renderData.owner is TextElement && !RenderEvents.UpdateTextCoreSettings(renderTreeManager, renderData.owner))
                     shouldUpdateVisuals = true;
             }
             else
                 shouldUpdateVisuals = true;
 
             if (shouldUpdateVisuals)
-                renderChain.UIEOnVisualsChanged(ve, false);
+                renderData.renderTree.OnRenderDataVisualsChanged(renderData, false);
         }
 
-        static void DepthFirstOnTransformOrSizeChanged(RenderChain renderChain, VisualElement parent, VisualElement ve, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
+        static void DepthFirstOnTransformOrSizeChanged(RenderTreeManager renderTreeManager, RenderData renderData, uint dirtyID, UIRenderDevice device, bool isAncestorOfChangeSkinned, bool transformChanged, ref ChainBuilderStats stats)
         {
-            if (dirtyID == ve.renderChainData.dirtyID)
+            if (dirtyID == renderData.dirtyID)
                 return;
 
             stats.recursiveTransformUpdatesExpanded++;
 
-            transformChanged |= (ve.renderChainData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
+            renderData.flags |= RenderDataFlags.IsClippingRectDirty;
 
-            if (RenderChainVEData.AllocatesID(ve.renderChainData.clipRectID))
-                renderChain.shaderInfoAllocator.SetClipRectValue(ve.renderChainData.clipRectID, GetClipRectIDClipInfo(ve));
+            transformChanged |= (renderData.dirtiedValues & RenderDataDirtyTypes.Transform) != 0;
 
-            if (transformChanged && UpdateLocalFlipsWinding(ve))
-                renderChain.UIEOnVisualsChanged(ve, true);
+            if (RenderData.AllocatesID(renderData.clipRectID))
+            {
+                Debug.Assert(!renderData.isSubTreeQuad);
+                renderTreeManager.shaderInfoAllocator.SetClipRectValue(renderData.clipRectID, GetClipRectIDClipInfo(renderData));
+            }
 
             if (transformChanged)
             {
-                UpdateZeroScaling(ve);
+                if (UpdateLocalFlipsWinding(renderData))
+                {
+                    // TODO: Optimized flip-winding instead of a full repaint
+                    renderData.renderTree.OnRenderDataVisualsChanged(renderData, true);
+                }
+                UpdateZeroScaling(renderData);
             }
 
             bool dirtyHasBeenResolved = true;
-            if (RenderChainVEData.AllocatesID(ve.renderChainData.transformID))
+            if (RenderData.AllocatesID(renderData.transformID))
             {
-                renderChain.shaderInfoAllocator.SetTransformValue(ve.renderChainData.transformID, GetTransformIDTransformInfo(ve));
+                Debug.Assert(!renderData.isNestedRenderTreeRoot); // Because they are always an identity
+                renderTreeManager.shaderInfoAllocator.SetTransformValue(renderData.transformID, GetTransformIDTransformInfo(renderData));
                 isAncestorOfChangeSkinned = true;
                 stats.boneTransformed++;
             }
@@ -606,52 +810,55 @@ namespace UnityEngine.UIElements.UIR
             {
                 // Only the clip info had to be updated, we can skip the other cases which are for transform changes only.
             }
-            else if (ve.renderChainData.isGroupTransform)
+            else if (renderData.isGroupTransform)
             {
                 stats.groupTransformElementsChanged++;
             }
             else if (isAncestorOfChangeSkinned)
             {
                 // Children of a bone element inherit the transform data change automatically when the root updates that data, no need to do anything for children
-                Debug.Assert(RenderChainVEData.InheritsID(ve.renderChainData.transformID)); // The element MUST have a transformID that has been inherited from an ancestor
+                Debug.Assert(RenderData.InheritsID(renderData.transformID)); // The element MUST have a transformID that has been inherited from an ancestor
                 dirtyHasBeenResolved = false; // We just skipped processing, if another later transform change is queued on this element this pass then we should still process it
                 stats.skipTransformed++;
             }
-            else if ((ve.renderChainData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 &&
-                     (ve.renderChainData.headMesh != null || ve.renderChainData.tailMesh != null))
+            else if ((renderData.dirtiedValues & (RenderDataDirtyTypes.Visuals | RenderDataDirtyTypes.VisualsHierarchy)) == 0 &&
+                     (renderData.headMesh != null || renderData.tailMesh != null))
             {
                 // If a visual update will happen, then skip work here as the visual update will incorporate the transformed vertices
-                if (NudgeVerticesToNewSpace(ve, renderChain, device))
+                if (NudgeVerticesToNewSpace(renderData, renderTreeManager, device))
                     stats.nudgeTransformed++;
                 else
                 {
-                    renderChain.UIEOnVisualsChanged(ve, false); // Nudging not allowed, so do a full visual repaint
+                    renderData.renderTree.OnRenderDataVisualsChanged(renderData, false); // Nudging not allowed, so do a full visual repaint
                     stats.visualUpdateTransformed++;
                 }
             }
 
             if (dirtyHasBeenResolved)
-                ve.renderChainData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
+                renderData.dirtyID = dirtyID; // Prevent reprocessing of the same element in the same pass
 
             // Make sure to pre-evaluate world transform and clip now so we don't do it at render time
-            if (renderChain.drawInCameras)
-                ve.EnsureWorldTransformAndClipUpToDate();
+            if (renderTreeManager.drawInCameras)
+                renderData.owner.EnsureWorldTransformAndClipUpToDate(); // TODO: Re-evaluate if this is needed
 
-            if (!ve.renderChainData.isGroupTransform)
+            if (!renderData.isGroupTransform)
             {
                 // Recurse on children
-                int childrenCount = ve.hierarchy.childCount;
-                for (int i = 0; i < childrenCount; i++)
-                    DepthFirstOnTransformOrSizeChanged(renderChain, ve, ve.hierarchy[i], dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
+                var child = renderData.firstChild;
+                while (child != null)
+                {
+                    DepthFirstOnTransformOrSizeChanged(renderTreeManager, child, dirtyID, device, isAncestorOfChangeSkinned, transformChanged, ref stats);
+                    child = child.nextSibling;
+                }
             }
         }
 
-        public static bool UpdateTextCoreSettings(RenderChain renderChain, VisualElement ve)
+        public static bool UpdateTextCoreSettings(RenderTreeManager renderTreeManager, VisualElement ve)
         {
             if (ve == null || !TextUtilities.IsFontAssigned(ve))
                 return false;
 
-            bool allocatesID = RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID);
+            bool allocatesID = RenderData.AllocatesID(ve.renderData.textCoreSettingsID);
 
             var settings = TextUtilities.GetTextCoreSettingsForElement(ve, false);
 
@@ -662,14 +869,14 @@ namespace UnityEngine.UIElements.UIR
             if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
             {
                 // Use default TextCore settings
-                ve.renderChainData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                ve.renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
                 return true;
             }
 
             if (!allocatesID)
-                ve.renderChainData.textCoreSettingsID = renderChain.shaderInfoAllocator.AllocTextCoreSettings(settings);
+                ve.renderData.textCoreSettingsID = renderTreeManager.shaderInfoAllocator.AllocTextCoreSettings(settings);
 
-            if (RenderChainVEData.AllocatesID(ve.renderChainData.textCoreSettingsID))
+            if (RenderData.AllocatesID(ve.renderData.textCoreSettingsID))
             {
                 if (ve.panel.contextType == ContextType.Editor)
                 {
@@ -679,26 +886,26 @@ namespace UnityEngine.UIElements.UIR
                     settings.underlayColor *= playModeTintColor;
                 }
 
-                renderChain.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderChainData.textCoreSettingsID, settings);
+                renderTreeManager.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderData.textCoreSettingsID, settings);
             }
 
             return true;
         }
 
-        static bool NudgeVerticesToNewSpace(VisualElement ve, RenderChain renderChain, UIRenderDevice device)
+        static bool NudgeVerticesToNewSpace(RenderData renderData, RenderTreeManager renderTreeManager, UIRenderDevice device)
         {
             k_NudgeVerticesMarker.Begin();
 
             Matrix4x4 newTransform;
-            UIRUtility.GetVerticesTransformInfo(ve, out newTransform);
-            Matrix4x4 nudgeTransform = newTransform * ve.renderChainData.verticesSpace.inverse;
+            UIRUtility.GetVerticesTransformInfo(renderData, out newTransform);
+            Matrix4x4 nudgeTransform = newTransform * renderData.verticesSpace.inverse;
 
             // Attempt to reconstruct the absolute transform. If the result diverges from the absolute
             // considerably, then we assume that the vertices have become degenerate beyond restoration.
             // In this case we refuse to nudge, and ask for this element to be fully repainted to regenerate
             // the vertices without error.
             const float kMaxAllowedDeviation = 0.0001f;
-            Matrix4x4 reconstructedNewTransform = nudgeTransform * ve.renderChainData.verticesSpace;
+            Matrix4x4 reconstructedNewTransform = nudgeTransform * renderData.verticesSpace;
             float error;
             error = Mathf.Abs(newTransform.m00 - reconstructedNewTransform.m00);
             error += Mathf.Abs(newTransform.m01 - reconstructedNewTransform.m01);
@@ -718,30 +925,30 @@ namespace UnityEngine.UIElements.UIR
                 return false;
             }
 
-            ve.renderChainData.verticesSpace = newTransform; // This is the new space of the vertices
+            renderData.verticesSpace = newTransform; // This is the new space of the vertices
 
             var job = new NudgeJobData
             {
                 transform = nudgeTransform
             };
 
-            if (ve.renderChainData.headMesh != null)
-                PrepareNudgeVertices(ve, device, ve.renderChainData.headMesh, out job.headSrc, out job.headDst, out job.headCount);
+            if (renderData.headMesh != null)
+                PrepareNudgeVertices(device, renderData.headMesh, out job.headSrc, out job.headDst, out job.headCount);
 
-            if (ve.renderChainData.tailMesh != null)
-                PrepareNudgeVertices(ve, device, ve.renderChainData.tailMesh, out job.tailSrc, out job.tailDst, out job.tailCount);
+            if (renderData.tailMesh != null)
+                PrepareNudgeVertices(device, renderData.tailMesh, out job.tailSrc, out job.tailDst, out job.tailCount);
 
-            renderChain.jobManager.Add(ref job);
+            renderTreeManager.jobManager.Add(ref job);
 
-            if (ve.renderChainData.hasExtraMeshes)
+            if (renderData.hasExtraMeshes)
             {
-                ExtraRenderChainVEData extraData = renderChain.GetOrAddExtraData(ve);
+                ExtraRenderData extraData = renderTreeManager.GetOrAddExtraData(renderData);
                 BasicNode<MeshHandle> extraMesh = extraData.extraMesh;
                 while (extraMesh != null)
                 {
                     var extraJob = new NudgeJobData { transform = job.transform };
-                    PrepareNudgeVertices(ve, device, extraMesh.data, out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
-                    renderChain.jobManager.Add(ref extraJob);
+                    PrepareNudgeVertices(device, extraMesh.data, out extraJob.headSrc, out extraJob.headDst, out extraJob.headCount);
+                    renderTreeManager.jobManager.Add(ref extraJob);
                     extraMesh = extraMesh.next;
                 }
             }
@@ -750,7 +957,7 @@ namespace UnityEngine.UIElements.UIR
             return true;
         }
 
-        static unsafe void PrepareNudgeVertices(VisualElement ve, UIRenderDevice device, MeshHandle mesh, out IntPtr src, out IntPtr dst, out int count)
+        static unsafe void PrepareNudgeVertices(UIRenderDevice device, MeshHandle mesh, out IntPtr src, out IntPtr dst, out int count)
         {
             int vertCount = (int)mesh.allocVerts.size;
             NativeSlice<Vertex> oldVerts = mesh.allocPage.vertices.cpuData.Slice((int)mesh.allocVerts.start, vertCount);
@@ -761,54 +968,30 @@ namespace UnityEngine.UIElements.UIR
             dst = (IntPtr)newVerts.GetUnsafePtr();
             count = vertCount;
         }
-        static VisualElement GetLastDeepestChild(VisualElement ve)
-        {
-            // O(n) of the visual tree depth, usually not too bad.. probably 10-15 in really bad cases
-            int childCount = ve.hierarchy.childCount;
-            while (childCount > 0)
-            {
-                ve = ve.hierarchy[childCount - 1];
-                childCount = ve.hierarchy.childCount;
-            }
-            return ve;
-        }
 
-        static VisualElement GetNextDepthFirst(VisualElement ve)
+        static ClipMethod DetermineSelfClipMethod(RenderTreeManager renderTreeManager, RenderData renderData)
         {
-            // O(n) of the visual tree depth, usually not too bad.. probably 10-15 in really bad cases
-            VisualElement parent = ve.hierarchy.parent;
-            while (parent != null)
-            {
-                int childIndex = parent.hierarchy.IndexOf(ve);
-                int childCount = parent.hierarchy.childCount;
-                if (childIndex < childCount - 1)
-                    return parent.hierarchy[childIndex + 1];
-                ve = parent;
-                parent = parent.hierarchy.parent;
-            }
-            return null;
-        }
-
-        static ClipMethod DetermineSelfClipMethod(RenderChain renderChain, VisualElement ve)
-        {
-            if (!renderChain.isFlat)
+            if (renderData.isSubTreeQuad)
                 return ClipMethod.NotClipped;
 
-            if (!ve.ShouldClip())
+            if (!renderData.owner.ShouldClip())
                 return ClipMethod.NotClipped;
+
+            if (renderTreeManager.drawInCameras)
+                return ClipMethod.ShaderDiscard; // World-space panels only support ShaderDiscard
 
             // Even though GroupTransform does not formally imply the use of scissors, we prefer to use them because
             // this way, we can avoid updating nested clipping rects.
-            bool preferScissors = ve.renderChainData.isGroupTransform || (ve.renderHints & RenderHints.ClipWithScissors) != 0;
+            bool preferScissors = renderData.isGroupTransform || (renderData.owner.renderHints & RenderHints.ClipWithScissors) != 0;
             ClipMethod rectClipMethod = preferScissors ? ClipMethod.Scissor : ClipMethod.ShaderDiscard;
 
-            if (!renderChain.elementBuilder.RequiresStencilMask(ve))
+            if (!renderTreeManager.elementBuilder.RequiresStencilMask(renderData.owner))
                 return rectClipMethod;
 
             int inheritedMaskDepth = 0;
-            VisualElement parent = ve.hierarchy.parent;
+            var parent = renderData.parent;
             if (parent != null)
-                inheritedMaskDepth = parent.renderChainData.childrenMaskDepth;
+                inheritedMaskDepth = parent.childrenMaskDepth;
 
             // We're already at the deepest level, we can't go any deeper.
             if (inheritedMaskDepth == UIRUtility.k_MaxMaskDepth)
@@ -819,45 +1002,53 @@ namespace UnityEngine.UIElements.UIR
         }
 
         // Returns true when a change was detected
-        static bool UpdateLocalFlipsWinding(VisualElement ve)
+        static bool UpdateLocalFlipsWinding(RenderData renderData)
         {
-            if (!ve.elementPanel.isFlat)
+            if (!renderData.owner.elementPanel.isFlat)
                 return false;
 
-            bool oldFlipsWinding = ve.renderChainData.localFlipsWinding;
-            Vector3 scale = ve.transform.scale;
-            float winding = scale.x * scale.y;
-            if (Math.Abs(winding) < 0.001f)
+            bool newFlipsWinding = false;
+            if (!renderData.isNestedRenderTreeRoot) // Otherwise, the transform is an identity
             {
-                return false; // Close to zero, preserve the current value
+                Vector3 scale = renderData.owner.resolvedStyle.scale.value;
+                float winding = scale.x * scale.y;
+                if (Math.Abs(winding) < 0.001f)
+                {
+                    return false; // Close to zero, preserve the current value
+                }
+
+                newFlipsWinding = winding < 0;
             }
 
-            bool newFlipsWinding = winding < 0;
+            bool oldFlipsWinding = renderData.localFlipsWinding;
             if (oldFlipsWinding != newFlipsWinding)
             {
-                ve.renderChainData.localFlipsWinding = newFlipsWinding;
+                renderData.localFlipsWinding = newFlipsWinding;
                 return true;
             }
 
             return false;
         }
 
-        static void UpdateZeroScaling(VisualElement ve)
+        static void UpdateZeroScaling(RenderData renderData)
         {
-            bool transformScaleZero = Math.Abs(ve.transform.scale.x * ve.transform.scale.y) < 0.001f;
-            ve.renderChainData.localTransformScaleZero = transformScaleZero;
+            if (renderData.isNestedRenderTreeRoot) // Otherwise, the transform is an identity
+                return;
+
+            var ve = renderData.owner;
+            bool transformScaleZero = Math.Abs(ve.resolvedStyle.scale.value.x * ve.resolvedStyle.scale.value.y) < 0.001f;
 
             bool parentTransformScaleZero = false;
             VisualElement parent = ve.hierarchy.parent;
             if (parent != null)
-                parentTransformScaleZero = parent.renderChainData.worldTransformScaleZero;
+                parentTransformScaleZero = parent.renderData.worldTransformScaleZero;
 
-            ve.renderChainData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
+            renderData.worldTransformScaleZero = parentTransformScaleZero | transformScaleZero;
         }
 
         static bool NeedsTransformID(VisualElement ve)
         {
-            return !ve.renderChainData.isGroupTransform && (ve.renderHints & RenderHints.BoneTransform) != 0;
+            return !ve.renderData.isGroupTransform && (ve.renderHints & RenderHints.BoneTransform) != 0;
         }
 
         // Indicates whether the transform id assigned to an element has changed. It does not care who the owner is.
@@ -888,43 +1079,43 @@ namespace UnityEngine.UIElements.UIR
             return false;
         }
 
-        static bool InitColorIDs(RenderChain renderChain, VisualElement ve)
+        static bool InitColorIDs(RenderTreeManager renderTreeManager, VisualElement ve)
         {
             var style = ve.resolvedStyle;
             bool hasAllocated = false;
-            if (!ve.renderChainData.colorID.IsValid() && ve is TextElement)
+            if (!ve.renderData.colorID.IsValid() && ve is TextElement)
             {
-                ve.renderChainData.colorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.colorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.backgroundColorID.IsValid())
+            if (!ve.renderData.backgroundColorID.IsValid())
             {
-                ve.renderChainData.backgroundColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.backgroundColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderLeftColorID.IsValid() && style.borderLeftWidth > 0.0f) // Size change will trigger a re-tessellation
+            if (!ve.renderData.borderLeftColorID.IsValid() && style.borderLeftWidth > 0.0f) // Size change will trigger a re-tessellation
             {
-                ve.renderChainData.borderLeftColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.borderLeftColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderTopColorID.IsValid() && style.borderTopWidth > 0.0f) // Size change will trigger a re-tessellation
+            if (!ve.renderData.borderTopColorID.IsValid() && style.borderTopWidth > 0.0f) // Size change will trigger a re-tessellation
             {
-                ve.renderChainData.borderTopColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.borderTopColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderRightColorID.IsValid() && style.borderRightWidth > 0.0f) // Size change will trigger a re-tessellation
+            if (!ve.renderData.borderRightColorID.IsValid() && style.borderRightWidth > 0.0f) // Size change will trigger a re-tessellation
             {
-                ve.renderChainData.borderRightColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.borderRightColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.borderBottomColorID.IsValid() && style.borderBottomWidth > 0.0f) // Size change will trigger a re-tessellation
+            if (!ve.renderData.borderBottomColorID.IsValid() && style.borderBottomWidth > 0.0f) // Size change will trigger a re-tessellation
             {
-                ve.renderChainData.borderBottomColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.borderBottomColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
-            if (!ve.renderChainData.tintColorID.IsValid())
+            if (!ve.renderData.tintColorID.IsValid())
             {
-                ve.renderChainData.tintColorID = renderChain.shaderInfoAllocator.AllocColor();
+                ve.renderData.tintColorID = renderTreeManager.shaderInfoAllocator.AllocColor();
                 hasAllocated = true;
             }
             return hasAllocated;
@@ -932,32 +1123,32 @@ namespace UnityEngine.UIElements.UIR
 
         static void ResetColorIDs(VisualElement ve)
         {
-            ve.renderChainData.colorID = BMPAlloc.Invalid;
-            ve.renderChainData.backgroundColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderLeftColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderTopColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderRightColorID = BMPAlloc.Invalid;
-            ve.renderChainData.borderBottomColorID = BMPAlloc.Invalid;
-            ve.renderChainData.tintColorID = BMPAlloc.Invalid;
+            ve.renderData.colorID = BMPAlloc.Invalid;
+            ve.renderData.backgroundColorID = BMPAlloc.Invalid;
+            ve.renderData.borderLeftColorID = BMPAlloc.Invalid;
+            ve.renderData.borderTopColorID = BMPAlloc.Invalid;
+            ve.renderData.borderRightColorID = BMPAlloc.Invalid;
+            ve.renderData.borderBottomColorID = BMPAlloc.Invalid;
+            ve.renderData.tintColorID = BMPAlloc.Invalid;
         }
 
-        public static void SetColorValues(RenderChain renderChain, VisualElement ve)
+        public static void SetColorValues(RenderTreeManager renderTreeManager, VisualElement ve)
         {
             var style = ve.resolvedStyle;
-            if (ve.renderChainData.colorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.colorID, style.color);
-            if (ve.renderChainData.backgroundColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.backgroundColorID, style.backgroundColor);
-            if (ve.renderChainData.borderLeftColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderLeftColorID, style.borderLeftColor);
-            if (ve.renderChainData.borderTopColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderTopColorID, style.borderTopColor);
-            if (ve.renderChainData.borderRightColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderRightColorID, style.borderRightColor);
-            if (ve.renderChainData.borderBottomColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderBottomColorID, style.borderBottomColor);
-            if (ve.renderChainData.tintColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.tintColorID, style.unityBackgroundImageTintColor);
+            if (ve.renderData.colorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.colorID, style.color);
+            if (ve.renderData.backgroundColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.backgroundColorID, style.backgroundColor);
+            if (ve.renderData.borderLeftColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderLeftColorID, style.borderLeftColor);
+            if (ve.renderData.borderTopColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderTopColorID, style.borderTopColor);
+            if (ve.renderData.borderRightColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderRightColorID, style.borderRightColor);
+            if (ve.renderData.borderBottomColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderBottomColorID, style.borderBottomColor);
+            if (ve.renderData.tintColorID.IsValid())
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.tintColorID, style.unityBackgroundImageTintColor);
         }
     }
 }

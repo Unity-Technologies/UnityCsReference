@@ -2,12 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 
 namespace UnityEngine.UIElements
 {
     /// <summary>
     /// Global configuration options for UI Toolkit input.
     /// </summary>
+    [Obsolete("All the methods in this class are obsolete.")]
     public static class UIToolkitInputConfiguration
     {
         /// <summary>
@@ -35,6 +37,7 @@ namespace UnityEngine.UIElements
         /// <param name="backend">
         /// The input backend to be used as the source of input for UI Toolkit events at runtime.
         /// </param>
+        [Obsolete("This method should not be used. Setting a backend other than the Default backend may lead to unexpected results or undefined behavior.")]
         public static void SetRuntimeInputBackend(UIToolkitInputBackendOption backend)
         {
             UIElementsRuntimeUtility.defaultEventSystem.useInputForUI =
@@ -45,6 +48,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Input backend options for UI Toolkit events at runtime.
     /// </summary>
+    [Obsolete("This enum only has one supported value. The Default backend should always be used, as it is more stable and covers all use cases.")]
     public enum UIToolkitInputBackendOption
     {
         /// <summary>
@@ -66,6 +70,7 @@ namespace UnityEngine.UIElements
         /// compatible with the Input System package. This option will always try to use the old Input Manager.
         /// If the Input Manager is not enabled as an active input handler, UI Toolkit runtime events will not work.
         /// </summary>
+        [Obsolete("The Legacy backend is not supported anymore. Use the default backend, which is more stable and covers all use cases already.")]
         LegacyBackend
     }
 }

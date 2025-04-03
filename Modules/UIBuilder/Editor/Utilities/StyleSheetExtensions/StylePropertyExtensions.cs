@@ -32,7 +32,7 @@ namespace Unity.UI.Builder
             var newValue = new StyleValueHandle(index, type);
             newValues.Add(newValue);
             property.values = newValues.ToArray();
-            styleSheet.UpdateContentHash();
+            styleSheet.SetTemporaryContentHash();
 
             return newValue;
         }
@@ -46,7 +46,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Keyword);
@@ -63,7 +63,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Float);
@@ -80,7 +80,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, undoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Dimension);
@@ -94,7 +94,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Color);
@@ -108,7 +108,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.String);
@@ -126,10 +126,24 @@ namespace Unity.UI.Builder
             var styleValueType = string.IsNullOrEmpty(resourcePath) ? StyleValueType.AssetReference : StyleValueType.ResourcePath;
 
             // Add value data to data array.
-            var index = string.IsNullOrEmpty(resourcePath) ? styleSheet.AddValueToArray(value) : styleSheet.AddValueToArray(resourcePath);
+            var index = string.IsNullOrEmpty(resourcePath) ? styleSheet.AddValue(value) : styleSheet.AddValue(resourcePath);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, styleValueType);
+
+            return newValue;
+        }
+
+        internal static StyleValueHandle AddValue(this StyleSheet styleSheet, StyleProperty property, ScalableImage value)
+        {
+            // Undo/Redo
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            // Add value data to data array.
+            var index = styleSheet.AddValue(value);
+
+            // Add value object to property.
+            var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.ScalableImage);
 
             return newValue;
         }
@@ -140,7 +154,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Enum);
@@ -154,7 +168,7 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             // Add value data to data array.
-            var index = styleSheet.AddValueToArray(value);
+            var index = styleSheet.AddValue(value);
 
             // Add value object to property.
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Enum);
@@ -171,11 +185,11 @@ namespace Unity.UI.Builder
             var funcHandle = styleSheet.AddValueHandle(property, (int)StyleValueFunction.Var, StyleValueType.Function);
 
             // Add the argument count
-            var index = styleSheet.AddValueToArray(1);
+            var index = styleSheet.AddValue(1);
             var argHandle = styleSheet.AddValueHandle(property, index, StyleValueType.Float);
 
             // Add the variable name
-            index = styleSheet.AddValueToArray(value);
+            index = styleSheet.AddValue(value);
             var newValue = styleSheet.AddValueHandle(property, index, StyleValueType.Variable);
 
             return new StyleValueHandle[] { funcHandle, argHandle, newValue };

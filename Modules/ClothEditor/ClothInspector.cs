@@ -9,7 +9,6 @@ using UnityEditorInternal;
 using UnityObject = UnityEngine.Object;
 using UnityEditor.Overlays;
 
-
 namespace UnityEditor
 {
     class ClothInspectorState : ScriptableSingleton<ClothInspectorState>
@@ -340,7 +339,7 @@ namespace UnityEditor
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
             bool hasHit = false;
-            RaycastHit hit = cloth.Raycast(mouseRay, Mathf.Infinity, ref hasHit);
+            RaycastHit hit = ClothUtilities.Raycast(cloth, mouseRay, Mathf.Infinity, ref hasHit);
 
             if (!hasHit)
             {
@@ -1944,7 +1943,7 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
-        [Overlay(typeof(SceneView), "Scene View/Cloth Constraints", "Cloth Constraints", "unity-sceneview-clothconstraints", priority = (int)OverlayPriority.ClothCollisions)]
+        [Overlay(typeof(SceneView), "Scene View/Cloth Constraints", "Cloth Constraints", "unity-sceneview-clothconstraints", priority = (int)OverlayPriority.ClothCollisions, defaultDisplay = false, defaultDockIndex = 0)]
         [Icon("Icons/editconstraints_16.png")]
         class SceneViewClothConstraintsOverlay : TransientSceneViewOverlay
         {
@@ -1960,7 +1959,7 @@ namespace UnityEditor
             }
         }
 
-        [Overlay(typeof(SceneView), "Scene View/Cloth Collisions", "Cloth Self-Collision and Inter-Collision", "unity-sceneview-clothcollision",  priority = (int)OverlayPriority.ClothCollisions)]
+        [Overlay(typeof(SceneView), "Scene View/Cloth Collisions", "Cloth Self-Collision and Inter-Collision", "unity-sceneview-clothcollision",  priority = (int)OverlayPriority.ClothCollisions, defaultDisplay = false, defaultDockIndex = 0)]
         [Icon("Icons/editCollision_16.png")]
         class SceneViewClothCollisionsOverlay : TransientSceneViewOverlay
         {
@@ -1977,4 +1976,3 @@ namespace UnityEditor
         }
     }
 }
-

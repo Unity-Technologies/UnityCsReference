@@ -153,7 +153,7 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private MatchedRulesExtractor m_MatchedRulesExtractor = new MatchedRulesExtractor();
+        private MatchedRulesExtractor m_MatchedRulesExtractor = new (AssetDatabase.GetAssetPath);
         private string m_SelectedElementUxml;
         private ReorderableList m_ClassList;
         private string m_NewClass;
@@ -416,129 +416,5 @@ namespace UnityEditor.UIElements.Debugger
         }
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal struct MatchedRule
-    {
-        public readonly SelectorMatchRecord matchRecord;
-        public readonly string displayPath;
-        public readonly int lineNumber;
-        public readonly string fullPath;
 
-        public MatchedRule(SelectorMatchRecord matchRecord)
-            : this()
-        {
-            this.matchRecord = matchRecord;
-            fullPath = AssetDatabase.GetAssetPath(matchRecord.sheet);
-            lineNumber = matchRecord.complexSelector.rule.line;
-            if (string.IsNullOrEmpty(fullPath))
-            {
-                displayPath = matchRecord.sheet.name + ":" + lineNumber;
-            }
-            else
-            {
-                if (fullPath == "Library/unity editor resources")
-                    displayPath = matchRecord.sheet.name + ":" + lineNumber;
-                else
-                    displayPath = Path.GetFileName(fullPath) + ":" + lineNumber;
-            }
-        }
-
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = matchRecord.GetHashCode();
-                hashCode = (hashCode * 397) ^ (displayPath != null ? displayPath.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ lineNumber;
-                hashCode = (hashCode * 397) ^ (fullPath != null ? fullPath.GetHashCode() : 0);
-                return hashCode;
-            }
-        }
-
-        private sealed class LineNumberFullPathEqualityComparer : IEqualityComparer<MatchedRule>
-        {
-            public bool Equals(MatchedRule x, MatchedRule y)
-            {
-                return x.lineNumber == y.lineNumber && string.Equals(x.fullPath, y.fullPath) && string.Equals(x.displayPath, y.displayPath);
-            }
-
-            public int GetHashCode(MatchedRule obj)
-            {
-                return obj.GetHashCode();
-            }
-        }
-
-        public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
-    }
-
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class MatchedRulesExtractor
-    {
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal List<SelectorMatchRecord> matchRecords = new List<SelectorMatchRecord>();
-
-        public IEnumerable<MatchedRule> GetMatchedRules() => selectedElementRules;
-
-        private void SetupParents(VisualElement cursor, StyleMatchingContext matchingContext)
-        {
-            if (cursor.hierarchy.parent != null)
-                SetupParents(cursor.hierarchy.parent, matchingContext);
-
-            // We populate the ancestor filter in order for the Bloom filter detection to work.
-            matchingContext.ancestorFilter.PushElement(cursor);
-
-            if (cursor.styleSheetList == null)
-                return;
-
-            foreach (StyleSheet sheet in cursor.styleSheetList)
-            {
-                // Skip deleted style sheets
-                if (sheet == null)
-                    continue;
-
-                string name = AssetDatabase.GetAssetPath(sheet);
-                if (string.IsNullOrEmpty(name) || sheet.isDefaultStyleSheet)
-                    name = sheet.name;
-
-                void RecursivePrintStyleSheetNames(StyleSheet importedSheet)
-                {
-                    for (int i = 0; i < importedSheet.imports.Length; i++)
-                    {
-                        var thisImportedSheet = importedSheet.imports[i].styleSheet;
-                        if (thisImportedSheet != null)
-                        {
-                            name += "\n(" + thisImportedSheet.name + ")";
-                            matchingContext.AddStyleSheet(thisImportedSheet);
-                            RecursivePrintStyleSheetNames(thisImportedSheet);
-                        }
-                    }
-                }
-
-                RecursivePrintStyleSheetNames(sheet);
-
-                selectedElementStylesheets.Add(name);
-                matchingContext.AddStyleSheet(sheet);
-            }
-        }
-
-        public void FindMatchingRules(VisualElement target)
-        {
-            var matchingContext = new StyleMatchingContext((element, info) => {}) { currentElement = target };
-            SetupParents(target, matchingContext);
-
-            matchRecords.Clear();
-            StyleSelectorHelper.FindMatches(matchingContext, matchRecords);
-
-            matchRecords.Sort(SelectorMatchRecord.Compare);
-
-            foreach (var record in matchRecords)
-            {
-                selectedElementRules.Add(new MatchedRule(record));
-            }
-        }
-    }
 }

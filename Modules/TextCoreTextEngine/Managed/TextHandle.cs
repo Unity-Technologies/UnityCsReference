@@ -102,13 +102,48 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal NativeTextGenerationSettings nativeSettings = NativeTextGenerationSettings.Default;
 
-        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal Vector2 preferredSize { get; set; }
+        // scaled pixel
+        internal Vector2 preferredSize
+        {
+            [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+            get => PixelsToPoints(pixelPreferedSize );
+        }
 
-        private Rect m_ScreenRect;
-        private float m_LineHeightDefault;
+        protected Vector2 pixelPreferedSize;
+
+        protected float PointsToPixels(float point)
+        {
+            return point * GetPixelsPerPoint();
+        }
+
+        protected float PixelsToPoints(float pixel)
+        {
+            return pixel / GetPixelsPerPoint();
+        }
+
+        protected Vector2 PointsToPixels(Vector2 point)
+        {
+            return point * GetPixelsPerPoint();
+        }
+
+        protected Vector2 PixelsToPoints(Vector2 pixel)
+        {
+            return pixel / GetPixelsPerPoint();
+        }
+
+
+        // Both UITK and IMGUI always work in scaled pixels and not real pixels onto the screen
+        // Because freetype values are actually meant to represent pixel on screen, we need to
+        // convert at some point between the two coordinate system. Considering that
+        // both ATG and TextCore have different scaling, and that theres is less code where the
+        // conversion would be needed in textHandle compared to every access to Freetype values during
+        // the text generation, we do the conversion here.
+        // Public API is usually in scaled pixels, while everything internal stays in real pixels as much as possible.
+        protected virtual float GetPixelsPerPoint() => 1.0f;
+        private Rect m_ScreenRect; //real pixel
+        private float m_LineHeightDefault; //real pixel
         private bool m_IsPlaceholder;
-        private bool m_IsEllided;
+        protected bool m_IsEllided;
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal IntPtr textGenerationInfo = IntPtr.Zero;
 
@@ -200,10 +235,10 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
 
-        protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
+        protected readonly internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         protected bool isDirty;
-        public void SetDirty()
+        public virtual void SetDirty()
         {
             isDirty = true;
         }
@@ -219,13 +254,13 @@ namespace UnityEngine.TextCore.Text
         public float ComputeTextWidth(TextGenerationSettings tgs)
         {
             UpdatePreferredValues(tgs);
-            return preferredSize.x;
+            return preferredSize.x;//Value already in scaled pixels
         }
 
         public float ComputeTextHeight(TextGenerationSettings tgs)
         {
             UpdatePreferredValues(tgs);
-            return preferredSize.y;
+            return preferredSize.y; //Value already in scaled pixels
         }
 
         public virtual bool IsPlaceholder
@@ -233,20 +268,9 @@ namespace UnityEngine.TextCore.Text
             get => m_IsPlaceholder;
         }
 
-        public bool IsElided()
-        {
-            if (textInfo == null)
-                return false;
-
-            if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
-                return true;
-
-            return m_IsEllided;
-        }
-
         protected void UpdatePreferredValues(TextGenerationSettings tgs)
         {
-            preferredSize = generator.GetPreferredValues(tgs, textInfoCommon);
+            pixelPreferedSize = generator.GetPreferredValues(tgs, textInfoCommon);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
@@ -319,11 +343,13 @@ namespace UnityEngine.TextCore.Text
             renderedHeight += settings.margins.y > 0 ? settings.margins.y : 0;
             renderedHeight += settings.margins.w > 0 ? settings.margins.w : 0;
 
-            // Round Preferred Values to nearest 5/100.
+            // Round Preferred Values to nearest 1/100.
+            // The cast is now ok as we are working with real pixels values
+            // The operation should also do nothing for bitmaps fonts as they are already aligned.
             renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
             renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
 
-            preferredSize = new Vector2(renderedWidth, renderedHeight);
+            pixelPreferedSize = new Vector2(renderedWidth, renderedHeight);
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -335,6 +361,7 @@ namespace UnityEngine.TextCore.Text
             return paddingPercent * pointSizeRatio;
         }
 
+        // Warning: return the ligne height in real pixels, not in scaled pixels
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
         internal static float GetLineHeightDefault(TextGenerationSettings settings)
         {
@@ -348,13 +375,15 @@ namespace UnityEngine.TextCore.Text
         public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
             AddTextInfoToPermanentCache();
-            return useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
+            var unscaled = useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
+            return PixelsToPoints(unscaled);
         }
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
             AddTextInfoToPermanentCache();
-            return useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
+            var unscaled =  useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
+            return PixelsToPoints(unscaled);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
@@ -365,13 +394,26 @@ namespace UnityEngine.TextCore.Text
                 Debug.LogError("Cannot use GetHighlightRectangles while using Standard Text");
                 return new Rect[0];
             }
-            return TextSelectionService.GetHighlightRectangles(textGenerationInfo, cursorIndex, selectIndex);
+            var result = TextSelectionService.GetHighlightRectangles(textGenerationInfo, cursorIndex, selectIndex);
+
+            var pointsPerPixelCache = 1/GetPixelsPerPoint();
+            for ( int i =0; i< result.Length; i++)
+             {
+
+                result[i].x *= pointsPerPixelCache;
+                result[i].y *= pointsPerPixelCache;
+                result[i].width *= pointsPerPixelCache;
+                result[i].height *= pointsPerPixelCache;
+            }
+            return result;
         }
 
         //TODO add special handling for 1 character...
         // Add support for world space.
+        //The position is in scaled GUI space
         public int GetCursorIndexFromPosition(Vector2 position, bool inverseYAxis = true)
         {
+            position = PointsToPixels(position);
             return useAdvancedText ? TextSelectionService.GetCursorLogicalIndexFromPosition(textGenerationInfo, position)
                 : textInfo.GetCursorIndexFromPosition(position, m_ScreenRect, inverseYAxis);
         }
@@ -399,6 +441,7 @@ namespace UnityEngine.TextCore.Text
 
         public int FindNearestLine(Vector2 position)
         {
+            position = PointsToPixels(position);
             if (useAdvancedText)
             {
                 Debug.LogError("Cannot use FindNearestLine while using Advanced Text");
@@ -414,6 +457,7 @@ namespace UnityEngine.TextCore.Text
                 Debug.LogError("Cannot use FindNearestCharacterOnLine while using Advanced Text");
                 return 0;
             }
+            position = PointsToPixels(position);
             return textInfo.FindNearestCharacterOnLine(position, line, visibleOnly);
         }
 
@@ -428,6 +472,7 @@ namespace UnityEngine.TextCore.Text
                 Debug.LogError("Cannot use FindIntersectingLink while using Advanced Text");
                 return 0;
             }
+            position = PointsToPixels(position);
             return textInfo.FindIntersectingLink(position, m_ScreenRect, inverseYAxis);
         }
 
@@ -461,17 +506,17 @@ namespace UnityEngine.TextCore.Text
 
         public float GetLineHeight(int lineNumber)
         {
-            return useAdvancedText ? TextSelectionService.GetLineHeight(textGenerationInfo, lineNumber) : textInfo.GetLineHeight(lineNumber);
+            return PixelsToPoints(useAdvancedText ? TextSelectionService.GetLineHeight(textGenerationInfo, lineNumber) : textInfo.GetLineHeight(lineNumber));
         }
 
         public float GetLineHeightFromCharacterIndex(int index)
         {
-            return useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetLineHeightFromCharacterIndex(index);
+            return PixelsToPoints(useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetLineHeightFromCharacterIndex(index));
         }
 
         public float GetCharacterHeightFromIndex(int index)
         {
-            return useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetCharacterHeightFromIndex(index);
+            return PixelsToPoints(useAdvancedText ? TextSelectionService.GetCharacterHeightFromIndex(textGenerationInfo, index) : textInfo.GetCharacterHeightFromIndex(index));
         }
 
 

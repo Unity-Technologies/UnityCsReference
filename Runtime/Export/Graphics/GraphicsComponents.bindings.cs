@@ -30,15 +30,55 @@ namespace UnityEngine
         }
 
         extern static void Internal_Create([Writable] Flare self);
+        
+        [System.Serializable]
+        [UsedByNativeCode]
+        internal partial struct FlareElement
+        {
+            [NativeName("m_ImageIndex")]
+            public uint imageIndex;
+            [NativeName("m_Position")]
+            public float position;
+            [NativeName("m_Size")]
+            public float size;
+            [NativeName("m_Color")]
+            public Color color;
+            [NativeName("m_UseLightColor")]
+            public bool useLightColor;
+            [NativeName("m_Rotate")]
+            public bool rotate;
+            [NativeName("m_Zoom")]
+            public bool zoom;
+            [NativeName("m_Fade")]
+            public bool fade;
+        };
+        
+        [System.Serializable]
+        internal enum FlareLayout
+        {
+            LayoutLargeRestSmall = 0,
+            LayoutMixed,
+            Layout1x1,
+            Layout2x2,
+            Layout3x3,
+            Layout4x4,
+        };
+        
+        extern internal Texture texture { get; set; }
+        extern internal FlareElement[] elements { get; set; }
+        extern internal bool useFog { get; set; }
+        extern internal int textureLayout { get; set; }
     }
 
     [NativeHeader("Runtime/Camera/Flare.h")]
     public sealed partial class LensFlare : Behaviour
     {
-        extern public float brightness { get; set; }
-        extern public float fadeSpeed  { get; set; }
-        extern public Color color      { get; set; }
-        extern public Flare flare      { get; set; }
+        extern public float brightness    { get; set; }
+        extern public float fadeSpeed     { get; set; }
+        extern public Color color         { get; set; }
+        extern public Flare flare         { get; set; }
+        extern internal long ignoreLayers { get; set; }
+        extern internal bool directional  { get; set; }
     }
 
     [NativeHeader("Runtime/Camera/Projector.h")]
@@ -138,5 +178,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/HaloManager.h")]
     internal sealed partial class Halo : Behaviour
     {
+        extern public float size { get; set; }
+        extern public Color color { get; set; }
     }
 }

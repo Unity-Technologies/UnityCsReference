@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundPosition startValue, BackgroundPosition endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundRepeat startValue, BackgroundRepeat endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
         bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
+        bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve);
 
         void CancelAllAnimations();
         void CancelAllAnimations(VisualElement owner);
@@ -312,6 +313,8 @@ namespace UnityEngine.UIElements
             {
                 return true;
             }
+
+            protected virtual T Copy(T value) { return value; }
 
             protected Values()
             {
@@ -634,10 +637,10 @@ namespace UnityEngine.UIElements
                 };
                 var style = new StyleData
                 {
-                    startValue = startValue,
-                    endValue = endValue,
-                    currentValue = startValue,
-                    reversingAdjustedStartValue = startValue
+                    startValue = Copy(startValue),
+                    endValue = Copy(endValue),
+                    currentValue = Copy(startValue),
+                    reversingAdjustedStartValue = Copy(startValue)
                 };
 
                 int combinedDuration = Mathf.Max(0, durationMs) + delayMs;
@@ -701,7 +704,7 @@ namespace UnityEngine.UIElements
                         return false;
                     }
 
-                    style.startValue = running.style[index].currentValue;
+                    style.startValue = Copy(running.style[index].currentValue);
                     if (!ConvertUnits(owner, prop, ref style.startValue, ref style.endValue))
                     {
                         QueueTransitionCancelEvent(owner, index, currentTimeMs);
@@ -709,7 +712,7 @@ namespace UnityEngine.UIElements
                         owner.styleAnimation.runningAnimationCount--;
                         return false;
                     }
-                    style.currentValue = style.startValue;
+                    style.currentValue = Copy(style.startValue);
 
                     // 4.3 Otherwise, if the reversing-adjusted start value of the running transition is the same as
                     // the value of the property in the after-change style, implementations must cancel the running
@@ -720,7 +723,7 @@ namespace UnityEngine.UIElements
                         float rsf = timing.reversingShorteningFactor = ComputeReversingShorteningFactor(index);
                         timing.startTimeMs = currentTimeMs + ComputeReversingDelay(delayMs, rsf);
                         timing.durationMs = ComputeReversingDuration(durationMs, rsf);
-                        style.reversingAdjustedStartValue = running.style[index].endValue;
+                        style.reversingAdjustedStartValue = Copy(running.style[index].endValue);
                     }
 
                     running.timing[index].isStarted = false;
@@ -848,7 +851,7 @@ namespace UnityEngine.UIElements
         {
             public override Func<float, float, bool> SameFunc { get; } = IsSame;
             private static bool IsSame(float a, float b) => Mathf.Approximately(a, b);
-            private static float Lerp(float a, float b, float t) => Mathf.LerpUnclamped(a, b, t);
+            private static void Lerp(float a, float b, ref float result, float t) => result = Mathf.LerpUnclamped(a, b, t);
 
             protected sealed override void UpdateValues()
             {
@@ -857,7 +860,7 @@ namespace UnityEngine.UIElements
                 {
                     ref var timing = ref running.timing[i];
                     ref var style = ref running.style[i];
-                    style.currentValue = Lerp(style.startValue, style.endValue, timing.easedProgress);
+                    Lerp(style.startValue, style.endValue, ref style.currentValue, timing.easedProgress);
                 }
             }
 
@@ -1348,6 +1351,147 @@ namespace UnityEngine.UIElements
             }
         }
 
+        class ValuesListFilterFunction : Values<List<FilterFunction>>
+        {
+            protected override List<FilterFunction> Copy(List<FilterFunction> value)
+            {
+                return new List<FilterFunction>(value);
+            }
+
+            public override Func<List<FilterFunction>, List<FilterFunction>, bool> SameFunc { get; } = IsSame;
+
+            private static bool IsSame(List<FilterFunction> a, List<FilterFunction> b)
+            {
+                if (a.Count != b.Count)
+                    return false;
+
+                for (int i = 0; i< a.Count; ++i)
+                {
+                    if (a[i] != b[i])
+                        return false;
+                }
+
+                return true;
+            }
+
+            protected sealed override bool ConvertUnits(VisualElement owner, StylePropertyId prop, ref List<FilterFunction> a, ref List<FilterFunction> b)
+            {
+                // This isn't really a unit conversion, but we need to validate that the filter function matches.
+
+                // We try to follow the CSS spect for filter functions, which allows filter lists
+                // of different size, and the system automatically pads with default functions.
+
+                // Iterate through the shortest list and compare the functions.
+                int minCount = Math.Min(a.Count, b.Count);
+                for (int i = 0; i < minCount; i++)
+                {
+                    if (a[i].type != b[i].type)
+                        return false;
+
+                    if (a[i].type == FilterFunctionType.Custom && !AreFilterDefinitionsCompatible(a[i].customDefinition, b[i].customDefinition))
+                        return false;
+                }
+
+                return true;
+            }
+
+            static bool AreFilterDefinitionsCompatible(FilterFunctionDefinition filterDef1, FilterFunctionDefinition filterDef2)
+            {
+                if (filterDef1 == null || filterDef2 == null)
+                    return false;
+
+                if (object.ReferenceEquals(filterDef1, filterDef2))
+                    return true;
+
+                return false;
+            }
+
+            protected sealed override void UpdateComputedStyle()
+            {
+            }
+
+            protected sealed override void UpdateComputedStyle(int i)
+            {
+            }
+
+            private static FilterParameter LerpFilterParameters(FilterParameter a, FilterParameter b, float t)
+            {
+                if (a.type != b.type)
+                    return a;
+
+                switch (a.type)
+                {
+                    case FilterParameterType.Float:
+                        return new FilterParameter()
+                        {
+                            type = FilterParameterType.Float,
+                            floatValue = Mathf.Lerp(a.floatValue, b.floatValue, t)
+                        };
+                    case FilterParameterType.Color:
+                        return new FilterParameter()
+                        {
+                            type = FilterParameterType.Color,
+                            colorValue = Color.Lerp(a.colorValue, b.colorValue, t)
+                        };
+                    default:
+                        return a;
+                }
+            }
+
+            private static void Lerp(List<FilterFunction> a, List<FilterFunction> b, ref List<FilterFunction> result, float t)
+            {
+                result.Clear();
+
+                int maxCount = a.Count >= b.Count ? a.Count : b.Count;
+                for (int i = 0; i < maxCount; i++)
+                {
+                    // If the a anb b lists are of different size, we need to pad with default values,
+                    // so we pass the other list as a reference in case the source list is too short.
+                    var fa = GetFunctionOrDefault(ref a, ref b, i);
+                    var fb = GetFunctionOrDefault(ref b, ref a, i);
+
+                    var fc = new FilterFunction() { type = fa.type, customDefinition = fa.customDefinition };
+                    for (int j = 0; j < fa.parameterCount; j++)
+                        fc.AddParameter(LerpFilterParameters(fa.parameters[j], fb.parameters[j], t));
+
+                    result.Add(fc);
+                }
+            }
+
+            private static FilterFunction GetFunctionOrDefault(ref List<FilterFunction> srcList, ref List<FilterFunction> refList, int index)
+            {
+                if (index < srcList.Count)
+                    return srcList[index];
+
+                var f = refList[index];
+                int parameterCount = f.parameterCount;
+
+                f.ClearParameters();
+                for (int i = 0; i < parameterCount; i++)
+                {
+                    FilterParameter defaultParam = new FilterParameter();
+                    var defaultParams = f.GetDefinition().parameters;
+                    if (i < defaultParams.Length)
+                        defaultParam = defaultParams[i].interpolationDefaultValue;
+
+                    f.AddParameter(defaultParam);
+                }
+
+                return f;
+            }
+
+            protected sealed override void UpdateValues()
+            {
+                int n = running.count;
+                for (int i = 0; i < n; i++)
+                {
+                    ref var timing = ref running.timing[i];
+                    ref var style = ref running.style[i];
+                    Lerp(style.startValue, style.endValue, ref style.currentValue, timing.easedProgress);
+                }
+            }
+        }
+
         private ValuesFloat m_Floats;
         private ValuesInt m_Ints;
         private ValuesLength m_Lengths;
@@ -1364,6 +1508,7 @@ namespace UnityEngine.UIElements
         private ValuesBackgroundPosition m_BackgroundPosition;
         private ValuesBackgroundRepeat m_BackgroundRepeat;
         private ValuesBackgroundSize m_BackgroundSize;
+        private ValuesListFilterFunction m_FilterFunctions;
 
         // All the value lists with ongoing animations. Add and remove Values objects when animations come in/out.
         private readonly List<Values> m_AllValues = new List<Values>();
@@ -1468,6 +1613,11 @@ namespace UnityEngine.UIElements
         public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_BackgroundSize));
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return StartTransition(owner, prop, startValue, endValue, durationMs, delayMs, easingCurve, GetOrCreate(ref m_FilterFunctions));
         }
 
         public void CancelAllAnimations()
@@ -1623,6 +1773,11 @@ namespace UnityEngine.UIElements
         }
 
         public bool StartTransition(VisualElement owner, StylePropertyId prop, BackgroundSize startValue, BackgroundSize endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
+        {
+            return false;
+        }
+
+        public bool StartTransition(VisualElement owner, StylePropertyId prop, List<FilterFunction> startValue, List<FilterFunction> endValue, int durationMs, int delayMs, [NotNull] Func<float, float> easingCurve)
         {
             return false;
         }

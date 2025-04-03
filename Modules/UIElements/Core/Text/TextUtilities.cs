@@ -82,12 +82,14 @@ namespace UnityEngine.UIElements
             {
                 te.uitkTextHandle.ATGMeasuredSizes = new Vector2(measuredWidth, measuredHeight);
                 te.uitkTextHandle.ATGRoundedSizes = roundedValues;
+                te.uitkTextHandle.LastPixelPerPoint = pixelsPerPoint;
 
             }
             else
             {
-                te.uitkTextHandle.MeasuredSizes = new Vector2(measuredWidth, measuredHeight);
-                te.uitkTextHandle.RoundedSizes = roundedValues;
+                te.uitkTextHandle.MeasuredWidth = measuredWidth;
+                te.uitkTextHandle.RoundedWidth = roundedWidth;
+                te.uitkTextHandle.LastPixelPerPoint = pixelsPerPoint;
             }
 
             return roundedValues;

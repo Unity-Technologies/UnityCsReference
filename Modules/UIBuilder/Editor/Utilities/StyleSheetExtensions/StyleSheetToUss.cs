@@ -10,6 +10,7 @@ using UnityEditor;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -90,7 +91,9 @@ namespace Unity.UI.Builder
                 break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
-                    if (dim.value == 0 && !dim.unit.IsTimeUnit())
+
+                    // Display 0 without a unit when using the default unit for the type. For time values, always include the unit regardless. (UUM-99023)
+                    if (dim.value == 0 && (dim.unit == Dimension.Unit.Pixel || dim.unit == Dimension.Unit.Degree))
                         str = "0";
                     else
                         str = dim.ToString();
@@ -113,7 +116,7 @@ namespace Unity.UI.Builder
                     break;
                 case StyleValueType.AssetReference:
                     var assetRef = sheet.ReadAssetReference(handle);
-                    str = GetPathValueFromAssetRef(assetRef);
+                    str = GetPathValueFromAssetRef(assetRef, propertyName);
                     break;
                 case StyleValueType.Variable:
                     str = sheet.ReadVariable(handle);
@@ -135,7 +138,20 @@ namespace Unity.UI.Builder
             return assetRef == null ? "none" : $"url(\"{assetPath}\")";
         }
 
+        private static string GetPathValueFromAssetRef(UnityEngine.Object assetRef, string propertyName = "")
+        {
+            if (assetRef == null)
+                return "none";
+            var assetPath = URIHelpers.MakeAssetUri(assetRef);
+            return (propertyName == "filter") ? $"\"{assetPath}\"" : $"url(\"{assetPath}\")";
+        }
+
         public static void ValueHandlesToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, string propertyName, StyleValueHandle[] values, ref int valueIndex, int valueCount = -1)
+        {
+            ValueHandlesToUssString(sb, sheet, options, propertyName, values.AsSpan(), ref valueIndex, valueCount);
+        }
+
+        private static void ValueHandlesToUssString(StringBuilder sb, StyleSheet sheet, UssExportOptions options, string propertyName, Span<StyleValueHandle> values, ref int valueIndex, int valueCount = -1)
         {
             for (; valueIndex < values.Length && valueCount != 0; --valueCount)
             {
@@ -187,32 +203,25 @@ namespace Unity.UI.Builder
                     continue;
 
                 sb.Append(options.propertyIndent);
-                sb.Append(property.name);
-                sb.Append(":");
-
                 ToUssString(sheet, options, property, sb);
-                sb.Append(";");
                 sb.Append(BuilderConstants.newlineCharFromEditorSettings);
             }
         }
 
         public static void ToUssString(StyleSheet sheet, UssExportOptions options, StyleProperty property, StringBuilder sb)
         {
-            if (property.name == "cursor" && property.values.Length > 1 && !property.IsVariable())
-            {
-                for (var i = 0; i < property.values.Length; i++)
-                {
-                    var propertyValueStr = ValueHandleToUssString(sheet, options, property.name, property.values[i]);
-                    sb.Append(" ");
-                    sb.Append(propertyValueStr);
-                }
-            }
-            else
-            {
-                var valueIndex = 0;
-                sb.Append(" ");
-                ValueHandlesToUssString(sb, sheet, options, property.name, property.values, ref valueIndex);
-            }
+            sb.Append(property.name);
+            sb.Append(":");
+
+            StylePropertyValueToString(sheet, options, property, sb);
+            sb.Append(";");
+        }
+
+        public static void StylePropertyValueToString(StyleSheet sheet, UssExportOptions options, StyleProperty property, StringBuilder sb)
+        {
+            var valueIndex = 0;
+            sb.Append(" ");
+            ValueHandlesToUssString(sb, sheet, options, property.name, property.values, ref valueIndex);
         }
 
         public static void ToUssString(StyleSelectorRelationship previousRelationship, StyleSelectorPart[] parts, StringBuilder sb)

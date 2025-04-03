@@ -913,6 +913,8 @@ namespace UnityEngine.UIElements
 
                     if (childVe == null)
                         continue;
+                    childVe.visualTreeAssetSource = this;
+
                     // Save reference to the visualElementAsset so elements can be reinitialized when
                     // we set their attributes in the editor
                     childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
@@ -1047,6 +1049,11 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        private void RemoveUsingEntry(UsingEntry entry)
+        {
+            m_Usings.Remove(entry);
+        }
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualTreeAsset ResolveTemplate(string templateName)
         {
@@ -1079,6 +1086,14 @@ namespace UnityEngine.UIElements
         internal void RegisterTemplate(string templateName, VisualTreeAsset asset)
         {
             InsertUsingEntry(new UsingEntry(templateName, asset));
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void UnregisterTemplate(VisualTreeAsset asset)
+        {
+            // Find the entry and remove it
+            var entry = m_Usings.Find(e => e.asset.Equals(asset));
+            RemoveUsingEntry(entry);
         }
 
         private void InsertUsingEntry(UsingEntry entry)

@@ -106,6 +106,7 @@ namespace UnityEngine.Rendering
             var instancesOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
             var instancesCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
             var editorData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenRendererEditorData>(nativeData.editorData, nativeData.rendererGroupCount, Allocator.Invalid);
+            var meshLodData = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenRendererMeshLodData>(nativeData.meshLodData, nativeData.rendererGroupCount, Allocator.Invalid);
 
             var invalidRendererGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.invalidRendererGroupID, nativeData.invalidRendererGroupIDCount, Allocator.Invalid);
 
@@ -114,6 +115,7 @@ namespace UnityEngine.Rendering
             var rendererGroupIndex = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(null, 0, Allocator.Invalid);
 
             var meshID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.meshID, nativeData.meshCount, Allocator.Invalid);
+            var meshLodInfo = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<GPUDrivenMeshLodInfo>(nativeData.meshLodInfo, nativeData.meshCount, Allocator.Invalid);
             var subMeshCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.subMeshCount, nativeData.meshCount, Allocator.Invalid);
             var subMeshDescOffset = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.subMeshDescOffset, nativeData.meshCount, Allocator.Invalid);
 
@@ -141,11 +143,13 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref instancesOffset, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref instancesCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref editorData, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref meshLodData, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidRendererGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref localToWorldMatrix, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref prevLocalToWorldMatrix, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref rendererGroupIndex, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref meshID, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref meshLodInfo, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMeshCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMeshDescOffset, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref subMeshDesc, AtomicSafetyHandle.Create());
@@ -172,10 +176,12 @@ namespace UnityEngine.Rendering
                 instancesCount = instancesCount,
                 editorData = editorData,
                 invalidRendererGroupID = invalidRendererGroupID,
+                meshLodData = meshLodData,
                 localToWorldMatrix = localToWorldMatrix,
                 prevLocalToWorldMatrix = prevLocalToWorldMatrix,
                 rendererGroupIndex = rendererGroupIndex,
                 meshID = meshID,
+                meshLodInfo = meshLodInfo,
                 subMeshCount = subMeshCount,
                 subMeshDescOffset = subMeshDescOffset,
                 subMeshDesc = subMeshDesc,
@@ -203,11 +209,13 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(instancesOffset));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(instancesCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(editorData));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(meshLodData));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidRendererGroupID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(localToWorldMatrix));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(prevLocalToWorldMatrix));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(rendererGroupIndex));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(meshID));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(meshLodInfo));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMeshCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMeshDescOffset));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(subMeshDesc));
@@ -227,6 +235,7 @@ namespace UnityEngine.Rendering
             var worldSpaceSize = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<float>(nativeData.worldSpaceSize, nativeData.lodGroupCount, Allocator.Invalid);
             var renderersCount = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<short>(nativeData.renderersCount, nativeData.lodGroupCount, Allocator.Invalid);
             var lastLODIsBillboard = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<bool>(nativeData.lastLODIsBillboard, nativeData.lodGroupCount, Allocator.Invalid);
+            var forceLODMask = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<byte>(nativeData.forceLODMask, nativeData.lodGroupCount, Allocator.Invalid);
 
             var invalidLODGroupID = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(nativeData.invalidLODGroupID, nativeData.invalidLODGroupCount, Allocator.Invalid);
 
@@ -242,6 +251,7 @@ namespace UnityEngine.Rendering
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref worldSpaceSize, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref renderersCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lastLODIsBillboard, AtomicSafetyHandle.Create());
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref forceLODMask, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref invalidLODGroupID, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodRenderersCount, AtomicSafetyHandle.Create());
             NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref lodScreenRelativeTransitionHeight, AtomicSafetyHandle.Create());
@@ -256,6 +266,7 @@ namespace UnityEngine.Rendering
                 worldSpaceSize = worldSpaceSize,
                 renderersCount = renderersCount,
                 lastLODIsBillboard = lastLODIsBillboard,
+                forceLODMask = forceLODMask,
                 invalidLODGroupID = invalidLODGroupID,
                 lodRenderersCount = lodRenderersCount,
                 lodScreenRelativeTransitionHeight = lodScreenRelativeTransitionHeight,
@@ -274,6 +285,7 @@ namespace UnityEngine.Rendering
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(invalidLODGroupID));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodRenderersCount));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lastLODIsBillboard));
+            AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(forceLODMask));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodScreenRelativeTransitionHeight));
             AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(lodFadeTransitionWidth));
         };
@@ -300,11 +312,22 @@ namespace UnityEngine.Rendering
         public extern int GetMaterialFilterFlags(Material material);
 
         [FreeFunction("GPUDrivenProcessor::ClassifyMaterials", IsThreadSafe = true)]
-        private static extern int ClassifyMaterialsImpl(ReadOnlySpan<int> materialIDs, Span<int> unsupportedMaterialIDs, Span<int> supportedMaterialIDs, Span<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas);
+        private static extern int ClassifyMaterialsImpl(ReadOnlySpan<EntityId> materialIDs, Span<EntityId> unsupportedMaterialIDs, Span<EntityId> supportedMaterialIDs, Span<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas);
+
+        public static int ClassifyMaterials(NativeArray<EntityId> materialIDs, NativeArray<EntityId> unsupportedMaterialIDs, NativeArray<EntityId> supportedMaterialIDs, NativeArray<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas)
+        {
+            return ClassifyMaterialsImpl(materialIDs, unsupportedMaterialIDs, supportedMaterialIDs, supportedPackedMaterialDatas);
+        }
 
         public static int ClassifyMaterials(NativeArray<int> materialIDs, NativeArray<int> unsupportedMaterialIDs, NativeArray<int> supportedMaterialIDs, NativeArray<GPUDrivenPackedMaterialData> supportedPackedMaterialDatas)
         {
-            return ClassifyMaterialsImpl(materialIDs, unsupportedMaterialIDs, supportedMaterialIDs, supportedPackedMaterialDatas);
+            unsafe
+            {
+                // Fix this re-interpret cast if size changes
+                UnityEngine.Assertions.Assert.IsTrue(sizeof(int) == sizeof(EntityId));
+            }
+
+            return ClassifyMaterialsImpl(materialIDs.Reinterpret<EntityId>(), unsupportedMaterialIDs.Reinterpret<EntityId>(), supportedMaterialIDs.Reinterpret<EntityId>(), supportedPackedMaterialDatas);
         }
 
         internal static class BindingsMarshaller
@@ -318,6 +341,14 @@ namespace UnityEngine.Rendering
     internal struct GPUDrivenRendererEditorData
     {
         public ulong sceneCullingMask;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GPUDrivenRendererMeshLodData
+    {
+        public int forceLod;
+        public float lodSelectionBias;
     }
 
     [UsedByNativeCode]
@@ -345,12 +376,14 @@ namespace UnityEngine.Rendering
         public int* invalidRendererGroupID;
         public int invalidRendererGroupIDCount;
 
+        public GPUDrivenRendererMeshLodData* meshLodData;
         public Matrix4x4* localToWorldMatrix;
         public Matrix4x4* prevLocalToWorldMatrix;
         public int* rendererGroupIndex;
         public int instanceCount;
 
         public int* meshID;
+        public GPUDrivenMeshLodInfo* meshLodInfo;
         public short* subMeshCount;
         public int* subMeshDescOffset;
         public int meshCount;
@@ -379,6 +412,7 @@ namespace UnityEngine.Rendering
         public float* worldSpaceSize;
         public short* renderersCount;
         public bool* lastLODIsBillboard;
+        public byte* forceLODMask;
         public int lodGroupCount;
 
         public int* invalidLODGroupID;
@@ -388,6 +422,16 @@ namespace UnityEngine.Rendering
         public float* lodScreenRelativeTransitionHeight;
         public float* lodFadeTransitionWidth;
         public int lodDataCount;
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct GPUDrivenMeshLodInfo
+    {
+        public int levelCount;
+        public float lodSlope;
+        public float lodBias;
+        public bool lodSelectionActive => levelCount > 1;
     }
 
     [UsedByNativeCode]
@@ -439,17 +483,19 @@ namespace UnityEngine.Rendering
         public bool isTransparent => (data & 1) != 0;
         public bool isMotionVectorsPassEnabled => (data & 1 << 1) != 0;
         public bool isIndirectSupported => (data & 1 << 2) != 0;
+        public bool supportsCrossFade => (data & 1 << 3) != 0;
 
         public GPUDrivenPackedMaterialData()
         {
             data = 0;
         }
 
-        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool isIndirectSupported)
+        public GPUDrivenPackedMaterialData(bool isTransparent, bool isMotionVectorsPassEnabled, bool isIndirectSupported, bool supportsCrossFade)
         {
             data = isTransparent ? 1u : 0u;
             data |= isMotionVectorsPassEnabled ? 1u << 1 : 0u;
             data |= isIndirectSupported ? 1u << 2 : 0u;
+            data |= supportsCrossFade ? 1u << 3 : 0u;
         }
 
         public bool Equals(GPUDrivenPackedMaterialData other)
@@ -502,6 +548,7 @@ namespace UnityEngine.Rendering
         public NativeArray<int> instancesOffset;
         public NativeArray<int> instancesCount;
         public NativeArray<GPUDrivenRendererEditorData> editorData;
+        public NativeArray<GPUDrivenRendererMeshLodData> meshLodData;
 
         /// <summary>
         /// Invalid or disabled Render Group IDs.
@@ -520,11 +567,12 @@ namespace UnityEngine.Rendering
         /// Mesh data. Indexed by meshIndex.
         /// </summary>
         public NativeArray<int> meshID;
+        public NativeArray<GPUDrivenMeshLodInfo> meshLodInfo;
         public NativeArray<short> subMeshCount;
         public NativeArray<int> subMeshDescOffset;
 
         /// <summary>
-        /// SubMesh Descriptor data. Indexed by subMeshCount and subMeshDescOffset.
+        /// SubMesh Descriptor data. Indexed by subMeshCount * meshLodInfo.levelCount and subMeshDescOffset.
         /// </summary>
         public NativeArray<SubMeshDescriptor> subMeshDesc;
 
@@ -554,6 +602,7 @@ namespace UnityEngine.Rendering
         public NativeArray<float> worldSpaceSize;
         public NativeArray<short> renderersCount;
         public NativeArray<bool> lastLODIsBillboard;
+        public NativeArray<byte> forceLODMask;
 
         /// <summary>
         /// Invalid or disabled LODGroup IDs.

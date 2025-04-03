@@ -86,6 +86,7 @@ namespace UnityEngine.TextCore.Text
             float currentElementScale = baseScale;
             float currentEmScale = fontSize * 0.01f * (generationSettings.isOrthographic ? 1 : 0.1f);
             m_FontScaleMultiplier = 1;
+            m_ShouldRenderBitmap = generationSettings.fontAsset.IsBitmap();
 
             m_CurrentFontSize = fontSize;
             m_SizeStack.SetDefault(m_CurrentFontSize);
@@ -106,7 +107,7 @@ namespace UnityEngine.TextCore.Text
 
             m_LineOffset = 0; // Amount of space between lines (font line spacing + m_linespacing).
             m_LineHeight = k_FloatUnset;
-            float lineGap = m_CurrentFontAsset.faceInfo.lineHeight - (m_CurrentFontAsset.faceInfo.ascentLine - m_CurrentFontAsset.faceInfo.descentLine);
+            float lineGap = Round(m_CurrentFontAsset.faceInfo.lineHeight - (m_CurrentFontAsset.faceInfo.ascentLine - m_CurrentFontAsset.faceInfo.descentLine));
 
             m_CSpacing = 0; // Amount of space added between characters as a result of the use of the <cspace> tag.
             m_MonoSpacing = 0;
@@ -586,8 +587,8 @@ namespace UnityEngine.TextCore.Text
 
                 #endregion Handle Style Padding
 
-                m_InternalTextElementInfo[m_CharacterCount].origin = m_XAdvance + glyphAdjustments.xPlacement * currentElementScale;
-                m_InternalTextElementInfo[m_CharacterCount].baseLine = (baselineOffset - m_LineOffset + m_BaselineOffset) + glyphAdjustments.yPlacement * currentElementScale;
+                m_InternalTextElementInfo[m_CharacterCount].origin = Round( m_XAdvance + glyphAdjustments.xPlacement * currentElementScale);
+                m_InternalTextElementInfo[m_CharacterCount].baseLine = Round((baselineOffset - m_LineOffset + m_BaselineOffset) + glyphAdjustments.yPlacement * currentElementScale);
 
                 // Compute text metrics
 
@@ -667,7 +668,7 @@ namespace UnityEngine.TextCore.Text
                     widthOfTextArea = m_Width != -1 ? Mathf.Min(marginWidth + 0.0001f - m_MarginLeft - m_MarginRight, m_Width) : marginWidth + 0.0001f - m_MarginLeft - m_MarginRight;
 
                     // Calculate the line breaking width of the text.
-                    textWidth = Mathf.Abs(m_XAdvance) + currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * (charCode == k_SoftHyphen ? currentElementUnmodifiedScale : currentElementScale);
+                    textWidth = Round(Mathf.Abs(m_XAdvance) + currentGlyphMetrics.horizontalAdvance * (1 - m_CharWidthAdjDelta) * (charCode == k_SoftHyphen ? currentElementUnmodifiedScale : currentElementScale));
 
                     // Handling of Horizontal Bounds
 
@@ -1078,12 +1079,19 @@ namespace UnityEngine.TextCore.Text
             renderedHeight += generationSettings.margins.y > 0 ? generationSettings.margins.y : 0;
             renderedHeight += generationSettings.margins.w > 0 ? generationSettings.margins.w : 0;
 
-            // Round Preferred Values to nearest 1/100.
-            if (renderedWidth != 0.0f)
-                renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
-            if (renderedHeight != 0.0f)
-                renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
-
+            if (NeedToRound)
+            {
+                //We should already have rounded values for the width.
+                Debug.AssertFormat(renderedWidth == Mathf.Round(renderedWidth), "renderedWidth was not rounded: {0}", renderedWidth);
+            }
+            else
+            {
+                // Round Preferred Values to nearest 1/100.
+                if (renderedWidth != 0.0f)
+                    renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;
+                if (renderedHeight != 0.0f)
+                    renderedHeight = (int)(renderedHeight * 100 + 1f) / 100f;
+            }
             Profiler.EndSample();
 
             return new Vector2(renderedWidth, renderedHeight);

@@ -102,7 +102,6 @@ namespace UnityEngine.UIElements.UIR
         readonly LinkedPool<MeshHandle> m_MeshHandles = new LinkedPool<MeshHandle>(() => new MeshHandle(), mh => {});
         readonly DrawParams m_DrawParams = new DrawParams();
         readonly TextureSlotManager m_TextureSlotManager = new TextureSlotManager();
-
         static LinkedList<DeviceToFree> m_DeviceFreeQueue = new LinkedList<DeviceToFree>();   // Not thread safe for now
         static int m_ActiveDeviceCount = 0; // Not thread safe for now
         static bool m_SubscribedToNotifications; // Not thread safe for now
@@ -110,7 +109,6 @@ namespace UnityEngine.UIElements.UIR
 
         static readonly int s_GradientSettingsTexID = Shader.PropertyToID("_GradientSettingsTex");
         static readonly int s_ShaderInfoTexID = Shader.PropertyToID("_ShaderInfoTex");
-
         static ProfilerMarker s_MarkerAllocate = new ProfilerMarker("UIR.Allocate");
         static ProfilerMarker s_MarkerFree = new ProfilerMarker("UIR.Free");
         static ProfilerMarker s_MarkerAdvanceFrame = new ProfilerMarker("UIR.AdvanceFrame");
@@ -120,13 +118,26 @@ namespace UnityEngine.UIElements.UIR
         internal static uint maxVerticesPerPage => 0xFFFF; // On DX11, 0xFFFF is an invalid index (associated to primitive restart). With size = 0xFFFF last index is 0xFFFE    cases:1259449
         internal bool breakBatches { get; set; }
         internal bool isFlat { get; }
-        internal bool drawsInCameras { get; }
+        internal bool forceGammaRendering { get; }
+
+        // TODO: It is now an insufficient condition to determine if we use command lists or not
+        // (nested render trees do not use command lists)
         internal uint frameIndex => m_FrameIndex;
 
         internal List<CommandList>[] commandLists => m_CommandLists;
         internal List<CommandList> currentFrameCommandLists => m_CommandLists == null ? null : m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
         internal int currentFrameCommandListCount = 0;
-        CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero);
+        CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero, null);
+
+        struct DisableForceGammaMaterial
+        {
+            public Material material;
+            public int count;
+        }
+
+        Dictionary<Material, DisableForceGammaMaterial> m_DisableForceGammaMaterialTable;
+        List<Material> m_MaterialToRemove;
+        List<Material> m_Materialkeys;
 
 
         static UIRenderDevice()
@@ -135,7 +146,7 @@ namespace UnityEngine.UIElements.UIR
             UIR.Utility.FlushPendingResources += OnFlushPendingResources;
         }
 
-        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool drawsInCameras = false)
+        public UIRenderDevice(uint initialVertexCapacity = 0, uint initialIndexCapacity = 0, bool isFlat = true, bool forceGammaRendering = false)
         {
             Debug.Assert(!m_SynchronousFree); // Shouldn't create render devices when the app is quitting or domain-unloading
             Debug.Assert(k_PruneEmptyPageFrameCount > k_MaxQueuedFrameCount); // To prevent pending updates from attempting to access a pruned page.
@@ -149,7 +160,7 @@ namespace UnityEngine.UIElements.UIR
             }
 
             this.isFlat = isFlat;
-            this.drawsInCameras = drawsInCameras;
+            this.forceGammaRendering = forceGammaRendering;
 
             m_NextPageVertexCount = Math.Max(initialVertexCapacity/2, 2048); // No less than 4k vertices (doubled from 2k effectively when the first page is allocated)
             m_LargeMeshVertexCount = m_NextPageVertexCount;
@@ -189,6 +200,10 @@ namespace UnityEngine.UIElements.UIR
             m_CommandLists = new List<CommandList>[k_MaxQueuedFrameCount];
             for (int i = 0; i < k_MaxQueuedFrameCount; ++i)
                 m_CommandLists[i] = new List<CommandList>();
+
+            m_DisableForceGammaMaterialTable = new();
+            m_MaterialToRemove = new();
+            m_Materialkeys = new();
         }
 
         void InitVertexDeclaration()
@@ -198,10 +213,10 @@ namespace UnityEngine.UIElements.UIR
                 // Vertex position first
                 new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
 
-                // Then UINT32 color
+                // The UINT32 color
                 new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
 
-                // Then UV
+                // The UV
                 new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 2),
 
                 // TransformID page coordinate (XY), ClipRectID page coordinate (ZW), packed into a Color32
@@ -634,7 +649,7 @@ namespace UnityEngine.UIElements.UIR
                 if (textureSlot < 0)
                 {
                     textureSlot = m_TextureSlotManager.FindOldestSlot();
-                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, textureSlot, st.batchProps, st.activeCommandList);
+                    m_TextureSlotManager.Bind(cmd.state.texture, cmd.state.sdfScale, cmd.state.sharpness, cmd.state.isPremultiplied, textureSlot, st.batchProps, st.activeCommandList);
                     st.mustApplyBatchProps = true;
                 }
                 else
@@ -650,27 +665,40 @@ namespace UnityEngine.UIElements.UIR
 
         // Before calling KickRanges, this method MUST be called to ensure that any information previously stored
         // in the property blocks is applied.
-        void ApplyBatchState(ref EvaluationState st)
+        void ApplyBatchState(ref EvaluationState st, Texture gradientSettings, Texture shaderInfo)
         {
             if (st.mustApplyMaterial)
             {
-                if (drawsInCameras)
+                if (st.activeCommandList == null)
                 {
-                    // This is only the case with world rendering where we are likely on the render thread. This is
-                    // very flaky and will need to be revisited anyway. For instance, we shouldn't access the device
-                    // and it should not be possible to modify the render chain from the main thread while we run this.
-                    Debug.LogError("Attempted to change material when it is not allowed to do so.");
-                    return;
+                    m_DrawStats.materialSetCount++;
+
+                    if ((st.curState.material != Shaders.runtimeMaterial)
+                        && (st.curState.material != Shaders.editorMaterial)
+                        )
+                    {
+                        if (forceGammaRendering)
+                        {
+                            st.curState.material.EnableKeyword(Shaders.k_ForceGammaKeyword);
+                        }
+                        else
+                        {
+                            st.curState.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
+                        }
+                    }
+
+                    st.curState.material.SetPass(0); // No multipass support, should it be even considered?
+                    if (st.constantProps != null)
+                        Utility.SetPropertyBlock(st.constantProps);
+
+                    st.mustApplyBatchProps = true;
+                    st.mustApplyStencil = true;
                 }
-
-                m_DrawStats.materialSetCount++;
-
-                st.curState.material.SetPass(0); // No multipass support, should it be even considered?
-                if (st.constantProps != null)
-                    Utility.SetPropertyBlock(st.constantProps);
-
-                st.mustApplyBatchProps = true;
-                st.mustApplyStencil = true;
+                else
+                {
+                    Material material = GetOrCreateMaterial(st.curState.material);
+                    CommandList cmdList = GetOrCreateCommandList(ref st, st.activeCommandList.m_Owner, material);
+                }
             }
 
             if (st.mustApplyBatchProps)
@@ -695,8 +723,46 @@ namespace UnityEngine.UIElements.UIR
             m_TextureSlotManager.StartNewBatch();
         }
 
-        public unsafe void EvaluateChain(RenderChainCommand head, Material initialMat, Material defaultMat, Texture gradientSettings, Texture shaderInfo,
-            float pixelsPerPoint, ref Exception immediateException)
+        // This function is only called when we are rendering in worldSpace.
+        // Since forceGammaRendering will always be false, we Assert on it.
+        // To optimize the code path, we test if the material is the default runtimeWorldMaterial 
+        // to make sure we do not unecessarely disable k_ForceGammaKeyword since it is always false
+        // and cannot be changed in the overlay codepath.
+        // For a custom shader, since the k_ForceGammaKeyword can be enabled in the overlay codepath, 
+        // we need to keep a copy and disable it.
+        // Since there is currently no difference between the blockshader interface offered between overlay and worldspace
+        // shaders we have to keep track of the materials that have possibly been modified to disable the k_ForceGammaKeyword.
+        Material GetOrCreateMaterial(Material material)
+        {
+            Debug.Assert(forceGammaRendering == false);
+
+            if (material == Shaders.runtimeWorldMaterial)
+            {
+                return material;
+            }
+
+            DisableForceGammaMaterial disableForceGammaMaterial;
+            if (!m_DisableForceGammaMaterialTable.TryGetValue(material, out disableForceGammaMaterial))
+            {
+                disableForceGammaMaterial.material = new Material(material);
+                disableForceGammaMaterial.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
+                m_DisableForceGammaMaterialTable.Add(material, disableForceGammaMaterial);
+            }
+            disableForceGammaMaterial.count = 2;
+            m_DisableForceGammaMaterialTable[material] = disableForceGammaMaterial;
+            return disableForceGammaMaterial.material;
+        }
+
+        public unsafe void EvaluateChain(
+            RenderChainCommand head,
+            Material initialMat,
+            Material defaultMat,
+            Texture gradientSettings,
+            Texture shaderInfo,
+            Rect? scissor,
+            float pixelsPerPoint,
+            bool isSerializing,
+            ref Exception immediateException)
         {
             Utility.ProfileDrawChainBegin();
 
@@ -723,19 +789,19 @@ namespace UnityEngine.UIElements.UIR
                 mustApplyStencil = true
             };
 
-            if (drawsInCameras)
+            if (isSerializing)
             {
                 // The default command list is never actually executed, but we use it to catch any commands that could
                 // be emitted by the root VisualElement. This could happen if, for example, a user applies a style that
                 // affects the root in some way.
-                m_DefaultCommandList.Reset(null);
+                m_DefaultCommandList.Reset(null, null);
                 st.activeCommandList = m_DefaultCommandList;
             }
 
             var drawParams = m_DrawParams;
             drawParams.Reset();
-            if (!drawsInCameras)
-                drawParams.renderTexture.Add(RenderTexture.active);
+
+            RenderChainCommand.PushScissor(drawParams, scissor ?? DrawParams.k_UnlimitedRect, pixelsPerPoint);
 
             m_TextureSlotManager.Reset();
 
@@ -744,7 +810,7 @@ namespace UnityEngine.UIElements.UIR
                 st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
             if (shaderInfo != null)
                 st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-            if (!drawsInCameras)
+            if (!isSerializing)
                 Utility.SetPropertyBlock(st.constantProps);
 
             while (head != null)
@@ -895,7 +961,7 @@ namespace UnityEngine.UIElements.UIR
                 {
                     if (rangesReady > 0)
                     {
-                        ApplyBatchState(ref st);
+                        ApplyBatchState(ref st, gradientSettings, shaderInfo);
                         KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
                     }
 
@@ -903,38 +969,16 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (head.type == CommandType.CutRenderChain)
                         {
-                            // Reuse command lists whenever possible
-                            CommandList cmdList = null;
-                            if (currentFrameCommandListCount < currentFrameCommandLists.Count)
-                            {
-                                cmdList = currentFrameCommandLists[currentFrameCommandListCount];
-                                cmdList.Reset(head.owner);
-                            }
-                            else
-                            {
-                                cmdList = new CommandList(head.owner, m_VertexDecl, m_DefaultStencilState);
-                                currentFrameCommandLists.Add(cmdList);
-                            }
+                            CommandList cmdList = GetOrCreateCommandList(ref st, head.owner.owner, defaultMat);
 
-                            ++currentFrameCommandListCount;
-
-                            st.activeCommandList = cmdList;
-                            st.constantProps = st.activeCommandList.constantProps;
-                            st.batchProps = st.activeCommandList.batchProps;
-                            st.mustApplyBatchProps = true;
-                            st.mustApplyStencil = true;
-
-                            st.batchProps.Clear();
                             if (gradientSettings != null)
                                 st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
                             if (shaderInfo != null)
                                 st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
-
-                            m_TextureSlotManager.Reset();
                         }
 
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
-                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.BlitToPreviousRT || head.type == CommandType.PushRenderTexture || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
+                        if (head.type == CommandType.Immediate || head.type == CommandType.ImmediateCull || head.type == CommandType.PopDefaultMaterial || head.type == CommandType.PushDefaultMaterial)
                         {
                             st.curState.material = null; // A value that is unique to force material reset on next draw command
                             st.mustApplyMaterial = false;
@@ -970,16 +1014,48 @@ namespace UnityEngine.UIElements.UIR
 
             if (rangesReady > 0)
             {
-                ApplyBatchState(ref st);
+                ApplyBatchState(ref st, gradientSettings, shaderInfo);
                 KickRanges(ranges, ref rangesReady, ref rangesStart, rangesCount, st.curPage, st.activeCommandList);
             }
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
+            RenderChainCommand.PopScissor(drawParams, pixelsPerPoint);
+
             UpdateFenceValue();
 
             Utility.ProfileDrawChainEnd();
 
+        }
+
+        private CommandList GetOrCreateCommandList(ref EvaluationState st, VisualElement owner, Material material)
+        {
+            // Reuse command lists whenever possible
+            CommandList cmdList = null;
+            if (currentFrameCommandListCount < currentFrameCommandLists.Count)
+            {
+                cmdList = currentFrameCommandLists[currentFrameCommandListCount];
+                cmdList.Reset(owner, material); // TODO: Make sure that nested RenderTrees don't cut the chain
+            }
+            else
+            {
+                cmdList = new CommandList(owner, m_VertexDecl, m_DefaultStencilState, material);
+                currentFrameCommandLists.Add(cmdList);
+            }
+
+            st.activeCommandList = cmdList;
+            st.activeCommandList.constantProps = st.constantProps;
+            st.activeCommandList.batchProps = st.batchProps;
+
+            st.batchProps.Clear();
+
+            st.mustApplyBatchProps = true;
+            st.mustApplyStencil = true;
+
+            m_TextureSlotManager.Reset();
+
+            ++currentFrameCommandListCount;
+            return cmdList;
         }
 
         unsafe void UpdateFenceValue()
@@ -1029,7 +1105,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 commandList.DrawRanges(ib, vb, ranges);
             }
-            else if (!drawsInCameras)
+            else
             {
                 IntPtr* vStream = stackalloc IntPtr[1];
                 vStream[0] = vb.BufferPointer;
@@ -1166,6 +1242,44 @@ namespace UnityEngine.UIElements.UIR
                 current.Dispose();
                 current = next;
             }
+        }
+
+        public void SynchronizeMaterials()
+        {
+            foreach (Material key in m_DisableForceGammaMaterialTable.Keys)
+            {
+                m_Materialkeys.Add(key);
+            }
+
+            foreach (Material key in m_Materialkeys)
+            {
+                DisableForceGammaMaterial disableForceGammaMaterial = m_DisableForceGammaMaterialTable[key];
+                if (disableForceGammaMaterial.count == 0 || key == null)
+                {
+                    m_MaterialToRemove.Add(key);
+                }
+                else
+                {
+                    disableForceGammaMaterial.count --;
+                    m_DisableForceGammaMaterialTable[key] = disableForceGammaMaterial;
+
+                    if (disableForceGammaMaterial.material.shader != key.shader)
+                    {
+                        disableForceGammaMaterial.material.shader = key.shader;
+                    }
+
+                    disableForceGammaMaterial.material.CopyPropertiesFromMaterial(key);
+                    disableForceGammaMaterial.material.DisableKeyword(Shaders.k_ForceGammaKeyword);
+                }
+            }
+
+            foreach (var material in m_MaterialToRemove)
+            {
+                m_DisableForceGammaMaterialTable.Remove(material);
+            }
+
+            m_Materialkeys.Clear();
+            m_MaterialToRemove.Clear();
         }
 
         internal static void PrepareForGfxDeviceRecreate()

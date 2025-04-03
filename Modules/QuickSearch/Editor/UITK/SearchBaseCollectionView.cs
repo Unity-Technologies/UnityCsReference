@@ -11,6 +11,35 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
+    static class SearchCollectionUtils
+    {
+        public static void NextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
+        {
+            if (currentIndex == -1)
+            {
+                if (itemCount > 0)
+                    nextSelectedIndex = 0;
+            }
+            else if (currentIndex + 1 < itemCount)
+            {
+                nextSelectedIndex = currentIndex + 1;
+            }
+        }
+
+        public static void PreviousSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
+        {
+            if (currentIndex == -1)
+            {
+                if (itemCount > 0)
+                    nextSelectedIndex = itemCount - 1;
+            }
+            else if (itemCount > 0 && currentIndex - 1 >= 0)
+            {
+                nextSelectedIndex = currentIndex - 1;
+            }
+        }
+    }
+
     abstract class SearchBaseCollectionView<T> : SearchElement, IResultView where T : BaseVerticalCollectionView
     {
         const float k_NormalItemHeight = 40f;
@@ -242,36 +271,14 @@ namespace UnityEditor.Search
             var currentIndex = m_ListView.selectedIndex == -1 ? -1 : m_ListView.selectedIndices.Last();
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Down)
-                WrapNextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
             else if (evt.direction == NavigationMoveEvent.Direction.Up)
-                WrapPreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
 
             VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
 
             m_ListView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
             evt.StopImmediatePropagation();
-        }
-
-        private void WrapNextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = 0;
-            }
-            else
-                nextSelectedIndex = Utils.Wrap(currentIndex + 1, itemCount);
-        }
-
-        private void WrapPreviousSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = itemCount - 1;
-            }
-            else if (itemCount > 0)
-                nextSelectedIndex = Utils.Wrap(currentIndex - 1, itemCount);
         }
 
         private bool VerifySelectionChanged(int currentIndex, int nextSelectedIndex, EventBase evt)
@@ -348,11 +355,11 @@ namespace UnityEditor.Search
             var nextSelectedIndex = -1;
             if (evt.keyCode == KeyCode.DownArrow)
             {
-                WrapNextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
             }
             else if (evt.keyCode == KeyCode.UpArrow)
             {
-                WrapPreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
             }
             else if (evt.keyCode == KeyCode.PageDown)
             {

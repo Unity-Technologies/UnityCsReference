@@ -102,13 +102,9 @@ namespace UnityEngine.UIElements
 
     internal class UIDocumentRootElement : TemplateContainer
     {
-        public UIDocument document;
-
-        public UIDocumentRootElement()
-        {
-        }
-
-        public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset.name,
+        public readonly UIDocument document;
+        internal UIRenderer uiRenderer { get; set; }
+        public UIDocumentRootElement(UIDocument document, VisualTreeAsset sourceAsset) : base(sourceAsset?.name,
             sourceAsset)
         {
             this.document = document;
@@ -143,6 +139,8 @@ namespace UnityEngine.UIElements
 
         internal static Func<bool> IsEditorPlaying;
         internal static Func<bool> IsEditorPlayingOrWillChangePlaymode;
+
+        internal static int EnabledDocumentCount = 0;
 
         [SerializeField]
         private PanelSettings m_PanelSettings;
@@ -364,6 +362,12 @@ namespace UnityEngine.UIElements
 
         private void OnEnable()
         {
+            _Enable();
+            EnabledDocumentCount++;
+        }
+
+        private void _Enable()
+        {
             if (IsEditorPlayingOrWillChangePlaymode.Invoke() && !IsEditorPlaying.Invoke())
             {
                 // We're in a weird transition state that causes an error with the logic below so let's skip it.
@@ -434,7 +438,7 @@ namespace UnityEngine.UIElements
                     ClearTransform();
             }
 
-            UpdateCutRenderChainFlag();
+            UpdateIsWorldSpaceRootFlag();
         }
 
         void UpdateRenderer()
@@ -442,11 +446,11 @@ namespace UnityEngine.UIElements
             UIRenderer renderer;
             if (!TryGetComponent<UIRenderer>(out renderer))
             {
-                rootVisualElement.uiRenderer = null;
+                m_RootVisualElement.uiRenderer = null;
                 return;
             }
 
-            rootVisualElement.uiRenderer = renderer;
+            m_RootVisualElement.uiRenderer = renderer;
 
             // Don't render embedded documents which will be rendered as part of their parents
             // Don't render documents with invalid PPU
@@ -463,7 +467,7 @@ namespace UnityEngine.UIElements
 
             renderer.localBounds = SanitizeRendererBounds(localBounds);
 
-            UpdateCutRenderChainFlag();
+            UpdateIsWorldSpaceRootFlag();
         }
 
         Bounds SanitizeRendererBounds(Bounds b)
@@ -533,27 +537,27 @@ namespace UnityEngine.UIElements
             return validDimensionCount >= 2;
         }
 
-        void UpdateCutRenderChainFlag()
+        void UpdateIsWorldSpaceRootFlag()
         {
             bool isWorldSpacePanel = !panelSettings.panel.isFlat;
-            bool shouldCutRenderChain;
+            bool isWorldSpaceRootUIDocument;
 
             if (isWorldSpacePanel)
             {
                 // World-space panel should cut the render chain unless they are nested in another UIDocument,
                 // in which case they are rendered through their parent.
-                shouldCutRenderChain = (parentUI == null);
+                isWorldSpaceRootUIDocument = (parentUI == null);
             }
             else
             {
                 // For overlay panels, we should never cut the render chain.
-                shouldCutRenderChain = false;
+                isWorldSpaceRootUIDocument = false;
             }
 
-            if (rootVisualElement.shouldCutRenderChain != shouldCutRenderChain)
+            if (m_RootVisualElement.isWorldSpaceRootUIDocument != isWorldSpaceRootUIDocument)
             {
-                rootVisualElement.shouldCutRenderChain = shouldCutRenderChain;
-                rootVisualElement.MarkDirtyRepaint(); // Necessary to insert/remove a CutRenderChain command
+                m_RootVisualElement.isWorldSpaceRootUIDocument = isWorldSpaceRootUIDocument;
+                m_RootVisualElement.MarkDirtyRepaint(); // Necessary to insert a CutRenderChain command
             }
         }
 
@@ -731,8 +735,8 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null)
             {
                 // Empty container if no UXML is set or if there was an error with cloning the set UXML.
-                rootVisualElement = new UIDocumentRootElement
-                    { document = this, name = gameObject.name + k_VisualElementNameSuffix };
+                rootVisualElement = new UIDocumentRootElement(this, null)
+                    { name = gameObject.name + k_VisualElementNameSuffix };
             }
             else
             {
@@ -853,6 +857,7 @@ namespace UnityEngine.UIElements
 
         private void OnDisable()
         {
+            EnabledDocumentCount--;
             PointerDeviceState.RemoveDocumentData(this);
             RemoveWorldSpaceCollider();
 

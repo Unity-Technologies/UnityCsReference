@@ -64,6 +64,7 @@ namespace UnityEditor.Experimental.GraphView
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -71,6 +72,12 @@ namespace UnityEditor.Experimental.GraphView
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
+        }
+
+        void OnCaptureOut(MouseCaptureOutEvent e)
+        {
+            FinishDrag(e);
         }
 
         protected void OnMouseDown(MouseDownEvent e)
@@ -112,11 +119,20 @@ namespace UnityEditor.Experimental.GraphView
             if (graphView == null)
                 return;
 
+            // Stop the drag even if we miss the mouse up event. Note that it will not work on MacOS if right click is pressed because of UUM-97875.
+            if ((e.pressedButtons & 1 << ((int)MouseButton.MiddleMouse)) == 0 && ((e.pressedButtons & 1 << ((int)MouseButton.LeftMouse)) == 0 || !e.modifiers.HasFlag(EventModifiers.Alt)))
+            {
+                FinishDrag(e);
+                return;
+            }
+
             Vector2 diff = graphView.ChangeCoordinatesTo(graphView.contentViewContainer, e.localMousePosition) - m_Start;
 
             // During the drag update only the view
+#pragma warning disable CS0618 // Type or member is obsolete
             Vector3 s = graphView.contentViewContainer.transform.scale;
             graphView.viewTransform.position += Vector3.Scale(diff, s);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             e.StopPropagation();
         }
@@ -126,12 +142,21 @@ namespace UnityEditor.Experimental.GraphView
             if (!m_Active || !CanStopManipulation(e))
                 return;
 
+            FinishDrag(e);
+        }
+
+        void FinishDrag(EventBase e)
+        {
             var graphView = target as GraphView;
             if (graphView == null)
                 return;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             Vector3 p = graphView.contentViewContainer.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
+#pragma warning disable CS0618 // Type or member is obsolete
             Vector3 s = graphView.contentViewContainer.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
 
             graphView.UpdateViewTransform(p, s);
 

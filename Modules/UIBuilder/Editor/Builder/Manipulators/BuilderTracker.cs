@@ -18,7 +18,7 @@ namespace Unity.UI.Builder
         }
 
         static readonly string s_UssClassName = "unity-builder-tracker";
-        protected static readonly string s_ActiveClassName = "unity-builder-tracker--active";
+        internal static readonly string s_ActiveClassName = "unity-builder-tracker--active";
 
         protected VisualElement m_Target;
         BuilderCanvas m_Canvas;

@@ -194,7 +194,8 @@ namespace UnityEngine.UIElements
                             if (null == changedPaths || changedPaths.Count == 0)
                                 continue;
 
-                            var processBinding = false;
+                            // Special case when binding against the data source itself.
+                            var processBinding = resolvedDataSourcePath.IsEmpty;
 
                             foreach (var path in changedPaths)
                             {

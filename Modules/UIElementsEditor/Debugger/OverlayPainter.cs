@@ -400,8 +400,8 @@ namespace UnityEditor.UIElements.Debugger
         void DrawWireframe(MeshGenerationContext mgc, VisualElement ve, Color wireColor, float alpha)
         {
             var verts = new List<Vector2>(64);
-            var cmd = ve.renderChainData.firstHeadCommand;
-            while (cmd != null && cmd.owner == ve)
+            var cmd = ve.renderData.firstHeadCommand;
+            while (cmd != null && cmd.owner.owner == ve)
             {
                 if (cmd.type == UnityEngine.UIElements.UIR.CommandType.Draw)
                 {

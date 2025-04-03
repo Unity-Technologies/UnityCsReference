@@ -16,6 +16,7 @@ namespace UnityEditor.DeploymentTargets
         readonly IDeploymentTargetsMainThreadContext m_Context;
 
         public IDeploymentTargetsMainThreadContext Context { get { return m_Context; }}
+        public IDeploymentTargetsExtension Extension { get { return m_Extension; } }
 
         public static DeploymentTargetManager CreateInstance(BuildTarget buildTarget, bool setup = true)
         {

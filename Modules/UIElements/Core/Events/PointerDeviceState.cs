@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements
         // all pointer buttons are released again. This is used by runtime panels to mimic GUIView.cpp window capture behavior.
         private static readonly RuntimePanel[] s_PlayerPanelWithSoftPointerCapture = new RuntimePanel[PointerId.maxPointers];
         private static readonly UIDocument[] s_WorldSpaceDocumentWithSoftPointerCapture = new UIDocument[PointerId.maxPointers];
+        private static readonly Camera[] s_CameraWithSoftPointerCapture = new Camera[PointerId.maxPointers];
 
         // For test usage
         internal static void Reset()
@@ -220,10 +221,16 @@ namespace UnityEngine.UIElements
             return s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
         }
 
-        internal static void SetElementWithSoftPointerCapture(int pointerId, VisualElement element)
+        internal static Camera GetCameraWithSoftPointerCapture(int pointerId)
+        {
+            return s_CameraWithSoftPointerCapture[pointerId];
+        }
+
+        internal static void SetElementWithSoftPointerCapture(int pointerId, VisualElement element, Camera camera)
         {
             var runtimePanel = element?.elementPanel as RuntimePanel;
             s_PlayerPanelWithSoftPointerCapture[pointerId] = runtimePanel;
+            s_CameraWithSoftPointerCapture[pointerId] = camera;
 
             ref var document = ref s_WorldSpaceDocumentWithSoftPointerCapture[pointerId];
             if (document != null)

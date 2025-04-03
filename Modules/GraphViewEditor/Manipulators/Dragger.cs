@@ -102,7 +102,9 @@ namespace UnityEditor.Experimental.GraphView
 
                 if (ce != null)
                 {
+#pragma warning disable CS0618 // Type or member is obsolete
                     var targetScale = ce.transform.scale;
+#pragma warning restore CS0618 // Type or member is obsolete
                     diff.x *= targetScale.x;
                     diff.y *= targetScale.y;
                 }

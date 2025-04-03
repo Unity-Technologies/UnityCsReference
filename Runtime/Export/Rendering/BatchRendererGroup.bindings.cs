@@ -278,7 +278,7 @@ namespace UnityEngine.Rendering
         public uint visibleCount;
         public BatchMeshID meshID;
         public ushort submeshIndex;
-        private ushort unusedPadding2;
+        public ushort activeMeshLod;
     }
 
     [StructLayout(LayoutKind.Sequential)]

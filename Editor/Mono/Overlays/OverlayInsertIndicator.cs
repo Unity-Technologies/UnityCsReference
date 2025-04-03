@@ -51,7 +51,9 @@ namespace UnityEditor.Overlays
         void MarkerGeometryChanged(GeometryChangedEvent evt)
         {
             var targetRect = m_RenderOnTopParent.WorldToLocal(m_Marker.worldBound);
+#pragma warning disable CS0618 // Type or member is obsolete
             m_Visual.transform.position = targetRect.position;
+#pragma warning restore CS0618 // Type or member is obsolete
             m_Visual.style.width = targetRect.width;
             m_Visual.style.height = targetRect.height;
             m_Visual.style.display = DisplayStyle.Flex;

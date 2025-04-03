@@ -3,218 +3,167 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements.UIR
 {
     static class CommandManipulator
     {
-        static bool IsParentOrAncestorOf(this VisualElement ve, VisualElement child)
+        public static void ReplaceHeadCommands(RenderTreeManager renderTreeManager, RenderData renderData, EntryProcessor processor)
         {
-            // O(n) of tree depth, not very cool
-            while (child.hierarchy.parent != null)
+            // Retain our command insertion points if possible, to avoid paying the cost of finding them again
+            bool foundInsertionBounds = false;
+            RenderChainCommand prev = null;
+            RenderChainCommand next = null;
+            if (renderData.firstHeadCommand != null)
             {
-                if (child.hierarchy.parent == ve)
-                    return true;
-                child = child.hierarchy.parent;
+                prev = renderData.firstHeadCommand.prev;
+                next = renderData.lastHeadCommand.next;
+                RemoveChain(renderData.renderTree, renderData.firstHeadCommand, renderData.lastHeadCommand);
+                foundInsertionBounds = true;
             }
-            return false;
+
+            // Do we have anything to insert?
+            if (processor.firstHeadCommand != null)
+            {
+                if (!foundInsertionBounds)
+                    FindHeadCommandInsertionPoint(renderData, out prev, out next);
+
+                if (prev != null)
+                {
+                    processor.firstHeadCommand.prev = prev;
+                    prev.next = processor.firstHeadCommand;
+                }
+
+                if (next != null)
+                {
+                    processor.lastHeadCommand.next = next;
+                    next.prev = processor.lastHeadCommand;
+                }
+
+                renderData.renderTree.OnRenderCommandAdded(processor.firstHeadCommand);
+            }
+
+            renderData.firstHeadCommand = processor.firstHeadCommand;
+            renderData.lastHeadCommand = processor.lastHeadCommand;
         }
 
-        public static void ReplaceCommands(RenderChain renderChain, VisualElement ve, EntryProcessor processor)
+        public static void ReplaceTailCommands(RenderTreeManager renderTreeManager, RenderData renderData, EntryProcessor processor)
         {
-            if (processor.firstHeadCommand == null && processor.firstTailCommand == null && ve.renderChainData.firstHeadCommand != null)
+            // Retain our command insertion points if possible, to avoid paying the cost of finding them again
+            bool foundInsertionBounds = false;
+            RenderChainCommand prev = null;
+            RenderChainCommand next = null;
+            if (renderData.firstTailCommand != null)
             {
-                ResetCommands(renderChain, ve);
-                return;
+                prev = renderData.firstTailCommand.prev;
+                next = renderData.lastTailCommand.next;
+                RemoveChain(renderData.renderTree, renderData.firstTailCommand, renderData.lastTailCommand);
+                foundInsertionBounds = true;
             }
 
-            // Update head commands
-            // Retain our command insertion points if possible, to avoid paying the cost of finding them again
+            // Do we have anything to insert?
+            if (processor.firstTailCommand != null)
             {
-                bool foundInsertionBounds = false;
-                RenderChainCommand prev = null;
-                RenderChainCommand next = null;
-                if (ve.renderChainData.firstHeadCommand != null)
+                if (!foundInsertionBounds)
+                    FindTailCommandInsertionPoint(renderData, out prev, out next);
+
+                if (prev != null)
                 {
-                    prev = ve.renderChainData.firstHeadCommand.prev;
-                    next = ve.renderChainData.lastHeadCommand.next;
-                    RemoveChain(renderChain, ve.renderChainData.firstHeadCommand, ve.renderChainData.lastHeadCommand);
-                    foundInsertionBounds = true;
+                    processor.firstTailCommand.prev = prev;
+                    prev.next = processor.firstTailCommand;
                 }
 
-                // Do we have anything to insert?
-                if (processor.firstHeadCommand != null)
+                if (next != null)
                 {
-                    if (!foundInsertionBounds)
-                        FindHeadCommandInsertionPoint(ve, out prev, out next);
-
-                    if (prev != null)
-                    {
-                        processor.firstHeadCommand.prev = prev;
-                        prev.next = processor.firstHeadCommand;
-                    }
-
-                    if (next != null)
-                    {
-                        processor.lastHeadCommand.next = next;
-                        next.prev = processor.lastHeadCommand;
-                    }
-
-                    renderChain.OnRenderCommandAdded(processor.firstHeadCommand);
+                    processor.lastTailCommand.next = next;
+                    next.prev = processor.lastTailCommand;
                 }
 
-                ve.renderChainData.firstHeadCommand = processor.firstHeadCommand;
-                ve.renderChainData.lastHeadCommand = processor.lastHeadCommand;
+                renderData.renderTree.OnRenderCommandAdded(processor.firstTailCommand);
             }
 
-            // Update tail commands
-            // Retain our command insertion points if possible, to avoid paying the cost of finding them again
+            renderData.firstTailCommand = processor.firstTailCommand;
+            renderData.lastTailCommand = processor.lastTailCommand;
+        }
+
+        /// <summary>This method searches for a previous command by iterating backwards on a render tree</summary>
+        /// <remarks>
+        /// Search order from the head:
+        /// 1. Head Commands
+        /// 2. Previous Sibling
+        /// 3. Parent
+        ///
+        /// Search order from the tail:
+        /// 1. Tail Commands
+        /// 2. Last Child
+        /// 3. Head Commands
+        /// 4. Previous Sibling
+        /// 5. Parent
+        /// </remarks>
+        /// <param name="candidate">The RenderData on which we start the iteration</param>
+        /// <param name="searchFromHead">When true, we start on the head commands of the candidate and reverse from there.
+        /// Otherwise we start on the tail commands of the candidate.</param>
+        static RenderChainCommand FindPrevCommand(RenderData candidate, bool searchFromHead)
+        {
+            // Iterate
+            while (true)
             {
-                bool foundInsertionBounds = false;
-                RenderChainCommand prev = null;
-                RenderChainCommand next = null;
-                if (ve.renderChainData.firstTailCommand != null)
+                if (!searchFromHead)
                 {
-                    prev = ve.renderChainData.firstTailCommand.prev;
-                    next = ve.renderChainData.lastTailCommand.next;
-                    RemoveChain(renderChain, ve.renderChainData.firstTailCommand, ve.renderChainData.lastTailCommand);
-                    foundInsertionBounds = true;
+                    if (candidate.lastTailCommand != null)
+                        return candidate.lastTailCommand;
+
+                    if (candidate.lastChild != null)
+                    {
+                        candidate = candidate.lastChild;
+                        continue;
+                    }
                 }
 
-                // Do we have anything to insert?
-                if (processor.firstTailCommand != null)
+                searchFromHead = false;
+
+                if (candidate.lastHeadCommand != null)
+                    return candidate.lastHeadCommand;
+
+                if (candidate.prevSibling != null)
                 {
-                    if (!foundInsertionBounds)
-                        FindTailCommandInsertionPoint(ve, out prev, out next);
-
-                    if (prev != null)
-                    {
-                        processor.firstTailCommand.prev = prev;
-                        prev.next = processor.firstTailCommand;
-                    }
-
-                    if (next != null)
-                    {
-                        processor.lastTailCommand.next = next;
-                        next.prev = processor.lastTailCommand;
-                    }
-
-                    renderChain.OnRenderCommandAdded(processor.firstTailCommand);
+                    candidate = candidate.prevSibling;
+                    continue;
                 }
 
-                ve.renderChainData.firstTailCommand = processor.firstTailCommand;
-                ve.renderChainData.lastTailCommand = processor.lastTailCommand;
+                if (candidate.parent == null)
+                    return null;
+
+                candidate = candidate.parent;
+                searchFromHead = true;
             }
         }
 
-        static void FindHeadCommandInsertionPoint(VisualElement ve, out RenderChainCommand prev, out RenderChainCommand next)
+        static void FindHeadCommandInsertionPoint(RenderData renderData, out RenderChainCommand prev, out RenderChainCommand next)
         {
-            VisualElement prevDrawingElem = ve.renderChainData.prev;
-
-            // This can be potentially O(n) of VE count
-            // It is ok to check against lastHeadCommand to mean the presence of tailCommand too, as we
-            // require that tail commands only exist if a head command exists too
-            while (prevDrawingElem != null && prevDrawingElem.renderChainData.lastHeadCommand == null)
-                prevDrawingElem = prevDrawingElem.renderChainData.prev;
-
-            if (prevDrawingElem != null && prevDrawingElem.renderChainData.lastHeadCommand != null)
-            {
-                // A previous drawing element can be:
-                // A) A previous sibling (O(1) check time)
-                // B) A parent/ancestor (O(n) of tree depth check time - meh)
-                // C) A child/grand-child of a previous sibling to an ancestor (lengthy check time, so it is left as the only choice remaining after the first two)
-                if (prevDrawingElem.hierarchy.parent == ve.hierarchy.parent) // Case A
-                    prev = prevDrawingElem.renderChainData.lastTailOrHeadCommand;
-                else if (prevDrawingElem.IsParentOrAncestorOf(ve)) // Case B
-                    prev = prevDrawingElem.renderChainData.lastHeadCommand;
-                else
-                {
-                    // Case C, get the last command that isn't owned by us, this is to skip potential
-                    // tail commands wrapped after the previous drawing element
-                    var lastCommand = prevDrawingElem.renderChainData.lastTailOrHeadCommand;
-                    for (; ; )
-                    {
-                        prev = lastCommand;
-                        lastCommand = lastCommand.next;
-                        if (lastCommand == null || (lastCommand.owner == ve) || !lastCommand.isTail) // Once again, we assume tail commands cannot exist without opening commands on the element
-                            break;
-                        if (lastCommand.owner.IsParentOrAncestorOf(ve))
-                            break;
-                    }
-                }
-
+            Debug.Assert(renderData.firstHeadCommand == null); // This must only be called when the element previously had no head command.
+            prev = FindPrevCommand(renderData, true);
+            if (prev == null)
+                next = renderData.renderTree.firstCommand;
+            else
                 next = prev.next;
-            }
-            else
-            {
-                VisualElement nextDrawingElem = ve.renderChainData.next;
-                // This can be potentially O(n) of VE count, very bad.. must adjust
-                while (nextDrawingElem != null && nextDrawingElem.renderChainData.firstHeadCommand == null)
-                    nextDrawingElem = nextDrawingElem.renderChainData.next;
-                next = nextDrawingElem?.renderChainData.firstHeadCommand;
-                prev = null;
-                Debug.Assert((next == null) || (next.prev == null));
-            }
         }
 
-        static void FindTailCommandInsertionPoint(VisualElement ve, out RenderChainCommand prev, out RenderChainCommand next)
+        static void FindTailCommandInsertionPoint(RenderData renderData, out RenderChainCommand prev, out RenderChainCommand next)
         {
-            // Tail commands for a visual element come after the tail commands of the shallowest child
-            // If not found, then after the last command of the last deepest child
-            // If not found, then after the last command of self
-
-            VisualElement nextDrawingElem = ve.renderChainData.next;
-
-            // Depth first search for the first VE that has a command (i.e. non empty element).
-            // This can be potentially O(n) of VE count
-            // It is ok to check against lastHeadCommand to mean the presence of tailCommand too, as we
-            // require that tail commands only exist if a startup command exists too
-            while (nextDrawingElem != null && nextDrawingElem.renderChainData.firstHeadCommand == null)
-                nextDrawingElem = nextDrawingElem.renderChainData.next;
-
-            if (nextDrawingElem != null && nextDrawingElem.renderChainData.firstHeadCommand != null)
-            {
-                // A next drawing element can be:
-                // A) A next sibling of ve (O(1) check time)
-                // B) A child/grand-child of self (O(n) of tree depth check time - meh)
-                // C) A next sibling of a parent/ancestor (lengthy check time, so it is left as the only choice remaining after the first two)
-                if (nextDrawingElem.hierarchy.parent == ve.hierarchy.parent) // Case A
-                {
-                    next = nextDrawingElem.renderChainData.firstHeadCommand;
-                    prev = next.prev;
-                }
-                else if (ve.IsParentOrAncestorOf(nextDrawingElem)) // Case B
-                {
-                    // Enclose the last deepest drawing child by our tail command
-                    for (; ; )
-                    {
-                        prev = nextDrawingElem.renderChainData.lastTailOrHeadCommand;
-                        nextDrawingElem = prev.next?.owner;
-                        if (nextDrawingElem == null || !ve.IsParentOrAncestorOf(nextDrawingElem))
-                            break;
-                    }
-                    next = prev.next;
-                }
-                else
-                {
-                    // Case C, just wrap ourselves
-                    prev = ve.renderChainData.lastHeadCommand;
-                    next = prev.next;
-                }
-            }
-            else
-            {
-                prev = ve.renderChainData.lastHeadCommand;
-                next = prev.next; // prev should not be null since we don't support tail commands without opening commands too
-            }
+            Debug.Assert(renderData.firstTailCommand == null); // This must only be called when the element previously had no tail command.
+            prev = FindPrevCommand(renderData, false);
+            Debug.Assert(prev != null); // We MUST have found something because we don't have tails without heads.
+            next = prev.next;
         }
 
-        static void RemoveChain(RenderChain renderChain, RenderChainCommand first, RenderChainCommand last)
+        static void RemoveChain(RenderTree renderTree, RenderChainCommand first, RenderChainCommand last)
         {
             Debug.Assert(first != null);
             Debug.Assert(last != null);
 
-            renderChain.OnRenderCommandsRemoved(first, last);
+            renderTree.OnRenderCommandsRemoved(first, last);
 
             // Fix the rest of the chain
             if (first.prev != null)
@@ -228,61 +177,61 @@ namespace UnityEngine.UIElements.UIR
             do
             {
                 RenderChainCommand next = current.next;
-                renderChain.FreeCommand(current);
+                renderTree.renderTreeManager.FreeCommand(current);
                 prev = current;
                 current = next;
             } while (prev != last);
         }
 
-        public static void ResetCommands(RenderChain renderChain, VisualElement ve)
+        public static void ResetCommands(RenderTreeManager renderTreeManager, RenderData renderData)
         {
-            if (ve.renderChainData.firstHeadCommand != null)
-                renderChain.OnRenderCommandsRemoved(ve.renderChainData.firstHeadCommand, ve.renderChainData.lastHeadCommand);
+            if (renderData.firstHeadCommand != null)
+                renderData.renderTree.OnRenderCommandsRemoved(renderData.firstHeadCommand, renderData.lastHeadCommand);
 
-            var prev = ve.renderChainData.firstHeadCommand != null ? ve.renderChainData.firstHeadCommand.prev : null;
-            var next = ve.renderChainData.lastHeadCommand != null ? ve.renderChainData.lastHeadCommand.next : null;
-            Debug.Assert(prev == null || prev.owner != ve);
-            Debug.Assert(next == null || next == ve.renderChainData.firstTailCommand || next.owner != ve);
+            var prev = renderData.firstHeadCommand != null ? renderData.firstHeadCommand.prev : null;
+            var next = renderData.lastHeadCommand != null ? renderData.lastHeadCommand.next : null;
+            Debug.Assert(prev == null || prev.owner != renderData);
+            Debug.Assert(next == null || next == renderData.firstTailCommand || next.owner != renderData);
             if (prev != null) prev.next = next;
             if (next != null) next.prev = prev;
 
-            if (ve.renderChainData.firstHeadCommand != null)
+            if (renderData.firstHeadCommand != null)
             {
-                var c = ve.renderChainData.firstHeadCommand;
-                while (c != ve.renderChainData.lastHeadCommand)
+                var c = renderData.firstHeadCommand;
+                while (c != renderData.lastHeadCommand)
                 {
                     var nextC = c.next;
-                    renderChain.FreeCommand(c);
+                    renderTreeManager.FreeCommand(c);
                     c = nextC;
                 }
-                renderChain.FreeCommand(c); // Last head command
+                renderTreeManager.FreeCommand(c); // Last head command
             }
-            ve.renderChainData.firstHeadCommand = ve.renderChainData.lastHeadCommand = null;
+            renderData.firstHeadCommand = renderData.lastHeadCommand = null;
 
-            prev = ve.renderChainData.firstTailCommand != null ? ve.renderChainData.firstTailCommand.prev : null;
-            next = ve.renderChainData.lastTailCommand != null ? ve.renderChainData.lastTailCommand.next : null;
-            Debug.Assert(prev == null || prev.owner != ve);
-            Debug.Assert(next == null || next.owner != ve);
+            prev = renderData.firstTailCommand != null ? renderData.firstTailCommand.prev : null;
+            next = renderData.lastTailCommand != null ? renderData.lastTailCommand.next : null;
+            Debug.Assert(prev == null || prev.owner != renderData);
+            Debug.Assert(next == null || next.owner != renderData);
             if (prev != null) prev.next = next;
             if (next != null) next.prev = prev;
 
-            if (ve.renderChainData.firstTailCommand != null)
+            if (renderData.firstTailCommand != null)
             {
-                renderChain.OnRenderCommandsRemoved(ve.renderChainData.firstTailCommand, ve.renderChainData.lastTailCommand);
+                renderData.renderTree.OnRenderCommandsRemoved(renderData.firstTailCommand, renderData.lastTailCommand);
 
-                var c = ve.renderChainData.firstTailCommand;
-                while (c != ve.renderChainData.lastTailCommand)
+                var c = renderData.firstTailCommand;
+                while (c != renderData.lastTailCommand)
                 {
                     var nextC = c.next;
-                    renderChain.FreeCommand(c);
+                    renderTreeManager.FreeCommand(c);
                     c = nextC;
                 }
-                renderChain.FreeCommand(c); // Last tail command
+                renderTreeManager.FreeCommand(c); // Last tail command
             }
-            ve.renderChainData.firstTailCommand = ve.renderChainData.lastTailCommand = null;
+            renderData.firstTailCommand = renderData.lastTailCommand = null;
         }
 
-        static void InjectCommandInBetween(RenderChain renderChain, RenderChainCommand cmd, RenderChainCommand prev, RenderChainCommand next)
+        static void InjectCommandInBetween(RenderTreeManager renderTreeManager, RenderChainCommand cmd, RenderChainCommand prev, RenderChainCommand next)
         {
             if (prev != null)
             {
@@ -294,156 +243,157 @@ namespace UnityEngine.UIElements.UIR
                 cmd.next = next;
                 next.prev = cmd;
             }
-            VisualElement ve = cmd.owner;
+            var renderData = cmd.owner;
 
             if (!cmd.isTail)
             {
-                if (ve.renderChainData.firstHeadCommand == null || ve.renderChainData.firstHeadCommand == next)
-                    ve.renderChainData.firstHeadCommand = cmd;
+                if (renderData.firstHeadCommand == null || renderData.firstHeadCommand == next)
+                    renderData.firstHeadCommand = cmd;
 
-                if (ve.renderChainData.lastHeadCommand == null || ve.renderChainData.lastHeadCommand == prev)
-                    ve.renderChainData.lastHeadCommand = cmd;
+                if (renderData.lastHeadCommand == null || renderData.lastHeadCommand == prev)
+                    renderData.lastHeadCommand = cmd;
             }
             else
             {
-                if (ve.renderChainData.firstTailCommand == null || ve.renderChainData.firstTailCommand == next)
-                    ve.renderChainData.firstTailCommand = cmd;
+                if (renderData.firstTailCommand == null || renderData.firstTailCommand == next)
+                    renderData.firstTailCommand = cmd;
 
-                if (ve.renderChainData.lastTailCommand == null || ve.renderChainData.lastTailCommand == prev)
-                    ve.renderChainData.lastTailCommand = cmd;
+                if (renderData.lastTailCommand == null || renderData.lastTailCommand == prev)
+                    renderData.lastTailCommand = cmd;
             }
-            renderChain.OnRenderCommandAdded(cmd);
 
+            renderData.renderTree.OnRenderCommandAdded(cmd);
         }
 
-        public static void DisableElementRendering(RenderChain renderChain, VisualElement ve, bool renderingDisabled)
+        public static void DisableElementRendering(RenderTreeManager renderTreeManager, VisualElement ve, bool renderingDisabled)
         {
-            if (!ve.renderChainData.isInChain)
+            var renderData = ve.renderData; // Can be the render tree "quad" in the case of render to texture
+                                                 // The nested render data will skip rendering entirely.
+            if (renderData == null)
                 return;
 
-            if (renderingDisabled)
+            if (renderingDisabled) // TODO: We whould skip rendering of the RenderTree. The quad should be skipped through Begin/EndDisable.
             {
-                if (ve.renderChainData.firstHeadCommand == null || ve.renderChainData.firstHeadCommand.type != CommandType.BeginDisable)
+                if (renderData.firstHeadCommand == null || renderData.firstHeadCommand.type != CommandType.BeginDisable)
                 {
-                    var cmd = renderChain.AllocCommand();
+                    var cmd = renderTreeManager.AllocCommand();
                     cmd.type = CommandType.BeginDisable;
-                    cmd.owner = ve;
+                    cmd.owner = renderData;
 
-                    if (ve.renderChainData.firstHeadCommand == null)
+                    if (renderData.firstHeadCommand == null)
                     {
-                        FindHeadCommandInsertionPoint(ve, out var cmdPrev, out var cmdNext);
-                        InjectCommandInBetween(renderChain, cmd, cmdPrev, cmdNext);
+                        FindHeadCommandInsertionPoint(renderData, out var cmdPrev, out var cmdNext);
+                        InjectCommandInBetween(renderTreeManager, cmd, cmdPrev, cmdNext);
                     }
                     else
                     {
                         // Need intermediate variable to pass by reference as it is modified
-                        var prev = ve.renderChainData.firstHeadCommand.prev;
-                        var next = ve.renderChainData.firstHeadCommand;
-                        var lastHeadCommand = ve.renderChainData.lastHeadCommand; // InjectCommandInBetween assumes we are adding the last command, witch is not the case now. Backup the value to restore after.
+                        var prev = renderData.firstHeadCommand.prev;
+                        var next = renderData.firstHeadCommand;
+                        var lastHeadCommand = renderData.lastHeadCommand; // InjectCommandInBetween assumes we are adding the last command, witch is not the case now. Backup the value to restore after.
                         Debug.Assert(lastHeadCommand != null);
-                        ve.renderChainData.firstHeadCommand = null; // will be replaced in InjectCommandInBetween
-                        InjectCommandInBetween(renderChain, cmd, prev, next);
-                        ve.renderChainData.lastHeadCommand = lastHeadCommand;
+                        renderData.firstHeadCommand = null; // will be replaced in InjectCommandInBetween
+                        InjectCommandInBetween(renderTreeManager, cmd, prev, next);
+                        renderData.lastHeadCommand = lastHeadCommand;
                     }
                 }
 
-                if (ve.renderChainData.lastTailCommand == null || ve.renderChainData.lastTailCommand.type != CommandType.EndDisable)
+                if (renderData.lastTailCommand == null || renderData.lastTailCommand.type != CommandType.EndDisable)
                 {
-                    var cmd = renderChain.AllocCommand();
+                    var cmd = renderTreeManager.AllocCommand();
                     cmd.type = CommandType.EndDisable;
                     cmd.isTail = true;
-                    cmd.owner = ve;
+                    cmd.owner = renderData;
 
-                    if (ve.renderChainData.lastTailCommand == null)
+                    if (renderData.lastTailCommand == null)
                     {
-                        FindTailCommandInsertionPoint(ve, out var cmdPrev, out var cmdNext);
-                        InjectCommandInBetween(renderChain, cmd, cmdPrev, cmdNext);
+                        FindTailCommandInsertionPoint(renderData, out var cmdPrev, out var cmdNext);
+                        InjectCommandInBetween(renderTreeManager, cmd, cmdPrev, cmdNext);
                     }
                     else
                     {
                         // Need intermediate variable to pass by reference as it is modified
-                        var prev = ve.renderChainData.lastTailCommand;
-                        var next = ve.renderChainData.lastTailCommand.next;
-                        Debug.Assert(ve.renderChainData.firstTailCommand != null);
-                        InjectCommandInBetween(renderChain, cmd, prev, next);
+                        var prev = renderData.lastTailCommand;
+                        var next = renderData.lastTailCommand.next;
+                        Debug.Assert(renderData.firstTailCommand != null);
+                        InjectCommandInBetween(renderTreeManager, cmd, prev, next);
                     }
                 }
             }
             else
             {
+                if (renderData.firstHeadCommand != null && renderData.firstHeadCommand.type == CommandType.BeginDisable)
+                    RemoveSingleCommand(renderTreeManager, renderData, renderData.firstHeadCommand);
 
-                if (ve.renderChainData.firstHeadCommand != null && ve.renderChainData.firstHeadCommand.type == CommandType.BeginDisable)
-                    RemoveSingleCommand(renderChain, ve, ve.renderChainData.firstHeadCommand);
-
-                if (ve.renderChainData.lastTailCommand != null && ve.renderChainData.lastTailCommand.type == CommandType.EndDisable)
-                    RemoveSingleCommand(renderChain, ve, ve.renderChainData.lastTailCommand);
+                if (renderData.lastTailCommand != null && renderData.lastTailCommand.type == CommandType.EndDisable)
+                    RemoveSingleCommand(renderTreeManager, renderData, renderData.lastTailCommand);
             }
 
         }
 
-        static void RemoveSingleCommand(RenderChain renderChain, VisualElement ve, RenderChainCommand cmd)
+        static void RemoveSingleCommand(RenderTreeManager renderTreeManager, RenderData renderData, RenderChainCommand cmd)
         {
             Debug.Assert(cmd != null);
-            Debug.Assert(cmd.owner == ve);
-            renderChain.OnRenderCommandsRemoved(cmd, cmd);
+            Debug.Assert(cmd.owner == renderData);
+            renderData.renderTree.OnRenderCommandsRemoved(cmd, cmd);
             var prev = cmd.prev;
             var next = cmd.next;
             if (prev != null) prev.next = next;
             if (next != null) next.prev = prev;
 
             // Clean up renderChain head commands pointers in the VisualElement's renderChainData
-            if (ve.renderChainData.firstHeadCommand == cmd)
+            if (renderData.firstHeadCommand == cmd)
             {
                 // is this the last Head command of the object
-                if (ve.renderChainData.firstHeadCommand == ve.renderChainData.lastHeadCommand)
+                if (renderData.firstHeadCommand == renderData.lastHeadCommand)
                 {
                     // Last command removed: extra checks
-                    Debug.Assert(cmd.prev?.owner != ve, "When removing the first head command, the command before this one in the queue should belong to an other parent");
-                    Debug.Assert(cmd.next?.owner != ve || cmd.next == ve.renderChainData.firstTailCommand); // It could be valid that there is a closing command if they get removed after this call.
-                    ve.renderChainData.firstHeadCommand = null;
-                    ve.renderChainData.lastHeadCommand = null;
+                    Debug.Assert(cmd.prev?.owner != renderData, "When removing the first head command, the command before this one in the queue should belong to an other parent");
+                    Debug.Assert(cmd.next?.owner != renderData || cmd.next == renderData.firstTailCommand); // It could be valid that there is a closing command if they get removed after this call.
+                    renderData.firstHeadCommand = null;
+                    renderData.lastHeadCommand = null;
                 }
                 else
                 {
-                    Debug.Assert(cmd.next.owner == ve);
-                    Debug.Assert(ve.renderChainData.lastHeadCommand != null);
-                    ve.renderChainData.firstHeadCommand = cmd.next;
+                    Debug.Assert(cmd.next.owner == renderData);
+                    Debug.Assert(renderData.lastHeadCommand != null);
+                    renderData.firstHeadCommand = cmd.next;
                 }
             }
-            else if (ve.renderChainData.lastHeadCommand == cmd)
+            else if (renderData.lastHeadCommand == cmd)
             {
-                Debug.Assert(cmd.prev.owner == ve);
-                Debug.Assert(ve.renderChainData.firstHeadCommand != null);
-                ve.renderChainData.lastHeadCommand = cmd.prev;
+                Debug.Assert(cmd.prev.owner == renderData);
+                Debug.Assert(renderData.firstHeadCommand != null);
+                renderData.lastHeadCommand = cmd.prev;
             }
 
 
             // Clean up renderChain Tail commands
-            if (ve.renderChainData.firstTailCommand == cmd)
+            if (renderData.firstTailCommand == cmd)
             {
                 //is this the last tailCommand?
-                if (ve.renderChainData.firstTailCommand == ve.renderChainData.lastTailCommand)
+                if (renderData.firstTailCommand == renderData.lastTailCommand)
                 {
                     // Last command removed: extra checks
-                    Debug.Assert(cmd.prev?.owner != ve || cmd.prev == ve.renderChainData.lastHeadCommand);
-                    Debug.Assert(cmd.next?.owner != ve);
-                    ve.renderChainData.firstTailCommand = null;
-                    ve.renderChainData.lastTailCommand = null;
+                    Debug.Assert(cmd.prev?.owner != renderData || cmd.prev == renderData.lastHeadCommand);
+                    Debug.Assert(cmd.next?.owner != renderData);
+                    renderData.firstTailCommand = null;
+                    renderData.lastTailCommand = null;
                 }
                 else
                 {
-                    Debug.Assert(cmd.next.owner == ve);
-                    Debug.Assert(ve.renderChainData.lastTailCommand != null);
-                    ve.renderChainData.firstTailCommand = cmd.next;
+                    Debug.Assert(cmd.next.owner == renderData);
+                    Debug.Assert(renderData.lastTailCommand != null);
+                    renderData.firstTailCommand = cmd.next;
                 }
             }
-            else if (ve.renderChainData.lastTailCommand == cmd)
+            else if (renderData.lastTailCommand == cmd)
             {
-                Debug.Assert(cmd.prev.owner == ve);
-                Debug.Assert(ve.renderChainData.firstTailCommand != null);
-                ve.renderChainData.lastTailCommand = cmd.prev;
+                Debug.Assert(cmd.prev.owner == renderData);
+                Debug.Assert(renderData.firstTailCommand != null);
+                renderData.lastTailCommand = cmd.prev;
             }
-            renderChain.FreeCommand(cmd);
+            renderTreeManager.FreeCommand(cmd);
         }
     }
 }

@@ -2,14 +2,14 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
-using UnityEngine.Android;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 using System;
 using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Android;
+using UnityEngine.Bindings;
+using UnityEngine.Internal;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -25,7 +25,7 @@ namespace UnityEngine
         [FieldOffset(0)]    public long    j;
         [FieldOffset(0)]    public float   f;
         [FieldOffset(0)]    public double  d;
-        [FieldOffset(0)]    public System.IntPtr  l;
+        [FieldOffset(0)]    public IntPtr  l;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -54,7 +54,7 @@ namespace UnityEngine
         }
 
         // Scans a particular Java class for a constructor method matching a signature.
-        public static IntPtr GetConstructorID(IntPtr javaClass, [UnityEngine.Internal.DefaultValue("")] string signature)
+        public static IntPtr GetConstructorID(IntPtr javaClass, [DefaultValue("")] string signature)
         {
             return _AndroidJNIHelper.GetConstructorID(javaClass, signature);
         }
@@ -66,13 +66,13 @@ namespace UnityEngine
         }
 
         // Scans a particular Java class for a method matching a name and a signature.
-        public static IntPtr GetMethodID(IntPtr javaClass, string methodName, [UnityEngine.Internal.DefaultValue("")] string signature)
+        public static IntPtr GetMethodID(IntPtr javaClass, string methodName, [DefaultValue("")] string signature)
         {
             return GetMethodID(javaClass, methodName, signature, false);
         }
 
         // Scans a particular Java class for a method matching a name and a signature.
-        public static IntPtr GetMethodID(IntPtr javaClass, string methodName, [UnityEngine.Internal.DefaultValue("")] string signature, [UnityEngine.Internal.DefaultValue("false")] bool isStatic)
+        public static IntPtr GetMethodID(IntPtr javaClass, string methodName, [DefaultValue("")] string signature, [DefaultValue("false")] bool isStatic)
         {
             return _AndroidJNIHelper.GetMethodID(javaClass, methodName, signature, isStatic);
         }
@@ -84,13 +84,13 @@ namespace UnityEngine
         }
 
         // Scans a particular Java class for a field matching a name and a signature.
-        public static IntPtr GetFieldID(IntPtr javaClass, string fieldName, [UnityEngine.Internal.DefaultValue("")] string signature)
+        public static IntPtr GetFieldID(IntPtr javaClass, string fieldName, [DefaultValue("")] string signature)
         {
             return GetFieldID(javaClass, fieldName, signature, false);
         }
 
         // Scans a particular Java class for a field matching a name and a signature.
-        public static IntPtr GetFieldID(IntPtr javaClass, string fieldName, [UnityEngine.Internal.DefaultValue("")] string signature, [UnityEngine.Internal.DefaultValue("false")] bool isStatic)
+        public static IntPtr GetFieldID(IntPtr javaClass, string fieldName, [DefaultValue("")] string signature, [DefaultValue("false")] bool isStatic)
         {
             return _AndroidJNIHelper.GetFieldID(javaClass, fieldName, signature, isStatic);
         }
@@ -117,7 +117,7 @@ namespace UnityEngine
         }
 
         // Creates a Java array from a managed array
-        public static IntPtr ConvertToJNIArray(System.Array array)
+        public static IntPtr ConvertToJNIArray(Array array)
         {
             return _AndroidJNIHelper.ConvertToJNIArray(array);
         }
@@ -159,13 +159,13 @@ namespace UnityEngine
         // @param javaClass Raw JNI Java class object (obtained by calling AndroidJNI.FindClass).
         // @param args Array with parameters to be passed to the constructor when invoked.
         //
-        public static System.IntPtr GetConstructorID(System.IntPtr jclass, object[] args)
+        public static IntPtr GetConstructorID(IntPtr jclass, object[] args)
         {
             return _AndroidJNIHelper.GetConstructorID(jclass, args);
         }
 
         // Get a JNI method ID based on calling arguments.
-        public static System.IntPtr GetMethodID(System.IntPtr jclass, string methodName, object[] args, bool isStatic)
+        public static IntPtr GetMethodID(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return _AndroidJNIHelper.GetMethodID(jclass, methodName, args, isStatic);
         }
@@ -191,13 +191,13 @@ namespace UnityEngine
         }
 
         // Get a JNI method ID based on calling arguments.
-        public static System.IntPtr GetMethodID<ReturnType>(System.IntPtr jclass, string methodName, object[] args, bool isStatic)
+        public static IntPtr GetMethodID<ReturnType>(IntPtr jclass, string methodName, object[] args, bool isStatic)
         {
             return _AndroidJNIHelper.GetMethodID<ReturnType>(jclass, methodName, args, isStatic);
         }
 
         // Get a JNI field ID based on type detection. Generic parameter represents the field type.
-        public static System.IntPtr GetFieldID<FieldType>(System.IntPtr jclass, string fieldName, bool isStatic)
+        public static IntPtr GetFieldID<FieldType>(IntPtr jclass, string fieldName, bool isStatic)
         {
             return _AndroidJNIHelper.GetFieldID<FieldType>(jclass, fieldName, isStatic);
         }
@@ -1140,10 +1140,14 @@ namespace UnityEngine
 
 
         //---------------------------------------
-
-        // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToBooleanArray(Boolean[] array);
+        static extern IntPtr ConvertToBooleanArray(Boolean[] array);
+        // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
+        public static IntPtr ToBooleanArray(Boolean[] array)
+        {
+            return array == null ? IntPtr.Zero : ConvertToBooleanArray(array);
+        }
+
         [ThreadSafe]
         [Obsolete("AndroidJNI.ToByteArray is obsolete. Use AndroidJNI.ToSByteArray method instead")]
         public static extern IntPtr ToByteArray(Byte[] array);

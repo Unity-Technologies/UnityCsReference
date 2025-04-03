@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Text;
 using UnityEngine;
@@ -332,6 +333,15 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         TryFocusCorrespondingWindow(p.ownerObject);
                     }
+                    else
+                    {
+                        List<Panel> panels = GetPanels();
+
+                        if (panels.Count > 0)
+                        {
+                            TryFocusCorrespondingWindow(panels[0].ownerObject);
+                        }
+                    }
                 }
             });
 
@@ -583,8 +593,11 @@ namespace UnityEditor.UIElements.Debugger
             return true;
         }
 
-        public bool InterceptMouseEvent(IPanel p, IMouseEvent ev)
+        public bool InterceptEvent(IPanel p, EventBase ev)
         {
+            if (m_Context == null)
+                return false;
+
             if (!m_Context.pickElement)
                 return false;
 
@@ -595,6 +608,12 @@ namespace UnityEditor.UIElements.Debugger
             // Ignore events on detached elements
             if (p == null)
                 return false;
+
+            if (evtType == NavigationCancelEvent.TypeId())
+            {
+                StopPicking();
+                return true;
+            }
 
             if (((BaseVisualElementPanel)p).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
             {
@@ -634,7 +653,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 if (evtType == MouseOverEvent.TypeId())
                 {
-                    OnPickMouseOver(target, panel);
+                    OnPickMouseOver(target, p);
                 }
                 else if (evtType == MouseEnterWindowEvent.TypeId())
                 {

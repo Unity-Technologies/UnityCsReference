@@ -63,7 +63,7 @@ namespace UnityEditor
 
                 if ((FogMode)m_FogMode.intValue != FogMode.Linear)
                 {
-                    EditorGUILayout.Slider(m_FogDensity, 0.0f, 1.0f, Styles.FogDensity);
+                    m_FogDensity.floatValue = EditorGUILayout.PowerSlider(Styles.FogDensity, m_FogDensity.floatValue, 0.0f, 1.0f, 2.0f);
                 }
                 else
                 {

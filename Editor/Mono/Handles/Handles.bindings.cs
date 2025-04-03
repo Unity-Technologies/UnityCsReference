@@ -59,7 +59,7 @@ namespace UnityEditor
         static extern void Internal_DrawCameraWithGrid([NotNull] Camera cam, DrawCameraMode renderMode, ref DrawGridParameters gridParam, bool drawGizmos, bool drawSelection);
 
         [FreeFunction]
-        internal static extern void Internal_DrawOutline(Color parentNodeColor, Color childNodeColor, int submeshOutlineMaterialId, int[] parentRenderers, int[] childRenderers, OutlineDrawMode outlineMode, float parentOutlineAlpha = 0, float childOutlineAlpha = 0);
+        internal static extern void Internal_DrawOutline(Color parentNodeColor, Color childNodeColor, EntityId submeshOutlineMaterialId, EntityId[] parentRenderers, EntityId[] childRenderers, OutlineDrawMode outlineMode, float parentOutlineAlpha = 0, float childOutlineAlpha = 0);
 
         [FreeFunction]
         static extern void Internal_DrawCamera([NotNull] Camera cam, DrawCameraMode renderMode, bool drawGizmos, bool drawSelection);

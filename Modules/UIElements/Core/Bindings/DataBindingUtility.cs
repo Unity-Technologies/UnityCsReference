@@ -144,7 +144,9 @@ namespace UnityEngine.UIElements
         public static void GetBindingsForElement(VisualElement element, List<BindingInfo> result)
         {
             using var pool = HashSetPool<PropertyPath>.Get(out var visited);
-            foreach (var bindingRequest in DataBindingManager.GetBindingRequests(element))
+            using var listHandle = ListPool<(Binding binding, BindingId bindingId)>.Get(out var list);
+            DataBindingManager.GetBindingRequests(element, list);
+            foreach (var bindingRequest in list)
             {
                 if (visited.Add(bindingRequest.bindingId) && null != bindingRequest.binding)
                     result.Add(BindingInfo.FromRequest(element, bindingRequest.bindingId, bindingRequest.binding));

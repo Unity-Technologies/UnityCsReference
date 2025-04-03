@@ -194,6 +194,8 @@ namespace UnityEngine.UIElements
         internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
         internal static readonly List<string> ussFoldoutChildDepthClassNames;
 
+        internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope(bool beginUitk = true) { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = beginUitk; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
+
         static IMGUIContainer()
         {
             ussFoldoutChildDepthClassNames = new List<string>(Foldout.ussFoldoutMaxDepth + 1);
@@ -695,6 +697,8 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
+            using var scope = new UITKScope();
+
             EventType originalEventType = e.rawType;
             if (originalEventType != EventType.Layout)
             {
@@ -847,8 +851,10 @@ namespace UnityEngine.UIElements
         static Event s_CurrentEvent = new Event() { type = EventType.Layout };
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)
         {
+
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
+            using var scope = new UITKScope();
 
             bool restoreCurrentEvent = false;
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
@@ -911,6 +917,7 @@ namespace UnityEngine.UIElements
                     measuredHeight = Mathf.Min(measuredHeight, desiredHeight);
                     break;
             }
+
 
             return new Vector2(measuredWidth, measuredHeight);
         }

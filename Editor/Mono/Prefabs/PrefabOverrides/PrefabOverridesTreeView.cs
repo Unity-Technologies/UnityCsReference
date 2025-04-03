@@ -747,7 +747,7 @@ namespace UnityEditor
                 var comparisonView = new ScrollView
                 {
                     mode = ScrollViewMode.Vertical,
-                    verticalScrollerVisibility = ScrollerVisibility.AlwaysVisible
+                    verticalScrollerVisibility = ScrollerVisibility.Auto
                 };
                 comparisonView.RegisterCallback<SerializedObjectChangeEvent>(OnObjectChanged);
 

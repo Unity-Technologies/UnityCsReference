@@ -34,7 +34,7 @@ namespace UnityEngine.UIElements
         {
             var p = panel as Panel;
             var updater = p?.GetUpdater(VisualTreeUpdatePhase.Repaint) as UIRRepaintUpdater;
-            updater?.renderChain?.RepaintTexturedElements();
+            updater?.renderTreeManager?.RepaintTexturedElements();
         }
 
         protected TextureId AllocateDynamicTexture()

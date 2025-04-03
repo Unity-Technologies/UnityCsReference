@@ -2,7 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor.UIElements.Debugger;
+using UnityEditor;
+using UnityEngine.UIElements;
 
 namespace Unity.UI.Builder
 {
@@ -17,7 +18,7 @@ namespace Unity.UI.Builder
         {
             m_Inspector = inspector;
 
-            m_MatchedRulesExtractor = new MatchedRulesExtractor();
+            m_MatchedRulesExtractor = new MatchedRulesExtractor(AssetDatabase.GetAssetPath);
         }
 
         public void GetElementMatchers()

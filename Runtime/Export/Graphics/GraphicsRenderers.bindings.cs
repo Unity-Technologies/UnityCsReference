@@ -113,6 +113,8 @@ namespace UnityEngine
 
         [NativeProperty("IsDynamicOccludee")] extern public bool allowOcclusionWhenDynamic { get; set; }
 
+        [NativeProperty("ForceMeshLod")] extern public Int16 forceMeshLod { get; set; }
+        [NativeProperty("MeshLodSelectionBias")] extern public float meshLodSelectionBias { get; set; }
 
         [NativeProperty("StaticBatchRoot")] extern internal Transform staticBatchRootTransform { get; set; }
         extern internal int staticBatchIndex { get; }
@@ -435,6 +437,7 @@ namespace UnityEngine
         extern public float scaleInLightmap { get; set; }
         extern public ReceiveGI receiveGI { get; set; }
         extern public bool stitchLightmapSeams { get; set; }
+        extern public UInt16 globalIlluminationMeshLod { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]

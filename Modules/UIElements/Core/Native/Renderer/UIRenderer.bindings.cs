@@ -27,7 +27,8 @@ namespace UnityEngine.UIElements
         internal volatile List<CommandList>[] commandLists;
         internal volatile bool skipRendering;
 
-        internal extern void SetNativeData(int safeFrameIndex, int cmdListIndex, Material mat);
+        internal extern void AddDrawCallData(int safeFrameIndex, int cmdListIndex, Material mat);
+        internal extern void ResetDrawCallData();
 
         [RequiredByNativeCode]
         static void OnRenderNodeExecute(UIRenderer renderer, int safeFrameIndex, int cmdListIndex)

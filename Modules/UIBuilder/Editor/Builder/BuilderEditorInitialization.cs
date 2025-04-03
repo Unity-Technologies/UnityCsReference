@@ -16,6 +16,7 @@ namespace Unity.UI.Builder
             BackgroundSizeStyleField.UxmlSerializedData.Register();
             BuilderPane.UxmlSerializedData.Register();
             CategoryDropdownField.UxmlSerializedData.Register();
+            CursorStyleField.UxmlSerializedData.Register();
             DimensionStyleField.UxmlSerializedData.Register();
             FieldStatusIndicator.UxmlSerializedData.Register();
             FoldoutField.UxmlSerializedData.Register();

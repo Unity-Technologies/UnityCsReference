@@ -1258,7 +1258,7 @@ namespace UnityEditor
                     if (!da)
                     {
                         if(m_Parent.window.showMode == ShowMode.Tooltip || m_Parent.window.showMode == ShowMode.PopupMenu)
-                            m_Parent.window.position = m_Parent.window.FitWindowRectToScreen(value, true, false);
+                            m_Parent.window.position = ContainerWindow.FitRectToScreen(value, value.center, true, m_Parent.window);
                         else
                             m_Parent.window.position = value;
                         m_Parent.window.OnResize();

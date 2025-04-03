@@ -69,14 +69,14 @@ namespace UnityEditor.UIElements
             var schemaDirectory = string.Join("/", backDots.ToArray());
 
             var uxmlTemplate = String.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
-<engine:{0}
+<ui:{0}
     xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-    xmlns:engine=""UnityEngine.UIElements""
-    xmlns:editor=""UnityEditor.UIElements""
+    xmlns:ui=""UnityEngine.UIElements""
+    xmlns:uie=""UnityEditor.UIElements""
     xsi:noNamespaceSchemaLocation=""{1}/UIElements.xsd""
 >
     {2}
-</engine:{0}>", UXMLImporterImpl.k_RootNode, schemaDirectory, uxmlContent);
+</ui:{0}>", UXMLImporterImpl.k_RootNode, schemaDirectory, uxmlContent);
 
             return uxmlTemplate;
         }

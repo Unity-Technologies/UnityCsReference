@@ -48,6 +48,7 @@ namespace UnityEngine.UIElements.UIR
             // Because the VE is complete
             Debug.Assert(!m_IsPushingMask);
             Debug.Assert(m_Mask.Count == 0);
+            Debug.Assert(m_ChildrenIndex >= 0); // Otherwise, ill-formed. The processor will assume that there is a DrawChildren entry.
         }
 
         // Clear important references to prevent memory retention
@@ -68,6 +69,7 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.DrawSolidMesh:
                     case EntryType.DrawTexturedMesh:
                     case EntryType.DrawTexturedMeshSkipAtlas:
+                    case EntryType.DrawDynamicTexturedMesh:
                     case EntryType.DrawTextMesh:
                     case EntryType.DrawGradients:
                         Debug.Assert(entry.vertices.Length <= UIRenderDevice.maxVerticesPerPage);
@@ -100,8 +102,6 @@ namespace UnityEngine.UIElements.UIR
                     case EntryType.PopGroupMatrix:
                     case EntryType.DrawImmediate:
                     case EntryType.DrawImmediateCull:
-                    case EntryType.PushRenderTexture:
-                    case EntryType.BlitAndPopRenderTexture:
                     case EntryType.PushDefaultMaterial:
                     case EntryType.PopDefaultMaterial:
                     case EntryType.CutRenderChain:

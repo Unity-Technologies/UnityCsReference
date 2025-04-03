@@ -142,7 +142,5 @@ namespace UnityEngine
         {
             SetEnabledFading(enabled, 0.5f);
         }
-
-        extern internal RaycastHit Raycast(Ray ray, float maxDistance, ref bool hasHit);
     }
 }

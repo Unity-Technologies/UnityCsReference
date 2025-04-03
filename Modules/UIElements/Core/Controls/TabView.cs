@@ -408,7 +408,7 @@ namespace UnityEngine.UIElements
             }
 
             // Store current and new positions
-            var currentPosition = m_HeaderContainer.transform.position;
+            var currentPosition = m_HeaderContainer.resolvedStyle.translate;
             var newPosition = currentPosition;
 
             // Calculate new position based on the conditions provided
@@ -421,7 +421,7 @@ namespace UnityEngine.UIElements
             // Update transform position to new position
             if (newPosition != currentPosition)  // Only apply if there's a change
             {
-                m_HeaderContainer.transform.position = newPosition;
+                m_HeaderContainer.style.translate = newPosition;
             }
 
             UpdateButtons(newPosition);
@@ -429,7 +429,7 @@ namespace UnityEngine.UIElements
 
         void OnNextClicked()
         {
-            var t = m_HeaderContainer.transform.position;
+            var t = m_HeaderContainer.resolvedStyle.translate;
             var nextHiddenTab = m_TabHeaders.Find(tab =>
             {
                 // if it's not the last tab, check there's a 50px difference between the tab and the viewport
@@ -444,7 +444,7 @@ namespace UnityEngine.UIElements
                 t.x = -(nextHiddenTab.layout.xMax + nextButton.layout.width - contentViewport.layout.xMax);
                 // Clamp the position to ensure we don't scroll past the content
                 t.x = Mathf.Max(t.x, -scrollableWidth);
-                m_HeaderContainer.transform.position = t;
+                m_HeaderContainer.style.translate = t;
             }
             // We need to pass the content transform because it takes a frame to update the transform position
             UpdateButtons(t);
@@ -452,7 +452,7 @@ namespace UnityEngine.UIElements
 
         void OnPreviousClicked()
         {
-            var t = m_HeaderContainer.transform.position;
+            var t = m_HeaderContainer.resolvedStyle.translate;
             var previousHiddenTab = m_TabHeaders.FindLast(tab =>
             {
                 // if it's not the first tab, check there's a 50px difference between the tab and the viewport
@@ -467,7 +467,7 @@ namespace UnityEngine.UIElements
                 t.x = contentViewport.layout.xMin + previousButton.layout.width - previousHiddenTab.layout.xMin;
                 // Clamp the position to ensure we don't scroll past the content
                 t.x = Mathf.Min(t.x, 0);
-                m_HeaderContainer.transform.position = t;
+                m_HeaderContainer.style.translate = t;
             }
             // We need to pass the content transform because it takes a frame to update the transform position
             UpdateButtons(t);
@@ -488,6 +488,14 @@ namespace UnityEngine.UIElements
             SaveViewData();
         }
 
+        void UpdateIndexes()
+        {
+            for (int i = 0; i < m_Tabs.Count; i++)
+            {
+                m_Tabs[i].index = i;
+            }
+        }
+
         void OnElementAdded(VisualElement ve, int index)
         {
             if (ve is not Tab tab || m_Reordering)
@@ -501,11 +509,12 @@ namespace UnityEngine.UIElements
                 m_TabHeaders.Insert(index, tabHeader);
                 m_Tabs.Insert(index, tab);
                 tab.EnableTabDragHandles(m_Reorderable);
-
-                tab.closed += (t) => OnTabClosed(t, index);
+                tab.closed += OnTabClosed;
             }
 
             tab.selected += OnTabSelected;
+
+            UpdateIndexes();
 
             // Set the first tab to be active
             if (activeTab == null)
@@ -527,6 +536,8 @@ namespace UnityEngine.UIElements
             tab.hierarchy.Insert(0, tabHeaderVisualElement);
             tab.SetInactive();
 
+            UpdateIndexes();
+
             // If we delete an active tab and there are more available, default back to the first one.
             if (activeTab == tab && m_Tabs.Count > 0)
                 activeTab = m_Tabs[0];
@@ -539,9 +550,9 @@ namespace UnityEngine.UIElements
             activeTab = tab;
         }
 
-        void OnTabClosed(Tab tab, int index)
+        void OnTabClosed(Tab tab)
         {
-            tabClosed?.Invoke(tab, index);
+            tabClosed?.Invoke(tab, tab.index);
         }
 
         /// <summary>
@@ -572,6 +583,8 @@ namespace UnityEngine.UIElements
             Insert(to, tab);
 
             m_Reordering = false;
+
+            UpdateIndexes();
 
             tabReordered?.Invoke(from, to);
 

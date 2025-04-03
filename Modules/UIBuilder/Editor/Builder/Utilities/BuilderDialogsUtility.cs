@@ -14,6 +14,9 @@ namespace Unity.UI.Builder
 
         private static bool cannotOpenDialogs => Application.isBatchMode || preventDialogsFromOpening;
 
+        // Used for testing
+        internal static int CannotOpenDisplayDialogComplexDefaultValue = 0;
+
         public static bool DisplayDialog(string title, string message)
         {
             return DisplayDialog(title, message, BuilderConstants.DialogOkOption);
@@ -35,7 +38,7 @@ namespace Unity.UI.Builder
         public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
         {
             if (cannotOpenDialogs)
-                return 0;
+                return CannotOpenDisplayDialogComplexDefaultValue;
 
             return EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
         }

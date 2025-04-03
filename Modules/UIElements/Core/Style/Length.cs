@@ -42,6 +42,15 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Creates a pixel <see cref="Length"/> from a float.
+        /// </summary>
+        /// <returns>The created length.</returns>
+        public static Length Pixels(float value)
+        {
+            return new Length(value, LengthUnit.Pixel);
+        }
+
+        /// <summary>
         /// Creates a percentage <see cref="Length"/> from a float.
         /// </summary>
         /// <returns>The created length.</returns>

@@ -99,8 +99,6 @@ namespace UnityEditor.Search
 
         internal void OnEnable()
         {
-            SearchService.SetupSearchFirstUse();
-
             titleContent.image = Icons.quicksearch;
             titleContent.text = L10n.Tr("Search Index Manager");
 
@@ -912,7 +910,7 @@ namespace UnityEditor.Search
                 menu.AddSeparator("");
                 menu.AddItem(new GUIContent("User"), false, () =>
                 {
-                    var defaultDB = SearchDatabase.CreateDefaultIndex();
+                    var defaultDB = SearchDatabase.CreateDefaultIndexAndImport();
                     var newItem = new IndexManagerViewModel(defaultDB.settings, false);
                     m_IndexSettings.Add(newItem);
                     m_IndexSettingsFilePaths.Add(defaultDB.path);

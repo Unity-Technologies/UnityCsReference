@@ -369,7 +369,9 @@ namespace UnityEditor.Search
             if (!draggable)
                 return;
             m_InitiateDragPosition = evt.position;
+#pragma warning disable CS0618 // Type or member is obsolete
             m_InitiateDragTargetPosition = transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         private void OnPointerUp(PointerUpEvent evt)
@@ -389,7 +391,9 @@ namespace UnityEditor.Search
 
             if (this.HasPointerCapture(evt.pointerId))
             {
+#pragma warning disable CS0618 // Type or member is obsolete
                 transform.position = new Vector3(m_InitiateDragTargetPosition.x + pointerDelta.x, m_InitiateDragTargetPosition.y + pointerDelta.y, 0.5f);
+#pragma warning restore CS0618 // Type or member is obsolete
 
                 // Check if we should switch position with another block
                 var targetIndex = parent.IndexOf(this);
@@ -410,14 +414,18 @@ namespace UnityEditor.Search
                                 continue;
 
                             m_InitiateDragPosition = evt.position;
+#pragma warning disable CS0618 // Type or member is obsolete
                             m_InitiateDragTargetPosition = b.transform.position;
+#pragma warning restore CS0618 // Type or member is obsolete
 
                             if (moveLeft)
                                 PlaceBehind(b);
                             else
                                 PlaceInFront(b);
 
+#pragma warning disable CS0618 // Type or member is obsolete
                             transform.position = m_InitiateDragTargetPosition;
+#pragma warning restore CS0618 // Type or member is obsolete
                             break;
                         }
                     }
@@ -440,7 +448,9 @@ namespace UnityEditor.Search
 
         private void OnDragExited(PointerCaptureOutEvent evt)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             transform.position = new Vector3(0, 0, m_InitiateDragTargetPosition.z);
+#pragma warning restore CS0618 // Type or member is obsolete
             m_InitiateDragPosition = default;
             m_InitiateDragTargetPosition = default;
 

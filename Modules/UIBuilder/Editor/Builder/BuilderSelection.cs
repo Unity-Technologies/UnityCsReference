@@ -393,10 +393,12 @@ namespace Unity.UI.Builder
             });
 
             var notifiedNotifiers = new HashSet<IBuilderSelectionNotifier>();
-            foreach (var notification in m_Notifications)
+            for (var i = 0; i < m_Notifications.Count; i++)
             {
-                foreach (var notifier in m_Notifiers)
+                var notification = m_Notifications[i];
+                for (var j = 0; j < m_Notifiers.Count; j++)
                 {
+                    var notifier = m_Notifiers[j];
                     if (!notifiedNotifiers.Contains(notifier) && notifier != notification.notifier)
                     {
                         notifier.StylingChanged(notification.styleList, notification.changeType);

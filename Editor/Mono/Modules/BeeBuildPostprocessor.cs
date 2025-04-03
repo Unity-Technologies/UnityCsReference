@@ -34,6 +34,8 @@ namespace UnityEditor.Modules
         static readonly string kXrBootSettingsKey = "xr-boot-settings";
         public virtual ILaunchReport LaunchPlayer(BuildLaunchPlayerArgs args) => throw new NotSupportedException();
 
+        public static event Action<IPostStrippingModuleAdder> onAddModulesPostUnityLinker;
+
         public virtual void PostProcess(BuildPostProcessArgs args, out BuildProperties outProperties)
         {
             PostProcess(args);
@@ -309,7 +311,7 @@ namespace UnityEditor.Modules
             var linkerFlagsFile = Il2CppLinkerFlagsFileFor(args);
             var relativeDataPath = Il2CppDataRelativePath(args);
 
-            if (CrashReportingSettings.enabled)
+            if (CrashReportingSettings.canUploadReports)
                 additionalArgs.Add("--emit-source-mapping");
 
             var namedBuildTarget = GetNamedBuildTarget(args);
@@ -346,7 +348,7 @@ namespace UnityEditor.Modules
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Unity_4_8 ||
                         apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard),
-                CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.enabled,
+                CreateSymbolFiles = !GetDevelopment(args) || CrashReportingSettings.canUploadReports,
                 AdditionalCppFiles = PluginImporter.GetImporters(args.target)
                     .Where(imp => DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
                     .Select(imp => imp.assetPath)
@@ -428,7 +430,7 @@ namespace UnityEditor.Modules
             Services = new ()
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
-                EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.enabled,
+                EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },
@@ -784,6 +786,9 @@ namespace UnityEditor.Modules
             {
                 args.report.AddAppendix(strippingInfo);
                 var linkerToEditorData = AssemblyStripper.ReadLinkerToEditorData(EditorBuildOutputPathFor(args).ToString());
+
+                onAddModulesPostUnityLinker?.Invoke(new PostStrippingModuleAdder(linkerToEditorData));
+
                 AssemblyStripper.UpdateBuildReport(linkerToEditorData, strippingInfo);
             }
         }

@@ -436,17 +436,23 @@ namespace UnityEngine.UIElements
 
         ValueAnimation<float> ITransitionAnimations.Scale(float to, int durationMs)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return experimental.animation.Start((e) => e.transform.scale.x, to, durationMs, (e, c) => { e.transform.scale = new Vector3(c, c, c); });
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         ValueAnimation<Vector3> ITransitionAnimations.Position(Vector3 to, int durationMs)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return experimental.animation.Start((e) => e.transform.position, to, durationMs, (e, c) => { e.transform.position = c; });
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         ValueAnimation<Quaternion> ITransitionAnimations.Rotation(Quaternion to, int durationMs)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             return experimental.animation.Start((e) => e.transform.rotation, to, durationMs, (e, c) => { e.transform.rotation = c; });
+#pragma warning restore CS0618 // Type or member is obsolete
         }
     }
 }

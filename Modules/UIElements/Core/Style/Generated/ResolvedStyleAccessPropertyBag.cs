@@ -646,6 +646,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, int value) => throw new System.InvalidOperationException();
         }
 
+        class UnitySliceTypeProperty : ResolvedEnumProperty<SliceType>
+        {
+            public override string Name => nameof(IResolvedStyle.unitySliceType);
+            public override string ussName => "-unity-slice-type";
+            public override bool IsReadOnly => true;
+            public override SliceType GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).unitySliceType;
+            public override void SetValue(ref ResolvedStyleAccess container, SliceType value) => throw new System.InvalidOperationException();
+        }
+
         class UnityTextAlignProperty : ResolvedEnumProperty<TextAnchor>
         {
             public override string Name => nameof(IResolvedStyle.unityTextAlign);
@@ -729,8 +738,8 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(79);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(237);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(80);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(240);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -801,6 +810,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnitySliceRightProperty());
             AddProperty(new UnitySliceScaleProperty());
             AddProperty(new UnitySliceTopProperty());
+            AddProperty(new UnitySliceTypeProperty());
             AddProperty(new UnityTextAlignProperty());
             AddProperty(new UnityTextGeneratorProperty());
             AddProperty(new UnityTextOutlineColorProperty());

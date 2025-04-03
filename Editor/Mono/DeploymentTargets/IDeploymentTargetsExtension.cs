@@ -151,7 +151,7 @@ namespace UnityEditor.DeploymentTargets
         {
             this.title = title;
             this.launchResult = result;
-            if (result != null && !result.Success)
+            if (result != null && result.Success)
                 Debug.LogWarning($"Creating DeploymentOperationFailedException('{title}') , but launch result says it's succeeded?");
         }
     }

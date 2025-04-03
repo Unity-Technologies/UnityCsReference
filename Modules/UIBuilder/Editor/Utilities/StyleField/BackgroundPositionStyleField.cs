@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 using UnityEngine;
@@ -46,7 +45,7 @@ namespace Unity.UI.Builder
             public override object CreateInstance() => new BackgroundPositionStyleField();
 
 #pragma warning disable 649
-            [SerializeField] BackgroundPositionMode mode;
+            [SerializeField] BackgroundPosition.Axis mode;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
 #pragma warning restore 649
 
@@ -69,9 +68,9 @@ namespace Unity.UI.Builder
         DimensionStyleField m_BackgroundPositionField;
         ToggleButtonGroup m_BackgroundPositionAlign;
 
-        BackgroundPositionMode m_Mode;
+        BackgroundPosition.Axis m_Mode;
 
-        public BackgroundPositionMode mode
+        public BackgroundPosition.Axis mode
         {
             get => m_Mode;
             set
@@ -80,64 +79,7 @@ namespace Unity.UI.Builder
                     return;
                 m_Mode = value;
 
-                List<Texture2D> icons = new List<Texture2D>();
-                List<string> tooltips = new List<string>();
-
-                if (m_Mode == BackgroundPositionMode.Horizontal)
-                {
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-left", "Background/"));
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-center", "Background/"));
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-right", "Background/"));
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionX", BackgroundPositionKeyword.Left.ToString()), out var styleValueTooltipLeft);
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionX", BackgroundPositionKeyword.Center.ToString()), out var styleValueTooltipCenter);
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionX", BackgroundPositionKeyword.Right.ToString()), out var styleValueTooltipRight);
-
-                    tooltips.Add(styleValueTooltipLeft);
-                    tooltips.Add(styleValueTooltipCenter);
-                    tooltips.Add(styleValueTooltipRight);
-                }
-                else
-                {
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-top", "Background/"));
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-center", "Background/"));
-                    icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-bottom", "Background/"));
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionY", BackgroundPositionKeyword.Top.ToString()), out var styleValueTooltipLeft);
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionY", BackgroundPositionKeyword.Center.ToString()), out var styleValueTooltipCenter);
-
-                    BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
-                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
-                        "BackgroundPositionY", BackgroundPositionKeyword.Bottom.ToString()), out var styleValueTooltipRight);
-
-                    tooltips.Add(styleValueTooltipLeft);
-                    tooltips.Add(styleValueTooltipCenter);
-                    tooltips.Add(styleValueTooltipRight);
-                }
-
-                for (var i = 0; i < icons.Count; ++i)
-                {
-                    var icon = icons[i];
-                    var tooltip = tooltips[i];
-                    var button = new Button() { iconImage = icon, tooltip = tooltip };
-                    m_BackgroundPositionAlign.Add(button);
-                }
-
-                var toggleButtonGroupState = new ToggleButtonGroupState(2u, 3);
-                m_BackgroundPositionAlign.SetValueWithoutNotify(toggleButtonGroupState);
+                OnModeChanged();
             }
         }
 
@@ -165,6 +107,7 @@ namespace Unity.UI.Builder
             });
 
             value = new BackgroundPosition(BackgroundPositionKeyword.Center);
+            OnModeChanged();
         }
 
         public override void SetValueWithoutNotify(BackgroundPosition newValue)
@@ -211,9 +154,9 @@ namespace Unity.UI.Builder
             int indexAlign = selectedAlign[0];
 
 
-            if (indexAlign == 0) newPosition.keyword = (m_Mode == BackgroundPositionMode.Horizontal) ? BackgroundPositionKeyword.Left : BackgroundPositionKeyword.Top;
+            if (indexAlign == 0) newPosition.keyword = (m_Mode == BackgroundPosition.Axis.Horizontal) ? BackgroundPositionKeyword.Left : BackgroundPositionKeyword.Top;
             else if (indexAlign == 1) newPosition.keyword = BackgroundPositionKeyword.Center;
-            else newPosition.keyword = (m_Mode == BackgroundPositionMode.Horizontal) ? BackgroundPositionKeyword.Right : BackgroundPositionKeyword.Bottom;
+            else newPosition.keyword = (m_Mode == BackgroundPosition.Axis.Horizontal) ? BackgroundPositionKeyword.Right : BackgroundPositionKeyword.Bottom;
 
             newPosition.offset = new Length(m_BackgroundPositionField.length, ConvertUnits(m_BackgroundPositionField.unit));
 
@@ -234,35 +177,71 @@ namespace Unity.UI.Builder
             return LengthUnit.Pixel;
         }
 
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
+        void OnModeChanged()
         {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
+            List<Texture2D> icons = new List<Texture2D>();
+            List<string> tooltips = new List<string>();
 
-            bool valid = stylePropertyValueCount == 2 &&
-                (styleProperty.values[0].valueType == StyleValueType.Enum && styleProperty.values[1].valueType == StyleValueType.Dimension);
-
-            if (!isNewValue && !valid)
+            if (m_Mode == BackgroundPosition.Axis.Horizontal)
             {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-left", "Background/"));
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-center", "Background/"));
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-x-right", "Background/"));
 
-            if (!isNewValue)
-            {
-                styleSheet.SetValue(styleProperty.values[0], value.keyword);
-                Dimension position = new Dimension(value.offset.value, StyleSheetUtilities.ConvertToDimensionUnit(value.offset.unit));
-                styleSheet.SetValue(styleProperty.values[1], position);
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                    BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                    "BackgroundPositionX", BackgroundPositionKeyword.Left.ToString()), out var styleValueTooltipLeft);
+
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                        "BackgroundPositionX", BackgroundPositionKeyword.Center.ToString()),
+                    out var styleValueTooltipCenter);
+
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                    BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                    "BackgroundPositionX", BackgroundPositionKeyword.Right.ToString()), out var styleValueTooltipRight);
+
+                tooltips.Add(styleValueTooltipLeft);
+                tooltips.Add(styleValueTooltipCenter);
+                tooltips.Add(styleValueTooltipRight);
             }
             else
             {
-                styleSheet.AddValue(styleProperty, value.keyword);
-                Dimension position = new Dimension(value.offset.value, StyleSheetUtilities.ConvertToDimensionUnit(value.offset.unit));
-                styleSheet.AddValue(styleProperty, position);
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-top", "Background/"));
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-center", "Background/"));
+                icons.Add(BuilderInspectorUtilities.LoadIcon("background-position-y-bottom", "Background/"));
+
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                    BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                    "BackgroundPositionY", BackgroundPositionKeyword.Top.ToString()), out var styleValueTooltipLeft);
+
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                        "BackgroundPositionY", BackgroundPositionKeyword.Center.ToString()),
+                    out var styleValueTooltipCenter);
+
+                BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(string.Format(
+                        BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat,
+                        "BackgroundPositionY", BackgroundPositionKeyword.Bottom.ToString()),
+                    out var styleValueTooltipRight);
+
+                tooltips.Add(styleValueTooltipLeft);
+                tooltips.Add(styleValueTooltipCenter);
+                tooltips.Add(styleValueTooltipRight);
             }
 
-            return isNewValue;
+            m_BackgroundPositionAlign.Clear();
+
+            for (var i = 0; i < icons.Count; ++i)
+            {
+                var icon = icons[i];
+                var tooltip = tooltips[i];
+                var button = new Button() { iconImage = icon, tooltip = tooltip };
+                m_BackgroundPositionAlign.Add(button);
+            }
+
+            var toggleButtonGroupState = new ToggleButtonGroupState(2u, 3);
+            m_BackgroundPositionAlign.SetValueWithoutNotify(toggleButtonGroupState);
         }
     }
 }

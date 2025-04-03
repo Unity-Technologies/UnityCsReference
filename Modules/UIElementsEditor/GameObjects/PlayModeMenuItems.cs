@@ -21,6 +21,38 @@ namespace UnityEditor.UIElements.GameObjects
         private static readonly string k_PanelSettingsAssetPath = k_UITKEssentialResourcesFolderPath + "/PanelSettings.asset";
         private static string[] k_AssetsFolderFilter = new[] { k_AssetsFolder };
 
+        [MenuItem("GameObject/UI Toolkit/Panel Input Configuration", false, 10)]
+        public static void AddPanelInputConfiguration(MenuCommand menuCommand)
+        {
+            AddPanelInputConfiguration(menuCommand.context as GameObject);
+        }
+
+        public static void AddPanelInputConfiguration(GameObject parent = null)
+        {
+            var root = ObjectFactory.CreateGameObject(nameof(PanelInputConfiguration));
+            root.SetActive(false);
+            root.AddComponent<PanelInputConfiguration>();
+            GameObjectUtility.EnsureUniqueNameForSibling(root);
+            root.SetActive(true);
+
+            // Works for all stages.
+            StageUtility.PlaceGameObjectInCurrentStage(root);
+            PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage != null)
+            {
+                Undo.SetTransformParent(root.transform, prefabStage.prefabContentsRoot.transform, "");
+            }
+
+            Undo.SetCurrentGroupName("Create " + root.name);
+
+            if (parent != null)
+            {
+                SetParentAndAlign(root, parent);
+            }
+
+            Selection.activeGameObject = root;
+        }
+
         [MenuItem("GameObject/UI Toolkit/UI Document", false, 9)]
         public static void AddUIDocument(MenuCommand menuCommand)
         {

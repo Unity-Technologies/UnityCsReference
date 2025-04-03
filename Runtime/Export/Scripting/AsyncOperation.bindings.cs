@@ -27,6 +27,9 @@ namespace UnityEngine
 
         protected AsyncOperation(IntPtr ptr)
         {
+            if(ptr == IntPtr.Zero)
+                return;
+
             InternalSetManagedObject(ptr, this);
             m_Ptr = ptr; 
         }

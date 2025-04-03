@@ -94,6 +94,7 @@ namespace UnityEngine
 
         public static int GetControlID(int hint, FocusType focus)
         {
+            GUIUtility.CheckOnGUI();
             return GetControlID(hint, focus, Rect.zero);
         }
 
@@ -113,6 +114,7 @@ namespace UnityEngine
             get { return Internal_GetHotControl(); }
             set
             {
+                WarnOnGUI();
                 Internal_SetHotControl(value);
             }
         }
@@ -120,6 +122,7 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void TakeCapture()
         {
+            WarnOnGUI();
             takeCapture?.Invoke();
         }
 
@@ -143,6 +146,7 @@ namespace UnityEngine
 
         internal static bool HasKeyFocus(int controlID)
         {
+            WarnOnGUI();
             return controlID == GUIUtility.keyboardControl &&
                 (s_HasCurrentWindowKeyFocusFunc != null ? s_HasCurrentWindowKeyFocusFunc() : true);
         }
@@ -150,6 +154,7 @@ namespace UnityEngine
         //*undocumented*
         public static void ExitGUI()
         {
+            WarnOnGUI();
             // We have to always throw the ExitGUIException otherwise the exiting out of recursive on GUI will not work.
             throw new ExitGUIException();
         }
@@ -303,16 +308,46 @@ namespace UnityEngine
             return IsExitGUIException(exception);
         }
 
+        private static readonly Lazy<bool> s_DetectIMGUICallsInUITK = new Lazy<bool>(() => (bool)Debug.GetDiagnosticSwitch("DetectIMGUICallsInUITK").value);
+        internal static bool DetectIMGUICallsInUITK => s_DetectIMGUICallsInUITK.Value;
+        private static readonly Lazy<bool> s_DetectInvalidImguiAPIUsages = new Lazy<bool>(() => (bool)Debug.GetDiagnosticSwitch("DetectInvalidImguiAPIUsages").value);
+        internal static bool DetectInvalidImguiAPIUsages => s_DetectInvalidImguiAPIUsages.Value;
+
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static bool isUITK { get; set; } = false;
+
         // Only allow calling GUI functions from inside OnGUI
         internal static void CheckOnGUI()
         {
-            if (guiDepth <= 0)
+            if ( guiDepth <= 0)
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
+
+            if (DetectIMGUICallsInUITK && isUITK)
+                Debug.LogWarning("IMGUI method called from insde UI Toolkit.\n " +
+                    "You can only call IMGUI method inside an OnGUI method or inside an IMGUIContainer.\n" +
+                    "While IMGUI and UI Toolkit are tightly coupled in the editor right now, it may change in future versions of Unity.");
+        }
+
+        // Only allow calling GUI functions from inside OnGUI
+        internal static void WarnOnGUI()
+        {
+            if (DetectInvalidImguiAPIUsages && guiDepth <= 0)
+            {
+                Debug.LogWarning("You can only call IMGUI method inside an OnGUI method or inside an IMGUIContainer.");
+                return;
+            }
+
+            if ( DetectIMGUICallsInUITK && isUITK )
+                Debug.LogWarning("IMGUI method called from insde UI Toolkit.\n " +
+                    "You can only call IMGUI method inside an OnGUI method or inside an IMGUIContainer.\n" +
+                    "While IMGUI and UI Toolkit are tightly coupled in the editor right now, it may change in future versions of Unity.");
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static float RoundToPixelGrid(float v)
         {
+            WarnOnGUI();
             // Using same rounding constant as GUITexture::AlignPointToDevice
             const float kNearestRoundingOffset = 0.48f;
             return Mathf.Floor((v * GUIUtility.pixelsPerPoint) + kNearestRoundingOffset) / GUIUtility.pixelsPerPoint;
@@ -328,12 +363,14 @@ namespace UnityEngine
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
+            WarnOnGUI();
             return InternalWindowToScreenPoint(GUIClip.UnclipToWindow(guiPoint));
         }
 
         // Convert a rect from GUI position to screen space.
         public static Rect GUIToScreenRect(Rect guiRect)
         {
+            WarnOnGUI();
             Vector2 screenPoint = GUIToScreenPoint(new Vector2(guiRect.x, guiRect.y));
             guiRect.x = screenPoint.x;
             guiRect.y = screenPoint.y;
@@ -343,12 +380,14 @@ namespace UnityEngine
         // Convert a point from screen space to GUI position.
         public static Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
+            WarnOnGUI();
             return GUIClip.ClipToWindow(InternalScreenToWindowPoint(screenPoint));
         }
 
         // Convert a rect from screen space to GUI position.
         public static Rect ScreenToGUIRect(Rect screenRect)
         {
+            WarnOnGUI();
             Vector2 guiPoint = ScreenToGUIPoint(new Vector2(screenRect.x, screenRect.y));
             screenRect.x = guiPoint.x;
             screenRect.y = guiPoint.y;
@@ -358,6 +397,7 @@ namespace UnityEngine
         // Helper function to rotate the GUI around a point.
         public static void RotateAroundPivot(float angle, Vector2 pivotPoint)
         {
+            WarnOnGUI();
             Matrix4x4 mat = GUI.matrix;
             GUI.matrix = Matrix4x4.identity;
             Vector2 point = GUIClip.Unclip(pivotPoint);
@@ -368,6 +408,7 @@ namespace UnityEngine
         // Helper function to scale the GUI around a point.
         public static void ScaleAroundPivot(Vector2 scale, Vector2 pivotPoint)
         {
+            WarnOnGUI();
             Matrix4x4 mat = GUI.matrix;
             Vector2 point = GUIClip.Unclip(pivotPoint);
             Matrix4x4 newMat =  Matrix4x4.TRS(point, Quaternion.identity, new Vector3(scale.x, scale.y, 1)) * Matrix4x4.TRS(-point, Quaternion.identity, Vector3.one);
@@ -376,6 +417,7 @@ namespace UnityEngine
 
         public static Rect AlignRectToDevice(Rect rect)
         {
+            WarnOnGUI();
             int width, height;
             return AlignRectToDevice(rect, out width, out height);
         }

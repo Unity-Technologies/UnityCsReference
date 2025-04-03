@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
             {
                 if (materials != null)
                 {
-                    s_MaterialPool.Release(materials);
+                    s_MaterialsPool.Release(materials);
                     s_VerticesPool.Release(vertices);
                     s_IndicesPool.Release(indices);
                     s_RenderModesPool.Release(renderModes);
@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements
             return inst;
         }, OnGetManagedJob, inst => { inst.visualElement = null; }, null, false);
 
-        static UnityEngine.Pool.ObjectPool<List<Material>> s_MaterialPool = new(() =>
+        static UnityEngine.Pool.ObjectPool<List<Material>> s_MaterialsPool = new(() =>
         {
             var inst = new List<Material>();
             return inst;
@@ -156,7 +156,7 @@ namespace UnityEngine.UIElements
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
 
-                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
                 if (managedJobData.prepareSuccess)
                     managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
                 k_PrepareJobifiedMarker.End();
@@ -176,7 +176,7 @@ namespace UnityEngine.UIElements
                 if (textData.prepareSuccess)
                     continue;
 
-                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
                 textData.visualElement.uitkTextHandle.PrepareFontAsset();
             }
 
@@ -237,23 +237,24 @@ namespace UnityEngine.UIElements
 
         static void ConvertMeshInfoToUIRVertex(MeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
         {
-            lock (s_MaterialPool)
+            lock (s_MaterialsPool)
             {
-                materials = s_MaterialPool.Get();
+                materials = s_MaterialsPool.Get();
                 verticesArray = s_VerticesPool.Get();
                 indicesArray = s_IndicesPool.Get();
                 renderModes = s_RenderModesPool.Get();
             }
 
             var pos = (visualElement).contentRect.min;
+            float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
             // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
             // since we cannot store multiple colors for a given text element.
             bool hasMultipleColors = visualElement.uitkTextHandle.textInfo.hasMultipleColors;
             if (hasMultipleColors)
-                visualElement.renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+                visualElement.renderData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
             else
-                visualElement.renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
+                visualElement.renderData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
             for (int i = 0; i < meshInfos.Length; i++)
             {
@@ -271,7 +272,6 @@ namespace UnityEngine.UIElements
 
                     materials.Add(meshInfo.material);
                     renderModes.Add(meshInfo.glyphRenderMode);
-
                     bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
                     bool isDynamicColor = meshInfo.applySDF && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
@@ -279,10 +279,10 @@ namespace UnityEngine.UIElements
 
                     for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
                     {
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 0], pos, isDynamicColor);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 1], pos, isDynamicColor);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 2], pos, isDynamicColor);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 3], pos, isDynamicColor);
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor);
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);
@@ -304,10 +304,13 @@ namespace UnityEngine.UIElements
 
         void AddDrawEntries(MeshGenerationContext mgc, object _)
         {
+            // Accessing TextInfoCommon is invalid after this point
             TextCore.Text.TextGenerator.IsExecutingJob = false;
+
             foreach (var managedJobData in textJobDatas)
             {
-                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);
+                var ve = managedJobData.visualElement;
+                mgc.Begin(managedJobData.node.GetParentEntry(), ve, ve.nestedRenderData ?? ve.renderData);
 
                 managedJobData.visualElement.uitkTextHandle.HandleLinkAndATagCallbacks();
                 mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes);

@@ -5,6 +5,7 @@
 using UnityEngine.UIElements;
 using UnityEngine;
 using System;
+using UnityEditor.UIElements.GameObjects;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.Inspector
@@ -33,6 +34,7 @@ namespace UnityEditor.UIElements.Inspector
 
         private HelpBox m_DrivenByParentWarning;
         private HelpBox m_MissingPanelSettings;
+        private VisualElement m_InputConfiguration;
 
         private void ConfigureFields()
         {
@@ -56,6 +58,14 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceWidthField = m_RootVisualElement.MandatoryQ<VisualElement>("width-field");
             m_WorldSpaceHeightField = m_RootVisualElement.MandatoryQ<VisualElement>("height-field");
             m_WorldSpaceDimensionsFoldout.style.display = DisplayStyle.None;
+
+            m_InputConfiguration = m_RootVisualElement.MandatoryQ<VisualElement>("input-configuration");
+            m_InputConfiguration.style.display = DisplayStyle.None;
+            m_InputConfiguration.MandatoryQ<Button>("input-configuration-create").clicked += () =>
+            {
+                if (PanelInputConfiguration.current == null)
+                    PlayModeMenuItems.AddPanelInputConfiguration();
+            };
         }
 
         private void BindFields()
@@ -86,6 +96,13 @@ namespace UnityEditor.UIElements.Inspector
             m_WorldSpaceHeightField.style.display = display;
         }
 
+        private void UpdateInputConfigurationOptions()
+        {
+            bool hasNoConfig = PanelInputConfiguration.s_ActiveInstances == 0;
+            bool isWorldSpace = ((UIDocument)target).panelSettings?.renderMode == PanelRenderMode.WorldSpace;
+            m_InputConfiguration.style.display = hasNoConfig && isWorldSpace ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+
         public override VisualElement CreateInspectorGUI()
         {
             m_RootVisualElement = new VisualElement();
@@ -105,6 +122,9 @@ namespace UnityEditor.UIElements.Inspector
             ConfigureFields();
             BindFields();
             UpdateValues();
+
+            UpdateInputConfigurationOptions();
+            m_InputConfiguration.schedule.Execute(UpdateInputConfigurationOptions).Every(200);
 
             return m_RootVisualElement;
         }

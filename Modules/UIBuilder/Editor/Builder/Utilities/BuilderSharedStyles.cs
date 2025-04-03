@@ -276,7 +276,7 @@ namespace Unity.UI.Builder
 
         public static List<string> GetMatchingSelectorsOnElement(VisualElement documentElement)
         {
-            var matchedElementsSelector = new MatchedRulesExtractor();
+            var matchedElementsSelector = new MatchedRulesExtractor(AssetDatabase.GetAssetPath);
             matchedElementsSelector.FindMatchingRules(documentElement);
 
             if (matchedElementsSelector.selectedElementRules == null || matchedElementsSelector.selectedElementRules.Count <= 0)
@@ -295,7 +295,7 @@ namespace Unity.UI.Builder
 
         public static List<SelectorMatchRecord> GetMatchingSelectorsOnElementFromLocalStyleSheet(VisualElement documentElement)
         {
-            var matchedElementsSelector = new MatchedRulesExtractor();
+            var matchedElementsSelector = new MatchedRulesExtractor(AssetDatabase.GetAssetPath);
 
             // set all pseudo states to true to get all matching selectors
             var previousPseudoStates = documentElement.pseudoStates;

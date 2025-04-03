@@ -303,6 +303,7 @@ namespace UnityEditor
         {
             Tools.viewTool = ViewTool.Pan;
             Tools.s_LockedViewTool = ViewTool.None;
+
             GUIUtility.hotControl = 0;
 
             if (viewToolActiveChanged != null)

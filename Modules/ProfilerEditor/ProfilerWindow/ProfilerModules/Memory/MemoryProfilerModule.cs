@@ -541,7 +541,17 @@ namespace UnityEditorInternal.Profiling
                 {
                     try
                     {
-                        var type = Type.GetType("Unity.MemoryProfiler.Editor.MemoryProfilerModule.MemoryProfilerModuleBridge, Unity.MemoryProfiler.Editor.MemoryProfilerModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+                        // Detect if correct namespace is used by the package and use that instead.
+                        var type = Type.GetType("Unity.MemoryProfiler.MemoryProfilerModule.Editor.MemoryProfilerModuleBridge, Unity.MemoryProfiler.MemoryProfilerModule.Editor, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+
+                        if(type == null)
+                            // Check if the old and incorrect assembly is used instead
+                            type = Type.GetType("Unity.MemoryProfiler.MemoryProfilerModule.Editor.MemoryProfilerModuleBridge, Unity.MemoryProfiler.Editor.MemoryProfilerModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+
+                        if(type == null)
+                            // Check if the old and incorrect namespace is used instead
+                            type = Type.GetType("Unity.MemoryProfiler.Editor.MemoryProfilerModule.MemoryProfilerModuleBridge, Unity.MemoryProfiler.Editor.MemoryProfilerModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null");
+
                         var property = type.GetProperty("CreateDetailsViewController");
                         s_MemoryProfilerModuleBridgeCreateDetailsViewControllerPropertyGetter = property.GetMethod;
                     }

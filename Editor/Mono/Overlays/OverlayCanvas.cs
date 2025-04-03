@@ -331,6 +331,8 @@ namespace UnityEditor.Overlays
         internal Action afterOverlaysInitialized;
         internal event Action<bool> overlaysEnabledChanged;
         internal event Action<bool> overlaysSupportEnabledChanged;
+        internal event Action presetChanged;
+
 
         internal event Action overlayListChanged;
 
@@ -459,7 +461,9 @@ namespace UnityEditor.Overlays
             m_WindowRoot.RegisterCallback<GeometryChangedEvent>((evt) =>
             {
                 var worldPos = m_WindowRoot.LocalToWorld(evt.newRect.position);
+#pragma warning disable CS0618 // Type or member is obsolete
                 dockArea.transform.position = ve.WorldToLocal(worldPos);
+#pragma warning restore CS0618 // Type or member is obsolete
                 dockArea.style.width = evt.newRect.width;
                 dockArea.style.height = evt.newRect.height;
             });
@@ -711,7 +715,7 @@ namespace UnityEditor.Overlays
                 saveData[i] = new SaveData(saveData[i]);
         }
 
-        internal void ApplyPreset(OverlayPreset preset)
+        internal void ApplyPreset(IOverlayPreset preset)
         {
             if (!preset.CanApplyToWindow(containerWindow.GetType()))
             {
@@ -722,6 +726,8 @@ namespace UnityEditor.Overlays
 
             m_LastAppliedPresetName = preset.name;
             ApplySaveData(preset.saveData);
+            preset.ApplyCustomData(this);
+            presetChanged?.Invoke();
         }
 
         internal void ApplySaveData(SaveData[] saveData)
@@ -1052,7 +1058,7 @@ namespace UnityEditor.Overlays
 
             // Clear OverlayContainer instances and set Overlay.displayed to false. RestoreOverlay expects that Overlay
             // is not present in VisualElement hierarchy.
-            foreach (var overlay in overlays)
+            foreach (var overlay in this.overlays)
             {
                 overlay.displayed = false;
                 overlay.container?.RemoveOverlay(overlay);
@@ -1062,12 +1068,13 @@ namespace UnityEditor.Overlays
             // 1. Find and associate all Overlays with SaveData (using default SaveData if necessary)
             // 2. Sort in ascending order by SaveData.index
             // 3. Apply SaveData, insert Overlay in Container
-            var ordered = new List<Tuple<SaveData, Overlay>>();
+            var overlays = new List<Tuple<SaveData, Overlay>>();
 
-            foreach(var o in overlays)
-                ordered.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
+            foreach(var o in this.overlays)
+                overlays.Add(new Tuple<SaveData, Overlay>(FindSaveData(o), o));
 
-            foreach (var o in ordered.OrderBy(x => x.Item1.index))
+            var ordered = overlays.OrderBy(x => x.Item1.index);
+            foreach (var o in ordered)
                 RestoreOverlay(o.Item2, o.Item1);
 
             afterOverlaysInitialized?.Invoke();

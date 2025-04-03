@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using JetBrains.Annotations;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine.UIElements;
 
@@ -42,7 +41,6 @@ namespace Unity.UI.Builder
         ToggleButtonGroup m_BackgroundRepeatXField;
         ToggleButtonGroup m_BackgroundRepeatYField;
 
-
         static readonly int[] k_RepeatButtonMapping = { 0, 3, 2, 1 };
         static readonly int[] k_ButtonRepeatMapping = { 0, 1, 2, 3 };
 
@@ -54,9 +52,7 @@ namespace Unity.UI.Builder
 
             styleSheets.Add(BuilderPackageUtilities.LoadAssetAtPath<StyleSheet>(s_UssPath));
 
-
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(s_UxmlPath);
-
             template.CloneTree(this);
 
             m_BackgroundRepeatXField = this.Q<ToggleButtonGroup>(s_BackgroundRepeatXFieldName);
@@ -73,9 +69,9 @@ namespace Unity.UI.Builder
                 e.StopPropagation();
             });
 
-            var tooltip = "Controls how a background image is repeated within an element.";
-            m_BackgroundRepeatXField.labelElement.tooltip = tooltip;
-            m_BackgroundRepeatYField.labelElement.tooltip = tooltip;
+            var fieldTooltip = "Controls how a background image is repeated within an element.";
+            m_BackgroundRepeatXField.labelElement.tooltip = fieldTooltip;
+            m_BackgroundRepeatYField.labelElement.tooltip = fieldTooltip;
 
             var iconImageNoRepeat = BuilderInspectorUtilities.LoadIcon("repeatBG_OFF", "Background/");
             var iconImageRepeat = BuilderInspectorUtilities.LoadIcon("repeatBG_ON", "Background/");
@@ -135,33 +131,6 @@ namespace Unity.UI.Builder
             int intY = selectedY[0];
 
             value = new BackgroundRepeat((Repeat)k_ButtonRepeatMapping[intX], (Repeat)k_ButtonRepeatMapping[intY]);
-        }
-
-        public bool OnFieldValueChange(StyleProperty styleProperty, StyleSheet styleSheet)
-        {
-            var stylePropertyValueCount = styleProperty.values.Length;
-            var isNewValue = stylePropertyValueCount == 0;
-            if (!isNewValue && (
-                stylePropertyValueCount < 2 ||
-                styleProperty.values[0].valueType != StyleValueType.Enum ||
-                styleProperty.values[1].valueType != StyleValueType.Enum))
-            {
-                Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-                styleProperty.values = new StyleValueHandle[0];
-                isNewValue = true;
-            }
-
-            if (!isNewValue)
-            {
-                styleSheet.SetValue(styleProperty.values[0], value.x);
-                styleSheet.SetValue(styleProperty.values[1], value.y);
-            }
-            else
-            {
-                styleSheet.AddValue(styleProperty, value.x);
-                styleSheet.AddValue(styleProperty, value.y);
-            }
-            return isNewValue;
         }
     }
 }
