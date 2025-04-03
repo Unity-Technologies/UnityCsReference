@@ -35,8 +35,6 @@ namespace UnityEngine.TextCore.Text
 
         public Rect screenRect;
         public Vector4 margins;
-        public float pixelsPerPoint = 1f;
-        public bool isEditorRenderingModeBitmap = false;
 
         public FontAsset fontAsset;
         public Material material;
@@ -57,7 +55,7 @@ namespace UnityEngine.TextCore.Text
         public bool overrideRichTextColors;
         public bool shouldConvertToLinearSpace = true;
 
-        public float fontSize = 18;
+        public int fontSize = 18;
         public bool autoSize;
         public float fontSizeMin;
         public float fontSizeMax;
@@ -107,7 +105,6 @@ namespace UnityEngine.TextCore.Text
             m_CachedRenderedText = tgs.m_CachedRenderedText;
             screenRect = tgs.screenRect;
             margins = tgs.margins;
-            pixelsPerPoint = tgs.pixelsPerPoint;
             fontAsset = tgs.fontAsset;
             material = tgs.material;
             spriteAsset = tgs.spriteAsset;
@@ -162,12 +159,9 @@ namespace UnityEngine.TextCore.Text
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
 
-            bool pixelPerPointsEqual = true;
-            if (IsEditorTextRenderingModeBitmap())
-                pixelPerPointsEqual = pixelsPerPoint.Equals(other.pixelsPerPoint);
 
             return m_RenderedText.Equals(other.m_RenderedText) && screenRect.Equals(other.screenRect) && margins.Equals(other.margins)
-                && pixelPerPointsEqual && Equals(fontAsset, other.fontAsset) && Equals(material, other.material)
+                && Equals(fontAsset, other.fontAsset) && Equals(material, other.material)
                 && Equals(spriteAsset, other.spriteAsset) && Equals(styleSheet, other.styleSheet)
                 && fontStyle == other.fontStyle && Equals(textSettings, other.textSettings)
                 && textAlignment == other.textAlignment && overflowMode == other.overflowMode
@@ -255,9 +249,6 @@ namespace UnityEngine.TextCore.Text
             hashCode.Add(inverseYAxis);
             hashCode.Add(charWidthMaxAdj);
             hashCode.Add(isIMGUI);
-
-            if (IsEditorTextRenderingModeBitmap())
-                hashCode.Add(pixelsPerPoint);
             return hashCode.ToHashCode();
         }
 
@@ -273,7 +264,7 @@ namespace UnityEngine.TextCore.Text
 
         public override string ToString()
         {
-            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(pixelsPerPoint)}: {pixelsPerPoint}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";
+            return $"{nameof(text)}: {text}\n {nameof(screenRect)}: {screenRect}\n {nameof(margins)}: {margins}\n {nameof(fontAsset)}: {fontAsset}\n {nameof(material)}: {material}\n {nameof(spriteAsset)}: {spriteAsset}\n {nameof(styleSheet)}: {styleSheet}\n {nameof(fontStyle)}: {fontStyle}\n {nameof(textSettings)}: {textSettings}\n {nameof(textAlignment)}: {textAlignment}\n {nameof(overflowMode)}: {overflowMode}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(wordWrappingRatio)}: {wordWrappingRatio}\n {nameof(color)}: {color}\n {nameof(fontColorGradient)}: {fontColorGradient}\n {nameof(fontColorGradientPreset)}: {fontColorGradientPreset}\n {nameof(tintSprites)}: {tintSprites}\n {nameof(overrideRichTextColors)}: {overrideRichTextColors}\n {nameof(shouldConvertToLinearSpace)}: {shouldConvertToLinearSpace}\n {nameof(fontSize)}: {fontSize}\n {nameof(autoSize)}: {autoSize}\n {nameof(fontSizeMin)}: {fontSizeMin}\n {nameof(fontSizeMax)}: {fontSizeMax}\n {nameof(richText)}: {richText}\n {nameof(isRightToLeft)}: {isRightToLeft}\n {nameof(extraPadding)}: {extraPadding}\n {nameof(parseControlCharacters)}: {parseControlCharacters}\n {nameof(isOrthographic)}: {isOrthographic}\n {nameof(tagNoParsing)}: {tagNoParsing}\n {nameof(characterSpacing)}: {characterSpacing}\n {nameof(wordSpacing)}: {wordSpacing}\n {nameof(lineSpacing)}: {lineSpacing}\n {nameof(paragraphSpacing)}: {paragraphSpacing}\n {nameof(lineSpacingMax)}: {lineSpacingMax}\n {nameof(textWrappingMode)}: {textWrappingMode}\n {nameof(maxVisibleCharacters)}: {maxVisibleCharacters}\n {nameof(maxVisibleWords)}: {maxVisibleWords}\n {nameof(maxVisibleLines)}: {maxVisibleLines}\n {nameof(firstVisibleCharacter)}: {firstVisibleCharacter}\n {nameof(useMaxVisibleDescender)}: {useMaxVisibleDescender}\n {nameof(fontWeight)}: {fontWeight}\n {nameof(pageToDisplay)}: {pageToDisplay}\n {nameof(horizontalMapping)}: {horizontalMapping}\n {nameof(verticalMapping)}: {verticalMapping}\n {nameof(uvLineOffset)}: {uvLineOffset}\n {nameof(geometrySortingOrder)}: {geometrySortingOrder}\n {nameof(inverseYAxis)}: {inverseYAxis}\n {nameof(charWidthMaxAdj)}: {charWidthMaxAdj}\n {nameof(inputSource)}: {inputSource}\n {nameof(isPlaceholder)}: {isPlaceholder}";
         }
     }
 }

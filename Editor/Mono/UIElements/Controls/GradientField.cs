@@ -301,7 +301,8 @@ namespace UnityEditor.UIElements
             }
             UpdateGradientTexture();
 
-            if (isShowingGradientPicker)
+            // Update the GradientPicker if it's open and not currently being interacted with. (UUM-100664)
+            if (isShowingGradientPicker && GUIUtility.hotControl == 0)
             {
                 GradientPicker.RefreshGradientData();
             }

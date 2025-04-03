@@ -8,8 +8,24 @@ using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text
 {
+
+
     internal partial class TextGenerator
     {
+        bool NeedToRound => m_ShouldRenderBitmap;
+
+        float Round(float v)
+        {
+            if (!NeedToRound)
+                return v;
+            // When rounding, we want to round halfway values always on the the same size even if there is a small floating point error in the calculation.
+            // This could be the case for centered values where all values would be exactly 0.5 and the rounding direction would be unpredictable.
+            // The small 0.02 pixel offset give a bit of play. This pattern is comming from other places in UITK, mostly from the layout,
+            // but it hasn't been confirmed to be needed here (just a precaution).
+            const float kNearestRoundingOffset = 0.48f;
+            return Mathf.Floor(v + kNearestRoundingOffset);
+        }
+
         public void ParsingPhase(TextInfo textInfo, TextGenerationSettings generationSettings, out uint charCode, out float maxVisibleDescender)
         {
             TextSettings textSettings = generationSettings.textSettings;
@@ -28,6 +44,7 @@ namespace UnityEngine.TextCore.Text
             float currentElementScale = baseScale;
             float currentEmScale = m_FontSize * 0.01f * (generationSettings.isOrthographic ? 1 : 0.1f);
             m_FontScaleMultiplier = 1;
+            m_ShouldRenderBitmap = generationSettings.fontAsset.IsBitmap();
 
             m_CurrentFontSize = m_FontSize;
             m_SizeStack.SetDefault(m_CurrentFontSize);
@@ -73,7 +90,7 @@ namespace UnityEngine.TextCore.Text
 
             m_LineOffset = 0; // Amount of space between lines (font line spacing + m_linespacing).
             m_LineHeight = k_FloatUnset;
-            float lineGap = m_CurrentFontAsset.faceInfo.lineHeight - (m_CurrentFontAsset.m_FaceInfo.ascentLine - m_CurrentFontAsset.m_FaceInfo.descentLine);
+            float lineGap = Round(m_CurrentFontAsset.faceInfo.lineHeight - (m_CurrentFontAsset.m_FaceInfo.ascentLine - m_CurrentFontAsset.m_FaceInfo.descentLine));
 
             m_CSpacing = 0; // Amount of space added between characters as a result of the use of the <cspace> tag.
             m_MonoSpacing = 0;
@@ -380,7 +397,7 @@ namespace UnityEngine.TextCore.Text
                     }
 
                     currentElementScale = adjustedScale * m_FontScaleMultiplier * m_CachedTextElement.m_Scale * m_CachedTextElement.m_Glyph.scale;
-                    baselineOffset = m_CurrentFontAsset.m_FaceInfo.baseline * adjustedScale * m_FontScaleMultiplier * m_CurrentFontAsset.m_FaceInfo.scale;
+                    baselineOffset = Round(m_CurrentFontAsset.m_FaceInfo.baseline * adjustedScale * m_FontScaleMultiplier * m_CurrentFontAsset.m_FaceInfo.scale);
 
                     textInfo.textElementInfo[m_CharacterCount].elementType = TextElementType.Character;
                     textInfo.textElementInfo[m_CharacterCount].scale = currentElementScale;
@@ -619,7 +636,7 @@ namespace UnityEngine.TextCore.Text
 
                 Vector3 topLeft;
                 topLeft.x = m_XAdvance + ((currentGlyphMetrics.horizontalBearingX * m_FXScale.x - padding - stylePadding + glyphAdjustments.xPlacement) * currentElementScale * (1 - m_CharWidthAdjDelta));
-                topLeft.y = baselineOffset + (currentGlyphMetrics.horizontalBearingY + padding + glyphAdjustments.yPlacement) * currentElementScale - m_LineOffset + m_BaselineOffset;
+                topLeft.y = baselineOffset + Round((currentGlyphMetrics.horizontalBearingY + padding + glyphAdjustments.yPlacement) * currentElementScale) - m_LineOffset + m_BaselineOffset;
                 topLeft.z = 0;
 
                 Vector3 bottomLeft;
@@ -680,8 +697,8 @@ namespace UnityEngine.TextCore.Text
                 textInfo.textElementInfo[m_CharacterCount].topRight = topRight;
                 textInfo.textElementInfo[m_CharacterCount].bottomRight = bottomRight;
 
-                textInfo.textElementInfo[m_CharacterCount].origin = m_XAdvance + glyphAdjustments.xPlacement * currentElementScale;
-                textInfo.textElementInfo[m_CharacterCount].baseLine = (baselineOffset - m_LineOffset + m_BaselineOffset) + glyphAdjustments.yPlacement * currentElementScale;
+                textInfo.textElementInfo[m_CharacterCount].origin = Round(m_XAdvance + glyphAdjustments.xPlacement * currentElementScale);
+                textInfo.textElementInfo[m_CharacterCount].baseLine = Round((baselineOffset - m_LineOffset + m_BaselineOffset) + glyphAdjustments.yPlacement * currentElementScale);
                 textInfo.textElementInfo[m_CharacterCount].aspectRatio = (topRight.x - bottomLeft.x) / (topLeft.y - bottomLeft.y);
 
                 // Compute text metrics
@@ -1455,7 +1472,7 @@ namespace UnityEngine.TextCore.Text
                 }
 
                 // Store xAdvance information
-                textInfo.textElementInfo[m_CharacterCount].xAdvance = m_XAdvance;
+                textInfo.textElementInfo[m_CharacterCount].xAdvance = m_XAdvance ;
 
                 #endregion Tabulation & Stops
 
@@ -1503,7 +1520,7 @@ namespace UnityEngine.TextCore.Text
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
                     if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false && !m_IsNewPage)
                     {
-                        TextGeneratorUtilities.AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount, baselineAdjustmentDelta, textInfo);
+                        TextGeneratorUtilities.AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount,Round( baselineAdjustmentDelta), textInfo);
                         m_MaxDescender -= baselineAdjustmentDelta;
                         m_LineOffset += baselineAdjustmentDelta;
 
@@ -1737,7 +1754,7 @@ namespace UnityEngine.TextCore.Text
             float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
             if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false && !m_IsNewPage)
             {
-                TextGeneratorUtilities.AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount, baselineAdjustmentDelta, textInfo);
+                TextGeneratorUtilities.AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount, Round( baselineAdjustmentDelta), textInfo);
                 m_MaxDescender -= baselineAdjustmentDelta;
                 m_LineOffset += baselineAdjustmentDelta;
             }
@@ -1772,7 +1789,7 @@ namespace UnityEngine.TextCore.Text
             float glyphAdjustment = textInfo.textElementInfo[m_LastVisibleCharacterOfLine].adjustedHorizontalAdvance;
             float maxAdvanceOffset = (glyphAdjustment * currentElementScale + (m_CurrentFontAsset.regularStyleSpacing + characterSpacingAdjustment + boldSpacingAdjustment) * currentEmScale + m_CSpacing) * (1 - generationSettings.charWidthMaxAdj);
             float adjustedHorizontalAdvance = textInfo.lineInfo[m_LineNumber].maxAdvance = textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance + (generationSettings.isRightToLeft ? maxAdvanceOffset : -maxAdvanceOffset);
-            textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance = adjustedHorizontalAdvance;
+            textInfo.textElementInfo[m_LastVisibleCharacterOfLine].xAdvance = Round(adjustedHorizontalAdvance);
 
             textInfo.lineInfo[m_LineNumber].baseline = 0 - m_LineOffset;
             textInfo.lineInfo[m_LineNumber].ascender = lineAscender;

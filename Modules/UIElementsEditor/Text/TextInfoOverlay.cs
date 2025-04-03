@@ -157,6 +157,7 @@ namespace UnityEditor.UIElements.Text
 
         private void DrawCharacters(MeshGenerationContext mgc)
         {
+            //TODO add scaling here
             var textInfo = m_TargetTextElement.uitkTextHandle.textInfo;
             int characterCount = textInfo.characterCount;
 

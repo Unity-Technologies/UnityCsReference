@@ -40,6 +40,22 @@ namespace UnityEditor
         const string k_SearchField = "SearchField";
         private const string k_MainSplitterViewDataKey =  "settings-main-splitter__view-data-key";
 
+        struct ProviderChangingScope : IDisposable
+        {
+            SettingsWindow m_Window;
+
+            public ProviderChangingScope(SettingsWindow window)
+            {
+                m_Window = window;
+                window.m_ProviderChanging = true;
+            }
+
+            public void Dispose()
+            {
+                m_Window.m_ProviderChanging = false;
+            }
+        }
+
         private static class ImguiStyles
         {
             public static readonly GUIStyle header = "SettingsHeader";
@@ -141,7 +157,9 @@ namespace UnityEditor
         {
             titleContent.image = EditorGUIUtility.IconContent("Settings").image;
 
-
+            // If this ever needs to be called from CreateGUI instead of OnEnable,
+            // make sure to change how we handle selection/activation of the
+            // initial provider in Init().
             SetupUI();
         }
 
@@ -154,11 +172,7 @@ namespace UnityEditor
                 EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_Splitter)), flexGrow);
             }
 
-            if (m_TreeView != null && m_TreeView.currentProvider != null)
-            {
-                m_TreeView.currentProvider.OnDeactivate();
-                EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
-            }
+            DeactivateAndSaveCurrentProvider();
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
@@ -171,7 +185,6 @@ namespace UnityEditor
             if (m_Providers != null)
                 return;
             Init();
-            RestoreSelection();
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
@@ -205,7 +218,7 @@ namespace UnityEditor
         {
             if (m_TreeView.currentProvider != null)
             {
-                if (state == PlayModeStateChange.ExitingPlayMode)
+                if (state == PlayModeStateChange.ExitingEditMode)
                 {
                     ProviderChanged(m_TreeView.currentProvider, null);
                 }
@@ -235,8 +248,8 @@ namespace UnityEditor
         {
             if (m_ProviderChanging)
                 return;
+            DeactivateAndSaveCurrentProvider();
             Init();
-            RestoreSelection();
             Repaint();
         }
 
@@ -268,27 +281,46 @@ namespace UnityEditor
             m_TreeViewState = m_TreeViewState ?? new TreeViewState();
             m_TreeView = new SettingsTreeView(m_TreeViewState, m_Providers);
             m_TreeView.searchString = m_SearchText = m_SearchText ?? string.Empty;
-            RestoreSelection();
             m_TreeView.currentProviderChanged += ProviderChanged;
+            // Restore selection after setting the ProviderChanged callback so we can activate the initial selected provider
+            RestoreSelection();
         }
 
-        private void ProviderChanged(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider)
+        private bool ProviderChanged(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider)
         {
             if (m_SettingsPanel == null)
-                return;
+                return true;
 
-            m_ProviderChanging = true;
-            lastSelectedProvider?.OnDeactivate();
+            using var pcd = new ProviderChangingScope(this);
+            // If we fail to deactivate the last provider, still continue to select the new one.
+            try
+            {
+                lastSelectedProvider?.Deactivate();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
             m_SettingsPanel.Clear();
 
             if (newlySelectedProvider != null)
             {
-                newlySelectedProvider?.OnActivate(m_SearchText, m_SettingsPanel);
-                EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
+                // If activating the new provider fails, restore the last selected provider.
+                try
+                {
+                    newlySelectedProvider?.Activate(m_SearchText, m_SettingsPanel);
+                    EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), newlySelectedProvider.settingsPath);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    RestoreSelection();
+                    return false;
+                }
             }
 
             SetupIMGUIForCurrentProviderIfNeeded();
-            m_ProviderChanging = false;
+            return true;
         }
 
         internal void SetupIMGUIForCurrentProviderIfNeeded()
@@ -517,7 +549,8 @@ namespace UnityEditor
             if (m_TreeView == null)
                 InitProviders();
 
-            var splitterRect = m_Splitter.fixedPane.layout;
+            // Splitter's fixedPane might only be available in the next `GeometryChangedEvent`.
+            var splitterRect = m_Splitter.fixedPane?.layout ?? Rect.zero;
             var splitterPos = splitterRect.xMax;
             var treeWidth = splitterPos;
             using (var scrollViewScope = new GUILayout.ScrollViewScope(m_PosLeft, GUILayout.Width(splitterPos), GUILayout.MaxWidth(splitterPos), GUILayout.MinWidth(splitterPos)))
@@ -531,6 +564,23 @@ namespace UnityEditor
         {
             m_TreeView.searchString = m_SearchText;
             UpdateSearchHighlight(m_SettingsPanel, m_SearchText);
+        }
+
+        void DeactivateAndSaveCurrentProvider()
+        {
+            if (m_TreeView != null && m_TreeView.currentProvider != null)
+            {
+                using var _ = new ProviderChangingScope(this);
+                try
+                {
+                    m_TreeView.currentProvider.Deactivate();
+                    EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                }
+            }
         }
 
         [MenuItem("Edit/Project Settings...", false, 20000, false)]

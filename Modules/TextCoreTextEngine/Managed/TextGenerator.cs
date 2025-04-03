@@ -3,15 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
-using UnityEngine.TextCore.LowLevel;
-using System;
-using System.Text;
-using System.Globalization;
-using Unity.Jobs.LowLevel.Unsafe;
-using System.Threading.Tasks;
+
 
 namespace UnityEngine.TextCore.Text
 {
@@ -179,6 +173,7 @@ namespace UnityEngine.TextCore.Text
         int m_TotalCharacterCount;
         float m_FontSize;
         float m_FontScaleMultiplier;
+        bool m_ShouldRenderBitmap;
         float m_CurrentFontSize;
         TextProcessingStack<float> m_SizeStack = new TextProcessingStack<float>(16);
 
@@ -194,7 +189,13 @@ namespace UnityEngine.TextCore.Text
 
         TextAlignment m_LineJustification;
         TextProcessingStack<TextAlignment> m_LineJustificationStack = new TextProcessingStack<TextAlignment>(16);
-        float m_BaselineOffset;
+        float _m_BaselineOffset;
+        float m_BaselineOffset
+        {
+            get { return _m_BaselineOffset; }
+            set { _m_BaselineOffset = Round(value); }
+        }
+
         TextProcessingStack<float> m_BaselineOffsetStack = new TextProcessingStack<float>(new float[16]);
         Color32 m_FontColor32;
         Color32 m_HtmlColor;
@@ -210,13 +211,29 @@ namespace UnityEngine.TextCore.Text
         TextProcessingStack<TextColorGradient> m_ColorGradientStack = new TextProcessingStack<TextColorGradient>(new TextColorGradient[16]);
         bool m_ColorGradientPresetIsTinted;
         TextProcessingStack<int> m_ActionStack = new TextProcessingStack<int>(new int[16]);
-        float m_LineOffset;
-        float m_LineHeight;
+        float _m_LineOffset;
+        float m_LineOffset{
+            get => _m_LineOffset;
+            set => _m_LineOffset = Round(value);
+        }
+
+        float _m_LineHeight;
+        float m_LineHeight
+        {
+            get => _m_LineHeight;
+            set => _m_LineHeight = Round(value);
+        }
         bool m_IsDrivenLineSpacing;
         float m_CSpacing;
         float m_MonoSpacing;
         bool m_DuoSpace;
-        float m_XAdvance;
+        float _m_XAdvance;
+        float m_XAdvance{ get => _m_XAdvance; set
+            {
+                var roundedValue = Round(value);
+                _m_XAdvance = roundedValue;
+            } }
+
         float m_TagLineIndent;
         float m_TagIndent;
         TextProcessingStack<float> m_IndentStack = new TextProcessingStack<float>(new float[16]);
@@ -284,6 +301,9 @@ namespace UnityEngine.TextCore.Text
 
         TextElementInfo[] m_InternalTextElementInfo;
 
+        internal static readonly bool EnableTextAlignmentAssertions = (bool)Debug.GetDiagnosticSwitch("EnableTextAlignmentAssertions").value;
+        internal static readonly bool EnableCheckerboardPattern = (bool)Debug.GetDiagnosticSwitch("TextAlignmentFontEngine").value;
+
         /// <summary>
         /// This is the main function that is responsible for creating / displaying the text.
         /// </summary>
@@ -348,6 +368,16 @@ namespace UnityEngine.TextCore.Text
                 ClearMesh(true, textInfo);
                 return;
             }
+
+            // There is currently rounding issues in IMGUI, so the assert cannot be enabled by default.
+            if (NeedToRound && EnableTextAlignmentAssertions)
+            {
+                Debug.AssertFormat(Mathf.Abs(generationSettings.screenRect.x - Round(generationSettings.screenRect.x)) < 0.01, "Bitmap Rendering specified and screenRect.x is not rounded:{0}", generationSettings.screenRect.x);
+                Debug.AssertFormat(Mathf.Abs(generationSettings.screenRect.y - Round(generationSettings.screenRect.y)) < 0.01, "Bitmap Rendering specified and screenRect.y is not rounded:{0}", generationSettings.screenRect.y);
+                Debug.AssertFormat(Mathf.Abs(generationSettings.screenRect.width - Round(generationSettings.screenRect.width)) < 0.01, "Bitmap Rendering specified and screenRect.width is not rounded:{0}", generationSettings.screenRect.width);
+                Debug.AssertFormat(Mathf.Abs(generationSettings.screenRect.height - Round(generationSettings.screenRect.height)) < 0.01, "Bitmap Rendering specified and screenRect.height is not rounded:{0}", generationSettings.screenRect.height);
+            }
+            
 
             // *** PHASE II of Text Generation ***
             LayoutPhase(textInfo, generationSettings, maxVisibleDescender);

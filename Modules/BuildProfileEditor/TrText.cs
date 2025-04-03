@@ -57,7 +57,7 @@ namespace UnityEditor.Build.Profile
             L10n.Tr("Build Profiles can have custom player settings");
         public static readonly string playerSettingsClassicInfo =
             L10n.Tr("Platforms use the global player settings. To customize player settings, create a Build Profile for this platform.");
-        public static readonly string customizePlayerSettingsButton = "Customize player settings";
+        public static readonly string customizePlayerSettingsButton = "Customize Player Settings";
         public static readonly string removePlayerSettingsDialogTitle = L10n.Tr("Remove Player Settings Overrides");
         public static readonly string removePlayerSettingsDialogMessage = L10n.Tr("This will remove all Player Settings overrides");
         public static readonly string resetPlayerSettingsDialogTitle = L10n.Tr("Reset Player Settings to Globals");

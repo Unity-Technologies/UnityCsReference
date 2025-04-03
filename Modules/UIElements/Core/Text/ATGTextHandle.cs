@@ -26,9 +26,10 @@ namespace UnityEngine.UIElements
             if (!ConvertUssToNativeTextGenerationSettings())
                 return;
 
+            var scale = GetPixelsPerPoint();
             nativeSettings.text = textToMeasure.CreateString();
-            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
-            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
+            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width *scale* 64.0f);
+            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height *scale* 64.0f);
 
             if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
             {
@@ -40,7 +41,7 @@ namespace UnityEngine.UIElements
             // Passing a zero pointer instead of the cached textGenerationInfo because it is possible that calling the measure will not
             // change the size, there will therefore be no full layout of the glyph and the textGenerationInfo will not have the final
             // glyph position populated and it breaks TextLib.FindIntersectingLink
-            preferredSize = textLib.MeasureText(nativeSettings, IntPtr.Zero);
+            pixelPreferedSize = textLib.MeasureText(nativeSettings, IntPtr.Zero);
         }
 
         public (NativeTextInfo, bool) UpdateNative(bool generateNativeSettings = true)
@@ -133,12 +134,15 @@ namespace UnityEngine.UIElements
                 Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}");
                 return false;
             }
+
+            var scale = GetPixelsPerPoint();
+
             var style = m_TextElement.computedStyle;
             nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
-            nativeSettings.fontSize = (int)(style.fontSize.value * 64.0f);
+            nativeSettings.fontSize = (int)(style.fontSize.value * 64.0f *scale);
             nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
             nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
@@ -173,8 +177,8 @@ namespace UnityEngine.UIElements
                 ATGMeasuredSizes = size;
             }
 
-            nativeSettings.screenWidth = (int)(size.x * 64.0f);
-            nativeSettings.screenHeight = (int)(size.y * 64.0f);
+            nativeSettings.screenWidth = (int)(size.x * 64.0f * scale);
+            nativeSettings.screenHeight = (int)(size.y * 64.0f * scale);
 
             return true;
         }

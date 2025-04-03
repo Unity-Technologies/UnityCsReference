@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements
         [Obsolete("OnMouseDown has been removed and replaced by its pointer-based equivalent. Please use OnPointerDown.", false)]
         protected void OnMouseDown(MouseDownEvent evt)
         {
-            if (CanStartManipulation(evt))
+            if (!active && CanStartManipulation(evt))
                 ProcessDownEvent(evt, evt.localMousePosition, PointerId.mousePointerId);
         }
 
@@ -255,7 +255,7 @@ namespace UnityEngine.UIElements
         /// <param name="evt">The event.</param>
         protected void OnPointerDown(PointerDownEvent evt)
         {
-            if (!CanStartManipulation(evt)) return;
+            if (active || !CanStartManipulation(evt)) return;
 
             ProcessDownEvent(evt, evt.localPosition, evt.pointerId);
         }

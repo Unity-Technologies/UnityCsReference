@@ -5553,6 +5553,12 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\UpdateAction.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\UpdateAction.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\UpdateActionBase.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\UpdateActionBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\Actions\VersionHistoryUpdateAction.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Packages\Actions\VersionHistoryUpdateAction.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Packages\PackageDatabase.cs</Link>
     </Compile>

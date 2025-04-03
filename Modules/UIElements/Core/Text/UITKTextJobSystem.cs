@@ -156,7 +156,7 @@ namespace UnityEngine.UIElements
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
 
-                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                managedJobData.prepareSuccess = visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
                 if (managedJobData.prepareSuccess)
                     managedJobData.prepareSuccess = visualElement.uitkTextHandle.PrepareFontAsset();
                 k_PrepareJobifiedMarker.End();
@@ -176,7 +176,7 @@ namespace UnityEngine.UIElements
                 if (textData.prepareSuccess)
                     continue;
 
-                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings();
+                textData.visualElement.uitkTextHandle.ConvertUssToTextGenerationSettings(populateScreenRect: true);
                 textData.visualElement.uitkTextHandle.PrepareFontAsset();
             }
 
@@ -246,6 +246,7 @@ namespace UnityEngine.UIElements
             }
 
             var pos = (visualElement).contentRect.min;
+            float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
             // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
             // since we cannot store multiple colors for a given text element.
@@ -278,10 +279,10 @@ namespace UnityEngine.UIElements
 
                     for (int vDst = 0, j = 0; vDst < vertexCount; vDst += 4, vSrc += 4, j += 6)
                     {
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 0], pos, isDynamicColor);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 1], pos, isDynamicColor);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 2], pos, isDynamicColor);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(meshInfo.vertexData[vSrc + 3], pos, isDynamicColor);
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 0], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 1], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 2], pos, inverseScale, isDynamicColor);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref meshInfo.vertexData[vSrc + 3], pos, inverseScale, isDynamicColor);
 
                         indices[j + 0] = (ushort)(vDst + 0);
                         indices[j + 1] = (ushort)(vDst + 1);
