@@ -6,7 +6,7 @@ May be used for reference purposes only.
 For terms of use, see
 https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-The repository includes third-party code subject to [third-party
+The repository includes third-party code subjected to [third-party
 notices](third-party-notices.txt).
 
 The terms of use do not permit you to modify or redistribute the C#
@@ -15,7 +15,7 @@ source code (C# and C++), contact Unity sales for a commercial source
 code license: https://store.unity.com/contact?type=source-code
 
 We do not take pull requests at this time (sorry). But if you find
-something that looks like a bug, we'd appreciate it if you'd file it
+something that looks like a bug, we would appreciate it if you would file it
 using the Unity Bug Reporter. For more information, see our blog post:
 https://blogs.unity3d.com/2018/03/26/releasing-the-unity-c-source-code/
 
