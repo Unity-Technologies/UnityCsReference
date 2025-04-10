@@ -66,7 +66,6 @@ namespace UnityEngine.UIElements
 
         public override void Resize(Vector2 size)
         {
-            var pixelAlignedItemHeight = resolvedItemHeight;
             var contentHeight = GetExpectedContentHeight();
             m_ScrollView.contentContainer.style.height = contentHeight;
 
@@ -80,9 +79,11 @@ namespace UnityEngine.UIElements
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
             // Add only extra items if the list is actually visible.
-            var itemCountFromHeight = (int)(m_CollectionView.ResolveItemHeight(size.y) / pixelAlignedItemHeight);
-            if (itemCountFromHeight > 0)
-                itemCountFromHeight += k_ExtraVisibleItems;
+            var itemCountFromHeight = 0;
+            var visibleItemCountFromHeight = size.y / resolvedItemHeight;
+
+            if (visibleItemCountFromHeight > 0)
+                itemCountFromHeight = (int)visibleItemCountFromHeight + k_ExtraVisibleItems;
 
             var itemCount = Mathf.Min(itemCountFromHeight, itemsCount);
 

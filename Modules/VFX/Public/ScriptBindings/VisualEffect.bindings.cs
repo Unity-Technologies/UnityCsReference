@@ -598,10 +598,19 @@ namespace UnityEngine.VFX
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users
-    [UsedByNativeCode]
+    // This type must be tagged as [RequiredByNativeCode] because it's implicitly required by the VisualEffect component.
+    // Otherwise, the type may get stripped if "Strip Engine Code" is enabled in Player settings, causing VisualEffect
+    // to crash when it tries to create its renderer.
+    // The public constructor with [RequiredMember] is necessary for the same reason.
+    // See UUM-99927 for details.
+    [RequiredByNativeCode]
     [NativeType(Header = "Modules/VFX/Public/VFXRenderer.h"), RejectDragAndDropMaterial]
     internal sealed partial class VFXRenderer : Renderer
     {
+        [UnityEngine.Scripting.RequiredMember]
+        public VFXRenderer()
+        {
+        }
     }
 
     [UsedByNativeCode]

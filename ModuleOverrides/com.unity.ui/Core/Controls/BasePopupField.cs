@@ -191,16 +191,7 @@ namespace UnityEngine.UIElements
         // Used in tests
         internal void ShowMenu()
         {
-            IGenericMenu menu;
-            if (createMenuCallback != null)
-            {
-                menu = createMenuCallback.Invoke();
-            }
-            else
-            {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
-            }
-
+            var menu = createMenuCallback != null ? createMenuCallback.Invoke() : elementPanel.CreateMenu();
             AddMenuItems(menu);
             menu.DropDown(visualInput.worldBound, this, true);
         }

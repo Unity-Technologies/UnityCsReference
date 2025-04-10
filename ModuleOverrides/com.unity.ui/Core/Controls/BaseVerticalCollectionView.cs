@@ -455,9 +455,7 @@ namespace UnityEngine.UIElements
 
         internal float ResolveItemHeight(float height = -1)
         {
-            var dpiScaling = scaledPixelsPerPoint;
-            height = height < 0 ? fixedItemHeight : height;
-            return Mathf.Round(height * dpiScaling) / dpiScaling;
+            return height < 0 ? fixedItemHeight : height;
         }
 
         /// <summary>
@@ -1478,6 +1476,8 @@ namespace UnityEngine.UIElements
         }
 
         private Vector3 m_TouchDownPosition;
+        private long m_LastPointerDownTimeStamp;
+        private int m_PointerDownCount;
 
         private void ProcessPointerDown(IPointerEvent evt)
         {
@@ -1493,10 +1493,17 @@ namespace UnityEngine.UIElements
             if (evt.pointerType != PointerType.mouse)
             {
                 m_TouchDownPosition = evt.position;
+                var pointerDownTimeStamp = (evt as PointerDownEvent)?.timestamp ?? 0;
+                m_PointerDownCount = pointerDownTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount + 1 : 1;
+                m_LastPointerDownTimeStamp = pointerDownTimeStamp;
                 return;
             }
+            else
+            {
+                m_PointerDownCount = evt.clickCount;
+            }
 
-            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+            DoSelect(evt.localPosition, m_PointerDownCount, evt.actionKey, evt.shiftKey);
         }
 
         private void ProcessPointerUp(IPointerEvent evt)
@@ -1515,8 +1522,12 @@ namespace UnityEngine.UIElements
                 var delta = evt.position - m_TouchDownPosition;
                 if (delta.sqrMagnitude <= ScrollView.ScrollThresholdSquared)
                 {
-                    DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+                    DoSelect(evt.localPosition, m_PointerDownCount, evt.actionKey, evt.shiftKey);
                 }
+
+                // Reset the pointer down counter if it's passed the double click time.
+                var pointerUpTimeStamp = (evt as PointerUpEvent)?.timestamp ?? 0;
+                m_PointerDownCount = pointerUpTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount : 0;
             }
             else
             {

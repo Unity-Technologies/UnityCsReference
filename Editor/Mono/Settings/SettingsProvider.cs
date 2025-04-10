@@ -23,6 +23,7 @@ namespace UnityEditor
         private string m_Label;
         private string m_Name;
         private HashSet<string> m_Keywords;
+        bool m_Activated;
 
         internal SettingsWindow settingsWindow { get; set; }
         internal string[] pathTokens { get; }
@@ -134,6 +135,24 @@ namespace UnityEditor
 
         internal virtual void FocusLost()
         {
+        }
+
+        internal void Activate(string searchContext, VisualElement rootElement)
+        {
+            // If OnActivate fails, it should not be considered activated
+            if (!m_Activated)
+                OnActivate(searchContext, rootElement);
+            m_Activated = true;
+        }
+
+        internal void Deactivate()
+        {
+            if (m_Activated)
+            {
+                // Set activated=false first, so even if OnDeactivate fails it will be considered deactivated.
+                m_Activated = false;
+                OnDeactivate();
+            }
         }
 
         #region Helper

@@ -538,8 +538,11 @@ namespace UnityEditor.UIElements.Debugger
             return true;
         }
 
-        public bool InterceptMouseEvent(IPanel p, IMouseEvent ev)
+        public bool InterceptEvent(IPanel p, EventBase ev)
         {
+            if (m_Context == null)
+                return false;
+
             if (!m_Context.pickElement)
                 return false;
 
@@ -550,6 +553,12 @@ namespace UnityEditor.UIElements.Debugger
             // Ignore events on detached elements
             if (p == null)
                 return false;
+
+            if (evtType == NavigationCancelEvent.TypeId())
+            {
+                StopPicking();
+                return true;
+            }
 
             if (((BaseVisualElementPanel)p).ownerObject is HostView hostView && hostView.actualView is PlayModeView playModeView)
             {
@@ -597,7 +606,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 if (evtType == MouseOverEvent.TypeId())
                 {
-                    OnPickMouseOver(target, panel);
+                    OnPickMouseOver(target, p);
                 }
                 else if (evtType == MouseEnterWindowEvent.TypeId())
                 {

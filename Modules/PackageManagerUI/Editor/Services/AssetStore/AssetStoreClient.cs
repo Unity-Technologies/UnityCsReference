@@ -45,7 +45,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             FetchStatusTracker fetchStatusTracker,
             UpmCache upmCache,
             UpmClient upmClient,
-            IOProxy ioProxy)
+            UpmRegistryClient upmRegistryClient,
+            IOProxy ioProxy,
+            PackageManagerProjectSettingsProxy settingsProxy)
         {
             m_UnityConnect = unityConnect;
             m_AssetStoreCache = assetStoreCache;
@@ -57,7 +59,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_ListOperation?.ResolveDependencies(unityConnect, assetStoreRestAPI, assetStoreCache);
             m_AssetStorePackageFactory.ResolveDependencies(assetStoreCache, this, assetStoreUtils, fetchStatusTracker, upmCache, ioProxy);
-            m_UpmOnAssetStorePackageFactory.ResolveDependencies(assetStoreCache, this, fetchStatusTracker, upmCache, upmClient);
+            m_UpmOnAssetStorePackageFactory.ResolveDependencies(assetStoreCache, this, fetchStatusTracker, upmCache, upmClient, upmRegistryClient, settingsProxy);
         }
 
         public virtual void ListCategories(Action<List<string>> callback)
@@ -371,7 +373,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (purchaseInfo == null && productInfo == null)
                         continue;
 
-                    var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UpmCache.GetNameByProductId(productId) : productInfo.packageName;
+                    var packageName = string.IsNullOrEmpty(productInfo?.packageName)
+                        ? m_UpmCache.GetProductSearchPackageInfo(productId)?.name ?? m_UpmCache.GetProductInstalledPackageInfo(productId)?.name
+                        : productInfo.packageName;
                     // ProductInfos with package names are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
                     if (!string.IsNullOrEmpty(packageName))
                         continue;
@@ -439,17 +443,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             private UpmCache m_UpmCache;
             [NonSerialized]
             private UpmClient m_UpmClient;
+            [NonSerialized]
+            private UpmRegistryClient m_UpmRegistryClient;
+            [NonSerialized]
+            private PackageManagerProjectSettingsProxy m_SettingsProxy;
             public void ResolveDependencies(AssetStoreCache assetStoreCache,
                 AssetStoreClient assetStoreClient,
                 FetchStatusTracker fetchStatusTracker,
                 UpmCache upmCache,
-                UpmClient upmClient)
+                UpmClient upmClient,
+                UpmRegistryClient upmRegistryClient,
+                PackageManagerProjectSettingsProxy settingsProxy)
             {
                 m_AssetStoreCache = assetStoreCache;
                 m_AssetStoreClient = assetStoreClient;
                 m_FetchStatusTracker = fetchStatusTracker;
                 m_UpmCache = upmCache;
                 m_UpmClient = upmClient;
+                m_UpmRegistryClient = upmRegistryClient;
+                m_SettingsProxy = settingsProxy;
             }
 
             public void OnEnable()
@@ -457,6 +469,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_UpmCache.onPackageInfosUpdated += OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched += OnExtraPackageInfoFetched;
                 m_UpmCache.onLoadAllVersionsChanged += OnLoadAllVersionsChanged;
+
+                m_UpmRegistryClient.onRegistriesModified += OnRegistriesModified;
 
                 m_AssetStoreCache.onPurchaseInfosChanged += OnPurchaseInfosChanged;
                 m_AssetStoreCache.onProductInfoChanged += OnProductInfoChanged;
@@ -471,6 +485,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_UpmCache.onPackageInfosUpdated -= OnPackageInfosUpdated;
                 m_UpmCache.onExtraPackageInfoFetched -= OnExtraPackageInfoFetched;
                 m_UpmCache.onLoadAllVersionsChanged -= OnLoadAllVersionsChanged;
+
+                m_UpmRegistryClient.onRegistriesModified -= OnRegistriesModified;
 
                 m_AssetStoreCache.onPurchaseInfosChanged -= OnPurchaseInfosChanged;
                 m_AssetStoreCache.onProductInfoChanged -= OnProductInfoChanged;
@@ -497,7 +513,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if ((fetchStatus.fetchingInProgress & FetchType.ProductSearchInfo) != 0)
                     {
                         var productInfo = m_AssetStoreCache.GetProductInfo(productId);
-                        var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UpmCache.GetNameByProductId(productId) : productInfo.packageName;
+                        var packageName = string.IsNullOrEmpty(productInfo?.packageName)
+                            ? m_UpmCache.GetProductSearchPackageInfo(productId)?.name ?? m_UpmCache.GetProductInstalledPackageInfo(productId)?.name
+                            : productInfo.packageName;
                         if (string.IsNullOrEmpty(packageName))
                             continue;
                         m_UpmClient.SearchPackageInfoForProduct(productId, packageName);
@@ -517,19 +535,32 @@ namespace UnityEditor.PackageManager.UI.Internal
                 {
                     var purchaseInfo = m_AssetStoreCache.GetPurchaseInfo(productId);
                     var productInfo = m_AssetStoreCache.GetProductInfo(productId);
+                    var productSearchInfo = m_UpmCache.GetProductSearchPackageInfo(productId);
+                    var installedPackageInfo = m_UpmCache.GetProductInstalledPackageInfo(productId);
 
-                    var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? m_UpmCache.GetNameByProductId(productId) : productInfo.packageName;
+                    var packageName = string.IsNullOrEmpty(productInfo?.packageName) ? productSearchInfo?.name ?? installedPackageInfo?.name : productInfo.packageName;
                     // Unlike AssetStorePackageFactory or UpmPackageFactory, UpmOnAssetStorePackageFactory is specifically created to handle packages
                     // with both productId and packageName, so we skip all other cases here.
                     if (string.IsNullOrEmpty(packageName))
                         continue;
 
-                    var productSearchInfo = m_UpmCache.GetProductSearchPackageInfo(packageName);
-                    var installedPackageInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
                     var fetchStatus = m_FetchStatusTracker.GetOrCreateFetchStatus(productId);
+                    var productSearchInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductSearchInfo);
+                    RegistryType? availableRegistryType = productSearchInfo != null || installedPackageInfo != null ? m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo) : null;
 
                     IPackage package = null;
-                    if (productSearchInfo != null || installedPackageInfo != null)
+                    if ((productSearchInfoFetchError?.error.errorCode == UIErrorCode.UpmError_NotFound || (availableRegistryType != null && availableRegistryType != RegistryType.AssetStore))
+                        && HasMatchingScopedRegistry(packageName, out var registry) )
+                    {
+                        var versionString = productInfo?.versionString ?? installedPackageInfo?.version ?? productSearchInfo?.version ?? string.Empty;
+                        var displayName = productInfo?.displayName ?? installedPackageInfo?.displayName ?? productSearchInfo?.displayName ?? string.Empty;
+                        var errorMessage = L10n.Tr(
+                            "This package is not accessible due to scope conflict with the \"{0}\" scoped registry. Please remove the conflicting entry in your Project Settings to restore access to this package on Asset Store.");
+                        var error = new UIError(UIErrorCode.AssetStorePackageError, string.Format(errorMessage, registry.name));
+                        var version = new PlaceholderPackageVersion($"{packageName}@{versionString}", displayName, versionString, PackageTag.Installable, error);
+                        package = new AssetStorePackage(packageName, productId, purchaseInfo, productInfo, new PlaceholderVersionList(version));
+                    }
+                    else if (productSearchInfo != null || installedPackageInfo != null)
                     {
                         var productInfoFetchError = fetchStatus?.GetFetchError(FetchType.ProductInfo);
                         if (productInfo == null && productInfoFetchError == null && !fetchStatus.IsFetchInProgress(FetchType.ProductInfo))
@@ -538,22 +569,28 @@ namespace UnityEditor.PackageManager.UI.Internal
                             continue;
                         }
 
-                        if (productSearchInfo == null)
+                        if (productSearchInfo == null && !fetchStatus.IsFetchInProgress(FetchType.ProductSearchInfo))
                             productIdAndNamesToSearch.Add((productId: productId, packageName: packageName));
 
                         var extraVersions = m_UpmCache.GetExtraPackageInfos(packageName);
-                        var availableRegistry = m_UpmClient.GetAvailableRegistryType(productSearchInfo ?? installedPackageInfo);
-                        var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistry, extraVersions);
+                        var versionList = new UpmVersionList(productSearchInfo, installedPackageInfo, availableRegistryType.Value, extraVersions);
                         versionList = VersionsFilter.UnloadVersionsIfNeeded(versionList, m_UpmCache.IsLoadAllVersions(productId.ToString()));
                         package = new AssetStorePackage(packageName, productId, purchaseInfo, productInfo, versionList);
                         if (productInfoFetchError != null)
                             package.AddError(productInfoFetchError.error);
                         else if (productInfo == null && fetchStatus.IsFetchInProgress(FetchType.ProductInfo))
                             package.progress = PackageProgress.Refreshing;
+                        else if (productSearchInfo != null && productSearchInfo.assetStore?.productId != productId)
+                        {
+                            // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
+                            // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
+                            // to expose it if it ever happens (rather than letting it pass silently)
+                            var errorMessage = L10n.Tr("Product Id mismatch between product details and package details. Please try to refresh in a few minutes or report the issue.");
+                            package.AddError(new UIError(UIErrorCode.AssetStorePackageError, errorMessage, UIError.Attribute.IsWarning));
+                        }
                     }
                     else if (productInfo != null)
                     {
-                        var productSearchInfoFetchError = fetchStatus.GetFetchError(FetchType.ProductSearchInfo);
                         if (productSearchInfoFetchError != null)
                         {
                             var version = new PlaceholderPackageVersion($"{packageName}@{productInfo.versionString}", productInfo.displayName, productInfo.versionString, PackageTag.Installable, productSearchInfoFetchError.error);
@@ -593,9 +630,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                 GeneratePackagesAndTriggerChangeEvent(purchaseInfos.Select(info => info.productId.ToString()));
             }
 
-            private void OnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
+            private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
             {
-                GeneratePackagesAndTriggerChangeEvent(packageInfos.Select(p => m_UpmCache.GetProductIdByName(p.name)).Where(id => !string.IsNullOrEmpty(id)));
+                var productIds = new List<string>();
+                foreach (var (oldInfo, newInfo) in updatedInfos)
+                {
+                    var oldInfoProductId = oldInfo?.assetStore?.productId ?? string.Empty;
+                    var newInfoProductId = newInfo?.assetStore?.productId ?? string.Empty;
+                    if (!string.IsNullOrEmpty(oldInfoProductId))
+                        productIds.Add(oldInfoProductId);
+                    if (!string.IsNullOrEmpty(newInfoProductId) && newInfoProductId !=oldInfoProductId)
+                        productIds.Add(newInfoProductId);
+                }
+                GeneratePackagesAndTriggerChangeEvent(productIds);
             }
 
             private void OnExtraPackageInfoFetched(PackageInfo packageInfo)
@@ -621,6 +668,30 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var productIds = m_UpmCache.installedPackageInfos.Select(info => info.assetStore?.productId).Where(id => !string.IsNullOrEmpty(id));
                 GeneratePackagesAndTriggerChangeEvent(productIds);
+            }
+
+            private bool HasMatchingScopedRegistry(string packageName, out RegistryInfo scopedRegistry)
+            {
+                scopedRegistry = m_SettingsProxy.scopedRegistries.FirstOrDefault(r => r.AnyScopeMatchesPackageName(packageName));
+                return scopedRegistry != null;
+            }
+
+            private void OnRegistriesModified()
+            {
+                var affectedProductIds = m_UpmCache.productSearchPackageInfos.Concat(m_UpmCache.installedPackageInfos)
+                    .Select(info => info.assetStore?.productId).Where(id => !string.IsNullOrEmpty(id))
+                    .Concat(m_AssetStoreCache.productInfos.Where(info => !string.IsNullOrEmpty(info.packageName)).Select(info => info.id))
+                    .ToHashSet();
+
+                // We need to clear the regenerate packages when scoped registries settings change as the old or new scoped registry setting
+                // could shadow UPM packages from Asset Store. Therefore, we clear package info that could potentially contain product info
+                // and the package factory will trigger the fetching of these information again.
+                m_UpmCache.ClearProductCache();
+                m_UpmCache.ClearExtraInfoCache();
+                m_FetchStatusTracker.ClearCache();
+
+                if (affectedProductIds.Count > 0)
+                    GeneratePackagesAndTriggerChangeEvent(affectedProductIds);
             }
         }
     }

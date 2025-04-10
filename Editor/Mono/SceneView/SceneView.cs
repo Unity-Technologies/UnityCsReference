@@ -2887,7 +2887,7 @@ namespace UnityEditor
 
         private void HandleSelectionAndOnSceneGUI()
         {
-            m_RectSelection.OnGUI();
+            m_RectSelection.OnGUI(this == lastActiveSceneView);
             CallOnSceneGUI();
         }
 

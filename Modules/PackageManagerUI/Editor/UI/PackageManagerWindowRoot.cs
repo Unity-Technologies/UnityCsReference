@@ -285,6 +285,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (!m_PageManager.IsInitialFetchingDone())
                 return;
 
+            // Since there's usually a delay for Asset Store page packages to load, we don't want to switch to the default page if we didn't
+            // specifically ask to switch to another page, especially when the default page doesn't contain the package to be selected.
+            // This prevents weird page switching behaviours.
+            if (package != null && m_FilterToSelectAfterLoad == null &&
+                m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore &&
+                !m_PageManager.GetPage(PackageFiltering.k_DefaultFilterTab).Contains(package))
+                return;
+
             if (package != null || m_FilterToSelectAfterLoad != null)
             {
                 var tab = m_FilterToSelectAfterLoad ?? PackageFiltering.k_DefaultFilterTab;

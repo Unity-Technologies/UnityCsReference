@@ -748,6 +748,16 @@ namespace UnityEngine.UIElements
             InsertUsingEntry(new UsingEntry(templateName, asset));
         }
 
+        internal void UnregisterTemplate(VisualTreeAsset asset)
+        {
+            if (m_Usings == null)
+                return;
+
+            // Find the entry and remove it
+            var entry = m_Usings.Find(e => e.asset.Equals(asset));
+            RemoveUsingEntry(entry);
+        }
+
         private void InsertUsingEntry(UsingEntry entry)
         {
             if (m_Usings == null)
@@ -759,6 +769,14 @@ namespace UnityEngine.UIElements
                 i++;
 
             m_Usings.Insert(i, entry);
+        }
+
+        private void RemoveUsingEntry(UsingEntry entry)
+        {
+            if (m_Usings == null)
+                return;
+
+            m_Usings.Remove(entry);
         }
 
 

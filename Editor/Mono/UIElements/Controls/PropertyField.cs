@@ -357,7 +357,7 @@ namespace UnityEditor.UIElements
                      {
                          var decoratorRect = new Rect();
                          decoratorRect.height = decorator.GetHeight();
-                         decoratorRect.width = resolvedStyle.width;
+                         decoratorRect.width = ve.rect.width;
                          decorator.OnGUI(decoratorRect);
                          ve.style.height = decoratorRect.height;
                      });
