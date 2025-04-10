@@ -85,27 +85,48 @@ namespace UnityEditor.UIElements.Samples
             var items = new List<TreeViewItemData<SampleTreeItem>>()
             {
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Styles", StylesExplorer.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Button", ButtonSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Scroller", ScrollerSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Toggle", ToggleSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ToggleButtonGroup", ToggleButtonGroupSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RadioButton", RadioButtonSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Label", LabelSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TextField", TextFieldSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("HelpBox", HelpBoxSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ObjectField", ObjectFieldSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ListView", ListViewSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TreeView", TreeViewSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MultiColumnListView", MultiColumnListViewSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MultiColumnTreeView", MultiColumnTreeViewSnippet.Create)),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TabView", TabViewSnippet.Create)),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Containers", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                {
+                    // VisualElement
+                    // ScrollView
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ListView", ListViewSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TreeView", TreeViewSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MultiColumnListView", MultiColumnListViewSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MultiColumnTreeView", MultiColumnTreeViewSnippet.Create)),
+                    // Group Box
+                }),
+                //new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Containers (Editor Only)", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                //{
+                    // IMGUIContainer
+                //}),
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Controls", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                {
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Label", LabelSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Button", ButtonSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Toggle", ToggleSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ToggleButtonGroup", ToggleButtonGroupSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Scroller", ScrollerSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TextField", TextFieldSnippet.Create)),
+                    // Foldout
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Slider", SliderSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("SliderInt", SliderIntSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MinMaxSlider", MinMaxSliderSnippet.Create)),
+                    // ProgressBar
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("DropdownField", DropdownFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("EnumField", EnumFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RadioButton", RadioButtonSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RadioButtonGroup", RadioButtonGroupSnippet.Create)),
+                    // Tab
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TabView", TabViewSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("HelpBox", HelpBoxSnippet.Create)), // Not in UI Builder
+                }),
                 new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Numeric Fields", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("IntegerField", IntegerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("FloatField", FloatFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("LongField", LongFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MinMaxSlider", MinMaxSliderSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Slider", SliderSnippet.Create)),
+                    // DoubleField
+                    // Hash128
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector2Field", Vector2FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector3Field", Vector3FieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector4Field", Vector4FieldSnippet.Create)),
@@ -113,30 +134,42 @@ namespace UnityEditor.UIElements.Samples
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("BoundsField", BoundsFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("UnsignedIntegerField", UnsignedIntegerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("UnsignedLongField", UnsignedLongFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("SliderInt", SliderIntSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector2IntField", Vector2IntFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Vector3IntField", Vector3IntFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RectIntField", RectIntFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("BoundsIntField", BoundsIntFieldSnippet.Create))
                 }),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Value Fields", MakeValueFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Value Fields (Editor Only)", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("ColorField", ColorFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("CurveField", CurveFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("GradientField", GradientFieldSnippet.Create))
                 }),
-                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Choice Fields", MakeChoiceFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Choice Fields (Editor Only)", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
                 {
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("EnumField", EnumFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("EnumFlagsField", EnumFlagsFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("PopupField", PopupFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("TagField", TagFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("MaskField", MaskFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("LayerField", LayerFieldSnippet.Create)),
                     new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("LayerMaskField", LayerMaskFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("DropdownField", DropdownFieldSnippet.Create)),
-                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("RadioButtonGroup", RadioButtonGroupSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("EnumFlagsField", EnumFlagsFieldSnippet.Create)),
+                    new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("PopupField", PopupFieldSnippet.Create)), // Not in UI Builder
                 }),
+                //new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Toolbar", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                //{
+                    // Toolbar
+                    // Toolbar Menu
+                    // Toolbar Button
+                    // Toolbar Spacer
+                    // Toolbar Toggle
+                    // Toolbar Breadcrumbs
+                    // Toolbar Search Field
+                    // Toolbar Popup Search Field
+                //}),
+                //new TreeViewItemData<SampleTreeItem>(nextId++, new SampleTreeItem("Inspectors", MakeNumericFieldsPanel), new List<TreeViewItemData<SampleTreeItem>>()
+                //{
+                    // ObjectField
+                    // PropertyField
+                //}),
             };
 
             var treeView = new TreeView() { name = k_TreeViewName };

@@ -471,7 +471,9 @@ namespace UnityEditor
                         if (EditorGUI.EndChangeCheck())
                         {
                             Material material = (Material)prop.serializedObject.targetObject;
+                            Undo.RecordObject(material, $"Modify Emission Flags of {material.name}");
                             material.globalIlluminationFlags = giFlags;
+                            EditorUtility.SetDirty(material);
 
                             prop.serializedObject.Update();
                         }
@@ -495,7 +497,9 @@ namespace UnityEditor
 
                         if (EditorGUI.EndChangeCheck())
                         {
+                            Undo.RecordObject(material, $"Modify Emission Flags of {material.name}");
                             material.SetColor("_EmissionColor", newValue);
+                            EditorUtility.SetDirty(material);
                         }
                         EditorGUI.EndProperty();
                     }
@@ -511,7 +515,9 @@ namespace UnityEditor
                         Color color = sourceMaterial.GetColor("_EmissionColor");
 
                         Material targetMaterial = (Material)target.serializedObject.targetObject;
+                        Undo.RecordObject(targetMaterial, $"Modify Emission Flags of {targetMaterial.name}");
                         targetMaterial.SetColor("_EmissionColor", color);
+                        EditorUtility.SetDirty(targetMaterial);
                     }) // 3: Color
             };
         }

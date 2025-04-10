@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements.StyleSheets
             s_InitialStyle.rareData.Write().unitySliceRight = 0;
             s_InitialStyle.rareData.Write().unitySliceScale = 1f;
             s_InitialStyle.rareData.Write().unitySliceTop = 0;
+            s_InitialStyle.rareData.Write().unitySliceType = SliceType.Sliced;
             s_InitialStyle.inheritedData.Write().unityTextAlign = TextAnchor.UpperLeft;
             s_InitialStyle.inheritedData.Write().unityTextGenerator = TextGeneratorType.Standard;
             s_InitialStyle.inheritedData.Write().unityTextOutlineColor = Color.clear;
@@ -189,6 +190,7 @@ namespace UnityEngine.UIElements.StyleSheets
         public static int unitySliceRight => s_InitialStyle.rareData.Read().unitySliceRight;
         public static float unitySliceScale => s_InitialStyle.rareData.Read().unitySliceScale;
         public static int unitySliceTop => s_InitialStyle.rareData.Read().unitySliceTop;
+        public static SliceType unitySliceType => s_InitialStyle.rareData.Read().unitySliceType;
         public static TextAnchor unityTextAlign => s_InitialStyle.inheritedData.Read().unityTextAlign;
         public static TextGeneratorType unityTextGenerator => s_InitialStyle.inheritedData.Read().unityTextGenerator;
         public static Color unityTextOutlineColor => s_InitialStyle.inheritedData.Read().unityTextOutlineColor;

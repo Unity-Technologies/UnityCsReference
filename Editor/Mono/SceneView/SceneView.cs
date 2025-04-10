@@ -1004,7 +1004,8 @@ namespace UnityEditor
         internal Vector2 GetDynamicClipPlanes()
         {
             float farClip = Mathf.Clamp(2000f * size, 1000f, k_MaxCameraFarClip);
-            return new Vector2(farClip * 0.000005f, farClip);
+            float nearClip = Mathf.Max(k_MinCameraNearClip, farClip * 0.000005f);
+            return new Vector2(nearClip, farClip);
         }
 
         internal SceneViewGrid sceneViewGrids
@@ -3111,7 +3112,7 @@ namespace UnityEditor
 
         private void HandleSelectionAndOnSceneGUI()
         {
-            m_RectSelection.OnGUI();
+            m_RectSelection.OnGUI(this == lastActiveSceneView);
             CallOnSceneGUI();
         }
 

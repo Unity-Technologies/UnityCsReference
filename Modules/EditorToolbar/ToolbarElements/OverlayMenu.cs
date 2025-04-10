@@ -21,6 +21,7 @@ namespace UnityEditor.Overlays
             m_TargetWindow = targetWindow;
             createMenuCallback = DropdownUtility.CreateDropdown;
             SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
+            
         }
 
         internal override void AddMenuItems(IGenericMenu menu)
@@ -40,7 +41,7 @@ namespace UnityEditor.Overlays
         internal override string GetListItemToDisplay(string item) => item;
     }
 
-    [Overlay(typeof(EditorWindow), "Overlays/OverlayMenu", "Overlay Menu", "overlay-menu", defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true)]
+    [Overlay(typeof(EditorWindow), "Overlays/OverlayMenu", "Overlay Menu", "overlay-menu", defaultDockZone = DockZone.LeftColumn, defaultLayout = Layout.HorizontalToolbar, defaultDisplay = true, defaultDockIndex = 0)]
     sealed class OverlayMenu : Overlay, ICreateHorizontalToolbar, ICreateVerticalToolbar
     {
         class Toolbar : OverlayToolbar
@@ -156,6 +157,7 @@ namespace UnityEditor.Overlays
         {
             canvas.overlaysEnabledChanged += OnOverlayEnabledChanged;
             canvas.overlayListChanged += OnOverlayListChanged;
+            canvas.presetChanged += OnPresetChanged;
             displayedChanged += OnDisplayedChanged;
         }
 
@@ -167,6 +169,12 @@ namespace UnityEditor.Overlays
             canvas.overlaysEnabledChanged -= OnOverlayEnabledChanged;
             canvas.overlayListChanged -= OnOverlayListChanged;
             displayedChanged -= OnDisplayedChanged;
+            canvas.presetChanged -= OnPresetChanged;
+        }
+
+        void OnPresetChanged()
+        {
+            m_Dropdown?.SetValueWithoutNotify(canvas.lastAppliedPresetName);
         }
 
         void OnDisplayedChanged(bool displayed)

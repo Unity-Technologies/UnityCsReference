@@ -172,14 +172,15 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            bool wasChanged = GUI.changed;
-
+            bool templateChanged = false;
             using (var vertical = new EditorGUILayout.VerticalScope())
             {
                 using (new EditorGUI.PropertyScope(vertical.rect, GUIContent.none, templateProp))
                 {
                     using (var horizontal = new EditorGUILayout.HorizontalScope())
                     {
+                        var selectedTemplateIndex = GetTemplateIndex(templateProp.stringValue);
+
                         if (TemplateGUIThumbnails.Length < 1)
                         {
                             GUILayout.Label(EditorGUIUtility.TrTextContent("No templates found."));
@@ -189,17 +190,22 @@ namespace UnityEditor
                             int numCols = Mathf.Min((int)Mathf.Max((Screen.width - kWebTemplateGridPadding * 2.0f) / kThumbnailSize, 1.0f), TemplateGUIThumbnails.Length);
                             int numRows = Mathf.Max((int)Mathf.Ceil((float)TemplateGUIThumbnails.Length / (float)numCols), 1);
 
-                            templateProp.stringValue = Templates[
-                                ThumbnailList(
-                                    GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
-                                    GetTemplateIndex(templateProp.stringValue),
-                                    TemplateGUIThumbnails,
-                                    numCols
-                                )].ToString();
+                            var updatedSelectedTemplateIndex =  ThumbnailList(
+                                GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
+                                selectedTemplateIndex,
+                                TemplateGUIThumbnails,
+                                numCols
+                            );
+                            templateChanged = selectedTemplateIndex != updatedSelectedTemplateIndex;
+
+                            // Only set/update templateProp and selectedTemplateIndex if there is a valid template selection.
+                            if (updatedSelectedTemplateIndex > -1)
+                            {
+                                templateProp.stringValue = Templates[updatedSelectedTemplateIndex].ToString();
+                                selectedTemplateIndex = updatedSelectedTemplateIndex;
+                            }
                         }
                     }
-
-                    bool templateChanged = !wasChanged && GUI.changed;
 
                     bool orgChanged = GUI.changed;
                     GUI.changed = false;

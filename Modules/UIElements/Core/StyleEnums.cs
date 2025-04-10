@@ -430,4 +430,20 @@ namespace UnityEngine.UIElements
         /// </summary>
         Bitmap = 1
     }
+
+    /// <summary>
+    /// The slice type determines whether the center of the image is scaled or tiled.
+    /// </summary>
+    public enum SliceType
+    {
+        /// <summary>
+        /// Fill the slices by stretching the center and sides.
+        /// </summary>
+        Sliced = 0,
+        /// <summary>
+        /// Fill the slices by tiling the center and sides.
+        /// Image must be imported as a Sprite (2D and UI) and have Mesh Type set to Full Rect. 
+        /// </summary>
+        Tiled = 1
+    }
 }

@@ -666,7 +666,7 @@ namespace UnityEditor
             RemoveLockedObjects();
         }
 
-        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName)]
+        [Overlay(typeof(SceneView), k_OverlayId, k_DisplayName, defaultDisplay = false)]
         class SceneViewPhysicsDebuggerOverlay : TransientSceneViewOverlay
         {
             const string k_OverlayId = "Scene View/Physics Debugger";

@@ -708,9 +708,6 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Build a tree of VisualElements from the asset.
         /// </summary>
-        /// <remarks>
-        /// This function will be deprecated. Use <see cref="VisualTreeAsset.Instantiate"/> instead.
-        /// </remarks>
         /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree()
         {
@@ -722,9 +719,6 @@ namespace UnityEngine.UIElements
         /// Build a tree of VisualElements from the asset.
         /// </summary>
         /// <param name="bindingPath">The path to the property that you want to bind to the root of the cloned tree.</param>
-        /// <remarks>
-        /// This function will be deprecated. Use <see cref="VisualTreeAsset.Instantiate"/> instead.
-        /// </remarks>
         /// <returns>The root of the tree of VisualElements that was just cloned.</returns>
         public TemplateContainer CloneTree(string bindingPath)
         {

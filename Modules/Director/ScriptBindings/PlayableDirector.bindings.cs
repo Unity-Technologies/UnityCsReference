@@ -13,6 +13,7 @@ namespace UnityEngine.Playables
     [NativeHeader("Modules/Director/PlayableDirector.h")]
     [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
     [RequiredByNativeCode]
+    [HelpURL("https://docs.unity3d.com/ScriptReference/Playables.PlayableDirector.html")]
     public partial class PlayableDirector : Behaviour, IExposedPropertyTable
     {
         public PlayState state
