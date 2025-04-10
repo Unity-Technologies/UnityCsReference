@@ -191,7 +191,7 @@ namespace UnityEditor
             evt.Use();
         }
 
-        public void OnGUI()
+        public void OnGUI(bool isLastActiveSceneView)
         {
             Event evt = Event.current;
 
@@ -201,7 +201,9 @@ namespace UnityEditor
             {
                 case EventType.Layout:
                 case EventType.MouseMove:
-                    if (!Tools.viewToolActive)
+                    // Only add default control if the Scene view is focused. Otherwise, can
+                    // cause issues when multiple Scene views open.
+                    if (!Tools.viewToolActive && isLastActiveSceneView)
                         HandleUtility.AddDefaultControl(k_RectSelectionID);
                     break;
                 case EventType.MouseDown:

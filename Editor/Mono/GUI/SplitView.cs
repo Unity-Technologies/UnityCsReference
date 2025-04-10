@@ -563,70 +563,69 @@ namespace UnityEditor
             }
         }
 
-        /// clean up this view & propagate down
+        /// Clean up this view & propagate up.
         public void Cleanup()
         {
-            // if I'm a one-view splitview, I can propagate my child up and kill myself
-            SplitView sp = parent as SplitView;
+            var parentSplitView = parent as SplitView;
 
-            if (children.Length == 1 && sp != null)
+            // My parent is a split view, I am a split view with only one child.
+            // We move my child up to my parent and then destroy myself.
+            if (parentSplitView != null && children.Length == 1)
             {
-                View c = children[0];
-                c.position = position;
-                if (parent != null)
-                {
-                    parent.AddChild(c, parent.IndexOfChild(this));
-                    parent.RemoveChild(this);
-                    if (sp)
-                        sp.Cleanup();
-                    if (!Unsupported.IsDestroyScriptableObject(this))
-                        DestroyImmediate(this);
-                    return;
-                }
-                else if (c is SplitView)
-                {
-                    RemoveChild(c);
-                    window.rootView = c;
-                    c.position = new Rect(0, 0, c.window.position.width, window.position.height);
-                    c.Reflow();
-                    if (!Unsupported.IsDestroyScriptableObject(this))
-                        DestroyImmediate(this);
-                    return;
-                }
+                var child = children[0];
+                parentSplitView.AddChild(child, parentSplitView.IndexOfChild(this));
+                parentSplitView.RemoveChild(this);
+                child.position = position;
+
+                if (!Unsupported.IsDestroyScriptableObject(this))
+                    DestroyImmediate(this);
+                parentSplitView.Cleanup(); // Propagate the clean up.
+
+                return;
             }
 
-            if (sp != null)
+            if (parentSplitView != null)
             {
-                sp.Cleanup();
-                // the parent might have moved US up and gotten rid of itself
-                sp = parent as SplitView;
+                parentSplitView.Cleanup();
+                // The parent might have moved US up and gotten rid of itself. Because we are modifying the
+                // parentSplitView recursively, it might points to a split view that's already been destroyed.
+                parentSplitView = parent as SplitView;
 
-                if (sp)
+                // If both my parent and I are split views with same orientation, we can move our views up and
+                // destroy ourselves. In the example as shown below, we want to move scene and game to the parent
+                // and then destroy ourselves, to avoid unnecessary nesting.
+                //
+                // SplitView (horizontal)       -- my parent
+                // |_____SplitView (horizontal) -- myself
+                //        |______Scene          -- my child
+                //        |______Game           -- my child
+                if (parentSplitView != null && parentSplitView.vertical == vertical)
                 {
-                    // If the parent has the same orientation as us, we can move our views up and kill ourselves
-                    if (sp.vertical == vertical)
+                    var myChildren = new List<View>(children);
+                    var idx = parent.IndexOfChild(this);
+
+                    foreach (var child in myChildren)
                     {
-                        int idx = new List<View>(parent.children).IndexOf(this);
-                        foreach (View child in children)
-                        {
-                            sp.AddChild(child, idx++);
-                            child.position = new Rect(position.x + child.position.x, position.y + child.position.y, child.position.width, child.position.height);
-                        }
-
-                        // don't let this fall through to the `children == 0` case because we don't want to be removed
-                        // "nicely." our children have already been merged to the parent with correct positions, so
-                        // there is no need to recalculate sibling dimensions (and may incorrectly resize views that
-                        // have been recursively cleaned up).
-                        sp.RemoveChild(this);
-                        if (!Unsupported.IsDestroyScriptableObject(this))
-                            DestroyImmediate(this, true);
-                        sp.Cleanup();
-
-                        return;
+                        RemoveChild(child);
+                        parentSplitView.AddChild(child, idx++);
+                        child.position = new Rect(position.x + child.position.x, position.y + child.position.y,
+                            child.position.width, child.position.height);
                     }
+
+                    // Don't let this fall through to the `children == 0` case because we don't want to be removed
+                    // "nicely." our children have already been merged to the parent with correct positions, so
+                    // there is no need to recalculate sibling dimensions (and may incorrectly resize views that
+                    // have been recursively cleaned up).
+                    parentSplitView.RemoveChild(this);
+                    if (!Unsupported.IsDestroyScriptableObject(this))
+                        DestroyImmediate(this, true);
+                    parentSplitView.Cleanup();
+
+                    return;
                 }
             }
 
+            // I am a split view with no children, I need to destroy myself, :(
             if (children.Length == 0)
             {
                 if (parent == null && window != null)
@@ -636,10 +635,10 @@ namespace UnityEditor
                 }
                 else
                 {
-                    ICleanuppable ic = parent as ICleanuppable;
-                    if (parent is SplitView)
+                    var ic = parent as ICleanuppable;
+                    if (parent is SplitView parentSplitVIew)
                     {
-                        ((SplitView)parent).RemoveChildNice(this);
+                        parentSplitVIew.RemoveChildNice(this);
                         if (!Unsupported.IsDestroyScriptableObject(this))
                             DestroyImmediate(this, true);
                     }

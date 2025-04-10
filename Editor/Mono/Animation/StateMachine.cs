@@ -100,11 +100,12 @@ namespace UnityEditor.Animations
         }
     }
 
-
+    [HelpURL("StateMachineTransitions")]
     internal class AnimatorDefaultTransition : ScriptableObject
     {
     }
 
+    [HelpURL("class-State")]
     public partial class AnimatorState : Object
     {
         private PushUndoIfNeeded undoHandler = new PushUndoIfNeeded(true);
@@ -242,6 +243,7 @@ namespace UnityEditor.Animations
         }
     }
 
+    [HelpURL("NestedStateMachines")]
     public partial class AnimatorStateMachine : Object
     {
         private PushUndoIfNeeded undoHandler = new PushUndoIfNeeded(true);

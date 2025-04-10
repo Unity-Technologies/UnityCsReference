@@ -135,6 +135,7 @@ namespace Unity.UI.Builder
             { "white-space", "Text White Space" },
             { "text-overflow", "Text Overflow" },
             { "-unity-background-scale-mode", "Background" },
+            { "-unity-slice-type", "Slice Type" },
             { FlexDirection.Column.ToString(), "Flex Column" },
             { FlexDirection.ColumnReverse.ToString(), "Flex Column" },
             { FlexDirection.Row.ToString(), "Flex Row" },
@@ -496,18 +497,25 @@ namespace Unity.UI.Builder
                                 enumAsDash, styleValueTooltip)
                             : enumAsDash;
 
-                        if (typeName == "Auto")
+                        if (styleName == "-unity-slice-type")
                         {
-                            uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = tooltip });
+                            uiField.Add(new Button() { name = typeName.ToLowerInvariant(), text = typeName, tooltip = tooltip });
                         }
                         else
                         {
-                            uiField.Add(new Button()
+                            if (typeName == "Auto")
                             {
-                                name = enumAsDash,
-                                iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
-                                tooltip = tooltip
-                            });
+                                uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = tooltip });
+                            }
+                            else
+                            {
+                                uiField.Add(new Button()
+                                {
+                                    name = enumAsDash,
+                                    iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
+                                    tooltip = tooltip
+                                });
+                            }
                         }
                     }
 

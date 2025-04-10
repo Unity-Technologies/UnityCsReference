@@ -349,6 +349,7 @@ namespace Unity.UI.Builder
             {"-unity-slice-left", "Size of the 9-slice's left edge when painting an element's background image."},
             {"-unity-slice-right", "Size of the 9-slice's right edge when painting an element's background image."},
             {"-unity-slice-scale", "Scale applied to an element's slices."},
+            {"-unity-slice-type", "Determines how the center and sides of a sprite are filled when slices are applied."},
             {"-unity-slice-top", "Size of the 9-slice's top edge when painting an element's background image."},
             {"-unity-text-align", "Horizontal and vertical text alignment in the element's box."},
             {"-unity-text-generator", "The Advanced Text Generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages, but some features are still under development."},
@@ -464,6 +465,8 @@ namespace Unity.UI.Builder
                 {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Top", "Aligns the background image to the top edge."},
                 {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Center", "Centers the background image vertically."},
                 {$"BackgroundPositionY{FieldTooltipDictionarySeparator}Bottom", "Aligns the background image to the bottom edge" },
+                {$"-unity-slice-type{FieldTooltipDictionarySeparator}sliced", "Fill the slices by stretching the center and sides."},
+                {$"-unity-slice-type{FieldTooltipDictionarySeparator}tiled", "Fill the slices by tiling the center and sides. Image must be imported as a Sprite (2D and UI) and have Mesh Type set to Full Rect."},
             };
 
         public static readonly string FoldoutContainsBindingsString = "One or more properties contain a binding (resolved or unresolved).";

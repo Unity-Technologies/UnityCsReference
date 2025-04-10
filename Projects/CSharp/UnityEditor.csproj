@@ -3705,6 +3705,9 @@
     <Compile Include="..\..\Editor\Mono\Text\BlurryTextMappingTable.cs">
       <Link>Editor\Mono\Text\BlurryTextMappingTable.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Text\EditorFontAssetFactory.cs">
+      <Link>Editor\Mono\Text\EditorFontAssetFactory.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Text\EditorTextSettings.cs">
       <Link>Editor\Mono\Text\EditorTextSettings.cs</Link>
     </Compile>

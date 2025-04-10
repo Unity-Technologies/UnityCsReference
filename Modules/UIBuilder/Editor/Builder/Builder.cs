@@ -394,20 +394,21 @@ namespace Unity.UI.Builder
                 builderWindow.Focus();
             }
 
-            bool validAsset;
-            if (builderWindow.document.visualTreeAsset != asset)
-            {
-                validAsset = builderWindow.LoadDocument(asset);
-            }
-            else
-            {
-                validAsset = builderWindow.ReloadDocument();
-            }
+            var validAsset = BuilderAssetUtilities.ValidateAsset(asset, null);
 
             if (!validAsset)
             {
                 builderWindow.NewDocument();
                 return false; // Let user open the asset in the IDE.
+            }
+
+            if (builderWindow.document.visualTreeAsset != asset)
+            {
+                builderWindow.LoadDocument(asset);
+            }
+            else
+            {
+                builderWindow.ReloadDocument();
             }
 
             return true;

@@ -1201,7 +1201,7 @@ namespace Unity.UI.Builder
             m_ScrollView.verticalScroller.value = cached.scrollPosition;
         }
 
-        public void RefreshUI()
+        public void RefreshUI(bool refreshAttributes = true)
         {
             using var marker = k_RefreshUIMarker.Auto();
 
@@ -1294,18 +1294,9 @@ namespace Unity.UI.Builder
                 m_AttributesSection.Enable();
             }
 
-            // Reselect Icon, Type & Name in Header
-            m_HeaderSection.Refresh();
-
-            if (m_AttributesSection.refreshScheduledItem != null)
+            if (refreshAttributes)
             {
-                // Pause to stop it in case it's already running; and then restart it to execute it.
-                m_AttributesSection.refreshScheduledItem.Pause();
-                m_AttributesSection.refreshScheduledItem.Resume();
-            }
-            else
-            {
-                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                RefreshAttributes();
             }
 
             // Reset current style rule.
@@ -1325,6 +1316,23 @@ namespace Unity.UI.Builder
             if (selectionInTemplateInstance)
             {
                 m_HeaderSection.Disable();
+            }
+        }
+
+        void RefreshAttributes()
+        {
+            // Reselect Icon, Type & Name in Header
+            m_HeaderSection.Refresh();
+
+            if (m_AttributesSection.refreshScheduledItem != null)
+            {
+                // Pause to stop it in case it's already running; and then restart it to execute it.
+                m_AttributesSection.refreshScheduledItem.Pause();
+                m_AttributesSection.refreshScheduledItem.Resume();
+            }
+            else
+            {
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
             }
         }
 
@@ -1450,7 +1458,9 @@ namespace Unity.UI.Builder
             if (m_CurrentVisualElement != null && BuilderSharedStyles.IsSelectorElement(m_CurrentVisualElement))
             {
                 StyleSheetUtilities.AddFakeSelector(m_CurrentVisualElement);
+                // Need to delay the refresh of the inspector for selectors to ensure the variables are resolved
                 m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
+                RefreshAttributes();
             }
             else
             {
@@ -1557,7 +1567,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                RefreshUI();
+                RefreshUI(false);
             }
         }
 

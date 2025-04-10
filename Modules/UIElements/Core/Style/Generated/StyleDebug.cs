@@ -169,6 +169,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.unitySliceScale;
                 case StylePropertyId.UnitySliceTop:
                     return computedStyle.unitySliceTop;
+                case StylePropertyId.UnitySliceType:
+                    return computedStyle.unitySliceType;
                 case StylePropertyId.UnityTextAlign:
                     return computedStyle.unityTextAlign;
                 case StylePropertyId.UnityTextGenerator:
@@ -347,6 +349,8 @@ namespace UnityEngine.UIElements
                     return typeof(float);
                 case StylePropertyId.UnitySliceTop:
                     return typeof(int);
+                case StylePropertyId.UnitySliceType:
+                    return typeof(SliceType);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(TextAnchor);
                 case StylePropertyId.UnityTextGenerator:
@@ -549,6 +553,8 @@ namespace UnityEngine.UIElements
                     return style.unitySliceScale;
                 case StylePropertyId.UnitySliceTop:
                     return style.unitySliceTop;
+                case StylePropertyId.UnitySliceType:
+                    return style.unitySliceType;
                 case StylePropertyId.UnityTextAlign:
                     return style.unityTextAlign;
                 case StylePropertyId.UnityTextGenerator:
@@ -800,6 +806,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnitySliceTop:
                     style.unitySliceTop = (StyleInt)value;
+                    break;
+                case StylePropertyId.UnitySliceType:
+                    style.unitySliceType = (StyleEnum<SliceType>)value;
                     break;
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = (StyleEnum<TextAnchor>)value;
@@ -1060,6 +1069,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceTop:
                     style.unitySliceTop = keyword;
                     break;
+                case StylePropertyId.UnitySliceType:
+                    style.unitySliceType = keyword;
+                    break;
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = keyword;
                     break;
@@ -1319,6 +1331,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceTop:
                     return new()
                     {};
+                case StylePropertyId.UnitySliceType:
+                    return new()
+                    {};
                 case StylePropertyId.UnityTextAlign:
                     return new()
                     {};
@@ -1503,6 +1518,8 @@ namespace UnityEngine.UIElements
                     return (StyleFloat)(float)value;
                 case StylePropertyId.UnitySliceTop:
                     return (StyleInt)(int)value;
+                case StylePropertyId.UnitySliceType:
+                    return (StyleEnum<SliceType>)(SliceType)value;
                 case StylePropertyId.UnityTextAlign:
                     return (StyleEnum<TextAnchor>)(TextAnchor)value;
                 case StylePropertyId.UnityTextGenerator:
@@ -1681,6 +1698,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleFloat);
                 case StylePropertyId.UnitySliceTop:
                     return typeof(StyleInt);
+                case StylePropertyId.UnitySliceType:
+                    return typeof(StyleEnum<SliceType>);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(StyleEnum<TextAnchor>);
                 case StylePropertyId.UnityTextGenerator:
@@ -1857,6 +1876,8 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityFontStyleAndWeight:
                     return true;
                 case StylePropertyId.UnityOverflowClipBox:
+                    return true;
+                case StylePropertyId.UnitySliceType:
                     return true;
                 case StylePropertyId.UnityTextAlign:
                     return true;

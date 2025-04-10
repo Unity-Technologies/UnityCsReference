@@ -102,6 +102,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-right", "<integer>"},
             {"-unity-slice-scale", "<length>"},
             {"-unity-slice-top", "<integer>"},
+            {"-unity-slice-type", "sliced | tiled"},
             {"-unity-text-align", "upper-left | middle-left | lower-left | upper-center | middle-center | lower-center | upper-right | middle-right | lower-right"},
             {"-unity-text-generator", "standard | advanced"},
             {"-unity-text-outline", "<length> || <color>"},

@@ -153,7 +153,8 @@ namespace UnityEditor.Search
             Object,
             Vector2,
             Vector3,
-            Vector4
+            Vector4,
+            EnumFlags
         }
 
         public readonly ValueType type;
@@ -259,6 +260,15 @@ namespace UnityEditor.Search
             this.v4 = default;
         }
 
+        internal SearchValue(ValueType type, int integerValue, string stringValue)
+        {
+            this.type = type;
+            this.floatNumber = integerValue;
+            this.text = stringValue;
+            this.color = default;
+            this.v4 = default;
+        }
+
         public SearchValue(object v)
         {
             this.type = ValueType.Nil;
@@ -360,7 +370,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Character:
                     var managedType = sp.GetManagedType();
                     if (managedType != null && managedType.IsEnum)
-                        return new SearchValue(sp.intValue, PropertySelectors.GetEnumValue(managedType, sp));
+                        return SearchUtils.GetEnumSearchValue(sp);
                     return new SearchValue(Convert.ToSingle(sp.intValue));
 
                 case SerializedPropertyType.Boolean: return new SearchValue(sp.boolValue);
@@ -368,11 +378,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.String: return new SearchValue(sp.stringValue);
 
                 case SerializedPropertyType.Enum:
-                    managedType = sp.GetManagedType();
-                    if (managedType != null && managedType.IsEnum)
-                        return new SearchValue(sp.intValue, PropertySelectors.GetEnumValue(managedType, sp));
-                    return new SearchValue(sp.enumValueIndex, PropertySelectors.GetEnumValue(sp));
-
+                    return SearchUtils.GetEnumSearchValue(sp);
                 case SerializedPropertyType.ObjectReference:
                     return new SearchValue(sp.objectReferenceValue);
 
@@ -570,7 +576,19 @@ namespace UnityEditor.Search
         private static bool PropertyStringCompare(in SearchValue v, StringView s, Func<StringView, StringView, bool> comparer)
         {
             if (v.type == ValueType.Enum)
+            {
+                if (v.type == ValueType.EnumFlags)
+                {
+                    foreach (var flagValueView in v.text.GetStringView().Split(','))
+                    {
+                        if (comparer(flagValueView, s))
+                            return true;
+                    }
+                    return false;
+                }
                 return comparer(v.text.GetStringView(), s);
+            }
+
             if (v.type == ValueType.Object)
             {
                 if (s.Equals("none", StringComparison.Ordinal) && string.Equals(v.text, string.Empty, StringComparison.Ordinal))

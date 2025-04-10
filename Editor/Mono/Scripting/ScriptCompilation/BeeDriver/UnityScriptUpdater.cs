@@ -230,5 +230,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var assemblyDataOut = scriptCompilationDataOut.Assemblies.FirstOrDefault(a => a.Path == outputfileForwardSlash);
             return assemblyDataOut ?? throw new ArgumentException($"Unable to find entry for {outputfileForwardSlash} in dataFromBuildProgram");
         }
+
+        public static bool LocalizeCompilerMessages(ObjectsFromDisk dataFromBuildProgram)
+        {
+            var scriptCompilationDataOut = dataFromBuildProgram.Get<ScriptCompilationData_Out>();
+            return scriptCompilationDataOut.LocalizeCompilerMessages;
+        }
     }
 }

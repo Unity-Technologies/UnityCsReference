@@ -734,6 +734,90 @@ namespace UnityEditor.Search
             return (p.propertyType == SerializedPropertyType.String || !p.isArray) && !p.isFixedBuffer && p.propertyPath.LastIndexOf('[') == -1;
         }
 
+        internal static string CleanEnumName(string enumName)
+        {
+            return enumName.Replace(" ", "").Replace("-", "");
+        }
+
+        internal static int GetEnumValueIndex(SerializedProperty p)
+        {
+            return p.propertyType == SerializedPropertyType.Enum ? p.enumValueIndex : p.intValue;
+        }
+
+        internal static SearchValue GetEnumSearchValue(SerializedProperty p)
+        {
+            var enumValue = string.Join(",", GetEnumFlags(p));
+            var enumValueIndex = GetEnumValueIndex(p);
+            if (enumValueIndex < 0 || p.enumValueFlag > 0)
+            {
+                return new SearchValue(p.enumValueFlag, enumValue);
+            }
+
+            return new SearchValue(enumValueIndex, enumValue);
+        }
+
+        internal static IEnumerable<string> GetEnumFlags(SerializedProperty p)
+        {
+            var enumValueIndex = GetEnumValueIndex(p);
+            var managedType = p.GetManagedType();
+            if (managedType != null && managedType.IsEnum)
+            {
+                var enumData = EnumDataUtility.GetCachedEnumData(managedType, excludeObsolete:false);
+                if (enumValueIndex < 0 || enumData.flags)
+                {
+                    var hasNothingValue = enumData.flagValues[0] == 0;
+                    if (p.enumValueFlag == 0)
+                    {
+                        if (hasNothingValue)
+                        {
+                            yield return CleanEnumName(enumData.names[0]);
+                        }
+                        else
+                        {
+                            yield return "None";
+                        }
+
+                        yield break;
+                    }
+
+                    var enumFlagValue = p.enumValueFlag;
+                    for (var i = 0; i < enumData.flagValues.Length; ++i)
+                    {
+                        var flagValue = enumData.flagValues[i];
+                        if ((flagValue & enumFlagValue) > 0)
+                        {
+                            yield return CleanEnumName(enumData.names[i]);
+                        }
+                    }
+                }
+                else if (enumValueIndex < enumData.names.Length)
+                {
+                    yield return CleanEnumName(enumData.names[enumValueIndex]);
+                }
+            }
+            else if (p.propertyType == SerializedPropertyType.Enum)
+            {
+                if (enumValueIndex < 0)
+                {
+                    // With native type there is no way of knowing if the first enumNames corresponds to None/NoValue/Nothing. Assume We check for None.
+                    var hasNoneValue = p.enumNames[0] == "None";
+                    var nameIndex = hasNoneValue ? 1 : 0;
+                    for (var flagShift = 0; nameIndex < p.enumNames.Length; ++flagShift, ++nameIndex)
+                    {
+                        var flag = 1 << flagShift;
+                        if ((flag & p.enumValueFlag) > 0)
+                        {
+                            yield return CleanEnumName(p.enumNames[nameIndex]);
+                        }
+                    }
+                }
+                else if (enumValueIndex < p.enumNames.Length)
+                {
+                    yield return CleanEnumName(p.enumNames[enumValueIndex]);
+                }
+            }
+        }
+
         internal static string GetPropertyNamePrefix(UnityEngine.Object obj)
         {
             var objType = obj.GetType();

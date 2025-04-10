@@ -24,6 +24,7 @@ namespace UnityEngine
     [NativeHeader("Modules/Animation/AnimatorOverrideController.h")]
     [NativeHeader("Modules/Animation/ScriptBindings/Animation.bindings.h")]
     [UsedByNativeCode]
+    [HelpURL("AnimatorOverrideController")]
     public class AnimatorOverrideController : RuntimeAnimatorController
     {
         public AnimatorOverrideController()

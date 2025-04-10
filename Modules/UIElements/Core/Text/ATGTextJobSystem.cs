@@ -39,6 +39,7 @@ internal class ATGTextJobSystem
 
     static readonly ProfilerMarker k_GenerateTextMarker = new("ATGTextJob.GenerateText");
     static readonly ProfilerMarker k_ATGTextJobMarker = new("ATGTextJob");
+
     static readonly bool k_IsMultiThreaded = (bool)Debug.GetDiagnosticSwitch("EnableMultiThreadingForATG").value;
 
     public ATGTextJobSystem()

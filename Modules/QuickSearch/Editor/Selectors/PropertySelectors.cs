@@ -132,16 +132,6 @@ namespace UnityEditor.Search
             }
         }
 
-        internal static string GetEnumValue(SerializedProperty p)
-        {
-            return p.enumNames[p.enumValueIndex].Replace(" ", "");
-        }
-
-        internal static string GetEnumValue(Type type, SerializedProperty p)
-        {
-            return type.GetEnumValues().GetValue(p.intValue).ToString().Replace(" ", "");
-        }
-
         internal static object GetSerializedPropertyValue(SerializedProperty p)
         {
             switch (p.propertyType)
@@ -154,7 +144,7 @@ namespace UnityEditor.Search
                 case SerializedPropertyType.Boolean: return p.boolValue;
                 case SerializedPropertyType.Float: return p.floatValue;
                 case SerializedPropertyType.String: return p.stringValue;
-                case SerializedPropertyType.Enum: return GetEnumValue(p);
+                case SerializedPropertyType.Enum: return SearchUtils.GetEnumSearchValue(p).text;
                 case SerializedPropertyType.Bounds: return p.boundsValue.size.magnitude;
                 case SerializedPropertyType.BoundsInt: return p.boundsIntValue.size.magnitude;
                 case SerializedPropertyType.Color: return p.colorValue;
