@@ -85,6 +85,7 @@ namespace Unity.UI.Builder
             m_RightClickManipulator = new ContextualMenuManipulator(BuildNameFieldContextualMenu);
 
             m_DataSourceViewContainer = new VisualElement();
+            m_DataSourceViewContainer.style.minHeight = 90;
 
             m_Header.Add(m_DataSourceViewContainer);
             m_DataSourceAndPathView = new BuilderDataSourceAndPathView(m_Inspector)

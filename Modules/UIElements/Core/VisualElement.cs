@@ -1959,12 +1959,9 @@ namespace UnityEngine.UIElements
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
         /// <remarks>
-        /// Setting the languageDirection to RTL adds basic support for right-to-left (RTL) by reversing the text and handling linebreaking
-        /// and word wrapping appropriately. However, it does not provide comprehensive RTL support, as this would require text shaping,
-        /// which includes the reordering of characters, and OpenType font feature support. Comprehensive RTL support is planned for future updates,
-        /// which will involve additional APIs to handle language, script, and font feature specifications.
-        ///
-        /// To enhance the RTL functionality of this property, users can explore available third-party plugins in the Unity Asset Store and make use of <see cref="ITextElementExperimentalFeatures.renderedText"/>
+        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get 
+        /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
+        /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
         /// </remarks>
         [CreateProperty]
         public LanguageDirection languageDirection
@@ -1992,7 +1989,7 @@ namespace UnityEngine.UIElements
 
                 m_LocalLanguageDirection = value;
 
-                IncrementVersion(VersionChangeType.Layout);
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {

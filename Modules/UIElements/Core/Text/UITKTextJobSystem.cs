@@ -301,7 +301,9 @@ namespace UnityEngine.UIElements
 
         void AddDrawEntries(MeshGenerationContext mgc, object _)
         {
+            // Accessing TextInfoCommon is invalid after this point
             TextCore.Text.TextGenerator.IsExecutingJob = false;
+
             foreach (var managedJobData in textJobDatas)
             {
                 mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.visualElement);

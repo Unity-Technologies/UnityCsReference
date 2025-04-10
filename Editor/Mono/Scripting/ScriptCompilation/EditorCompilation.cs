@@ -861,12 +861,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ? Constants.ScriptAssembliesAndTypeDBTarget
                 : Constants.ScriptAssembliesTarget;
 
-            var extraScriptingDefines = new List<string>();
-            if (scriptAssemblySettings.BuildingForEditor)
-                extraScriptingDefines.Add("UNITY_EDITOR");
-            if (scriptAssemblySettings.BuildingDevelopmentBuild)
-                extraScriptingDefines.Add("DEVELOPMENT_BUILD");
-
             buildRequest.DataForBuildProgram.Add(() => BeeScriptCompilation.ScriptCompilationDataFor(
                 this,
                 scriptAssemblies,
@@ -875,7 +869,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 buildTarget,
                 scriptAssemblySettings.BuildingForEditor,
                 !scriptAssemblySettings.BuildingWithoutScriptUpdater,
-                extraScriptingDefines.ToArray()));
+                scriptAssemblySettings.ExtraGeneralDefines, scriptAssemblySettings));
 
             var cts = new CancellationTokenSource();
 

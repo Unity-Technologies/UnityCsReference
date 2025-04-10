@@ -85,6 +85,7 @@ namespace UnityEngine.UIElements
         public int unitySliceRight => ve.computedStyle.unitySliceRight;
         public float unitySliceScale => ve.computedStyle.unitySliceScale;
         public int unitySliceTop => ve.computedStyle.unitySliceTop;
+        public SliceType unitySliceType => ve.computedStyle.unitySliceType;
         public TextAnchor unityTextAlign => ve.computedStyle.unityTextAlign;
         public TextGeneratorType unityTextGenerator => ve.computedStyle.unityTextGenerator;
         public Color unityTextOutlineColor => ve.computedStyle.unityTextOutlineColor;
@@ -168,6 +169,7 @@ namespace UnityEngine.UIElements
         int IResolvedStyle.unitySliceRight => resolvedStyle.unitySliceRight;
         float IResolvedStyle.unitySliceScale => resolvedStyle.unitySliceScale;
         int IResolvedStyle.unitySliceTop => resolvedStyle.unitySliceTop;
+        SliceType IResolvedStyle.unitySliceType => resolvedStyle.unitySliceType;
         TextAnchor IResolvedStyle.unityTextAlign => resolvedStyle.unityTextAlign;
         TextGeneratorType IResolvedStyle.unityTextGenerator => resolvedStyle.unityTextGenerator;
         Color IResolvedStyle.unityTextOutlineColor => resolvedStyle.unityTextOutlineColor;

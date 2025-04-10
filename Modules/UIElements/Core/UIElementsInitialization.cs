@@ -32,6 +32,7 @@ namespace UnityEngine.UIElements
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<OverflowInternal>, OverflowInternal>());
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<Position>, Position>());
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<ScaleMode>, ScaleMode>());
+            PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<SliceType>, SliceType>());
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<TextAnchor>, TextAnchor>());
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<TextGeneratorType>, TextGeneratorType>());
             PropertyBag.Register(new StyleValuePropertyBag<StyleEnum<TextOverflow>, TextOverflow>());

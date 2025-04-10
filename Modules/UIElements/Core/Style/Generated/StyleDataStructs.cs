@@ -266,6 +266,7 @@ namespace UnityEngine.UIElements
         public int unitySliceRight;
         public float unitySliceScale;
         public int unitySliceTop;
+        public SliceType unitySliceType;
         public TextOverflowPosition unityTextOverflowPosition;
 
         public RareData Copy()
@@ -289,6 +290,7 @@ namespace UnityEngine.UIElements
                 lhs.unitySliceRight == rhs.unitySliceRight &&
                 lhs.unitySliceScale == rhs.unitySliceScale &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
+                lhs.unitySliceType == rhs.unitySliceType &&
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
@@ -323,6 +325,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ unitySliceRight;
                 hashCode = (hashCode * 397) ^ unitySliceScale.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceTop;
+                hashCode = (hashCode * 397) ^ (int)unitySliceType;
                 hashCode = (hashCode * 397) ^ (int)unityTextOverflowPosition;
                 return hashCode;
             }

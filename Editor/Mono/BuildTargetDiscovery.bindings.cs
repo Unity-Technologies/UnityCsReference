@@ -432,29 +432,6 @@ namespace UnityEditor
                 }
             },
             {
-               new("d80a96315208455a9ba318d697981cfc"),
-               new PlatformInfo
-               {
-                    displayName = "Facebook Instant Games",
-                    buildTarget = BuildTarget.WebGL,
-                    link = L10n.Tr("More details coming soon"),
-                    iconName = "BuildSettings.Facebook",
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
-                }
-            },
-            {
-               new("80657fe557de4d17822398b3a01b8c9e"),
-               new PlatformInfo
-               {
-                    displayName = "Meta Quest",
-                    buildTarget = BuildTarget.Android,
-                    link = L10n.Tr("More details coming soon"),
-                    iconName = "BuildSettings.Meta",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.meta-openxr") },
-                    flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
-                }
-            },
-            {
                 new("32e92b6f4db44fadb869cafb8184d021"),
                 new PlatformInfo
                 {

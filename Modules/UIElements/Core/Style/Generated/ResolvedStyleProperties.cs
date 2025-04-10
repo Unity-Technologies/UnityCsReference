@@ -85,6 +85,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId unitySliceRightProperty = "resolvedStyle." + nameof(IResolvedStyle.unitySliceRight);
             internal static readonly BindingId unitySliceScaleProperty = "resolvedStyle." + nameof(IResolvedStyle.unitySliceScale);
             internal static readonly BindingId unitySliceTopProperty = "resolvedStyle." + nameof(IResolvedStyle.unitySliceTop);
+            internal static readonly BindingId unitySliceTypeProperty = "resolvedStyle." + nameof(IResolvedStyle.unitySliceType);
             internal static readonly BindingId unityTextAlignProperty = "resolvedStyle." + nameof(IResolvedStyle.unityTextAlign);
             internal static readonly BindingId unityTextGeneratorProperty = "resolvedStyle." + nameof(IResolvedStyle.unityTextGenerator);
             internal static readonly BindingId unityTextOutlineColorProperty = "resolvedStyle." + nameof(IResolvedStyle.unityTextOutlineColor);

@@ -324,6 +324,10 @@ namespace UnityEngine.UIElements
         /// </summary>
         int unitySliceTop { get; }
         /// <summary>
+        /// Specifies the type of sclicing.
+        /// </summary>
+        SliceType unitySliceType { get; }
+        /// <summary>
         /// Horizontal and vertical text alignment in the element's box.
         /// </summary>
         /// <remarks>

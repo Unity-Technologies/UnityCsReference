@@ -104,6 +104,11 @@ namespace UnityEngine
             get;
         }
 
+        internal extern uint extrude
+        {
+            get;
+        }
+
         // Get Secondary Textures.
         internal extern Texture2D GetSecondaryTexture(int index);
         // Get Secondary Texture count
