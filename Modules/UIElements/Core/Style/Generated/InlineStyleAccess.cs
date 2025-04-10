@@ -1135,6 +1135,23 @@ namespace UnityEngine.UIElements
             }
         }
 
+        StyleEnum<SliceType> IStyle.unitySliceType
+        {
+            get
+            {
+                var tmp = GetStyleInt(StylePropertyId.UnitySliceType);
+                return new StyleEnum<SliceType>((SliceType)tmp.value, tmp.keyword);
+            }
+
+            set
+            {
+                if (SetStyleValue(StylePropertyId.UnitySliceType, value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
         StyleEnum<TextAnchor> IStyle.unityTextAlign
         {
             get

@@ -634,6 +634,21 @@ namespace UnityEditor.Search
             return new StringView(baseString, startIndex, i);
         }
 
+        public static IEnumerable<StringView> Split(this StringView view, char splitter)
+        {
+            var start = 0;
+            var i = 0;
+            for (; i < view.length; i++)
+            {
+                if (view[i] == splitter)
+                {
+                    yield return new StringView(view.baseString, start, i);
+                    start = i + 1;
+                }
+            }
+            yield return new StringView(view.baseString, start, i);
+        }
+
         public static bool HasQuotes(this StringView sv, in char quoteChar = '"')
         {
             return sv.length >= 2 && sv.StartsWith(quoteChar) && sv.EndsWith(quoteChar);

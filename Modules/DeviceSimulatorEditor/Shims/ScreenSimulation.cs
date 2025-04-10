@@ -481,7 +481,7 @@ namespace UnityEditor.DeviceSimulation
 
         public override float dpi => m_Screen.dpi;
 
-        public override Resolution currentResolution => new Resolution() { width = m_CurrentWidth, height = m_CurrentHeight };
+        public override Resolution currentResolution => new Resolution() { width = m_CurrentWidth, height = m_CurrentHeight, refreshRateRatio = EditorScreen.currentResolution.refreshRateRatio  };
 
         public override Resolution[] resolutions => new[] { currentResolution };
 

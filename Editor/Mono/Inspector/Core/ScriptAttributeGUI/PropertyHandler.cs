@@ -102,12 +102,13 @@ namespace UnityEditor
             // Case 3: If property is not a collection nor within a collection, applyToCollection value should
             //         NOT have any effects on it. Custom drawer should be used.
             // Case 4: Rest of the cases, custom drawer should be used.
+            var isArrayOrList = propertyType != null && propertyType.IsArrayOrList();
             switch (attribute.applyToCollection)
             {
                 // Case 1.
-                case false when propertyType.IsArrayOrList():
+                case false when isArrayOrList:
                 // Case 2.
-                case true when !propertyType.IsArrayOrList() && property.propertyPath.Contains("["):
+                case true when !isArrayOrList && property.propertyPath.Contains("["):
                     return;
                 // Case 3 & 4.
                 default:

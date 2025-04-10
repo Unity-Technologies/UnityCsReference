@@ -143,7 +143,7 @@ namespace UnityEngine.TextCore.Text
         private Rect m_ScreenRect; //real pixel
         private float m_LineHeightDefault; //real pixel
         private bool m_IsPlaceholder;
-        private bool m_IsEllided;
+        protected bool m_IsEllided;
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal IntPtr textGenerationInfo = IntPtr.Zero;
 
@@ -266,17 +266,6 @@ namespace UnityEngine.TextCore.Text
         public virtual bool IsPlaceholder
         {
             get => m_IsPlaceholder;
-        }
-
-        public bool IsElided()
-        {
-            if (textInfo == null)
-                return false;
-
-            if (textInfo.characterCount == 0) // impossible to differentiate between an empty string and a fully truncated string.
-                return true;
-
-            return m_IsEllided;
         }
 
         protected void UpdatePreferredValues(TextGenerationSettings tgs)

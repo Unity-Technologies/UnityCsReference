@@ -267,6 +267,8 @@ namespace UnityEngine.UIElements.UIR
                     rectParams.rightSlice = Mathf.RoundToInt(slices.z);
                     rectParams.bottomSlice = Mathf.RoundToInt(slices.w);
                     rectParams.sliceScale = sliceScale;
+                    if (style.unitySliceType == SliceType.Tiled)
+                        rectParams.meshFlags |= MeshGenerationContext.MeshFlags.SliceTiled;
 
                     // Make sure we are using a valid scale mode otherwise default to StretchtoFill
                     if (!validScaleMode)

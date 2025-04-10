@@ -444,7 +444,8 @@ namespace UnityEditor.UIElements
 
             // We recreate the window regardless of Live Reload being on or off to guarantee tracking is there or not
             // depending on the option being on or off, and we don't leave leftover tracking by turning it off.
-            RecreateWindow();
+            if (panel is BaseVisualElementPanel elementPanel)
+                elementPanel.visualTree.schedule.Execute(RecreateWindow);
 
             if (SetupLiveReloadPanelTrackers != null && editorWindowModel?.window.GetType() == typeof(GameView))
             {

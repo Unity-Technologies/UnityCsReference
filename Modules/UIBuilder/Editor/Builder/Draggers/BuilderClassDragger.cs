@@ -19,6 +19,7 @@ namespace Unity.UI.Builder
             BuilderViewport viewport, BuilderParentTracker parentTracker)
             : base(paneWindow, root, selection, viewport, parentTracker)
         {
+            exclusive = false;
         }
 
         protected override VisualElement CreateDraggedElement()

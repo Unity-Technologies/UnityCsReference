@@ -682,6 +682,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleInt value) => ((IStyle)container).unitySliceTop = value;
         }
 
+        class UnitySliceTypeProperty : InlineStyleEnumProperty<SliceType>
+        {
+            public override string Name => nameof(IStyle.unitySliceType);
+            public override string ussName => "-unity-slice-type";
+            public override bool IsReadOnly => false;
+            public override StyleEnum<SliceType> GetValue(ref InlineStyleAccess container) => ((IStyle)container).unitySliceType;
+            public override void SetValue(ref InlineStyleAccess container, StyleEnum<SliceType> value) => ((IStyle)container).unitySliceType = value;
+        }
+
         class UnityTextAlignProperty : InlineStyleEnumProperty<TextAnchor>
         {
             public override string Name => nameof(IStyle.unityTextAlign);
@@ -765,8 +774,8 @@ namespace UnityEngine.UIElements
 
         public InlineStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(83);
-            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(249);
+            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(84);
+            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(252);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -841,6 +850,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnitySliceRightProperty());
             AddProperty(new UnitySliceScaleProperty());
             AddProperty(new UnitySliceTopProperty());
+            AddProperty(new UnitySliceTypeProperty());
             AddProperty(new UnityTextAlignProperty());
             AddProperty(new UnityTextGeneratorProperty());
             AddProperty(new UnityTextOutlineColorProperty());

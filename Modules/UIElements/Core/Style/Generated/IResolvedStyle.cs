@@ -118,8 +118,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <remarks>
         /// Unlike the visibility property, this property affects the layout of the element.
-        /// To hide an element without removing it from the hierarchy,
-        /// you can use <see cref="DisplayStyle.None"/>.
+        /// This is a convenient way to hide an element without removing it from the hierarchy
+        /// (when using the <see cref="DisplayStyle.None"/>).
         /// 
         /// Elements with a display style of <see cref="DisplayStyle.None"/> are ignored by pointer events
         /// and by <see cref="IPanel.Pick"/>.
@@ -327,6 +327,10 @@ namespace UnityEngine.UIElements
         /// Size of the 9-slice's top edge when painting an element's background image.
         /// </summary>
         int unitySliceTop { get; }
+        /// <summary>
+        /// Specifies the type of sclicing.
+        /// </summary>
+        SliceType unitySliceType { get; }
         /// <summary>
         /// Horizontal and vertical text alignment in the element's box.
         /// </summary>

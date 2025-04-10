@@ -512,9 +512,13 @@ namespace UnityEditor
                {
                     displayName = "Meta Quest",
                     downloadLinkName = "Android",
+                    description = L10n.Tr(
+                        "Take advantage of Unity's support for Meta Quest platforms and leverage Unity's extensive XR tools and frameworks. " +
+                        "This platform offers default project settings and configurations for a streamlined publishing process."
+                    ),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Meta",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.meta-openxr") },
+                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.openxr") },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },

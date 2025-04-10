@@ -321,5 +321,13 @@ namespace UnityEngine.UIElements
         {
             get => useAdvancedText ? m_TextElement.showPlaceholderText : base.IsPlaceholder;
         }
+
+        public bool IsElided()
+        {
+            if (string.IsNullOrEmpty(m_TextElement.text)) // impossible to differentiate between an empty string and a fully truncated string.
+                return true;
+
+            return m_IsEllided;
+        }
     }
 }

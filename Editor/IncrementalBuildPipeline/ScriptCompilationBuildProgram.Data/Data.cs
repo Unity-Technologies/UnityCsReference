@@ -56,6 +56,7 @@ namespace ScriptCompilationBuildProgram.Data
     public class ScriptCompilationData_Out
     {
         public AssemblyData_Out[] Assemblies;
+        public bool LocalizeCompilerMessages;
     }
 
     public class AssemblyData_Out

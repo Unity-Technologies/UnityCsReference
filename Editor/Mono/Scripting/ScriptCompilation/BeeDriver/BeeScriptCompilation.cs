@@ -13,7 +13,6 @@ using ScriptCompilationBuildProgram.Data;
 using Unity.Profiling;
 using UnityEditor.Build.Player;
 using UnityEditor.Compilation;
-using UnityEditor.PackageManager;
 using UnityEditor.Scripting.Compilers;
 using UnityEngine;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;

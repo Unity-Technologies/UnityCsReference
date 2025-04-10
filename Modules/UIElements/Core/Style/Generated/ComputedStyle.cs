@@ -104,6 +104,7 @@ namespace UnityEngine.UIElements
         public int unitySliceRight => rareData.Read().unitySliceRight;
         public float unitySliceScale => rareData.Read().unitySliceScale;
         public int unitySliceTop => rareData.Read().unitySliceTop;
+        public SliceType unitySliceType => rareData.Read().unitySliceType;
         public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
         public TextGeneratorType unityTextGenerator => inheritedData.Read().unityTextGenerator;
         public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
@@ -438,6 +439,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnitySliceTop:
                         rareData.Write().unitySliceTop = reader.ReadInt(0);
                         break;
+                    case StylePropertyId.UnitySliceType:
+                        rareData.Write().unitySliceType = (SliceType)reader.ReadEnum(StyleEnumType.SliceType, 0);
+                        break;
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.Write().unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
@@ -682,6 +686,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = (int)sv.number;
+                    break;
+                case StylePropertyId.UnitySliceType:
+                    rareData.Write().unitySliceType = (SliceType)sv.number;
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = (TextAnchor)sv.number;
@@ -995,6 +1002,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = other.rareData.Read().unitySliceTop;
+                    break;
+                case StylePropertyId.UnitySliceType:
+                    rareData.Write().unitySliceType = other.rareData.Read().unitySliceType;
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = other.inheritedData.Read().unityTextAlign;
@@ -1340,6 +1350,14 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = newValue;
                     ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                case StylePropertyId.UnitySliceType:
+                    if (rareData.Read().unitySliceType != (SliceType)newValue)
+                    {
+                        rareData.Write().unitySliceType = (SliceType)newValue;
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
+                    }
+
                     break;
                 case StylePropertyId.UnityTextAlign:
                     if (inheritedData.Read().unityTextAlign != (TextAnchor)newValue)
@@ -1925,6 +1943,8 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceScale, oldStyle.rareData.Read().unitySliceScale, newStyle.rareData.Read().unitySliceScale, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnitySliceTop:
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldStyle.rareData.Read().unitySliceTop, newStyle.rareData.Read().unitySliceTop, durationMs, delayMs, easingCurve);
+                case StylePropertyId.UnitySliceType:
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnitySliceType, (int)oldStyle.rareData.Read().unitySliceType, (int)newStyle.rareData.Read().unitySliceType, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityTextAlign:
                     return element.styleAnimation.StartEnum(StylePropertyId.UnityTextAlign, (int)oldStyle.inheritedData.Read().unityTextAlign, (int)newStyle.inheritedData.Read().unityTextAlign, durationMs, delayMs, easingCurve);
                 case StylePropertyId.UnityTextOutline:
@@ -2317,6 +2337,12 @@ namespace UnityEngine.UIElements
                     oldData.unitySliceTop != newData.unitySliceTop)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.UnitySliceTop, oldData.unitySliceTop, newData.unitySliceTop, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
+                    oldData.unitySliceType != newData.unitySliceType)
+                {
+                    result |= element.styleAnimation.StartEnum(StylePropertyId.UnitySliceType, (int)oldData.unitySliceType, (int)newData.unitySliceType, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -2946,6 +2972,12 @@ namespace UnityEngine.UIElements
                     return element.styleAnimation.Start(StylePropertyId.UnitySliceTop, computedStyle.rareData.Read().unitySliceTop, to, durationMs, delayMs, easingCurve);
                 }
 
+                case StylePropertyId.UnitySliceType:
+                {
+                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unitySliceType : (SliceType)sv.number;
+                    return element.styleAnimation.StartEnum(StylePropertyId.UnitySliceType, (int)computedStyle.rareData.Read().unitySliceType, (int)to, durationMs, delayMs, easingCurve);
+                }
+
                 case StylePropertyId.UnityTextAlign:
                 {
                     var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.unityTextAlign : (TextAnchor)sv.number;
@@ -3324,6 +3356,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnitySliceTop:
                     rareData.Write().unitySliceTop = InitialStyle.unitySliceTop;
                     break;
+                case StylePropertyId.UnitySliceType:
+                    rareData.Write().unitySliceType = InitialStyle.unitySliceType;
+                    break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = InitialStyle.unityTextAlign;
                     break;
@@ -3584,8 +3619,9 @@ namespace UnityEngine.UIElements
 
             if (!x.rareData.ReferenceEquals(y.rareData))
             {
-                if (x.textOverflow != y.textOverflow ||
-                    x.unitySliceScale != y.unitySliceScale)
+                if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unitySliceType != y.unitySliceType ||
+                    x.textOverflow != y.textOverflow ||
+                    x.unitySliceScale != y.unitySliceScale))
                 {
                     changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
                 }

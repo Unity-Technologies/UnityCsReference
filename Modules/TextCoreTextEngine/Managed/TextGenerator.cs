@@ -303,7 +303,6 @@ namespace UnityEngine.TextCore.Text
 
         internal static readonly bool EnableTextAlignmentAssertions = (bool)Debug.GetDiagnosticSwitch("EnableTextAlignmentAssertions").value;
         internal static readonly bool EnableCheckerboardPattern = (bool)Debug.GetDiagnosticSwitch("TextAlignmentFontEngine").value;
-
         /// <summary>
         /// This is the main function that is responsible for creating / displaying the text.
         /// </summary>

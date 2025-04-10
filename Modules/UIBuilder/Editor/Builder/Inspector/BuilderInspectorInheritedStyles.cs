@@ -155,7 +155,7 @@ namespace Unity.UI.Builder
                 m_PaneWindow.document, currentVisualElement, className);
 
             // We actually want to get the notification back and refresh ourselves.
-            m_Selection.NotifyOfHierarchyChange(null);
+            m_Selection.NotifyOfHierarchyChange(null, currentVisualElement, BuilderHierarchyChangeType.ClassList);
             m_Selection.NotifyOfStylingChange(null);
         }
 

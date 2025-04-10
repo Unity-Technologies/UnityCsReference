@@ -269,6 +269,7 @@ namespace UnityEngine.UIElements
             None = 0,
             SkipDynamicAtlas = 1 << 1,
             IsUsingVectorImageGradients = 1 << 2,
+            SliceTiled = 1 << 3,
         }
 
         /// <summary>

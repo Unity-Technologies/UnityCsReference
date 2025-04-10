@@ -67,6 +67,7 @@ namespace UnityEditor.Search
             "InitTestScene"
         };
 
+        List<string> m_FlagsPool = new List<string>();
         internal SearchDatabase.Settings settings { get; private set; }
 
         private HashSet<string> m_IgnoredProperties;
@@ -520,16 +521,7 @@ namespace UnityEditor.Search
                     var managedType = p.GetManagedType();
                     if (managedType?.IsEnum == true)
                     {
-                        var values = Enum.GetValues(managedType);
-                        for (int i = 0; i < values.Length; i++)
-                        {
-                            var v = (int)values.GetValue(i);
-                            if (v == p.intValue)
-                            {
-                                IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions, Enum.GetNames(managedType)[i]);
-                                break;
-                            }
-                        }
+                        IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions);
                     }
                     else if (managedType == typeof(bool))
                     {
@@ -553,9 +545,7 @@ namespace UnityEditor.Search
                         LogProperty(fieldName, p, propositionGenerationOptions, p.stringValue);
                     break;
                 case SerializedPropertyType.Enum:
-                    if (p.enumValueIndex < 0 || p.type != "Enum")
-                        return;
-                    IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions, p.enumNames[p.enumValueIndex]);
+                    IndexEnum(documentIndex, fieldName, p, propositionGenerationOptions);
                     break;
                 case SerializedPropertyType.Color:
                     IndexerExtensions.IndexColor(fieldName, p.colorValue, this, documentIndex);
@@ -588,11 +578,24 @@ namespace UnityEditor.Search
             }
         }
 
-        void IndexEnum(in int documentIndex, in string fieldName, in SerializedProperty p, SearchPropositionGenerationOptions propositionGenerationOptions, string enumValue)
+        void IndexEnum(in int documentIndex, in string fieldName, in SerializedProperty p, SearchPropositionGenerationOptions propositionGenerationOptions)
         {
-            enumValue = enumValue.Replace(" ", "");
-            IndexProperty(documentIndex, fieldName, enumValue, saveKeyword: true, exact: true);
-            LogProperty(fieldName, p, propositionGenerationOptions, enumValue);
+            m_FlagsPool.Clear();
+            m_FlagsPool.AddRange(SearchUtils.GetEnumFlags(p));
+            if (m_FlagsPool.Count == 0)
+                return;
+            if (m_FlagsPool.Count > 1)
+            {
+                foreach (var f in m_FlagsPool)
+                {
+                    IndexProperty(documentIndex, fieldName, f, saveKeyword: true, exact: true);
+                }
+            }
+            
+            // Add the complete Flag list:
+            var flagValue = m_FlagsPool.Count == 1 ? m_FlagsPool[0] : string.Join(",", m_FlagsPool);
+            IndexProperty(documentIndex, fieldName, flagValue, saveKeyword: true, exact: true);
+            LogProperty(fieldName, p, propositionGenerationOptions, flagValue);
         }
 
         bool IndexPropertyStringComponents(in int documentIndex, in string fieldName, in string sv)

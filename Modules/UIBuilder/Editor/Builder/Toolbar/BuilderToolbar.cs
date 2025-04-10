@@ -170,7 +170,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            ChangeCanvasTheme(currentTheme, currentThemeSheet);
+            ChangeCanvasTheme(currentTheme, currentThemeSheet, true);
             UpdateCanvasThemeMenuStatus();
         }
 
@@ -381,21 +381,21 @@ namespace Unity.UI.Builder
         {
             UpdateHasUnsavedChanges();
             SetViewportSubTitle();
-            ChangeCanvasTheme(document.currentCanvasTheme, document.currentCanvasThemeStyleSheet);
+            ChangeCanvasTheme(document.currentCanvasTheme, document.currentCanvasThemeStyleSheet, true);
             SetToolbarBreadCrumbs();
         }
 
         public bool ReloadDocument()
         {
-            return LoadDocument(document.visualTreeAsset, false);
+            return LoadDocument(document.visualTreeAsset, false, false, null, m_ThemeManager);
         }
 
         public bool LoadDocument(VisualTreeAsset visualTreeAsset, string assetPath)
         {
-            return LoadDocument(visualTreeAsset, true, false, assetPath);
+            return LoadDocument(visualTreeAsset, true, false, assetPath, m_ThemeManager);
         }
 
-        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false, string assetPath = null)
+        public bool LoadDocument(VisualTreeAsset visualTreeAsset, bool unloadAllSubdocuments = true, bool assetModifiedExternally = false, string assetPath = null, ThemeStyleSheetManager themeStyleSheetManager = null)
         {
             if (!BuilderAssetUtilities.ValidateAsset(visualTreeAsset, assetPath))
                 return false;
@@ -415,16 +415,16 @@ namespace Unity.UI.Builder
             if (unloadAllSubdocuments)
                 document.GoToRootDocument(m_Viewport.documentRootElement, m_PaneWindow);
 
-            LoadDocumentInternal(visualTreeAsset);
+            LoadDocumentInternal(visualTreeAsset, themeStyleSheetManager);
 
             return true;
         }
 
-        void LoadDocumentInternal(VisualTreeAsset visualTreeAsset)
+        void LoadDocumentInternal(VisualTreeAsset visualTreeAsset, ThemeStyleSheetManager themeStyleSheetManager = null)
         {
             m_Selection.ClearSelection(null);
 
-            document.LoadDocument(visualTreeAsset, m_Viewport.documentRootElement);
+            document.LoadDocument(visualTreeAsset, m_Viewport.documentRootElement, themeStyleSheetManager);
 
             m_Viewport.SetViewFromDocumentSetting();
             m_Inspector?.canvasInspector.Refresh();
@@ -587,7 +587,7 @@ namespace Unity.UI.Builder
             return theme is BuilderDocument.CanvasTheme.Default or BuilderDocument.CanvasTheme.Dark or BuilderDocument.CanvasTheme.Light;
         }
 
-        public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet = null)
+        public void ChangeCanvasTheme(BuilderDocument.CanvasTheme theme, ThemeStyleSheet customThemeStyleSheet = null, bool isInit = false)
         {
             m_Viewport.canvas.defaultBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.None : DisplayStyle.Flex;
             m_Viewport.canvas.checkerboardBackgroundElement.style.display = theme == BuilderDocument.CanvasTheme.Custom ? DisplayStyle.Flex : DisplayStyle.None;
@@ -615,7 +615,8 @@ namespace Unity.UI.Builder
             ApplyCanvasBackground(m_Viewport.canvas.defaultBackgroundElement, theme);
             ApplyCanvasTheme(m_TooltipPreview, activeThemeStyleSheet, m_LastCustomTheme);
             ApplyCanvasBackground(m_TooltipPreview, theme);
-            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet);
+            document.ChangeDocumentTheme(m_Viewport.documentRootElement, theme, customThemeStyleSheet, m_ThemeManager, isInit);
+            UpdateCanvasThemeMenuStatus();
             m_LastCustomTheme = customThemeStyleSheet;
 
             m_Inspector?.selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);

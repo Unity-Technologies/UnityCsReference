@@ -155,6 +155,11 @@ namespace UnityEditor
             }
         }
 
+        public override string ToString()
+        {
+            return $"{GetType().Name} - {settingsPath}";
+        }
+
         #region Helper
         public static IEnumerable<string> GetSearchKeywordsFromGUIContentProperties<T>()
         {

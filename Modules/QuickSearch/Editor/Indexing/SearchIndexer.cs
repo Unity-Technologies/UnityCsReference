@@ -52,7 +52,8 @@ namespace UnityEditor.Search
         // 30- Use SearchDocumentList
         // 31- Update custom indexers with prefabs.
         // 32- Property references also index GlobalObjectId with PropertyName.
-        internal const int version = 0x032;
+        // 33- Support for EnumFlags.
+        internal const int version = 0x033;
 
         public enum Type : byte
         {

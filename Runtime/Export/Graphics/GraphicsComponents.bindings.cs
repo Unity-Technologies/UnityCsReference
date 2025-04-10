@@ -138,5 +138,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/HaloManager.h")]
     internal sealed partial class Halo : Behaviour
     {
+        extern public float size { get; set; }
+        extern public Color color { get; set; }
     }
 }
