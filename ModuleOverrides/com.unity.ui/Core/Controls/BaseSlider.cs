@@ -29,6 +29,7 @@ namespace UnityEngine.UIElements
     public abstract class BaseSlider<TValueType> : BaseField<TValueType>, IValueField<TValueType>
         where TValueType : System.IComparable<TValueType>
     {
+        float m_AdjustedPageSizeFromClick = 0;
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="BaseSlider"/>.
         /// </summary>
@@ -57,6 +58,18 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         private TValueType m_LowValue;
+
+        private protected override bool canSwitchToMixedValue
+        {
+            get
+            {
+                if (inputTextField == null)
+                    return true;
+
+                return !inputTextField.textInputBase.textElement.hasFocus
+                       || (inputTextField.textInputBase.textElement.hasFocus && focusController != null && focusController.IsPendingFocus(this));
+            }
+        }
 
         /// <summary>
         /// This is the minimum value that the slider encodes.
@@ -550,18 +563,20 @@ namespace UnityEngine.UIElements
             var isPositionIncreasing = dragElementLastPos > (dragElementPos + dragElementLength);
             var isDraggingHighToLow = inverted ? isPositionIncreasing : isPositionDecreasing;
             var isDraggingLowToHigh = inverted ? isPositionDecreasing : isPositionIncreasing;
-            var adjustedPageSize = inverted ? -pageSize : pageSize;
+
+            // We maintain a cumulative page size value to handle scenarios where the page size is too small to produce noticeable movement with a single click (UUM-86425).
+            m_AdjustedPageSizeFromClick = inverted ? m_AdjustedPageSizeFromClick - pageSize : m_AdjustedPageSizeFromClick + pageSize;
 
             if (isDraggingHighToLow && (clampedDragger.dragDirection != ClampedDragger<TValueType>.DragDirection.LowToHigh))
             {
                 clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.HighToLow;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - adjustedPageSize, totalRange)) / totalRange;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - m_AdjustedPageSizeFromClick, totalRange)) / totalRange;
                 value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
             else if (isDraggingLowToHigh && (clampedDragger.dragDirection != ClampedDragger<TValueType>.DragDirection.HighToLow))
             {
                 clampedDragger.dragDirection = ClampedDragger<TValueType>.DragDirection.LowToHigh;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + adjustedPageSize, totalRange)) / totalRange;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + m_AdjustedPageSizeFromClick, totalRange)) / totalRange;
                 value = SliderLerpDirectionalUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
         }
@@ -651,6 +666,9 @@ namespace UnityEngine.UIElements
                     var newPos = new Vector3(newLeft, 0, 0);
                     dragElement.transform.position = newPos;
                     dragBorderElement.transform.position = newPos;
+
+                    // When the dragElement moves we can reset our cumlative page size
+                    m_AdjustedPageSizeFromClick = 0;
                 }
             }
             else
@@ -671,6 +689,9 @@ namespace UnityEngine.UIElements
                     var newPos = new Vector3(0, newTop, 0);
                     dragElement.transform.position = newPos;
                     dragBorderElement.transform.position = newPos;
+
+                    // When the dragElement moves we can reset our cumlative page size
+                    m_AdjustedPageSizeFromClick = 0;
                 }
             }
         }
@@ -763,10 +784,18 @@ namespace UnityEngine.UIElements
             if (showMixedValue)
             {
                 dragElement?.RemoveFromHierarchy();
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = true;
+                }
             }
             else
             {
                 dragContainer.Add(dragElement);
+                if (inputTextField != null)
+                {
+                    inputTextField.showMixedValue = false;
+                }
             }
         }
 

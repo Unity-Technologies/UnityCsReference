@@ -5653,6 +5653,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PlayModeDownload.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\ResourceLoader.cs</Link>
     </Compile>

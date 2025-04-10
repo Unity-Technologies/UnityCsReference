@@ -32,7 +32,7 @@ namespace UnityEditor
         public SettingsProvider currentProvider { get; private set; }
         public string searchContext { get; set; }
 
-        public delegate void ProviderChangedHandler(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider);
+        public delegate bool ProviderChangedHandler(SettingsProvider lastSelectedProvider, SettingsProvider newlySelectedProvider);
         public event ProviderChangedHandler currentProviderChanged;
 
         public SettingsTreeView(TreeViewState state, SettingsProvider[] providers)
@@ -67,8 +67,8 @@ namespace UnityEditor
         protected override void SelectionChanged(IList<int> selectedIds)
         {
             SettingsProvider selectedProvider = GetFirstValidProvider(selectedIds.Count > 0 ? selectedIds.First() : -1);
-            currentProviderChanged?.Invoke(currentProvider, selectedProvider);
-            currentProvider = selectedProvider;
+            if (currentProviderChanged?.Invoke(currentProvider, selectedProvider) ?? true)
+                currentProvider = selectedProvider;
         }
 
         protected SettingsProvider GetFirstValidProvider(int id)

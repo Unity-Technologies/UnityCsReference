@@ -6,6 +6,7 @@ using UnityEditor;
 using UnityEditor.UIElements.StyleSheets;
 using UnityEngine;
 using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -86,7 +87,9 @@ namespace Unity.UI.Builder
                 break;
                 case StyleValueType.Dimension:
                     var dim = sheet.ReadDimension(handle);
-                    if (dim.value == 0 && !dim.unit.IsTimeUnit())
+
+                    // Display 0 without a unit when using the default unit for the type. For time values, always include the unit regardless. (UUM-99023)
+                    if (dim.value == 0 && (dim.unit == Dimension.Unit.Pixel || dim.unit == Dimension.Unit.Degree))
                         str = "0";
                     else
                         str = dim.ToString();

@@ -16,10 +16,9 @@ namespace UnityEngine.UIElements
         public void DispatchEvent(EventBase evt, IPanel panel)
         {
             // s_GlobalPanelDebug handle picking elements across all panels
-            IMouseEvent mouseEvent = evt as IMouseEvent;
-            if (s_GlobalPanelDebug != null && mouseEvent != null)
+            if (s_GlobalPanelDebug != null)
             {
-                if (s_GlobalPanelDebug.InterceptMouseEvent(panel, mouseEvent))
+                if (s_GlobalPanelDebug.InterceptEvent(panel, evt))
                 {
                     evt.StopPropagation();
                     evt.PreventDefault();

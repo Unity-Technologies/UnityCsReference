@@ -66,7 +66,6 @@ namespace UnityEngine.UIElements
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
         private BaseFieldMouseDragger m_Dragger;
-        internal bool m_UpdateTextFromValue;
         private bool m_ForceUpdateDisplay;
         internal const int kMaxValueFieldLength = 1000;
 
@@ -92,7 +91,6 @@ namespace UnityEngine.UIElements
         protected TextValueField(string label, int maxLength, TextValueInput textValueInput)
             : base(label, maxLength, Char.MinValue, textValueInput)
         {
-            m_UpdateTextFromValue = true;
             textEdition.UpdateText(ValueToString(rawValue));
             onIsReadOnlyChanged += OnIsReadOnlyChanged;
         }
@@ -151,7 +149,10 @@ namespace UnityEngine.UIElements
 
         internal override void UpdateTextFromValue()
         {
-            text = ValueToString(rawValue);
+            if (m_UpdateTextFromValue)
+            {
+                text = ValueToString(rawValue);
+            }
         }
 
         private void OnIsReadOnlyChanged(bool newValue)
@@ -228,7 +229,7 @@ namespace UnityEngine.UIElements
             }
             else if (evt.eventTypeId == FocusEvent.TypeId())
             {
-                if (showMixedValue)
+                if (showMixedValue && textInputBase.textElement.hasFocus)
                 {
                     textInputBase.text = "";
                 }

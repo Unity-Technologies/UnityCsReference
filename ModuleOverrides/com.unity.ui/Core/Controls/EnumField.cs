@@ -297,21 +297,12 @@ namespace UnityEngine.UIElements
             evt.StopPropagation();
         }
 
-        private void ShowMenu()
+        internal void ShowMenu()
         {
             if (m_EnumType == null)
                 return;
 
-            IGenericMenu menu;
-            if (createMenuCallback != null)
-            {
-                menu = createMenuCallback.Invoke();
-            }
-            else
-            {
-                menu = elementPanel?.contextType == ContextType.Player ? new GenericDropdownMenu() : DropdownUtility.CreateDropdown();
-            }
-
+            var menu = createMenuCallback != null ? createMenuCallback.Invoke() : elementPanel.CreateMenu();
             int selectedIndex = Array.IndexOf(m_EnumData.values, value);
 
             for (int i = 0; i < m_EnumData.values.Length; ++i)

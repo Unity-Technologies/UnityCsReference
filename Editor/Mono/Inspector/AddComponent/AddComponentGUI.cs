@@ -13,17 +13,11 @@ namespace UnityEditor.AddComponent
         private static class Styles
         {
             public static GUIStyle itemStyle = "DD LargeItemStyle";
-            internal static GUIStyle lineStyleFaint = new GUIStyle("DD LargeItemStyle");
 
-            static Styles()
-            {
-                float val = EditorGUIUtility.isProSkin ? 0.5f : 0.25f;
-                var color = new Color(val, val, val, 1f);
-                lineStyleFaint.active.textColor = color;
-                lineStyleFaint.focused.textColor = color;
-                lineStyleFaint.hover.textColor = color;
-                lineStyleFaint.normal.textColor = color;
-            }
+            const string k_includeNamespaceProSkin = "{0} <color=#808080>({1})</color>";
+            const string k_includeNamespace = "{0} <color=#404040>({1})</color>";
+
+            public static string includeNamespaceString => EditorGUIUtility.isProSkin ? k_includeNamespaceProSkin : k_includeNamespace;
         }
 
         private Vector2 m_IconSize = new Vector2(16, 16);
@@ -39,22 +33,17 @@ namespace UnityEditor.AddComponent
 
         private void DrawSearchItem(string name, string path, Texture2D icon, bool selected)
         {
-            path = string.IsNullOrEmpty(path) ? "" : $"({path})"; // if the path we're left with is equal to " ()" - scrap it
+            if (!string.IsNullOrEmpty(path))
+                name = string.Format(Styles.includeNamespaceString, name, path);
+
             var contentWithIcon = new GUIContent(name, path);
             contentWithIcon.image = icon;
 
-            var rect = GUILayoutUtility.GetRect(contentWithIcon, Styles.lineStyleFaint, GUILayout.ExpandWidth(true));
-            var fullRect = new Rect(rect);
+            var rect = GUILayoutUtility.GetRect(contentWithIcon, Styles.itemStyle, GUILayout.ExpandWidth(true));
 
             if (Event.current.type != EventType.Repaint)
                 return;
-
-            var emptySpace = Styles.lineStyleFaint.CalcSize(contentWithIcon);
-            rect.x += emptySpace.x;
-
-            lineStyle.Draw(fullRect, contentWithIcon, selected, selected, selected, selected);
-
-            Styles.lineStyleFaint.Draw(rect, new GUIContent(path, path), selected, false, false, false);
+            lineStyle.Draw(rect, contentWithIcon, selected, selected, selected, selected);
         }
 
         internal override void DrawItem(AdvancedDropdownItem item, string name, Texture2D icon, bool enabled, bool drawArrow, bool selected, bool hasSearch)

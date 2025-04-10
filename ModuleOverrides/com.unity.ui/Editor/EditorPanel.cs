@@ -13,6 +13,9 @@ namespace UnityEditor.UIElements
         static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
         static Shader s_EditorShader;
         static readonly int s_EditorColorSpaceID = Shader.PropertyToID("_EditorColorSpace");
+
+        internal override IGenericMenu CreateMenu() => new GenericOSMenu();
+
         [InitializeOnLoad]
         static class EditorShaderLoader
         {

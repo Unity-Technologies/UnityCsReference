@@ -56,6 +56,8 @@ namespace UnityEngine.UIElements
         }
 
         TextInputBase m_TextInputBase;
+        internal bool m_UpdateTextFromValue;
+
         /// <undoc/>
         /// <summary>
         /// This is the text input visual element which presents the value in the field.
@@ -337,6 +339,7 @@ namespace UnityEngine.UIElements
         }
 
         internal bool hasFocus => textInputBase.textElement.hasFocus;
+        private protected override bool canSwitchToMixedValue => !textInputBase.textElement.hasFocus || (textInputBase.textElement.hasFocus && focusController != null && focusController.IsPendingFocus(this));
 
         /// <summary>
         /// Converts a value of the specified generic type from the subclass to a string representation.
@@ -374,6 +377,7 @@ namespace UnityEngine.UIElements
             m_TextInputBase.maskChar = maskChar;
 
             RegisterCallback<CustomStyleResolvedEvent>(OnFieldCustomStyleResolved);
+            m_UpdateTextFromValue = true;
         }
 
         private void OnFieldCustomStyleResolved(CustomStyleResolvedEvent e)
@@ -436,7 +440,11 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
+                if (m_UpdateTextFromValue)
+                {
+                    ((INotifyValueChanged<string>)textInputBase.textElement).SetValueWithoutNotify(mixedValueString);
+                }
+
                 AddToClassList(mixedValueLabelUssClassName);
                 visualInput?.AddToClassList(mixedValueLabelUssClassName);
             }

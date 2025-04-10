@@ -41,7 +41,8 @@ namespace UnityEngine.UIElements
         /// <returns>The unsigned integer parsed from the string.</returns>
         protected override uint StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToUInt(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToUInt(str, textInputBase.originalText, out var v, out var expression);
+            expressionEvaluated?.Invoke(expression);
             return success ? v : rawValue;
         }
 
@@ -132,8 +133,7 @@ namespace UnityEngine.UIElements
 
             protected override uint StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToUInt(str, originalText, out var v);
-                return v;
+                return parentUnsignedIntegerField.StringToValue(str);
             }
         }
     }

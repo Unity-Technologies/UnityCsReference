@@ -11,7 +11,7 @@ using UnityEngine;
 namespace UnityEditor.PackageManager.UI.Internal
 {
     [Serializable]
-    internal class UpmClient : ISerializationCallbackReceiver
+    internal class UpmClient
     {
         private static readonly string[] k_UnityRegistryUrlsHosts = { ".unity.com", ".unity3d.com" };
 
@@ -53,13 +53,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private readonly Dictionary<string, UpmSearchOperation> m_ExtraFetchOperations = new Dictionary<string, UpmSearchOperation>();
 
-        [SerializeField]
-        private string[] m_SerializedRegistryUrlsKeys;
-
-        [SerializeField]
-        private RegistryType[] m_SerializedRegistryUrlsValues;
-
-        internal Dictionary<string, RegistryType> m_RegistryUrls = new Dictionary<string, RegistryType>();
+        private static readonly Dictionary<string, bool> s_IsUnityUrlResults = new();
 
         // a list of unique ids (could be specialUniqueId or packageId)
         [SerializeField]
@@ -108,18 +102,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             return PackageInfo.GetAllRegisteredPackages().Any(info => (info.version.Contains("-preview") || info.version.Contains("-exp.") || info.version.StartsWith("0.")) && IsUnityPackage(info));
         }
 
-        public void OnBeforeSerialize()
-        {
-            m_SerializedRegistryUrlsKeys = m_RegistryUrls?.Keys.ToArray() ?? new string[0];
-            m_SerializedRegistryUrlsValues = m_RegistryUrls?.Values.ToArray() ?? new RegistryType[0];
-        }
-
-        public void OnAfterDeserialize()
-        {
-            for (var i = 0; i < m_SerializedRegistryUrlsKeys.Length; i++)
-                m_RegistryUrls[m_SerializedRegistryUrlsKeys[i]] = m_SerializedRegistryUrlsValues[i];
-        }
-
         public virtual bool isAddRemoveOrEmbedInProgress => (m_AddOperation?.isInProgress  ?? false) ||
         (m_RemoveOperation?.isInProgress  ?? false) ||
         (m_AddAndRemoveOperation?.isInProgress  ?? false) ||
@@ -160,8 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddRemoveOrEmbedInProgress)
                 return;
-            var packageName = packageId.Split(new[] { '@' }, 2)[0];
-            addOperation.Add(packageId, m_UpmCache.GetProductIdByName(packageName));
+            addOperation.Add(packageId);
             SetupAddOperation();
         }
 
@@ -318,7 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddRemoveOrEmbedInProgress)
                 return;
-            embedOperation.Embed(packageName, m_UpmCache.GetProductIdByName(packageName));
+            embedOperation.Embed(packageName);
             SetupEmbedOperation();
         }
 
@@ -333,7 +314,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (isAddRemoveOrEmbedInProgress)
                 return;
-            removeOperation.Remove(packageName, m_UpmCache.GetProductIdByName(packageName));
+            removeOperation.Remove(packageName);
             SetupRemoveOperation();
         }
 
@@ -439,15 +420,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             if (!string.IsNullOrEmpty(productId))
             {
-                // This is not really supposed to happen - this happening would mean there's an issue with data from the backend
-                // Right now there isn't any recommended actions we can suggest the users to take, so we'll just add a message here
-                // to expose it if it ever happens (rather than letting it pass silently)
-                if (packageInfo?.assetStore?.productId != productId)
-                {
-                    var error = new UIError(UIErrorCode.AssetStorePackageError, L10n.Tr("Product Id mismatch between product details and package details."));
-                    m_FetchStatusTracker.SetFetchError(productId, FetchType.ProductSearchInfo, error);
-                    return;
-                }
                 m_UpmCache.SetProductSearchPackageInfo(productId, packageInfo);
                 m_FetchStatusTracker.SetFetchSuccess(productId, FetchType.ProductSearchInfo);
             }
@@ -528,7 +500,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
 #pragma warning disable 618
             // Ideally we should be only using `packageInfo.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore` here
-            // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However there's currently a serialization issue (PAK-3869) with
+            // because `packageInfo.isAssetStorePackage` is marked as Obsolete. However, there's currently a serialization issue (PAK-3869) with
             // packageInfo.entitlements that sometimes licensingModel is set to None when it should be EntitlementLicensingModel.AssetStore
             // As a result, we will use the deprecated packageInfo.isAssetStorePackage until the PAK-3869 is fixed.
             if (packageInfo?.isAssetStorePackage == true || packageInfo?.entitlements?.licensingModel == EntitlementLicensingModel.AssetStore)
@@ -543,12 +515,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (packageInfo?.versions == null || packageInfo.versions.all.Length == 0)
                 return RegistryType.None;
 
-            if (m_RegistryUrls.TryGetValue(packageInfo.registry.url, out var result))
-                return result;
-
-            result = packageInfo.registry.isDefault && IsUnityUrl(packageInfo.registry.url) ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
-            m_RegistryUrls[packageInfo.registry.url] = result;
-            return result;
+            if (!s_IsUnityUrlResults.TryGetValue(packageInfo.registry.url, out var isUnityUrl))
+            {
+                isUnityUrl = IsUnityUrl(packageInfo.registry.url);
+                s_IsUnityUrlResults[packageInfo.registry.url] = isUnityUrl;
+            }
+            return packageInfo.registry.isDefault && isUnityUrl ? RegistryType.UnityRegistry : RegistryType.MyRegistries;
         }
 
         public virtual bool IsUnityPackage(PackageInfo packageInfo)
@@ -637,13 +609,22 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var seeAllVersions = m_SettingsProxy.seeAllPackageVersions;
                 foreach (var packageName in packageNames)
                 {
-                    // Upm packages with product ids are handled in UpmOnAssetStorePackageFactory, we don't want to worry about it here.
-                    if (!string.IsNullOrEmpty(m_UpmCache.GetProductIdByName(packageName)))
-                        continue;
                     var installedInfo = m_UpmCache.GetInstalledPackageInfo(packageName);
                     var searchInfo = m_UpmCache.GetSearchPackageInfo(packageName);
                     if (installedInfo == null && searchInfo == null)
+                        // When we add a package with empty version list, this package will be removed later in the PackageDatabase
                         updatedPackages.Add(new UpmPackage(packageName, false, new UpmVersionList()));
+                    else if (!string.IsNullOrEmpty(installedInfo?.assetStore?.productId))
+                    {
+                        // It could happen that an installed package changed source from scoped registry to Asset Store when user modify scoped registry settings
+                        // In that case, a package that points to the scoped registry (with package name as unique id) should have already been created, and we need
+                        // to remove that package, otherwise two entries of the same package will exist at the same time (the other one's unique id is product id).
+                        // Note that we only do this when a package is switched from scoped registry to Asset Store. When it's the other way around, we don't need
+                        // to remove the package with product id as unique id, since it's expected to have two packages then, one points to scoped registry with no error
+                        // The other one points to the asset store with error saying that the asset store product is no longer accessible due to scoped registry settings.
+                        // Note that when we add a package with empty version list, this package will be removed later in the PackageDatabase
+                        updatedPackages.Add(new UpmPackage(packageName, false, new UpmVersionList()));
+                    }
                     else
                     {
                         var availableRegistry = m_UpmClient.GetAvailableRegistryType(searchInfo ?? installedInfo);
@@ -659,9 +640,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_UpmClient.onPackagesChanged?.Invoke(updatedPackages.Cast<IPackage>());
             }
 
-            private void OnPackageInfosUpdated(IEnumerable<PackageInfo> packageInfos)
+            private void OnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> updatedInfos)
             {
-                GeneratePackagesAndTriggerChangeEvent(packageInfos.Select(p => p.name));
+                var packageNames = updatedInfos.Select(i => i.oldInfo?.name ?? i.newInfo?.name).ToArray();
+                GeneratePackagesAndTriggerChangeEvent(packageNames);
             }
 
             private void OnLoadAllVersionsChanged(string packageUniqueId, bool _)

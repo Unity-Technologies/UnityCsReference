@@ -242,6 +242,12 @@ namespace UnityEditor
 
         internal static bool IsHovering(int controlID, Event evt)
         {
+            // If the mouse position is over an overlay, return false since we don't want to indicate interactivity with any handles.
+            if (SceneView.lastActiveSceneView == null || SceneView.lastActiveSceneView.sceneViewMotion == null)
+                return false;
+            if (!SceneView.lastActiveSceneView.sceneViewMotion.viewportsUnderMouse)
+                return false;
+
             return controlID == HandleUtility.nearestControl && GUIUtility.hotControl == 0 && !Tools.viewToolActive;
         }
 

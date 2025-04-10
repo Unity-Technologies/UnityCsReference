@@ -459,12 +459,19 @@ namespace UnityEditor
             DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, showHotkey, false);
         }
 
+
+        //This method is only valid during onGUI callbacks, prefer DisplayCustomMenuWithSeparatorsWithScreenSpacePosition that work al the time. 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick = false)
         {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
 
+            DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
+        }
+
+        internal static void DisplayCustomMenuWithSeparatorsWithScreenSpacePosition(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames, bool shouldDiscardMenuOnSecondClick)
+        {
             Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames, shouldDiscardMenuOnSecondClick);
             ResetMouseDown();
         }

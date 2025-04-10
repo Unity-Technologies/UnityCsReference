@@ -43,7 +43,8 @@ namespace UnityEngine.UIElements
         /// <returns>The integer parsed from the string.</returns>
         protected override int StringToValue(string str)
         {
-            var success = UINumericFieldsUtils.TryConvertStringToInt(str, textInputBase.originalText, out var v);
+            var success = UINumericFieldsUtils.TryConvertStringToInt(str, textInputBase.originalText, out var v, out var expression);
+            expressionEvaluated?.Invoke(expression);
             return success ? v : rawValue;
         }
 
@@ -133,8 +134,7 @@ namespace UnityEngine.UIElements
 
             protected override int StringToValue(string str)
             {
-                UINumericFieldsUtils.TryConvertStringToInt(str, originalText, out var v);
-                return v;
+                return parentIntegerField.StringToValue(str);
             }
         }
     }
