@@ -6,7 +6,6 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
@@ -19,6 +18,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/GameCode/AsyncInstantiate/AsyncInstantiateOperation.h")]
     public class AsyncInstantiateOperation : AsyncOperation
     {
+        internal static CancellationTokenSource s_GlobalCancellation = new();
+
         internal Object[] m_Result;
         private CancellationToken m_CancellationToken;
 
@@ -36,11 +37,13 @@ namespace UnityEngine
         [StaticAccessor("GetAsyncInstantiateManager()", StaticAccessorType.Dot)]
         internal extern static float IntegrationTimeMS { get; set; }
 
-        public AsyncInstantiateOperation() { }
+        public AsyncInstantiateOperation() : this(IntPtr.Zero, default)
+        {
+        }
 
         protected AsyncInstantiateOperation(IntPtr ptr, CancellationToken cancellationToken) : base(ptr)
         {
-            m_CancellationToken = cancellationToken;
+            m_CancellationToken = CancellationTokenSource.CreateLinkedTokenSource(s_GlobalCancellation.Token, cancellationToken).Token;
         }
 
         public static float GetIntegrationTimeMS()
