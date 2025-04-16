@@ -236,9 +236,14 @@ namespace UnityEditor
         [UsedByNativeCode]
         internal static void RedrawFromNative()
         {
-            var propertyEditors = Resources.FindObjectsOfTypeAll<PropertyEditor>();
-            foreach (var propertyEditor in propertyEditors)
-                propertyEditor.RebuildContentsContainers();
+            // This method could be called before `OnEnable` is being called on an editor window.
+            // Therefore it is important to make sure your editor window is enabled/active/alive first,
+            // which means it have to be contained in `activeEditorWindows` list.
+            foreach (var editorWindow in activeEditorWindows)
+            {
+                if (editorWindow is PropertyEditor propertyEditor)
+                    propertyEditor.RebuildContentsContainers();
+            }
         }
 
         internal static InspectorWindow[] GetAllInspectorWindows()

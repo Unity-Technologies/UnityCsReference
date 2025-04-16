@@ -120,6 +120,9 @@ namespace UnityEditor
             }
         }
 
+        // This list contains all the editor windows that are already enabled/active/alive.
+        // It is important to check if your window is contained in this list before doing anything,
+        // such like UI build/rebuild.
         internal static List<EditorWindow> activeEditorWindows { get; } = new List<EditorWindow>();
 
         internal void SaveViewData()

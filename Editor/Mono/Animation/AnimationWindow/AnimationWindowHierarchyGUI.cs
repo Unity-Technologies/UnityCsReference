@@ -30,6 +30,9 @@ namespace UnityEditorInternal
         private int[] m_HierarchyItemValueControlIDs;
         private int[] m_HierarchyItemButtonControlIDs;
 
+        private bool m_NeedsToReclaimFieldFocus;
+        private int m_FieldToReclaimFocus;
+
         private const float k_RowRightOffset = 10;
         private const float k_ValueFieldDragWidth = 15;
         private const float k_ValueFieldWidth = 80;
@@ -352,11 +355,12 @@ namespace UnityEditorInternal
                             && Event.current.type == EventType.KeyDown
                             && (Event.current.character == '\n' || (int)Event.current.character == 3));
 
-                        //  Force back keyboard focus to float field editor when editing it.
-                        //  TreeView forces keyboard focus on itself at mouse down and we lose focus here.
+                        // Force back keyboard focus to float field editor when editing it since the TreeView forces keyboard focus on itself at mouse down.
+                        // The focus will be reclaimed after the TreeViewController.OnGUI call.
                         if (EditorGUI.s_RecycledEditor.controlID == id && Event.current.type == EventType.MouseDown && valueFieldRect.Contains(Event.current.mousePosition))
                         {
-                            GUIUtility.keyboardControl = id;
+                            m_NeedsToReclaimFieldFocus = true;
+                            m_FieldToReclaimFocus = id;
                         }
 
                         if (curve.isDiscreteCurve)
@@ -418,6 +422,15 @@ namespace UnityEditorInternal
                     state.ClearCandidates();
 
                 state.ResampleAnimation();
+            }
+        }
+
+        internal void ReclaimPendingFieldFocus()
+        {
+            if (m_NeedsToReclaimFieldFocus)
+            {
+                GUIUtility.keyboardControl = m_FieldToReclaimFocus;
+                m_NeedsToReclaimFieldFocus = false;
             }
         }
 

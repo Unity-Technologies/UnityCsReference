@@ -360,7 +360,7 @@ namespace UnityEditor
                     buildTarget = BuildTarget.Android,
                     nameAndLinkToShowUnderTitle = new List<NameAndLink>
                     {
-                        new NameAndLink{name = L10n.Tr("Unity Android Manual"),  linkUrl = "https://docs.unity3d.com/Manual/android.html"},
+                        new NameAndLink{name = L10n.Tr("Unity Android Manual"),  linkUrl = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/android.html"},
                     },
                     iconName = "BuildSettings.Android",
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget

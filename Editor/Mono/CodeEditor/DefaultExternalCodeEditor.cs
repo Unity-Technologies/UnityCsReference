@@ -8,13 +8,15 @@ using System.Linq;
 using Unity.CodeEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Assertions;
+using NiceIO;
 
 namespace UnityEditor
 {
     internal class DefaultExternalCodeEditor : IExternalCodeEditor
     {
         static readonly GUIContent k_ResetArguments = EditorGUIUtility.TrTextContent("Reset argument");
-        static readonly string[] supportedExtensions = {"json", "asmdef", "log", "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template", "raytrace" };
+        static readonly string[] supportedExtensions = { "json", "asmdef", "log", "cs", "uxml", "uss", "shader", "compute", "cginc", "hlsl", "glslinc", "template", "raytrace" };
         static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
         static bool IsWindows => Application.platform == RuntimePlatform.WindowsEditor;
         static bool IsLinux => Application.platform == RuntimePlatform.LinuxEditor;
@@ -37,7 +39,7 @@ namespace UnityEditor
                 // So on OSX we change the key for per application for script editor args,
                 // to avoid reading the one from previous versions.
                 // The year 2021: Delete mac hack.
-                if (Application.platform == RuntimePlatform.OSXEditor)
+                if (IsOSX)
                 {
                     var oldMac = EditorPrefs.GetString("kScriptEditorArgs_" + Installation);
                     if (!string.IsNullOrEmpty(oldMac))
@@ -50,7 +52,7 @@ namespace UnityEditor
             }
             set
             {
-                if (Application.platform == RuntimePlatform.OSXEditor)
+                if (IsOSX)
                 {
                     EditorPrefs.SetString("kScriptEditorArgs_" + Installation, value);
                 }
@@ -134,11 +136,15 @@ namespace UnityEditor
                 return false;
             }
 
-            string applicationPath = CodeEditor.CurrentEditorPath.Trim();
+            var applicationPath = CodeEditor.CurrentEditorPath.Trim();
+            var doesNotExistWarning =
+                $"External Code Editor application path does not exist ({applicationPath})! Please select a different application.";
 
-            if (!string.IsNullOrEmpty(applicationPath) && !File.Exists(applicationPath))
+            var npath = new NPath(applicationPath);
+            if (applicationPath == null || !npath.Exists())
             {
-                UnityEngine.Debug.LogWarning($"External Code Editor application path does not exist ({applicationPath})! Please select a different application");
+                UnityEngine.Debug.LogWarning(doesNotExistWarning);
+                return false;
             }
 
             if (applicationPath == CodeEditor.SystemDefaultPath)
@@ -146,25 +152,21 @@ namespace UnityEditor
                 return InternalEditorUtility.OpenFileAtLineExternal(path, -1, -1);
             }
 
-            if (IsOSX)
-            {
-                return CodeEditor.OSOpenFile(applicationPath, CodeEditor.ParseArgument(Arguments, path, line, column));
-            }
-
             string fileName = "";
             string arguments = "";
-
-            if (IsLinux)
+            switch (Application.platform)
             {
-                fileName = applicationPath;
-                arguments = CodeEditor.ParseArgument(Arguments, path, line, column);
-            }
-
-            if (IsWindows)
-            {
-                fileName = "cmd.exe";
-                arguments = "/C \"" + CodeEditor.QuoteForProcessStart(applicationPath) +
-                    " " + CodeEditor.ParseArgument(Arguments, path, line, column) + "\"";
+                case RuntimePlatform.OSXEditor:
+                    return CodeEditor.OSOpenFile(applicationPath, CodeEditor.ParseArgument(Arguments, path, line, column));
+                case RuntimePlatform.LinuxEditor:
+                    fileName = applicationPath;
+                    arguments = CodeEditor.ParseArgument(Arguments, path, line, column);
+                    break;
+                case RuntimePlatform.WindowsEditor:
+                    fileName = "cmd.exe";
+                    arguments = "/C \"" + CodeEditor.QuoteForProcessStart(applicationPath) +
+                                " " + CodeEditor.ParseArgument(Arguments, path, line, column) + "\"";
+                    break;
             }
 
             var process = new Process

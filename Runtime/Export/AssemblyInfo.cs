@@ -56,7 +56,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.UIElementsGameObjectsModule")]
-[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.Tiny.Rendering.Authoring")]
 [assembly: InternalsVisibleTo("Unity.Tiny.Authoring")]
 [assembly: InternalsVisibleTo("Unity.ImageConversionTests")]
@@ -123,7 +123,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsGameObjectsModule")]
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")]
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")]
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]

@@ -529,14 +529,17 @@ namespace UnityEditor.Search
 
         internal void OnEnable()
         {
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+            m_InstanceID = GetInstanceID();
+
+            Log("OnEnable");
+
             if (settings == null)
             {
                 LoadingState = LoadState.Error;
                 return;
             }
-
-            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeChanged;
 
             // In the off chance we call OnEnable on an existing SearchDatabase.
             index?.Dispose();
@@ -547,10 +550,6 @@ namespace UnityEditor.Search
                 LoadingState = LoadState.Error;
                 return;
             }
-
-            m_InstanceID = GetInstanceID();
-
-            Log("OnEnable");
 
             Dispatcher.Enqueue(LoadAsync);
         }
@@ -873,7 +872,7 @@ namespace UnityEditor.Search
         private void OnArtifactsResolved(Task task, TaskData data)
         {
             m_CurrentResolveTask = null;
-            if (task.canceled || task.error != null)
+            if (!this || task.canceled || task.error != null)
             {
                 LoadingState = task.canceled ? LoadState.Canceled : LoadState.Error;
                 return;
@@ -889,10 +888,11 @@ namespace UnityEditor.Search
         // To be used with WaitForReadComplete.
         private void AssignNewIndexAndSetup(Task task, TaskData data)
         {
-            if (task.error != null)
+            if (!this || task.error != null)
             {
                 LoadingState = LoadState.Error;
-                Debug.LogException(task.error);
+                if (task.error != null)
+                    Debug.LogException(task.error);
                 return;
             }
 
@@ -1040,6 +1040,9 @@ namespace UnityEditor.Search
 
         private void ProcessIncrementalUpdates()
         {
+            if (!this)
+                return;
+
             if (ready && !updating && !m_ImmutableLock.IsReadLockHeld)
             {
                 if (m_UpdateQueue.TryTake(out var diff))

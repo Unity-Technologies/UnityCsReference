@@ -3336,6 +3336,9 @@
     <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs">
       <Link>Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Scripting\AsyncInstantiateManager.cs">
+      <Link>Editor\Mono\Scripting\AsyncInstantiateManager.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs">
       <Link>Editor\Mono\Scripting\Compilers\CommandLineFormatter.cs</Link>
     </Compile>

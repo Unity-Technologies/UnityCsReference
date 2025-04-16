@@ -387,6 +387,12 @@ namespace UnityEditor
             return url;
         }
 
+        internal static string GetShortReleaseVersion()
+        {
+            var version = InternalEditorUtility.GetUnityVersion();
+            return $"{version.Major}.{version.Minor}";
+        }
+
         private static void InitDocumentation()
         {
             ClearCache();
