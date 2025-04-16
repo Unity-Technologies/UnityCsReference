@@ -77,6 +77,22 @@ namespace UnityEditor.Scripting.Compilers
         private static readonly UWPSDK kMinimumSupportedUWPSDK = new UWPSDK(kMinimumSupportedUWPVersion, new Version(14, 0), new[] { kMinimumSupportedPreviousUWPSDK });
 
         public static UWPSDK MinimumSupportedUWPSDK { get { return kMinimumSupportedUWPSDK; } }
+        public static string GetBinPath(UWPSDK sdk, string architecture)
+        {
+            
+            var folder = GetWindowsKit10();
+            if (string.IsNullOrEmpty(folder))
+                return null;
+                
+            var version = SdkVersionToString(sdk.Version);
+
+            var binPath = CombinePaths(folder, "bin", version, architecture);
+
+            if(!Directory.Exists(binPath))
+                return null;
+
+            return binPath;
+        }
 
         public static string[] GetReferences(UWPSDK sdk)
         {
