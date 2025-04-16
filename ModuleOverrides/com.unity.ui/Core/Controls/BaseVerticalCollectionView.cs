@@ -118,32 +118,32 @@ namespace UnityEngine.UIElements
         /// use this event to update the binding events so the UI fits the new type.
         ///\\
         ///\\
-        /// This event isn't raised if the selection or the size of the data source changes. For size changes, such as adding 
-        /// or removing an item from a list view, listen to the [[BaseListViewController.itemsSourceSizeChanged]] event. 
+        /// This event isn't raised if the selection or the size of the data source changes. For size changes, such as adding
+        /// or removing an item from a list view, listen to the [[BaseListViewController.itemsSourceSizeChanged]] event.
         /// For selection changes, listen to the [[BaseVerticalCollectionView.selectionChanged]] event.
         /// </remarks>
         /// <example>
-        /// The following example illustrates that the @@itemsSourceChanged@@ event is only triggered when the [[BaseVerticalCollectionView.itemsSource|itemsSource]] property is changed, 
+        /// The following example illustrates that the @@itemsSourceChanged@@ event is only triggered when the [[BaseVerticalCollectionView.itemsSource|itemsSource]] property is changed,
         /// not when the contents of the data source are modified.
         /// <code lang="cs">
         /// <![CDATA[
         /// var changedCount = 0;
         /// var source = new List<string>();
         /// var listView = new ListView();
-        /// 
+        ///
         /// listView.itemsSourceChanged += () => changedCount++;
-        /// 
+        ///
         /// // Changing the data source of the list view triggers the event.
         /// listView.itemsSource = source;
-        /// 
-        /// // Adding an item to the source doesn't trigger itemsSourceChanged 
+        ///
+        /// // Adding an item to the source doesn't trigger itemsSourceChanged
         /// // because the data source reference remains the same.
-        /// source.Add("Hello World!"); 
-        /// 
-        /// // Adding an item to the ListView directly doesn't trigger itemsSourceChanged 
+        /// source.Add("Hello World!");
+        ///
+        /// // Adding an item to the ListView directly doesn't trigger itemsSourceChanged
         /// // because the data source reference remains the same.
-        /// listView.viewController.AddItems(1); 
-        /// 
+        /// listView.viewController.AddItems(1);
+        ///
         /// Debug.Log(changedCount); // Outputs 1.
         /// ]]>
         /// </code>
@@ -1122,6 +1122,8 @@ namespace UnityEngine.UIElements
         }
 
         private Vector3 m_TouchDownPosition;
+        private long m_LastPointerDownTimeStamp;
+        private int m_PointerDownCount;
 
         private void ProcessPointerDown(IPointerEvent evt)
         {
@@ -1137,10 +1139,17 @@ namespace UnityEngine.UIElements
             if (evt.pointerType != PointerType.mouse)
             {
                 m_TouchDownPosition = evt.position;
+                var pointerDownTimeStamp = (evt as PointerDownEvent)?.timestamp ?? 0;
+                m_PointerDownCount = pointerDownTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount + 1 : 1;
+                m_LastPointerDownTimeStamp = pointerDownTimeStamp;
                 return;
             }
+            else
+            {
+                m_PointerDownCount = evt.clickCount;
+            }
 
-            DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+            DoSelect(evt.localPosition, m_PointerDownCount, evt.actionKey, evt.shiftKey);
         }
 
         private void ProcessPointerUp(IPointerEvent evt)
@@ -1159,8 +1168,12 @@ namespace UnityEngine.UIElements
                 var delta = evt.position - m_TouchDownPosition;
                 if (delta.sqrMagnitude <= ScrollView.ScrollThresholdSquared)
                 {
-                    DoSelect(evt.localPosition, evt.clickCount, evt.actionKey, evt.shiftKey);
+                    DoSelect(evt.localPosition, m_PointerDownCount, evt.actionKey, evt.shiftKey);
                 }
+
+                // Reset the pointer down counter if it's passed the double click time.
+                var pointerUpTimeStamp = (evt as PointerUpEvent)?.timestamp ?? 0;
+                m_PointerDownCount = pointerUpTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount : 0;
             }
             else
             {

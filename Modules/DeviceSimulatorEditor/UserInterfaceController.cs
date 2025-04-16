@@ -117,6 +117,7 @@ namespace UnityEditor.DeviceSimulation
             m_ScaleSlider.lowValue = kScaleMin;
             m_ScaleSlider.highValue = kScaleMax;
             m_Scale = serializedState.scale;
+            m_ScaleSlider.value = serializedState.scale;
             m_ScaleSlider.SetValueWithoutNotify(m_Scale);
             m_ScaleSlider.RegisterCallback<ChangeEvent<int>>(SetScale);
             m_ScaleValueLabel = rootVisualElement.Q<Label>("scale-value-label");
