@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using UnityEngine.Serialization;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -56,10 +57,47 @@ namespace UnityEngine.UIElements
         WorldSpace
     }
 
-    internal enum PanelWorldInputMode
+    /// <summary>
+    /// Options that specify how to update colliders for UI Documents in world space.
+    /// </summary>
+    internal enum ColliderUpdateMode
     {
-        AddAutoUpdatedPhysicsColliders,
-        UsePhysicsCollidersOnlyIfAlreadyPresent,
+        /// <summary>
+        /// Automatically adds a BoxCollider that matches the bounding box of the document contents.
+        /// </summary>
+        /// <remarks>
+        /// If the bounding box of the document changes, the collider will be automatically udpated
+        /// to match the new bounding box.
+        /// </remarks>
+        [InspectorName("Match 3-D bounding box")]
+        MatchBoundingBox = 0,
+        /// <summary>
+        /// Leave UI Document as is. Do not modify existing colliders or add new ones automatically.
+        /// </summary>
+        /// <remarks>
+        /// Elements in this document will not be interactable unless a collider is added manually to
+        /// the document.
+        /// </remarks>
+        /// <remarks>
+        /// This is the option that has the least impact on performance.
+        /// </remarks>
+        [InspectorName("Keep existing colliders (if any)")]
+        Keep = 1,
+        /// <summary>
+        /// Automatically adds a BoxCollider that matches the world bound rectangle of the document.
+        /// </summary>
+        /// <remarks>
+        /// The created collider is always a flat, 2-D collider aligned with the document's surface.
+        /// </remarks>
+        /// <remarks>
+        /// If the document contains elements that overflow outside of its (0, 0, width, height) rect,
+        /// these elements may not be interactable.
+        /// </remarks>
+        /// <remarks>
+        /// This option is better for performance than <see cref="AddAutoUpdatedBoudingBoxCollider"/>.
+        /// </remarks>
+        [InspectorName("Match 2-D document rect")]
+        MatchDocumentRect = 2,
     }
 
     /// <summary>
@@ -265,16 +303,28 @@ namespace UnityEngine.UIElements
             set => m_WorldSpaceLayer = value;
         }
 
-        [SerializeField]
-        private PanelWorldInputMode m_WorldInputMode = PanelWorldInputMode.AddAutoUpdatedPhysicsColliders;
+        [SerializeField, FormerlySerializedAs("m_WorldInputMode")]
+        private ColliderUpdateMode m_ColliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
 
         /// <summary>
-        /// Determines how the panel input is handled.
+        /// Determines how colliders are created and updated on world-space documents.
         /// </summary>
-        internal PanelWorldInputMode worldInputMode
+        internal ColliderUpdateMode colliderUpdateMode
         {
-            get => m_WorldInputMode;
-            set => m_WorldInputMode = value;
+            get => m_ColliderUpdateMode;
+            set => m_ColliderUpdateMode = value;
+        }
+
+        [SerializeField]
+        private bool m_ColliderIsTrigger = true;
+
+        /// <summary>
+        /// Determines if colliders created around documents in world space are trigger colliders or not.
+        /// </summary>
+        internal bool colliderIsTrigger
+        {
+            get => m_ColliderIsTrigger;
+            set => m_ColliderIsTrigger = value;
         }
 
         [SerializeField]
@@ -677,7 +727,7 @@ namespace UnityEngine.UIElements
             referenceDpi = ScreenDPI;
             scaleMode = PanelScaleMode.ConstantPhysicalSize;
             renderMode = PanelRenderMode.ScreenSpaceOverlay;
-            worldInputMode = PanelWorldInputMode.AddAutoUpdatedPhysicsColliders;
+            colliderUpdateMode = ColliderUpdateMode.MatchBoundingBox;
             pixelsPerUnit = 100.0f;
             themeUss = GetOrCreateDefaultTheme?.Invoke();
             m_AtlasBlitShader = m_RuntimeShader = m_RuntimeWorldShader = null;

@@ -234,7 +234,7 @@ namespace Unity.UI.Builder
             {
                 // We need to discard any change events that happen during the undo/redo update in order to avoid reapplying those changes.
                 s_IsInsideUndoRedoUpdate = true;
-                UIEventRegistration.UpdateSchedulers();
+                inspector?.elementPanel?.TickSchedulingUpdaters();
             }
             finally
             {

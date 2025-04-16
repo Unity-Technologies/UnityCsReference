@@ -454,7 +454,7 @@ namespace UnityEditorInternal.Profiling
 
             // Update instances label
             var sampleName = m_FrameDataView.GetItemName(selectedId);
-            m_InstancesLabel.text = UnityString.Format(kInstancesCountFormatText, samplesCount, sampleName);
+            m_InstancesLabel.text = string.Format(kInstancesCountFormatText, samplesCount, sampleName);
             m_InstancesLabel.tooltip = kInstancesCountTooltipText;
         }
 

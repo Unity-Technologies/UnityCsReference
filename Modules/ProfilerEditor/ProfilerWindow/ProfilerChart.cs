@@ -208,7 +208,7 @@ namespace UnityEditorInternal
                     m_Data.overlays[i] = new ChartSeriesViewData(chart.name, chart.category, length, chart.color);
                 }
                 float maxValue;
-                ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, UnityString.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Data.overlays[i].yValues, out maxValue);
+                ProfilerDriver.GetCounterValuesBatch(ProfilerArea.CPU, string.Format("Selected{0}", chart.name), firstEmptyFrame, 1.0f, m_Data.overlays[i].yValues, out maxValue);
                 m_Data.overlays[i].yScale = m_DataScale;
             }
         }

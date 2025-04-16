@@ -426,6 +426,9 @@ namespace UnityEditor.Build.Profile
             }
 
             // Additional actions are always directly applied to the parent window state.
+            if (parent.additionalActions == child.additionalActions)
+                return;
+
             parent.additionalActions = child.additionalActions;
             RepaintAdditionActionsDropdown();
         }

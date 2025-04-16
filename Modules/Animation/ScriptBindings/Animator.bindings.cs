@@ -148,7 +148,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("AnimationBindings::InstanceIDToAnimationClipPPtr")]
-        extern private static AnimationClip InstanceIDToAnimationClipPPtr(int instanceID);
+        extern private static AnimationClip InstanceIDToAnimationClipPPtr(EntityId entityId);
 
         private int m_ClipInstanceID;
         private float m_Weight;

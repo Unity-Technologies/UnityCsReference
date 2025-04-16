@@ -17,7 +17,6 @@ namespace UnityEngine
     {
         [FreeFunction("MaterialScripting::CreateWithShader")]   extern private static void CreateWithShader([Writable] Material self, [NotNull] Shader shader);
         [FreeFunction("MaterialScripting::CreateWithMaterial")] extern private static void CreateWithMaterial([Writable] Material self, [NotNull] Material source);
-        [FreeFunction("MaterialScripting::CreateWithString")]   extern private static void CreateWithString([Writable] Material self);
 
         public Material(Shader shader)   { CreateWithShader(this, shader); }
         // will otherwise be stripped if scene only uses default materials not explicitly referenced
@@ -27,8 +26,8 @@ namespace UnityEngine
 
         // TODO: is it time to make it deprecated with error?
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [Obsolete("Creating materials from shader source string is no longer supported. Use Shader assets instead.", false)]
-        public Material(string contents) { CreateWithString(this); }
+        [Obsolete("Creating materials from shader source string is no longer supported. Use Shader assets instead.", true)]
+        public Material(string contents) {}
 
         static extern internal Material GetDefaultMaterial();
         static extern internal Material GetDefaultParticleMaterial();
@@ -331,5 +330,6 @@ namespace UnityEngine
 
         // Clear stale references
         [NativeName("RemoveUnusedProperties")] extern internal void RemoveUnusedProperties();
+        extern internal void MarkChildrenNeedValidation(string changedProperty);
     }
 }

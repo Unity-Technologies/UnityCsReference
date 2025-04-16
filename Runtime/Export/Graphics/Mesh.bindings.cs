@@ -25,7 +25,7 @@ namespace UnityEngine
             Internal_Create(this);
         }
 
-        [FreeFunction("MeshScripting::MeshFromInstanceId")] extern internal static Mesh FromInstanceID(int id);
+        [FreeFunction("MeshScripting::MeshFromInstanceId")] extern internal static Mesh FromInstanceID(EntityId id);
 
 
         // triangles/indices

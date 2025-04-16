@@ -65,7 +65,7 @@ namespace UnityEngine
             if (string.IsNullOrEmpty(format))
                 format = "F3";
             formatProvider ??= CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, formatProvider), g.ToString(format, formatProvider), b.ToString(format, formatProvider), a.ToString(format, formatProvider));
+            return string.Format("RGBA({0}, {1}, {2}, {3})", r.ToString(format, formatProvider), g.ToString(format, formatProvider), b.ToString(format, formatProvider), a.ToString(format, formatProvider));
         }
 
         // used to allow Colors to be used as keys in hash tables

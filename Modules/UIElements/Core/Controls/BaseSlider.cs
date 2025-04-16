@@ -310,12 +310,18 @@ namespace UnityEngine.UIElements
         /// </summary>
         void IValueField<TValueType>.StopDragging() {}
 
+        // If available, this gets called in SetValueWithoutNotify. The idea of having this is that in certain cases, we
+        // have some sort of value dependency, e.g, for the case of ScrollOffset needs to have the same value as the
+        // Slider's values.
+        internal event Action<TValueType> onSetValueWithoutNotify;
+
         public override void SetValueWithoutNotify(TValueType newValue)
         {
             // Clamp the value around the real lowest and highest range values.
             var clampedValue = clamped ? GetClampedValue(newValue) : newValue;
 
             base.SetValueWithoutNotify(clampedValue);
+            onSetValueWithoutNotify?.Invoke(clampedValue);
             UpdateDragElementPosition();
             UpdateTextFieldValue();
         }

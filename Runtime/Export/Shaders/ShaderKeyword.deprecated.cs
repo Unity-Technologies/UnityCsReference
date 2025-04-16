@@ -20,31 +20,22 @@ namespace UnityEngine.Rendering
             return ShaderKeywordType.UserDefined;
         }
 
-        [Obsolete(@"GetGlobalKeywordName is deprecated. Use the ShaderKeyword.name property instead.")]
-        public static string GetGlobalKeywordName(ShaderKeyword index)
-        {
-            return index.m_Name;
-        }
+        [Obsolete(@"GetGlobalKeywordName is deprecated. Use the ShaderKeyword.name property instead.", true)]
+        public static string GetGlobalKeywordName(ShaderKeyword index) { return ""; }
 
-        [Obsolete(@"GetKeywordName is deprecated. Use the ShaderKeyword.name property instead.")]
-        public static string GetKeywordName(Shader shader, ShaderKeyword index)
-        {
-            return index.m_Name;
-        }
+        [Obsolete(@"GetKeywordName is deprecated. Use the ShaderKeyword.name property instead.", true)]
+        public static string GetKeywordName(Shader shader, ShaderKeyword index) { return ""; }
 
-        [Obsolete(@"GetKeywordName is deprecated. Use the ShaderKeyword.name property instead.")]
-        public static string GetKeywordName(ComputeShader shader, ShaderKeyword index)
-        {
-            return index.m_Name;
-        }
+        [Obsolete(@"GetKeywordName is deprecated. Use the ShaderKeyword.name property instead.", true)]
+        public static string GetKeywordName(ComputeShader shader, ShaderKeyword index) { return ""; }
 
-        [Obsolete(@"GetKeywordType is deprecated. Use ShaderKeyword.name instead.")]
-        public ShaderKeywordType GetKeywordType() { return GetGlobalKeywordType(this); }
+        [Obsolete(@"GetKeywordType is deprecated. Use ShaderKeyword.GetGlobalKeywordType instead.", true)]
+        public ShaderKeywordType GetKeywordType() { return ShaderKeywordType.None; }
 
-        [Obsolete(@"GetKeywordName is deprecated. Use ShaderKeyword.name instead.")]
-        public string GetKeywordName() { return GetGlobalKeywordName(this); }
+        [Obsolete(@"GetKeywordName is deprecated. Use ShaderKeyword.name instead.", true)]
+        public string GetKeywordName() { return ""; }
 
-        [Obsolete(@"GetName() has been deprecated. Use ShaderKeyword.name instead.")]
-        public string GetName() { return GetKeywordName(); }
+        [Obsolete(@"GetName() has been deprecated. Use ShaderKeyword.name instead.", true)]
+        public string GetName() { return ""; }
     }
 }

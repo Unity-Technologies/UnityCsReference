@@ -43,7 +43,6 @@ namespace UnityEditor.Rendering
                 return false;
             }
 
-
             return true;
         }
 
@@ -187,7 +186,9 @@ namespace UnityEditor.Rendering
                 if (IsNull(result))
                     switch (location)
                     {
-                        case SearchType.ProjectPath: throw new InvalidImportException($"Cannot load. Path {path} is correct but AssetDatabase cannot load now.");
+                        case SearchType.ProjectPath:
+                            CheckTypeMismatch(path, type);
+                            throw new InvalidImportException($"Cannot load. Path {path} is correct but AssetDatabase cannot load now.");
                         case SearchType.ShaderName: throw new InvalidImportException($"Failed to find {path} in {location}.");
                         case SearchType.BuiltinPath: throw new InvalidImportException($"Failed to find {path} in {location}.");
                         case SearchType.BuiltinExtraPath: throw new InvalidImportException($"Failed to find {path} in {location}.");
@@ -220,6 +221,22 @@ namespace UnityEditor.Rendering
                     SearchType.ShaderName => throw new ArgumentException($"{nameof(SearchType.ShaderName)} is only available for Shaders."),
                     _ => throw new NotImplementedException($"Unknown {location}")
                 };
+
+            void CheckTypeMismatch(string path, Type expectedType)
+            {
+                UnityEngine.Object[] assets = AssetDatabase.LoadAllAssetsAtPath(path);
+                if (assets == null)
+                    return;
+                bool foundCandidate = false;
+                foreach (var asset in assets)
+                    if (expectedType.IsAssignableFrom(asset.GetType()))
+                    {
+                        foundCandidate = true;
+                        break;
+                    }
+                if (!foundCandidate)
+                    throw new InvalidImportException($"Host type is not matching any asset type at Path {path}.");
+            }
         }
     }
 }

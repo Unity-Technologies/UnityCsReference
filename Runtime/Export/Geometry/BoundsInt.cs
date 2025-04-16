@@ -156,7 +156,7 @@ namespace UnityEngine
         {
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("Position: {0}, Size: {1}", m_Position.ToString(format, formatProvider), m_Size.ToString(format, formatProvider));
+            return string.Format("Position: {0}, Size: {1}", m_Position.ToString(format, formatProvider), m_Size.ToString(format, formatProvider));
         }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]

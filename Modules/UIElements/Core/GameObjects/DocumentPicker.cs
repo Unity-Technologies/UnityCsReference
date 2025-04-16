@@ -9,32 +9,33 @@ namespace UnityEngine.UIElements;
 
 internal class PhysicsDocumentPicker
 {
-    public void Pick(Ray worldRay, float maxDistance, int layerMask, out UIDocument document, out VisualElement pickedElement, out float distance)
+    private void Pick(Ray worldRay, float maxDistance, int layerMask, out Collider collider, out UIDocument document, out VisualElement pickedElement, out float distance)
     {
         var result = WorldSpaceInput.PickDocument3D(worldRay, maxDistance, layerMask);
+        collider = result.collider;
         document = result.document;
         pickedElement = result.pickedElement;
         distance = result.distance;
     }
 
-    public bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out UIDocument document, out VisualElement elementUnderPointer, out float distance, out bool captured)
+    public bool TryPickWithCapture(int pointerId, Ray worldRay, float maxDistance, int layerMask, out Collider collider, out UIDocument document, out VisualElement elementUnderPointer, out float distance, out bool captured)
     {
         captured = GetCapturingDocument(pointerId, out var capturingDocument);
-        if (captured)
+        if (!captured)
         {
-            if (capturingDocument != null && ((1 << capturingDocument.gameObject.layer) & layerMask) != 0)
-            {
-                document = capturingDocument;
-                elementUnderPointer = WorldSpaceInput.Pick3D(document, worldRay, out distance);
-                return true;
-            }
-        }
-        else
-        {
-            Pick(worldRay, maxDistance, layerMask, out document, out elementUnderPointer, out distance);
+            Pick(worldRay, maxDistance, layerMask, out collider, out document, out elementUnderPointer, out distance);
             return !float.IsPositiveInfinity(distance);
         }
 
+        if (capturingDocument != null && ((1 << capturingDocument.gameObject.layer) & layerMask) != 0)
+        {
+            collider = null; // This may not be the expected behaviour. We should consider returning a collider.
+            document = capturingDocument;
+            elementUnderPointer = WorldSpaceInput.Pick3D(document, worldRay, out distance);
+            return true;
+        }
+
+        collider = null;
         document = null;
         elementUnderPointer = null;
         distance = 0;
@@ -49,7 +50,7 @@ internal class PhysicsDocumentPicker
             var capturingElementPanel = capturingVE.elementPanel;
             if (capturingElementPanel != null && !capturingElementPanel.isFlat)
             {
-                capturingDocument = UIDocument.FindParentDocument(capturingVE);
+                capturingDocument = UIDocument.FindRootUIDocument(capturingVE);
                 return true;
             }
         }

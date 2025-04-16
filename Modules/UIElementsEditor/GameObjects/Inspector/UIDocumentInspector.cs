@@ -88,7 +88,8 @@ namespace UnityEditor.UIElements.Inspector
 
             m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
 
-            m_WorldSpaceDimensionsFoldout.style.display = (uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace) ? DisplayStyle.Flex : DisplayStyle.None;
+            bool worldSpaceVisible = (uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace);
+            m_WorldSpaceDimensionsFoldout.style.display = worldSpaceVisible ? DisplayStyle.Flex : DisplayStyle.None;
 
             bool isFixedSize = (uiDocument.worldSpaceSizeMode == UIDocument.WorldSpaceSizeMode.Fixed);
             var display = isFixedSize ? DisplayStyle.Flex : DisplayStyle.None;

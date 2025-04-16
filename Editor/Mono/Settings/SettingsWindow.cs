@@ -34,12 +34,15 @@ namespace UnityEditor
         private VisualElement m_TreeViewContainer;
         private VisualElement m_Toolbar;
         private bool m_ProviderChanging;
+        private bool m_ProviderReloadNeeded;
 
         private bool m_SearchFieldGiveFocus;
         const string k_SearchField = "SearchField";
         private const string k_MainSplitterViewDataKey =  "settings-main-splitter__view-data-key";
 
         internal bool GuiCreated => m_SettingsPanel != null;
+
+        internal bool ProviderReloadNeeded => m_ProviderReloadNeeded;
 
         struct ProviderChangingScope : IDisposable
         {
@@ -198,6 +201,12 @@ namespace UnityEditor
             SetupGUI();
         }
 
+        internal void Update()
+        {
+            if (m_ProviderReloadNeeded)
+                ReloadProviders();
+        }
+
         void SetupGUI()
         {
             var root = rootVisualElement;
@@ -303,12 +312,23 @@ namespace UnityEditor
 
         private void OnSettingsProviderChanged()
         {
+            // Prevent infinite changing
+            if (m_ProviderChanging)
+                return;
+
+            m_ProviderReloadNeeded = true;
+        }
+
+        void ReloadProviders()
+        {
+            // Prevent recursive changing
             if (m_ProviderChanging)
                 return;
             DeactivateAndSaveCurrentProvider();
             InitProviders();
             RestoreSelection();
             Repaint();
+            m_ProviderReloadNeeded = false;
         }
 
         private void RestoreSelection()

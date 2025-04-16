@@ -415,7 +415,7 @@ namespace UnityEngine
             get { return UsesReversedZBuffer(); }
         }
 
-        [Obsolete("supportsStencil always returns true, no need to call it")]
+        [Obsolete("supportsStencil always returns true, no need to call it", true)]
         public static int supportsStencil
         {
             get { return 1; }
@@ -669,7 +669,7 @@ namespace UnityEngine
             get { return MaxGraphicsBufferSize(); }
         }
 
-        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
+        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.", true)]
         public static bool minConstantBufferOffsetAlignment
         {
             get { return false; }
@@ -739,7 +739,7 @@ namespace UnityEngine
             get { return SupportsDepthFetchInRenderPass(); }
         }
 
-        [Obsolete("Vertex program support is required in Unity 5.0+")]
+        [Obsolete("Vertex program support is required in Unity 5.0+", true)]
         public static bool supportsVertexPrograms { get { return true; } }
 
         [FreeFunction("systeminfo::GetBatteryLevel")]

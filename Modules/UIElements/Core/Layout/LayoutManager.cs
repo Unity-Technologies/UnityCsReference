@@ -135,14 +135,18 @@ internal class LayoutManager : IDisposable
 
     static LayoutManager s_SharedInstance;
 
-    public static LayoutManager SharedManager => s_SharedInstance;
+    public static bool IsSharedManagerCreated => s_Initialized;
+
+    public static LayoutManager SharedManager
+    {
+        get
+        {
+            Initialize();
+            return s_SharedInstance;
+        }
+    }
 
     static readonly List<LayoutManager> s_Managers = new List<LayoutManager>();
-
-    static LayoutManager()
-    {
-        Initialize();
-    }
 
     static void Initialize()
     {
@@ -176,7 +180,18 @@ internal class LayoutManager : IDisposable
         s_SharedInstance.Dispose();
     }
 
-    const int k_InitialNodeCapacity = 1024 * 64;
+    // The capacity of the LayoutManager impacts how many chunks are created per component
+    // Because every component has a different size, the number of chunks will differ for each
+    static int DefaultCapacity =>
+        k_CapacityBig
+    ;
+
+    // For Editor, we use a very high initial capacity that should in practice rarely be exceeded
+    public const int k_CapacityBig = 1024 * 64;
+
+    // For the Player, memory consumption is a concern so we start smaller, normally leading to 1 chunk per component
+    public const int k_CapacitySmall = 16;
+
     const int k_InitialConfigCapacity = 32;
 
     readonly int m_Index;
@@ -197,10 +212,15 @@ internal class LayoutManager : IDisposable
     // Last allocated index in the store (0 mean index 0 is valid aka a node was allocated)
     int m_HighMark = -1;
 
+    // Used in tests.
+    public int NodeCapacity => m_Nodes.Capacity;
+
     internal static LayoutManager GetManager(int index)
         => (uint) index < s_Managers.Count ? s_Managers[index] : null;
 
-    public LayoutManager(Allocator allocator)
+    public LayoutManager(Allocator allocator) : this(allocator, DefaultCapacity) {}
+
+    public LayoutManager(Allocator allocator, int initialNodeCapacity)
     {
         m_Index = s_Managers.Count;
         s_Managers.Add(this);
@@ -218,7 +238,7 @@ internal class LayoutManager : IDisposable
             ComponentType.Create<LayoutConfigData>()
         };
 
-        m_Nodes = new LayoutDataStore(nodeComponentTypes, k_InitialNodeCapacity, allocator);
+        m_Nodes = new LayoutDataStore(nodeComponentTypes, initialNodeCapacity, allocator);
         m_Configs = new LayoutDataStore(configComponentTypes, k_InitialConfigCapacity, allocator);
 
         m_DefaultConfig = CreateConfig().Handle;

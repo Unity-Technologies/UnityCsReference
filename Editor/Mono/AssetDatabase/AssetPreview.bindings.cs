@@ -22,16 +22,16 @@ namespace UnityEditor
             return null;
         }
 
-        internal static Texture2D GetAssetPreview(int instanceID)
+        internal static Texture2D GetAssetPreview(EntityId entityId)
         {
-            return GetAssetPreview(instanceID, kSharedClientID);
+            return GetAssetPreview(entityId, kSharedClientID);
         }
 
         [FreeFunction("AssetPreviewBindings::GetAssetPreview")]
-        internal static extern Texture2D GetAssetPreview(int instanceID, int clientID);
+        internal static extern Texture2D GetAssetPreview(EntityId entityId, int clientID);
 
         [FreeFunction("AssetPreviewBindings::HasAssetPreview")]
-        internal static extern bool HasAssetPreview(int instanceID, int clientID);
+        internal static extern bool HasAssetPreview(EntityId entityId, int clientID);
 
         internal static Texture2D GetAssetPreviewFromGUID(string guid)
         {
@@ -46,8 +46,13 @@ namespace UnityEditor
             return IsLoadingAssetPreview(instanceID, kSharedClientID);
         }
 
+        public static bool IsLoadingAssetPreview(EntityId entityId)
+        {
+            return IsLoadingAssetPreview(entityId, kSharedClientID);
+        }
+
         [FreeFunction("AssetPreviewBindings::IsLoadingAssetPreview")]
-        internal static extern bool IsLoadingAssetPreview(int instanceID, int clientID);
+        internal static extern bool IsLoadingAssetPreview(EntityId entityId, int clientID);
 
         public static bool IsLoadingAssetPreviews()
         {

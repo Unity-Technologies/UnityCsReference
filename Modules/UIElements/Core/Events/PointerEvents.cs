@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// The pointer ID for a tracked device event is a number between trackedPointerIdBase and trackedPointerIdBase + trackedPointerCount - 1.
         /// </remarks>
-        public static readonly int trackedPointerCount = 4;
+        public static readonly int trackedPointerCount = 8;
 
         // Tracked pointers are not screen hovering pointers because they only operate in world-space
         internal static readonly int[] screenHoveringPointers =
@@ -1703,6 +1703,11 @@ namespace UnityEngine.UIElements
                 panel.ReleasePointer(pointerId);
                 BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
                 basePanel?.ClearCachedElementUnderPointer(pointerId, this);
+            }
+
+            if (pointerType == PointerType.tracked)
+            {
+                PointerDeviceState.RemoveTrackedState(pointerId);
             }
 
             base.PostDispatch(panel);

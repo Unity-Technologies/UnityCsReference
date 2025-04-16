@@ -1072,7 +1072,7 @@ namespace UnityEngine.UIElements
             {
                 if (isLocalBounds3DDirty)
                 {
-                    UpdateLocalBoundsAndPickingBounds3D();
+                    UpdateBounds3D();
                     isLocalBounds3DDirty = false;
                 }
 
@@ -1086,7 +1086,7 @@ namespace UnityEngine.UIElements
             {
                 if (isLocalBounds3DDirty)
                 {
-                    UpdateLocalBoundsAndPickingBounds3D();
+                    UpdateBounds3D();
                     isLocalBounds3DDirty = false;
                 }
 
@@ -1094,59 +1094,79 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void UpdateLocalBoundsAndPickingBounds3D()
+        // "localBounds3D" and "localBoundsPicking3D" are truly local and do not include nested UIDocuments.
+        // "localBoundsNested3D" do include nested UIDocuments.
+        internal Bounds localBoundsNested3D
+        {
+            get
+            {
+                if (isLocalBounds3DDirty)
+                {
+                    UpdateBounds3D();
+                    isLocalBounds3DDirty = false;
+                }
+
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsNested3D;
+            }
+        }
+
+        void UpdateBounds3D()
         {
             if (!areAncestorsAndSelfDisplayed)
             {
                 WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
                 {
                     localBounds3D = WorldSpaceData.k_Empty3DBounds,
-                    localBoundsPicking3D = WorldSpaceData.k_Empty3DBounds
+                    localBoundsPicking3D = WorldSpaceData.k_Empty3DBounds,
+                    localBoundsNested3D = WorldSpaceData.k_Empty3DBounds,
                 });
                 return;
             }
 
-            if (!needs3DBounds)
-            {
-                // Fast path for elements that don't need 3D transforms
-                var bbox = boundingBox;
-                var localBounds = new Bounds(bbox.center, bbox.size);
-                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
-                {
-                    localBounds3D = localBounds,
-                    localBoundsPicking3D = localBounds
-                });
-                return;
-            }
-
-            var bounds = new Bounds(rect.center, rect.size);
-            var pickingBounds = pickingMode == PickingMode.Position ? bounds : WorldSpaceData.k_Empty3DBounds;
+            var localBounds = new Bounds(rect.center, rect.size);
+            var localBoundsWithNested = localBounds;
+            var pickingBounds = pickingMode == PickingMode.Position ? localBounds : WorldSpaceData.k_Empty3DBounds;
 
             if (!ShouldClip())
             {
                 var childCount = hierarchy.childCount;
                 for (int i = 0; i < childCount; i++)
                 {
-                    var childBounds = hierarchy[i].localBounds3D;
-                    if (childBounds.extents.x >= 0)
+                    var child = hierarchy[i];
+
+                    bool childIsUIDocumentRoot = child is UIDocumentRootElement;
+                    if (!childIsUIDocumentRoot) // Skip local bounds update when child is a UIDocument root
                     {
-                        hierarchy[i].TransformAlignedBoundsToParentSpace(ref childBounds);
-                        bounds.Encapsulate(childBounds);
+                        var childBounds = child.localBounds3D;
+                        if (childBounds.extents.x >= 0)
+                        {
+                            child.TransformAlignedBoundsToParentSpace(ref childBounds);
+                            localBounds.Encapsulate(childBounds);
+                        }
+
+                        var childPickingBounds = child.localBoundsPicking3D;
+                        if (childPickingBounds.extents.x >= 0)
+                        {
+                            child.TransformAlignedBoundsToParentSpace(ref childPickingBounds);
+                            pickingBounds.Encapsulate(childPickingBounds);
+                        }
                     }
 
-                    var childPickingBounds = hierarchy[i].localBoundsPicking3D;
-                    if (childPickingBounds.extents.x >= 0)
+                    // Always update local bounds with nested UIDocs
+                    var childLocalBoundsWithNested = child.localBoundsNested3D;
+                    if (childLocalBoundsWithNested.extents.x >= 0)
                     {
-                        hierarchy[i].TransformAlignedBoundsToParentSpace(ref childPickingBounds);
-                        pickingBounds.Encapsulate(childPickingBounds);
+                        child.TransformAlignedBoundsToParentSpace(ref childLocalBoundsWithNested);
+                        localBoundsWithNested.Encapsulate(childLocalBoundsWithNested);
                     }
                 }
             }
 
             WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
             {
-                localBounds3D = bounds,
-                localBoundsPicking3D = pickingBounds
+                localBounds3D = localBounds,
+                localBoundsPicking3D = pickingBounds,
+                localBoundsNested3D = localBoundsWithNested,
             });
         }
 
@@ -1921,7 +1941,14 @@ namespace UnityEngine.UIElements
                 AttachDataSource();
 
                 // We need to reset any visual pseudo state
-                pseudoStates &= ~(PseudoStates.Focus | PseudoStates.Active | PseudoStates.Hover);
+                pseudoStates &= ~(PseudoStates.Active | PseudoStates.Hover);
+                if ((pseudoStates & PseudoStates.Focus) != 0)
+                {
+                    // In the case of Focus, don't reset the state if the element is re-added to its former panel
+                    // and the focus wasn't changed in the meantime.
+                    if (!focusController.IsFocused(this))
+                        pseudoStates &= ~PseudoStates.Focus;
+                }
 
                 // UUM-42891: We must presume that we're not displayed because when it's the case (i.e. when we are not
                 // displayed), the layout updater will not process the children unless there is a display *change* in the ancestors.
@@ -2124,12 +2151,9 @@ namespace UnityEngine.UIElements
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
         /// <remarks>
-        /// Setting the languageDirection to RTL adds basic support for right-to-left (RTL) by reversing the text and handling linebreaking
-        /// and word wrapping appropriately. However, it does not provide comprehensive RTL support, as this would require text shaping,
-        /// which includes the reordering of characters, and OpenType font feature support. Comprehensive RTL support is planned for future updates,
-        /// which will involve additional APIs to handle language, script, and font feature specifications.
-        ///
-        /// To enhance the RTL functionality of this property, users can explore available third-party plugins in the Unity Asset Store and make use of <see cref="ITextElementExperimentalFeatures.renderedText"/>
+        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get 
+        /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
+        /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
         /// </remarks>
         [CreateProperty]
         public LanguageDirection languageDirection
@@ -2157,7 +2181,7 @@ namespace UnityEngine.UIElements
 
                 m_LocalLanguageDirection = value;
 
-                IncrementVersion(VersionChangeType.Layout);
+                IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                 var count = m_Children.Count;
                 for (int i = 0; i < count; ++i)
                 {

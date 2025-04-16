@@ -593,7 +593,7 @@ namespace UnityEngine
             }
             if (xBase + heights.GetLength(1) > heightmapResolution || xBase + heights.GetLength(1) < 0 || yBase + heights.GetLength(0) < 0 || xBase < 0 || yBase < 0 || yBase + heights.GetLength(0) > heightmapResolution)
             {
-                throw new System.ArgumentException(UnityString.Format("X or Y base out of bounds. Setting up to {0}x{1} while map size is {2}x{2}", xBase + heights.GetLength(1), yBase + heights.GetLength(0), heightmapResolution));
+                throw new System.ArgumentException(string.Format("X or Y base out of bounds. Setting up to {0}x{1} while map size is {2}x{2}", xBase + heights.GetLength(1), yBase + heights.GetLength(0), heightmapResolution));
             }
 
             Internal_SetHeights(xBase, yBase, heights.GetLength(1), heights.GetLength(0), heights);
@@ -622,10 +622,10 @@ namespace UnityEngine
             int width = heights.GetLength(1);
 
             if (xBase < 0 || (xBase + width) < 0 || (xBase + width) > heightmapResolution)
-                throw new System.ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, heightmapResolution));
+                throw new System.ArgumentException(string.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, heightmapResolution));
 
             if (yBase < 0 || (yBase + height) < 0 || (yBase + height) > heightmapResolution)
-                throw new System.ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, heightmapResolution));
+                throw new System.ArgumentException(string.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, heightmapResolution));
 
             Internal_SetHeightsDelayLOD(xBase, yBase, width, height, heights);
         }
@@ -661,10 +661,10 @@ namespace UnityEngine
             int width = holes.GetLength(1);
 
             if (xBase < 0 || (xBase + width) > holesResolution)
-                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
+                throw new ArgumentException(string.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
 
             if (yBase < 0 || (yBase + height) > holesResolution)
-                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
+                throw new ArgumentException(string.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
 
             Internal_SetHoles(xBase, yBase, holes.GetLength(1), holes.GetLength(0), holes);
         }
@@ -677,10 +677,10 @@ namespace UnityEngine
             int width = holes.GetLength(1);
 
             if (xBase < 0 || (xBase + width) > holesResolution)
-                throw new ArgumentException(UnityString.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
+                throw new ArgumentException(string.Format("X out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", xBase, xBase + width, holesResolution));
 
             if (yBase < 0 || (yBase + height) > holesResolution)
-                throw new ArgumentException(UnityString.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
+                throw new ArgumentException(string.Format("Y out of bounds - trying to set {0}-{1} but the terrain ranges from 0-{2}", yBase, yBase + height, holesResolution));
 
             Internal_SetHolesDelayLOD(xBase, yBase, width, height, holes);
         }
@@ -1017,7 +1017,7 @@ namespace UnityEngine
         {
             if (map.GetLength(2) != alphamapLayers)
             {
-                throw new System.Exception(UnityString.Format("Float array size wrong (layers should be {0})", alphamapLayers));
+                throw new System.Exception(string.Format("Float array size wrong (layers should be {0})", alphamapLayers));
             }
 
             // TODO: crop the map or throw if outside.

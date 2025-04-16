@@ -2096,14 +2096,14 @@ namespace UnityEditor
             return VectorProperty(prop, label);
         }
 
-        [System.Obsolete("Use TextureProperty with MaterialProperty instead.")]
+        [System.Obsolete("Use TextureProperty with MaterialProperty instead.", true)]
         public Texture TextureProperty(string propertyName, string label, ShaderUtil.ShaderPropertyTexDim texDim)
         {
             MaterialProperty prop = GetMaterialProperty(targets, propertyName);
             return TextureProperty(prop, label);
         }
 
-        [System.Obsolete("Use TextureProperty with MaterialProperty instead.")]
+        [System.Obsolete("Use TextureProperty with MaterialProperty instead.", true)]
         public Texture TextureProperty(string propertyName, string label, ShaderUtil.ShaderPropertyTexDim texDim, bool scaleOffset)
         {
             MaterialProperty prop = GetMaterialProperty(targets, propertyName);
@@ -2904,15 +2904,8 @@ namespace UnityEditor
             m_ReflectionProbePicker.OnEnable();
         }
 
-        [Obsolete("MaterialEditor.UndoRedoPerformed() has been deprecated. Use MaterialEditor.UndoRedoPerformed(in UndoRedoInfo) instead", false)]
-        public virtual void UndoRedoPerformed()
-        {
-            // Undo could've restored old shader which might lead to change in custom editor class
-            // therefore we need to rebuild inspector
-            UpdateAllOpenMaterialEditors();
-
-            PropertiesChanged();
-        }
+        [Obsolete("MaterialEditor.UndoRedoPerformed() has been deprecated. Use MaterialEditor.UndoRedoPerformed(in UndoRedoInfo) instead", true)]
+        public virtual void UndoRedoPerformed() {}
 
         public virtual void UndoRedoPerformed(in UndoRedoInfo info)
         {

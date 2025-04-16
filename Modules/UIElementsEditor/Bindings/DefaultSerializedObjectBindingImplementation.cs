@@ -325,21 +325,29 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
         {
             context ??= FindOrCreateBindingContext(element, obj);
 
+            if (!context.IsValid()) // Sometimes our serializedObject might have vanished, after a domain reload
+            {
+                return;
+            }
+
             switch (requestType)
             {
                 case RequestType.Bind:
                     context.Bind(element);
                     break;
                 case RequestType.DelayBind:
-                    if (context.IsValid())  // Sometimes our serializedObject might have vanished, after a domain reload
+                    if (parentProperty == null || parentProperty.isValid)
                     {
                         context.ContinueBinding(element, parentProperty);
                     }
                     break;
                 case RequestType.TrackProperty:
                 {
-                    var contextUpdater = context.AddBindingUpdater(element);
-                    contextUpdater.AddTracking(parentProperty, callback as Action<object, SerializedProperty>);
+                    if (parentProperty != null && parentProperty.isValid)
+                    {
+                        var contextUpdater = context.AddBindingUpdater(element);
+                        contextUpdater.AddTracking(parentProperty, callback as Action<object, SerializedProperty>);
+                    }
                 }
                     break;
                 case RequestType.TrackObject:

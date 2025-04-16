@@ -221,10 +221,20 @@ namespace UnityEngine
         extern public static AsyncOperation UnloadUnusedAssets();
 
         [FreeFunction("Resources_Bindings::InstanceIDToObject")]
-        public extern static Object InstanceIDToObject(int instanceID);
+        public extern static Object EntityIdToObject(EntityId entityId);
+
+        public static Object InstanceIDToObject(int instanceID)
+        {
+            return EntityIdToObject(instanceID);
+        }
 
         [FreeFunction("Resources_Bindings::IsInstanceLoaded")]
-        internal extern static bool IsInstanceLoaded(int instanceID);
+        internal extern static bool IsObjectLoaded(EntityId entityId);
+
+        internal static bool IsInstanceLoaded(int instanceID)
+        {
+            return IsObjectLoaded(instanceID);
+        }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
         extern private static void InstanceIDToObjectList(IntPtr instanceIDs, int instanceCount, List<Object> objects);
@@ -249,7 +259,12 @@ namespace UnityEngine
         private static extern unsafe void InstanceIDsToValidArray_Internal(IntPtr instanceIDs, int instanceCount, IntPtr validArray, int validArrayCount);
 
         [FreeFunction("Resources_Bindings::DoesObjectWithInstanceIDExist", IsThreadSafe = true)]
-        public static extern bool InstanceIDIsValid(int instanceId);
+        public static extern bool EntityIdIsValid(EntityId entityId);
+
+        public static bool InstanceIDIsValid(int instanceId)
+        {
+            return EntityIdIsValid(instanceId);
+        }
 
         public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray)
         {
@@ -262,21 +277,53 @@ namespace UnityEngine
             if(instanceIDs.Length == 0)
                 return;
 
+            UnityEngine.Assertions.Assert.AreEqual(sizeof(int), sizeof(EntityId));
+
             InstanceIDsToValidArray_Internal((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
         }
 
-        public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray)
-            {
-                if (instanceIDs.Length != validArray.Length)
-                    throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
-                if(instanceIDs.Length == 0)
-                    return;
+        public static unsafe void EntityIdsToValidArray(NativeArray<EntityId> entityIDs, NativeArray<bool> validArray)
+        {
+            if (!entityIDs.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(entityIDs));
+            if (!validArray.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(validArray));
+            if (entityIDs.Length != validArray.Length)
+                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
+            if(entityIDs.Length == 0)
+                return;
 
-                fixed(int* instanceIDsPtr = instanceIDs)
-                fixed(bool* validArrayPtr = validArray)
-                {
-                    InstanceIDsToValidArray_Internal((IntPtr)instanceIDsPtr, instanceIDs.Length, (IntPtr)validArrayPtr, validArray.Length);
-                }
+            InstanceIDsToValidArray_Internal((IntPtr)entityIDs.GetUnsafeReadOnlyPtr(), entityIDs.Length, (IntPtr)validArray.GetUnsafePtr(), validArray.Length);
+        }
+
+        public static unsafe void InstanceIDsToValidArray(ReadOnlySpan<int> instanceIDs, Span<bool> validArray)
+        {
+            if(instanceIDs.Length != validArray.Length)
+                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
+            if(instanceIDs.Length == 0)
+                return;
+
+            UnityEngine.Assertions.Assert.AreEqual(sizeof(int), sizeof(EntityId));
+
+            fixed(int* instanceIDsPtr = instanceIDs)
+            fixed(bool* validArrayPtr = validArray)
+            {
+                InstanceIDsToValidArray_Internal((IntPtr)instanceIDsPtr, instanceIDs.Length, (IntPtr)validArrayPtr, validArray.Length);
             }
         }
+
+        public static unsafe void EntityIdsToValidArray(ReadOnlySpan<EntityId> entityIds, Span<bool> validArray)
+        {
+            if(entityIds.Length != validArray.Length)
+                throw new ArgumentException("Size mismatch! Both arrays must be the same length.");
+            if(entityIds.Length == 0)
+                return;
+
+            fixed(EntityId* entityIdsPtr = entityIds)
+            fixed(bool* validArrayPtr = validArray)
+            {
+                InstanceIDsToValidArray_Internal((IntPtr)entityIdsPtr, entityIds.Length, (IntPtr)validArrayPtr, validArray.Length);
+            }
+        }
+    }
 }

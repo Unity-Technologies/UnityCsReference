@@ -494,12 +494,16 @@ namespace UnityEngine.UIElements
         }
 
         public abstract void Repaint(Event e);
-        public abstract void ValidateFocus();
         public abstract void ValidateLayout();
         public abstract void TickSchedulingUpdaters();
+        public abstract void UpdateForRepaint();
+
+		// [Updater refactor] These 3 will be removed
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
         public abstract void UpdateDataBinding();
+		/////
+
         public abstract void ApplyStyles();
 
         public abstract void UpdateAssetTrackers();
@@ -933,7 +937,8 @@ namespace UnityEngine.UIElements
             get { return timerEventScheduler; }
         }
 
-        internal VisualTreeUpdater visualTreeUpdater
+        // TODO: Refactor tests to avoid relying on this and remove internal access
+        internal  VisualTreeUpdater visualTreeUpdater
         {
             get { return m_VisualTreeUpdater; }
         }
@@ -947,8 +952,15 @@ namespace UnityEngine.UIElements
                 if (m_StylePropertyAnimationSystem == value)
                     return;
 
-                m_StylePropertyAnimationSystem?.CancelAllAnimations();
-                m_StylePropertyAnimationSystem = value;
+                try
+                {
+                    // Tests can put the animation system in an invalid state that will throw ArgumentExceptions
+                    m_StylePropertyAnimationSystem?.CancelAllAnimations();
+                }
+                finally
+                {
+                    m_StylePropertyAnimationSystem = value;
+                }
             }
         }
 
@@ -1028,7 +1040,7 @@ namespace UnityEngine.UIElements
             focusController?.BlurLastFocusedElement();
         }
 
-        public override void ValidateFocus()
+        public void ValidateFocus()
         {
             if (m_JustReceivedFocus)
             {
@@ -1083,7 +1095,7 @@ namespace UnityEngine.UIElements
             m_MarkerPanelChangeReceiver = new ProfilerMarker($"{panelName}.ExecutePanelChangeReceiverCallback");
         }
 
-        internal static TimeMsFunction TimeSinceStartup { private get; set; }
+        internal static TimeMsFunction TimeSinceStartup { get; set; }
 
         public override int IMGUIContainersCount { get; set; }
 
@@ -1311,12 +1323,13 @@ namespace UnityEngine.UIElements
         {
             using var _ = m_MarkerTickScheduledActions.Auto();
             // Dispatch all timer update messages to each scheduled item
-            UpdateAssetTrackers();
-            timerEventScheduler.UpdateScheduledEvents();
+            timerEventScheduler.UpdateScheduledEvents(); //This entire thing should become an updater
             ValidateFocus();
+
+            UpdateAssetTrackers();
+            UpdateBindings();
             UpdateDataBinding();
             UpdateAnimations();
-            UpdateBindings();
         }
 
 
@@ -1330,12 +1343,11 @@ namespace UnityEngine.UIElements
             m_VisualTreeUpdater.visualTreeEditorUpdater.UpdateVisualTreePhase(VisualTreeEditorUpdatePhase.AssetChange);
         }
 
-
-        void UpdateForRepaint()
+        public override void UpdateForRepaint()
         {
             //Here we don't want to update animation and bindings which are ticked by the scheduler
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);  //To be removed
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
@@ -1345,9 +1357,11 @@ namespace UnityEngine.UIElements
         internal void UpdateWithoutRepaint()
         {
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
+            // This code path is currently only used by the InspectorWindow to force a layout
+            // while it attempts to throttle the inspector elements creation
+            // Here we only need to execute any binding requests + basic layout
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Animation);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);  //To be removed
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
         }
@@ -1542,21 +1556,8 @@ namespace UnityEngine.UIElements
 
         internal virtual void Update()
         {
-            using (m_MarkerTickScheduledActionsPreLayout.Auto())
-            {
-                scheduler.UpdateScheduledEvents();
-                // This call is already on UIElementsUtility.UpdateSchedulers() but it's also necessary here for Runtime UI
-                UpdateAssetTrackers();
-                ValidateFocus();
-            }
-
+            TickSchedulingUpdaters();
             ValidateLayout();
-
-            using (m_MarkerTickScheduledActionsPostLayout.Auto())
-            {
-                UpdateAnimations();
-                UpdateBindings();
-            }
         }
 
         // Expose common static method for getting the display/window resolution for calculation in the PanelSetting.

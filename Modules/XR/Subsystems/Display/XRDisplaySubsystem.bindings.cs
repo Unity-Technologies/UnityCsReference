@@ -172,6 +172,7 @@ namespace UnityEngine.XR
             public Matrix4x4 projection;
             public Rect viewport;
             public Mesh occlusionMesh;
+            public Mesh visibleMesh;
             public int textureArraySlice;
             public Matrix4x4 previousView;
             public bool isPreviousViewValid;

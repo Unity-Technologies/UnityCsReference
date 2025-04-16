@@ -1430,7 +1430,7 @@ namespace UnityEditor.Search
 
             return OpenWithContextualProviders(query,
                 new [] { Providers.AssetProvider.type, Providers.BuiltInSceneObjectsProvider.type },
-                contextualFlags: OpenWithContextualProvidersFlags.UseExplicitProvidersAsNormalProviders | OpenWithContextualProvidersFlags.AddActiveProvidersToContext,
+                contextualFlags: OpenWithContextualProvidersFlags.AddActiveProvidersToContext,
                 eventContext: "FindReferences");
         }
 
@@ -1618,7 +1618,7 @@ namespace UnityEditor.Search
             AddActiveProvidersToContext = 1 << 2,
             SyncSearch = 1 << 3,
 
-            Default = UseExplicitProvidersAsNormalProviders | AddContextualFilterIdToQuery | AddActiveProvidersToContext
+            Default = AddContextualFilterIdToQuery | AddActiveProvidersToContext
         }
 
         internal static ISearchView OpenWithContextualProviders(string query, string[] providerIds,

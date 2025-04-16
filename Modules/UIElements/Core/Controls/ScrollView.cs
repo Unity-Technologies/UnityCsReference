@@ -438,19 +438,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField, DontCreateProperty]
+        private Vector2 m_ScrollOffset;
+
         /// <summary>
         /// The current scrolling position.
         /// </summary>
         [CreateProperty]
         public Vector2 scrollOffset
         {
-            get { return new Vector2(horizontalScroller.value, verticalScroller.value); }
+            get { return m_ScrollOffset; }
             set
             {
-                if (value != scrollOffset)
+                if (value != m_ScrollOffset)
                 {
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
+
+                    // Can't directly use the value's x and y as they might be clamped by the slider.
+                    m_ScrollOffset = new Vector2(horizontalScroller.value, verticalScroller.value);
+                    SaveViewData();
 
                     if (panel != null)
                     {
@@ -1020,9 +1027,14 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
+                    // Our BaseField overwrites the whole object when there's a viewDataKey applied. As a result, this
+                    // brings back the old previous highValue and therefore, we need to update it back to the correct
+                    // scrollableWidth.
+                    horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
             { viewDataKey = "HorizontalScroller" };
+
             horizontalScroller.AddToClassList(hScrollerUssClassName);
             horizontalScroller.style.display = DisplayStyle.None;
             hierarchy.Add(horizontalScroller);
@@ -1031,9 +1043,16 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
+                    // Our BaseField overwrites the whole object when there's a viewDataKey applied. As a result, this
+                    // brings back the old previous highValue and therefore, we need to update it back to the correct
+                    // scrollableHeight.
+                    verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
             { viewDataKey = "VerticalScroller" };
+
+            horizontalScroller.slider.onSetValueWithoutNotify += OnHorizontalScrollerSetValueWithoutNotify;
+            verticalScroller.slider.onSetValueWithoutNotify += OnVerticalScrollerSetValueWithoutNotify;
 
             horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
             verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
@@ -1240,6 +1259,18 @@ namespace UnityEngine.UIElements
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
             UpdateContentViewTransform();
             ScheduleResetLayoutPass();
+        }
+
+        void OnVerticalScrollerSetValueWithoutNotify(float value)
+        {
+            m_ScrollOffset = new Vector2(scrollOffset.x, value);
+            SaveViewData();
+        }
+
+        void OnHorizontalScrollerSetValueWithoutNotify(float value)
+        {
+            m_ScrollOffset = new Vector2(value, scrollOffset.y);
+            SaveViewData();
         }
 
         private IVisualElementScheduledItem m_ScheduledLayoutPassResetItem;
@@ -1776,9 +1807,13 @@ namespace UnityEngine.UIElements
 
             // Need to set always, for touch scrolling.
             verticalScroller.lowValue = 0f;
-            verticalScroller.highValue = scrollableHeight;
+            verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
             horizontalScroller.lowValue = 0f;
-            horizontalScroller.highValue = scrollableWidth;
+            horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
+
+            // Need to sync the offset values with the scroller's values since highValue might change this.
+            m_ScrollOffset.y = verticalScroller.value;
+            m_ScrollOffset.x = horizontalScroller.value;
         }
 
         private void OnScrollersGeometryChanged(GeometryChangedEvent evt)
@@ -1878,6 +1913,22 @@ namespace UnityEngine.UIElements
 
                 ExecuteElasticSpringAnimation();
             }
+        }
+
+        internal void SetScrollOffsetWithoutNotify(Vector2 value)
+        {
+            m_ScrollOffset = value;
+            horizontalScroller.slider.SetValueWithoutNotify(value.x);
+            verticalScroller.slider.SetValueWithoutNotify(value.y);
+            SaveViewData();
+        }
+
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+            var key = GetFullHierarchicalViewDataKey();
+            OverwriteFromViewData(this, key);
+            UpdateContentViewTransform();
         }
     }
 }

@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
 
         public Bounds localBounds3D;
         public Bounds localBoundsPicking3D;
+        public Bounds localBoundsNested3D;
     }
 
     internal static class WorldSpaceDataStore

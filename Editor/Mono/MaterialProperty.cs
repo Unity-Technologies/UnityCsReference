@@ -216,6 +216,17 @@ namespace UnityEditor
 
             if (!didApply)
                 ShaderUtil.ApplyProperty(this, changedPropertyMask, "Modify " + displayName + " of " + targetTitle);
+
+            foreach (Material material in targets)
+            {
+                if (material != null)
+                {
+                    ShaderGUIUtility.ValidateMaterial(material);
+                    // If the edited material is the base for any material variants, we may need to mark these variants
+                    // for re-validation.
+                    material.MarkChildrenNeedValidation(this.name);
+                }
+            }
         }
 
         // -------- helper functions to handle material variant overrides

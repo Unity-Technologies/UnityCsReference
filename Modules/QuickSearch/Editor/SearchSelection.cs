@@ -5,6 +5,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Pool;
 
 namespace UnityEditor.Search
 {
@@ -14,9 +15,11 @@ namespace UnityEditor.Search
     public class SearchSelection : IReadOnlyCollection<SearchItem>
     {
         int m_ListInitialCount;
-        private ISearchList m_List;
-        private IList<int> m_Selection;
-        private List<SearchItem> m_Items;
+        int m_InitialSelectionCount;
+        ISearchList m_List;
+        IList<int> m_Selection;
+        List<int> m_ActualSelection;
+        List<SearchItem> m_Items;
 
         /// <summary>
         /// Create a new SearchSelection
@@ -26,16 +29,19 @@ namespace UnityEditor.Search
         public SearchSelection(IList<int> selection, ISearchList filteredItems)
         {
             m_Selection = selection;
+            m_ActualSelection = new List<int>(selection);
             m_List = filteredItems;
             m_ListInitialCount = m_List.Count;
+            m_InitialSelectionCount = selection.Count;
         }
 
         public SearchSelection(IEnumerable<SearchItem> items)
         {
             m_Items = new List<SearchItem>(items);
-            m_Selection = new List<int>();
+            m_ActualSelection = new List<int>(m_Items.Count);
             for (int i = 0; i < m_Items.Count; ++i)
-                m_Selection.Add(i);
+                m_ActualSelection.Add(i);
+            m_Selection = m_ActualSelection;
             m_List = null;
         }
 
@@ -47,7 +53,9 @@ namespace UnityEditor.Search
             if (m_List == null)
                 return false;
 
-            if (m_Selection.Count != m_Items.Count || m_List.Count != m_ListInitialCount)
+            // TODO: We need a better way to find that these collections have really changed, i.e. this will not work
+            // if selection changed from {1, 2, 3} to {4, 5, 6}.
+            if (m_Selection.Count != m_InitialSelectionCount || m_List.Count != m_ListInitialCount)
             {
                 BuildSelection();
                 return true;
@@ -55,12 +63,12 @@ namespace UnityEditor.Search
             return false;
         }
 
-        internal IList<int> indexes => m_Selection;
+        internal IList<int> indexes => m_ActualSelection;
 
         /// <summary>
         /// How many items are selected.
         /// </summary>
-        public int Count => m_Selection.Count;
+        public int Count => m_ActualSelection.Count;
 
         /// <summary>
         /// Lowest selected index of any item in the selection.
@@ -68,7 +76,7 @@ namespace UnityEditor.Search
         /// <returns>Returns the lowest selected index.</returns>
         public int MinIndex()
         {
-            return m_Selection.Count > 0 ? m_Selection.Min() : -1;
+            return m_ActualSelection.Count > 0 ? m_ActualSelection.Min() : -1;
         }
 
         /// <summary>
@@ -77,7 +85,7 @@ namespace UnityEditor.Search
         /// <returns>Returns the highest selected index.</returns>
         public int MaxIndex()
         {
-            return m_Selection.Count > 0 ? m_Selection.Max() : -1;
+            return m_ActualSelection.Count > 0 ? m_ActualSelection.Max() : -1;
         }
 
         /// <summary>
@@ -86,10 +94,12 @@ namespace UnityEditor.Search
         /// <returns>First select item in selection. Returns null if no item are selected</returns>
         public SearchItem First()
         {
-            if (m_Selection.Count == 0)
+            if (m_ActualSelection.Count == 0)
                 return null;
             if (m_Items == null)
                 BuildSelection();
+            if (m_Items.Count == 0)
+                return null;
             return m_Items[0];
         }
 
@@ -99,10 +109,12 @@ namespace UnityEditor.Search
         /// <returns>Last select item in selection. Returns null if no item are selected</returns>
         public SearchItem Last()
         {
-            if (m_Selection.Count == 0)
+            if (m_ActualSelection.Count == 0)
                 return null;
             if (m_Items == null)
                 BuildSelection();
+            if (m_Items.Count == 0)
+                return null;
             return m_Items[m_Items.Count - 1];
         }
 
@@ -132,16 +144,22 @@ namespace UnityEditor.Search
             if (m_List == null)
                 return;
 
-            if (m_List.Count != m_ListInitialCount)
+            // We have to rebuild the list of selected items AND the list of indices
+            // to keep them in sync.
+            using var _ = ListPool<int>.Get(out var tempSelection);
+            tempSelection.AddRange(m_Selection);
+            m_ActualSelection.Clear();
+            for (var i = 0; i < tempSelection.Count; ++i)
             {
-                m_Selection = new List<int>(m_Selection.Where(index => index >= 0 && index < m_List.Count));
-                m_ListInitialCount = m_List.Count;
+                var index = tempSelection[i];
+                if (index < 0 || index >= m_List.Count)
+                    continue;
+                m_ActualSelection.Add(index);
+                m_Items.Add(m_List.ElementAt(index));
             }
 
-            foreach (var s in m_Selection)
-            {
-                m_Items.Add(m_List.ElementAt(s));
-            }
+            m_InitialSelectionCount = m_Selection.Count;
+            m_ListInitialCount = m_List.Count;
         }
 
         public bool Contains(SearchItem item)
@@ -150,7 +168,7 @@ namespace UnityEditor.Search
                 return false;
             foreach (var e in m_Items)
             {
-                if (string.Equals(e.id, item.id, System.StringComparison.Ordinal))
+                if (item.Equals(e))
                     return true;
             }
 

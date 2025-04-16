@@ -18,12 +18,12 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("({0}, {1})", position.ToString(), rotation.ToString());
+            return string.Format("({0}, {1})", position.ToString(), rotation.ToString());
         }
 
         public string ToString(string format)
         {
-            return UnityString.Format("({0}, {1})", position.ToString(format), rotation.ToString(format));
+            return string.Format("({0}, {1})", position.ToString(format), rotation.ToString(format));
         }
 
         public Pose GetTransformedBy(Pose lhs)

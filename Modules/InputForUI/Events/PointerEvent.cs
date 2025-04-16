@@ -50,6 +50,12 @@ namespace UnityEngine.InputForUI
             /// Event is sent strictly between PointerEntered and PointerLeft.
             /// </summary>
             TouchCanceled = 6,
+
+            /// <summary>
+            /// Tracked device has become inactive or is out of range.
+            /// Event is sent strictly between PointerEntered and PointerLeft.
+            /// </summary>
+            TrackedCanceled = 6,
         }
 
         [Flags]
@@ -100,7 +106,8 @@ namespace UnityEngine.InputForUI
 
         /// <summary>
         /// Returns true if pointer can be considered to be a primary pointer.
-        /// True for mouse or pen, and true for first finger of the touch.
+        /// This will be true for the first instance of each pointer type:
+        /// mouse, pen, left tracked device, first touching finger.
         /// </summary>
         public bool isPrimaryPointer => pointerIndex == 0;
 
@@ -125,6 +132,15 @@ namespace UnityEngine.InputForUI
         /// For other pointer types, this value will always be default(Quaternion).
         /// </summary>
         public Quaternion worldOrientation;
+
+        /// <summary>
+        /// Maximum reaching distance for the pointer (for tracked devices).
+        /// </summary>
+        /// <remarks>
+        /// Pointer events are filtered by distance only if <see cref="maxDistance" />
+        /// has a non-zero, positive value.
+        /// </remarks>
+        public float maxDistance;
 
         /// <summary>
         /// Returns a Ray using current world position and orientation (for tracked devices).

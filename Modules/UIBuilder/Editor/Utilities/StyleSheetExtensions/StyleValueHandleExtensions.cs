@@ -28,12 +28,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, StyleValueKeyword value)
-        {
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleSheet.WriteKeyword(ref valueHandle, value);
-        }
-
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, float value)
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
@@ -72,13 +66,6 @@ namespace Unity.UI.Builder
             {
                 styleSheet.WriteAssetReference(ref valueHandle, value);
             }
-        }
-
-        public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Enum value)
-        {
-            // Undo/Redo
-            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
-            styleSheet.WriteEnum(ref valueHandle, value);
         }
     }
 }

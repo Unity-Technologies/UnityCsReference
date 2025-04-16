@@ -1034,26 +1034,12 @@ namespace UnityEngine
 
         int GetGraphicalLineStart(int p)
         {
-            if (textHandle.useAdvancedText)
-            {
-               return textHandle.GetFirstCharacterIndexOnLine(p);
-            }
-            Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
-            point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
-            point.x = 0;
-            return textHandle.GetCursorIndexFromPosition(point);
+            return textHandle.GetFirstCharacterIndexOnLine(p);
         }
 
         int GetGraphicalLineEnd(int p)
         {
-            if (textHandle.useAdvancedText)
-            {
-                return textHandle.GetLastCharacterIndexOnLine(p);
-            }
-            Vector2 point = textHandle.GetCursorPositionFromStringIndexUsingLineHeight(p);
-            point.y -= 1.0f / GUIUtility.pixelsPerPoint; // we make sure no floating point errors can make us land on another line
-            point.x += 5000;
-            return textHandle.GetCursorIndexFromPosition(point);
+            return textHandle.GetLastCharacterIndexOnLine(p);
         }
 
         public void Copy()

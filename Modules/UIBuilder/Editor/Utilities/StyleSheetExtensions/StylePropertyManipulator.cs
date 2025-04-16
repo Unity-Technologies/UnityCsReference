@@ -515,44 +515,42 @@ namespace Unity.UI.Builder
 
         void SetTypedValue<T>(StyleValueHandleContext handle, T value)
         {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             switch (handle.handle.valueType)
             {
                 case StyleValueType.Keyword:
-                    styleSheet.SetValue(handle.handle, (StyleValueKeyword)(object) value);
+                    styleSheet.WriteKeyword(ref handle.handle, (StyleValueKeyword)(object) value);
                     break;
                 case StyleValueType.Float:
-                    styleSheet.SetValue(handle.handle, (float)(object) value);
+                    styleSheet.WriteFloat(ref handle.handle, (float)(object) value);
                     break;
                 case StyleValueType.Dimension:
-                    styleSheet.SetValue(handle.handle, (Dimension)(object) value);
+                    styleSheet.WriteDimension(ref handle.handle, (Dimension)(object) value);
                     break;
                 case StyleValueType.Color:
-                    styleSheet.SetValue(handle.handle, (Color)(object) value);
+                    styleSheet.WriteColor(ref handle.handle, (Color)(object) value);
                     break;
                 case StyleValueType.ResourcePath:
-                    styleSheet.SetValue(handle.handle, (string)(object) value);
+                    styleSheet.WriteResourcePath(ref handle.handle, (string)(object) value);
                     break;
                 case StyleValueType.AssetReference:
-                    styleSheet.SetValue(handle.handle, (UnityEngine.Object)(object) value);
+                    styleSheet.WriteAssetReference(ref handle.handle, (UnityEngine.Object)(object) value);
                     break;
                 case StyleValueType.Enum:
                     if (typeof(T).IsEnum || value is Enum)
-                        styleSheet.SetValue(handle.handle, (Enum)(object) value);
+                        styleSheet.WriteEnum(ref handle.handle, (Enum)(object) value);
                     else if (typeof(T) == typeof(string) || value is string)
-                        styleSheet.SetValue(handle.handle, (string)(object) value);
+                        styleSheet.WriteEnumAsString(ref handle.handle, (string)(object) value);
                     break;
                 case StyleValueType.String:
-                    styleSheet.SetValue(handle.handle, (string)(object) value);
+                    styleSheet.WriteString(ref handle.handle, (string)(object) value);
                     break;
-
                 case StyleValueType.MissingAssetReference:
-                    styleSheet.SetValue(handle.handle, (string)(object) value);
+                    styleSheet.WriteMissingAssetReferenceUrl(ref handle.handle, (string)(object) value);
                     break;
-
                 case StyleValueType.ScalableImage:
-                    // Not actually supported
-                    // styleSheet.SetValue(handle.handle, handle.AsScalableImage());
-                    // break;
+                    styleSheet.WriteScalableImage(ref handle.handle, handle.AsScalableImage());
+                    break;
                 // These are not "values".
                 case StyleValueType.Invalid:
                 case StyleValueType.Variable:

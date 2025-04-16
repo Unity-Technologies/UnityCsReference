@@ -32,7 +32,7 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("{0} x {1} @ {2}Hz", m_Width, m_Height, m_RefreshRate);
+            return string.Format("{0} x {1} @ {2}Hz", m_Width, m_Height, m_RefreshRate);
         }
     }
 
@@ -228,13 +228,13 @@ namespace UnityEngine
         internal static void CheckLoadActionValid(Rendering.RenderBufferLoadAction load, string bufferType)
         {
             if (load != Rendering.RenderBufferLoadAction.Load && load != Rendering.RenderBufferLoadAction.DontCare)
-                throw new ArgumentException(UnityString.Format("Bad {0} LoadAction provided.", bufferType));
+                throw new ArgumentException(string.Format("Bad {0} LoadAction provided.", bufferType));
         }
 
         internal static void CheckStoreActionValid(Rendering.RenderBufferStoreAction store, string bufferType)
         {
             if (store != Rendering.RenderBufferStoreAction.Store && store != Rendering.RenderBufferStoreAction.DontCare)
-                throw new ArgumentException(UnityString.Format("Bad {0} StoreAction provided.", bufferType));
+                throw new ArgumentException(string.Format("Bad {0} StoreAction provided.", bufferType));
         }
 
         internal static void SetRenderTargetImpl(RenderTargetSetup setup)
@@ -591,13 +591,13 @@ namespace UnityEngine
             Internal_RenderMeshInstanced(rparams, mesh, submeshIndex, (IntPtr)((T*)instanceData.GetUnsafePtr() + startInstance), layout, count);
         }
 
-        public static void RenderMeshIndirect(in RenderParams rparams, Mesh mesh, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
+        public static void RenderMeshIndirect(in RenderParams rparams, Mesh mesh, GraphicsBuffer argsBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             if (!SystemInfo.supportsIndirectArgumentsBuffer)
                 throw new InvalidOperationException("Indirect argument buffers are not supported.");
-            Internal_RenderMeshIndirect(rparams, mesh, commandBuffer, commandCount, startCommand);
+            Internal_RenderMeshIndirect(rparams, mesh, argsBuffer, commandCount, startCommand);
         }
 
         public static void RenderMeshPrimitives(in RenderParams rparams, Mesh mesh, int submeshIndex, [uei.DefaultValue("1")] int instanceCount = 1)
@@ -621,13 +621,13 @@ namespace UnityEngine
             Internal_RenderPrimitivesIndexed(rparams, topology, indexBuffer, indexCount, startIndex, instanceCount);
         }
 
-        public static void RenderPrimitivesIndirect(in RenderParams rparams, MeshTopology topology, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
+        public static void RenderPrimitivesIndirect(in RenderParams rparams, MeshTopology topology, GraphicsBuffer argsBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)
         {
             if (!SystemInfo.supportsInstancing)
                 throw new InvalidOperationException("Instancing is not supported.");
             if (!SystemInfo.supportsIndirectArgumentsBuffer)
                 throw new InvalidOperationException("Indirect argument buffers are not supported.");
-            Internal_RenderPrimitivesIndirect(rparams, topology, commandBuffer, commandCount, startCommand);
+            Internal_RenderPrimitivesIndirect(rparams, topology, argsBuffer, commandCount, startCommand);
         }
 
         public static void RenderPrimitivesIndexedIndirect(in RenderParams rparams, MeshTopology topology, GraphicsBuffer indexBuffer, GraphicsBuffer commandBuffer, [uei.DefaultValue("1")] int commandCount = 1, [uei.DefaultValue("0")] int startCommand = 0)

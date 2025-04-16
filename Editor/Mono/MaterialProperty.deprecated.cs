@@ -33,7 +33,7 @@ namespace UnityEditor
             NonModifiableTextureData = (1 << 6),
         }
 
-        [Obsolete("Use UnityEngine.Rendering.TextureDimension instead.", false)]
+        [Obsolete("Use UnityEngine.Rendering.TextureDimension instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension", true)]
         public enum TexDim
         {
             Unknown = -1,

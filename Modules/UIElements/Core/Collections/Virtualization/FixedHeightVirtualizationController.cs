@@ -98,7 +98,7 @@ namespace UnityEngine.UIElements
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-            var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
 
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = itemsCount * pixelAlignedItemHeight;
-            serializedData.scrollOffset.y = scrollOffset.y;
+            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset.y));
 
             if (firstVisibleItemIndex != firstVisibleIndex)
             {
@@ -221,7 +221,7 @@ namespace UnityEngine.UIElements
 
             if (firstVisibleIndex > m_DraggedItem.index)
             {
-                m_ScrollView.verticalScroller.value = serializedData.scrollOffset.y - resolvedItemHeight;
+                m_ScrollView.verticalScroller.value = m_ScrollView.scrollOffset.y - resolvedItemHeight;
             }
 
             base.EndDrag(dropIndex);

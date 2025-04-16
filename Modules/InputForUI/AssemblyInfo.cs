@@ -12,6 +12,13 @@ using System.Runtime.CompilerServices;
 // UITK user
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
 
+// XR integration sending events manually
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Editor")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.StarterAssets")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.StarterAssets.Editor")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.UIToolkit")]
+
 // Input testing
 [assembly: InternalsVisibleTo("UnityEngine.InputForUITests")]
 [assembly: InternalsVisibleTo("UnityEngine.InputForUIVisualizer")]

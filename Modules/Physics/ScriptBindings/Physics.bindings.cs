@@ -1067,10 +1067,10 @@ namespace UnityEngine
         internal static extern void DisconnectPhysicsSDKVisualDebugger();
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        extern internal static Collider GetColliderByInstanceID(int instanceID);
+        extern internal static Collider GetColliderByInstanceID(EntityId entityId);
 
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]
-        internal static extern Component GetBodyByInstanceID(int instanceID);
+        internal static extern Component GetBodyByInstanceID(EntityId entityId);
 
         [ThreadSafe]
         [StaticAccessor("PhysicsManager", StaticAccessorType.DoubleColon)]

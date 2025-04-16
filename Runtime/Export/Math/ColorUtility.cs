@@ -25,7 +25,7 @@ namespace UnityEngine
                 (byte)Mathf.Clamp(Mathf.RoundToInt(color.b * 255), 0, 255),
                 1);
 
-            return UnityString.Format("{0:X2}{1:X2}{2:X2}", col32.r, col32.g, col32.b);
+            return string.Format("{0:X2}{1:X2}{2:X2}", col32.r, col32.g, col32.b);
         }
 
         public static string ToHtmlStringRGBA(Color color)
@@ -37,7 +37,7 @@ namespace UnityEngine
                 (byte)Mathf.Clamp(Mathf.RoundToInt(color.b * 255), 0, 255),
                 (byte)Mathf.Clamp(Mathf.RoundToInt(color.a * 255), 0, 255));
 
-            return UnityString.Format("{0:X2}{1:X2}{2:X2}{3:X2}", col32.r, col32.g, col32.b, col32.a);
+            return string.Format("{0:X2}{1:X2}{2:X2}{3:X2}", col32.r, col32.g, col32.b, col32.a);
         }
     }
 }

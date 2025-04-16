@@ -23,11 +23,13 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Color of the cursor.
         /// </summary>
+        [Obsolete("cursorColor is deprecated. Please use the corresponding USS property (--unity-cursor-color) instead.")]
         public Color cursorColor { get; set; }
 
         /// <summary>
         /// Background color of selected text.
         /// </summary>
+        [Obsolete("selectionColor is deprecated. Please use the corresponding USS property (--unity-selection-color) instead.")]
         public Color selectionColor { get; set; }
 
         /// <summary>
@@ -101,8 +103,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId doubleClickSelectsWordProperty = nameof(doubleClickSelectsWord);
         internal static readonly BindingId tripleClickSelectsLineProperty = nameof(tripleClickSelectsLine);
         internal static readonly BindingId cursorPositionProperty = nameof(cursorPosition);
-        internal static readonly BindingId selectionColorProperty = nameof(selectionColor);
-        internal static readonly BindingId cursorColorProperty = nameof(cursorColor);
         internal static readonly BindingId selectAllOnFocusProperty = nameof(selectAllOnFocus);
         internal static readonly BindingId selectAllOnMouseUpProperty = nameof(selectAllOnMouseUp);
         internal static readonly BindingId selectionProperty = nameof(selection);
@@ -325,8 +325,7 @@ namespace UnityEngine.UIElements
                 selectingManipulator.m_SelectingUtilities.MoveTextEnd();
         }
 
-        private Color m_SelectionColor = new Color(0.239f, 0.502f, 0.875f, 0.65f);
-
+        Color m_SelectionColor = new Color(0.239f, 0.502f, 0.875f, 0.65f);
         Color ITextSelection.selectionColor
         {
             get => m_SelectionColor;
@@ -335,19 +334,23 @@ namespace UnityEngine.UIElements
                 if (m_SelectionColor == value)
                     return;
                 m_SelectionColor = value;
-                NotifyPropertyChanged(selectionColorProperty);
                 MarkDirtyRepaint();
             }
         }
 
-        [CreateProperty]
-        private Color selectionColor
+        internal Color selectionColor
         {
-            get => selection.selectionColor;
-            set => selection.selectionColor = value;
+            get => m_SelectionColor;
+            set
+            {
+                if (m_SelectionColor == value)
+                    return;
+                m_SelectionColor = value;
+                MarkDirtyRepaint();
+            }
         }
 
-        private Color m_CursorColor = new Color(0.706f, 0.706f, 0.706f, 1.0f);
+        Color m_CursorColor = new Color(0.706f, 0.706f, 0.706f, 1.0f);
         Color ITextSelection.cursorColor {
             get => m_CursorColor;
             set
@@ -355,16 +358,20 @@ namespace UnityEngine.UIElements
                 if (m_CursorColor == value)
                     return;
                 m_CursorColor = value;
-                NotifyPropertyChanged(cursorColorProperty);
                 MarkDirtyRepaint();
             }
         }
 
-        [CreateProperty]
-        private Color cursorColor
+        internal Color cursorColor
         {
-            get => selection.cursorColor;
-            set => selection.cursorColor = value;
+            get => m_CursorColor;
+            set
+            {
+                if (m_CursorColor == value)
+                    return;
+                m_CursorColor = value;
+                MarkDirtyRepaint();
+            }
         }
 
         private float m_CursorWidth = 1.0f;
@@ -421,7 +428,7 @@ namespace UnityEngine.UIElements
                 mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
                 {
                     rect = new Rect(startPos.x, startPos.y - lineHeight, endPos.x - startPos.x, lineHeight),
-                    color = selection.selectionColor,
+                    color = selectionColor,
                     playmodeTintColor = playmodeTintColor
                 });
             }
@@ -462,7 +469,7 @@ namespace UnityEngine.UIElements
                     mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
                     {
                         rect = new Rect(startPos.x, startPos.y - lineHeight, endPos.x - startPos.x, lineHeight),
-                        color = selection.selectionColor,
+                        color = selectionColor,
                         playmodeTintColor = playmodeTintColor
                     });
                 }
@@ -481,7 +488,7 @@ namespace UnityEngine.UIElements
                 mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
                 {
                     rect = new Rect(rectangles[i].position + contentRect.min, rectangles[i].size),
-                    color = selection.selectionColor,
+                    color = selectionColor,
                     playmodeTintColor = playmodeTintColor
                 });
             }
@@ -497,7 +504,7 @@ namespace UnityEngine.UIElements
             mgc.meshGenerator.DrawRectangle(new UIR.MeshGenerator.RectangleParams
             {
                 rect = new Rect(selection.cursorPosition.x, selection.cursorPosition.y - characterHeight, width, characterHeight),
-                color = selection.cursorColor,
+                color = cursorColor,
                 playmodeTintColor = playmodeTintColor
             });
         }

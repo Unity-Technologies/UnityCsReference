@@ -42,7 +42,7 @@ namespace UnityEngine.Rendering
 
         public static ShaderKeywordType GetGlobalKeywordType(ShaderKeyword index)
         {
-            if (index.IsValid())
+            if (index.IsValid() && !index.m_IsLocal)
                 return GetGlobalShaderKeywordType(index.m_Index);
             return ShaderKeywordType.UserDefined;
         }

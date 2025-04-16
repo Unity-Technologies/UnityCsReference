@@ -131,7 +131,7 @@ namespace UnityEngine.Events
         protected static void ThrowOnInvalidArg<T>(object arg)
         {
             if (arg != null && !(arg is T))
-                throw new ArgumentException(UnityString.Format("Passed argument 'args[0]' is of the wrong type. Type:{0} Expected:{1}", arg.GetType(), typeof(T)));
+                throw new ArgumentException(string.Format("Passed argument 'args[0]' is of the wrong type. Type:{0} Expected:{1}", arg.GetType(), typeof(T)));
         }
 
         protected static bool AllowInvoke(Delegate @delegate)
@@ -948,12 +948,12 @@ namespace UnityEngine.Events
         protected bool ValidateRegistration(MethodInfo method, object targetObj, PersistentListenerMode mode, Type argumentType)
         {
             if (method == null)
-                throw new ArgumentNullException("method", UnityString.Format("Can not register null method on {0} for callback!", targetObj));
+                throw new ArgumentNullException("method", string.Format("Can not register null method on {0} for callback!", targetObj));
 
             if (method.DeclaringType == null)
             {
                 throw new NullReferenceException(
-                    UnityString.Format(
+                    string.Format(
                         "Method '{0}' declaring type is null, global methods are not supported",
                         method.Name));
             }
@@ -965,7 +965,7 @@ namespace UnityEngine.Events
                 if (obj == null || obj.GetInstanceID() == 0)
                 {
                     throw new ArgumentException(
-                        UnityString.Format(
+                        string.Format(
                             "Could not register callback {0} on {1}. The class {2} does not derive from UnityEngine.Object",
                             method.Name,
                             targetObj,
@@ -976,7 +976,7 @@ namespace UnityEngine.Events
 
                 if (!method.DeclaringType.IsAssignableFrom(targetType))
                     throw new ArgumentException(
-                        UnityString.Format(
+                        string.Format(
                             "Method '{0}' declaring type '{1}' is not assignable from object type '{2}'",
                             method.Name,
                             method.DeclaringType.Name,
@@ -989,7 +989,7 @@ namespace UnityEngine.Events
 
             if (FindMethod(method.Name, targetType, mode, argumentType) == null)
             {
-                Debug.LogWarning(UnityString.Format("Could not register listener {0}.{1} on {2} the method could not be found.", targetObj, method, GetType()));
+                Debug.LogWarning(string.Format("Could not register listener {0}.{1} on {2} the method could not be found.", targetObj, method, GetType()));
                 return false;
             }
             return true;

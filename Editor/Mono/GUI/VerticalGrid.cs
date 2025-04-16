@@ -146,7 +146,7 @@ namespace UnityEditor
 
         public override string ToString()
         {
-            return UnityString.Format("VerticalGrid: rows {0}, columns {1}, fixedWidth {2}, itemSize {3}", rows, columns, fixedWidth, itemSize);
+            return string.Format("VerticalGrid: rows {0}, columns {1}, fixedWidth {2}, itemSize {3}", rows, columns, fixedWidth, itemSize);
         }
     }
 

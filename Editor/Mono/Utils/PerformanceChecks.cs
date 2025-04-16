@@ -28,7 +28,7 @@ namespace UnityEditor.Utils
         private static string FormattedTextContent(string localeString, params object[] args)
         {
             var content = EditorGUIUtility.TextContent(localeString);
-            return UnityString.Format(content.text, args);
+            return string.Format(content.text, args);
         }
 
         public static string CheckMaterial(Material mat, BuildTarget buildTarget)

@@ -435,7 +435,7 @@ namespace UnityEditor
             return true;
         }
 
-        private void UpdateMask(ClipAnimationMaskType maskType)
+        internal void UpdateMask(ClipAnimationMaskType maskType)
         {
             if (clipInfo == null)
                 return;

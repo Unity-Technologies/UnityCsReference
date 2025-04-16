@@ -12,8 +12,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")] // for UI Test Framework
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.InternalAccessTests")] // for UI Test Framework tests that need internal access
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")] // for UI Test Framework
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime.InternalAccessTests")] // for UI Test Framework tests that need internal access
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
@@ -27,14 +27,21 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
-[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests")] // for UI Test Framework
-[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests.InternalAccessTests")] // for UI Test Framework tests that need internal access
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access
 
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.
 
 [assembly: InternalsVisibleTo("UnityEngine.UI")] // com.unity.ugui
+
+// XR integration
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Editor")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.StarterAssets")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.StarterAssets.Editor")]
+[assembly: InternalsVisibleTo("Unity.XR.Interaction.Toolkit.Samples.UIToolkit")]
 
 [assembly: InternalsVisibleTo("UnityEditor.CoreModule")]
 [assembly: InternalsVisibleTo("UnityEditor.EditorToolbarModule")]

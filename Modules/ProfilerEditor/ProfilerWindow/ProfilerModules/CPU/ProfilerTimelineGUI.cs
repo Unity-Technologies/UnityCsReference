@@ -1897,7 +1897,7 @@ namespace UnityEditorInternal
             bool hasCallStack = m_SelectedEntry.hasCallstack;
             if (callStackNeedsRegeneration || m_SelectedEntry.cachedSelectionTooltipContent == null)
             {
-                string durationString = UnityString.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
+                string durationString = string.Format(m_SelectedEntry.duration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.duration);
 
                 System.Text.StringBuilder text = new System.Text.StringBuilder();
                 if (m_SelectedEntry.nonProxyName != null)
@@ -1909,7 +1909,7 @@ namespace UnityEditorInternal
                         diff == 1 ? BaseStyles.proxySampleMessageScopeSingular : BaseStyles.proxySampleMessageScopePlural);
                     text.Append(BaseStyles.proxySampleMessagePart2TimelineView);
                 }
-                text.Append(UnityString.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
+                text.Append(string.Format("{0}\n{1}", m_SelectedEntry.name, durationString));
 
                 // Calculate total time of the sample across visible frames
                 var selectedThreadIndex = m_SelectedEntry.threadIndex;
@@ -1925,7 +1925,7 @@ namespace UnityEditorInternal
                 if (totalAsyncFramesCount > 1)
                 {
                     var totalAsyncDuration = totalAsyncDurationNs * 1e-6f;
-                    var totalAsyncDurationString = UnityString.Format(totalAsyncDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", totalAsyncDuration);
+                    var totalAsyncDurationString = string.Format(totalAsyncDuration >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", totalAsyncDuration);
                     text.Append(string.Format(styles.localizedStringTotalAcrossFrames, totalAsyncDurationString, totalAsyncFramesCount, selectedThreadName));
                 }
 
@@ -1936,13 +1936,13 @@ namespace UnityEditorInternal
 
                     if (m_SelectedEntry.instanceCountForThread > 1)
                     {
-                        string totalDurationForThreadString = UnityString.Format(m_SelectedEntry.totalDurationForThread >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForThread);
+                        string totalDurationForThreadString = string.Format(m_SelectedEntry.totalDurationForThread >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForThread);
                         text.Append(string.Format(styles.localizedStringTotalInThread, totalDurationForThreadString, m_SelectedEntry.instanceCountForThread, selectedThreadName));
                     }
 
                     if (m_SelectedEntry.instanceCountForFrame > m_SelectedEntry.instanceCountForThread)
                     {
-                        string totalDurationForFrameString = UnityString.Format(m_SelectedEntry.totalDurationForFrame >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForFrame);
+                        string totalDurationForFrameString = string.Format(m_SelectedEntry.totalDurationForFrame >= 1.0 ? "{0:f2}ms" : "{0:f3}ms", m_SelectedEntry.totalDurationForFrame);
                         text.Append(string.Format(styles.localizedStringTotalInFrame, totalDurationForFrameString, m_SelectedEntry.instanceCountForFrame, m_SelectedEntry.threadCount));
                     }
                 }
@@ -2137,7 +2137,7 @@ namespace UnityEditorInternal
                 format = k_TickFormatSeconds;
             }
 
-            return UnityString.Format(format, time.ToString("N" + Mathf.Max(0, -log10), CultureInfo.InvariantCulture.NumberFormat));
+            return string.Format(format, time.ToString("N" + Mathf.Max(0, -log10), CultureInfo.InvariantCulture.NumberFormat));
         }
 
         void DrawOutOfRangeOverlay(Rect rect, float frameTime)
@@ -2179,7 +2179,7 @@ namespace UnityEditorInternal
             EditorGUI.DrawRect(selectionRect, styles.rangeSelectionColor);
 
             // Duration label
-            var labelText = UnityString.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3", CultureInfo.InvariantCulture.NumberFormat));
+            var labelText = string.Format(k_TickFormatMilliseconds, m_RangeSelection.duration.ToString("N3", CultureInfo.InvariantCulture.NumberFormat));
             Chart.DoLabel(startPixel + (endPixel - startPixel) / 2, rect.yMin + 3, labelText, -0.5f);
         }
 

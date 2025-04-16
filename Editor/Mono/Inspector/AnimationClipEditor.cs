@@ -759,7 +759,7 @@ namespace UnityEditor
             // Muscle clip info is currently only available for humanoid
             if (IsHumanClip)
             {
-                statsText = UnityString.Format(Styles.AverageVelocity, m_Clips[0].averageSpeed.ToString("0.000"), (m_Clips[0].averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
+                statsText = string.Format(Styles.AverageVelocity, m_Clips[0].averageSpeed.ToString("0.000"), (m_Clips[0].averageAngularSpeed * 180.0f / Mathf.PI).ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
             }
 
             // Only show stats in final clip not for the preview clip
@@ -785,8 +785,8 @@ namespace UnityEditor
                 float streamRatio = (float)stats.streamCurves / (float)stats.totalCurves * 100.0f;
 
 
-                statsText += UnityString.Format("Curves Pos: {0} Quaternion: {1} Euler: {2} Scale: {3} Muscles: {4} Generic: {5} PPtr: {6}\n", stats.positionCurves, stats.quaternionCurves, stats.eulerCurves, stats.scaleCurves, stats.muscleCurves, stats.genericCurves, stats.pptrCurves);
-                statsText += UnityString.Format("Curves Total: {0}, Constant: {1} ({2}%) Dense: {3} ({4}%) Stream: {5} ({6}%)\n", stats.totalCurves, stats.constantCurves, constantRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), stats.denseCurves, denseRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), stats.streamCurves, streamRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
+                statsText += string.Format("Curves Pos: {0} Quaternion: {1} Euler: {2} Scale: {3} Muscles: {4} Generic: {5} PPtr: {6}\n", stats.positionCurves, stats.quaternionCurves, stats.eulerCurves, stats.scaleCurves, stats.muscleCurves, stats.genericCurves, stats.pptrCurves);
+                statsText += string.Format("Curves Total: {0}, Constant: {1} ({2}%) Dense: {3} ({4}%) Stream: {5} ({6}%)\n", stats.totalCurves, stats.constantCurves, constantRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), stats.denseCurves, denseRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat), stats.streamCurves, streamRatio.ToString("0.0", CultureInfo.InvariantCulture.NumberFormat));
 
                 statsText += EditorUtility.FormatBytes(stats.size);
             }

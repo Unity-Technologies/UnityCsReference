@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")] // For editor-only playmode tests
 
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]
@@ -20,7 +21,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests")] // for UI Test Framework
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.

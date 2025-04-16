@@ -562,17 +562,6 @@ namespace UnityEditor.Overlays
             bool isCollapsed = m_Collapsed || activeLayout == 0;
             var targetContainer = tempTargetContainer ?? container;
 
-            if (isCollapsed)
-            {
-                if (collapsedContent.parent != contentRoot)
-                    contentRoot.Add(collapsedContent);
-            }
-            else
-            {
-                m_CurrentContent = CreateContent(m_ActiveLayout);
-                contentRoot.Add(m_CurrentContent);
-            }
-
             m_ContentsChanged = true;
 
             m_ActiveLayout = m_ActiveLayout == 0 ? targetContainer.preferredLayout : m_ActiveLayout;
@@ -597,6 +586,17 @@ namespace UnityEditor.Overlays
             rootVisualElement.EnableInClassList(k_PanelLayout, m_ActiveLayout == Layout.Panel);
             rootVisualElement.EnableInClassList(k_Collapsed, isCollapsed);
             rootVisualElement.EnableInClassList(k_Expanded, !isCollapsed);
+
+            if (isCollapsed)
+            {
+                if (collapsedContent.parent != contentRoot)
+                    contentRoot.Add(collapsedContent);
+            }
+            else
+            {
+                m_CurrentContent = CreateContent(m_ActiveLayout);
+                contentRoot.Add(m_CurrentContent);
+            }
 
             // Disable drop zone previews when floating
             var dropZonesDisplay = !floating ? DisplayStyle.Flex : DisplayStyle.None;

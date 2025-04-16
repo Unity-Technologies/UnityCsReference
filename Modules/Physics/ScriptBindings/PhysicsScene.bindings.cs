@@ -17,7 +17,7 @@ namespace UnityEngine
     {
         private int m_Handle;
 
-        public override string ToString() { return UnityString.Format("({0})", m_Handle); }
+        public override string ToString() { return string.Format("({0})", m_Handle); }
         public static bool operator ==(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle == rhs.m_Handle; }
         public static bool operator !=(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle != rhs.m_Handle; }
         public override int GetHashCode() { return m_Handle; }

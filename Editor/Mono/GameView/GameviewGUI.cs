@@ -83,7 +83,7 @@ namespace UnityEditor
         {
             if (vol == 0.0f)
                 return "-\u221E dB";
-            return UnityString.Format("{0:F1} dB", 20.0f * Mathf.Log10(vol));
+            return string.Format("{0:F1} dB", 20.0f * Mathf.Log10(vol));
         }
 
         [RequiredByNativeCode]
@@ -106,12 +106,12 @@ namespace UnityEditor
                 StringBuilder audioStats = new StringBuilder(400);
                 float audioLevel = UnityStats.audioLevel;
                 audioStats.Append("  Level: " + FormatDb(audioLevel) + (EditorUtility.audioMasterMute ? " (MUTED)\n" : "\n"));
-                audioStats.Append(UnityString.Format("  Clipping: {0:F1}%", 100.0f * UnityStats.audioClippingAmount));
+                audioStats.Append(string.Format("  Clipping: {0:F1}%", 100.0f * UnityStats.audioClippingAmount));
                 GUILayout.Label(audioStats.ToString());
             }
 
-            GUI.Label(new Rect(170, 40, 120, 20), UnityString.Format("DSP load: {0:F1}%", 100.0f * UnityStats.audioDSPLoad));
-            GUI.Label(new Rect(170, 53, 120, 20), UnityString.Format("Stream load: {0:F1}%", 100.0f * UnityStats.audioStreamLoad));
+            GUI.Label(new Rect(170, 40, 120, 20), string.Format("DSP load: {0:F1}%", 100.0f * UnityStats.audioDSPLoad));
+            GUI.Label(new Rect(170, 53, 120, 20), string.Format("Stream load: {0:F1}%", 100.0f * UnityStats.audioStreamLoad));
 
             EditorGUILayout.Space();
 
@@ -122,10 +122,10 @@ namespace UnityEditor
             // Time stats
             UpdateFrameTime();
 
-            string timeStats = UnityString.Format("- FPS (Playmode Off)");
+            string timeStats = string.Format("- FPS (Playmode Off)");
             if (EditorApplication.isPlaying)
             {
-                timeStats = UnityString.Format("{0:F1} FPS ({1:F1}ms)",
+                timeStats = string.Format("{0:F1} FPS ({1:F1}ms)",
                     1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
             }
             GUI.Label(new Rect(170, graphicsLabelRect.y, 120, 20), timeStats);
@@ -137,17 +137,17 @@ namespace UnityEditor
 
             StringBuilder gfxStats = new StringBuilder(400);
             if (m_ClientFrameTime > m_RenderFrameTime)
-                gfxStats.Append(UnityString.Format("  CPU: main <b>{0:F1}</b>ms  render thread {1:F1}ms\n", m_ClientFrameTime * 1000.0f, m_RenderFrameTime * 1000.0f));
+                gfxStats.Append(string.Format("  CPU: main <b>{0:F1}</b>ms  render thread {1:F1}ms\n", m_ClientFrameTime * 1000.0f, m_RenderFrameTime * 1000.0f));
             else
-                gfxStats.Append(UnityString.Format("  CPU: main {0:F1}ms  render thread <b>{1:F1}</b>ms\n", m_ClientFrameTime * 1000.0f, m_RenderFrameTime * 1000.0f));
+                gfxStats.Append(string.Format("  CPU: main {0:F1}ms  render thread <b>{1:F1}</b>ms\n", m_ClientFrameTime * 1000.0f, m_RenderFrameTime * 1000.0f));
 
-            gfxStats.Append(UnityString.Format("  Batches: <b>{0}</b> \tSaved by batching: {1}\n", UnityStats.batches, batchesSavedByDynamicBatching + batchesSavedByStaticBatching + batchesSavedByInstancing));
-            gfxStats.Append(UnityString.Format("  Tris: {0} \tVerts: {1} \n", FormatNumber(UnityStats.trianglesLong), FormatNumber(UnityStats.verticesLong)));
-            gfxStats.Append(UnityString.Format("  Screen: {0} - {1}\n", UnityStats.screenRes, EditorUtility.FormatBytes(screenBytes)));
-            gfxStats.Append(UnityString.Format("  SetPass calls: {0} \tShadow casters: {1} \n", UnityStats.setPassCalls, UnityStats.shadowCasters));
-            gfxStats.Append(UnityString.Format("  Visible skinned meshes: {0}\n", UnityStats.visibleSkinnedMeshes));
-            gfxStats.Append(UnityString.Format("  Animation components playing: {0} \n", UnityStats.animationComponentsPlaying));
-            gfxStats.Append(UnityString.Format("  Animator components playing: {0}", UnityStats.animatorComponentsPlaying));
+            gfxStats.Append(string.Format("  Batches: <b>{0}</b> \tSaved by batching: {1}\n", UnityStats.batches, batchesSavedByDynamicBatching + batchesSavedByStaticBatching + batchesSavedByInstancing));
+            gfxStats.Append(string.Format("  Tris: {0} \tVerts: {1} \n", FormatNumber(UnityStats.trianglesLong), FormatNumber(UnityStats.verticesLong)));
+            gfxStats.Append(string.Format("  Screen: {0} - {1}\n", UnityStats.screenRes, EditorUtility.FormatBytes(screenBytes)));
+            gfxStats.Append(string.Format("  SetPass calls: {0} \tShadow casters: {1} \n", UnityStats.setPassCalls, UnityStats.shadowCasters));
+            gfxStats.Append(string.Format("  Visible skinned meshes: {0}\n", UnityStats.visibleSkinnedMeshes));
+            gfxStats.Append(string.Format("  Animation components playing: {0} \n", UnityStats.animationComponentsPlaying));
+            gfxStats.Append(string.Format("  Animator components playing: {0}", UnityStats.animatorComponentsPlaying));
             GUILayout.Label(gfxStats.ToString(), labelStyle);
 
             GUILayout.EndArea();

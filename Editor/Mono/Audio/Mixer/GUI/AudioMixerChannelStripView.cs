@@ -514,7 +514,7 @@ namespace UnityEditor
         {
             if (m_ChangingWetMixIndex == m_IndexCounter && showLevel)
             {
-                return UnityString.Format("{0:F1} dB", effect.GetValueForMixLevel(m_Controller, snapshot));
+                return string.Format("{0:F1} dB", effect.GetValueForMixLevel(m_Controller, snapshot));
             }
 
             if (effect.IsSend() && effect.sendTarget != null)

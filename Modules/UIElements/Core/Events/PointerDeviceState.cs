@@ -41,6 +41,32 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public class TrackedPointerState
+        {
+            public struct RaycastHit
+            {
+                public float distance;
+                public Collider collider;
+                public UIDocument document;
+                public VisualElement element;
+            }
+
+            public Vector3 worldPosition = Vector3.zero;
+            public Quaternion worldOrientation = Quaternion.identity;
+            public RaycastHit hit;
+
+            public Ray worldRay => new Ray(worldPosition, worldOrientation * Vector3.forward);
+
+            public void Reset()
+            {
+                worldPosition = Vector3.zero;
+                worldOrientation = Quaternion.identity;
+                hit = default;
+            }
+        }
+
+        private static TrackedPointerState[] s_TrackedPointerStates = new TrackedPointerState[PointerId.trackedPointerCount];
+
         private static PointerLocation[] s_EditorPointerLocations = new PointerLocation[PointerId.maxPointers];
         private static PointerLocation[] s_PlayerPointerLocations = new PointerLocation[PointerId.maxPointers];
         private static int[] s_PressedButtons = new int[PointerId.maxPointers];
@@ -67,6 +93,11 @@ namespace UnityEngine.UIElements
                     s_WorldSpaceDocumentWithSoftPointerCapture[i].softPointerCaptures = 0;
                     s_WorldSpaceDocumentWithSoftPointerCapture[i] = null;
                 }
+            }
+
+            for (var i = 0; i < PointerId.trackedPointerCount; i++)
+            {
+                s_TrackedPointerStates[i]?.Reset();
             }
         }
 
@@ -236,10 +267,30 @@ namespace UnityEngine.UIElements
             if (document != null)
                 document.softPointerCaptures &= ~(1 << pointerId);
 
-            document = runtimePanel?.drawsInCameras == true ? UIDocument.FindParentDocument(element) : null;
+            document = runtimePanel?.drawsInCameras == true ? UIDocument.FindRootUIDocument(element) : null;
 
             if (document != null)
                 document.softPointerCaptures |= 1 << pointerId;
+        }
+
+        internal static TrackedPointerState GetTrackedState(int pointerId, bool createIfNull = false)
+        {
+            int trackedPointerIndex = pointerId - PointerId.trackedPointerIdBase;
+            if (trackedPointerIndex < 0 || trackedPointerIndex >= PointerId.trackedPointerCount)
+                return null;
+
+            if (createIfNull)
+                return s_TrackedPointerStates[trackedPointerIndex] ??= new TrackedPointerState();
+            return s_TrackedPointerStates[trackedPointerIndex];
+        }
+
+        internal static void RemoveTrackedState(int pointerId)
+        {
+            int trackedPointerIndex = pointerId - PointerId.trackedPointerIdBase;
+            if (trackedPointerIndex < 0 || trackedPointerIndex >= PointerId.trackedPointerCount)
+                return;
+
+            s_TrackedPointerStates[trackedPointerIndex] = null;
         }
     }
 }

@@ -112,6 +112,52 @@ namespace UnityEngine.UIElements
     }
 
     /// <summary>
+    /// Enum value used to specify the size used to compute the <see cref="Pivot"/> position.
+    /// </summary>
+    public enum PivotReferenceSize
+    {
+        /// <summary>The size of the full bounding-box of the UIDocument will be used to determine the pivot position.</summary>
+        BoundingBox = 0,
+
+        /// <summary>The layout size of the root element will be used to determine the pivot position.</summary>
+        Layout = 1,
+    }
+
+
+    /// <summary>
+    /// Enum value used to specify the origin point of a <see cref="UIDocument"/>.
+    /// </summary>
+    public enum Pivot
+    {
+        /// <summary>Center pivot.</summary>
+        Center = 0,
+
+        /// <summary>Top-left pivot.</summary>
+        TopLeft = 1,
+
+        /// <summary>Top-center pivot.</summary>
+        TopCenter = 2,
+
+        /// <summary>Top-right pivot.</summary>
+        TopRight = 3,
+
+        /// <summary>Left-center pivot.</summary>
+        LeftCenter = 4,
+
+        /// <summary>Right-center pivot.</summary>
+        RightCenter = 5,
+
+        /// <summary>Bottom-left pivot.</summary>
+        BottomLeft = 6,
+
+        /// <summary>Bottom-center pivot.</summary>
+        BottomCenter = 7,
+
+        /// <summary>Bottom-right pivot.</summary>
+        BottomRight = 8,
+    }
+
+    /// <summary>
     /// Defines a Component that connects <see cref="VisualElement">VisualElements</see> to <see cref="GameObject">GameObjects</see>.
     /// </summary>
     /// <remarks>
@@ -301,7 +347,31 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_WorldSpaceHeight = 1080;
 
-        [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
+        [SerializeField]
+        private PivotReferenceSize m_PivotReferenceSize;
+
+        /// <summary>
+        /// Defines how the size of the container is calculated for pivot positioning.
+        /// </summary>
+        public PivotReferenceSize pivotReferenceSize
+        {
+            get { return m_PivotReferenceSize; }
+            set { m_PivotReferenceSize = value; }
+        }
+
+        [SerializeField]
+        private Pivot m_Pivot;
+
+        /// <summary>
+        /// Defines the pivot point for positioning and transformation, such as rotation and scaling, of the UI Document in world space. The default pivot is the center.
+        /// </summary>
+        public Pivot pivot
+        {
+            get { return m_Pivot; }
+            set { m_Pivot = value; }
+        }
+
+       [SerializeField, HideInInspector] private BoxCollider m_WorldSpaceCollider;
 
         /// <summary>
         /// The order in which this UIDocument will show up on the hierarchy in relation to other UIDocuments either
@@ -334,8 +404,14 @@ namespace UnityEngine.UIElements
             AddRootVisualElementToTree();
         }
 
-        internal static UIDocument FindParentDocument(VisualElement element) =>
-            element.GetFirstOfType<UIDocumentRootElement>()?.document;
+        internal static UIDocument FindRootUIDocument(VisualElement element)
+        {
+            var doc = element.GetFirstOfType<UIDocumentRootElement>()?.document;
+            while (doc?.parentUI != null)
+                doc = doc.parentUI;
+            return doc;
+        }
+            
 
         internal static Func<UIDocument, ILiveReloadAssetTracker<VisualTreeAsset>> CreateLiveReloadVisualTreeAssetTracker;
         private ILiveReloadAssetTracker<VisualTreeAsset> m_LiveReloadVisualTreeAssetTracker;
@@ -423,12 +499,11 @@ namespace UnityEngine.UIElements
             {
                 SetTransform();
                 UpdateRenderer();
-
-                if (panelSettings.worldInputMode == PanelWorldInputMode.AddAutoUpdatedPhysicsColliders
+                if (panelSettings.colliderUpdateMode != ColliderUpdateMode.Keep
                     && Application.isPlaying
                     )
                 {
-                    UpdateWorldSpaceCollider();
+                    UpdateWorldSpaceCollider(panelSettings.colliderUpdateMode);
                 }
             }
             else
@@ -450,6 +525,12 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            renderer.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            if (renderer.sharedMaterial)
+            {
+                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            }
+
             m_RootVisualElement.uiRenderer = renderer;
 
             // Don't render embedded documents which will be rendered as part of their parents
@@ -462,10 +543,11 @@ namespace UnityEngine.UIElements
 
             Debug.Assert(rtp.drawsInCameras);
 
-            var localBounds = rootVisualElement.localBounds3D;
-            VisualElement.TransformAlignedBounds(ref rootVisualElement.worldTransformRef, ref localBounds);
+            var bb = SanitizeRendererBounds(rootVisualElement.localBoundsNested3D);
+            var toGameObject = TransformToGameObjectMatrix();
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
 
-            renderer.localBounds = SanitizeRendererBounds(localBounds);
+            renderer.localBounds = bb;
 
             UpdateIsWorldSpaceRootFlag();
         }
@@ -474,7 +556,9 @@ namespace UnityEngine.UIElements
         {
             // The bounds may be invalid if the element is not layed out yet
             if (float.IsNaN(b.size.x) || float.IsNaN(b.size.y) || float.IsNaN(b.size.z))
-                return new Bounds(Vector3.zero, Vector3.zero);
+                b = new Bounds(Vector3.zero, Vector3.zero);
+            if (b.size.x < 0.0f || b.size.y < 0.0f)
+                b.size = Vector3.zero;
             return b;
         }
 
@@ -493,15 +577,30 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void UpdateWorldSpaceCollider()
+        internal void UpdateWorldSpaceCollider(ColliderUpdateMode mode)
         {
+            if (parentUI != null)
+            {
+                // The parent UIDoc is responsible to create a global collider that encompasses nested UIDocuments
+                return;
+            }
+
             if (containerPanel == null)
             {
                 RemoveWorldSpaceCollider();
                 return;
             }
 
-            var bb = WorldSpaceInput.GetPicking3DWorldBounds(rootVisualElement);
+            Bounds bb;
+            if (mode == ColliderUpdateMode.MatchBoundingBox)
+            {
+                bb = WorldSpaceInput.GetPicking3DWorldBounds(rootVisualElement);
+            }
+            else // ColliderUpdateMode.MatchDocumentRect
+            {
+                Rect wb = rootVisualElement.worldBound;
+                bb = new Bounds(wb.center, wb.size);
+            }
 
             if (!IsValidBounds(bb))
             {
@@ -512,7 +611,7 @@ namespace UnityEngine.UIElements
             if (m_WorldSpaceCollider == null)
             {
                 m_WorldSpaceCollider = gameObject.AddComponent<BoxCollider>();
-                m_WorldSpaceCollider.isTrigger = true;
+                m_WorldSpaceCollider.isTrigger = panelSettings.colliderIsTrigger;
             }
 
             // Setting BoxCollider.center or BoxCollider.size triggers some work even if the value doesn't change.
@@ -584,46 +683,109 @@ namespace UnityEngine.UIElements
 
         float pixelsPerUnit => containerPanel?.pixelsPerUnit ?? 1.0f;
 
-        void ComputeTransform(Transform transform, out Matrix4x4 matrix)
+        Matrix4x4 ScaleAndFlipMatrix()
         {
             // This is the root, apply the pixels-per-unit scaling, and the y-flip.
             float ppu = pixelsPerUnit;
             if (ppu < Mathf.Epsilon)
             {
                 // This isn't a valid PPU, return the identity here, but the skipRendering flag will be set on the renderer
-                matrix = Matrix4x4.identity;
-                return;
+                return Matrix4x4.identity;
             }
 
             float ppuScale = 1.0f / ppu;
 
             var scale = Vector3.one * ppuScale;
             var flipRotation = Quaternion.AngleAxis(180.0f, Vector3.right); // Y-axis flip
+            return Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
+        }
 
-            if (parentUI == null)
+        Bounds LocalBoundsFromPivotSource()
+        {
+            var localBounds = m_RootVisualElement.localBounds3D;
+
+            Bounds bb;
+            if (m_PivotReferenceSize == PivotReferenceSize.BoundingBox)
             {
-                matrix = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
+                bb = localBounds;
             }
             else
             {
-                var ui2Go = Matrix4x4.TRS(Vector3.zero, flipRotation, scale);
+                // Take the x,y size from the layout, but the z size from the bounds depth
+                var layout = m_RootVisualElement.layout;
+                var c = layout.center;
+                var s = layout.size;
+                float depth = localBounds.size.z;
+                bb = new Bounds(new Vector3(c.x, c.y, localBounds.min.z + depth*0.5f), new Vector3(s.x, s.y, depth));
+            }
+
+            return SanitizeRendererBounds(bb);
+        }
+
+        Vector2 PivotOffset()
+        {
+            var pivotPercent = GetPivotAsPercent(m_Pivot);
+            var localBounds = LocalBoundsFromPivotSource();
+            return (-(Vector2)localBounds.min) + new Vector2(-localBounds.size.x * pivotPercent.x, -localBounds.size.y * pivotPercent.y);
+        }
+
+        Matrix4x4 TransformToGameObjectMatrix()
+        {
+            var m = ScaleAndFlipMatrix();
+            MathUtils.PostApply2DOffset(ref m, PivotOffset());
+            return m;
+        }
+
+        void ComputeTransform(Transform transform, out Matrix4x4 matrix)
+        {
+            if (parentUI == null)
+            {
+                matrix = TransformToGameObjectMatrix();
+            }
+            else
+            {
+                var ui2Go = parentUI.ScaleAndFlipMatrix();
                 var go2Ui = ui2Go.inverse;
 
                 var childGoToWorld = transform.localToWorldMatrix;
                 var worldToParentGo = parentUI.transform.worldToLocalMatrix;
 
-                //      (VEa To World)      * (VEb To VEa) =                                           (VEb To World)
-                // (GOa To World) * (UI2GO) * (VEb To VEa) =                                      (GOb To World) * (UI2GO)
-                //                            (VEb To VEa) = (UI2GO) ^ -1 * (GOa To World) ^ -1 * (GOb To World) * (UI2GO)
+                //                     (VEa To World)*(VEb To VEa) =                             (VEb To World)
+                // (GOa To World)*(UI2GO)*(VEa Pivot)*(VEb To VEa) =                   (GOb To World)*(UI2GO)*(VEb Pivot)
+                //           (VEb To VEa) = (VEa Pivot)^1*(UI2GO)^-1*(GOa To World)^-1*(GOb To World)*(UI2GO)*(VEb Pivot)
                 matrix = go2Ui * worldToParentGo * childGoToWorld * ui2Go;
+
+                MathUtils.PreApply2DOffset(ref matrix, -parentUI.PivotOffset());
+
+                // Apply the nested pivot
+                MathUtils.PostApply2DOffset(ref matrix, PivotOffset());
             }
         }
 
-        static void SetNoTransform(VisualElement visualElement)
+        static Vector2 GetPivotAsPercent(Pivot origin)
         {
-            visualElement.style.translate = Translate.None();
-            visualElement.style.rotate = Rotate.None();
-            visualElement.style.scale = Scale.None();
+            switch (origin)
+            {
+                case Pivot.Center:
+                    return new Vector2(0.5f, 0.5f);
+                case Pivot.TopLeft:
+                    return new Vector2(0, 0);
+                case Pivot.TopCenter:
+                    return new Vector2(0.5f, 0);
+                case Pivot.TopRight:
+                    return new Vector2(1, 0);
+                case Pivot.LeftCenter:
+                    return new Vector2(0, 0.5f);
+                case Pivot.RightCenter:
+                    return new Vector2(1, 0.5f);
+                case Pivot.BottomLeft:
+                    return new Vector2(0, 1);
+                case Pivot.BottomCenter:
+                    return new Vector2(0.5f, 1);
+                case Pivot.BottomRight:
+                    return new Vector2(1, 1);
+            }
+            return new Vector2(0.5f, 0.5f);
         }
 
         /// <summary>
@@ -709,7 +871,7 @@ namespace UnityEngine.UIElements
         {
             if (m_RootVisualElement != null)
             {
-               RemoveFromHierarchy();
+                RemoveFromHierarchy();
                 if (m_PanelSettings != null)
                     m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 rootVisualElement = null;
@@ -731,6 +893,8 @@ namespace UnityEngine.UIElements
                     Debug.LogException(e);
                 }
             }
+
+            m_OldUxml = sourceAsset;
 
             if (m_RootVisualElement == null)
             {
@@ -1028,35 +1192,31 @@ namespace UnityEngine.UIElements
         private VisualTreeAsset m_OldUxml = null;
         private float m_OldSortingOrder = k_DefaultSortingOrder;
 
+        // For unit tests
+        internal static int s_OnValidateCalled = 0;
+
         private void OnValidate()
         {
-            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
-            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
-            // systems listening to the panel creation to initialize themselves, which may do invalid
-            // operations for an OnValidate() call (e.g., the EventSystem will create GameObjects).
-            if (m_PanelSettings == null || !m_PanelSettings.isInitialized)
-            {
-                return;
-            }
+            s_OnValidateCalled++;
 
             if (!gameObject.activeInHierarchy)
             {
                 return;
             }
 
-            if (m_OldUxml != sourceAsset)
-            {
-                visualTreeAsset = sourceAsset;
-                m_OldUxml = sourceAsset;
-            }
-
-            if (m_PreviousPanelSettings != m_PanelSettings && m_RootVisualElement != null && m_RootVisualElement.panel != null)
+            if (m_PreviousPanelSettings != m_PanelSettings)
             {
                 // We'll use the setter as it guarantees the right behavior.
                 // It's necessary for the setter that the old value is still in place.
                 var tempPanelSettings = m_PanelSettings;
                 m_PanelSettings = m_PreviousPanelSettings;
                 panelSettings = tempPanelSettings;
+            }
+
+            if (m_OldUxml != sourceAsset)
+            {
+                visualTreeAsset = sourceAsset;
+                m_OldUxml = sourceAsset;
             }
 
             if (m_OldSortingOrder != m_SortingOrder)
@@ -1073,6 +1233,29 @@ namespace UnityEngine.UIElements
             {
                 UpdateWorldSpaceSize();
             }
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (m_RootVisualElement == null)
+                return;
+
+            var bb = LocalBoundsFromPivotSource();
+            if (!IsValidBounds(bb))
+                return;
+
+            var toGameObject = TransformToGameObjectMatrix();
+            VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
+
+            var matrixBackup = Gizmos.matrix;
+
+            Vector3 center = bb.center;
+            Vector3 size = bb.size;
+            Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
+            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.DrawWireCube(center, size);
+
+            Gizmos.matrix = matrixBackup;
         }
 
     }

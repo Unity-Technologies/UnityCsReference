@@ -511,6 +511,9 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [Obsolete("This version of Dropdown is deprecated. To ensure the dropdown is positioned correctly, please provide a reference to the targetElement.", false)]
+        public void DropDown(Rect position) => DropDown(position, null, false);
+
         /// <summary>
         /// Displays the menu at the specified position.
         /// </summary>
@@ -538,7 +541,7 @@ namespace UnityEngine.UIElements
 
             if (m_TargetElement.panel != null && m_TargetElement.panel.contextType == ContextType.Player)
             {
-                var uiDocument = UIDocument.FindParentDocument(m_TargetElement);
+                var uiDocument = UIDocument.FindRootUIDocument(m_TargetElement);
                 if (uiDocument != null &&
                     uiDocument.panelSettings != null &&
                     uiDocument.panelSettings.renderMode == PanelRenderMode.WorldSpace)

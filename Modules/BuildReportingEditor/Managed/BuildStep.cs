@@ -33,7 +33,7 @@ namespace UnityEditor.Build.Reporting
 
         public override string ToString()
         {
-            return UnityString.Format("{0} ({1}ms)", name, duration.TotalMilliseconds);
+            return string.Format("{0} ({1}ms)", name, duration.TotalMilliseconds);
         }
     }
 }

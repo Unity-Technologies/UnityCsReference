@@ -47,21 +47,21 @@ namespace Unity.UI.Builder
             string alpha = color.a.ToString("0.##", CultureInfo.InvariantCulture.NumberFormat);
             if (alpha != "1")
             {
-                str = UnityString.Format("rgba({0}, {1}, {2}, {3:F2})", ColorComponent(color.r),
+                str = string.Format("rgba({0}, {1}, {2}, {3:F2})", ColorComponent(color.r),
                     ColorComponent(color.g),
                     ColorComponent(color.b),
                     alpha);
             }
             else if (!useColorCode)
             {
-                str = UnityString.Format("rgb({0}, {1}, {2})",
+                str = string.Format("rgb({0}, {1}, {2})",
                     ColorComponent(color.r),
                     ColorComponent(color.g),
                     ColorComponent(color.b));
             }
             else
             {
-                str = UnityString.Format("#{0}", ColorUtility.ToHtmlStringRGB(color));
+                str = string.Format("#{0}", ColorUtility.ToHtmlStringRGB(color));
             }
             return str;
         }

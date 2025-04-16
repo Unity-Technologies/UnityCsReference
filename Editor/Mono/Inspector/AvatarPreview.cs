@@ -893,7 +893,7 @@ namespace UnityEditor
             rect.y = rect.yMax - 24;
             float time = timeControl.currentTime - timeControl.startTime;
             EditorGUI.DropShadowLabel(new Rect(rect.x, rect.y, rect.width, 20),
-                UnityString.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
+                string.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
             );
         }
 

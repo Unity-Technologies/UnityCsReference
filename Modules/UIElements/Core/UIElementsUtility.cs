@@ -230,6 +230,15 @@ namespace UnityEngine.UIElements
                     // Instead of allocating a new Event object every time
                     // we reuse this instance and copy event data into it
                     s_EventInstance.CopyFromPtr(nativeEventPtr);
+                    if (kTestFrameUpdateEvent == (int)s_EventInstance.type)
+                    {
+                        Action cb = testFrameUpdateCallback;
+                        testFrameUpdateCallback = null;
+                        cb?.Invoke();
+                        eventHandled = true;
+                        return true;
+                    }
+					
                     using var scope = new UITKScope(false);
                     eventHandled = DoDispatch(panel);
 
@@ -272,7 +281,10 @@ namespace UnityEngine.UIElements
             s_PanelsIterationList.Clear();
             UIElementsUtility.GetAllPanels(s_PanelsIterationList, ContextType.Editor);
 
-            LayoutManager.SharedManager.Collect();
+            if (LayoutManager.IsSharedManagerCreated)
+            {
+                LayoutManager.SharedManager.Collect();
+            }
 
             foreach (var panel in s_PanelsIterationList)
             {
@@ -280,6 +292,26 @@ namespace UnityEngine.UIElements
                 panel.TickSchedulingUpdaters();
             }
         }
+
+        internal const int kTestFrameUpdateEvent = 7777;
+
+        static Action testFrameUpdateCallback;
+
+        // This method should only be used by the UI Test Framework
+        // It creates a bogus Event that will be used to invoke a callback
+        // It is assumed that the caller will immediately call GuiView.SendEvent with the returned Event
+        // During the GUIUtility.ProcessEvent call, the callback will be invoked
+        //
+        // ANY OTHER USAGE IS NOT SUPPORTED AND WILL BRING INFINITE SHAME UPON ITS AUTHOR
+        public static Event CreateTestFrameUpdateEvent(Action callback)
+        {
+            testFrameUpdateCallback = callback;
+
+            Event refreshEvent = new Event();
+            refreshEvent.type = (EventType) kTestFrameUpdateEvent;
+            return refreshEvent;
+        }
+
 
         void IUIElementsUtility.RequestRepaintForPanels(Action<ScriptableObject> repaintCallback)
         {

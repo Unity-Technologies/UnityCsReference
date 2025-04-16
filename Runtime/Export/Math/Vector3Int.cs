@@ -60,7 +60,7 @@ namespace UnityEngine
                     case 1: return y;
                     case 2: return z;
                     default:
-                        throw new IndexOutOfRangeException(UnityString.Format("Invalid Vector3Int index addressed: {0}!", index));
+                        throw new IndexOutOfRangeException(string.Format("Invalid Vector3Int index addressed: {0}!", index));
                 }
             }
 
@@ -73,7 +73,7 @@ namespace UnityEngine
                     case 1: y = value; break;
                     case 2: z = value; break;
                     default:
-                        throw new IndexOutOfRangeException(UnityString.Format("Invalid Vector3Int index addressed: {0}!", index));
+                        throw new IndexOutOfRangeException(string.Format("Invalid Vector3Int index addressed: {0}!", index));
                 }
             }
         }
@@ -252,7 +252,7 @@ namespace UnityEngine
         {
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("({0}, {1}, {2})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider));
+            return string.Format("({0}, {1}, {2})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), z.ToString(format, formatProvider));
         }
 
         public static Vector3Int zero { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return s_Zero; } }

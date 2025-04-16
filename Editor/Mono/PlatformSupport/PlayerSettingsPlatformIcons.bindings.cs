@@ -186,7 +186,7 @@ namespace UnityEditor
             return Math.Max(previewTexturesCount, validLayerCount);
         }
 
-        public override string ToString() { return UnityString.Format("({0}x{1}) {2}", width, height, description); }
+        public override string ToString() { return string.Format("({0}x{1}) {2}", width, height, description); }
     }
 
     public class PlatformIconKind
@@ -448,7 +448,7 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconsForPlatform(iBuildTarget.TargetName, kind) :
-                    GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();                
+                    GetPlatformIcons(buildTarget, platformIconKind).Select(t => t.GetTexture(0)).ToArray();
             }
             return PlayerSettings.GetIconsForPlatform(buildTarget.TargetName, kind);
         }
@@ -498,7 +498,7 @@ namespace UnityEditor
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
                     GetIconWidthsForPlatform(iBuildTarget.TargetName, kind) :
-                    GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray(); 
+                    GetPlatformIcons(buildTarget, platformIconKind).Select(s => s.width).ToArray();
             }
             return GetIconWidthsForPlatform(buildTarget.TargetName, kind);
         }

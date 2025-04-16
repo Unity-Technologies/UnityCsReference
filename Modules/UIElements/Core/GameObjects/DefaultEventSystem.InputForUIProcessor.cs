@@ -163,7 +163,8 @@ namespace UnityEngine.UIElements
                         PointerUpEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
                     deselectIfNoTarget = true;
                 }
-                else if (pointerEvent.type == PointerEvent.Type.TouchCanceled)
+                else if (pointerEvent.type == PointerEvent.Type.TouchCanceled ||
+                         pointerEvent.type == PointerEvent.Type.TrackedCanceled)
                 {
                     evtFactory = (panelPosition, t) =>
                         PointerCancelEvent.GetPooled(t.pointerEvent, panelPosition, t.pointerId, t.deltaTime);
@@ -183,7 +184,8 @@ namespace UnityEngine.UIElements
 
                 if (pointerEvent.eventSource == EventSource.TrackedDevice)
                 {
-                    m_EventSystem.SendRayBasedEvent(pointerEvent.worldRay, pointerId, evtFactory,
+                    var maxDistance = pointerEvent.maxDistance > 0 ? pointerEvent.maxDistance : Mathf.Infinity;
+                    m_EventSystem.SendRayBasedEvent(pointerEvent.worldRay, maxDistance, pointerId, evtFactory,
                         (pointerEvent, pointerId, deltaTime), deselectIfNoTarget);
                 }
                 else

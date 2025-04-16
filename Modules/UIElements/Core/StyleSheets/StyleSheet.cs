@@ -837,6 +837,12 @@ namespace UnityEngine.UIElements
             where TEnum : Enum
         {
             var valueStr = StyleSheetUtility.GetEnumExportString(value);
+            WriteEnumAsString(ref handle, valueStr);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void WriteEnumAsString(ref StyleValueHandle handle, string valueStr)
+        {
             if (handle.valueType == StyleValueType.Enum)
             {
                 strings[handle.valueIndex] = valueStr;

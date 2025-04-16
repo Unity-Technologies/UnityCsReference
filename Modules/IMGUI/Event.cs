@@ -284,7 +284,7 @@ namespace UnityEngine
                         }
                         catch (ArgumentException)
                         {
-                            Debug.LogError(UnityString.Format("Unable to find key name that matches '{0}'", subStr));
+                            Debug.LogError(string.Format("Unable to find key name that matches '{0}'", subStr));
                         }
                     }
                     else
@@ -336,15 +336,15 @@ namespace UnityEngine
             if (isKey)
             {
                 if (character == 0)
-                    return UnityString.Format("Event:{0}   Character:\\0   Modifiers:{1}   KeyCode:{2}", type, modifiers, keyCode);
+                    return string.Format("Event:{0}   Character:\\0   Modifiers:{1}   KeyCode:{2}", type, modifiers, keyCode);
 
                 return "Event:" + type + "   Character:" + (int)(character) + "   Modifiers:" + modifiers + "   KeyCode:" + keyCode;
             }
             if (isMouse)
-                return UnityString.Format("Event: {0}   Position: {1} Modifiers: {2}", type, mousePosition, modifiers);
+                return string.Format("Event: {0}   Position: {1} Modifiers: {2}", type, mousePosition, modifiers);
 
             if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)
-                return UnityString.Format("Event: {0}  \"{1}\"", type, commandName);
+                return string.Format("Event: {0}  \"{1}\"", type, commandName);
 
             return "" + type;
         }
@@ -353,7 +353,7 @@ namespace UnityEngine
         public void Use()
         {
             if (type == EventType.Repaint || type == EventType.Layout)
-                Debug.LogWarning(UnityString.Format("Event.Use() should not be called for events of type {0}", type));
+                Debug.LogWarning(string.Format("Event.Use() should not be called for events of type {0}", type));
             Internal_Use();
         }
     }

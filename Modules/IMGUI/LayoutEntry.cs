@@ -110,7 +110,7 @@ namespace UnityEngine
             string space = "";
             for (int i = 0; i < indent; i++)
                 space += " ";
-            return space + UnityString.Format("{1}-{0} (x:{2}-{3}, y:{4}-{5})", style != null ? style.name : "NULL", GetType(), rect.x, rect.xMax, rect.y, rect.yMax) +
+            return space + string.Format("{1}-{0} (x:{2}-{3}, y:{4}-{5})", style != null ? style.name : "NULL", GetType(), rect.x, rect.xMax, rect.y, rect.yMax) +
                 "   -   W: " + minWidth + "-" + maxWidth + (stretchWidth != 0 ? "+" : "") + ", H: " + minHeight + "-" + maxHeight + (stretchHeight  != 0 ? "+" : "");
         }
     }

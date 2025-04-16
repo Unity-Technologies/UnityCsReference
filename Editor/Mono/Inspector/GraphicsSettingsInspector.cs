@@ -422,6 +422,9 @@ namespace UnityEditor
 
             EditorGraphicsSettings.ForEachPipelineSettings(globalSettings =>
             {
+                if (globalSettings == null)
+                    return;
+
                 var serializedGlobalSettings = new SerializedObject(globalSettings);
                 var settingsIterator = serializedGlobalSettings.FindProperty(RenderPipelineGraphicsSettingsManager.serializationPathToCollection);
 

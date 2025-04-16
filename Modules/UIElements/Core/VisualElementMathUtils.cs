@@ -565,4 +565,35 @@ namespace UnityEngine.UIElements
             return new Ray(m.MultiplyPoint3x4(ray.origin), m.MultiplyVector(ray.direction));
         }
     }
+
+    static class MathUtils
+    {
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static Matrix4x4 PreApply2DOffset(ref Matrix4x4 m, Vector2 p)
+        {
+            // This is a fast-path for Offset * Matrix
+            // [1 0 0 px]   [m00 m01 m02 m03]   [m00 m01 m02 m03+px]
+            // [0 1 0 py] * [m10 m11 m12 m13] = [m10 m11 m12 m13+py]
+            // [0 0 1 0 ]   [m20 m21 m22 m23]   [m20 m21 m22 m23   ]
+            // [0 0 0 1 ]   [0   0   0   1  ]   [0   0   0   1     ]
+
+            m.m03 += p.x;
+            m.m13 += p.y;
+            return m;
+        }
+
+        [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
+        internal static Matrix4x4 PostApply2DOffset(ref Matrix4x4 m, Vector2 p)
+        {
+            // This is a fast-path for Matrix * Offset
+            // [m00 m01 m02 m03]   [1 0 0 px]   [m00 m01 m02 m00*px+m01*py+m03]
+            // [m10 m11 m12 m13] * [0 1 0 py] = [m10 m11 m12 m10*px+m11*py+m13]
+            // [m20 m21 m22 m23]   [0 0 1 0 ]   [m20 m21 m22 m23              ]
+            // [0   0   0   1  ]   [0 0 0 1 ]   [0   0   0   1                ]
+
+            m.m03 += m.m00 * p.x + m.m01 * p.y;
+            m.m13 += m.m10 * p.x + m.m11 * p.y;
+            return m;
+        }
+    }
 }

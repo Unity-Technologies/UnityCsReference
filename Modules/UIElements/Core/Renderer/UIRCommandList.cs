@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
@@ -67,6 +67,8 @@ namespace UnityEngine.UIElements.UIR
 
             for (int i = 0; i < m_GpuTextureData.Length; ++i)
                 m_GpuTextureData[i] = Vector4.zero;
+
+            batchProps.Clear();
         }
 
         public unsafe void Execute()

@@ -23,7 +23,7 @@ namespace UnityEngine
     {
         private int m_Handle;
 
-        public override string ToString() { return UnityString.Format("({0})", m_Handle); }
+        public override string ToString() { return string.Format("({0})", m_Handle); }
         public static bool operator==(PhysicsScene2D lhs, PhysicsScene2D rhs) { return lhs.m_Handle == rhs.m_Handle; }
         public static bool operator!=(PhysicsScene2D lhs, PhysicsScene2D rhs) { return lhs.m_Handle != rhs.m_Handle; }
         public override int GetHashCode() { return m_Handle; }
@@ -3073,7 +3073,7 @@ namespace UnityEngine
         public float friction { get { return m_Friction; } }
 
         // The effective bounciness used here (post PhysicsMaterial2D combination).
-        public float bounciness { get { return m_Bounciness; } }        
+        public float bounciness { get { return m_Bounciness; } }
 
         // The first collider in contact.
         public Collider2D collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider2D; } }
@@ -3371,7 +3371,7 @@ namespace UnityEngine
                 useLayerMask = default;
                 layerMask = Physics2D.AllLayers;
             }
-            
+
             [field: SerializeField] public int maxIterations { get; set; }
             [field: SerializeField] public float surfaceSlideAngle { get; set; }
             [field: SerializeField] public float gravitySlipAngle { get; set; }
@@ -3502,7 +3502,7 @@ namespace UnityEngine
 
         // Should kinematic/kinematic and kinematic/static contacts be allowed?
         extern public bool useFullKinematicContacts { get; set; }
-       
+
         // Controls whether physics will change the rotation of the object.
         extern public bool freezeRotation { get; set; }
 

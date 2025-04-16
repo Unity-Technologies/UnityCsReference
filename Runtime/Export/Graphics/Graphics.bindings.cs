@@ -355,7 +355,7 @@ namespace UnityEngine
 
         [NativeName("SetRequestedMSAASamples")]
         extern public static void SetMSAASamples(int numSamples);
-        
+
         [NativeName("GetRequestedMSAASamples")]
         extern private static int GetMSAASamples();
 
@@ -674,7 +674,7 @@ namespace UnityEngine
         extern private static void Internal_RenderMeshInstanced(RenderParams rparams, [NotNull] Mesh mesh, int submeshIndex, IntPtr instanceData, RenderInstancedDataLayout layout, uint instanceCount);
 
         [FreeFunction("GraphicsScripting::RenderMeshIndirect")]
-        extern private static void Internal_RenderMeshIndirect(RenderParams rparams, [NotNull] Mesh mesh, [NotNull] GraphicsBuffer commandBuffer, int commandCount, int startCommand);
+        extern private static void Internal_RenderMeshIndirect(RenderParams rparams, [NotNull] Mesh mesh, [NotNull] GraphicsBuffer argsBuffer, int commandCount, int startCommand);
 
         [FreeFunction("GraphicsScripting::RenderMeshPrimitives")]
         extern private static void Internal_RenderMeshPrimitives(RenderParams rparams, [NotNull] Mesh mesh, int submeshIndex, int instanceCount);
@@ -686,7 +686,7 @@ namespace UnityEngine
         extern private static void Internal_RenderPrimitivesIndexed(RenderParams rparams, MeshTopology topology, [NotNull] GraphicsBuffer indexBuffer, int indexCount, int startIndex, int instanceCount);
 
         [FreeFunction("GraphicsScripting::RenderPrimitivesIndirect")]
-        extern private static void Internal_RenderPrimitivesIndirect(RenderParams rparams, MeshTopology topology, [NotNull] GraphicsBuffer commandBuffer, int commandCount, int startCommand);
+        extern private static void Internal_RenderPrimitivesIndirect(RenderParams rparams, MeshTopology topology, [NotNull] GraphicsBuffer argsBuffer, int commandCount, int startCommand);
 
         [FreeFunction("GraphicsScripting::RenderPrimitivesIndexedIndirect")]
         extern private static void Internal_RenderPrimitivesIndexedIndirect(RenderParams rparams, MeshTopology topology, [NotNull] GraphicsBuffer indexBuffer, [NotNull] GraphicsBuffer commandBuffer, int commandCount, int startCommand);

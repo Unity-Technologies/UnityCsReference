@@ -294,7 +294,7 @@ namespace UnityEditor
             if (idx < 0)
                 return "<error>";
 
-            return UnityString.Format("{0:0.##} {1}", val, scale[idx]);
+            return string.Format("{0:0.##} {1}", val, scale[idx]);
         }
 
         private void DebugInfoSection()

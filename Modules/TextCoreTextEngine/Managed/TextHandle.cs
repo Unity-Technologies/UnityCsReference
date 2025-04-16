@@ -572,8 +572,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (!useAdvancedText)
             {
-                Debug.LogError("Cannot use GetFirstCharacterIndexOnLine while using Standard Text");
-                return 0;
+                LineInfo li = GetLineInfoFromCharacterIndex( currentIndex);
+                return li.firstCharacterIndex;
             }
             return TextSelectionService.GetFirstCharacterIndexOnLine(textGenerationInfo, currentIndex);
         }
@@ -582,8 +582,8 @@ namespace UnityEngine.TextCore.Text
         {
             if (!useAdvancedText)
             {
-                Debug.LogError("Cannot use GetLastCharacterIndexOnLine while using Standard Text");
-                return 0;
+                LineInfo li = GetLineInfoFromCharacterIndex( currentIndex);
+                return li.lastCharacterIndex;
             }
             return TextSelectionService.GetLastCharacterIndexOnLine(textGenerationInfo, currentIndex);
         }

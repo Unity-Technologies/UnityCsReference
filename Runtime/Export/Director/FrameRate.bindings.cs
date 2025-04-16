@@ -81,7 +81,7 @@ namespace UnityEngine.Playables
                 format =  dropFrame ? "F2" : "F0";
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("{0} Fps", rate.ToString(format, formatProvider));
+            return string.Format("{0} Fps", rate.ToString(format, formatProvider));
         }
 
         internal static int FrameRateToInt(FrameRate framerate)

@@ -486,7 +486,7 @@ namespace UnityEngine
 
         public override string ToString()
         {
-            return UnityString.Format("GUIStyle '{0}'", name);
+            return string.Format("GUIStyle '{0}'", name);
         }
 
         [RequiredByNativeCode]

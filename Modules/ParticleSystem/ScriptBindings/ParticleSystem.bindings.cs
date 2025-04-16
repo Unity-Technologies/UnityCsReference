@@ -280,7 +280,7 @@ namespace UnityEngine
     public partial struct ParticleCollisionEvent
     {
         [FreeFunction(Name = "ParticleSystemScriptBindings::InstanceIDToColliderComponent")]
-        extern static private Component InstanceIDToColliderComponent(int instanceID);
+        extern static private Component InstanceIDToColliderComponent(EntityId entityId);
     }
 
     internal class ParticleSystemExtensionsImpl

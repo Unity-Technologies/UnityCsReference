@@ -107,6 +107,7 @@ namespace UnityEngine.UIElements
         }
 
         //Note: used in tests
+        [Obsolete("This will be removed. Please use the different update methods from Panel instead")]
         public void UpdateVisualTree()
         {
             visualTreeEditorUpdater.Update();
@@ -123,6 +124,10 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void UpdateForEditor()
+        {
+            visualTreeEditorUpdater.Update();
+        }
         public void UpdateVisualTreePhase(VisualTreeUpdatePhase phase)
         {
             var updater = m_UpdaterArray[phase];

@@ -59,7 +59,7 @@ namespace UnityEditor.Build.Content
 
         public override string ToString()
         {
-            return UnityString.Format("{{ guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
+            return string.Format("{{ guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
         }
 
         public int CompareTo(ObjectIdentifier other)

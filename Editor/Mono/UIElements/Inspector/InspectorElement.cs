@@ -165,6 +165,8 @@ namespace UnityEditor.UIElements
         /// </summary>
         VisualElement m_InspectorElement;
 
+        internal VisualElement inspectorContent => m_InspectorElement;
+
         /// <summary>
         /// The default framework to use for generic inspectors.
         /// </summary>

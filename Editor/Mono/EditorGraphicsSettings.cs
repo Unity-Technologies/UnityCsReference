@@ -97,40 +97,23 @@ namespace UnityEditor.Rendering
 
     public sealed partial class EditorGraphicsSettings
     {
-        [Obsolete("Use GetTierSettings() instead (UnityUpgradable) -> GetTierSettings(*)", false)]
+        [Obsolete("Use GetTierSettings() instead (UnityUpgradable) -> GetTierSettings(*)", true)]
         public static PlatformShaderSettings GetShaderSettingsForPlatform(BuildTargetGroup target, ShaderHardwareTier tier)
         {
-            TierSettings ts = GetTierSettings(target, (GraphicsTier)tier);
-
             PlatformShaderSettings pss = new PlatformShaderSettings();
-            pss.cascadedShadowMaps              = ts.cascadedShadowMaps;
-            pss.standardShaderQuality           = ts.standardShaderQuality;
-            pss.reflectionProbeBoxProjection    = ts.reflectionProbeBoxProjection;
-            pss.reflectionProbeBlending         = ts.reflectionProbeBlending;
             return pss;
         }
 
-        [Obsolete("Use SetTierSettings() instead (UnityUpgradable) -> SetTierSettings(*)", false)]
-        public static void SetShaderSettingsForPlatform(BuildTargetGroup target, ShaderHardwareTier tier, PlatformShaderSettings settings)
-        {
-            // we want to preserve TierSettings members that are absent from PlatformShaderSettings
-            TierSettings ts = GetTierSettings(target, (GraphicsTier)tier);
+        [Obsolete("Use SetTierSettings() instead (UnityUpgradable) -> SetTierSettings(*)", true)]
+        public static void SetShaderSettingsForPlatform(BuildTargetGroup target, ShaderHardwareTier tier, PlatformShaderSettings settings) {}
 
-            ts.standardShaderQuality        = settings.standardShaderQuality;
-            ts.cascadedShadowMaps           = settings.cascadedShadowMaps;
-            ts.reflectionProbeBoxProjection = settings.reflectionProbeBoxProjection;
-            ts.reflectionProbeBlending      = settings.reflectionProbeBlending;
-
-            SetTierSettings(target, (GraphicsTier)tier, ts);
-        }
-
-        [Obsolete("Use GraphicsTier instead of ShaderHardwareTier enum", false)]
+        [Obsolete("Use GraphicsTier instead of ShaderHardwareTier enum", true)]
         public static TierSettings GetTierSettings(BuildTargetGroup target, ShaderHardwareTier tier)
         {
             return GetTierSettings(target, (GraphicsTier)tier);
         }
 
-        [Obsolete("Use GraphicsTier instead of ShaderHardwareTier enum", false)]
+        [Obsolete("Use GraphicsTier instead of ShaderHardwareTier enum", true)]
         public static void SetTierSettings(BuildTargetGroup target, ShaderHardwareTier tier, TierSettings settings)
         {
             SetTierSettings(target, (GraphicsTier)tier, settings);

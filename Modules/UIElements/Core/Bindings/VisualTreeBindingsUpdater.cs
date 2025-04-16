@@ -274,6 +274,7 @@ namespace UnityEngine.UIElements
                                 foreach (var req in bindingRequests)
                                 {
                                     req.Bind(element);
+                                    req.Release();
                                 }
 
                                 RequestObjectListPool.Release(bindingRequests);

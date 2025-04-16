@@ -53,7 +53,7 @@ namespace UnityEditor
         // This will save the previous state which will be useful in case of platform switch
         int prevSizeGroupType;
 
-        //Take the backing scale from the window if it is available as this values is valid outside of OnGUI methods 
+        //Take the backing scale from the window if it is available as this values is valid outside of OnGUI methods
         float backingScale => m_Parent?.GetBackingScaleFactor() ?? EditorGUIUtility.pixelsPerPoint;
         float minScale
         {
@@ -213,7 +213,7 @@ namespace UnityEditor
         {
             if (showToolbar)
                 return new Rect(0, EditorGUI.kWindowToolbarHeight, pos.width, pos.height - EditorGUI.kWindowToolbarHeight);
-            
+
             return new Rect(0, 0, pos.width, pos.height);
         }
 
@@ -313,7 +313,7 @@ namespace UnityEditor
         Vector2 gameMouseOffset { get { return -viewInWindow.position - targetInView.position; } }
 
         float gameMouseScale { get { return backingScale / m_ZoomArea.scale.y; } }
-        
+
         private bool showToolbar
         {
             get => m_showToolbar;
@@ -561,7 +561,7 @@ namespace UnityEditor
                 var newZoom = Mathf.Pow(10f, logScale);
                 SnapZoom(newZoom);
             }
-            var scaleContent = EditorGUIUtility.TempContent(UnityString.Format("{0}x", (m_ZoomArea.scale.y).ToString("G2", CultureInfo.InvariantCulture.NumberFormat)));
+            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G2", CultureInfo.InvariantCulture.NumberFormat)));
             scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
             GUILayout.Label(scaleContent, GUILayout.Width(kScaleLabelWidth));
             scaleContent.tooltip = string.Empty;
@@ -896,9 +896,9 @@ namespace UnityEditor
 
         void OnBecameVisible()
         {
-            if (latestState == PlayModeStateChange.EnteredPlayMode) 
+            if (latestState == PlayModeStateChange.EnteredPlayMode)
                 m_Parent.EnableVSync(m_VSyncEnabled);
-            
+
             EditorApplication.update += RepaintIfNeeded;
         }
 
@@ -906,7 +906,7 @@ namespace UnityEditor
         {
             EditorApplication.update -= RepaintIfNeeded;
         }
-        
+
         void OnAddedAsTab()
         {
             if (latestState == PlayModeStateChange.EnteredPlayMode)

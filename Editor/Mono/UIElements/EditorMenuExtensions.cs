@@ -152,7 +152,7 @@ namespace UnityEditor.UIElements
             m_GenericMenu.AddSeparator(path);
         }
 
-        public void DropDown(Rect position, VisualElement targetElement , bool anchored = false)
+        public void DropDown(Rect position, VisualElement targetElement, bool anchored = false)
         {
             if(targetElement is null || targetElement.panel == null)
             {

@@ -196,31 +196,29 @@ namespace UnityEngine
 
     partial class MaterialPropertyBlock
     {
-        // TODO: effectively adding a property or setting a property should be the same, but SetFloat will be a bit slower due to an extra lookup...
-
-        [Obsolete("Use SetFloat instead (UnityUpgradable) -> SetFloat(*)", false)]
+        [Obsolete("Use SetFloat instead (UnityUpgradable) -> SetFloat(*)", true)]
         public void AddFloat(string name, float value) { SetFloat(Shader.PropertyToID(name), value); }
-        [Obsolete("Use SetFloat instead (UnityUpgradable) -> SetFloat(*)", false)]
+        [Obsolete("Use SetFloat instead (UnityUpgradable) -> SetFloat(*)", true)]
         public void AddFloat(int nameID, float value)  { SetFloat(nameID, value); }
 
-        [Obsolete("Use SetVector instead (UnityUpgradable) -> SetVector(*)", false)]
+        [Obsolete("Use SetVector instead (UnityUpgradable) -> SetVector(*)", true)]
         public void AddVector(string name, Vector4 value)   { SetVector(Shader.PropertyToID(name), value); }
-        [Obsolete("Use SetVector instead (UnityUpgradable) -> SetVector(*)", false)]
+        [Obsolete("Use SetVector instead (UnityUpgradable) -> SetVector(*)", true)]
         public void AddVector(int nameID, Vector4 value)    { SetVector(nameID, value); }
 
-        [Obsolete("Use SetColor instead (UnityUpgradable) -> SetColor(*)", false)]
+        [Obsolete("Use SetColor instead (UnityUpgradable) -> SetColor(*)", true)]
         public void AddColor(string name, Color value)  { SetColor(Shader.PropertyToID(name), value); }
-        [Obsolete("Use SetColor instead (UnityUpgradable) -> SetColor(*)", false)]
+        [Obsolete("Use SetColor instead (UnityUpgradable) -> SetColor(*)", true)]
         public void AddColor(int nameID, Color value)   { SetColor(nameID, value); }
 
-        [Obsolete("Use SetMatrix instead (UnityUpgradable) -> SetMatrix(*)", false)]
+        [Obsolete("Use SetMatrix instead (UnityUpgradable) -> SetMatrix(*)", true)]
         public void AddMatrix(string name, Matrix4x4 value) { SetMatrix(Shader.PropertyToID(name), value); }
-        [Obsolete("Use SetMatrix instead (UnityUpgradable) -> SetMatrix(*)", false)]
+        [Obsolete("Use SetMatrix instead (UnityUpgradable) -> SetMatrix(*)", true)]
         public void AddMatrix(int nameID, Matrix4x4 value)  { SetMatrix(nameID, value); }
 
-        [Obsolete("Use SetTexture instead (UnityUpgradable) -> SetTexture(*)", false)]
+        [Obsolete("Use SetTexture instead (UnityUpgradable) -> SetTexture(*)", true)]
         public void AddTexture(string name, Texture value)  { SetTexture(Shader.PropertyToID(name), value); }
-        [Obsolete("Use SetTexture instead (UnityUpgradable) -> SetTexture(*)", false)]
+        [Obsolete("Use SetTexture instead (UnityUpgradable) -> SetTexture(*)", true)]
         public void AddTexture(int nameID, Texture value)   { SetTexture(nameID, value); }
     }
 
@@ -278,7 +276,7 @@ namespace UnityEngine
 
     partial class Shader
     {
-        [Obsolete("Use Graphics.activeTier instead (UnityUpgradable) -> UnityEngine.Graphics.activeTier", false)]
+        [Obsolete("Use Graphics.activeTier instead (UnityUpgradable) -> UnityEngine.Graphics.activeTier", true)]
         public static UnityEngine.Rendering.ShaderHardwareTier globalShaderHardwareTier
         {
             get { return (UnityEngine.Rendering.ShaderHardwareTier)Graphics.activeTier; }
@@ -288,7 +286,7 @@ namespace UnityEngine
 
     partial class Material
     {
-        [Obsolete("Creating materials from shader source string will be removed in the future. Use Shader assets instead.", false)]
+        [Obsolete("Creating materials from shader source string will be removed in the future. Use Shader assets instead.", true)]
         public static Material Create(string scriptContents)
         {
             return new Material(scriptContents);
@@ -298,8 +296,7 @@ namespace UnityEngine
 
 namespace UnityEngine.Rendering
 {
-    // deprecated in 5.5
-    [Obsolete("ShaderHardwareTier was renamed to GraphicsTier (UnityUpgradable) -> GraphicsTier", false)]
+    [Obsolete("ShaderHardwareTier was renamed to GraphicsTier (UnityUpgradable) -> GraphicsTier", true)]
     public enum ShaderHardwareTier
     {
         Tier1 = 0,

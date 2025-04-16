@@ -457,6 +457,17 @@ namespace UnityEditor
             return (String.Equals(typeof(AudioMixerGroup).Name, typeStr));
         }
 
+        static Type GetUnityObjectType(string typeName)
+        {
+            var objectTypes = TypeCache.GetTypesDerivedFrom<UnityEngine.Object>();
+            foreach (var objectType in objectTypes)
+            {
+                if (objectType.FullName == typeName || objectType.Name == typeName)
+                    return objectType;
+            }
+            return null;
+        }
+
         private readonly Regex s_MatchPPtrTypeName = new Regex(@"PPtr\<(\w+)\>");
 
         internal void Show(Type requiredType, SerializedProperty property, bool allowSceneObjects, List<int> allowedInstanceIDs = null, Action<UnityObject> onObjectSelectorClosed = null, Action<UnityObject> onObjectSelectedUpdated = null)
@@ -573,14 +584,21 @@ namespace UnityEditor
 
             // Set member variables
             m_DelegateView = GUIView.current;
-            m_RequiredRawTypes = requiredTypes;
+            m_RequiredRawTypes = new Type[requiredTypes.Length];
             // type filter requires unqualified names for built-in types, but will prioritize them over user types, so ensure user types are namespace-qualified
             if (m_RequiredTypes == null || m_RequiredTypes.Length != requiredTypes.Length)
                 m_RequiredTypes = new string[requiredTypes.Length];
-            for (int i = 0; i < requiredTypes.Length; i++)
+            for (var i = 0; i < requiredTypes.Length; i++)
             {
                 if (requiredTypes[i] != null)
+                {
                     m_RequiredTypes[i] = typeof(ScriptableObject).IsAssignableFrom(requiredTypes[i]) || typeof(MonoBehaviour).IsAssignableFrom(requiredTypes[i]) ? requiredTypes[i].FullName : requiredTypes[i].Name;
+                    m_RequiredRawTypes[i] = requiredTypes[i];
+                }
+                else
+                {
+                    m_RequiredRawTypes[i] = GetUnityObjectType(m_RequiredTypes[i]);
+                }
             }
             m_SearchFilter = "";
             m_OriginalSelection = obj;
@@ -675,7 +693,7 @@ namespace UnityEditor
             {
                 var assetPath = AssetDatabase.GetAssetPath(initialSelection);
                 if (m_SkipHiddenPackages && !PackageManagerUtilityInternal.IsPathInVisiblePackage(assetPath))
-                    m_SkipHiddenPackages = false;
+                    m_SkipHiddenPackagesToggle.value = false;
             }
 
             if (m_RequiredTypes.All(t => ShouldTreeViewBeUsed(t)))

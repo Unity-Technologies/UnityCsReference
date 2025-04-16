@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        float viewportMaxOffset => serializedData.scrollOffset.y + m_ScrollView.contentViewport.layout.height;
+        float viewportMaxOffset => m_ScrollView.scrollOffset.y + m_ScrollView.contentViewport.layout.height;
 
         Action m_FillCallback;
         Action m_ScrollCallback;
@@ -195,8 +195,7 @@ namespace UnityEngine.UIElements
                     contentHeight = GetExpectedContentHeight();
                     var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
                     m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-                    m_ScrollView.verticalScroller.value = serializedData.scrollOffset.y;
-                    serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
+                    m_ScrollView.verticalScroller.value = m_ScrollView.scrollOffset.y;
                 }
 
                 ScheduleFill();
@@ -257,10 +256,9 @@ namespace UnityEngine.UIElements
             // and highValues.
             var viewportHeight = m_ScrollView.contentViewport.layout.height;
             var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
-            var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
-            serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
 
             // We virtualize a number of items based on the smallest expected item height.
             var resolvedViewportHeight = m_CollectionView.ResolveItemHeight(size.y);
@@ -351,10 +349,9 @@ namespace UnityEngine.UIElements
             {
                 var viewportHeight = m_ScrollView.contentViewport.layout.height;
                 var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
-                var offset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
+                var offset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
                 m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
                 m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(offset);
-                serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
                 return;
             }
 
@@ -385,7 +382,7 @@ namespace UnityEngine.UIElements
 
         void OnScrollUpdate()
         {
-            var scrollOffset = float.IsNegativeInfinity(m_DelayedScrollOffset.y) ? serializedData.scrollOffset : m_DelayedScrollOffset;
+            var scrollOffset = float.IsNegativeInfinity(m_DelayedScrollOffset.y) ? m_ScrollView.scrollOffset : m_DelayedScrollOffset;
             if (float.IsNaN(m_ScrollView.contentViewport.layout.height) || float.IsNaN(scrollOffset.y))
                 return;
 
@@ -394,7 +391,7 @@ namespace UnityEngine.UIElements
 
             // Keep the serialized value if new content is smaller. Adjustment will come later in Fill or Apply.
             contentHeight = Mathf.Max(expectedContentHeight, contentHeight);
-            m_ScrollDirection = scrollOffset.y < serializedData.scrollOffset.y ? ScrollDirection.Up : ScrollDirection.Down;
+            m_ScrollDirection = scrollOffset.y < m_ScrollView.scrollOffset.y ? ScrollDirection.Up : ScrollDirection.Down;
             var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
 
             if (scrollOffset.y <= 0)
@@ -403,10 +400,9 @@ namespace UnityEngine.UIElements
             }
 
             m_StickToBottom = scrollableHeight > 0 && Math.Abs(scrollOffset.y - m_ScrollView.verticalScroller.highValue) < float.Epsilon;
-            serializedData.scrollOffset = scrollOffset;
-            m_CollectionView.SaveViewData();
+            m_ScrollView.SetScrollOffsetWithoutNotify(scrollOffset);
 
-            var firstIndex = m_ForcedFirstVisibleItem != -1 ? m_ForcedFirstVisibleItem : GetFirstVisibleItem(serializedData.scrollOffset.y);
+            var firstIndex = m_ForcedFirstVisibleItem != -1 ? m_ForcedFirstVisibleItem : GetFirstVisibleItem(m_ScrollView.scrollOffset.y);
             var firstVisiblePadding = GetContentHeightForIndex(firstIndex - 1);
             contentPadding = firstVisiblePadding;
             m_ForcedFirstVisibleItem = -1;
@@ -529,7 +525,7 @@ namespace UnityEngine.UIElements
             var lastItemIndex = lastVisibleItem?.index ?? -1;
             var contentOffset = contentPadding;
 
-            if (contentOffset > serializedData.scrollOffset.y)
+            if (contentOffset > m_ScrollView.scrollOffset.y)
                 return true;
 
             for (var i = firstVisibleIndex; i < itemsCount; i++)
@@ -598,7 +594,7 @@ namespace UnityEngine.UIElements
             }
 
             // Bring back items in front of the current content to fill the viewport above.
-            if (firstVisibleIndex > 0 && contentPadding > serializedData.scrollOffset.y)
+            if (firstVisibleIndex > 0 && contentPadding > m_ScrollView.scrollOffset.y)
             {
                 var inserting = m_ScrollInsertionList;
 
@@ -618,7 +614,7 @@ namespace UnityEngine.UIElements
                     MarkWaitingForLayout(last);
 
                     firstVisiblePadding -= GetExpectedItemHeight(newIndex);
-                    if (firstVisiblePadding < serializedData.scrollOffset.y)
+                    if (firstVisiblePadding < m_ScrollView.scrollOffset.y)
                         break;
                 }
 
@@ -651,13 +647,13 @@ namespace UnityEngine.UIElements
             if (m_ForcedLastVisibleItem >= 0)
             {
                 var lastItemHeight = GetContentHeightForIndex(m_ForcedLastVisibleItem);
-                serializedData.scrollOffset.y = lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height;
+                m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, lastItemHeight + BaseVerticalCollectionView.s_DefaultItemHeight - m_ScrollView.contentViewport.layout.height));
             }
             else
             {
                 if (m_ScrollDirection == ScrollDirection.Up)
                 {
-                    serializedData.scrollOffset.y += newHeight - previousHeight;
+                    m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, m_ScrollView.scrollOffset.y + (newHeight - previousHeight)));
                 }
             }
         }
@@ -665,7 +661,7 @@ namespace UnityEngine.UIElements
         void ApplyScrollViewUpdate(bool dimensionsOnly = false)
         {
             var previousPadding = contentPadding;
-            var previousScrollOffset = serializedData.scrollOffset.y;
+            var previousScrollOffset = m_ScrollView.scrollOffset.y;
             var itemOffset = previousScrollOffset - previousPadding;
 
             if (anchoredIndex >= 0)
@@ -705,7 +701,6 @@ namespace UnityEngine.UIElements
             // Don't notify to avoid coming back in the scroll update for no reason.
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
-            serializedData.scrollOffset.y = m_ScrollView.verticalScroller.slider.value;
 
             if (dimensionsOnly || m_LastChange == VirtualizationChange.Resize)
             {
@@ -739,7 +734,7 @@ namespace UnityEngine.UIElements
                     if (m_ActiveItems[i].rootElement.style.display == DisplayStyle.Flex)
                     {
                         // Items above the viewport bounds need to be sent back to the back of active items.
-                        if (itemContentOffset + itemHeight < serializedData.scrollOffset.y)
+                        if (itemContentOffset + itemHeight < m_ScrollView.scrollOffset.y)
                         {
                             item.rootElement.BringToFront(); // We send the element to the bottom of the list (front in z-order)
                             HideItem(i);
@@ -777,7 +772,7 @@ namespace UnityEngine.UIElements
         void UpdateAnchor()
         {
             anchoredIndex = firstVisibleIndex;
-            anchorOffset = serializedData.scrollOffset.y - contentPadding;
+            anchorOffset = m_ScrollView.scrollOffset.y - contentPadding;
         }
 
         void ScheduleFill()
@@ -1050,7 +1045,7 @@ namespace UnityEngine.UIElements
                 {
                     var deltaHeight = targetHeight - previousHeight;
                     var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
-                    m_StickToBottom = scrollableHeight > 0 && serializedData.scrollOffset.y >= m_ScrollView.verticalScroller.highValue + deltaHeight;
+                    m_StickToBottom = scrollableHeight > 0 && m_ScrollView.scrollOffset.y >= m_ScrollView.verticalScroller.highValue + deltaHeight;
                 }
             }
 
@@ -1117,7 +1112,7 @@ namespace UnityEngine.UIElements
             // With the new updated height, we need to grab anchors on the new first element if needed.
             if (firstVisibleIndex > m_DraggedItem.index)
             {
-                firstVisibleIndex = GetFirstVisibleItem(serializedData.scrollOffset.y);
+                firstVisibleIndex = GetFirstVisibleItem(m_ScrollView.scrollOffset.y);
                 UpdateAnchor();
             }
 

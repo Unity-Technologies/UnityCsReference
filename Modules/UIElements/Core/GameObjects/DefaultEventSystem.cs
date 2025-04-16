@@ -310,7 +310,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal void SendRayBasedEvent<TArg>(Ray worldRay, int pointerId, Func<Vector3, TArg, EventBase> evtFactory,
+        internal void SendRayBasedEvent<TArg>(Ray worldRay, float maxDistance, int pointerId, Func<Vector3, TArg, EventBase> evtFactory,
             TArg arg, bool deselectIfNoTarget = false)
         {
             // Allow focus to be lost before processing the event
@@ -319,7 +319,7 @@ namespace UnityEngine.UIElements
                 UpdateFocusedPanel(focusedPanel);
             }
 
-            FindTargetAtRay(worldRay, pointerId, out var target, out var targetPanel,
+            FindTargetAtRay(worldRay, maxDistance, pointerId, out var target, out var targetPanel,
                 out var targetPanelPosition, out var elementUnderPointer);
 
             RuntimePanel lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
@@ -410,7 +410,7 @@ namespace UnityEngine.UIElements
             {
                 var layerMask = worldRay.camera.cullingMask & worldSpaceLayers;
                 if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
-                        out var document, out elementUnderPointer, out _, out _))
+                        out _, out var document, out elementUnderPointer, out _, out _))
                 {
                     // We hit a non-UI GameObject
                     if (document == null)
@@ -430,11 +430,25 @@ namespace UnityEngine.UIElements
             camera = null;
         }
 
-        internal void FindTargetAtRay(Ray worldRay, int pointerId, out VisualElement target,
+        internal void FindTargetAtRay(Ray worldRay, float maxDistance, int pointerId, out VisualElement target,
             out RuntimePanel targetPanel, out Vector3 targetPanelPosition, out VisualElement elementUnderPointer)
         {
-            if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, worldSpaceMaxDistance, worldSpaceLayers,
-                    out var document, out elementUnderPointer, out _, out _))
+            maxDistance = Mathf.Min(maxDistance, worldSpaceMaxDistance);
+            var picked = m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay, maxDistance, worldSpaceLayers,
+                out var collider, out var document, out elementUnderPointer, out var distance, out _);
+
+            var trackedState = PointerDeviceState.GetTrackedState(pointerId, true);
+            trackedState.worldPosition = worldRay.origin + worldRay.direction * distance;
+            trackedState.worldOrientation = Quaternion.FromToRotation(Vector3.forward, worldRay.direction);
+            trackedState.hit = new PointerDeviceState.TrackedPointerState.RaycastHit
+            {
+                collider = collider,
+                document = document,
+                distance = distance,
+                element = elementUnderPointer,
+            };
+
+            if (picked && document != null)
             {
                 var capturingElement = RuntimePanel.s_EventDispatcher.pointerState.GetCapturingElement(pointerId) as VisualElement;
                 target = capturingElement ?? elementUnderPointer ?? document.rootVisualElement;

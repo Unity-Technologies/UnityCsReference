@@ -208,8 +208,8 @@ namespace UnityEngine.UIElements
 
         internal static Object activeEventSystem { get; private set; }
         internal static bool useDefaultEventSystem => overrideUseDefaultEventSystem ?? activeEventSystem == null;
-
         internal static bool? overrideUseDefaultEventSystem { get; set; }
+        internal static bool autoUpdateEventSystem { get; set; } = true;
 
         private static bool s_IsPlayMode = false;
 
@@ -234,10 +234,13 @@ namespace UnityEngine.UIElements
         {
             RemoveUnusedPanels();
             UIRenderDevice.ProcessDeviceFreeQueue();
-
-            // This is already called in the Editor loop (UIElementsUtility) but we also need this in the Player
-            // When profiling in Editor this may not show accurate results however
-            LayoutManager.SharedManager.Collect();
+            
+            if (LayoutManager.IsSharedManagerCreated)
+            {
+                // This is already called in the Editor loop (UIElementsUtility) but we also need this in the Player
+                // When profiling in Editor this may not show accurate results however
+                LayoutManager.SharedManager.Collect();
+            }
 
             List<BaseRuntimePanel> sortedPlayerPanels = GetSortedPlayerPanels();
 
@@ -261,7 +264,11 @@ namespace UnityEngine.UIElements
                 if (useDefaultEventSystem)
                 {
                     defaultEventSystem.isInputReady = true;
-                    defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
+
+                    if (autoUpdateEventSystem)
+                    {
+                        defaultEventSystem.Update(DefaultEventSystem.UpdateMode.IgnoreIfAppNotFocused);
+                    }
                 }
                 else if (s_DefaultEventSystem != null)
                 {
@@ -279,7 +286,6 @@ namespace UnityEngine.UIElements
         private static List<PanelSettings> s_PotentiallyEmptyPanelSettings = new List<PanelSettings>();
         internal static void RemoveUnusedPanels()
         {
-
             foreach (PanelSettings psetting in s_PotentiallyEmptyPanelSettings)
             {
                 var m_AttachedUIDocumentsList = psetting.m_AttachedUIDocumentsList;
@@ -289,10 +295,22 @@ namespace UnityEngine.UIElements
                     // It'll be recreated if it's used again.
                     psetting.DisposePanel();
                 }
-
             }
-
             s_PotentiallyEmptyPanelSettings.Clear();
+
+            // This check is necessary because neither OnDisable or OnDestroy are called when deleting an asset
+            // from the project browser.
+            List<PanelSettings> toDispose = null;
+            foreach (var panel in GetSortedPlayerPanels())
+            {
+                if (!panel.ownerObject && panel.ownerObject is PanelSettings psettings)
+                    (toDispose ??= new()).Add(psettings);
+            }
+            if (toDispose != null)
+            {
+                foreach (var psettings in toDispose)
+                    psettings.DisposePanel();
+            }
         }
 
         public static void EnableRenderingAndInputCallbacks()

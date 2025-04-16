@@ -174,7 +174,7 @@ namespace UnityEngine
         {
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), width.ToString(format, formatProvider), height.ToString(format, formatProvider));
+            return string.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x.ToString(format, formatProvider), y.ToString(format, formatProvider), width.ToString(format, formatProvider), height.ToString(format, formatProvider));
         }
 
         // Returns true if the rectangles are different.
@@ -189,7 +189,7 @@ namespace UnityEngine
         public static bool operator==(RectInt lhs, RectInt rhs)
         {
             return lhs.x == rhs.x && lhs.y == rhs.y && lhs.width == rhs.width && lhs.height == rhs.height;
-        }   
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override int GetHashCode()
@@ -198,11 +198,11 @@ namespace UnityEngine
             var yHash = y.GetHashCode();
             var wHash = width.GetHashCode();
             var hHash = height.GetHashCode();
-            return xHash ^ 
-                (yHash << 4) ^ (yHash >> 28) ^ 
+            return xHash ^
+                (yHash << 4) ^ (yHash >> 28) ^
                 (wHash >> 4) ^ (wHash << 28) ^
                 (hHash >> 4) ^ (hHash << 28);
-        }      
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public override bool Equals(object other)
@@ -210,7 +210,7 @@ namespace UnityEngine
             if (!(other is RectInt)) return false;
 
             return Equals((RectInt)other);
-        }                 
+        }
 
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public bool Equals(RectInt other)

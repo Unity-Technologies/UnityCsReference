@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
 
         public override string ToString()
         {
-            return UnityString.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
+            return string.Format("[StyleSelectorPart: value={0}, type={1}]", value, type);
         }
 
         public static StyleSelectorPart CreateClass(string className)

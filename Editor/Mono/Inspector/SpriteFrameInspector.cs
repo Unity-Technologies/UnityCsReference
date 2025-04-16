@@ -47,8 +47,8 @@ namespace UnityEditor
 
             CheckBorderHasSameValue();
             m_SpriteNameContent = new GUIContent(sprite.name);
-            m_SpriteAlignmentContent = new GUIContent(UnityString.Format(Styles.spriteAlignmentText.text, m_Pivot.vector2Value.x, m_Pivot.vector2Value.y));
-            m_SpriteBorderContent = new GUIContent(UnityString.Format(Styles.borderText.text, m_BorderValue.x, m_BorderValue.y, m_BorderValue.z, m_BorderValue.w));
+            m_SpriteAlignmentContent = new GUIContent(string.Format(Styles.spriteAlignmentText.text, m_Pivot.vector2Value.x, m_Pivot.vector2Value.y));
+            m_SpriteBorderContent = new GUIContent(string.Format(Styles.borderText.text, m_BorderValue.x, m_BorderValue.y, m_BorderValue.z, m_BorderValue.w));
             m_ElementStringBuilder = new StringBuilder();
         }
 
@@ -384,7 +384,7 @@ namespace UnityEditor
 
             Sprite sprite = target as Sprite;
 
-            return UnityString.Format("({0}x{1})",
+            return string.Format("({0}x{1})",
                 (int)sprite.rect.width,
                 (int)sprite.rect.height
             );

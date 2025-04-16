@@ -26,7 +26,8 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_ThemeStyleSheetField;
         private ObjectField m_UITKTextSettings;
         private EnumField m_RenderModeField;
-        private EnumField m_WorldInputModeField;
+        private EnumField m_ColliderUpdateModeField;
+        private Toggle m_ColliderIsTriggerField;
         private LayerField m_WorldSpaceLayerField;
         private ObjectField m_TargetTextureField;
         private FloatField m_SortingOrderField;
@@ -70,7 +71,8 @@ namespace UnityEditor.UIElements.Inspector
             m_UITKTextSettings.objectType = typeof(PanelTextSettings);
 
             m_RenderModeField = m_RootVisualElement.MandatoryQ<EnumField>("render-mode");
-            m_WorldInputModeField = m_RootVisualElement.MandatoryQ<EnumField>("worldinput-mode");
+            m_ColliderUpdateModeField = m_RootVisualElement.MandatoryQ<EnumField>("worldinput-mode");
+            m_ColliderIsTriggerField = m_RootVisualElement.MandatoryQ<Toggle>("worldinput-trigger");
             m_WorldSpaceLayerField = m_RootVisualElement.MandatoryQ<LayerField>("worldspace-layer");
 
             m_TargetTextureField = m_RootVisualElement.MandatoryQ<ObjectField>("target-texture");
@@ -232,7 +234,8 @@ namespace UnityEditor.UIElements.Inspector
             }
 
             m_WorldSpaceLayerField.style.display = displayStyleForWorldProperties;
-            m_WorldInputModeField.style.display = displayStyleForWorldProperties;
+            m_ColliderUpdateModeField.style.display = displayStyleForWorldProperties;
+            m_ColliderIsTriggerField.style.display = displayStyleForWorldProperties;
 
             m_TargetTextureField.style.display = displayStyleForOverlayProperties;
             m_ScaleModeField.style.display = displayStyleForOverlayProperties;

@@ -223,7 +223,7 @@ namespace UnityEngine
 
         public virtual long maxGraphicsBufferSize => UnityEngine.SystemInfo.maxGraphicsBufferSize;
 
-        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.")]
+        [Obsolete("Use SystemInfo.constantBufferOffsetAlignment instead.", true)]
         public virtual bool minConstantBufferOffsetAlignment => UnityEngine.SystemInfo.minConstantBufferOffsetAlignment;
 
         public virtual bool hasMipMaxLevel => UnityEngine.SystemInfo.hasMipMaxLevel;

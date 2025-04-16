@@ -142,9 +142,9 @@ namespace UnityEditor.UIElements
         {
             string message = ErrorMessage(code);
             string lineInfo = xmlLineInfo == null ? ""
-                : UnityString.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
-            return UnityString.Format("{0}: {1} - {2}", lineInfo, error,
-                UnityString.Format(message, context == null ? "<null>" : context.ToString()));
+                : string.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+            return string.Format("{0}: {1} - {2}", lineInfo, error,
+                string.Format(message, context == null ? "<null>" : context.ToString()));
         }
 
         static string ErrorMessage(ImportErrorCode errorCode)

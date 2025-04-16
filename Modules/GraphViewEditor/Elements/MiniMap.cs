@@ -225,7 +225,7 @@ namespace UnityEditor.Experimental.GraphView
 
             // Update label with new value
             var containerZoomFactor = container.worldTransform.m00;
-            SetZoomFactorText(UnityString.Format("{0:F2}", containerZoomFactor) + "x");
+            SetZoomFactorText(string.Format("{0:F2}", containerZoomFactor) + "x");
 
             // Adjust rects for MiniMap
             float effectiveWidth = layout.width - 1;

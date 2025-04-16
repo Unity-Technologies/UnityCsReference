@@ -142,7 +142,7 @@ namespace UnityEditorInternal
         {
             if (vol == 0.0f)
                 return "-\u221E dB";
-            return UnityString.Format("{0:F1} dB", 20.0f * Mathf.Log10(vol));
+            return string.Format("{0:F1} dB", 20.0f * Mathf.Log10(vol));
         }
 
         public static string GetColumnString(AudioProfilerGroupInfoWrapper info, ColumnIndices index)
@@ -175,12 +175,12 @@ namespace UnityEditorInternal
                 case ColumnIndices.IsOpenMemoryPoint: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_OPENMEMORYPOINT) != 0 ? "YES" : "NO";
                 case ColumnIndices.IsOpenUser: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_OPENUSER) != 0 ? "YES" : "NO";
                 case ColumnIndices.IsNonBlocking: return isGroup ? "" : (info.info.flags & AUDIOPROFILER_FLAGS_NONBLOCKING) != 0 ? "YES" : "NO";
-                case ColumnIndices.DistanceToListener: return isGroup ? "" : !is3D ? "N/A" : (info.info.distanceToListener >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.distanceToListener * 0.001f) : UnityString.Format("{0:0.00} m", info.info.distanceToListener);
-                case ColumnIndices.MinDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.minDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.minDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.minDist);
-                case ColumnIndices.MaxDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.maxDist >= 1000.0f) ? UnityString.Format("{0:0.00} km", info.info.maxDist * 0.001f) : UnityString.Format("{0:0.00} m", info.info.maxDist);
-                case ColumnIndices.Time: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.time);
-                case ColumnIndices.Duration: return isGroup ? "" : UnityString.Format("{0:0.00} s", info.info.maxRMSLevelOrDuration);
-                case ColumnIndices.Frequency: return isGroup ? UnityString.Format("{0:0.00} x", info.info.frequency) : (info.info.frequency >= 1000.0f) ? UnityString.Format("{0:0.00} kHz", info.info.frequency * 0.001f) : UnityString.Format("{0:0.00} Hz", info.info.frequency);
+                case ColumnIndices.DistanceToListener: return isGroup ? "" : !is3D ? "N/A" : (info.info.distanceToListener >= 1000.0f) ? string.Format("{0:0.00} km", info.info.distanceToListener * 0.001f) : string.Format("{0:0.00} m", info.info.distanceToListener);
+                case ColumnIndices.MinDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.minDist >= 1000.0f) ? string.Format("{0:0.00} km", info.info.minDist * 0.001f) : string.Format("{0:0.00} m", info.info.minDist);
+                case ColumnIndices.MaxDist: return isGroup ? "" : !is3D ? "N/A" : (info.info.maxDist >= 1000.0f) ? string.Format("{0:0.00} km", info.info.maxDist * 0.001f) : string.Format("{0:0.00} m", info.info.maxDist);
+                case ColumnIndices.Time: return isGroup ? "" : string.Format("{0:0.00} s", info.info.time);
+                case ColumnIndices.Duration: return isGroup ? "" : string.Format("{0:0.00} s", info.info.maxRMSLevelOrDuration);
+                case ColumnIndices.Frequency: return isGroup ? string.Format("{0:0.00} x", info.info.frequency) : (info.info.frequency >= 1000.0f) ? string.Format("{0:0.00} kHz", info.info.frequency * 0.001f) : string.Format("{0:0.00} Hz", info.info.frequency);
             }
             return "Unknown";
         }
@@ -916,11 +916,11 @@ namespace UnityEditorInternal
                 if ((node.info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) != 0)
                     s += " [BYP]";
                 if (name == "Send")
-                    s += UnityString.Format(" ({0:0.00} dB)", 20.0f * Math.Log10(node.info.level1));
+                    s += string.Format(" ({0:0.00} dB)", 20.0f * Math.Log10(node.info.level1));
                 s += "\n";
                 if (name == "VUFader" || name == "EmbeddedFader")
-                    s += UnityString.Format("Vol: {0:0.00} dB\nVU: {1:0.00} dB\n", 20.0f * Math.Log10(node.info.level1), 20.0f * Math.Log10(node.info.level2));
-                s += UnityString.Format("Rel. audibility: {0:0.00} dB\nAbs. audibility: {1:0.00} dB\nAud. order:{2}\n", 20.0f * Math.Log10(node.info.relativeAudibility), 20.0f * Math.Log10(node.info.absoluteAudibility), node.info.audibilityVisitOrder);
+                    s += string.Format("Vol: {0:0.00} dB\nVU: {1:0.00} dB\n", 20.0f * Math.Log10(node.info.level1), 20.0f * Math.Log10(node.info.level2));
+                s += string.Format("Rel. audibility: {0:0.00} dB\nAbs. audibility: {1:0.00} dB\nAud. order:{2}\n", 20.0f * Math.Log10(node.info.relativeAudibility), 20.0f * Math.Log10(node.info.absoluteAudibility), node.info.audibilityVisitOrder);
 
                 DrawRectClipped(new Rect(nodeX, node.y, nodeW, nodeHeight), color, s, clippingRect, zoomFactor);
             }
@@ -966,7 +966,7 @@ namespace UnityEditorInternal
                     DrawRectClipped(
                         new Rect(cx - connectionWidth * 0.5f, cy - connectionHeight * 0.5f, connectionWidth, connectionHeight),
                         new Color(1.0f, info.weight, 0.0f, (!highlightAudibleDSPChains || source.audible) ? 0.7f : 0.3f),
-                        UnityString.Format($"{(int)(100.0f * info.weight)}%"),
+                        string.Format($"{(int)(100.0f * info.weight)}%"),
                         clippingRect,
                         zoomFactor);
                 }

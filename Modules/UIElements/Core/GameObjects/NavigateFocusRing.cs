@@ -99,7 +99,7 @@ namespace UnityEngine.UIElements
             }
 
             // Find document root as a replacement for m_Root. Assume ve is in a document.
-            document = UIDocument.FindParentDocument(ve);
+            document = UIDocument.FindRootUIDocument(ve);
             if (document == null || document.rootVisualElement == null)
                 return false;
 

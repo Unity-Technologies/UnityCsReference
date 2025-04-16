@@ -1120,6 +1120,7 @@ namespace UnityEditor
                 m_MaskInspector.canImport = false;
                 m_MaskInspector.showBody = clip.isHumanMotion;
                 m_MaskInspector.clipInfo = clipInfo;
+                m_MaskInspector.UpdateMask(clipInfo.maskType);
             }
         }
 

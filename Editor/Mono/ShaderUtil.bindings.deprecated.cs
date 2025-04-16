@@ -13,17 +13,21 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/ShaderUtil.bindings.h")]
     public partial class ShaderUtil
     {
-        [Obsolete("ClearShaderErrors has been deprecated. Use ClearShaderMessages instead (UnityUpgradable) -> ClearShaderMessages(*)")]
-        [NativeName("ClearShaderMessages")]
-        extern public static void ClearShaderErrors([NotNull] Shader s);
+        [Obsolete("ClearShaderErrors has been deprecated. Use ClearShaderMessages instead (UnityUpgradable) -> ClearShaderMessages(*)", true)]
+        public static void ClearShaderErrors(Shader s) {}
 
-        [Obsolete("Use UnityEngine.Rendering.TextureDimension instead.")]
+        [Obsolete("Use UnityEngine.Rendering.TextureDimension instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension", true)]
         public enum ShaderPropertyTexDim
         {
+            [Obsolete("Use UnityEngine.Rendering.TextureDimension.None instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension.None", true)]
             TexDimNone = 0, // no texture
+            [Obsolete("Use UnityEngine.Rendering.TextureDimension.Tex2D instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension.Tex2D", true)]
             TexDim2D = 2,
+            [Obsolete("Use UnityEngine.Rendering.TextureDimension.Tex3D instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension.Tex3D", true)]
             TexDim3D = 3,
+            [Obsolete("Use UnityEngine.Rendering.TextureDimension.Cube instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension.Cube", true)]
             TexDimCUBE = 4,
+            [Obsolete("Use UnityEngine.Rendering.TextureDimension.Any instead. (UnityUpgradable) -> UnityEngine.Rendering.TextureDimension.Any", true)]
             TexDimAny = 6,
         }
 

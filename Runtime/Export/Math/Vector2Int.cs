@@ -258,7 +258,7 @@ namespace UnityEngine
         {
             if (formatProvider == null)
                 formatProvider = CultureInfo.InvariantCulture.NumberFormat;
-            return UnityString.Format("({0}, {1})", x.ToString(format, formatProvider), y.ToString(format, formatProvider));
+            return string.Format("({0}, {1})", x.ToString(format, formatProvider), y.ToString(format, formatProvider));
         }
 
         public static Vector2Int zero { [MethodImpl(MethodImplOptionsEx.AggressiveInlining)] get { return s_Zero; } }

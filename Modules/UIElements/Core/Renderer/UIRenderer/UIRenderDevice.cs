@@ -125,7 +125,7 @@ namespace UnityEngine.UIElements.UIR
         internal uint frameIndex => m_FrameIndex;
 
         internal List<CommandList>[] commandLists => m_CommandLists;
-        internal List<CommandList> currentFrameCommandLists => m_CommandLists == null ? null : m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
+        internal List<CommandList> currentFrameCommandLists => m_CommandLists[(int)(m_FrameIndex % m_CommandLists.Length)];
         internal int currentFrameCommandListCount = 0;
         CommandList m_DefaultCommandList = new CommandList(null, IntPtr.Zero, IntPtr.Zero, null);
 
@@ -607,6 +607,12 @@ namespace UnityEngine.UIElements.UIR
                 page = page.next;
             }
             s_MarkerBeforeDraw.End();
+
+            // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
+            // Render() being called. Otherwise, the previous fence (which has already passed) won't be updated and we
+            // might be modifying the update ranges buffer, or the vertex/index buffers while they're already being
+            // copied by the render thread.
+            UpdateFenceValue();
         }
 
         internal unsafe static NativeSlice<T> PtrToSlice<T>(void* p, int count) where T : struct
@@ -697,7 +703,7 @@ namespace UnityEngine.UIElements.UIR
                 else
                 {
                     Material material = GetOrCreateMaterial(st.curState.material);
-                    CommandList cmdList = GetOrCreateCommandList(ref st, st.activeCommandList.m_Owner, material);
+                    CommandList cmdList = GetOrCreateCommandList(ref st, st.activeCommandList.m_Owner, material, gradientSettings, shaderInfo);
                 }
             }
 
@@ -806,10 +812,8 @@ namespace UnityEngine.UIElements.UIR
             m_TextureSlotManager.Reset();
 
             st.batchProps.Clear();
-            if (gradientSettings != null)
-                st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
-            if (shaderInfo != null)
-                st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+
+            InitializeConstantProperties(st.constantProps, gradientSettings, shaderInfo);
             if (!isSerializing)
                 Utility.SetPropertyBlock(st.constantProps);
 
@@ -969,12 +973,7 @@ namespace UnityEngine.UIElements.UIR
                     {
                         if (head.type == CommandType.CutRenderChain)
                         {
-                            CommandList cmdList = GetOrCreateCommandList(ref st, head.owner.owner, defaultMat);
-
-                            if (gradientSettings != null)
-                                st.constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
-                            if (shaderInfo != null)
-                                st.constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+                            CommandList cmdList = GetOrCreateCommandList(ref st, head.owner.owner, defaultMat, gradientSettings, shaderInfo);
                         }
 
                         head.ExecuteNonDrawMesh(drawParams, pixelsPerPoint, ref immediateException);
@@ -1022,13 +1021,21 @@ namespace UnityEngine.UIElements.UIR
 
             RenderChainCommand.PopScissor(drawParams, pixelsPerPoint);
 
-            UpdateFenceValue();
+            UpdateFenceValue(); // TODO: Replace by GPU fence.
 
             Utility.ProfileDrawChainEnd();
 
         }
 
-        private CommandList GetOrCreateCommandList(ref EvaluationState st, VisualElement owner, Material material)
+        private void InitializeConstantProperties(MaterialPropertyBlock constantProps, Texture gradientSettings, Texture shaderInfo)
+        {
+            if (gradientSettings != null)
+                constantProps.SetTexture(s_GradientSettingsTexID, gradientSettings);
+            if (shaderInfo != null)
+                constantProps.SetTexture(s_ShaderInfoTexID, shaderInfo);
+        }
+
+        private CommandList GetOrCreateCommandList(ref EvaluationState st, VisualElement owner, Material material, Texture gradientSettings, Texture shaderInfo)
         {
             // Reuse command lists whenever possible
             CommandList cmdList = null;
@@ -1044,10 +1051,12 @@ namespace UnityEngine.UIElements.UIR
             }
 
             st.activeCommandList = cmdList;
-            st.activeCommandList.constantProps = st.constantProps;
-            st.activeCommandList.batchProps = st.batchProps;
+            InitializeConstantProperties(cmdList.constantProps, gradientSettings, shaderInfo);
 
-            st.batchProps.Clear();
+            // When a CommandList is used, we should not be modifying the batchprops,
+            // only those owned by the CommandList will be filled at execution time.
+            st.constantProps = null;
+            st.batchProps = null;
 
             st.mustApplyBatchProps = true;
             st.mustApplyStencil = true;

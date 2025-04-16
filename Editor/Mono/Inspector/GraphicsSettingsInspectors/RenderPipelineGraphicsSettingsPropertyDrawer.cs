@@ -206,7 +206,6 @@ namespace UnityEditor.Inspector.GraphicsSettingsInspectors
         static void OnDomainReload()
             => RenderPipelineManager.activeRenderPipelineCreated += RecomputeDictionary;
 
-        //internal for tests
         internal static void RecomputeDictionary()
         {
             s_SharedPreviousStates = new();

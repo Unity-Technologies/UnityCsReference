@@ -260,7 +260,7 @@ namespace UnityEditor
         private static void DrawLODRange(LODInfo currentLOD, float previousLODPercentage, bool isSelected, bool isMeshLodEnabled = false)
         {
             var tempColor = GUI.backgroundColor;
-            var startPercentageString = UnityString.Format("{0}\n{1:0}%", currentLOD.LODName + (isMeshLodEnabled ? " (Mesh LOD)" : ""), previousLODPercentage * 100);
+            var startPercentageString = string.Format("{0}\n{1:0}%", currentLOD.LODName + (isMeshLodEnabled ? " (Mesh LOD)" : ""), previousLODPercentage * 100);
             if (isSelected)
             {
                 var foreground = currentLOD.m_RangePosition;
@@ -295,7 +295,7 @@ namespace UnityEditor
             GUI.color = tempColor;
 
             // Draw some details for the current marker
-            var startPercentageString = UnityString.Format("Culled\n{0:0}%", previousLODPercentage * 100);
+            var startPercentageString = string.Format("Culled\n{0:0}%", previousLODPercentage * 100);
             Styles.m_LODSliderText.Draw(r, startPercentageString, false, false, false, false);
         }
 

@@ -3099,9 +3099,6 @@
     <Compile Include="..\..\Editor\Mono\ProjectTemplateWindow.cs">
       <Link>Editor\Mono\ProjectTemplateWindow.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\RagdollBuilder.cs">
-      <Link>Editor\Mono\RagdollBuilder.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\RegistryUtil.bindings.cs">
       <Link>Editor\Mono\RegistryUtil.bindings.cs</Link>
     </Compile>
@@ -5058,6 +5055,9 @@
     <Compile Include="..\..\Modules\GraphViewEditor\Orientation.cs">
       <Link>Modules\GraphViewEditor\Orientation.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Utils\GraphViewTemplateDescriptor.cs">
+      <Link>Modules\GraphViewEditor\Utils\GraphViewTemplateDescriptor.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Utils\RectUtils.cs">
       <Link>Modules\GraphViewEditor\Utils\RectUtils.cs</Link>
     </Compile>
@@ -5075,6 +5075,9 @@
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewMinimapWindow.cs">
       <Link>Modules\GraphViewEditor\Windows\GraphViewMinimapWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewTemplateWindow.cs">
+      <Link>Modules\GraphViewEditor\Windows\GraphViewTemplateWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\GraphViewEditor\Windows\GraphViewToolWindow.cs">
       <Link>Modules\GraphViewEditor\Windows\GraphViewToolWindow.cs</Link>
@@ -6680,6 +6683,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\PhysicsMaterialEditor.cs">
       <Link>Modules\PhysicsEditor\PhysicsMaterialEditor.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\RagdollBuilder.cs">
+      <Link>Modules\PhysicsEditor\RagdollBuilder.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PhysicsEditor\RagdollBuilderWindow.cs">
+      <Link>Modules\PhysicsEditor\RagdollBuilderWindow.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PhysicsEditor\RigidbodyEditor.cs">
       <Link>Modules\PhysicsEditor\RigidbodyEditor.cs</Link>

@@ -195,7 +195,7 @@ namespace UnityEditor
             heightFieldRect.y = heightFieldRect.y + (heightMarkerArea.height - heightFieldRect.height) / 2f;
 
             //Draw TopLeft point
-            GUI.Label(startPointFieldRect, UnityString.Format("({0},{1})", instructionRect.x, instructionRect.y), Styles.centeredLabel);
+            GUI.Label(startPointFieldRect, string.Format("({0},{1})", instructionRect.x, instructionRect.y), Styles.centeredLabel);
 
             Handles.color = new Color(1, 1, 1, 0.5f);
             //Draw Width markers and value
@@ -236,7 +236,7 @@ namespace UnityEditor
 
             GUI.Label(heightFieldRect, instructionRect.height.ToString(CultureInfo.InvariantCulture));
 
-            GUI.Label(endPointFieldRect, UnityString.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), Styles.centeredLabel);
+            GUI.Label(endPointFieldRect, string.Format("({0},{1})", instructionRect.xMax, instructionRect.yMax), Styles.centeredLabel);
 
             //Draws the rect
             GUI.Box(visualRect, GUIContent.none);

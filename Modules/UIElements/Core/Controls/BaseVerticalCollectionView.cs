@@ -72,7 +72,6 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class SerializedVirtualizationData
     {
-        public Vector2 scrollOffset;
         public int firstVisibleIndex;
         public float contentPadding;
         public float contentHeight;
@@ -1140,8 +1139,6 @@ namespace UnityEngine.UIElements
             // Disabling view data persistence on the vertical and horizontal scrollers to make sure we keep
             // the previous behavior on the scrollOffset.
             m_ScrollView.viewDataKey = "unity-vertical-collection-scroll-view";
-            m_ScrollView.verticalScroller.viewDataKey = null;
-            m_ScrollView.horizontalScroller.viewDataKey = null;
 
             focusable = true;
             isCompositeRoot = true;
@@ -2038,7 +2035,6 @@ namespace UnityEngine.UIElements
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
-
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
             m_ScrollView.UpdateContentViewTransform();

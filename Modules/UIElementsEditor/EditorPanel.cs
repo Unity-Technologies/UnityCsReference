@@ -9,7 +9,7 @@ using UnityEngine.UIElements;
 namespace UnityEditor.UIElements
 {
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    sealed class EditorPanel : Panel
+    internal sealed class EditorPanel : Panel
     {
         readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
         static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
             return panel;
         }
 
-        EditorPanel(ScriptableObject ownerObject)
+        public EditorPanel(ScriptableObject ownerObject)
             : base(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher, InitEditorUpdater)
         {
             name = ownerObject.GetType().Name;
@@ -90,15 +90,12 @@ namespace UnityEditor.UIElements
             CheckPanelScaling();
             base.ValidateLayout();
         }
-        public override void Repaint(Event e)
+
+        public override void UpdateForRepaint()
         {
             CheckPanelScaling();
-            base.Repaint(e);
-        }
-        public override void Render()
-        {
-            CheckPanelScaling();
-            base.Render();
+            visualTreeUpdater.UpdateForEditor();
+            base.UpdateForRepaint();
         }
 
         internal override IGenericMenu CreateMenu() => new GenericOSMenu();
@@ -111,6 +108,6 @@ namespace UnityEditor.UIElements
                 return color;
             }
         }
-    
+
     }
 }

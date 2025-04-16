@@ -22,7 +22,6 @@ namespace UnityEditor
             Menu.RemoveMenuItem("Assets/Create/Shader/Standard Surface Shader");
             Menu.RemoveMenuItem("Assets/Create/Shader/Image Effect Shader");
             Menu.RemoveMenuItem("Assets/Create/Shader/Unlit Shader");
-            Menu.RemoveMenuItem("Assets/Create/Shader/Ray Tracing Shader");
 
             Menu.RemoveMenuItem("Assets/Create/Shader Graph/BuiltIn/Lit Shader Graph");
             Menu.RemoveMenuItem("Assets/Create/Shader Graph/BuiltIn/Unlit Shader Graph");

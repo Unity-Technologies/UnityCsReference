@@ -52,6 +52,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Profiler")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS4")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.PS5")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Switch")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Rendering")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.SceneVisibility")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.ScriptCompilation")]
@@ -147,7 +148,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.XR.Remoting.Editor")]
 [assembly: InternalsVisibleTo("UnityEngine.Common")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.Editor")]
-[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests.Tests")] // for UI Test Framework
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.Tests")] // for UI Test Framework
 [assembly: InternalsVisibleTo("UnityEditor.UIBuilderModule")]
 [assembly: InternalsVisibleTo("Unity.UI.Builder.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.GraphViewTestUtilities.Editor")]
@@ -175,8 +176,8 @@ using UnityEngine;
 
 [assembly: InternalsVisibleTo("Unity.Entities.Build")]
 
-[assembly: InternalsVisibleTo("Unity.Muse.Common.Bridge")]
 [assembly: InternalsVisibleTo("Unity.Muse.Chat.Bridge")]
+[assembly: InternalsVisibleTo("Unity.AI.Assistant.Bridge.Editor")]
 
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Playmode.Editor.Bridge")]
 [assembly: InternalsVisibleTo("Unity.DedicatedServer.Editor.Bridge")]

@@ -51,7 +51,7 @@ namespace UnityEditor
 
             public static GUIContent EnableLodCustomizationsWarn = EditorGUIUtility.TrTextContent("Customizing LOD options may help with tuning the GPU performance but will likely negatively impact the instanced draw batching, i.e. CPU performance.\nPlease use the per-LOD customizations with careful memory and performance profiling for both CPU and GPU and remember that these options are a trade-off rather than a free win.");
             public static GUIContent BillboardSettingsHelp = EditorGUIUtility.TrTextContent("Billboard options are separate from the 3D model options shown above.\nChange the options below for influencing billboard rendering.");
-            
+
             public static GUIContent ApplyAndGenerate = EditorGUIUtility.TrTextContent("Apply & Generate Materials", "Apply current importer settings and generate asset materials with the new settings.");
             public static GUIContent Regenerate = EditorGUIUtility.TrTextContent("Regenerate Materials", "Regenerate materials using the current import settings.");
 
@@ -77,7 +77,7 @@ namespace UnityEditor
         // DATA
         //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-        // mesh 
+        // mesh
         private SerializedProperty m_ScaleFactor;
         private SerializedProperty m_UnitConversionEnumValue;
         private SerializedProperty m_MotionVectorModeEnumValue;
@@ -391,7 +391,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_MainColor, Styles.MainColor);
             EditorGUILayout.PropertyField(m_EnableHueVariation, Styles.EnableColorVariation);
 
-            
+
             if (ShouldRenderHueVariationDropdown())
             {
                 EditorGUILayout.PropertyField(m_HueVariation, Styles.HueVariation);
@@ -497,7 +497,7 @@ namespace UnityEditor
                         {
                             var menuText = String.Format("{0}: {1}",
                                 Path.GetFileNameWithoutExtension(importer.assetPath),
-                                String.Join(" | ", importer.LODHeights.Select(height => UnityString.Format("{0:0}%", height * 100)).ToArray()));
+                                String.Join(" | ", importer.LODHeights.Select(height => string.Format("{0:0}%", height * 100)).ToArray()));
                             dropDownMenu.AddItem(new GUIContent(menuText), false, OnResetLODMenuClick, importer);
                         }
                         dropDownMenu.DropDown(buttonRect);
@@ -736,7 +736,7 @@ namespace UnityEditor
             }
             else
             {
-                // Toggle 
+                // Toggle
                 GUIContent customizationLabel = EditorGUIUtility.TrTextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above");
                 EditorGUILayout.PropertyField(lodSettingOverride, customizationLabel);
 

@@ -273,7 +273,7 @@ namespace UnityEditor.SpeedTree.Importer
             {
                 prefabs[i] = assetTargets[i] as GameObject;
             }
-            
+
             List<SpeedTree9Importer> importerArray = new List<SpeedTree9Importer>();
             foreach (SpeedTree9Importer importer in importers)
             {
@@ -345,7 +345,7 @@ namespace UnityEditor.SpeedTree.Importer
                             string[] heightsFormated = new string[heights.Length];
                             for (int i = 0; i < heights.Length; ++i)
                             {
-                                heightsFormated[i] = UnityString.Format("{0:0}%", heights[i] * 100);
+                                heightsFormated[i] = string.Format("{0:0}%", heights[i] * 100);
                             }
 
                             var menuText = String.Format("{0}: {1}",
@@ -640,7 +640,7 @@ namespace UnityEditor.SpeedTree.Importer
             }
             else
             {
-                // Toggle 
+                // Toggle
                 GUIContent customizationLabel = EditorGUIUtility.TrTextContent(String.Format("Customize {0} options", lods[lodIndex].LODName), "To override options for a certain LOD, check this box and select the LOD from the LOD slider above");
                 EditorGUILayout.PropertyField(lodSettingOverride, customizationLabel);
 

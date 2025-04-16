@@ -68,6 +68,67 @@ internal static class WorldSpaceInput
     }
 
     /// <summary>
+    /// Pick the closest element (in drawing order) from a document's hierarchy that intersects the given ray.
+    /// </summary>
+    /// <param name="document">The UI Document to pick from.</param>
+    /// <param name="worldRay">A ray specified in absolute coordinates.</param>
+    /// <param name="pickResult">The result of the ray intersection.</param>
+    /// <returns>True if a pickable element intersects the ray, false otherwise.</returns>
+    public static bool Pick3D(UIDocument document, Ray worldRay, out PickResult pickResult)
+    {
+        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
+        var pickedElement = Pick_Internal(document, documentRay);
+
+        if (pickedElement == null)
+        {
+            pickResult = PickResult.Empty;
+            return false;
+        }
+
+        pickedElement.IntersectWorldRay(documentRay, out var distanceWithinDocument, out _);
+        var documentPoint = documentRay.origin + documentRay.direction * distanceWithinDocument;
+        var worldPoint = document.transform.TransformPoint(documentPoint);
+        var distance = Vector3.Distance(worldRay.origin, worldPoint);
+
+        pickResult = new PickResult
+        {
+            document = document, pickedElement = pickedElement, distance = distance
+        };
+        pickResult.ComputeCollisionData(worldRay);
+        return true;
+    }
+
+    /// <summary>
+    /// Finds the intersection point between a ray and the given element.
+    /// </summary>
+    /// <remarks>The @@element@@ has to be parented to a document.</remarks>
+    /// <param name="element">The element to intersect with.</param>
+    /// <param name="worldRay">A ray specified in absolute coordinates.</param>
+    /// <param name="pickResult">The result of the ray intersection.</param>
+    /// <param name="acceptOutside">Should the intersection skip element boundary checks?</param>
+    /// <returns>True if the ray intersects the element.</returns>
+    public static bool PickElement3D(VisualElement element, Ray worldRay, out PickResult pickResult, bool acceptOutside = false)
+    {
+        var document = UIDocument.FindRootUIDocument(element);
+        if (document == null)
+            throw new ArgumentException("Element must be part of a UI Document.");
+
+        var documentRay = document.transform.worldToLocalMatrix.TransformRay(worldRay);
+        if (!element.IntersectWorldRay(documentRay, out var distance, out _) && (!acceptOutside || !(distance > 0)))
+        {
+            pickResult = PickResult.Empty;
+            return false;
+        }
+
+        pickResult = new PickResult
+        {
+            document = document, pickedElement = element, distance = distance
+        };
+        pickResult.ComputeCollisionData(worldRay);
+        return true;
+    }
+
+    /// <summary>
     /// The result of a Picking operation.
     /// </summary>
     public struct PickResult
@@ -78,6 +139,14 @@ internal static class WorldSpaceInput
         public static readonly PickResult Empty = new PickResult { distance = Mathf.Infinity };
 
         /// <summary>
+        /// The collider that ended the pick process.
+        /// </summary>
+        /// <remarks>
+        /// Doesn't always have a UIDocument component associated with it.
+        /// </remarks>
+        public Collider collider;
+
+        /// <summary>
         /// The document containing the picked element.
         /// </summary>
         public UIDocument document;
@@ -85,12 +154,34 @@ internal static class WorldSpaceInput
         /// <summary>
         /// A VisualElement intersected by the ray from the Picking operation.
         /// </summary>
+        /// <remarks>
+        /// If @@document@@ is null, then @@pickedElement@@ is also null.
+        /// However, with pointer capture, it's possible that @@pickedElement@@ is null but not @@document@@.
+        /// </remarks>
         public VisualElement pickedElement;
 
         /// <summary>
         /// The distance between the Ray origin and the world point intersected by the Picking operation.
         /// </summary>
         public float distance;
+
+        /// <summary>
+        /// The raycast hit surface normal, expressed in the GameObject world coordinate system.
+        /// </summary>
+        public Vector3 normal;
+
+        /// <summary>
+        /// The intersected point, expressed in the GameObject world coordinate system.
+        /// </summary>
+        public Vector3 point;
+
+        /// <summary>
+        /// The intersected point in the @@pickedElement@@ local coordinate system.
+        /// </summary>
+        /// <remarks>
+        /// If @@pickedElement@@ is null, this is the same as @@point@@..
+        /// </remarks>
+        public Vector3 localPoint;
 
         // Assume elements come from distinct documents. DrawOrder within document isn't guaranteed by this comparison.
         internal int CompareDrawOrder([NotNull] UIDocument otherDocument, float otherDistance)
@@ -108,6 +199,19 @@ internal static class WorldSpaceInput
                 return documentSortingOrder;
 
             return distance.CompareTo(otherDistance);
+        }
+
+        internal void ComputeCollisionData(Ray ray)
+        {
+            point = ray.origin + ray.direction * distance;
+
+            if (document != null && pickedElement != null)
+            {
+                localPoint = pickedElement.worldTransformInverse.MultiplyPoint3x4(
+                             document.transform.InverseTransformPoint(point));
+                normal = document.transform.TransformDirection(
+                         pickedElement.worldTransformRef.MultiplyVector(Vector3.forward));
+            }
         }
     }
 
@@ -150,11 +254,11 @@ internal static class WorldSpaceInput
 
             // Non-Document objects on the same layer can block raycasts.
             // If we hit a real-world object, we can conclude our search with the best candidate so far.
-            var document = hit.transform.GetComponentInParent<UIDocument>(includeInactive: true);
+            var document = hit.collider.GetComponentInParent<UIDocument>(includeInactive: true);
             if (document == null)
             {
                 if (distance < bestSoFar.distance)
-                    bestSoFar = new PickResult { distance = distance };
+                    bestSoFar = new PickResult { distance = distance, collider = hit.collider, normal = hit.normal, point = hit.point, localPoint = hit.point };
                 break;
             }
 
@@ -197,7 +301,8 @@ internal static class WorldSpaceInput
             if (pickedElement != null && distance <= maxDistance && bestSoFar.CompareDrawOrder(document, distance) > 0)
             {
                 // Update the result but don't fast-forward the activeRay!
-                bestSoFar = new PickResult { pickedElement = pickedElement, document = document, distance = distance };
+                bestSoFar = new PickResult { collider = hit.collider, pickedElement = pickedElement, document = document, distance = distance };
+                bestSoFar.ComputeCollisionData(worldRay);
             }
         }
 
@@ -341,19 +446,77 @@ internal static class WorldSpaceInput
         return returnedChild;
     }
 
-    public static Bounds GetPicking3DWorldBounds(VisualElement ve)
+    internal static Bounds GetPicking3DWorldBounds(VisualElement ve)
     {
         var bb = GetPicking3DLocalBounds(ve);
         VisualElement.TransformAlignedBounds(ref ve.worldTransformRef, ref bb);
         return bb;
     }
 
-    public static Bounds GetPicking3DLocalBounds(VisualElement ve)
+    internal static Bounds GetPicking3DLocalBounds(VisualElement ve)
     {
         if (ve.needs3DBounds)
-            return ve.localBounds3D;
+            return ve.localBoundsNested3D;
 
         Rect bb = ve.boundingBox;
         return new Bounds(bb.center, bb.size);
+    }
+
+    /// <summary>
+    /// Transforms a point from the element's local coordinate system to the global GameObject
+    /// world coordinate system.
+    /// </summary>
+    /// <remarks>The @@element@@ has to be parented to a document.</remarks>
+    /// <param name="element">The element to use for the reference local coordinate system.</param>
+    /// <param name="localPoint">The point to transform.</param>
+    public static Vector3 LocalPointToGameObjectWorldSpace(VisualElement element, Vector3 localPoint)
+    {
+        var document = UIDocument.FindRootUIDocument(element);
+        if (document == null)
+            throw new ArgumentException("Element must be part of a UI Document.");
+        var documentPoint = element.LocalToWorld3D(localPoint);
+        return document.transform.TransformPoint(documentPoint);
+    }
+
+    /// <summary>
+    /// Transforms a delta vector from the element's local coordinate system to the global GameObject
+    /// world coordinate system.
+    /// </summary>
+    /// <remarks>The @@element@@ has to be parented to a document.</remarks>
+    /// <param name="element">The element to use for the reference local coordinate system.</param>
+    /// <param name="localDelta">The vector to transform.</param>
+    public static Vector3 LocalDeltaToGameObjectWorldSpace(VisualElement element, Vector3 localDelta)
+    {
+        return LocalPointToGameObjectWorldSpace(element, localDelta) -
+               LocalPointToGameObjectWorldSpace(element, Vector3.zero);
+    }
+
+    /// <summary>
+    /// Transforms a point from the global GameObject world coordinate system to the element's
+    /// local coordinate system.
+    /// </summary>
+    /// <remarks>The @@element@@ has to be parented to a document.</remarks>
+    /// <param name="element">The element to use for the reference local coordinate system.</param>
+    /// <param name="worldPoint">The point to transform.</param>
+    public static Vector3 GameObjectWorldSpaceToLocalPoint(VisualElement element, Vector3 worldPoint)
+    {
+        var document = UIDocument.FindRootUIDocument(element);
+        if (document == null)
+            throw new ArgumentException("Element must be part of a UI Document.");
+        var documentPoint = document.transform.InverseTransformPoint(worldPoint);
+        return element.WorldToLocal3D(documentPoint);
+    }
+
+    /// <summary>
+    /// Transforms a delta vector from the global GameObject world coordinate system to the element's
+    /// local coordinate system.
+    /// </summary>
+    /// <remarks>The @@element@@ has to be parented to a document.</remarks>
+    /// <param name="element">The element to use for the reference local coordinate system.</param>
+    /// <param name="worldDelta">The vector to transform.</param>
+    public static Vector3 GameObjectWorldSpaceToLocalDelta(VisualElement element, Vector3 worldDelta)
+    {
+        return GameObjectWorldSpaceToLocalPoint(element, worldDelta) -
+               GameObjectWorldSpaceToLocalPoint(element, Vector3.zero);
     }
 }

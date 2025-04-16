@@ -97,7 +97,13 @@ namespace UnityEngine
             try
             {
                 awaitable._spinLock.Enter(ref lockTaken);
-                awaitable._cancelTokenRegistration = cancellationToken.Register(coroutine => ((Awaitable)coroutine).Cancel(), awaitable);
+                // there is no way to ask cancellationToken not to capture execution context with public API
+                // this uses call to EC.SuppressFlow as a fallback.
+                // Note: not needed with core clr where EC capture are no-ops
+                using (var oldFlow = ExecutionContext.SuppressFlow())
+                {
+                    awaitable._cancelTokenRegistration = cancellationToken.Register(static coroutine => ((Awaitable)coroutine).Cancel(), awaitable, false);
+                }
             }
             finally
             {

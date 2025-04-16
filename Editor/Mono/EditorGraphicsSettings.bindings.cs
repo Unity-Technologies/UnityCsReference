@@ -84,6 +84,9 @@ namespace UnityEditor.Rendering
                     RenderPipelineManager.RecreateCurrentPipeline(rpAsset);
             }
 
+            //Removing a globalSeetings and adding back another one from the same type will cause issue in the Notifier persistency cache
+            Notifier.RecomputeDictionary();  
+
             GraphicsSettingsInspectorUtility.ReloadGraphicsSettingsEditorIfNeeded();
         }
 

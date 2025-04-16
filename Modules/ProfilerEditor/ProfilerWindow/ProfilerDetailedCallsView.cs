@@ -669,7 +669,7 @@ namespace UnityEditorInternal.Profiling
             m_CallersTreeView.SetCallsData(callersAndCalleeData.callersData);
             m_CalleesTreeView.SetCallsData(callersAndCalleeData.calleesData);
 
-            var sampleDetails = profilerSampleNameProvider.GetItemName(m_FrameDataView, selectedId) + UnityString.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
+            var sampleDetails = profilerSampleNameProvider.GetItemName(m_FrameDataView, selectedId) + string.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
             m_TotalSelectedPropertyTimeLabel.text = sampleDetails;
             m_TotalSelectedPropertyTimeLabel.tooltip = string.Concat(sampleDetails, "\n\n", Content.totalSelectedPropertyTimeTooltip);
         }
