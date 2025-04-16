@@ -9,7 +9,7 @@ namespace UnityEditor
 {
     public partial class SceneView
     {
-        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName)]
+        [Overlay(typeof(SceneView), k_OverlayID, k_DisplayName, defaultDisplay = false)]
         internal class SceneViewIsolationOverlay : TransientSceneViewOverlay
         {
             public const string k_OverlayID = "Scene View/Scene Visibility";

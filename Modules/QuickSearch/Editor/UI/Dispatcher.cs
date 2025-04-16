@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
 using System.Collections.Concurrent;
 
 namespace UnityEditor.Search
@@ -31,6 +32,11 @@ namespace UnityEditor.Search
                     return false;
                 handler?.Invoke();
                 return true;
+            }
+
+            public void ForceInvoke()
+            {
+                handler?.Invoke();
             }
         }
 
@@ -74,6 +80,17 @@ namespace UnityEditor.Search
             if (!done)
                 Enqueue(task);
             return done;
+        }
+
+        // For testing purposes only. It returns an IEnumerator so we can control the timeout while processing all events.
+        internal static IEnumerator ForceProcessAll()
+        {
+            while (!s_ExecutionQueue.IsEmpty)
+            {
+                if (s_ExecutionQueue.TryDequeue(out var task) && task.valid)
+                    task.ForceInvoke();
+                yield return null;
+            }
         }
 
         static void Update()

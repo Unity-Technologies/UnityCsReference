@@ -984,7 +984,7 @@ namespace UnityEngine.UIElements
                 while (bindings.Count > 0)
                 {
                     var binding = bindings[^1];
-                    CreateBindingRequest(element, binding.target.bindingId, binding.binding);
+                    CreateBindingRequest(element, binding.target.bindingId, binding.binding, isTransferring:true);
                     UnregisterBinding(element, binding.target.bindingId);
                 }
             }
@@ -1006,6 +1006,11 @@ namespace UnityEngine.UIElements
 
         public static void CreateBindingRequest(VisualElement target, in BindingId bindingId, Binding binding)
         {
+            CreateBindingRequest(target, in bindingId, binding, false);
+        }
+
+        private static void CreateBindingRequest(VisualElement target, in BindingId bindingId, Binding binding, bool isTransferring)
+        {
             var requests = (List<BindingRequest>) target.GetProperty(k_RequestBindingPropertyName);
             if (requests == null)
             {
@@ -1013,17 +1018,22 @@ namespace UnityEngine.UIElements
                 target.SetProperty(k_RequestBindingPropertyName, requests);
             }
 
+            var shouldProcessSelf = true;
+
             // When processing multiple requests to the same binding id, we should only process the very last one.
             for (var i = 0; i < requests.Count; ++i)
             {
                 var request = requests[i];
                 if (request.bindingId == bindingId)
                 {
-                    requests[i] = request.CancelRequest();
+                    if (isTransferring)
+                        shouldProcessSelf = false;
+                    else
+                        requests[i] = request.CancelRequest();
                 }
             }
 
-            requests.Add(new BindingRequest(bindingId, binding));
+            requests.Add(new BindingRequest(bindingId, binding, shouldProcessSelf));
         }
 
         public static void CreateClearAllBindingsRequest(VisualElement target)

@@ -231,6 +231,11 @@ namespace UnityEditor.UIElements.Debugger
             var debuggerWindow = CreateDebuggerWindow();
             debuggerWindow.Show();
 
+            if (TextureAtlasViewer.UIElementsDebugger == null)
+            {
+                TextureAtlasViewer.UIElementsDebugger = debuggerWindow;
+            }
+
             if (window != null)
                 debuggerWindow.m_DebuggerImpl.ScheduleWindowToDebug(window);
         }

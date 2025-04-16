@@ -13,6 +13,36 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Overlays
 {
+    interface IOverlayPreset
+    {
+        SaveData[] saveData { get; }
+        Type targetWindowType { get; }
+        bool CanApplyToWindow(Type windowType);
+        void ApplyCustomData(OverlayCanvas canvas);
+        string name { get; }
+    }
+
+    sealed class DefaultOverlayPreset : IOverlayPreset
+    {
+        readonly static SaveData[] m_EmptySave = new SaveData[0];
+
+        public SaveData[] saveData => m_EmptySave;
+        public Type targetWindowType => null;
+
+        public bool CanApplyToWindow(Type windowType) => true;
+
+        public void ApplyCustomData(OverlayCanvas canvas)
+        {
+            // We set these package overlays manually for backward compatibility now that we don't have a Default save file
+            if (canvas.TryGetOverlay("Scene View/Navmesh Display", out var overlay)) overlay.displayed = false;
+            if (canvas.TryGetOverlay("Scene View/Agent Display", out overlay)) overlay.displayed = false;
+            if (canvas.TryGetOverlay("Scene View/Obstacle Display", out overlay)) overlay.displayed = false;
+            if (canvas.TryGetOverlay("Scene View/Occlusion Culling", out overlay)) overlay.displayed = false;
+        }
+
+        public string name => OverlayPresetManager.defaultPresetName;
+    }
+
     // This is responsible for loading and saving OverlayPresets. It does not serialize presets in the manager, but
     // rather loads and saves from the various locations that presets can exist.
     sealed class OverlayPresetManager : ScriptableSingleton<OverlayPresetManager>
@@ -24,6 +54,7 @@ namespace UnityEditor.Overlays
 
         const string k_FileExtension = "overlay";
         const string k_PresetAssetsName = "OverlayPresets.asset";
+        internal const string defaultPresetName = "Default";
         static string k_PreferencesAssetPath => Path.Combine(InternalEditorUtility.unityPreferencesFolder, "OverlayPresets/" + k_PresetAssetsName);
         static string k_ResourcesAssetPath => Path.Combine(EditorApplication.applicationContentsPath, "Resources/OverlayPresets/" + k_PresetAssetsName);
         static string preferencesPath => FileUtil.CombinePaths(InternalEditorUtility.unityPreferencesFolder, "OverlayPresets");
@@ -87,7 +118,6 @@ namespace UnityEditor.Overlays
         {
             if (File.Exists(k_PreferencesAssetPath))
                 FileUtil.DeleteFileOrDirectory(k_PreferencesAssetPath);
-            FileUtil.CopyFileOrDirectory(k_ResourcesAssetPath, k_PreferencesAssetPath);
         }
 
         static void SaveAllPreferences()
@@ -141,15 +171,22 @@ namespace UnityEditor.Overlays
             return TryGetPreset(windowType, presetName, out _);
         }
 
-        public static OverlayPreset GetDefaultPreset(Type windowType)
+        public static IOverlayPreset GetDefaultPreset(Type windowType)
         {
-            var presets = GetAllPresets(windowType);
-            return presets?.FirstOrDefault();
+            if (TryGetPreset(windowType, defaultPresetName, out OverlayPreset preset))
+                return preset;
+
+            return new DefaultOverlayPreset();
         }
 
-        internal static IEnumerable<OverlayPreset> GetAllPresets(Type windowType)
+        internal static IEnumerable<IOverlayPreset> GetAllPresets(Type windowType)
         {
-            List<OverlayPreset> presets = new List<OverlayPreset>();
+            List<IOverlayPreset> presets = new List<IOverlayPreset>();
+
+            // Add a default preset if the user hasn't overwritten it
+            if (!TryGetPreset(windowType, defaultPresetName, out OverlayPreset preset))
+                presets.Add(new DefaultOverlayPreset());
+
             foreach (var i in windowType.GetInterfaces())
             {
                 if (loadedPresets.TryGetValue(i, out var p))
@@ -347,12 +384,16 @@ namespace UnityEditor.Overlays
                 }
             });
 
-            foreach (var preset in presets)
+            foreach (var rawPreset in presets)
             {
-                menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
+                // Only add the ability to delete asset presets and not the ones created from code
+                if (rawPreset is OverlayPreset preset)
                 {
-                    DeletePreset(preset);
-                });
+                    menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
+                    {
+                        DeletePreset(preset);
+                    });
+                }
             }
 
             menu.AddItem(L10n.Tr($"{pathPrefix}Revert All Saved Presets"), false, () =>

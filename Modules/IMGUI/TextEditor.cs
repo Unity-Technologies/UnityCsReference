@@ -491,18 +491,17 @@ namespace UnityEngine
             if (GUIUtility.compositionString.Length > 0)
             {
                 m_Content.text = newText.Substring(0, cursorIndex) + GUIUtility.compositionString + newText.Substring(selectIndex);
-                cursorPos += GUIUtility.compositionString.Length;
             }
             else
                 m_Content.text = newText;
 
-            graphicalCursorPos = style.GetCursorPixelPosition(position, m_Content, cursorPos);
+            graphicalCursorPos = style.GetCursorPixelPosition(position, m_Content, cursorPos) + new Vector2(0, style.lineHeight);
 
             Vector2 originalContentOffset = style.contentOffset;
             style.contentOffset -= scrollOffset;
             style.Internal_clipOffset = scrollOffset;
 
-            GUIUtility.compositionCursorPos = GUIClip.UnclipToWindow(graphicalCursorPos + new Vector2(position.x, position.y + style.lineHeight) - scrollOffset);
+            GUIUtility.compositionCursorPos = GUIClip.UnclipToWindow(graphicalCursorPos - scrollOffset);
 
             if (GUIUtility.compositionString.Length > 0)
                 style.DrawWithTextSelection(position, m_Content, controlID, cursorIndex, cursorIndex + GUIUtility.compositionString.Length, true);

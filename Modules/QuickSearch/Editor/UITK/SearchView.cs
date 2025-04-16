@@ -3,10 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Profiling;
+using UnityEngine.Pool;
 using UnityEngine.Search;
 using UnityEngine.UIElements;
 
@@ -76,8 +78,12 @@ namespace UnityEditor.Search
                 var prevGroup = currentGroup;
                 viewState.groupChanged?.Invoke(context, value, currentGroup);
 
-                var selectedItems = m_SearchItemSelection != null ? m_SearchItemSelection.ToArray() : Array.Empty<SearchItem>();
-                var newSelectedIndices = new int[selectedItems.Length];
+                var tempSelection = ArrayPool<int>.Shared.Rent(m_Selection.Count);
+                using var _ = ListPool<SearchItem>.Get(out var tempSelectedItems);
+                for (var i = 0; i < m_Selection.Count; ++i)
+                {
+                    tempSelectedItems.Add(m_FilteredItems[m_Selection[i]]);
+                }
 
                 viewState.group = value;
                 m_FilteredItems.currentGroup = value;
@@ -88,12 +94,19 @@ namespace UnityEditor.Search
 
                 RefreshContent(RefreshFlags.GroupChanged);
 
-                for (var i  = 0; i < selectedItems.Length; ++i)
+                var actualCount = 0;
+                for (var i  = 0; i < tempSelectedItems.Count; ++i)
                 {
-                    var selectedItem = selectedItems[i];
-                    newSelectedIndices[i] = m_FilteredItems.IndexOf(selectedItem);
+                    var selectedItem = tempSelectedItems[i];
+                    var newIndex = m_FilteredItems.IndexOf(selectedItem);
+                    if (newIndex >= 0)
+                    {
+                        tempSelection[actualCount] = newIndex;
+                        actualCount++;
+                    }
                 }
-                SetSelection(true, newSelectedIndices, true);
+                SetSelection(true, tempSelection.AsSpan(0, actualCount), true);
+                ArrayPool<int>.Shared.Return(tempSelection);
             }
         }
 
@@ -159,6 +172,7 @@ namespace UnityEditor.Search
                 m_FilteredItems.currentGroup = viewState.group;
                 m_ResultView?.OnItemSourceChanged(m_FilteredItems);
             }
+            ClearSelection();
         }
 
         private ISearchListComparer GetDefaultSearchListComparer()
@@ -194,6 +208,7 @@ namespace UnityEditor.Search
 
             context.ClearErrors();
             m_FilteredItems.Clear();
+            ClearSelection();
 
             var hostWindow = this.GetSearchHostWindow();
             if (hostWindow != null)
@@ -435,17 +450,17 @@ namespace UnityEditor.Search
             return true;
         }
 
-        private void SetSelection(bool trackSelection, int[] selection, bool forceChange = false)
+        private void SetSelection(bool trackSelection, ReadOnlySpan<int> newSelection, bool forceChange = false)
         {
-            if (!multiselect && selection.Length > 1)
-                selection = new int[] { selection[selection.Length - 1] };
+            if (!multiselect && newSelection.Length > 1)
+                newSelection = newSelection.Slice(newSelection.Length - 1, 1);
 
             var selectedIds = new List<int>();
             var lastIndexAdded = k_ResetSelectionIndex;
 
             m_Selection.Clear();
             m_SearchItemSelection = null;
-            foreach (var idx in selection)
+            foreach (var idx in newSelection)
             {
                 if (!IsItemValid(idx))
                     continue;
@@ -476,14 +491,34 @@ namespace UnityEditor.Search
             EditorApplication.delayCall += DelayTrackSelection;
         }
 
-        public void SetItems(IEnumerable<SearchItem> items)
+        public void SetItems(IEnumerable<SearchItem> newItems)
         {
+            var tempSelection = ArrayPool<int>.Shared.Rent(m_Selection.Count);
+            using var _ = ListPool<SearchItem>.Get(out var tempSelectedItems);
+            for (var i = 0; i < m_Selection.Count; ++i)
+            {
+                tempSelectedItems.Add(m_FilteredItems[m_Selection[i]]);
+            }
+
             m_SearchItemSelection = null;
             m_FilteredItems.Clear();
-            m_FilteredItems.AddItems(items);
+            m_FilteredItems.AddItems(newItems);
             if (!string.IsNullOrEmpty(context.filterId))
                 m_FilteredItems.AddGroup(context.providers.First());
-            SetSelection(trackSelection: false, m_Selection.ToArray());
+
+            var actualCount = 0;
+            for (var i = 0; i < tempSelectedItems.Count; ++i)
+            {
+                var selectedItem = tempSelectedItems[i];
+                var newIndex = m_FilteredItems.IndexOf(selectedItem);
+                if (newIndex >= 0)
+                {
+                    tempSelection[actualCount] = newIndex;
+                    actualCount++;
+                }
+            }
+            SetSelection(trackSelection: false, tempSelection.AsSpan(0, actualCount));
+            ArrayPool<int>.Shared.Return(tempSelection);
         }
 
         internal void DelayTrackSelection()
@@ -654,6 +689,12 @@ namespace UnityEditor.Search
             }
 
             SetSelection(true, m_Selection.ToArray());
+        }
+
+        void ClearSelection()
+        {
+            m_Selection.Clear();
+            m_SearchItemSelection = null;
         }
 
         void ISearchView.FocusSearch() => m_ResultViewContainer.Focus();

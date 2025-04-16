@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")] // For editor-only playmode tests
 
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents.Editor")]

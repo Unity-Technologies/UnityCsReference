@@ -404,6 +404,12 @@ namespace UnityEngine.UIElements
                 return;
             }
 
+            renderer.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            if (renderer.sharedMaterial)
+            {
+                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            }
+
             rootVisualElement.uiRenderer = renderer;
 
             // Don't render embedded documents which will be rendered as part of their parents

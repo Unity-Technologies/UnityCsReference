@@ -308,6 +308,8 @@ namespace UnityEditor.Search
         /// <returns>>Returns true if SearchItem have the same id.</returns>
         public bool Equals(SearchItem other)
         {
+            if (other == null)
+                return false;
             return string.Equals(id, other.id, StringComparison.Ordinal);
         }
 

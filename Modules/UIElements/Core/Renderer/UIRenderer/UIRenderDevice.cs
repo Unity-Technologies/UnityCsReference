@@ -608,6 +608,12 @@ namespace UnityEngine.UIElements.UIR
                 page = page.next;
             }
             s_MarkerBeforeDraw.End();
+
+            // UUM-101410: We must update the fence now in case that multiple calls to Update() are performed without
+            // Render() being called. Otherwise, the previous fence (which has already passed) won't be updated and we
+            // might be modifying the update ranges buffer, or the vertex/index buffers while they're already being
+            // copied by the render thread.
+            UpdateFenceValue();
         }
 
         internal unsafe static NativeSlice<T> PtrToSlice<T>(void* p, int count) where T : struct
@@ -999,7 +1005,7 @@ namespace UnityEngine.UIElements.UIR
 
             Debug.Assert(disableCounter == 0, "Rendering disabled counter is not 0, indicating a mismatch of commands");
 
-            UpdateFenceValue();
+            UpdateFenceValue(); // TODO: Replace by GPU fence.
 
             Utility.ProfileDrawChainEnd();
 

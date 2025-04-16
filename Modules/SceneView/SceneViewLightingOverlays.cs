@@ -12,7 +12,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor
 {
-    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization", priority = (int)OverlayPriority.LightingVisualization, defaultDockZone = DockZone.RightColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization", defaultDisplay = false, priority = (int)OverlayPriority.LightingVisualization, defaultDockZone = DockZone.RightColumn, defaultDockIndex = 0)]
     [Icon("Icons/LightingVisualization.png")]
     class SceneViewLighting : Overlay, ITransientOverlay
     {
@@ -312,7 +312,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_OverlayID, "PBR Validation Settings", priority = (int)OverlayPriority.PBRValidation, defaultDockZone = DockZone.RightColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "PBR Validation Settings", priority = (int)OverlayPriority.PBRValidation, defaultDockZone = DockZone.RightColumn, defaultDockIndex = 0)]
     [Icon("Icons/Exposure.png")]
     class SceneViewLightingPBRValidation : Overlay, ITransientOverlay
     {
@@ -649,7 +649,7 @@ namespace UnityEditor
         }
     }
 
-    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization Colors", priority = (int)OverlayPriority.LightingVisualizationColor, defaultDockZone = DockZone.LeftColumn)]
+    [Overlay(typeof(SceneView), k_OverlayID, "Lighting Visualization Colors", priority = (int)OverlayPriority.LightingVisualizationColor, defaultDockZone = DockZone.LeftColumn, defaultDockIndex = 0)]
     [Icon("Icons/LightingVisualizationColors.png")]
     class SceneViewLightingColors : Overlay, ITransientOverlay
     {
