@@ -293,7 +293,7 @@ namespace UnityEngine
                 fixed(Vector3* positionsPtr = positions)
                 fixed(Quaternion* rotationsPtr = rotations)
                 {                    
-                    return new AsyncInstantiateOperation<T>(Internal_InstantiateAsyncWithParams(original, count, parameters, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length, cancellationToken.CanBeCanceled), cancellationToken);
+                    return new AsyncInstantiateOperation<T>(Internal_InstantiateAsyncWithParams(original, count, parameters, (IntPtr)positionsPtr, positions.Length, (IntPtr)rotationsPtr, rotations.Length), cancellationToken);
                 }
             }            
         }
@@ -687,7 +687,7 @@ namespace UnityEngine
         extern static Object Internal_CloneSingleWithParent([NotNull] Object data, [NotNull] Transform parent, bool worldPositionStays);
 
         [FreeFunction("InstantiateAsyncObjects")]
-        extern static IntPtr Internal_InstantiateAsyncWithParams([NotNull] Object original, int count, InstantiateParameters parameters, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount, bool hasManagedCancellationToken);
+        extern static IntPtr Internal_InstantiateAsyncWithParams([NotNull] Object original, int count, InstantiateParameters parameters, IntPtr positions, int positionsCount, IntPtr rotations, int rotationsCount);
 
         [FreeFunction("InstantiateObject")]
         extern static Object Internal_InstantiateSingle([NotNull] Object data, Vector3 pos, Quaternion rot);

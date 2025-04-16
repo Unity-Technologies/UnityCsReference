@@ -24,8 +24,6 @@ namespace UnityEngine.UIElements
         internal static readonly BindingId textSelectionProperty = nameof(textSelection);
         internal static readonly BindingId textEditionProperty = nameof(textEdition);
         internal static readonly BindingId placeholderTextProperty = nameof(placeholderText);
-        internal static readonly BindingId selectionColorProperty = nameof(selectionColor);
-        internal static readonly BindingId cursorColorProperty = nameof(cursorColor);
         internal static readonly BindingId cursorIndexProperty = nameof(cursorIndex);
         internal static readonly BindingId cursorPositionProperty = nameof(cursorPosition);
         internal static readonly BindingId selectIndexProperty = nameof(selectIndex);
@@ -534,12 +532,12 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Background color of selected text.
         /// </summary>
-        [CreateProperty(ReadOnly = true)]
+        [Obsolete("cursorColor is deprecated. Please use the corresponding USS property (--unity-cursor-color) instead.")]
         public Color selectionColor => textSelection.selectionColor;
         /// <summary>
         /// Color of the cursor.
         /// </summary>
-        [CreateProperty(ReadOnly = true)]
+        [Obsolete("cursorColor is deprecated. Please use the corresponding USS property (--unity-cursor-color) instead.")]
         public Color cursorColor => textSelection.cursorColor;
 
         /// <summary>
@@ -1106,10 +1104,10 @@ namespace UnityEngine.UIElements
                 // (aka setting the value via code should always overrides the one from styleSheets)
                 ICustomStyle customStyle = e.customStyle;
                 if (customStyle.TryGetValue(s_SelectionColorProperty, out Color selectionValue))
-                    textSelection.selectionColor = selectionValue;
+                    textElement.selectionColor = selectionValue;
 
                 if (customStyle.TryGetValue(s_CursorColorProperty, out Color cursorValue))
-                    textSelection.cursorColor = cursorValue;
+                    textElement.cursorColor = cursorValue;
 
                 SetScrollViewMode();
                 SetMultilineContainerStyle();

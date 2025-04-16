@@ -44,6 +44,7 @@ namespace UnityEditorInternal
         // Animation window shared state
         private AnimationWindowState m_State;
         private TreeViewController m_TreeView;
+        private AnimationWindowHierarchyGUI m_HierarchyGUI;
 
         public Vector2 GetContentSize()
         {
@@ -65,6 +66,7 @@ namespace UnityEditorInternal
         {
             m_TreeView.OnEvent();
             m_TreeView.OnGUI(position, GUIUtility.GetControlID(FocusType.Keyboard));
+            m_HierarchyGUI.ReclaimPendingFieldFocus();
         }
 
         public void Init(EditorWindow owner, Rect rect)
@@ -74,9 +76,10 @@ namespace UnityEditorInternal
 
             m_TreeView = new TreeViewController(owner, m_State.hierarchyState);
             m_State.hierarchyData = new AnimationWindowHierarchyDataSource(m_TreeView, m_State);
+            m_HierarchyGUI = new AnimationWindowHierarchyGUI(m_TreeView, m_State);
             m_TreeView.Init(rect,
                 m_State.hierarchyData,
-                new AnimationWindowHierarchyGUI(m_TreeView, m_State),
+                m_HierarchyGUI,
                 null
             );
 
