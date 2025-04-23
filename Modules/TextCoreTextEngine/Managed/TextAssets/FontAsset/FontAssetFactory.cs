@@ -97,27 +97,26 @@ internal class FontAssetFactory
         }
     }
 
-    internal static FontAsset? ConvertFontToFontAsset(Font font, Shader shader)
+    internal static FontAsset? ConvertFontToFontAsset(Font font)
     {
         if(font == null)
             return null;
 
         FontAsset? fontAsset = null;
-        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, shader, AtlasPopulationMode.Dynamic, true);
+        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
-            SetupFontAssetSettings(fontAsset, shader);
+            SetupFontAssetSettings(fontAsset);
 
         return fontAsset;
     }
 
-    internal static void SetupFontAssetSettings(FontAsset fontAsset, Shader shader)
+    internal static void SetupFontAssetSettings(FontAsset fontAsset)
     {
         if (!fontAsset)
             return;
 
         SetHideFlags(fontAsset);
-        fontAsset.material.shader = shader;
         fontAsset.isMultiAtlasTexturesEnabled = true;
         fontAsset.IsEditorFont = true;
     }

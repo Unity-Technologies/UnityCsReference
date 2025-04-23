@@ -182,10 +182,15 @@ namespace UnityEditor.Build.Profile
                 return new IMGUIContainer(() =>
                 {
                     GUILayout.Label(EditorGUIUtility.TextContent(text), EditorStyles.wordWrappedLabel);
+                    
+                    EditorGUILayout.BeginHorizontal();
+                    // Add the space to align the button with text
+                    GUILayout.Space(6);
                     if (GUILayout.Button("Contact Sales", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
                     {
                         Help.BrowseURL(url);
                     }
+                    EditorGUILayout.EndHorizontal();
                 });
             }
 

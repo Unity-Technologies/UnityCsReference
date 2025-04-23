@@ -232,7 +232,7 @@ namespace UnityEngine
 
             settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
 
-            settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
+            settings.fontAsset = settings.textSettings.GetCachedFontAsset(font);
             if (settings.fontAsset == null)
                 return;
 
@@ -242,7 +242,7 @@ namespace UnityEngine
                 settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset);
             }
 
-            // If the raster mode is bitmap, we need to have a clean rect for the alignment to work properly. 
+            // If the raster mode is bitmap, we need to have a clean rect for the alignment to work properly.
             if (settings.fontAsset.IsBitmap())
             {
                 settings.screenRect = new Rect(0, 0, Mathf.Max(0, Mathf.Round(rect.width * pixelsPerPoint)), Mathf.Max(0, Mathf.Round(rect.height * pixelsPerPoint)));
@@ -259,7 +259,7 @@ namespace UnityEngine
                 {
                     settings.fontAsset.material.SetFloat("_Sharpness", 0.5f);
                 }
-                
+
             }
 
             settings.material = settings.fontAsset.material;

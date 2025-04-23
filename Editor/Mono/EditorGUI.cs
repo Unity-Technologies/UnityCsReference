@@ -2012,12 +2012,11 @@ namespace UnityEditor
                 this.style = style;
                 this.scrollPosition = scrollPosition;
 
+                position = IndentedRect(position);
                 float fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
                 Rect viewRect = new Rect(0, 0, position.width, fullTextHeight);
 
                 oldScrollValue = style.contentOffset;
-
-                position = IndentedRect(position);
                 if (position.height < viewRect.height)
                 {
                     //Scroll bar position
@@ -2082,7 +2081,23 @@ namespace UnityEditor
 
                     RecycledTextEditor.s_AllowContextCutOrPaste = false;
                     if (sendEventToTextEditor)
+                    {
+                        bool isMouseDown = Event.current.rawType == EventType.MouseDown && Event.current.button == 0;
+                        bool isEditingControl = s_RecycledEditor.IsEditingControl(id);
+
                         DoTextField(s_RecycledEditor, id, position, text, style, string.Empty, out _, false, true, false);
+
+                        if (isMouseDown && Event.current.type == EventType.Used)
+                        {
+                            // We just took control over the Scrollable label
+                            if (!isEditingControl && s_RecycledEditor.IsEditingControl(id))
+                            {
+                                // Properly set the scroll offset as it was set to 0 in the editor.BeginEditing
+                                // Move the recycled Editor offset to match our scrollbar
+                                s_RecycledEditor.scrollOffset = scrollPosition;
+                            }
+                        }
+                    }
                 }
 
                 //Only update the out scrollPosition if the user has interacted with the TextArea (the current event was used)
