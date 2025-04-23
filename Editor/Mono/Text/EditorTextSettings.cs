@@ -116,11 +116,9 @@ namespace UnityEditor
         if (m_FontReferences.Count > 0)
             return;
 
-        Shader shader = TextShaderUtilities.ShaderRef_MobileSDF_IMGUI;
-
         var systemFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_SystemFontConfig;
-        FontAsset systemRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(systemFontConfig, shader);
-        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemRegularFontAsset, shader,
+        FontAsset systemRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(systemFontConfig);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemRegularFontAsset,
             new[]
             {
                 FontPaths.System.Normal,
@@ -129,8 +127,8 @@ namespace UnityEditor
                 FontPaths.System.Warning
             });
 
-        FontAsset systemBoldFontAsset = EditorFontAssetFactory.CreateFontAsset(EditorFontAssetFactory.SystemFontName, "Bold", 90, shader);
-        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemBoldFontAsset, shader,
+        FontAsset systemBoldFontAsset = EditorFontAssetFactory.CreateFontAsset(EditorFontAssetFactory.SystemFontName, "Bold", 90);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, systemBoldFontAsset,
             new[]
             {
                 FontPaths.System.NormalBold,
@@ -138,8 +136,8 @@ namespace UnityEditor
             });
 
         var interFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_InterFontConfig;
-        FontAsset interRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(interFontConfig, shader);
-        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, interRegularFontAsset, shader, new[] { FontPaths.Inter.Regular });
+        FontAsset interRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(interFontConfig);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, interRegularFontAsset, new[] { FontPaths.Inter.Regular });
     }
 
         const int k_MinSupportedPointSize = 5;

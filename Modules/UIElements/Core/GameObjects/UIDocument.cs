@@ -404,10 +404,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            renderer.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            renderer.hideFlags = HideFlags.HideInInspector;
             if (renderer.sharedMaterial)
             {
-                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector;
             }
 
             rootVisualElement.uiRenderer = renderer;

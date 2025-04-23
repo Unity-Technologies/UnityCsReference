@@ -8,8 +8,8 @@ namespace UnityEditor.Modules
     {
         ICompilationExtension CompilationExtension { get; }
         IBuildPostprocessor BuildPostprocessor { get; }
-        IBuildProfileExtension BuildProfileExtension { get; }
         IDerivedBuildTarget DerivedBuildTarget { get; }
-        ISettingEditorExtension SettingEditorExtension { get; }
+        IBuildProfileExtension CreateBuildProfileExtension();
+        ISettingEditorExtension CreateSettingEditorExtension();
     }
 }

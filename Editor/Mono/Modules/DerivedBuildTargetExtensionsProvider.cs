@@ -55,7 +55,7 @@ namespace UnityEditor.Modules
         {
             if (m_DerivedBuildTargetExtensions.TryGetValue(buildTarget, out var derivedBuildTargetExtensions))
             {
-                return derivedBuildTargetExtensions.SettingEditorExtension ?? baseSettingEditorExtension;
+                return derivedBuildTargetExtensions.CreateSettingEditorExtension() ?? baseSettingEditorExtension;
             }
             return baseSettingEditorExtension;
         }
@@ -64,7 +64,7 @@ namespace UnityEditor.Modules
         {
             if (m_DerivedBuildTargetExtensions.TryGetValue(buildTarget, out var derivedBuildTargetExtensions))
             {
-                return derivedBuildTargetExtensions.BuildProfileExtension ?? baseBuildProfileExtension;
+                return derivedBuildTargetExtensions.CreateBuildProfileExtension() ?? baseBuildProfileExtension;
             }
             return baseBuildProfileExtension;
         }
