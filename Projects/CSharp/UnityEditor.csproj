@@ -1821,6 +1821,9 @@
     <Compile Include="..\..\Editor\Mono\IPlayerConnectionPlatformProperties.cs">
       <Link>Editor\Mono\IPlayerConnectionPlatformProperties.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\ISubtargetPlatformProperties.cs">
+      <Link>Editor\Mono\ISubtargetPlatformProperties.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\IUIPlatformProperties.cs">
       <Link>Editor\Mono\IUIPlatformProperties.cs</Link>
     </Compile>

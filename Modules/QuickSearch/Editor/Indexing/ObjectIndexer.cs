@@ -228,6 +228,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPropertyComponentsMarker.Auto();
             int scoreModifier = 0;
             double number = 0;
+            name = name.ToLowerInvariant();
             foreach (var c in GetEntryComponents(value, documentIndex))
             {
                 var score = settings.baseScore + scoreModifier++;
@@ -303,6 +304,7 @@ namespace UnityEditor.Search
             using var _ = k_IndexPropertyMarker.Auto();
             if (string.IsNullOrEmpty(value))
                 return;
+            name = name.ToLowerInvariant();
             var valueLower = value.ToLowerInvariant();
             if (exact)
             {
@@ -310,6 +312,11 @@ namespace UnityEditor.Search
             }
             else
                 AddProperty(name, valueLower, settings.baseScore, documentIndex, saveKeyword: saveKeyword);
+        }
+
+        public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string propertyName, string value)
+        {
+            IndexProperty<TProperty, TPropertyOwner>(documentIndex, propertyName, value, false, false);
         }
 
         public void IndexProperty<TProperty, TPropertyOwner>(int documentIndex, string name, string value, bool saveKeyword, bool exact)
@@ -332,6 +339,7 @@ namespace UnityEditor.Search
         /// <param name="documentIndex">Document where the indexed value was found.</param>
         public void IndexNumber(int documentIndex, string name, double number)
         {
+            name = name.ToLowerInvariant();
             AddNumber(name, number, settings.baseScore, documentIndex);
         }
 
@@ -533,7 +541,7 @@ namespace UnityEditor.Search
                         LogProperty(fieldName, p, propositionGenerationOptions, p.intValue);
                     break;
                 case SerializedPropertyType.Boolean:
-                    IndexProperty(documentIndex, fieldName, p.boolValue.ToString().ToLowerInvariant(), saveKeyword: false, exact: true);
+                    IndexProperty(documentIndex, fieldName, p.boolValue.ToString(), saveKeyword: false, exact: true);
                     LogProperty(fieldName, p, propositionGenerationOptions, p.boolValue);
                     break;
                 case SerializedPropertyType.Float:
@@ -572,7 +580,7 @@ namespace UnityEditor.Search
                     LogProperty(fieldName, p, propositionGenerationOptions, p.objectReferenceValue);
                     break;
                 case SerializedPropertyType.Hash128:
-                    IndexProperty(documentIndex, fieldName, p.hash128Value.ToString().ToLowerInvariant(), saveKeyword: true, exact: true);
+                    IndexProperty(documentIndex, fieldName, p.hash128Value.ToString(), saveKeyword: true, exact: true);
                     LogProperty(fieldName, p, propositionGenerationOptions, p.hash128Value);
                     break;
             }

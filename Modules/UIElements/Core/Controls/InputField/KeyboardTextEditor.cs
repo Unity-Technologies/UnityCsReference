@@ -145,7 +145,15 @@ namespace UnityEngine.UIElements
                 }
 
                 if (!textElement.edition.multiline && (evt.keyCode == KeyCode.KeypadEnter || evt.keyCode == KeyCode.Return))
+                {
+                    string prevText = editingUtilities.text;
                     textElement.edition.UpdateValueFromText?.Invoke();
+
+                    // Revert the text to its previous value when using a delayed textfield to fix a bug with IME inputs (e.g. Japanese).
+                    // Hitting enter with an IME could trigger multiple events, causing duplicated characters otherwise.
+                    if (textElement.edition.isDelayed)
+                        editingUtilities.text = prevText;
+                }
 
                 evt.StopPropagation();
 

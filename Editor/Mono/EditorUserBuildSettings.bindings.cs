@@ -12,6 +12,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Profile;
 using UnityEngine;
 using UnityEditor.Modules;
+using UnityEngine.Assertions;
 
 namespace UnityEditor
 {
@@ -821,8 +822,9 @@ namespace UnityEditor
 
         [NativeMethod("SwitchActiveBuildTargetGuid")]
         private static extern bool SwitchActiveBuildTargetAndSubTargetGuid(GUID platformGuid, BuildTarget target, int subtarget);
-        internal static bool SwitchActiveBuildTargetGuid(GUID platformGuid)
+        internal static bool SwitchActiveBuildTargetGuid(BuildProfile profile)
         {
+            var platformGuid = profile.platformGuid;
             // Account for derived platforms.
             // Jira https://jira.unity3d.com/browse/PLAT-9234
             // The editor triggers recompilation on a build target or subtarget change already. Both of these values
@@ -835,10 +837,17 @@ namespace UnityEditor
             }
 
             var (buildTargetFromGuid, subTargetFromGuid) = BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformGuid);
-
             int activeSubtarget = (int)subTargetFromGuid;
-            if(subTargetFromGuid == StandaloneBuildSubtarget.Default)
-                activeSubtarget = EditorUserBuildSettings.GetActiveSubtargetFor(buildTargetFromGuid);
+
+            //This will either get the base or derived platform to cast to correct baseplatformsetting type.
+            bool result = BuildTargetDiscovery.TryGetBuildTarget(profile.buildTarget, out var buildTarget);
+            if (result && buildTarget != null)
+            {
+                var subtarget = (buildTarget.TextureSubtargetPlatformProperties == null) ? -1 :
+                    buildTarget.TextureSubtargetPlatformProperties.GetSubtargetFromPlatformSettings(profile.platformBuildProfile);
+                if (subtarget != -1) activeSubtarget = subtarget;
+            }
+
 
             return SwitchActiveBuildTargetAndSubTargetGuid(platformGuid, buildTargetFromGuid, activeSubtarget);
         }

@@ -23,7 +23,7 @@ namespace UnityEditor.Search
 
         private SearchPreviewKey m_PreviewKey;
         private IVisualElementScheduledItem m_PreviewRefreshCallback;
-        private const int k_PreviewFetchCounter = 5;
+        private const int k_PreviewFetchCounter = 100;
 
         static readonly string searchFavoriteButtonTooltip = L10n.Tr("Mark as Favorite");
         static readonly string searchFavoriteOnButtonTooltip = L10n.Tr("Remove as Favorite");
@@ -120,8 +120,7 @@ namespace UnityEditor.Search
             {
                 if (m_FetchPreviewOff == null)
                     UpdatePreview();
-            });
-            m_PreviewRefreshCallback.StartingIn(500).Every(500).Until(() =>
+            }).StartingIn(500).Every(500).Until(() =>
             {
                 counter++;
                 return m_ViewModel.previewManager.HasPreview(m_PreviewKey) || counter >= k_PreviewFetchCounter;
