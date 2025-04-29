@@ -751,7 +751,7 @@ namespace UnityEngine.UIElements
             {
                 if (elementPanel == null)
                 {
-                    Debug.LogWarning("Tying to acces dpi setting of a visual element not on a panel");
+                    Debug.LogWarning("Trying to access the DPI setting of a visual element that is not on a panel.");
                     return GUIUtility.pixelsPerPoint;
                 }
 

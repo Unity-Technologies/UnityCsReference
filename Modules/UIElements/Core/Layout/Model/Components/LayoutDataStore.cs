@@ -96,29 +96,6 @@ unsafe partial struct LayoutDataStore : IDisposable
             return m_Chunks[chunkIndex].Buffer + indexInChunk * Size;
         }
 
-        public void EnsureCapacity(int capacity)
-        {
-            var newChunkCount = capacity / ComponentCountPerChunk + 1;
-
-            if (newChunkCount > ChunkCount)
-            {
-                // Grow the chunk ptr array.
-                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), Allocator);
-
-                // Allocate new chunks.
-                for (var i = ChunkCount; i<newChunkCount; i++)
-                {
-                    m_Chunks[i] = new Chunk
-                    {
-                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, 4, Allocator)
-                        // memory is cleared when we call Allocate with some data
-                    };
-                }
-
-                ChunkCount = newChunkCount;
-            }
-        }
-
         public void ResizeCapacity(int capacity)
         {
             var newChunkCount = capacity / ComponentCountPerChunk + 1;
@@ -274,7 +251,15 @@ unsafe partial struct LayoutDataStore : IDisposable
 
     void IncreaseCapacity()
     {
-        ResizeCapacity((int) (m_Data->Capacity * 1.5f));
+        // A word on the growth rate used here.
+        // A rate of 1.5f could lead to more frequent resizing of the m_Version array.
+        // But this is not so much of an issue for the chunk storage which:
+        // 1. "rounds up" the capacity to determine the number of chunks (i.e. capacity / ChunkSize)
+        // 2. only resizes its internal list of chunks and nothing else
+        // So we prioritize not growing the chunk-base storage too fast,
+        // especially considering it never shrinks automatically at the moment.
+        const float growRate = 1.5f;
+        ResizeCapacity((int)(m_Data->Capacity * growRate));
     }
 
     void ResizeCapacity(int capacity)

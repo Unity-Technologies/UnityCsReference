@@ -332,7 +332,7 @@ namespace UnityEngine.TextCore.Text
                     continue;
                 }
 
-                int id = fontRef.font.GetHashCode() + fontRef.fontAsset.material.shader.GetHashCode();
+                int id = fontRef.font.GetHashCode();
 
                 if (!m_FontLookup.ContainsKey(id))
                     m_FontLookup.Add(id, fontRef.fontAsset);
@@ -356,15 +356,10 @@ namespace UnityEngine.TextCore.Text
         internal Dictionary<int, FontAsset> m_FontLookup;
         internal List<FontReferenceMap> m_FontReferences = new List<FontReferenceMap>();
 
-        protected FontAsset GetCachedFontAssetInternal(Font font)
-        {
-            return GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF);
-        }
-
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
-        internal FontAsset GetCachedFontAsset(Font font, Shader shader)
+        internal FontAsset GetCachedFontAsset(Font font)
         {
-            if (font == null || shader == null)
+            if (font == null)
                 return null;
 
             if (m_FontLookup == null)
@@ -373,7 +368,7 @@ namespace UnityEngine.TextCore.Text
                 InitializeFontReferenceLookup();
             }
 
-            int id = font.GetHashCode() + shader.GetHashCode();
+            int id = font.GetHashCode();
 
             if (m_FontLookup.ContainsKey(id))
                 return m_FontLookup[id];
@@ -381,7 +376,7 @@ namespace UnityEngine.TextCore.Text
             if (TextGenerator.IsExecutingJob)
                 return null;
 
-            FontAsset fontAsset = FontAssetFactory.ConvertFontToFontAsset(font, shader);
+            FontAsset fontAsset = FontAssetFactory.ConvertFontToFontAsset(font);
 
             if (fontAsset != null)
             {
@@ -392,15 +387,10 @@ namespace UnityEngine.TextCore.Text
             return fontAsset;
         }
 
-        internal virtual Shader GetFontShader()
-        {
-            return TextShaderUtilities.ShaderRef_MobileSDF;
-        }
-
         private List<FontAsset> GetOSFontAssetList()
         {
             var fonts = Font.GetOSFallbacks();
-            return FontAsset.CreateFontAssetOSFallbackList(fonts, GetFontShader());
+            return FontAsset.CreateFontAssetOSFallbackList(fonts);
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]

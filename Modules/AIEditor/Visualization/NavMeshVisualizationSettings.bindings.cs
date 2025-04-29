@@ -12,8 +12,6 @@ using UnityEngine.Scripting;
 
 [assembly:InternalsVisibleTo("Unity.AI.Navigation.Editor")]
 
-[assembly:InternalsVisibleTo("Unity.AI.Navigation.Editor")]
-
 namespace UnityEditor.AI
 {
     [MovedFrom("UnityEditor")]

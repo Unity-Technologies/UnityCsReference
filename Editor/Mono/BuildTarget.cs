@@ -143,6 +143,8 @@ namespace UnityEditor
         VisionOS = 47,
         ReservedCFE = 48,
 
+        Kepler = 49,
+
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = -1,
