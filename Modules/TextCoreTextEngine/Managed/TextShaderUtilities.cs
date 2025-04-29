@@ -148,44 +148,13 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             get
             {
-                // Try to use TMP shaders first
                 if (((System.Object)k_ShaderRef_MobileSDF) == null)
-                {
-                    k_ShaderRef_MobileSDF = Shader.Find("TextMeshPro/Mobile/Distance Field SSD");
-
-                    if (((System.Object)k_ShaderRef_MobileSDF) == null)
-                        k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field SSD");
-
-                    if (((System.Object)k_ShaderRef_MobileSDF) == null)
-                        k_ShaderRef_MobileSDF = Shader.Find("Hidden/TextCore/Distance Field SSD");
-                }
+                    k_ShaderRef_MobileSDF = Shader.Find("Hidden/TextCore/Distance Field SSD");
 
                 return k_ShaderRef_MobileSDF;
             }
         }
         static Shader k_ShaderRef_MobileSDF;
-
-        /// <summary>
-        /// Returns a reference to the mobile distance field shader for IMGUI
-        /// </summary>
-        internal static Shader ShaderRef_MobileSDF_IMGUI
-        {
-            [VisibleToOtherModules("UnityEngine.IMGUIModule")]
-            get
-            {
-                // IMGUI doesn't work with TMP shader so we ignore that one
-                if (k_ShaderRef_MobileSDF_IMGUI == null)
-                {
-                    k_ShaderRef_MobileSDF_IMGUI = Shader.Find("Text/Mobile/Distance Field SSD");
-
-                    if (k_ShaderRef_MobileSDF_IMGUI == null)
-                        k_ShaderRef_MobileSDF_IMGUI = Shader.Find("Hidden/TextCore/Distance Field SSD");
-                }
-
-                return k_ShaderRef_MobileSDF_IMGUI;
-            }
-        }
-        static Shader k_ShaderRef_MobileSDF_IMGUI;
 
         /// <summary>
         /// Returns a reference to the mobile bitmap shader.
@@ -195,13 +164,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (k_ShaderRef_MobileBitmap == null)
-                {
-                    if (k_ShaderRef_MobileBitmap == null)
-                        k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
-
-                    if (k_ShaderRef_MobileBitmap == null)
-                        k_ShaderRef_MobileBitmap = Shader.Find("Hidden/Internal-GUITextureClipText");
-                }
+                    k_ShaderRef_MobileBitmap = Shader.Find("Hidden/Internal-GUITextureClipText");
 
                 return k_ShaderRef_MobileBitmap;
             }
@@ -215,10 +178,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (k_ShaderRef_Sprite == null)
                 {
-                    k_ShaderRef_Sprite = Shader.Find("TextMeshPro/Sprite");
-
-                    if (k_ShaderRef_Sprite == null)
-                        k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
+                    k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
 
                     if (k_ShaderRef_Sprite == null)
                         k_ShaderRef_Sprite = Shader.Find("Hidden/TextCore/Sprite");
@@ -326,13 +286,6 @@ namespace UnityEngine.TextCore.Text
                 ID_ScaleRatio_A = Shader.PropertyToID("_ScaleRatioA");
                 ID_ScaleRatio_B = Shader.PropertyToID("_ScaleRatioB");
                 ID_ScaleRatio_C = Shader.PropertyToID("_ScaleRatioC");
-
-                // Set internal shader references
-                //if (k_ShaderRef_MobileSDF == null)
-                //    k_ShaderRef_MobileSDF = Shader.Find("Text/Mobile/Distance Field");
-
-                //if (k_ShaderRef_MobileBitmap == null)
-                //    k_ShaderRef_MobileBitmap = Shader.Find("Text/Bitmap");
             }
         }
 

@@ -26,7 +26,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private bool m_IsDiscoverable;
-        public bool isDiscoverable => m_IsDiscoverable || versions.installed?.isDirectDependency == true;
+        public bool isDiscoverable => m_IsDiscoverable;
 
         public string displayName => !string.IsNullOrEmpty(m_Product?.displayName) ? m_Product?.displayName : versions.FirstOrDefault()?.displayName ?? string.Empty;
         public PackageState state

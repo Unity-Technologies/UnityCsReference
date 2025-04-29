@@ -118,5 +118,7 @@ namespace UnityEditor
 
         VisionOS = 36,
         ReservedCFE = 37,
+
+        Kepler = 38,
     }
 }

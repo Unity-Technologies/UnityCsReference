@@ -250,6 +250,8 @@ namespace UnityEngine.UIElements
         public Label labelElement { get; private set; }
         /// <summary>
         /// The string representing the label that will appear beside the field.
+        /// If the string is empty, the label element is removed from the hierarchy.
+        /// If the string is not empty, the label element is added to the hierarchy.
         /// </summary>
         [CreateProperty]
         public string label
@@ -365,6 +367,11 @@ namespace UnityEngine.UIElements
             m_VisualInput = null;
         }
 
+        /// <summary>
+        /// Initializes and returns an instance of <see cref="BaseField"/>.
+        /// </summary>
+        /// <param name="label">The text to use as a label.</param>
+        /// <param name="visualInput">The visual element to use as the input for the field.</param>
         protected BaseField(string label, VisualElement visualInput)
             : this(label)
         {

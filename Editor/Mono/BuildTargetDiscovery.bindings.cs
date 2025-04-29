@@ -498,6 +498,16 @@ namespace UnityEditor
                     iconName = "BuildSettings.QNX",
                     flags = PlatformAttributes.IsHidden | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
+            },
+            {
+               new("f8c7649c24f344129a97cf9854e2d582"),
+               new PlatformInfo
+               {
+                    displayName = "Kepler",
+                    buildTarget = BuildTarget.Kepler,
+                    iconName = "BuildSettings.EmbeddedLinux",
+                    flags = PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsHidden
+                }
             }
         };
 

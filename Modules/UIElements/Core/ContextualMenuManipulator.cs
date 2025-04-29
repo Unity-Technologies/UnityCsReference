@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
         {
             m_MenuBuilder = menuBuilder;
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.RightMouse });
-            if (UIElementsUtility.isOSXContextualMenuPlatform)
+            if (IsOSXContextualMenuPlatform())
             {
                 activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
             }
@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void RegisterCallbacksOnTarget()
         {
-            if (UIElementsUtility.isOSXContextualMenuPlatform)
+            if (IsOSXContextualMenuPlatform())
             {
                 target.RegisterCallback<PointerDownEvent>(OnPointerDownEventOSX);
                 target.RegisterCallback<PointerUpEvent>(OnPointerUpEventOSX);
@@ -53,7 +53,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         protected override void UnregisterCallbacksFromTarget()
         {
-            if (UIElementsUtility.isOSXContextualMenuPlatform)
+            if (IsOSXContextualMenuPlatform())
             {
                 target.UnregisterCallback<PointerDownEvent>(OnPointerDownEventOSX);
                 target.UnregisterCallback<PointerUpEvent>(OnPointerUpEventOSX);
@@ -67,6 +67,15 @@ namespace UnityEngine.UIElements
 
             target.UnregisterCallback<KeyUpEvent>(OnKeyUpEvent);
             target.UnregisterCallback<ContextualMenuPopulateEvent>(OnContextualMenuEvent);
+        }
+
+        /// <summary>
+        /// Check whether the handling of contextual menu events needs to be adapted for OSX.
+        /// </summary>
+        /// <returns>True if it needs to operate as it would on OSX. False otherwise.</returns>
+        protected bool IsOSXContextualMenuPlatform()
+        {
+            return UIElementsUtility.isOSXContextualMenuPlatform;
         }
 
         void OnPointerUpEvent(IPointerEvent evt)

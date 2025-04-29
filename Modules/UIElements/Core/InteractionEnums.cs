@@ -7,6 +7,11 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Controls how many items can be selected at once.
     /// </summary>
+    /// <remarks>
+    /// Used by <see cref="BaseVerticalCollectionView"/> and its inheritors including <see cref="ListView"/>,
+    /// <see cref="TreeView"/>, <see cref="MultiColumnListView"/> and <see cref="MultiColumnTreeView"/>.
+    /// Set the view's @@selectionType@@ property as one of these values to control how many items can be selected at once.
+    /// </remarks>
     public enum SelectionType
     {
         /// <summary>

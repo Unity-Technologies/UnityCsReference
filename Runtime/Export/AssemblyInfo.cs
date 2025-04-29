@@ -37,6 +37,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.WebGL.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.EmbeddedLinux.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.QNX.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Kepler.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]

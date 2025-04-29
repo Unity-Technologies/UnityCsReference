@@ -305,7 +305,7 @@ namespace UnityEditor
             if (selectedIndex >= 0 && selectedIndex < group.GetTotalCount())
                 text = group.GetGameViewSize(selectedIndex).displayText;
 
-            if (EditorGUI.DropdownButton(buttonRect, GUIContent.Temp(text), FocusType.Passive, guiStyle))
+            if (DropdownButton(buttonRect, GUIContent.Temp(text, GameView.Styles.k_AspectRatioTooltip), FocusType.Passive, guiStyle))
             {
                 var menuData = new GameViewSizesMenuItemProvider(groupType);
                 var flexibleMenu = new GameViewSizeMenu(menuData, selectedIndex, new GameViewSizesMenuModifyItemUI(), gameView);

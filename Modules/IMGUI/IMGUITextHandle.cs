@@ -229,7 +229,7 @@ namespace UnityEngine
 
             settings.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.fontStyle);
 
-            settings.fontAsset = settings.textSettings.GetCachedFontAsset(font, TextShaderUtilities.ShaderRef_MobileSDF_IMGUI);
+            settings.fontAsset = settings.textSettings.GetCachedFontAsset(font);
             if (settings.fontAsset == null)
                 return;
             var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
@@ -245,6 +245,7 @@ namespace UnityEngine
             {
                 settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
             }
+                
 
             settings.screenRect = new Rect(0, 0, rect.width, rect.height);
             settings.text = text;
