@@ -578,7 +578,7 @@ namespace UnityEditor.Search
                     evt.Use();
                     return true;
                 }
-                else
+                else if (m_TextBlock != null)
                 {
                     m_TextBlock.GetSearchField()?.Focus();
                 }

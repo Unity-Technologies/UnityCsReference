@@ -29,6 +29,7 @@ internal abstract class BaseBuildTarget : IBuildTarget
     public virtual IUIPlatformProperties UIPlatformProperties => Properties as IUIPlatformProperties;
     public virtual IAudioPlatformProperties AudioPlatformProperties => Properties as IAudioPlatformProperties;
     public virtual IVRPlatformProperties VRPlatformProperties => Properties as IVRPlatformProperties;
+    public virtual ISubtargetPlatformProperties TextureSubtargetPlatformProperties => Properties as ISubtargetPlatformProperties;
 
     protected virtual IPlatformProperties Properties => null;
 

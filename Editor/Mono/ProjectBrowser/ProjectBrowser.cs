@@ -1811,7 +1811,9 @@ namespace UnityEditor
                 return;
             }
             // Check if event is delete on root folder
-            if (ShouldDiscardCommandsEventsForRootFolders())
+            // Note that if the folder is in favorite, there is no need for root check.
+            // Because we only remove it from the favorite list, not delete the asset.
+            if (!SelectionIsFavorite() && ShouldDiscardCommandsEventsForRootFolders())
             {
                 Debug.LogFormat(LogType.Warning, LogOption.NoStacktrace, null, k_WarningRootFolderDeletionFormat, Event.current.commandName);
                 return;
@@ -3117,6 +3119,9 @@ namespace UnityEditor
 
         internal bool SelectionIsFavorite()
         {
+            if (m_FolderTree == null)
+                return false;
+
             if (m_FolderTree.GetSelection().Length != 1)
                 return false;
 

@@ -316,6 +316,22 @@ namespace Unity.UI.Builder
                     }
                 }
 
+                // Add slot/slot-name
+                var veaId = vea.id;
+                if (vta.TryGetSlotInsertionPoint(veaId, out var slotName))
+                {
+                    stringBuilder.Append($" slot-name=\"{ slotName }\"");
+                }
+
+                if (vta.GetParentAsset(root) is TemplateAsset { slotUsages: not null } parentTemplateAsset)
+                {
+                    var slotIndex = parentTemplateAsset.slotUsages.FindIndex(su => su.assetId == veaId);
+                    if (slotIndex >= 0)
+                    {
+                        stringBuilder.Append($" slot=\"{ parentTemplateAsset.slotUsages[slotIndex].slotName }\"");
+                    }
+                }
+
                 // Add special children.
                 var styleSheets = vea.GetStyleSheets();
                 var styleSheetPaths = vea.GetStyleSheetPaths();

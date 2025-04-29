@@ -199,36 +199,14 @@ namespace UnityEditor.Search
             var currentIndex = m_GridView.selectedIndex == -1 ? -1 : m_GridView.selectedIndices.Last();
             var nextSelectedIndex = -1;
             if (evt.direction == NavigationMoveEvent.Direction.Right)
-                WrapNextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
             else if (evt.direction == NavigationMoveEvent.Direction.Left)
-                WrapPreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
 
             VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
 
             m_GridView.UnregisterCallback<NavigationMoveEvent>(OnNavigationMove);
             evt.StopImmediatePropagation();
-        }
-
-        private void WrapNextSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = 0;
-            }
-            else
-                nextSelectedIndex = Utils.Wrap(currentIndex + 1, itemCount);
-        }
-
-        private void WrapPreviousSelectedItem(int currentIndex, int itemCount, ref int nextSelectedIndex)
-        {
-            if (currentIndex == -1)
-            {
-                if (itemCount > 0)
-                    nextSelectedIndex = itemCount - 1;
-            }
-            else if (itemCount > 0)
-                nextSelectedIndex = Utils.Wrap(currentIndex - 1, itemCount);
         }
 
         private bool VerifySelectionChanged(int currentIndex, int nextSelectedIndex, EventBase evt)
@@ -308,12 +286,12 @@ namespace UnityEditor.Search
             var selectionHasChanged = false;
             if (evt.keyCode == KeyCode.DownArrow)
             {
-                WrapNextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.NextSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
                 selectionHasChanged = VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
             }
             else if (evt.keyCode == KeyCode.UpArrow)
             {
-                WrapPreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
+                SearchCollectionUtils.PreviousSelectedItem(currentIndex, itemCount, ref nextSelectedIndex);
                 selectionHasChanged = VerifySelectionChanged(currentIndex, nextSelectedIndex, evt);
             }
             if (evt.keyCode == KeyCode.PageDown)

@@ -272,7 +272,7 @@ namespace UnityEditor.Build.Profile
         /// </summary>
         public static void SwitchLegacyActiveFromBuildProfile(BuildProfile profile)
         {
-            EditorUserBuildSettings.SwitchActiveBuildTargetGuid(profile.platformGuid);
+            EditorUserBuildSettings.SwitchActiveBuildTargetGuid(profile);
         }
 
         public static void SwitchLegacySelectedBuildTargets(BuildProfile profile)

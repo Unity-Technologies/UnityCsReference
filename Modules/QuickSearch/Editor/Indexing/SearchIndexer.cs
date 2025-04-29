@@ -53,7 +53,8 @@ namespace UnityEditor.Search
         // 31- Update custom indexers with prefabs.
         // 32- Property references also index GlobalObjectId with PropertyName.
         // 33- Support for EnumFlags.
-        internal const int version = 0x033;
+        // 34- Modify ObjectIndex.IndexProperty to force all property names to be lowercase.
+        internal const int version = 0x034;
 
         public enum Type : byte
         {

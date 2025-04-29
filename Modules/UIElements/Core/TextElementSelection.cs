@@ -492,6 +492,11 @@ namespace UnityEngine.UIElements
                     playmodeTintColor = playmodeTintColor
                 });
             }
+
+            if (m_TouchScreenKeyboard != null && hideMobileInput)
+            {
+                m_TouchScreenKeyboard.selection = new RangeInt(startIndex, endIndex - startIndex);
+            }
         }
 
         // used by unit tests

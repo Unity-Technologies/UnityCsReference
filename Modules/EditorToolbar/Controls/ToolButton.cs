@@ -75,8 +75,6 @@ namespace UnityEditor.Toolbars
                 Add(variantIcon);
             }
 
-            UpdateState();
-            UpdateContent();
             RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             RegisterCallback<MouseDownEvent>(OnMouseDown);
@@ -250,6 +248,9 @@ namespace UnityEditor.Toolbars
             if (!IsBuiltinTool())
                 EditorApplication.update += UpdateAvailability;
 
+            UpdateState();
+            UpdateContent();
+
             if (m_TargetTool == Tool.View)
             {
                 Tools.viewToolChanged += UpdateViewToolContent;
@@ -331,7 +332,10 @@ namespace UnityEditor.Toolbars
                     tooltip = L10n.Tr(content.tooltip);
                     if (content.image == null && !string.IsNullOrEmpty(content.text))
                     {
-                        textIcon = content.text;
+                        if (IsParentVerticalToolbar())
+                            textIcon = content.text;
+                        else
+                            text = content.text;
                     }
                     else
                     {

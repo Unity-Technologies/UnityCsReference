@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -400,6 +399,7 @@ namespace UnityEngine.UIElements
 
         VisualElement m_AttachedRootVisualContainer;
         float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+        bool m_SingleLineHeightDirtyFlag;
         const string k_SingleLineHeightPropertyName = "--unity-metrics-single_line-height";
 
         const float k_ScrollPageOverlapFactor = 0.1f;
@@ -1144,7 +1144,7 @@ namespace UnityEngine.UIElements
 
             m_AttachedRootVisualContainer = GetRootVisualContainer();
             m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            ReadSingleLineHeight();
+            MarkSingleLineHeightDirty();
 
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
@@ -1805,6 +1805,12 @@ namespace UnityEngine.UIElements
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+
+            if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline && m_SingleLineHeightDirtyFlag)
+            {
+                ReadSingleLineHeight();
+            }
+
             var mouseScrollFactor = m_MouseWheelScrollSizeIsInline ? mouseWheelScrollSize : m_SingleLineHeight;
 
             if (canUseVerticalScroll)
@@ -1840,7 +1846,13 @@ namespace UnityEngine.UIElements
 
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
-            ReadSingleLineHeight();
+            // Do not read single line height yet: SV or one of its ancestors might have custom variable values that affect it.
+            MarkSingleLineHeightDirty();
+        }
+
+        void MarkSingleLineHeightDirty()
+        {
+            m_SingleLineHeightDirtyFlag = true;
         }
 
         void OnRootPointerUp(PointerUpEvent evt)
@@ -1850,18 +1862,28 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            if (m_AttachedRootVisualContainer?.computedStyle.customProperties != null &&
-                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            var currentParent = (VisualElement) this;
+            while (currentParent != null)
             {
-                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                if (currentParent.computedStyle.customProperties != null &&
+                    currentParent.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
                 {
-                    m_SingleLineHeight = dimension.value;
+                    m_SingleLineHeightDirtyFlag = false;
+                    if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                    {
+                        m_SingleLineHeight = dimension.value;
+                        return;
+                    }
                 }
+                else if (currentParent == m_AttachedRootVisualContainer)
+                {
+                    break;
+                }
+
+                currentParent = currentParent.parent;
             }
-            else
-            {
-                m_SingleLineHeight = UIElementsUtility.singleLineHeight;
-            }
+            m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+            m_SingleLineHeightDirtyFlag = false;
         }
 
         void UpdateElasticBehaviour()

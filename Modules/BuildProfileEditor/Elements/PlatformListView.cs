@@ -200,7 +200,7 @@ namespace UnityEditor.Build.Profile.Elements
         {
             if (m_PlatformListView.selectedIndex >= 0)
                 m_PlatformListView.ClearSelection();
-            
+
             ClearSharedSceneListSelection();
 
             m_BuildProfilesListView.SetSelection(index);
@@ -210,7 +210,7 @@ namespace UnityEditor.Build.Profile.Elements
         {
             if (m_PlatformListView.selectedIndex >= 0)
                 m_PlatformListView.ClearSelection();
-                
+
             if (m_BuildProfilesListView.selectedIndex >= 0)
                 m_BuildProfilesListView.ClearSelection();
 
@@ -237,7 +237,8 @@ namespace UnityEditor.Build.Profile.Elements
             if (TrySelectClassicBasePlatform())
                 return;
 
-            Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
+            // Disabled warning message. See PLAT-12653.
+            //Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
         }
 
         bool TrySelectClassicPlatform()

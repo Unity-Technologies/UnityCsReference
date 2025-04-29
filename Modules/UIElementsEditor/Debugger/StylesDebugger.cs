@@ -193,8 +193,25 @@ namespace UnityEditor.UIElements.Debugger
             var textElement = m_SelectedElement as TextElement;
             if (textElement != null)
             {
+                EditorGUILayout.BeginHorizontal();
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);
+
+                if (Unsupported.IsDeveloperMode())
+                {
+                    string unicodeSequence = "";
+                    if (!string.IsNullOrEmpty(textElement.text))
+                            unicodeSequence = string.Join(", ", textElement.text.Select(c => $"U+{((int)c):X4}"));
+                    GUILayout.Label("Unicode:", GUILayout.Width(55));
+                    EditorGUILayout.SelectableLabel(
+                        unicodeSequence,
+                        EditorStyles.textField,
+                        GUILayout.Height(EditorGUIUtility.singleLineHeight),
+                        GUILayout.MinWidth(100)
+                    );
+                }
+                EditorGUILayout.EndHorizontal();
             }
+
 
             m_SelectedElement.viewDataKey = EditorGUILayout.TextField("View Data Key", m_SelectedElement.viewDataKey);
 

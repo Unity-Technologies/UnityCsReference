@@ -10,19 +10,6 @@ namespace UnityEngine
 {
     internal static class SpookyHash
     {
-        static readonly bool AllowUnalignedRead = AttemptDetectAllowUnalignedRead();
-        static bool AttemptDetectAllowUnalignedRead()
-        {
-            switch (SystemInfo.processorType)
-            {
-                case "x86":
-                case "AMD64": // Known to tolerate unaligned-reads well.
-                    return true;
-            }
-
-            return false;
-        }
-
         // number of uint64's in internal state
         const int k_NumVars = 12;
 
@@ -87,7 +74,7 @@ namespace UnityEngine
             end = u.p64 + (length / k_BlockSize) * k_NumVars;
 
             // handle all whole sc_blockSize blocks of bytes
-            if (AllowUnalignedRead || ((u.i & 0x7) == 0))
+            if ((u.i & 0x7) == 0)
             {
                 while (u.p64 < end)
                 {
@@ -118,7 +105,7 @@ namespace UnityEngine
             // Handle the last partial block of sc_blockSize bytes.
             remainder = length - (ulong)((byte*)end - (byte*)message);
             UnsafeUtility.MemCpy(buf, end, (long)remainder);
-            memset(((byte*)buf) + remainder, 0, k_BlockSize - remainder);
+            UnsafeUtility.MemSet(((byte*)buf) + remainder, 0, (long)(k_BlockSize - remainder));
             ((byte*)buf)[k_BlockSize - 1] = (byte)remainder;
 
             // do some final mixing
@@ -211,7 +198,7 @@ namespace UnityEngine
             ulong* buf = stackalloc ulong[2 * k_NumVars];
             U u = new U((ushort*)message);
 
-            if (!AllowUnalignedRead && (u.i & 0x7) != 0)
+            if ((u.i & 0x7) != 0)
             {
                 UnsafeUtility.MemCpy(buf, message, (long)length);
                 u.p64 = buf;
@@ -397,37 +384,6 @@ namespace UnityEngine
             s9 += data[9];   s11 ^= s7; s8 ^= s9;   Rot64(ref s9, 54);  s8 += s10;
             s10 += data[10]; s0 ^= s8;  s9 ^= s10;  Rot64(ref s10, 22); s9 += s11;
             s11 += data[11]; s1 ^= s9;  s10 ^= s11; Rot64(ref s11, 46); s10 += s0;
-        }
-
-        static unsafe void memset(void* dst, int value, ulong numberOfBytes)
-        {
-            // Copy per 8 bytes
-            {
-                ulong v = ((uint)value) | ((uint)value << 32);
-                ulong* dst8 = (ulong*)dst;
-                var count = numberOfBytes >> 3; // divide by 8
-                ulong i = 0;
-                for (; i < count; ++i)
-                    dst8[i] = v;
-
-                // Get remainder
-                dst = (void*)dst8;
-                numberOfBytes -= count;
-            }
-
-            // Copy per byte
-            {
-                byte* v = stackalloc byte[4];
-                v[0] = (byte)(((uint)value) & 0xF);
-                v[1] = (byte)((((uint)value) >> 4) & 0xF);
-                v[2] = (byte)((((uint)value) >> 8) & 0xF);
-                v[3] = (byte)((((uint)value) >> 12) & 0xF);
-                byte* dst1 = (byte*)dst;
-                var count = numberOfBytes; // remainder
-                ulong i = 0;
-                for (; i < count; ++i)
-                    dst1[i] = v[i % 4];
-            }
         }
     }
 }

@@ -230,6 +230,7 @@ namespace UnityEditor
                     }
                 }
             }
+            SyncToState();
 
             Repaint();
         }

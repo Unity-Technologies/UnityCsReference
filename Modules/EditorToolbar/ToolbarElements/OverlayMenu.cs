@@ -81,7 +81,11 @@ namespace UnityEditor.Overlays
                 toggle.SetValueWithoutNotify(overlay.displayed);
                 toggle.RegisterValueChangedCallback((evt) => overlay.displayed = evt.newValue);
                 Action<bool> displayedChanged = (value) => toggle.SetValueWithoutNotify(value);
-                toggle.RegisterCallback<AttachToPanelEvent>((evt) => overlay.displayedChanged += displayedChanged);
+                toggle.RegisterCallback<AttachToPanelEvent>((evt) =>
+                {
+                    displayedChanged(overlay.displayed);
+                    overlay.displayedChanged += displayedChanged;
+                });
                 toggle.RegisterCallback<DetachFromPanelEvent>((evt) => overlay.displayedChanged -= displayedChanged);
                 return toggle;
             }
