@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
 using UnityEngine.Bindings;
@@ -400,6 +399,7 @@ namespace UnityEngine.UIElements
 
         VisualElement m_AttachedRootVisualContainer;
         float m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+        bool m_SingleLineHeightDirtyFlag;
         const string k_SingleLineHeightPropertyName = "--unity-metrics-single_line-height";
 
         const float k_ScrollPageOverlapFactor = 0.1f;
@@ -1027,10 +1027,6 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
-                    // Our BaseField overwrites the whole object when there's a viewDataKey applied. As a result, this
-                    // brings back the old previous highValue and therefore, we need to update it back to the correct
-                    // scrollableWidth.
-                    horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
             { viewDataKey = "HorizontalScroller" };
@@ -1043,13 +1039,12 @@ namespace UnityEngine.UIElements
                 (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
-                    // Our BaseField overwrites the whole object when there's a viewDataKey applied. As a result, this
-                    // brings back the old previous highValue and therefore, we need to update it back to the correct
-                    // scrollableHeight.
-                    verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
             { viewDataKey = "VerticalScroller" };
+
+            verticalScroller.slider.viewDataRestored += OnVerticalSliderViewDataRestored;
+            horizontalScroller.slider.viewDataRestored += OnHorizontalSliderViewDataRestored;
 
             horizontalScroller.slider.onSetValueWithoutNotify += OnHorizontalScrollerSetValueWithoutNotify;
             verticalScroller.slider.onSetValueWithoutNotify += OnVerticalScrollerSetValueWithoutNotify;
@@ -1164,7 +1159,7 @@ namespace UnityEngine.UIElements
 
             m_AttachedRootVisualContainer = GetRootVisualContainer();
             m_AttachedRootVisualContainer?.RegisterCallback<CustomStyleResolvedEvent>(OnRootCustomStyleResolved);
-            ReadSingleLineHeight();
+            MarkSingleLineHeightDirty();
 
             if (evt.destinationPanel.contextType == ContextType.Player)
             {
@@ -1259,6 +1254,18 @@ namespace UnityEngine.UIElements
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
             UpdateContentViewTransform();
             ScheduleResetLayoutPass();
+        }
+
+        void OnVerticalSliderViewDataRestored()
+        {
+            verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
+            UpdateContentViewTransform();
+        }
+
+        void OnHorizontalSliderViewDataRestored()
+        {
+            horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
+            UpdateContentViewTransform();
         }
 
         void OnVerticalScrollerSetValueWithoutNotify(float value)
@@ -1810,10 +1817,6 @@ namespace UnityEngine.UIElements
             verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
             horizontalScroller.lowValue = 0f;
             horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
-
-            // Need to sync the offset values with the scroller's values since highValue might change this.
-            m_ScrollOffset.y = verticalScroller.value;
-            m_ScrollOffset.x = horizontalScroller.value;
         }
 
         private void OnScrollersGeometryChanged(GeometryChangedEvent evt)
@@ -1841,6 +1844,12 @@ namespace UnityEngine.UIElements
             var canUseVerticalScroll = mode != ScrollViewMode.Horizontal && scrollableHeight > 0;
             var canUseHorizontalScroll = mode != ScrollViewMode.Vertical && scrollableWidth > 0;
             var horizontalScrollDelta = canUseHorizontalScroll && !canUseVerticalScroll ? evt.delta.y : evt.delta.x;
+
+            if ((canUseHorizontalScroll || canUseVerticalScroll) && !m_MouseWheelScrollSizeIsInline && m_SingleLineHeightDirtyFlag)
+            {
+                ReadSingleLineHeight();
+            }
+
             var mouseScrollFactor = m_MouseWheelScrollSizeIsInline ? mouseWheelScrollSize : m_SingleLineHeight;
 
             if (canUseVerticalScroll)
@@ -1876,7 +1885,13 @@ namespace UnityEngine.UIElements
 
         void OnRootCustomStyleResolved(CustomStyleResolvedEvent evt)
         {
-            ReadSingleLineHeight();
+            // Do not read single line height yet: SV or one of its ancestors might have custom variable values that affect it.
+            MarkSingleLineHeightDirty();
+        }
+
+        void MarkSingleLineHeightDirty()
+        {
+            m_SingleLineHeightDirtyFlag = true;
         }
 
         void OnRootPointerUp(PointerUpEvent evt)
@@ -1886,18 +1901,28 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            if (m_AttachedRootVisualContainer?.computedStyle.customProperties != null &&
-                m_AttachedRootVisualContainer.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
+            var currentParent = (VisualElement) this;
+            while (currentParent != null)
             {
-                if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                if (currentParent.computedStyle.customProperties != null &&
+                    currentParent.computedStyle.customProperties.TryGetValue(k_SingleLineHeightPropertyName, out var customProp))
                 {
-                    m_SingleLineHeight = dimension.value;
+                    m_SingleLineHeightDirtyFlag = false;
+                    if (customProp.sheet.TryReadDimension(customProp.handle, out var dimension))
+                    {
+                        m_SingleLineHeight = dimension.value;
+                        return;
+                    }
                 }
+                else if (currentParent == m_AttachedRootVisualContainer)
+                {
+                    break;
+                }
+
+                currentParent = currentParent.parent;
             }
-            else
-            {
-                m_SingleLineHeight = UIElementsUtility.singleLineHeight;
-            }
+            m_SingleLineHeight = UIElementsUtility.singleLineHeight;
+            m_SingleLineHeightDirtyFlag = false;
         }
 
         void UpdateElasticBehaviour()
@@ -1917,15 +1942,28 @@ namespace UnityEngine.UIElements
 
         internal void SetScrollOffsetWithoutNotify(Vector2 value)
         {
-            m_ScrollOffset = value;
             horizontalScroller.slider.SetValueWithoutNotify(value.x);
             verticalScroller.slider.SetValueWithoutNotify(value.y);
+            // Can't directly use the value's x and y as they might be clamped by the slider.
+            m_ScrollOffset = new Vector2(horizontalScroller.value, verticalScroller.value);
             SaveViewData();
         }
 
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
+
+            // There is a viewDataKey set in the inspector's scrollview. For PropertyEditor, we disable the scrollbar's
+            // persistance by removing the viewDataKey. To comply with this use case, we want to skip the restore as not
+            // every inspector will be used as a PropertyEditor.
+            if (string.IsNullOrEmpty(verticalScroller.viewDataKey) &&
+                string.IsNullOrEmpty(verticalScroller.slider.viewDataKey) &&
+                string.IsNullOrEmpty(horizontalScroller.viewDataKey) &&
+                string.IsNullOrEmpty(horizontalScroller.slider.viewDataKey))
+            {
+                return;
+            }
+
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
             UpdateContentViewTransform();

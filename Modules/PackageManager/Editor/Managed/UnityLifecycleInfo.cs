@@ -36,6 +36,10 @@ namespace UnityEditor.PackageManager.UnityLifecycle
         [NativeName("deprecationMessage")]
         private string m_DeprecationMessage;
 
+        [SerializeField]
+        [NativeName("isDiscoverable")]
+        private bool m_IsDiscoverable;
+
         public string version => m_Version;
         public string nextVersion => m_NextVersion;
         public string recommendedVersion => m_RecommendedVersion;
@@ -43,15 +47,18 @@ namespace UnityEditor.PackageManager.UnityLifecycle
         public bool isDeprecated => m_IsDeprecated;
         public string deprecationMessage => m_DeprecationMessage;
 
-        internal UnityLifecycleInfo() : this("", "", "", false, "") {}
+        public bool isDiscoverable => m_IsDiscoverable;
 
-        internal UnityLifecycleInfo(string version, string nextVersion, string recommendedVersion, bool isDeprecated, string deprecationMessage)
+        internal UnityLifecycleInfo() : this("", "", "", false, "", false) {}
+
+        internal UnityLifecycleInfo(string version, string nextVersion, string recommendedVersion, bool isDeprecated, string deprecationMessage, bool isDiscoverable)
         {
             m_Version = version;
             m_NextVersion = nextVersion;
             m_RecommendedVersion = recommendedVersion;
             m_IsDeprecated = isDeprecated;
             m_DeprecationMessage = deprecationMessage ?? "";
+            m_IsDiscoverable = isDiscoverable;
         }
     }
 }

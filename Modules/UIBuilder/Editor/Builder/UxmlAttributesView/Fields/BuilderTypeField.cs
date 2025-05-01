@@ -169,7 +169,17 @@ namespace UnityEditor.UIElements
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
                     // Get all types in the assembly
-                    foreach (var t in assembly.GetTypes())
+                    Type[] types;
+                    try
+                    {
+                        types = assembly.GetTypes();
+                    }
+                    // In case of the assembly contains one or more types that cannot be loaded, simply ignore it
+                    catch (ReflectionTypeLoadException)
+                    {
+                        continue;
+                    }
+                    foreach (var t in types)
                     {
                         yield return t;
                     }

@@ -68,63 +68,10 @@ namespace UnityEngine.UIElements.UIR
 
         bool blockDirtyRegistration { get; set; }
 
-        internal static void InitRenderData(RenderData renderData)
-        {
-            // IMPORTANT NOTE: Is is important to initialize every RenderData field here
-            // as they are reused from previously pooled elements.
-
-            renderData.owner = null;
-            renderData.renderTree = null;
-            renderData.parent = null;
-            renderData.nextSibling = null;
-            renderData.prevSibling = null;
-            renderData.firstChild = null;
-            renderData.lastChild = null;
-            renderData.groupTransformAncestor = null;
-            renderData.boneTransformAncestor = null;
-            renderData.prevDirty = null;
-            renderData.nextDirty = null;
-            renderData.flags = RenderDataFlags.IsClippingRectDirty;
-            renderData.depthInRenderTree = 0;
-            renderData.dirtiedValues = RenderDataDirtyTypes.None;
-            renderData.dirtyID = 0;
-            renderData.firstHeadCommand = null;
-            renderData.lastHeadCommand = null;
-            renderData.firstTailCommand = null;
-            renderData.lastTailCommand = null;
-            renderData.localFlipsWinding = false;
-            renderData.worldFlipsWinding = false;
-            renderData.worldTransformScaleZero = false;
-            renderData.clipMethod = ClipMethod.Undetermined;
-            renderData.childrenStencilRef = 0;
-            renderData.childrenMaskDepth = 0;
-            renderData.headMesh = null;
-            renderData.tailMesh = null;
-            renderData.verticesSpace = Matrix4x4.identity;
-            renderData.transformID = UIRVEShaderInfoAllocator.identityTransform;
-            renderData.clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
-            renderData.opacityID = UIRVEShaderInfoAllocator.fullOpacity;
-            renderData.colorID = BMPAlloc.Invalid;
-            renderData.backgroundColorID = BMPAlloc.Invalid;
-            renderData.borderLeftColorID = BMPAlloc.Invalid;
-            renderData.borderTopColorID = BMPAlloc.Invalid;
-            renderData.borderRightColorID = BMPAlloc.Invalid;
-            renderData.borderBottomColorID = BMPAlloc.Invalid;
-            renderData.tintColorID = BMPAlloc.Invalid;
-            renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
-            renderData.compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
-            renderData.backgroundAlpha = 0.0f;
-            renderData.textures = null;
-            renderData.pendingRepaint = false;
-            renderData.pendingHierarchicalRepaint = false;
-            renderData.clippingRect = Rect.zero;
-            renderData.clippingRectMinusGroup = Rect.zero;
-        }
-
         internal RenderData GetPooledRenderData()
         {
             var data = m_RenderDataPool.Get();
-            InitRenderData(data);
+            data.Init();
             return data;
         }
 

@@ -49,7 +49,7 @@ class AIDropdownContent : PopupWindowContent
         packages = new()
         {
             "com.unity.ai.generators",
-            "com.unity.ai.chat"
+            "com.unity.ai.assistant"
         },
 
         installButtonText = "Agree and install AI features"

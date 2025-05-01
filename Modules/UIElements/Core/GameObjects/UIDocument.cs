@@ -525,10 +525,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            renderer.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+            renderer.hideFlags = HideFlags.HideInInspector;
             if (renderer.sharedMaterial)
             {
-                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector | HideFlags.HideAndDontSave;
+                renderer.sharedMaterial.hideFlags = HideFlags.HideInInspector;
             }
 
             m_RootVisualElement.uiRenderer = renderer;
@@ -543,7 +543,7 @@ namespace UnityEngine.UIElements
 
             Debug.Assert(rtp.drawsInCameras);
 
-            var bb = SanitizeRendererBounds(rootVisualElement.localBoundsNested3D);
+            var bb = SanitizeRendererBounds(rootVisualElement.localBounds3D);
             var toGameObject = TransformToGameObjectMatrix();
             VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
 
@@ -702,7 +702,7 @@ namespace UnityEngine.UIElements
 
         Bounds LocalBoundsFromPivotSource()
         {
-            var localBounds = m_RootVisualElement.localBounds3D;
+            var localBounds = m_RootVisualElement.localBounds3DWithoutNested3D;
 
             Bounds bb;
             if (m_PivotReferenceSize == PivotReferenceSize.BoundingBox)

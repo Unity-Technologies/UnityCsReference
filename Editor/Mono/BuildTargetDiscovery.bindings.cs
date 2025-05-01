@@ -764,64 +764,15 @@ namespace UnityEditor
                 }
 
                 bool isInstalled = false;
-                if (platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget))
-                {
-                    var serverVariations = new[]
-                    {
-                        "win32_server_development",
-                        "win32_server_nondevelopment",
-                        "win64_server_development",
-                        "win64_server_nondevelopment",
-                        "win_arm64_server_development",
-                        "win_arm64_server_nondevelopment",
-                    };
-                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
-                }
-                else if (platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget))
-                {
-                    var serverVariations = new[]
-                    {
-                        "linux64_server_development",
-                        "linux64_server_nondevelopment",
-                    };
-                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
-                }
-                else if (platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
-                {
-                    var serverVariations = new[]
-                    {
-                        "macos_x64_server_development",
-                        "macos_x64_server_nondevelopment",
-                        "macos_arm64_server_development",
-                        "macos_arm64_server_nondevelopment",
-                        "macos_x64arm64_server_development",
-                        "macos_x64arm64_server_nondevelopment",
-                    };
-                    isInstalled = VariationPresent(serverVariations, playbackEngineDirectory);
-                }
+                if (platform.Value.HasFlag(PlatformAttributes.IsWindowsServerBuildTarget) ||
+                    platform.Value.HasFlag(PlatformAttributes.IsLinuxServerBuildTarget) ||
+                    platform.Value.HasFlag(PlatformAttributes.IsMacServerBuildTarget))
+                    isInstalled = BuildPipeline.IsServerBuildPlatformSupported(platform.Value.buildTarget);
                 else
                     isInstalled = true;
 
                 k_PlatformInstalledData.Add(platform.Key, isInstalled);
             }
-        }
-
-        static bool VariationPresent(string[] variations, string playbackEngineDirectory)
-        {
-            if (string.IsNullOrEmpty(playbackEngineDirectory))
-                return false;
-
-            var scriptingBackends = new[] { "mono", "il2cpp", "coreclr" };
-            foreach (var variation in variations)
-            {
-                foreach (var backend in scriptingBackends)
-                {
-                    if (Directory.Exists(Paths.Combine(playbackEngineDirectory, "Variations", variation + "_" + backend)))
-                        return true;
-                }
-            }
-
-            return false;
         }
 
         [System.Obsolete("BuildPlatformIsInstalled(BuildTarget) is obsolete. Use BuildPlatformIsInstalled(IBuildTarget) instead.", false)]

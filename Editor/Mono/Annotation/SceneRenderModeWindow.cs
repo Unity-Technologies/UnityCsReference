@@ -146,7 +146,7 @@ namespace UnityEditor
 
         }
 
-        // Default CameraMode should be DrawCameraMode.GIContributorsReceivers
+        // UUM-96180: Default CameraMode should be DrawCameraMode.GIContributorsReceivers
         internal static SceneView.CameraMode defaultCameraMode
         {
             get

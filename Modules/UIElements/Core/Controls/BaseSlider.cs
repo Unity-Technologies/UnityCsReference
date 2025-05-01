@@ -766,6 +766,8 @@ namespace UnityEngine.UIElements
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
+            var key = GetFullHierarchicalViewDataKey();
+            OverwriteFromViewData(this, key);
             UpdateDragElementPosition();
         }
 
@@ -804,7 +806,7 @@ namespace UnityEngine.UIElements
                     var newPos = new Vector3(newLeft, 0, 0);
                     dragElement.style.translate = newPos;
                     dragBorderElement.style.translate = newPos;
-                    
+
                     // When the dragElement moves we can reset our cumlative page size
                     m_AdjustedPageSizeFromClick = 0;
                 }
@@ -827,7 +829,7 @@ namespace UnityEngine.UIElements
                     var newPos = new Vector3(0, newTop, 0);
                     dragElement.style.translate = newPos;
                     dragBorderElement.style.translate = newPos;
-                    
+
                     // When the dragElement moves we can reset our cumlative page size
                     m_AdjustedPageSizeFromClick = 0;
                 }

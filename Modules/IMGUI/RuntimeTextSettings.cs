@@ -30,12 +30,6 @@ namespace UnityEngine
 
         static List<FontAsset> s_FallbackOSFontAssetIMGUIInternal;
 
-
-        internal override Shader GetFontShader()
-        {
-            return TextShaderUtilities.ShaderRef_MobileSDF_IMGUI;
-        }
-
         internal override List<FontAsset> GetStaticFallbackOSFontAsset()
         {
             return s_FallbackOSFontAssetIMGUIInternal;

@@ -80,6 +80,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         public abstract RefreshOptions refreshOptions { get; }
         public abstract IVisualStateList visualStates { get; }
 
+        public virtual RegistryInfo scopedRegistry => null;
+
         [NonSerialized]
         protected IPackageDatabase m_PackageDatabase;
         [ExcludeFromCodeCoverage]

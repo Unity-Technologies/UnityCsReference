@@ -203,6 +203,7 @@ namespace UnityEditor
     }
 
     // What to do on uncaught .NET exception (on iOS)
+    [Obsolete("The enum is deprecated and will be removed in a future release.")]
     public enum ActionOnDotNetUnhandledException
     {
         // Silent exit
@@ -1536,6 +1537,7 @@ namespace UnityEditor
         public static extern bool enableInternalProfiler { get; set; }
 
         /// What to do on unhandled .NET exceptions on iOS
+        [Obsolete("Non-functional. The property will be removed in a future release.")]
         public static extern ActionOnDotNetUnhandledException actionOnDotNetUnhandledException { get; set; }
 
         /// Whether to log Objective-C uncaught exceptions on iOS

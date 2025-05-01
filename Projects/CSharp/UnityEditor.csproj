@@ -4854,11 +4854,11 @@
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\OverlayMenu.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\OverlayMenu.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PackageManagerButton.cs">
+      <Link>Modules\EditorToolbar\ToolbarElements\PackageManagerButton.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\PlayModeButtons.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\PreviewPackagesInUseDropdown.cs">
-      <Link>Modules\EditorToolbar\ToolbarElements\PreviewPackagesInUseDropdown.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\EditorToolbar\ToolbarElements\SearchButton.cs">
       <Link>Modules\EditorToolbar\ToolbarElements\SearchButton.cs</Link>
@@ -5466,6 +5466,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Package.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Package.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageComplianceExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageComplianceExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\PackageInfoExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\PackageInfoExtension.cs</Link>
     </Compile>
@@ -5484,6 +5487,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\Product.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\Product.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\RegistryComplianceExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\RegistryComplianceExtension.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\RegistryInfoExtension.cs</Link>
     </Compile>
@@ -5498,6 +5504,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Common\UniqueIdMapper.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Common\ViolationExtension.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Common\ViolationExtension.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\EntitlementsErrorAndDeprecationChecker.cs</Link>
@@ -5672,6 +5681,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\ExtensionPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\ExtensionPage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectNonCompliancePage.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectNonCompliancePage.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectPage.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Pages\PageTypes\InProjectPage.cs</Link>
@@ -5907,6 +5919,9 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\GenericInputDropdown.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\GenericInputDropdown.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\Generic\HelpBoxWithOptionalReadMore.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\Generic\HelpBoxWithOptionalReadMore.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\InProgressDropdown.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\InProgressDropdown.cs</Link>
     </Compile>
@@ -6042,11 +6057,11 @@
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\HiddenProductHelpBox.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\HiddenProductHelpBox.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\NonCompliantPackageHelpBox.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\NonCompliantPackageHelpBox.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageBaseHelpBox.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageBaseHelpBox.cs</Link>
-    </Compile>
-    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageHelpBoxWithReadMore.cs">
-      <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\PackageHelpBoxWithReadMore.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageHelpBox\ScopedRegistryHelpBox.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageHelpBox\ScopedRegistryHelpBox.cs</Link>
@@ -6131,6 +6146,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\PackageTagLabel\PackageSimpleTagLabel.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\PartiallyNonCompliantRegistryMessage.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\PartiallyNonCompliantRegistryMessage.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\RegistryItem.cs">
+      <Link>Modules\PackageManagerUI\Editor\UI\RegistryItem.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs">
       <Link>Modules\PackageManagerUI\Editor\UI\ScopedRegistriesSettings.cs</Link>
@@ -6261,6 +6282,12 @@
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCollection.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageCollection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCompliance.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackageCompliance.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageComplianceStatus.cs">
+      <Link>Modules\PackageManager\Editor\Managed\PackageComplianceStatus.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\PackageInfo.cs</Link>
     </Compile>
@@ -6284,6 +6311,12 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\ProgressUpdateEventArgs.cs">
       <Link>Modules\PackageManager\Editor\Managed\ProgressUpdateEventArgs.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RegistryCompliance.cs">
+      <Link>Modules\PackageManager\Editor\Managed\RegistryCompliance.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RegistryComplianceStatus.cs">
+      <Link>Modules\PackageManager\Editor\Managed\RegistryComplianceStatus.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\RegistryInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\RegistryInfo.cs</Link>
@@ -6380,6 +6413,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManager\Editor\Managed\VersionsInfo.cs">
       <Link>Modules\PackageManager\Editor\Managed\VersionsInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Violation.cs">
+      <Link>Modules\PackageManager\Editor\Managed\Violation.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ParticleSystemEditor\ParticleEffectUI.cs">
       <Link>Modules\ParticleSystemEditor\ParticleEffectUI.cs</Link>

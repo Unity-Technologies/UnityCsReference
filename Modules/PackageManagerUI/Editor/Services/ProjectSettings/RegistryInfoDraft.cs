@@ -138,17 +138,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 if (!m_Modified)
                     return false;
-                if (original == null)
+                if (original is null)
                     return !string.IsNullOrEmpty(m_UserModifications.name) || !string.IsNullOrEmpty(m_UserModifications.url) || !(m_UserModifications.scopes.Count == 0 || m_UserModifications.scopes.All(string.IsNullOrEmpty));
 
-                return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.scopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
+                return !original.IsEqualTo(new RegistryInfo(original.id, m_UserModifications.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
             }
         }
 
         public bool isUrlOrScopesUpdated
         {
-            get => m_Modified && original != null &&
-            !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.scopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
+            get => m_Modified && original is not null &&
+            !original.IsEqualTo(new RegistryInfo(original.id, original.name, m_UserModifications.url, m_UserModifications.sanitizedScopes.ToArray(), original.isDefault, original.capabilities, original.configSource));
         }
 
         public void RevertChanges()

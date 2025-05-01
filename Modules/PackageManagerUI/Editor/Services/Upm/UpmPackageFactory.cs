@@ -166,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         continue;
                     }
 
-                    var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage);
+                    var package = CreatePackage(packageName, versionList, isDiscoverable: packageData.isDiscoverable, isDeprecated: packageData.isDeprecated, deprecationMessage: packageData.deprecationMessage, compliance: packageData.compliance);
                     updatedPackages.Add(package);
 
                     // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early

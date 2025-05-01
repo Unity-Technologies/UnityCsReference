@@ -108,6 +108,9 @@ namespace UnityEngine.UIElements.UIR
             renderData.owner = ve;
             ve.renderData = renderData;
 
+            // Unset the WorldClipDirty VisualElement flag. See VisualElements.flags for more details.
+            ve.flags &= ~VisualElementFlags.WorldClipDirty;
+
             if (ve.useRenderTexture)
                 renderData.flags |= RenderDataFlags.IsSubTreeQuad;
 
@@ -1135,20 +1138,22 @@ namespace UnityEngine.UIElements.UIR
         public static void SetColorValues(RenderTreeManager renderTreeManager, VisualElement ve)
         {
             var style = ve.resolvedStyle;
+            var playModeTintColor = (ve.panel.contextType == ContextType.Editor) ? ve.playModeTintColor : Color.white;
+
             if (ve.renderData.colorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.colorID, style.color);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.colorID, style.color * playModeTintColor);
             if (ve.renderData.backgroundColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.backgroundColorID, style.backgroundColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.backgroundColorID, style.backgroundColor * playModeTintColor);
             if (ve.renderData.borderLeftColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderLeftColorID, style.borderLeftColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderLeftColorID, style.borderLeftColor * playModeTintColor);
             if (ve.renderData.borderTopColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderTopColorID, style.borderTopColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderTopColorID, style.borderTopColor * playModeTintColor);
             if (ve.renderData.borderRightColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderRightColorID, style.borderRightColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderRightColorID, style.borderRightColor * playModeTintColor);
             if (ve.renderData.borderBottomColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderBottomColorID, style.borderBottomColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.borderBottomColorID, style.borderBottomColor * playModeTintColor);
             if (ve.renderData.tintColorID.IsValid())
-                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.tintColorID, style.unityBackgroundImageTintColor);
+                renderTreeManager.shaderInfoAllocator.SetColorValue(ve.renderData.tintColorID, style.unityBackgroundImageTintColor * playModeTintColor);
         }
     }
 }

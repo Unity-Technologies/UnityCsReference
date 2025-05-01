@@ -173,8 +173,12 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         internal static extern Bc7TextureCompressor bc7TextureCompressor { get; set; }
 
+        [Obsolete("EditorSettings.etcTextureCompressorBehavior has been deprecated with the removal of support for ETC Legacy compression behavior.", false)]
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern int etcTextureCompressorBehavior { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        internal static extern int etcTextureCompressorBehaviorInternal { [NativeMethod("GetEtcTextureCompressorBehavior")] get; [NativeMethod("SetEtcTextureCompressorBehavior")] set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern int etcTextureFastCompressor {[NativeMethod("GetEtcTextureFastCompressorNoOffset")] get; set; }

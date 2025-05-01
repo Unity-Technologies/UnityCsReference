@@ -176,11 +176,15 @@ namespace UnityEditor
                 if (report != null
                 )
                 {
-                    var resultStr = String.Format("Build completed with a result of '{0}' in {1} seconds ({2} ms)",
+                    var resultStr = String.Format("Build completed with a result of '{0}' in {1} seconds ({2} ms) [{3} -> {4}, {5}]",
                         report.summary.result.ToString("g"),
                         Convert.ToInt32(report.summary.totalTime.TotalSeconds),
-                        Convert.ToInt32(report.summary.totalTime.TotalMilliseconds));
-
+                        Convert.ToInt32(report.summary.totalTime.TotalMilliseconds),
+                        report.summary.buildStartedAt.ToLocalTime(),
+                        report.summary.buildEndedAt.ToLocalTime(),
+                        FriendlyFormatBuildDuration(report.summary.totalTime)
+                        );
+                        
                     switch (report.summary.result)
                     {
                         case Build.Reporting.BuildResult.Unknown:
@@ -200,6 +204,23 @@ namespace UnityEditor
 
                     buildCompletionHandler?.Invoke(report);
                 }
+            }
+
+            static string FriendlyFormatBuildDuration(TimeSpan duration)
+            {
+                int totalHours = (int)duration.TotalHours;
+
+                if (totalHours > 0)
+                {
+                    return string.Format("{0}h {1:D2}m {2:D2}s", totalHours, duration.Minutes, duration.Seconds);
+                }
+
+                if (duration.Minutes > 0)
+                {
+                    return string.Format("{0}m {1:D2}s", duration.Minutes, duration.Seconds);
+                }
+
+                return string.Format("{0:D2}s", duration.Seconds);
             }
 
             /// <summary>

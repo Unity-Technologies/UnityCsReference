@@ -100,9 +100,8 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos");
+            public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Activate / Deactivate gizmos in the GameView");
             public static GUIContent zoomSliderContent = EditorGUIUtility.TrTextContent("Scale", "Size of the game view on the screen.");
-            public static GUIContent vsyncContent = EditorGUIUtility.TrTextContent("VSync");
             public static GUIContent muteOffContent = EditorGUIUtility.TrIconContent("GameViewAudio On", "Mute Audio");
             public static GUIContent muteOnContent = EditorGUIUtility.TrIconContent("GameViewAudio", "Mute Audio");
             public static GUIContent shortcutsOnContent = EditorGUIUtility.TrIconContent("Keyboard", "Unity Shortcuts");
@@ -117,6 +116,7 @@ namespace UnityEditor
 
             public const string k_StatsShortcutID = "Game View/Toggle Stats";
             public const string k_StatsTooltip = "View general rendering information";
+            public const string k_AspectRatioTooltip = "Change aspect ratios, emulate low pixel density, allow VSync";
 
             public static GUIContent renderdocContent;
             public static GUIStyle gameViewBackgroundStyle;

@@ -203,4 +203,5 @@ using UnityEngine;
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 

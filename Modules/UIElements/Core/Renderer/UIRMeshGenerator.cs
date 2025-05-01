@@ -800,7 +800,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 position = new Vector3(vertex.position.x * inverseScale + posOffset.x, vertex.position.y * inverseScale + posOffset.y),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
-                tint = isColorGlyph ? Color.white : vertex.color,
+                tint = isColorGlyph ? new Color32(255, 255, 255, vertex.color.a) : vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
                 flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
             };

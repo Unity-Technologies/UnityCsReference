@@ -18,7 +18,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isEmpty { get; }
         IEnumerable<IPackage> allPackages { get; }
 
-
         IPackage GetPackage(string uniqueId);
         IPackage GetPackage(long productId);
         void GetPackageAndVersionByIdOrName(string idOrName, out IPackage package, out IPackageVersion version, bool bruteForceSearch);
@@ -32,6 +31,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
 
         void ClearSamplesCache();
+
+        bool AnyNonCompliantPackagesInUse();
+        bool AnyExperimentalPackagesInUse();
     }
 
     internal class PackagesChangeArgs
@@ -90,6 +92,20 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         public IPackage GetPackage(string uniqueId) => m_Packages.Get(uniqueId);
+
+        public bool AnyNonCompliantPackagesInUse()
+        {
+            if (m_Packages.Count == 0)
+                return PackageInfo.GetAllRegisteredPackages().Any(info => info.compliance.status == PackageComplianceStatus.NonCompliant);
+            return m_Packages.Values.Any(p => p.compliance.status == PackageComplianceStatus.NonCompliant && p.versions.installed != null);
+        }
+
+        public bool AnyExperimentalPackagesInUse()
+        {
+            if (m_Packages.Count == 0)
+                return PackageInfo.GetAllRegisteredPackages().Any(info => SemVersionParser.TryParse(info.version, out var parsedVersion) && parsedVersion?.GetExpOrPreOrReleaseTag() == PackageTag.Experimental);
+            return m_Packages.Values.Any(p => p.versions.installed?.HasTag(PackageTag.Experimental) == true);
+        }
 
         // In some situations, we only know an id (could be package unique id, or version unique id) or just a name (package Name, or display name)
         // but we still might be able to find a package and a version that matches the criteria

@@ -456,7 +456,7 @@ internal static class WorldSpaceInput
     internal static Bounds GetPicking3DLocalBounds(VisualElement ve)
     {
         if (ve.needs3DBounds)
-            return ve.localBoundsNested3D;
+            return ve.localBoundsPicking3D;
 
         Rect bb = ve.boundingBox;
         return new Bounds(bb.center, bb.size);

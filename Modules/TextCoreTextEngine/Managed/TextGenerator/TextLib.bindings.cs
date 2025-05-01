@@ -48,6 +48,9 @@ namespace UnityEngine.TextCore.Text
                 var inverseAtlasWidth = 1.0f / fa.atlasWidth;
                 var inverseAtlasHeight = 1.0f / fa.atlasHeight;
 
+                bool hasMultipleColors = false;
+                Color? previousColor = null;
+
                 // TODO we should add glyphs in batch instead
                 for (int i = 0; i < meshInfo.textElementInfos.Length; i++)
                 {
@@ -57,6 +60,13 @@ namespace UnityEngine.TextCore.Text
                     bool success = fa.TryAddGlyphInternal((uint)glyphID, out var glyph);
                     if (!success)
                         continue;
+
+                    var currentColor = textElementInfo.topLeft.color;
+                    if (previousColor.HasValue && previousColor.Value != currentColor)
+                    {
+                        hasMultipleColors = true;
+                    }
+                    previousColor = currentColor;
 
                     var glyphRect = glyph.glyphRect;
 
@@ -102,6 +112,7 @@ namespace UnityEngine.TextCore.Text
                         textElementInfo.bottomRight.uv0= topRightUV * textElementInfo.bottomRight.uv0+ bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
                     }
                 }
+                meshInfo.hasMultipleColors = hasMultipleColors;
             }
         }
 

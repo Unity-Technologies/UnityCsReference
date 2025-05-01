@@ -1322,6 +1322,13 @@ namespace UnityEngine.TextCore.Text
                             }
                         }
 
+                        // We cannot intialize the SpriteAsset for the first time on a thread.
+                        if (!canWriteOnAsset && m_CurrentSpriteAsset.m_GlyphIndexLookup == null)
+                        {
+                            isThreadSuccess = false;
+                            return false;
+                        }
+
                         // Handling of <sprite=index> legacy tag format.
                         if (m_XmlAttribute[0].valueType == TagValueType.NumericalValue) // <sprite=index>
                         {

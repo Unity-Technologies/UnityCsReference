@@ -36,6 +36,8 @@ namespace UnityEngine.Rendering
         NonModifiableTextureData    = 1 << 6,
         MainTexture                 = 1 << 7,
         MainColor                   = 1 << 8,
+        Vector2                     = 1 << 9,
+        Vector3                     = 1 << 10
     }
 }
 

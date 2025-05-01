@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -14,6 +15,7 @@ namespace UnityEngine
     //   on il2cpp/mono we can "resize" List<T> (up to Capacity, sure, but this is/should-be handled higher level)
     //   also we can easily "convert" List<T> to System.Array
     // NB .net backend is treated as second-class citizen going through ToArray call
+    [VisibleToOtherModules]
     internal static class NoAllocHelpers
     {
         public static void EnsureListElemCount<T>(List<T> list, int count)

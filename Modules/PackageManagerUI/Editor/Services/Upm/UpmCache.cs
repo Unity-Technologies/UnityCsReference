@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         event Action<string, bool> onLoadAllVersionsChanged;
         event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
         event Action<PackageInfo> onExtraPackageInfoFetched;
+        event Action onScopedRegistriesPotentiallyChanged;
 
         IEnumerable<PackageInfo> searchPackageInfos { get; }
         IEnumerable<PackageInfo> installedPackageInfos  { get; }
@@ -79,14 +80,17 @@ namespace UnityEditor.PackageManager.UI.Internal
         public event Action<string, bool> onLoadAllVersionsChanged = delegate {};
         public event Action<IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)>> onPackageInfosUpdated;
         public event Action<PackageInfo> onExtraPackageInfoFetched;
+        public event Action onScopedRegistriesPotentiallyChanged;
 
         public IEnumerable<PackageInfo> searchPackageInfos => m_SearchPackageInfos.Values;
         public IEnumerable<PackageInfo> installedPackageInfos => m_PackageNameToInstalledPackageInfosMap.Values;
 
         private readonly IUniqueIdMapper m_UniqueIdMapper;
-        public UpmCache(IUniqueIdMapper uniqueIdMapper)
+        private readonly IProjectSettingsProxy m_SettingsProxy;
+        public UpmCache(IUniqueIdMapper uniqueIdMapper, IProjectSettingsProxy settingsProxy)
         {
             m_UniqueIdMapper = RegisterDependency(uniqueIdMapper);
+            m_SettingsProxy = RegisterDependency(settingsProxy);
         }
 
         private static IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> FindUpdatedPackageInfos(Dictionary<string, PackageInfo> oldInfos, Dictionary<string, PackageInfo> newInfos)
@@ -114,11 +118,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.resolvedPath != p2.resolvedPath ||
                 p1.entitlements.isAllowed != p2.entitlements.isAllowed ||
                 p1.entitlements.licensingModel != p2.entitlements.licensingModel ||
-                p1.registry?.id != p2.registry?.id ||
-                p1.registry?.name != p2.registry?.name ||
-                p1.registry?.url != p2.registry?.url ||
-                p1.registry?.isDefault != p2.registry?.isDefault ||
-                p1.registry?.scopes?.SequenceEqual(p2.registry?.scopes) != true ||
                 p1.versions.recommended != p2.versions.recommended ||
                 p1.versions.compatible.Length != p2.versions.compatible.Length || !p1.versions.compatible.SequenceEqual(p2.versions.compatible) ||
                 p1.versions.all.Length != p2.versions.all.Length || !p1.versions.all.SequenceEqual(p2.versions.all) ||
@@ -130,7 +129,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                 p1.documentationUrl != p2.documentationUrl ||
                 p1.changelogUrl != p2.changelogUrl ||
                 p1.licensesUrl != p2.licensesUrl ||
-                p1.assetStore?.productId != p2.assetStore?.productId)
+                p1.assetStore?.productId != p2.assetStore?.productId ||
+                !p1.registry.IsEquivalentTo(p2.registry) ||
+                !p1.compliance.IsEquivalentTo(p2.compliance))
                 return true;
 
             if (p1.source == PackageSource.BuiltIn || p1.source == PackageSource.Registry)
@@ -141,8 +142,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             return true;
         }
-
-        private bool IsLoadAllVersions(string packageUniqueId)
+        public bool IsLoadAllVersions(string packageUniqueId)
         {
             return m_LoadAllVersions.Contains(packageUniqueId);
         }
@@ -279,9 +279,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdateProductIdToInstalledPackageInfoMap(null, info);
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
-            if (updatedInfos.Any())
+            if (updatedInfos.Count > 0)
+            {
                 TriggerOnPackageInfosUpdated(updatedInfos);
-
+                DetectScopedRegistriesChanges(updatedInfos, false);
+            }
             m_InstalledPackageInfosTimestamp = timestamp;
         }
 
@@ -330,9 +332,11 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_SearchPackageInfos = newPackageInfos;
 
             var updatedInfos = FindUpdatedPackageInfos(oldPackageInfos, newPackageInfos);
-            if (updatedInfos.Any())
+            if (updatedInfos.Count > 0)
+            {
                 TriggerOnPackageInfosUpdated(updatedInfos);
-
+                DetectScopedRegistriesChanges(updatedInfos, true);
+            }
             m_SearchPackageInfosTimestamp = timestamp;
         }
 
@@ -347,6 +351,56 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ProductIdToProductSearchInfosMap[productId] = (info, timestamp);
             if (oldInfo == null || IsDifferent(oldInfo, info))
                 TriggerOnPackageInfosUpdated(new [] { (oldInfo, newInfo: info) });
+        }
+
+        // This is to detected changes to the scoped registry compliance data, as that is something that will change without the users modifying the project manifest.
+        // We don't want to call the API to get the registry list all the time, instead, we want to take a look at the packages we receive from List and Search calls and
+        // detect changes to the scoped registries that way.
+        private void DetectScopedRegistriesChanges(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos, bool isSearchResult)
+        {
+            if (m_SettingsProxy.registries == null || m_SettingsProxy.registries.Count < 2)
+                return;
+
+            var registriesToCheck = m_SettingsProxy.scopedRegistries.ToDictionary(r => r.name, r => r);
+            // We use a HashSet to make sure we only check each registry once, because packages from the same registry will share the same RegistryInfo
+            var registriesChecked = new HashSet<string>();
+            foreach (var (_, newInfo) in packageInfos)
+            {
+                var registry = newInfo?.registry;
+                if (!string.IsNullOrEmpty(registry?.name) && !registry.isDefault && !registriesChecked.Contains(registry.name) && registriesToCheck.TryGetValue(registry.name, out var result))
+                {
+                    if (!result.IsEquivalentTo(registry))
+                    {
+                        onScopedRegistriesPotentiallyChanged?.Invoke();
+                        return;
+                    }
+                    registriesChecked.Add(registry.name);
+                }
+            }
+
+            // In the case where the result is from a search request, we need to do an additional check because it's possible that some packages disappeared from the search result
+            // due to the scoped registry becoming non-compliant. Whereas List request results are not affected by this.
+            if (registriesToCheck.Count == registriesChecked.Count || !isSearchResult)
+                return;
+
+            foreach (var registry in registriesChecked)
+                registriesToCheck.Remove(registry);
+            registriesChecked.Clear();
+
+            foreach (var (oldInfo, newInfo) in packageInfos)
+            {
+                if (newInfo != null || oldInfo == null || registriesChecked.Contains(oldInfo.registry.name))
+                    continue;
+
+                // When we find a package that used to be in the search request but not anymore, and their scoped registry is still in the list of registries, we flag this as a potential change
+                // to the scoped registry compliance data. There could be other cause of this, such as packages removed from the server directly.
+                if (registriesToCheck.ContainsKey(oldInfo.registry.name))
+                {
+                    onScopedRegistriesPotentiallyChanged?.Invoke();
+                    return;
+                }
+                registriesChecked.Add(oldInfo.registry.name);
+            }
         }
 
         private void TriggerOnPackageInfosUpdated(IReadOnlyCollection<(PackageInfo oldInfo, PackageInfo newInfo)> packageInfos)

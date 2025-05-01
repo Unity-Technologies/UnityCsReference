@@ -9,11 +9,19 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]
+[assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests.Controls")]
 [assembly: InternalsVisibleTo("Unity.UIElements.TestComponents")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime.InternalAccessTests")] // for UI Test Framework tests that need internal access
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Base")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")] 
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.StyleSheets")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.UXML")]
+
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
 
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")] // for Moq

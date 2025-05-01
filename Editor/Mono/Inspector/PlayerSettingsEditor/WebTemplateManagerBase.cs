@@ -18,8 +18,8 @@ namespace UnityEditor
 
         private static Styles s_Styles;
 
-        private WebTemplate[] s_Templates = null;
-        private GUIContent[] s_TemplateGUIThumbnails = null;
+        private WebTemplate[] m_Templates = null;
+        private GUIContent[] m_TemplateGUIThumbnails = null;
 
         // Template layout constants
         const float kWebTemplateGridPadding = 15.0f;
@@ -46,12 +46,12 @@ namespace UnityEditor
         {
             get
             {
-                if (s_Templates == null || s_TemplateGUIThumbnails == null)
+                if (m_Templates == null || m_TemplateGUIThumbnails == null)
                 {
                     BuildTemplateList();
                 }
 
-                return s_Templates;
+                return m_Templates;
             }
         }
 
@@ -59,12 +59,12 @@ namespace UnityEditor
         {
             get
             {
-                if (s_Templates == null || s_TemplateGUIThumbnails == null)
+                if (m_Templates == null || m_TemplateGUIThumbnails == null)
                 {
                     BuildTemplateList();
                 }
 
-                return s_TemplateGUIThumbnails;
+                return m_TemplateGUIThumbnails;
             }
         }
 
@@ -84,8 +84,8 @@ namespace UnityEditor
 
         public void ClearTemplates()
         {
-            s_Templates = null;
-            s_TemplateGUIThumbnails = null;
+            m_Templates = null;
+            m_TemplateGUIThumbnails = null;
         }
 
         private void BuildTemplateList()
@@ -106,12 +106,12 @@ namespace UnityEditor
                 Debug.LogError("Did not find built-in templates.");
             }
 
-            s_Templates = templates.ToArray();
+            m_Templates = templates.ToArray();
 
-            s_TemplateGUIThumbnails = new GUIContent[s_Templates.Length];
-            for (int i = 0; i < s_TemplateGUIThumbnails.Length; i++)
+            m_TemplateGUIThumbnails = new GUIContent[m_Templates.Length];
+            for (int i = 0; i < m_TemplateGUIThumbnails.Length; i++)
             {
-                s_TemplateGUIThumbnails[i] = s_Templates[i].ToGUIContent(defaultIcon);
+                m_TemplateGUIThumbnails[i] = m_Templates[i].ToGUIContent(defaultIcon);
             }
         }
 

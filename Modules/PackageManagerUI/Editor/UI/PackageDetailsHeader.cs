@@ -67,6 +67,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void CreateHelpBoxes()
         {
+            helpBoxContainer.Add(new NonCompliantPackageHelpBox());
             helpBoxContainer.Add(new DeprecatedVersionHelpBox());
             helpBoxContainer.Add(new DeprecatedPackageHelpBox());
             helpBoxContainer.Add(new DisabledPackageHelpBox());

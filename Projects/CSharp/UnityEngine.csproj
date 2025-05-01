@@ -4830,6 +4830,24 @@
     <Compile Include="..\..\Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs">
       <Link>Runtime\Scripting\APIUpdating\APIUpdaterRuntimeHelpers.cs</Link>
     </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\AssemblyLoadedAttributes.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\AssemblyLoadedAttributes.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\CodeLoadedScope.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\CodeLoadedScope.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\LifecycleAttributeBase.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\LifecycleAttributeBase.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\RequiredMemberAttribute.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\RequiredMemberAttribute.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\ScopedLazy.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\ScopedLazy.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Runtime\Scripting\Internal\LifecycleManagement\StaticsCleanupAttributes.cs">
+      <Link>Runtime\Scripting\Internal\LifecycleManagement\StaticsCleanupAttributes.cs</Link>
+    </Compile>
     <Compile Include="..\..\Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs">
       <Link>Runtime\Scripting\Marshalling\ArrayHandleOnStack.cs</Link>
     </Compile>

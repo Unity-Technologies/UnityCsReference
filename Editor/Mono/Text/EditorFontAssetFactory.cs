@@ -49,28 +49,28 @@ namespace UnityEditor
             );
         }
 
-        internal static FontAsset CreateFontFamilyAssets(FontFamilyConfig config, Shader shader)
+        internal static FontAsset CreateFontFamilyAssets(FontFamilyConfig config)
         {
             // Create main (regular) font asset
-            FontAsset regularFontAsset = CreateFontAsset(config.familyName, config.regularStyle, 90, shader);
+            FontAsset regularFontAsset = CreateFontAsset(config.familyName, config.regularStyle, 90);
             if (regularFontAsset == null) return null;
 
             // Create bold font asset
-            var boldFontAsset = CreateFontAsset(config.familyName, config.boldStyle, 90, shader);
+            var boldFontAsset = CreateFontAsset(config.familyName, config.boldStyle, 90);
             if (boldFontAsset != null)
             {
                 regularFontAsset.fontWeightTable[7].regularTypeface = boldFontAsset;
             }
 
             // Create italic font asset
-            var italicFontAsset = CreateFontAsset(config.familyName, config.italicStyle, 90, shader);
+            var italicFontAsset = CreateFontAsset(config.familyName, config.italicStyle, 90);
             if (italicFontAsset != null)
             {
                 regularFontAsset.fontWeightTable[4].italicTypeface = italicFontAsset;
             }
 
             // Create bold italic font asset
-            var boldItalicFontAsset = CreateFontAsset(config.familyName, config.boldItalicStyle, 90, shader);
+            var boldItalicFontAsset = CreateFontAsset(config.familyName, config.boldItalicStyle, 90);
             if (boldItalicFontAsset != null)
             {
                 regularFontAsset.fontWeightTable[7].italicTypeface = boldItalicFontAsset;
@@ -79,13 +79,13 @@ namespace UnityEditor
             return regularFontAsset;
         }
 
-        internal static FontAsset CreateFontAsset(string fontFamily, string fontStyle, int fontSize, Shader shader)
+        internal static FontAsset CreateFontAsset(string fontFamily, string fontStyle, int fontSize)
         {
             FontAsset fontAsset = FontAsset.CreateFontAssetInternal(fontFamily, fontStyle, fontSize);
             if (fontAsset != null)
             {
                 fontAsset.InternalDynamicOS = true;
-                SetupFontAssetSettings(fontAsset, shader);
+                SetupFontAssetSettings(fontAsset);
             }
 
             return fontAsset;
@@ -95,7 +95,6 @@ namespace UnityEditor
             List<TextSettings.FontReferenceMap> fontReferences,
             Dictionary<int, FontAsset> fontLookup,
             FontAsset fontAsset,
-            Shader shader,
             string[] paths)
         {
             if (fontAsset == null) return;
@@ -105,7 +104,7 @@ namespace UnityEditor
                 var font = EditorGUIUtility.Load(path) as Font;
                 if (font == null) continue;
 
-                int id = font.GetHashCode() + shader.GetHashCode();
+                int id = font.GetHashCode();
 
                 if (fontLookup.ContainsKey(id))
                     continue;

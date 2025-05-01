@@ -1549,6 +1549,7 @@ namespace NiceIO
 
         /// <summary>
         /// Until .Dispose is invoked on the returnvalue, makes all NPath's on this thread use the provided filesystem implementation for all filesystem access.
+        /// WARNING: This must only be used in code that is guaranteed to run on a single thread (see https://jira.unity3d.com/browse/UUM-101974 for details).
         /// </summary>
         /// <param name="fileSystem"></param>
         /// <returns>An object you can invoke .Dispose() on, which will make all NPath filesystem operations stop using the provided filesystem</returns>

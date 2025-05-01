@@ -80,17 +80,13 @@ namespace UnityEditor.Profiling
                 ValidateConnectionId();
             }
 
-            Rect r = GUILayoutUtility.GetRect(100, 40);
             if (ProfilerUserSettings.ValidCustomConnectionID(connectionID))
             {
-                EditorGUI.HelpBox(r, $"Connection ID cannot contain \", * or be more than 26 characters in length. Spaces will be converted to underscores.",
-                    MessageType.Info);
+                EditorGUILayout.HelpBox($"Connection ID cannot contain \", * or be more than 26 characters in length. Spaces will be converted to underscores.", MessageType.Info);
             }
             else
             {
-                EditorGUI.HelpBox(r,
-                    $"Connection ID contains \", * or is more than 26 characters in length and will be reverted",
-                    MessageType.Error);
+                EditorGUILayout.HelpBox($"Connection ID contains \", * or is more than 26 characters in length and will be reverted", MessageType.Error);
             }
 
             EditorGUI.BeginChangeCheck();

@@ -103,6 +103,60 @@ namespace UnityEngine.UIElements.UIR
         // This is set whenever a hierarchical repaint was needed when HierarchyDisplayed == false.
         public bool pendingHierarchicalRepaint;
 
+        public void Init()
+        {
+            // IMPORTANT NOTE: Is is important to initialize every RenderData field here
+            // as they are reused from previously pooled elements.
+
+            owner = null;
+            renderTree = null;
+            parent = null;
+            nextSibling = null;
+            prevSibling = null;
+            firstChild = null;
+            lastChild = null;
+            groupTransformAncestor = null;
+            boneTransformAncestor = null;
+            prevDirty = null;
+            nextDirty = null;
+            flags = RenderDataFlags.IsClippingRectDirty;
+            depthInRenderTree = 0;
+            dirtiedValues = RenderDataDirtyTypes.None;
+            dirtyID = 0;
+            firstHeadCommand = null;
+            lastHeadCommand = null;
+            firstTailCommand = null;
+            lastTailCommand = null;
+            localFlipsWinding = false;
+            worldFlipsWinding = false;
+            worldTransformScaleZero = false;
+            clipMethod = ClipMethod.Undetermined;
+            childrenStencilRef = 0;
+            childrenMaskDepth = 0;
+            headMesh = null;
+            tailMesh = null;
+            verticesSpace = Matrix4x4.identity;
+            transformID = UIRVEShaderInfoAllocator.identityTransform;
+            clipRectID = UIRVEShaderInfoAllocator.infiniteClipRect;
+            opacityID = UIRVEShaderInfoAllocator.fullOpacity;
+            colorID = BMPAlloc.Invalid;
+            backgroundColorID = BMPAlloc.Invalid;
+            borderLeftColorID = BMPAlloc.Invalid;
+            borderTopColorID = BMPAlloc.Invalid;
+            borderRightColorID = BMPAlloc.Invalid;
+            borderBottomColorID = BMPAlloc.Invalid;
+            tintColorID = BMPAlloc.Invalid;
+            textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+            compositeOpacity = float.MaxValue; // Any unreasonable value will do to trip the opacity composer to work
+            backgroundAlpha = 0.0f;
+            textures = null;
+            pendingRepaint = false;
+            pendingHierarchicalRepaint = false;
+            clippingRect = Rect.zero;
+            clippingRectMinusGroup = Rect.zero;
+            clippingRectIsInfinite = false;
+        }
+
         public bool isGroupTransform
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -191,25 +245,51 @@ namespace UnityEngine.UIElements.UIR
 
         }
 
-        void UpdateClippingRect()
+        private bool m_ClippingRectIsInfinite;
+
+        internal bool clippingRectIsInfinite
+        {
+            get
+            {
+                if (isClippingRectDirty)
+                {
+                    UpdateClippingRect();
+                    flags &= ~RenderDataFlags.IsClippingRectDirty;
+                }
+                return m_ClippingRectIsInfinite;
+            }
+            set
+            {
+                m_ClippingRectIsInfinite = value;
+            }
+        }
+
+        internal void UpdateClippingRect()
         {
             // TODO: Optimize to avoid full matrix multiplications, instead apply scale+offset
 
             Rect inheritedClipping;
             Rect inheritedClippingMinusGroup;
+            bool parentClipIsInfinite = (parent == null) || parent.clippingRectIsInfinite;
 
             if (parent != null)
             {
                 inheritedClipping = parent.clippingRect;
                 if (parent.isGroupTransform)
+                {
                     inheritedClippingMinusGroup = DrawParams.k_UnlimitedRect;
+                    parentClipIsInfinite = true;
+                }
                 else
                     inheritedClippingMinusGroup = parent.clippingRectMinusGroup;
             }
             else
             {
-                inheritedClippingMinusGroup = DrawParams.k_UnlimitedRect;
-                inheritedClipping = DrawParams.k_UnlimitedRect;
+                var baseClippingRect = (owner?.panel != null) ? owner.panel.visualTree.rect : DrawParams.k_UnlimitedRect;
+                if (renderTree.renderTreeManager.drawInCameras)
+                    baseClippingRect = DrawParams.k_UnlimitedRect;
+                inheritedClippingMinusGroup = baseClippingRect;
+                inheritedClipping = baseClippingRect;
             }
 
             if (owner.ShouldClip())
@@ -238,7 +318,7 @@ namespace UnityEngine.UIElements.UIR
                         else
                             VisualElement.TransformAlignedRect(ref renderTree.rootRenderData.owner.worldTransformInverse, ref clipMinusGroup);
 
-                        m_ClippingRectMinusGroup = IntersectClipRects(clipMinusGroup, inheritedClippingMinusGroup);
+                        m_ClippingRectMinusGroup = parentClipIsInfinite ? clipMinusGroup : IntersectClipRects(clipMinusGroup, inheritedClippingMinusGroup);
                     }
                 }
 
@@ -257,6 +337,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 m_ClippingRect = inheritedClipping;
                 m_ClippingRectMinusGroup = inheritedClippingMinusGroup;
+                m_ClippingRectIsInfinite = parentClipIsInfinite;
             }
         }
 

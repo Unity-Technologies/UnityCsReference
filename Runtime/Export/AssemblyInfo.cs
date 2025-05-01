@@ -128,6 +128,13 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UIElements.Editor")]
 [assembly: InternalsVisibleTo("Unity.UIElements.PlayModeTests")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")]
+[assembly: InternalsVisibleTo("UnityEditor.UIElements.Tests")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Base")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.StyleSheets")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.UXML")]
 
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.RuntimeTests")]

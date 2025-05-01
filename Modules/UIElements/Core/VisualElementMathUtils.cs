@@ -588,11 +588,12 @@ namespace UnityEngine.UIElements
             // This is a fast-path for Matrix * Offset
             // [m00 m01 m02 m03]   [1 0 0 px]   [m00 m01 m02 m00*px+m01*py+m03]
             // [m10 m11 m12 m13] * [0 1 0 py] = [m10 m11 m12 m10*px+m11*py+m13]
-            // [m20 m21 m22 m23]   [0 0 1 0 ]   [m20 m21 m22 m23              ]
+            // [m20 m21 m22 m23]   [0 0 1 0 ]   [m20 m21 m22 m20*px+m21*py+m23]
             // [0   0   0   1  ]   [0 0 0 1 ]   [0   0   0   1                ]
 
             m.m03 += m.m00 * p.x + m.m01 * p.y;
             m.m13 += m.m10 * p.x + m.m11 * p.y;
+            m.m23 += m.m20 * p.x + m.m21 * p.y;
             return m;
         }
     }

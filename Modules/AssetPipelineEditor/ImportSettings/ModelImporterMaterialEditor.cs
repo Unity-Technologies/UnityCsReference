@@ -247,7 +247,7 @@ namespace UnityEditor
             DoMaterialsGUI();
         }
 
-        private void ExtractTexturesGUI()
+        private bool ExtractTexturesGUI()
         {
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -274,7 +274,7 @@ namespace UnityEditor
                         if (string.IsNullOrEmpty(assetPath))
                         {
                             // cancel the extraction if the user did not select a folder
-                            return;
+                            return false;
                         }
                         var destinationPath = FileUtil.GetProjectRelativePath(assetPath);
 
@@ -343,9 +343,12 @@ namespace UnityEditor
                         {
                             AssetDatabase.StopAssetEditing();
                         }
+                        // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
+                        return true;
                     }
                 }
             }
+            return false;
         }
 
         private bool ExtractMaterialsGUI()
@@ -577,7 +580,9 @@ namespace UnityEditor
                     // display the extract buttons
                     if (m_MaterialLocation.intValue != 0 && !m_MaterialLocation.hasMultipleDifferentValues)
                     {
-                        ExtractTexturesGUI();
+                        if (ExtractTexturesGUI())
+                            return;
+                            
                         if (ExtractMaterialsGUI())
                             return;
                     }

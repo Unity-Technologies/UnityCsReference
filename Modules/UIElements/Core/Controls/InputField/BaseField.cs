@@ -159,6 +159,9 @@ namespace UnityEngine.UIElements
         // Event triggered when an expression is evaluated for a numeric field
         internal Action<ExpressionEvaluator.Expression> expressionEvaluated;
 
+        // Sent whenever we overwrite the value from view data.
+        internal event Action viewDataRestored;
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal VisualElement visualInput
         {
@@ -603,6 +606,7 @@ namespace UnityEngine.UIElements
                 var key = GetFullHierarchicalViewDataKey();
                 var oldValue = m_Value;
                 OverwriteFromViewData(this, key);
+                viewDataRestored?.Invoke();
 
                 if (!EqualityComparer<TValueType>.Default.Equals(oldValue, m_Value))
                 {

@@ -160,34 +160,39 @@ namespace UnityEngine.UIElements
 
         public static string ConvertDashToUpperNoSpace(string dash, bool firstCase, bool addSpace)
         {
-            using var stringBuilderHandler = Pool.GenericPool<StringBuilder>.Get(out var sb);
-            sb.Clear();
-
             if (SpecialStringToEnumCases.TryGetValue(dash, out var replacement))
                 return replacement;
 
-            var caseFlag = firstCase;
-            foreach (var c in dash)
-            {
-                if (c == '-')
-                {
-                    if (addSpace)
-                        sb.Append(' ');
-                    caseFlag = true;
-                }
-                else if (caseFlag)
-                {
-                    sb.Append(char.ToUpper(c, CultureInfo.InvariantCulture));
-                    caseFlag = false;
-                }
-                else
-                {
-                    sb.Append(char.ToLowerInvariant(c));
-                }
-            }
+            var sb = Pool.GenericPool<StringBuilder>.Get();
 
-            var result = sb.ToString();
-            return result;
+            try
+            {
+                var caseFlag = firstCase;
+                foreach (var c in dash)
+                {
+                    if (c == '-')
+                    {
+                        if (addSpace)
+                            sb.Append(' ');
+                        caseFlag = true;
+                    }
+                    else if (caseFlag)
+                    {
+                        sb.Append(char.ToUpper(c, CultureInfo.InvariantCulture));
+                        caseFlag = false;
+                    }
+                    else
+                    {
+                        sb.Append(char.ToLowerInvariant(c));
+                    }
+                }
+
+                return sb.ToString();
+            }
+            finally
+            {
+                Pool.GenericPool<StringBuilder>.Release(sb.Clear());
+            }
         }
     }
 }

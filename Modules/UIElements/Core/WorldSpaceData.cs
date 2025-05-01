@@ -17,7 +17,11 @@ namespace UnityEngine.UIElements
 
         public Bounds localBounds3D;
         public Bounds localBoundsPicking3D;
-        public Bounds localBoundsNested3D;
+        public Bounds localBoundsWithoutNested3D;
+
+        // This value is technically a flat 2D rect, but it is only useful in world-space mode.
+        // For this reason, we store it in this struct to avoid inflating the VisualElement class.
+        public Rect boundingBoxWithoutNested;
     }
 
     internal static class WorldSpaceDataStore
@@ -31,7 +35,9 @@ namespace UnityEngine.UIElements
 
         public static WorldSpaceData GetWorldSpaceData(VisualElement ve)
         {
-            return m_WorldSpaceData[ve.controlid];
+            if (m_WorldSpaceData.TryGetValue(ve.controlid, out var data))
+                return data;
+            return new WorldSpaceData();
         }
 
         public static void ClearWorldSpaceData(VisualElement ve)
@@ -43,6 +49,15 @@ namespace UnityEngine.UIElements
 
             for (var i = ve.hierarchy.childCount - 1; i >= 0; --i)
                 ClearWorldSpaceData(ve.hierarchy[i]);
+        }
+
+        public static void ClearLocalBounds3DData(VisualElement ve)
+        {
+            var data = GetWorldSpaceData(ve);
+            data.localBounds3D = WorldSpaceData.k_Empty3DBounds;
+            data.localBoundsPicking3D = WorldSpaceData.k_Empty3DBounds;
+            data.localBoundsWithoutNested3D = WorldSpaceData.k_Empty3DBounds;
+            SetWorldSpaceData(ve, data);
         }
     }
 }

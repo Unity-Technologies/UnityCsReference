@@ -69,17 +69,18 @@ namespace UnityEngine.UIElements
         DisableRendering = 1 << 14,
         // Element uses 3-D transforms or contains children that do
         Needs3DBounds = 1 << 15,
-        // Element's 3-D transform local bounds need to be recalculated
+        // Element's 3-D transform local bounds need to be recalculated (with or without nested UIDocuments)
         LocalBounds3DDirty = 1 << 16,
+        LocalBoundsWithoutNested3DDirty = 1 << 17,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
-        DetachedDataSource = 1 << 17,
+        DetachedDataSource = 1 << 18,
         // Element has capture on one or more pointerIds
-        PointerCapture = 1 << 18,
+        PointerCapture = 1 << 19,
         // Element is a root UIDocument
-        isWorldSpaceRootUIDocument = 1 << 19,
+        IsWorldSpaceRootUIDocument = 1 << 20,
 
         // Element initial flags
-        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
+        Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty | DetachedDataSource
     }
 
     /// <summary>
@@ -491,15 +492,40 @@ namespace UnityEngine.UIElements
         private VisualElementFlags m_Flags;
         internal VisualElementFlags flags
         {
-            get { return m_Flags; }
+            get {
+                // The WorldClipDirty flag is managed by the RenderData, so we combine it with m_Flags when set on
+                // either renderData or nestedRenderData. See the setter below for more information.
+                if (((renderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty) ||
+                    ((nestedRenderData?.flags & RenderDataFlags.IsClippingRectDirty) == RenderDataFlags.IsClippingRectDirty))
+                    return m_Flags | VisualElementFlags.WorldClipDirty;
+
+                return m_Flags;
+            }
             set
             {
                 m_Flags = value;
-                if (renderData != null)
+
+                // UUM-91413: We avoid setting the WorldClipDirty flag on the VisualElement as the RenderData is responsible
+                // to clear it once computed, otherwise the flag will stick between updates.
+                if ((m_Flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty)
                 {
-                    // Forward relevant flags to render data
-                    if ((value & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty)
+                    // The RenderData (nested or not) is responsible for dealing with the dirty clipping rect.
+                    if (renderData != null)
+                    {
                         renderData.flags |= RenderDataFlags.IsClippingRectDirty;
+                        m_Flags &= ~VisualElementFlags.WorldClipDirty;
+                    }
+                    if (nestedRenderData != null)
+                    {
+                        nestedRenderData.flags |= RenderDataFlags.IsClippingRectDirty;
+
+                        // No need to remove the flag from m_Flags as renderData is guaranteed to not be null here
+                        Debug.Assert(renderData != null, "renderData should not be null when nestedRenderData is not null");
+                    }
+
+                    // If the RenderData is not created yet, we temporarily allow the flag to be set on the VisualElement.
+                    // It will be reset once the RenderData is created (in UIRRenderEvents.DepthFirstOnChildAdded).
+                    // Doing so avoid useless recursions to set the flags in the HierarchyFlagsUpdater.
                 }
             }
         }
@@ -820,7 +846,7 @@ namespace UnityEngine.UIElements
             {
                 if (elementPanel == null)
                 {
-                    Debug.LogWarning("Tying to acces dpi setting of a visual element not on a panel");
+                    Debug.LogWarning("Trying to access the DPI setting of a visual element that is not on a panel.");
                     return GUIUtility.pixelsPerPoint;
                 }
 
@@ -969,6 +995,12 @@ namespace UnityEngine.UIElements
             set => m_Flags = value ? m_Flags | VisualElementFlags.LocalBounds3DDirty : m_Flags & ~VisualElementFlags.LocalBounds3DDirty;
         }
 
+        internal bool isLocalBoundsWithoutNested3DDirty
+        {
+            get => (m_Flags & VisualElementFlags.LocalBoundsWithoutNested3DDirty) != 0;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.LocalBoundsWithoutNested3DDirty : m_Flags & ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+        }
+
         internal bool isBoundingBoxDirty
         {
             get => (m_Flags & VisualElementFlags.BoundingBoxDirty) == VisualElementFlags.BoundingBoxDirty;
@@ -1006,6 +1038,20 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal Rect boundingBoxWithoutNested
+        {
+            get
+            {
+                if (isBoundingBoxDirty)
+                {
+                    UpdateBoundingBox();
+                    isBoundingBoxDirty = false;
+                }
+
+                return WorldSpaceDataStore.GetWorldSpaceData(this).boundingBoxWithoutNested;
+            }
+        }
+
         internal Rect worldBoundingBox
         {
             get
@@ -1032,29 +1078,55 @@ namespace UnityEngine.UIElements
 
         internal void UpdateBoundingBox()
         {
+            // boundingBoxWithoutNested is only used in world-space mode.
+            bool shouldComputedWithoutNested = (elementPanel != null && !elementPanel.isFlat);
+            Rect bboxWithoutNested;
+
             var r = rect;
             if (float.IsNaN(r.x) || float.IsNaN(r.y) || float.IsNaN(r.width) || float.IsNaN(r.height))
             {
                 // Ignored unlayouted VisualElements.
                 m_BoundingBox = Rect.zero;
+                bboxWithoutNested = Rect.zero;
             }
             else
             {
                 m_BoundingBox = r;
+                bboxWithoutNested = r;
                 if (!ShouldClip() && resolvedStyle.display == DisplayStyle.Flex)
                 {
                     var childCount = m_Children.Count;
                     for (int i = 0; i < childCount; i++)
                     {
-                        if (!m_Children[i].areAncestorsAndSelfDisplayed)
+                        var child = m_Children[i];
+                        if (!child.areAncestorsAndSelfDisplayed)
                             continue;
-                        var childBB = m_Children[i].boundingBoxInParentSpace;
+
+                        var childBB = child.boundingBoxInParentSpace;
                         m_BoundingBox.xMin = Math.Min(m_BoundingBox.xMin, childBB.xMin);
                         m_BoundingBox.xMax = Math.Max(m_BoundingBox.xMax, childBB.xMax);
                         m_BoundingBox.yMin = Math.Min(m_BoundingBox.yMin, childBB.yMin);
                         m_BoundingBox.yMax = Math.Max(m_BoundingBox.yMax, childBB.yMax);
+
+                        if (shouldComputedWithoutNested && !(child is UIDocumentRootElement))
+                        {
+                            // Only update "bounding-box without nested" for non-UIDocumentRootElement
+                            bboxWithoutNested.xMin = Math.Min(bboxWithoutNested.xMin, childBB.xMin);
+                            bboxWithoutNested.xMax = Math.Max(bboxWithoutNested.xMax, childBB.xMax);
+                            bboxWithoutNested.yMin = Math.Min(bboxWithoutNested.yMin, childBB.yMin);
+                            bboxWithoutNested.yMax = Math.Max(bboxWithoutNested.yMax, childBB.yMax);
+                        }
                     }
                 }
+            }
+
+            if (shouldComputedWithoutNested)
+            {
+                // This value is only used in world-space mode. So, we store the "without nested"
+                // result in the WorldSpaceData struct to avoid uselessly inflating the VisualElement class.
+                var data = WorldSpaceDataStore.GetWorldSpaceData(this);
+                data.boundingBoxWithoutNested = bboxWithoutNested;
+                WorldSpaceDataStore.SetWorldSpaceData(this, data);
             }
 
             isWorldBoundingBoxDirty = true;
@@ -1090,23 +1162,21 @@ namespace UnityEngine.UIElements
                     isLocalBounds3DDirty = false;
                 }
 
-                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsPicking3D;
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBounds3D;
             }
         }
 
-        // "localBounds3D" and "localBoundsPicking3D" are truly local and do not include nested UIDocuments.
-        // "localBoundsNested3D" do include nested UIDocuments.
-        internal Bounds localBoundsNested3D
+        internal Bounds localBounds3DWithoutNested3D
         {
             get
             {
-                if (isLocalBounds3DDirty)
+                if (isLocalBoundsWithoutNested3DDirty)
                 {
                     UpdateBounds3D();
-                    isLocalBounds3DDirty = false;
+                    isLocalBoundsWithoutNested3DDirty = false;
                 }
 
-                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsNested3D;
+                return WorldSpaceDataStore.GetWorldSpaceData(this).localBoundsWithoutNested3D;
             }
         }
 
@@ -1114,18 +1184,32 @@ namespace UnityEngine.UIElements
         {
             if (!areAncestorsAndSelfDisplayed)
             {
-                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
+                WorldSpaceDataStore.ClearLocalBounds3DData(this);
+                return;
+            }
+
+            if (!needs3DBounds)
+            {
+                // Fast path for elements that don't need 3D transforms
+                var bbox = boundingBox;
+                var localBounds = new Bounds(bbox.center, bbox.size);
+
+                var bboxWithoutNested = boundingBoxWithoutNested;
+                var boundsWithoutNested = new Bounds(bboxWithoutNested.center, bboxWithoutNested.size);
+
+                WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData()
                 {
-                    localBounds3D = WorldSpaceData.k_Empty3DBounds,
-                    localBoundsPicking3D = WorldSpaceData.k_Empty3DBounds,
-                    localBoundsNested3D = WorldSpaceData.k_Empty3DBounds,
+                    localBounds3D = localBounds,
+                    localBoundsPicking3D = localBounds,
+                    localBoundsWithoutNested3D = boundsWithoutNested,
+                    boundingBoxWithoutNested = bboxWithoutNested,
                 });
                 return;
             }
 
-            var localBounds = new Bounds(rect.center, rect.size);
-            var localBoundsWithNested = localBounds;
-            var pickingBounds = pickingMode == PickingMode.Position ? localBounds : WorldSpaceData.k_Empty3DBounds;
+            var localBoundsWithoutNested = new Bounds(rect.center, rect.size);
+            var localBoundsWithNested = localBoundsWithoutNested;
+            var pickingBounds = pickingMode == PickingMode.Position ? localBoundsWithNested : WorldSpaceData.k_Empty3DBounds;
 
             if (!ShouldClip())
             {
@@ -1137,37 +1221,37 @@ namespace UnityEngine.UIElements
                     bool childIsUIDocumentRoot = child is UIDocumentRootElement;
                     if (!childIsUIDocumentRoot) // Skip local bounds update when child is a UIDocument root
                     {
-                        var childBounds = child.localBounds3D;
-                        if (childBounds.extents.x >= 0)
+                        var childBoundsWithoutNested = child.localBounds3DWithoutNested3D;
+                        if (childBoundsWithoutNested.extents.x >= 0)
                         {
-                            child.TransformAlignedBoundsToParentSpace(ref childBounds);
-                            localBounds.Encapsulate(childBounds);
-                        }
-
-                        var childPickingBounds = child.localBoundsPicking3D;
-                        if (childPickingBounds.extents.x >= 0)
-                        {
-                            child.TransformAlignedBoundsToParentSpace(ref childPickingBounds);
-                            pickingBounds.Encapsulate(childPickingBounds);
+                            child.TransformAlignedBoundsToParentSpace(ref childBoundsWithoutNested);
+                            localBoundsWithoutNested.Encapsulate(childBoundsWithoutNested);
                         }
                     }
 
                     // Always update local bounds with nested UIDocs
-                    var childLocalBoundsWithNested = child.localBoundsNested3D;
+                    var childLocalBoundsWithNested = child.localBounds3D;
                     if (childLocalBoundsWithNested.extents.x >= 0)
                     {
                         child.TransformAlignedBoundsToParentSpace(ref childLocalBoundsWithNested);
                         localBoundsWithNested.Encapsulate(childLocalBoundsWithNested);
                     }
+
+                    // Update picking bounds
+                    var childPickingBounds = child.localBoundsPicking3D;
+                    if (childPickingBounds.extents.x >= 0)
+                    {
+                        child.TransformAlignedBoundsToParentSpace(ref childPickingBounds);
+                        pickingBounds.Encapsulate(childPickingBounds);
+                    }
                 }
             }
 
-            WorldSpaceDataStore.SetWorldSpaceData(this, new WorldSpaceData
-            {
-                localBounds3D = localBounds,
-                localBoundsPicking3D = pickingBounds,
-                localBoundsNested3D = localBoundsWithNested,
-            });
+            var data = WorldSpaceDataStore.GetWorldSpaceData(this);
+            data.localBounds3D = localBoundsWithNested;
+            data.localBoundsPicking3D = pickingBounds;
+            data.localBoundsWithoutNested3D = localBoundsWithoutNested;
+            WorldSpaceDataStore.SetWorldSpaceData(this, data);
         }
 
         /// <summary>
@@ -1211,9 +1295,9 @@ namespace UnityEngine.UIElements
         internal bool isWorldSpaceRootUIDocument
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => (m_Flags & VisualElementFlags.isWorldSpaceRootUIDocument) == VisualElementFlags.isWorldSpaceRootUIDocument;
+            get => (m_Flags & VisualElementFlags.IsWorldSpaceRootUIDocument) == VisualElementFlags.IsWorldSpaceRootUIDocument;
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set => m_Flags = value ? m_Flags | VisualElementFlags.isWorldSpaceRootUIDocument : m_Flags & ~VisualElementFlags.isWorldSpaceRootUIDocument;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.IsWorldSpaceRootUIDocument : m_Flags & ~VisualElementFlags.IsWorldSpaceRootUIDocument;
         }
 
         internal bool isWorldTransformDirty
@@ -1315,28 +1399,18 @@ namespace UnityEngine.UIElements
             isWorldTransformInverseDirty = false;
         }
 
+        // Only used in tests
         internal bool isWorldClipDirty
         {
-            get => (m_Flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty;
-            set => m_Flags = value ? m_Flags | VisualElementFlags.WorldClipDirty : m_Flags & ~VisualElementFlags.WorldClipDirty;
+            get => (flags & VisualElementFlags.WorldClipDirty) == VisualElementFlags.WorldClipDirty;
         }
-
-        private Rect m_WorldClip = Rect.zero;
-        private Rect m_NestedTreeWorldClip = Rect.zero;
-        private bool m_WorldClipIsInfinite = false;
 
         internal Rect worldClip
         {
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             get
             {
-                if (isWorldClipDirty)
-                {
-                    UpdateWorldClip();
-                    isWorldClipDirty = false;
-                }
-
-                return m_WorldClip;
+                return renderData?.clippingRect ?? Rect.zero;
             }
         }
 
@@ -1344,113 +1418,21 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                if (isWorldClipDirty)
-                {
-                    UpdateWorldClip();
-                    isWorldClipDirty = false;
-                }
-
-                return m_NestedTreeWorldClip;
+                return nestedRenderData?.clippingRect ?? Rect.zero;
             }
         }
 
-        internal bool worldClipIsInfinite
-        {
-            get
-            {
-                if (isWorldClipDirty)
-                {
-                    UpdateWorldClip();
-                    isWorldClipDirty = false;
-                }
-                return m_WorldClipIsInfinite;
-            }
-        }
+       internal void EnsureWorldTransformAndClipUpToDate()
+       {
+            if (renderData == null)
+                return;
 
-        internal void EnsureWorldTransformAndClipUpToDate()
-        {
             if (isWorldTransformDirty)
                 UpdateWorldTransform();
-            if (isWorldClipDirty)
-            {
-                UpdateWorldClip();
-                isWorldClipDirty = false;
-            }
-        }
 
-        internal static readonly Rect s_InfiniteRect = new Rect(-10000, -10000, 40000, 40000);
-
-        private void UpdateWorldClip()
-        {
-            if (hierarchy.parent != null)
-            {
-                bool parentWorldClipIsInfinite = hierarchy.parent.worldClipIsInfinite;
-                if (hierarchy.parent == renderData?.groupTransformAncestor?.owner)
-                    parentWorldClipIsInfinite = true; // Group transforms marks the beginning of a new clipping space
-
-                if (ShouldClip())
-                {
-                    // Case 1222517: We must substract before intersection. Otherwise, if the parent world clip
-                    // boundary happens to be overlapping the element, we may be over-substracting. Also clamping must
-                    // be the last operation that's performed.
-                    Rect wb = SubstractBorderPadding(worldBound);
-
-                    m_WorldClip = parentWorldClipIsInfinite ? wb : CombineClipRects(wb, hierarchy.parent.worldClip);
-                    m_NestedTreeWorldClip = m_WorldClip;
-
-                    m_WorldClipIsInfinite = false;
-                }
-                else
-                {
-                    m_WorldClip = hierarchy.parent.worldClip;
-
-                    if (nestedRenderData != null)
-                        m_NestedTreeWorldClip = s_InfiniteRect;
-                    else
-                        m_NestedTreeWorldClip = m_WorldClip;
-
-                    m_WorldClipIsInfinite = parentWorldClipIsInfinite;
-                }
-            }
-            else
-            {
-                m_WorldClip = (panel != null) ? panel.visualTree.rect : s_InfiniteRect;
-                m_WorldClipIsInfinite = true;
-            }
-        }
-
-        private Rect CombineClipRects(Rect rect, Rect parentRect)
-        {
-            float x1 = Mathf.Max(rect.xMin, parentRect.xMin);
-            float x2 = Mathf.Min(rect.xMax, parentRect.xMax);
-            float y1 = Mathf.Max(rect.yMin, parentRect.yMin);
-            float y2 = Mathf.Min(rect.yMax, parentRect.yMax);
-            float width = Mathf.Max(x2 - x1, 0);
-            float height = Mathf.Max(y2 - y1, 0);
-            return new Rect(x1, y1, width, height);
-        }
-
-        private Rect SubstractBorderPadding(Rect worldRect)
-        {
-            // Case 1222517: We must take the scaling into consideration when applying local changes to the world rect.
-            float xScale = worldTransform.m00;
-            float yScale = worldTransform.m11;
-
-            worldRect.x += resolvedStyle.borderLeftWidth * xScale;
-            worldRect.y += resolvedStyle.borderTopWidth * yScale;
-            worldRect.width -= (resolvedStyle.borderLeftWidth + resolvedStyle.borderRightWidth) * xScale;
-            worldRect.height -= (resolvedStyle.borderTopWidth + resolvedStyle.borderBottomWidth) * yScale;
-
-            if (computedStyle.unityOverflowClipBox == OverflowClipBox.ContentBox)
-            {
-                worldRect.x += resolvedStyle.paddingLeft * xScale;
-                worldRect.y += resolvedStyle.paddingTop * yScale;
-                worldRect.width -= (resolvedStyle.paddingLeft + resolvedStyle.paddingRight) * xScale;
-                worldRect.height -= (resolvedStyle.paddingTop + resolvedStyle.paddingBottom) * yScale;
-            }
-
-            return worldRect;
-        }
+            renderData.UpdateClippingRect();
+            renderData.flags &= ~RenderDataFlags.IsClippingRectDirty;
+       }
 
         // get the AA aligned bound
         internal static Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
@@ -1481,6 +1463,8 @@ namespace UnityEngine.UIElements
             set
             {
                 PseudoStates diff = m_PseudoStates ^ value;
+                m_PseudoStates = value; // Set the new value before IncrementVersion so we can react to it.
+
                 if ((int)diff > 0)
                 {
                     if ((value & PseudoStates.Root) == PseudoStates.Root)
@@ -1491,7 +1475,7 @@ namespace UnityEngine.UIElements
                     if (diff != PseudoStates.Root)
                     {
                         var added = diff & value;
-                        var removed = diff & m_PseudoStates;
+                        var removed = diff ^ added;
 
                         if ((triggerPseudoMask & added) != 0
                             || (dependencyPseudoMask & removed) != 0)
@@ -1499,8 +1483,6 @@ namespace UnityEngine.UIElements
                             IncrementVersion(VersionChangeType.StyleSheet);
                         }
                     }
-
-                    m_PseudoStates = value;
                 }
             }
         }
@@ -1740,7 +1722,7 @@ namespace UnityEngine.UIElements
             hierarchy = new Hierarchy(this);
 
             m_ClassList = s_EmptyClassList;
-            m_Flags = VisualElementFlags.Init;
+            flags = VisualElementFlags.Init;
             enabledSelf = true;
 
             focusable = false;
@@ -1865,7 +1847,7 @@ namespace UnityEngine.UIElements
                     foreach (var e in elements)
                     {
                         e.elementPanel = p;
-                        e.m_Flags |= flagToAdd;
+                        e.flags |= flagToAdd;
                         e.m_CachedNextParentWithEventInterests = null;
                     }
                     InvokeHierarchyChanged(HierarchyChangeType.AttachedToPanel, elements);

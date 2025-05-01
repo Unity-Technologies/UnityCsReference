@@ -1420,7 +1420,21 @@ namespace UnityEditor
             var oldLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 0f;
 
-            Vector4 newValue = EditorGUI.Vector4Field(position, label, prop.vectorValue);
+            Vector4 newValue;
+            if ((prop.propertyFlags & ShaderPropertyFlags.Vector3) != 0)
+            {
+                var vec3value = EditorGUI.Vector3Field(position, label, new Vector3(prop.vectorValue.x, prop.vectorValue.y, prop.vectorValue.z));
+                newValue = new Vector4(vec3value.x, vec3value.y, vec3value.z, 0);
+            }
+            else if ((prop.propertyFlags & ShaderPropertyFlags.Vector2) != 0)
+            {
+                var vec2value = EditorGUI.Vector2Field(position, label, new Vector2(prop.vectorValue.x, prop.vectorValue.y));
+                newValue = new Vector4(vec2value.x, vec2value.y, 0, 0);
+            }
+            else
+            {
+                newValue = EditorGUI.Vector4Field(position, label, prop.vectorValue);
+            }
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
 

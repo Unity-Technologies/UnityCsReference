@@ -111,7 +111,7 @@ namespace UnityEditor
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOnWarning = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable Profiler GPU Recorders and the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOnGPURecordersOffInfo = EditorGUIUtility.TrTextContent("On OpenGL, Frame Timing Stats may disable the GPU Profiler.");
             public static readonly GUIContent openGLFrameTimingStatsOffGPURecordersOnInfo = EditorGUIUtility.TrTextContent("On OpenGL, Profiler GPU Recorders may disable the GPU Profiler.");
-            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation (Deprecated)", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately. This is has no effect on iOS 16 later versions as autorotation is always animated. This option is deprecated and will be removed in a future release.");
+            public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation (Deprecated)", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately. This has no effect on iOS 16 and later versions as autorotation is always animated. This option is deprecated and will be removed in a future release.");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
             public static readonly GUIContent defaultScreenHeight = EditorGUIUtility.TrTextContent("Default Screen Height");
             public static readonly GUIContent macRetinaSupport = EditorGUIUtility.TrTextContent("Mac Retina Support");
@@ -140,7 +140,8 @@ namespace UnityEditor
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
             public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
-            public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*");
+            public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*", "This is non-functional. The option is deprecated and will be removed in a future release.");
+            public static readonly GUIContent actionOnDotNetUnhandledExceptionDeprecation = EditorGUIUtility.TrTextContent("On .Net UnhandledException* is non-functional. This option is deprecated and will be removed in a future release.");
             public static readonly GUIContent logObjCUncaughtExceptions = EditorGUIUtility.TrTextContent("Log Obj-C Uncaught Exceptions*");
             public static readonly GUIContent enableCrashReportAPI = EditorGUIUtility.TrTextContent("Enable CrashReport API*");
             public static readonly GUIContent activeColorSpace = EditorGUIUtility.TrTextContent("Color Space*");
@@ -1984,6 +1985,7 @@ namespace UnityEditor
                     // Crash reporting
                     GUILayout.Label(SettingsContent.crashReportingTitle, EditorStyles.boldLabel);
                     EditorGUILayout.PropertyField(m_ActionOnDotNetUnhandledException, SettingsContent.actionOnDotNetUnhandledException);
+                    EditorGUILayout.HelpBox(SettingsContent.actionOnDotNetUnhandledExceptionDeprecation.text, MessageType.Info, true);
                     EditorGUILayout.PropertyField(m_LogObjCUncaughtExceptions, SettingsContent.logObjCUncaughtExceptions);
 
                     GUIContent crashReportApiContent = SettingsContent.enableCrashReportAPI;

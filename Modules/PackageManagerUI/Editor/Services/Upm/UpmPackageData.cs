@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         bool isDiscoverable { get; }
         bool isDeprecated { get; }
         string deprecationMessage { get; }
+        PackageCompliance compliance { get; }
         PackageInfo GetSearchInfo(string version);
         bool IsVersionDeprecated(string version);
     }
@@ -34,6 +35,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public bool isDiscoverable => mainSearchInfo != null;
         public bool isDeprecated => m_NewestInfo.unityLifecycle?.isDeprecated ?? false;
         public string deprecationMessage => isDeprecated ? m_NewestInfo.unityLifecycle.deprecationMessage : null;
+        public PackageCompliance compliance => m_NewestInfo.compliance;
 
         private readonly Dictionary<string, PackageInfo> m_ExtraSearchInfos;
         private readonly PackageInfo m_NewestInfo;

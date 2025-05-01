@@ -14,7 +14,7 @@ namespace UnityEngine.Rendering
             if (GraphicsSettings.s_PropertyHelper.SetProperty(settings, ref currentPropertyValue, newValue, propertyName))
             {
                 GraphicsSettings.CallOnIRenderPipelineGraphicsSettingsChange(settings, propertyName);
-                GraphicsSettings.Internal_SetAllRenderPipelineSettingsDirty();
+                GraphicsSettings.SetDirtyRenderPipelineGlobalSettingsContaining(settings);
             }
         }
 
@@ -22,7 +22,7 @@ namespace UnityEngine.Rendering
         {
             GraphicsSettings.s_PropertyHelper.NotifyValueChange(settings, propertyName);
             GraphicsSettings.CallOnIRenderPipelineGraphicsSettingsChange(settings, propertyName);
-            GraphicsSettings.Internal_SetAllRenderPipelineSettingsDirty();
+            GraphicsSettings.SetDirtyRenderPipelineGlobalSettingsContaining(settings);
         }
     }
 

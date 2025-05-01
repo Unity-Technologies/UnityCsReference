@@ -149,7 +149,6 @@ namespace UnityEngine.UIElements
 
             m_ScrollView.contentContainer.style.paddingTop = firstVisibleItemIndex * pixelAlignedItemHeight;
             m_ScrollView.contentContainer.style.height = itemsCount * pixelAlignedItemHeight;
-            m_ScrollView.SetScrollOffsetWithoutNotify(new Vector2(m_ScrollView.scrollOffset.x, scrollOffset.y));
 
             if (firstVisibleItemIndex != firstVisibleIndex)
             {

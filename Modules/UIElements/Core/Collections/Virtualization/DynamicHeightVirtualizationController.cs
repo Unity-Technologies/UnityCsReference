@@ -195,7 +195,8 @@ namespace UnityEngine.UIElements
                     contentHeight = GetExpectedContentHeight();
                     var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
                     m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
-                    m_ScrollView.verticalScroller.value = m_ScrollView.scrollOffset.y;
+                    m_ScrollView.scrollOffset = serializedData.scrollOffset;
+                    serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
                 }
 
                 ScheduleFill();
@@ -256,9 +257,10 @@ namespace UnityEngine.UIElements
             // and highValues.
             var viewportHeight = m_ScrollView.contentViewport.layout.height;
             var scrollableHeight = Mathf.Max(0, contentHeight - viewportHeight);
-            var scrollOffset = Mathf.Min(m_ScrollView.scrollOffset.y, scrollableHeight);
+            var scrollOffset = Mathf.Min(serializedData.scrollOffset.y, scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
+            serializedData.scrollOffset.y = m_ScrollView.verticalScroller.value;
 
             // We virtualize a number of items based on the smallest expected item height.
             var resolvedViewportHeight = m_CollectionView.ResolveItemHeight(size.y);
@@ -401,6 +403,8 @@ namespace UnityEngine.UIElements
 
             m_StickToBottom = scrollableHeight > 0 && Math.Abs(scrollOffset.y - m_ScrollView.verticalScroller.highValue) < float.Epsilon;
             m_ScrollView.SetScrollOffsetWithoutNotify(scrollOffset);
+            serializedData.scrollOffset = m_ScrollView.scrollOffset;
+            m_CollectionView.SaveViewData();
 
             var firstIndex = m_ForcedFirstVisibleItem != -1 ? m_ForcedFirstVisibleItem : GetFirstVisibleItem(m_ScrollView.scrollOffset.y);
             var firstVisiblePadding = GetContentHeightForIndex(firstIndex - 1);
@@ -634,6 +638,9 @@ namespace UnityEngine.UIElements
             // After a fill, we want to reapply the dimensions correctly if anything changed.
             if (m_WaitingCache.Count == 0)
             {
+                // Restore back the old value in the use case where there's a nested list with viewDataKeys. The
+                // OverwriteFromViewData will overwrite the whole stream.
+                m_ScrollView.scrollOffset = serializedData.scrollOffset;
                 ResetScroll();
                 ApplyScrollViewUpdate(true);
             }
@@ -701,6 +708,7 @@ namespace UnityEngine.UIElements
             // Don't notify to avoid coming back in the scroll update for no reason.
             m_ScrollView.verticalScroller.slider.SetHighValueWithoutNotify(scrollableHeight);
             m_ScrollView.verticalScroller.slider.SetValueWithoutNotify(scrollOffset);
+            serializedData.scrollOffset.y = m_ScrollView.verticalScroller.slider.value;
 
             if (dimensionsOnly || m_LastChange == VirtualizationChange.Resize)
             {

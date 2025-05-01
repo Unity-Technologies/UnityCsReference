@@ -19,16 +19,14 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         [SerializeField]
         private RegistryInfo m_RegistryInfo;
-
-        public RegistryInfo registry => m_RegistryInfo;
+        public override RegistryInfo scopedRegistry  => m_RegistryInfo;
 
         public override string id => GetIdFromRegistry(m_RegistryInfo);
         public override string displayName => m_RegistryInfo.name;
 
         [NonSerialized]
         private IUpmCache m_UpmCache;
-        public void ResolveDependencies(IPackageDatabase packageDatabase,
-            IUpmCache upmCache)
+        public void ResolveDependencies(IPackageDatabase packageDatabase, IUpmCache upmCache)
         {
             ResolveDependencies(packageDatabase);
             m_UpmCache = upmCache;
@@ -43,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void UpdateRegistry(RegistryInfo registryInfo)
         {
-            if (new UpmRegistryClient.RegistryInfoComparer().Equals(m_RegistryInfo, registryInfo))
+            if (m_RegistryInfo.IsEquivalentTo(registryInfo))
                 return;
             m_RegistryInfo = registryInfo;
             RebuildVisualStatesAndUpdateVisibilityWithSearchText();
@@ -54,7 +52,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             return base.ShouldInclude(package) && package.versions.Any(v =>
             {
                 var packageInfo = m_UpmCache.GetBestMatchPackageInfo(v.name, v.isInstalled);
-                return new UpmRegistryClient.RegistryInfoComparer().Equals(m_RegistryInfo, packageInfo.registry);
+                return packageInfo?.registry != null && m_RegistryInfo.IsEquivalentTo(packageInfo.registry);
             });
         }
     }

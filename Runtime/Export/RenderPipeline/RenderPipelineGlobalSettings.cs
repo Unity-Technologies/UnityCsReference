@@ -149,6 +149,17 @@ namespace UnityEngine.Rendering
             return settingsList != null && settingsMap.ContainsKey(type);
         }
 
+        internal bool ContainsReference(IRenderPipelineGraphicsSettings renderPipelineGraphicsSettings)
+        {
+            if (renderPipelineGraphicsSettings == null)
+                return false;
+
+            if (!TryGet(renderPipelineGraphicsSettings.GetType(), out var settings))
+                return false;
+
+            return Object.ReferenceEquals(renderPipelineGraphicsSettings, settings);
+        }
+
         public virtual void OnBeforeSerialize()
         {
         }

@@ -127,13 +127,13 @@ namespace UnityEditor
             public static int[] clearFlagsValues = { 1, 2 }; // taken from Camera.h
 
             private static GUIContent customPrivitiveBoundsHandleEditModeButton = new GUIContent(
-                EditorGUIUtility.IconContent("EditCollider").image,
+                EditorGUIUtility.IconContent("EditShape").image,
                 EditorGUIUtility.TrTextContent("Adjust the probe's zone of effect. Holding Alt or Shift and click the control handle to pin the center or scale the volume uniformly.").text
             );
             public static GUIContent[] toolContents =
             {
                 customPrivitiveBoundsHandleEditModeButton,
-                EditorGUIUtility.TrIconContent("MoveTool", "Move the selected objects.")
+                EditorGUIUtility.TrIconContent("CapturePosition", "Modify capture position.")
             };
             public static EditMode.SceneViewEditMode[] sceneViewEditModes = new[]
             {

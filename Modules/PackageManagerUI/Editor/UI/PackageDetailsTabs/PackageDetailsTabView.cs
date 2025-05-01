@@ -47,7 +47,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_TabHeaderDropdown.SetIcon(Icon.PullDown);
 
             m_EntitlementsErrorLabel = new Label(L10n.Tr("Information is unavailable because the package license isn't registered to your user account."));
-            m_EntitlementsErrorLabel.AddClasses("packageTabsEntitlementsError");
+            m_EntitlementsErrorLabel.AddClasses("packageDetailsTabMessage");
             Add(m_EntitlementsErrorLabel);
 
             m_CalculatedTabHorizontalMarginAndPadding = k_TabHeaderMarginLeft + k_TabHeaderMarginRight + k_TabHeaderPaddingLeft + k_TabHeaderPaddingRight;

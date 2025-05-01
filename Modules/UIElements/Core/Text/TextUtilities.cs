@@ -102,9 +102,9 @@ namespace UnityEngine.UIElements
 
             var textSettings = GetTextSettingsFrom(ve);
             if (ve.computedStyle.unityFontDefinition.font != null)
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font, TextShaderUtilities.ShaderRef_MobileSDF);
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFontDefinition.font);
             else if (ve.computedStyle.unityFont != null)
-                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont, TextShaderUtilities.ShaderRef_MobileSDF);
+                return textSettings.GetCachedFontAsset(ve.computedStyle.unityFont);
             else if (textSettings != null)
                 return textSettings.defaultFontAsset;
             return null;

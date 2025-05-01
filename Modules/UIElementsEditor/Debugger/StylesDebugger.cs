@@ -25,6 +25,7 @@ namespace UnityEditor.UIElements.Debugger
         private ScrollView m_ScrollView;
         private BoxModelView m_BoxModelView;
         private StylePropertyDebugger m_StylePropertyDebugger;
+        private IMGUIContainer m_MatchingRulesContainer;
 
         private IPanelDebug m_PanelDebug;
         private VisualElement selectedElement
@@ -45,15 +46,16 @@ namespace UnityEditor.UIElements.Debugger
                 m_ClassList = null;
 
                 this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
-                UpdateMatchs();
+                UpdateMatches();
             }
         }
 
         //Used by StylePropertyDebugger to return to a "not Inline" style
-        public void UpdateMatchs()
+        public void UpdateMatches()
         {
             GetElementMatchers();
             m_StylePropertyDebugger.SetMatchRecords(m_SelectedElement, m_MatchedRulesExtractor.matchRecords);
+            m_MatchingRulesContainer.MarkDirtyLayout();
         }
 
         public StylesDebugger(DebuggerSelection debuggerSelection)
@@ -79,7 +81,7 @@ namespace UnityEditor.UIElements.Debugger
             layoutInfo.Add(new IMGUIContainer(DrawLayoutInfo) { style = { flexShrink = 0, minWidth = 420 } });
             m_ScrollView.Add(layoutInfo);
 
-            m_ScrollView.Add(new IMGUIContainer(DrawMatchingRules));
+            m_ScrollView.Add(m_MatchingRulesContainer = new IMGUIContainer(DrawMatchingRules));
 
             m_ScrollView.Add(new IMGUIContainer(DrawProperties));
 

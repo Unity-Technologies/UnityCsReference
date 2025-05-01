@@ -152,34 +152,104 @@ namespace UnityEditor.Rendering.Settings
 
             return true;
         }
+
         internal static void ResetRenderPipelineGraphicsSettings(Type graphicsSettingsType, Type renderPipelineType)
         {
             if (graphicsSettingsType == null || renderPipelineType == null)
                 return;
 
             var renderPipelineGlobalSettings = EditorGraphicsSettings.GetRenderPipelineGlobalSettingsAsset(renderPipelineType);
-            if (renderPipelineGlobalSettings == null || !renderPipelineGlobalSettings.TryGet(graphicsSettingsType, out var srpGraphicSetting))
+            if (renderPipelineGlobalSettings == null || !renderPipelineGlobalSettings.TryGet(graphicsSettingsType, out var graphicsSettingsCurrentInstance))
                 return;
 
-            if (!TryCreateInstance(graphicsSettingsType, true, out srpGraphicSetting))
+            if (!TryCreateInstance(graphicsSettingsType, true, out IRenderPipelineGraphicsSettings createdForCSharpDefaultValues))
                 return;
+            
+            if (createdForCSharpDefaultValues is IRenderPipelineResources resource)
+                RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
 
-            srpGraphicSetting.Reset();
-
+            //Retrieve the SerializedProperty on the settings to reset in the global settings for the Notifier
             var serializedGlobalSettings = new SerializedObject(renderPipelineGlobalSettings);
             var settingsIterator = serializedGlobalSettings.FindProperty(serializationPathToCollection);
             settingsIterator.NextVisible(true); //enter the collection
             while (settingsIterator.boxedValue?.GetType() != graphicsSettingsType)
                 settingsIterator.NextVisible(false);
 
-            if (srpGraphicSetting is IRenderPipelineResources resource)
-                RenderPipelineResourcesEditorUtils.TryReloadContainedNullFields(resource);
-
             using (var notifier = new Notifier.Scope(settingsIterator))
             {
-                settingsIterator.boxedValue = srpGraphicSetting;
+                //Transfer default C# values (+ null reloading for IRenderPipelineResources)
+                CopyBySerialization.Copy(createdForCSharpDefaultValues, settingsIterator);
+
                 if (serializedGlobalSettings.ApplyModifiedProperties())
                     Undo.SetCurrentGroupName($"{undoResetName}{graphicsSettingsType.Name}");
+            }
+
+            graphicsSettingsCurrentInstance.Reset();
+        }
+
+        // Note: to keep reference when copying, we need to go through the serializedObject and update all field.
+        // Using directly ` property.boxedValue = value; ` change the reference. So, any local cache of the settings
+        // will be invalid after. Instead we need to shallow copy the content into the reference, as follow.
+        // As a IRenderPipelineGraphicsSettings is not a UnityEngine.Object, we need to host it in one to serialize it.
+        class CopyBySerialization : ScriptableObject
+        {
+            [SerializeReference] IRenderPipelineGraphicsSettings content;
+
+            public static void Copy(IRenderPipelineGraphicsSettings source, SerializedProperty destinationProperty)
+            {
+                if (destinationProperty == null || source == null || destinationProperty.boxedValue.GetType() != source.GetType())
+                    return;
+
+                var container = ScriptableObject.CreateInstance<CopyBySerialization>();
+                container.content = source;
+
+                // Get a SerializedProperty on the 'content' property
+                SerializedObject sp = new(container);
+                var iterator = sp.GetIterator();
+                iterator.NextVisible(true); //enter CopyBySerialization
+                while (iterator.boxedValue?.GetType() != source.GetType())
+                    iterator.NextVisible(false);
+
+                ShallowCopyContent(iterator, destinationProperty);
+
+                container.content = null;
+                UnityEngine.Object.DestroyImmediate(container);
+            }
+
+            static void ShallowCopyContent(SerializedProperty source, SerializedProperty destination)
+            {
+                void Copy(SerializedProperty source, SerializedProperty destination)
+                {
+                    if (source.propertyType == SerializedPropertyType.String)
+                    {
+                        //array are perceive as string by isArray
+                        destination.boxedValue = source.boxedValue;
+                    }
+                    else if (source.isArray)
+                    {
+                        //Array cannot directly be copied so we need to go one step deeper for them
+                        destination.arraySize = source.arraySize;
+                        source.NextVisible(true); 
+                        destination.NextVisible(true);
+                    }
+
+                    destination.boxedValue = source.boxedValue;
+                }
+
+                var sourceIterator = source.Copy();
+                var destinationIterator = destination.Copy();
+                var sourceEnd = sourceIterator.GetEndProperty();
+
+                //step into
+                sourceIterator.NextVisible(true);
+                destinationIterator.NextVisible(true);
+
+                while (!SerializedProperty.EqualContents(sourceIterator, sourceEnd))
+                {
+                    Copy(sourceIterator, destinationIterator);
+                    sourceIterator.NextVisible(false);
+                    destinationIterator.NextVisible(false);
+                }
             }
         }
     }

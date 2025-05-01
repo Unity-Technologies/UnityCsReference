@@ -74,6 +74,8 @@ namespace UnityEditor
             public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
             public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
             public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
+            public static GUIContent legacyDeprecationWarning = EditorGUIUtility.TrTextContent("ETC Legacy compression has been deprecated and will be removed in a future release.\n\n" +
+                "Legacy compression results are best matched by choosing \"Custom\", then choosing \"ETCPACK Fast\", \"ETCPACK Fast\" and \"ETCPACK Best\" for Fast, Normal, and Best, respectively. ETC Textures will be reimported and recompressed during the next AssetDatabase refresh.");
 
             public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
 
@@ -632,7 +634,7 @@ namespace UnityEditor
             EditorGUILayout.Popup(m_Bc7TextureCompressor, bc7TextureCompressorOptions, Content.bc7Compressor);
 
             // ETC
-            int index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureCompressorBehavior : m_EtcTextureCompressorBehavior.intValue, 0, etcTextureCompressorPopupList.Length - 1);
+            int index = Mathf.Clamp(m_IsGlobalSettings ? EditorSettings.etcTextureCompressorBehaviorInternal : m_EtcTextureCompressorBehavior.intValue, 0, etcTextureCompressorPopupList.Length - 1);
             CreatePopupMenu(Content.etcCompressor.text, etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
 
             EditorGUI.indentLevel++;
@@ -649,6 +651,11 @@ namespace UnityEditor
 
             EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
+
+            if ((m_IsGlobalSettings ? EditorSettings.etcTextureCompressorBehaviorInternal : m_EtcTextureCompressorBehavior.intValue) == 0)
+            {
+                EditorGUILayout.HelpBox(Content.legacyDeprecationWarning.text, MessageType.Warning, true);
+            }
 
             return EditorGUI.EndChangeCheck();
         }
@@ -1193,14 +1200,14 @@ namespace UnityEditor
             int newValue = (int)data;
             if (m_IsGlobalSettings)
             {
-                if (EditorSettings.etcTextureCompressorBehavior == newValue)
+                if (EditorSettings.etcTextureCompressorBehaviorInternal == newValue)
                     return;
 
-                EditorSettings.etcTextureCompressorBehavior = newValue;
+                EditorSettings.etcTextureCompressorBehaviorInternal = newValue;
 
                 if (newValue == 0)
                     EditorSettings.SetEtcTextureCompressorLegacyBehavior();
-                else
+                else if (newValue == 1)
                     EditorSettings.SetEtcTextureCompressorDefaultBehavior();
             }
             else

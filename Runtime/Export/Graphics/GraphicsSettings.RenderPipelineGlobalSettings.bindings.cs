@@ -156,7 +156,7 @@ namespace UnityEngine.Rendering
             return settings != null;
         }
 
-        [NativeName("SetAllRenderPipelineSettingsDirty")] internal static extern void Internal_SetAllRenderPipelineSettingsDirty();
+        extern internal static void SetDirtyRenderPipelineGlobalSettingsContaining(object renderpipelineGraphicsSettings);
         [RequiredByNativeCode] private static string GetCurrentRenderPipelineTypeFullName() => currentRenderPipeline != null ? currentRenderPipeline.pipelineTypeFullName : string.Empty;
 
     }

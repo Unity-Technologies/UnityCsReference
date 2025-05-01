@@ -21,7 +21,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode AddAndRemove([Out] out long operationId, string[] packagesToAdd, string[] packagesToRemove);
 
         [FreeFunction("PackageManager::AddScopedRegistry::StartOperation")]
-        private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes);
+        private static extern NativeStatusCode AddScopedRegistry([Out] out long operationId, string name, string url, string[] scopes, bool dryRun);
 
         [FreeFunction("PackageManager::ClearCache::StartOperation")]
         private static extern NativeStatusCode ClearCache([Out] out long operationId);
@@ -76,7 +76,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode SetCacheRoot([Out] out long operationId, string newPath);
 
         [FreeFunction("PackageManager::UpdateScopedRegistry::StartOperation")]
-        private static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryId, UpdateScopedRegistryOptions options);
+        private static extern NativeStatusCode UpdateScopedRegistry([Out] out long operationId, string registryId, UpdateScopedRegistryOptions options, bool dryRun);
     }
 
     [NativeHeader("Modules/PackageManager/Editor/Public/PackageManager.h")]

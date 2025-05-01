@@ -9,6 +9,7 @@ using UnityEditor.Inspector.GraphicsSettingsInspectors;
 using UnityEditor.Rendering.Settings;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.Rendering
@@ -19,7 +20,7 @@ namespace UnityEditor.Rendering
     {
         [NativeName("SetTierSettings")] extern internal static void SetTierSettingsImpl(BuildTargetGroup target, GraphicsTier tier, TierSettings settings);
 
-        extern public   static TierSettings GetTierSettings(BuildTargetGroup target, GraphicsTier tier);
+        extern public static TierSettings GetTierSettings(BuildTargetGroup target, GraphicsTier tier);
         public static TierSettings GetTierSettings(NamedBuildTarget target, GraphicsTier tier) => GetTierSettings(target.ToBuildTargetGroup(), tier);
 
         extern internal static TierSettings GetCurrentTierSettings();
@@ -34,7 +35,7 @@ namespace UnityEditor.Rendering
         extern internal static void RegisterUndo();
 
         extern private static AlbedoSwatchInfo[] GetAlbedoSwatches();
-        extern private static void               SetAlbedoSwatches(AlbedoSwatchInfo[] swatches);
+        extern private static void SetAlbedoSwatches(AlbedoSwatchInfo[] swatches);
 
         public static AlbedoSwatchInfo[] albedoSwatches
         {
@@ -217,6 +218,14 @@ namespace UnityEditor.Rendering
                 settings = baseSettings.ToArray();
 
             return settings != null;
+        }
+
+        [RequiredByNativeCode]
+        internal static bool IsGlobalSettingsContaining(UnityEngine.Object renderPipelineGlobalSettings, object renderPipelineGraphicsSettings)
+        {
+            var settings = renderPipelineGraphicsSettings as IRenderPipelineGraphicsSettings;
+            var globalSettings = renderPipelineGlobalSettings as RenderPipelineGlobalSettings;
+            return globalSettings.ContainsReference(settings);
         }
     }
 }

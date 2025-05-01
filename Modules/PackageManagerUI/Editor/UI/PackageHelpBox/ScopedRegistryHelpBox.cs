@@ -6,13 +6,13 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class ScopedRegistryHelpBox : PackageHelpBoxWithReadMore
+    internal class ScopedRegistryHelpBox : PackageBaseHelpBox
     {
-        public ScopedRegistryHelpBox(IApplicationProxy application) : base(application)
+        public ScopedRegistryHelpBox(IApplicationProxy application)
         {
             text = L10n.Tr("This package is hosted on a Scoped Registry.");
             messageType = HelpBoxMessageType.Info;
-            m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
+            readMoreUrl = $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
         }
 
         public override void Refresh(IPackageVersion version)

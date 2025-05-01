@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
             DirtyParentHierarchy(ve.hierarchy.parent, BoundingBoxDirtyFlags);
         }
 
-        protected static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
+        private static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
         {
             while (ve != null && (ve.flags & flags) != flags)
             {
@@ -149,7 +149,7 @@ namespace UnityEngine.UIElements
         }
 
         private new const VisualElementFlags BoundingBoxDirtyFlags =
-            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementFlags.LocalBounds3DDirty;
+            VisualTreeHierarchyFlagsUpdater.BoundingBoxDirtyFlags | VisualElementFlags.LocalBounds3DDirty | VisualElementFlags.LocalBoundsWithoutNested3DDirty;
 
         private static VisualElementFlags GetParentMustDirtyFlags(VisualElement ve)
         {
@@ -165,7 +165,26 @@ namespace UnityEngine.UIElements
         {
             var flags = GetParentMustDirtyFlags(ve);
             ve.flags |= flags;
+
+            if (ve is UIDocumentRootElement)
+                // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
+                flags &= ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+
             DirtyParentHierarchy(ve.hierarchy.parent, flags);
+        }
+
+        private static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
+        {
+            while (ve != null && (ve.flags & flags) != flags)
+            {
+                ve.flags |= flags;
+
+                if (ve is UIDocumentRootElement)
+                    // We crossed a UIDocument boundary, don't dirty the "without nested" flags anymore
+                    flags &= ~VisualElementFlags.LocalBoundsWithoutNested3DDirty;
+
+                ve = ve.hierarchy.parent;
+            }
         }
 
         public override void Update()
