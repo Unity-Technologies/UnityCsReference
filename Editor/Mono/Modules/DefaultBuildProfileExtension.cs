@@ -97,6 +97,10 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawExplicitNullCheckbox() => false;
         public virtual bool ShouldDrawExplicitDivideByZeroCheckbox() => false;
         public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() => false;
+        public virtual bool ShouldDrawInstallInBuildFolderCheckbox()
+        {
+            return Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget);
+        }
 
         protected virtual string GetPlatformProfileInfoMessage()
         {
@@ -261,7 +265,7 @@ namespace UnityEditor.Modules
                 }
             }
 
-            if (Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget))
+            if (ShouldDrawInstallInBuildFolderCheckbox())
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {

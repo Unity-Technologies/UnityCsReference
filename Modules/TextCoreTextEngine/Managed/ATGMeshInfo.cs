@@ -23,5 +23,8 @@ namespace UnityEngine.TextCore.Text
 
         [Ignore]
         public List<List<int>> textElementInfoIndicesByAtlas;
+
+        [Ignore]
+        public bool hasMultipleColors;
     }
 }

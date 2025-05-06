@@ -941,7 +941,7 @@ namespace UnityEditor
             }
         }
 
-        void SelectCategory(TerrainTool category, bool selectTool = true)
+        internal void SelectCategory(TerrainTool category, bool selectTool = true)
         {
             selectedCategory = category;
 
@@ -1144,7 +1144,7 @@ namespace UnityEditor
 
         TerrainTool m_SelectedCategory;
 
-        private TerrainTool selectedCategory
+        internal TerrainTool selectedCategory
         {
             get => m_SelectedCategory;
 
@@ -1211,6 +1211,7 @@ namespace UnityEditor
 
                         // set last selected tool here in case TerrainTransientToolbarOverlay is collapsed and needs to keep track of last selected tool
                         TerrainTransientToolbarOverlay.s_LastSelectedTool = (ITerrainPaintToolWithOverlays)paintTool;
+                        TerrainTransientToolbarOverlay.s_LastSelectedTerrainCategory = selectedCategory;
                     }
                     else
                     {
