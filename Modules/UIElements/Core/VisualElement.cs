@@ -1371,6 +1371,8 @@ namespace UnityEngine.UIElements
             set
             {
                 PseudoStates diff = m_PseudoStates ^ value;
+                m_PseudoStates = value; // Set the new value before IncrementVersion so we can react to it.
+
                 if ((int)diff > 0)
                 {
                     if ((value & PseudoStates.Root) == PseudoStates.Root)
@@ -1381,7 +1383,7 @@ namespace UnityEngine.UIElements
                     if (diff != PseudoStates.Root)
                     {
                         var added = diff & value;
-                        var removed = diff & m_PseudoStates;
+                        var removed = diff ^ added;
 
                         if ((triggerPseudoMask & added) != 0
                             || (dependencyPseudoMask & removed) != 0)
@@ -1389,8 +1391,6 @@ namespace UnityEngine.UIElements
                             IncrementVersion(VersionChangeType.StyleSheet);
                         }
                     }
-
-                    m_PseudoStates = value;
                 }
             }
         }

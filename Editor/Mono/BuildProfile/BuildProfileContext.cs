@@ -66,12 +66,7 @@ namespace UnityEditor.Build.Profile
         {
             get
             {
-                // Active Build profile may be deleted from the project.
-                var activeProfile = EditorUserBuildSettings.activeBuildProfile;
-                if (activeProfile != null && activeProfile.CanBuildLocally())
-                    return activeProfile;
-
-                return null;
+                return EditorUserBuildSettings.activeBuildProfile;
             }
 
             set
@@ -273,6 +268,27 @@ namespace UnityEditor.Build.Profile
             // the classic platform build profile for the target platform
             // when no suitable active profile is found.
             return IsSharedProfile(platformGuid) ? instance.sharedProfile : instance.GetForClassicPlatform(platformGuid);
+        }
+
+        /// <summary>
+        /// This method allows the native code to fetch the development setting from
+        /// build profiles without allocations.
+        /// </summary>
+        /// <remarks>
+        /// This is a workaround for certain allocation-sensitive graphics tests to pass.
+        /// We use return by ref to avoid the allocation that occurs when the return value
+        /// is boxed into a ScriptingObjectPtr.
+        /// </remarks>
+        [RequiredByNativeCode]
+        internal static void GetActiveOrClassicBuildProfileDevelopmentSetting(ref bool value)
+        {
+            var profile = IsSharedSettingEnabledInActiveProfile("development") ?
+                activeProfile : instance.sharedProfile;
+
+            if (profile == null || profile.platformBuildProfile == null)
+                value = false;
+            else
+                value = profile.platformBuildProfile.development;
         }
 
         internal static bool TryGetActiveOrClassicPlatformSettingsBase<T>(

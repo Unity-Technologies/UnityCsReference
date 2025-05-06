@@ -482,10 +482,10 @@ namespace UnityEditor
                     var args = new ProfilerModule.InitializationArgs(moduleIdentifier, moduleMetadata.DisplayName, moduleMetadata.IconPath, this);
                     module.Initialize(args);
 
-                    modules.Add(module);
-
                     if (moduleIdentifier == kJobsProfilerIdentifier)
                         jobsProfilerModule = module;
+                    else
+                        modules.Add(module);
                 }
                 catch (Exception e)
                 {

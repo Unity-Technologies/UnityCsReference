@@ -179,19 +179,20 @@ internal class ATGTextJobSystem
     static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
     {
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
-        // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
-        // since we cannot store multiple colors for a given text element.
-        bool hasMultipleColors = visualElement.uitkTextHandle.textInfo.hasMultipleColors;
-        if (hasMultipleColors)
-            visualElement.renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
-        else
-            visualElement.renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
         for (int i = 0; i < meshInfos.Length; i++)
         {
             var meshInfo = meshInfos[i];
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
+
+            // If multiple colors are required(e.g., color tags are used), then ignore the dynamic-color hint
+            // since we cannot store multiple colors for a given text element.
+            bool hasMultipleColors = meshInfo.hasMultipleColors;
+            if (hasMultipleColors)
+                visualElement.renderChainData.flags |= RenderDataFlags.IsIgnoringDynamicColorHint;
+            else
+                visualElement.renderChainData.flags &= ~RenderDataFlags.IsIgnoringDynamicColorHint;
 
             for (int j = 0; j < meshInfo.textElementInfoIndicesByAtlas.Count; ++j)
             {
@@ -223,10 +224,10 @@ internal class ATGTextJobSystem
                     {
                         var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
                         var tei = meshInfo.textElementInfos[textElementInfoInAtlas[vSrc]];
-                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor: false, isColorFont);
-                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomRight, pos, inverseScale, isDynamicColor: false, isColorFont);
+                        vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
+                        vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);
+                        vertices[vDst + 2] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topRight, pos, inverseScale, isDynamicColor, isColorFont);
+                        vertices[vDst + 3] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomRight, pos, inverseScale, isDynamicColor, isColorFont);
 
                         indices[k + 0] = (ushort)(vDst + 0);
                         indices[k + 1] = (ushort)(vDst + 1);

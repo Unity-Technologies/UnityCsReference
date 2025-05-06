@@ -523,6 +523,9 @@ namespace UnityEditor.UIElements.Debugger
             if ((changeTypeFlag & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
                 m_TreeViewContainer.hierarchyHasChanged = true;
 
+            if ((changeTypeFlag & VersionChangeType.StyleSheet) == VersionChangeType.StyleSheet && ve == m_Context.selectedElement)
+                m_StylesDebuggerContainer.UpdateMatches();
+
             if (panelDebug?.debuggerOverlayPanel != null)
                 panelDebug.debuggerOverlayPanel.visualTree.layout = panel.visualTree.layout;
         }

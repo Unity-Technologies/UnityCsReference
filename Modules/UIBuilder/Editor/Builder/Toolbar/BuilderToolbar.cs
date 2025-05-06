@@ -660,8 +660,9 @@ namespace Unity.UI.Builder
             if (oldCustomThemeStyleSheet != null)
                 element.styleSheets.Remove(oldCustomThemeStyleSheet);
 
+            // Ensure theme style are applied first
             if (newThemeStyleSheet != null)
-                element.styleSheets.Add(newThemeStyleSheet);
+                element.styleSheets.Insert(0, newThemeStyleSheet);
 
             element.SetProperty(BuilderConstants.ElementLinkedActiveThemeStyleSheetVEPropertyName, newThemeStyleSheet);
         }

@@ -6,6 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    [HelpURL("tilemaps/tile-palettes/new-tile-palette-reference")]
     /// <summary>GridPalette stores settings for Palette assets when shown in the Palette window.</summary>
     public class GridPalette : ScriptableObject
     {

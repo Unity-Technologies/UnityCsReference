@@ -229,9 +229,14 @@ namespace UnityEngine.UIElements
             }
             else if (firstVisibleIndex >= index)
             {
+                // We dont do anything if the scroll offset wont change (UUM-10285)
+                var newOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                if (newOffset == m_ScrollView.scrollOffset)
+                    return;
+
                 m_ForcedFirstVisibleItem = index;
                 m_ForcedLastVisibleItem = ReusableCollectionItem.UndefinedIndex;
-                m_ScrollView.scrollOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                m_ScrollView.scrollOffset = newOffset;
             }
             else // index > first
             {
@@ -464,9 +469,11 @@ namespace UnityEngine.UIElements
                     var inserting = m_ScrollInsertionList;
 
                     var checkIndex = 0;
-                    while (firstVisibleIndex > m_ActiveItems[checkIndex].index)
+                    var lastIndex = -1; // Ignore out of order items (UUM-103037)
+                    while (firstVisibleIndex > m_ActiveItems[checkIndex].index && lastIndex < m_ActiveItems[checkIndex].index)
                     {
                         var first = m_ActiveItems[checkIndex];
+                        lastIndex = first.index;
                         inserting.Add(first);
                         checkIndex++;
 

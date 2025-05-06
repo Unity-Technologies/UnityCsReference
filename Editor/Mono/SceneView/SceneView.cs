@@ -1410,6 +1410,11 @@ namespace UnityEditor
             Selection.selectedObjectWasDestroyed += OnSelectedObjectWasDestroyed;
             Selection.nonSelectedObjectWasDestroyed += OnNonSelectedObjectWasDestroyed;
             Lightmapping.lightingDataUpdated += RepaintAll;
+
+            // UUM-102090: as m_LastDebugDrawMode was serialized with an incorrect value at some point (UUM-96180),
+            // we ensure on enable that the serialized value is correctly set.
+            if (lastDebugDrawMode.drawMode == DrawCameraMode.GIContributorsReceivers)
+                m_LastDebugDrawMode = SceneRenderModeWindow.defaultCameraMode;
             onCameraModeChanged += delegate
             {
                 if (cameraMode.drawMode == DrawCameraMode.ShadowCascades) sceneLighting = true;
@@ -2834,13 +2839,13 @@ namespace UnityEditor
 
         internal void ToggleLastDebugDrawMode()
         {
-            if (cameraMode.drawMode == m_LastDebugDrawMode.drawMode)
+            if (cameraMode.drawMode == lastDebugDrawMode.drawMode)
             {
                 SwitchToRenderMode(DrawCameraMode.Textured);
             }
             else
             {
-                SwitchToRenderMode(m_LastDebugDrawMode);
+                SwitchToRenderMode(lastDebugDrawMode);
             }
         }
 

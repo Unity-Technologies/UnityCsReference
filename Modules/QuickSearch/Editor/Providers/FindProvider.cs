@@ -106,8 +106,13 @@ namespace UnityEditor.Search.Providers
                         options |= FindOptions.Exact;
                     }
 
-                    IEnumerable<SearchDocument> subset = args.andSet ??
-                        roots.SelectMany(root => GetRootPaths(root, options));
+                    IEnumerable<SearchDocument> subset = args.andSet;
+                    if (subset == null)
+                    {
+                        var subsetList = new List<SearchDocument>();
+                        GetAllRootPaths(roots, options, subsetList);
+                        subset = subsetList;
+                    }
 
                     IEnumerable<SearchDocument> results = Enumerable.Empty<SearchDocument>();
                     if (args.name == null && args.value is string word && word.Length > 0)
@@ -151,20 +156,35 @@ namespace UnityEditor.Search.Providers
             }
         }
 
-        private static IEnumerable<SearchDocument> GetRootPaths(string root, FindOptions options)
+        static void GetAllRootPaths(IEnumerable<string> roots, FindOptions options, List<SearchDocument> outRootPaths)
+        {
+            foreach (var root in roots)
+            {
+                GetRootPaths(root, options, outRootPaths);
+            }
+
+            SearchMonitor.contentRefreshed -= Update;
+            SearchMonitor.contentRefreshed += Update;
+        }
+
+        private static void GetRootPaths(string root, FindOptions options, List<SearchDocument> outRootPaths)
         {
             {
                 var isPackage = options.HasAny(FindOptions.Packages) && root.StartsWith("Packages/", StringComparison.Ordinal);
                 if (!options.HasAny(FindOptions.Packages) && isPackage)
-                    yield break;
+                    return;
 
                 if (s_RootFilePaths.TryGetValue(root, out var docs))
                 {
                     foreach (var d in docs.Keys)
-                        yield return d;
+                        outRootPaths.Add(d);
                 }
                 else
                 {
+                    // Avoid DirectoryNotFoundException by validating the directory exists first.
+                    if (!Directory.Exists(root))
+                        return;
+
                     var foundFiles = new ConcurrentDictionary<SearchDocument, byte>();
                     var baseScore = isPackage ? 1 : 0;
 
@@ -174,7 +194,7 @@ namespace UnityEditor.Search.Providers
                         var p = f.Substring(0, f.Length - 5).Replace("\\", "/");
                         var doc = new SearchDocument(p, null, null, baseScore, SearchDocumentFlags.Asset);
                         if (foundFiles.TryAdd(doc, 0))
-                            yield return doc;
+                            outRootPaths.Add(doc);
                     }
 
                     s_RootFilePaths.TryAdd(root, foundFiles);
