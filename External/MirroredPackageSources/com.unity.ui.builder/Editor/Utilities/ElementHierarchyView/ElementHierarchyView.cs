@@ -773,24 +773,38 @@ namespace Unity.UI.Builder
 
         void OnSelectionChange(IEnumerable<int> itemIndices)
         {
-            if (m_SelectElementCallback == null)
-                return;
-
-            if (!itemIndices.Any())
+            void OnSelectionChangeInner(IEnumerable<int> itemIndices)
             {
-                m_SelectElementCallback(null);
-                return;
+                if (m_SelectElementCallback == null)
+                    return;
+
+                var enumerable = itemIndices as int[] ?? itemIndices.ToArray();
+                if (enumerable.Length == 0)
+                {
+                    m_SelectElementCallback(null);
+                    return;
+                }
+
+                var elements = new List<VisualElement>();
+                foreach (var index in enumerable)
+                {
+                    var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
+                    if (item.data != null)
+                        elements.Add(item.data);
+                }
+
+                m_SelectElementCallback(elements);
             }
 
-            var elements = new List<VisualElement>();
-            foreach (var index in itemIndices)
+            if (focusController is { focusedElement: DimensionStyleField })
             {
-                var item = m_TreeViewController.GetTreeViewItemDataForIndex(index);
-                if (item.data != null)
-                    elements.Add(item.data);
+                schedule.Execute(() =>
+                {
+                    OnSelectionChangeInner(itemIndices);
+                }).ExecuteLater(1);
             }
-
-            m_SelectElementCallback(elements);
+            else
+                OnSelectionChangeInner(itemIndices);
         }
 
         void HighlightAllElementsMatchingSelectorElement(VisualElement selectorElement)

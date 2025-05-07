@@ -251,7 +251,7 @@ namespace UnityEditor
                 case Columns.Timestamp:
                 {
                     var ts = TimeSpan.FromMilliseconds(item.assetLoadingMarker.startTimeMs);
-                    string time = string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D4}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
+                    string time = string.Format("{0:D2}:{1:D2}:{2:D2}.{3:D3}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds);
                     CellLabel(cellRect, item, new GUIContent(time, string.Format("{0}ms", item.assetLoadingMarker.startTimeMs)));
                     break;
                 }

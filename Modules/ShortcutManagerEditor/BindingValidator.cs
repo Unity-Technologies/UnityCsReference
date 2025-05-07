@@ -54,7 +54,7 @@ namespace UnityEditor.ShortcutManagement
 
         public bool IsKeyValid(KeyCode key, out string invalidKeyMessage)
         {
-            if (s_InvalidKeyCodes.Contains(key) || (int)key >= Directory.MaxIndexedEntries)
+            if (s_InvalidKeyCodes.Contains(key) || !Directory.IsKeyCodeSupported(key))
             {
                 invalidKeyMessage = $"Binding uses invalid key code {GetInvalidKeyCodes(key)}";
                 return false;

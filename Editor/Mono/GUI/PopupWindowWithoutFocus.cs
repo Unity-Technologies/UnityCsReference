@@ -27,7 +27,8 @@ namespace UnityEditor
 
             if (s_PopupWindowWithoutFocus != null)
             {
-                s_PopupWindowWithoutFocus.CloseContent();
+                s_PopupWindowWithoutFocus.Close();
+                s_PopupWindowWithoutFocus = null;
             }
 
             if (ShouldShowWindow(activatorRect))

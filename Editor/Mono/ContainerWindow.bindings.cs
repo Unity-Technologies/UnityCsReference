@@ -70,10 +70,6 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "MoveBehindOf", HasExplicitThis = true)]
         public extern void MoveBehindOf(ContainerWindow other);
 
-        // Fit a container window to the screen.
-        [FreeFunction(k_ScriptingPrefix + "FitWindowRectToScreen", HasExplicitThis = true)]
-        public extern Rect FitWindowRectToScreen(Rect r, bool forceCompletelyVisible, bool useMouseScreen);
-
         [FreeFunction(k_ScriptingPrefix + "SendCaptionEvent", HasExplicitThis = true)]
         public extern void SendCaptionEvent(bool mouseDown);
 
@@ -109,7 +105,11 @@ namespace UnityEditor
         [FreeFunction(k_ScriptingPrefix + "GetOrderedWindowList")]
         internal static extern void GetOrderedWindowList();
 
+        [FreeFunction(k_ScriptingPrefix + "FitRectToMouseScreen")]
+        internal static extern Rect FitRectToMouseScreen(Rect rect, bool forceCompletelyVisible, ContainerWindow windowForBorderCalculation);
+
         [FreeFunction(k_ScriptingPrefix + "FitRectToScreen")]
-        internal static extern Rect FitRectToScreen(Rect defaultRect, bool forceCompletelyVisible, bool useMouseScreen);
+        internal static extern Rect FitRectToScreen(Rect rect, Vector2 uiPositionToFindScreen, bool forceCompletelyVisible, ContainerWindow windowForBorderCalculation);
+
     }
 }

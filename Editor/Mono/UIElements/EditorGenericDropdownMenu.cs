@@ -52,7 +52,7 @@ namespace UnityEditor.UIElements
                                    + m_GenericDropdownMenu.scrollView.resolvedStyle.borderBottomWidth
                                    + m_GenericDropdownMenu.outerContainer.resolvedStyle.borderTopWidth;
                 var dropdownRect = new Rect(0f, 0f, m_DropdownPosition.width, scrollHeight);
-                var adjustedDropdownRect = ContainerWindow.FitRectToScreen(dropdownRect, true, true);
+                var adjustedDropdownRect = ContainerWindow.FitRectToScreen(dropdownRect, dropdownRect.center, true, null);
 
                 if (dropdownRect.height > adjustedDropdownRect.height)
                 {

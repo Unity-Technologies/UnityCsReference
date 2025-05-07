@@ -858,7 +858,9 @@ namespace UnityEditor
                 return false;
             if (evt.keyCode >= KeyCode.JoystickButton0 && evt.keyCode <= KeyCode.Joystick8Button19)
                 return false;
-            if (evt.keyCode >= KeyCode.F1 && evt.keyCode <= KeyCode.F15)
+            if (evt.keyCode >= KeyCode.F1 && evt.keyCode <= KeyCode.F15 ||
+                // KeyCode.F15 (296) and KeyCode.F16 (670) are not contiguous
+                evt.keyCode >= KeyCode.F16 && evt.keyCode <= KeyCode.F24)
                 return false;
             switch (evt.keyCode)
             {
@@ -7582,7 +7584,7 @@ namespace UnityEditor
                         bool toggled = DropdownButton(position, toggleLabelContent, FocusType.Keyboard, EditorStyles.layerMaskField);
                         if (toggled)
                         {
-                            PopupWindowWithoutFocus.Show(position, new MaskFieldDropDown(property));
+                            PopupWindow.Show(position, new MaskFieldDropDown(property));
                             GUIUtility.ExitGUI();
                         }
                         break;
