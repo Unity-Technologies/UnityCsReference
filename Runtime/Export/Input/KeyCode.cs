@@ -307,6 +307,24 @@ namespace UnityEngine
         Break       = 318,
         // Menu key
         Menu        = 319,
+        // F16 function key
+        F16 = 670,
+        // F17 function key
+        F17 = 671,
+        // F18 function key
+        F18 = 672,
+        // F19 function key
+        F19 = 673,
+        // F20 function key
+        F20 = 674,
+        // F21 function key
+        F21 = 675,
+        // F22 function key
+        F22 = 676,
+        // F23 function key
+        F23 = 677,
+        // F24 function key
+        F24 = 678,
 
         // First (primary) mouse button
         Mouse0      = 323,
@@ -326,371 +344,371 @@ namespace UnityEngine
         // Button 0 on any joystick
         JoystickButton0     = 330,
         // Button 1 on any joystick
-        JoystickButton1     = 331,
+        JoystickButton1     = JoystickButton0 + 1,
         // Button 2 on any joystick
-        JoystickButton2     = 332,
+        JoystickButton2     = JoystickButton0 + 2,
         // Button 3 on any joystick
-        JoystickButton3     = 333,
+        JoystickButton3     = JoystickButton0 + 3,
         // Button 4 on any joystick
-        JoystickButton4     = 334,
+        JoystickButton4     = JoystickButton0 + 4,
         // Button 5 on any joystick
-        JoystickButton5     = 335,
+        JoystickButton5     = JoystickButton0 + 5,
         // Button 6 on any joystick
-        JoystickButton6     = 336,
+        JoystickButton6     = JoystickButton0 + 6,
         // Button 7 on any joystick
-        JoystickButton7     = 337,
+        JoystickButton7     = JoystickButton0 + 7,
         // Button 8 on any joystick
-        JoystickButton8     = 338,
+        JoystickButton8     = JoystickButton0 + 8,
         // Button 9 on any joystick
-        JoystickButton9     = 339,
+        JoystickButton9     = JoystickButton0 + 9,
         // Button 10 on any joystick
-        JoystickButton10    = 340,
+        JoystickButton10    = JoystickButton0 + 10,
         // Button 11 on any joystick
-        JoystickButton11    = 341,
+        JoystickButton11    = JoystickButton0 + 11,
         // Button 12 on any joystick
-        JoystickButton12    = 342,
+        JoystickButton12    = JoystickButton0 + 12,
         // Button 13 on any joystick
-        JoystickButton13    = 343,
+        JoystickButton13    = JoystickButton0 + 13,
         // Button 14 on any joystick
-        JoystickButton14    = 344,
+        JoystickButton14    = JoystickButton0 + 14,
         // Button 15 on any joystick
-        JoystickButton15    = 345,
+        JoystickButton15    = JoystickButton0 + 15,
         // Button 16 on any joystick
-        JoystickButton16    = 346,
+        JoystickButton16    = JoystickButton0 + 16,
         // Button 17 on any joystick
-        JoystickButton17    = 347,
+        JoystickButton17    = JoystickButton0 + 17,
         // Button 18 on any joystick
-        JoystickButton18    = 348,
+        JoystickButton18    = JoystickButton0 + 18,
         // Button 19 on any joystick
-        JoystickButton19    = 349,
+        JoystickButton19    = JoystickButton0 + 19,
 
         // Button 0 on first joystick
-        Joystick1Button0        = 350,
+        Joystick1Button0        = JoystickButton19 + 1,
         // Button 1 on first joystick
-        Joystick1Button1        = 351,
+        Joystick1Button1        = Joystick1Button0 + 1,
         // Button 2 on first joystick
-        Joystick1Button2        = 352,
+        Joystick1Button2        = Joystick1Button0 + 2,
         // Button 3 on first joystick
-        Joystick1Button3        = 353,
+        Joystick1Button3        = Joystick1Button0 + 3,
         // Button 4 on first joystick
-        Joystick1Button4        = 354,
+        Joystick1Button4        = Joystick1Button0 + 4,
         // Button 5 on first joystick
-        Joystick1Button5        = 355,
+        Joystick1Button5        = Joystick1Button0 + 5,
         // Button 6 on first joystick
-        Joystick1Button6        = 356,
+        Joystick1Button6        = Joystick1Button0 + 6,
         // Button 7 on first joystick
-        Joystick1Button7        = 357,
+        Joystick1Button7        = Joystick1Button0 + 7,
         // Button 8 on first joystick
-        Joystick1Button8        = 358,
+        Joystick1Button8        = Joystick1Button0 + 8,
         // Button 9 on first joystick
-        Joystick1Button9        = 359,
+        Joystick1Button9        = Joystick1Button0 + 9,
         // Button 10 on first joystick
-        Joystick1Button10   = 360,
+        Joystick1Button10   = Joystick1Button0 + 10,
         // Button 11 on first joystick
-        Joystick1Button11   = 361,
+        Joystick1Button11   = Joystick1Button0 + 11,
         // Button 12 on first joystick
-        Joystick1Button12   = 362,
+        Joystick1Button12   = Joystick1Button0 + 12,
         // Button 13 on first joystick
-        Joystick1Button13   = 363,
+        Joystick1Button13   = Joystick1Button0 + 13,
         // Button 14 on first joystick
-        Joystick1Button14   = 364,
+        Joystick1Button14   = Joystick1Button0 + 14,
         // Button 15 on first joystick
-        Joystick1Button15   = 365,
+        Joystick1Button15   = Joystick1Button0 + 15,
         // Button 16 on first joystick
-        Joystick1Button16   = 366,
+        Joystick1Button16   = Joystick1Button0 + 16,
         // Button 17 on first joystick
-        Joystick1Button17   = 367,
+        Joystick1Button17   = Joystick1Button0 + 17,
         // Button 18 on first joystick
-        Joystick1Button18   = 368,
+        Joystick1Button18   = Joystick1Button0 + 18,
         // Button 19 on first joystick
-        Joystick1Button19   = 369,
+        Joystick1Button19   = Joystick1Button0 + 19,
 
         // Button 0 on second joystick
-        Joystick2Button0        = 370,
+        Joystick2Button0        = Joystick1Button19 + 1,
         // Button 1 on second joystick
-        Joystick2Button1        = 371,
+        Joystick2Button1        = Joystick2Button0 + 1,
         // Button 2 on second joystick
-        Joystick2Button2        = 372,
+        Joystick2Button2        = Joystick2Button0 + 2,
         // Button 3 on second joystick
-        Joystick2Button3        = 373,
+        Joystick2Button3        = Joystick2Button0 + 3,
         // Button 4 on second joystick
-        Joystick2Button4        = 374,
+        Joystick2Button4        = Joystick2Button0 + 4,
         // Button 5 on second joystick
-        Joystick2Button5        = 375,
+        Joystick2Button5        = Joystick2Button0 + 5,
         // Button 6 on second joystick
-        Joystick2Button6        = 376,
+        Joystick2Button6        = Joystick2Button0 + 6,
         // Button 7 on second joystick
-        Joystick2Button7        = 377,
+        Joystick2Button7        = Joystick2Button0 + 7,
         // Button 8 on second joystick
-        Joystick2Button8        = 378,
+        Joystick2Button8        = Joystick2Button0 + 8,
         // Button 9 on second joystick
-        Joystick2Button9        = 379,
+        Joystick2Button9        = Joystick2Button0 + 9,
         // Button 10 on second joystick
-        Joystick2Button10   = 380,
+        Joystick2Button10   = Joystick2Button0 + 10,
         // Button 11 on second joystick
-        Joystick2Button11   = 381,
+        Joystick2Button11   = Joystick2Button0 + 11,
         // Button 12 on second joystick
-        Joystick2Button12   = 382,
+        Joystick2Button12   = Joystick2Button0 + 12,
         // Button 13 on second joystick
-        Joystick2Button13   = 383,
+        Joystick2Button13   = Joystick2Button0 + 13,
         // Button 14 on second joystick
-        Joystick2Button14   = 384,
+        Joystick2Button14   = Joystick2Button0 + 14,
         // Button 15 on second joystick
-        Joystick2Button15   = 385,
+        Joystick2Button15   = Joystick2Button0 + 15,
         // Button 16 on second joystick
-        Joystick2Button16   = 386,
+        Joystick2Button16   = Joystick2Button0 + 16,
         // Button 17 on second joystick
-        Joystick2Button17   = 387,
+        Joystick2Button17   = Joystick2Button0 + 17,
         // Button 18 on second joystick
-        Joystick2Button18   = 388,
+        Joystick2Button18   = Joystick2Button0 + 18,
         // Button 19 on second joystick
-        Joystick2Button19   = 389,
+        Joystick2Button19   = Joystick2Button0 + 19,
 
         // Button 0 on third joystick
-        Joystick3Button0        = 390,
+        Joystick3Button0        = Joystick2Button19 + 1,
         // Button 1 on third joystick
-        Joystick3Button1        = 391,
+        Joystick3Button1        = Joystick3Button0 + 1,
         // Button 2 on third joystick
-        Joystick3Button2        = 392,
+        Joystick3Button2        = Joystick3Button0 + 2,
         // Button 3 on third joystick
-        Joystick3Button3        = 393,
+        Joystick3Button3        = Joystick3Button0 + 3,
         // Button 4 on third joystick
-        Joystick3Button4        = 394,
+        Joystick3Button4        = Joystick3Button0 + 4,
         // Button 5 on third joystick
-        Joystick3Button5        = 395,
+        Joystick3Button5        = Joystick3Button0 + 5,
         // Button 6 on third joystick
-        Joystick3Button6        = 396,
+        Joystick3Button6        = Joystick3Button0 + 6,
         // Button 7 on third joystick
-        Joystick3Button7        = 397,
+        Joystick3Button7        = Joystick3Button0 + 7,
         // Button 8 on third joystick
-        Joystick3Button8        = 398,
+        Joystick3Button8        = Joystick3Button0 + 8,
         // Button 9 on third joystick
-        Joystick3Button9        = 399,
+        Joystick3Button9        = Joystick3Button0 + 9,
         // Button 10 on third joystick
-        Joystick3Button10   = 400,
+        Joystick3Button10   = Joystick3Button0 + 10,
         // Button 11 on third joystick
-        Joystick3Button11   = 401,
+        Joystick3Button11   = Joystick3Button0 + 11,
         // Button 12 on third joystick
-        Joystick3Button12   = 402,
+        Joystick3Button12   = Joystick3Button0 + 12,
         // Button 13 on third joystick
-        Joystick3Button13   = 403,
+        Joystick3Button13   = Joystick3Button0 + 13,
         // Button 14 on third joystick
-        Joystick3Button14   = 404,
+        Joystick3Button14   = Joystick3Button0 + 14,
         // Button 15 on third joystick
-        Joystick3Button15   = 405,
+        Joystick3Button15   = Joystick3Button0 + 15,
         // Button 16 on third joystick
-        Joystick3Button16   = 406,
+        Joystick3Button16   = Joystick3Button0 + 16,
         // Button 17 on third joystick
-        Joystick3Button17   = 407,
+        Joystick3Button17   = Joystick3Button0 + 17,
         // Button 18 on third joystick
-        Joystick3Button18   = 408,
+        Joystick3Button18   = Joystick3Button0 + 18,
         // Button 19 on third joystick
-        Joystick3Button19   = 409,
+        Joystick3Button19   = Joystick3Button0 + 19,
 
         // Button 0 on forth joystick
-        Joystick4Button0        = 410,
+        Joystick4Button0        = Joystick3Button19 + 1,
         // Button 1 on forth joystick
-        Joystick4Button1        = 411,
+        Joystick4Button1        = Joystick4Button0 + 1,
         // Button 2 on forth joystick
-        Joystick4Button2        = 412,
+        Joystick4Button2        = Joystick4Button0 + 2,
         // Button 3 on forth joystick
-        Joystick4Button3        = 413,
+        Joystick4Button3        = Joystick4Button0 + 3,
         // Button 4 on forth joystick
-        Joystick4Button4        = 414,
+        Joystick4Button4        = Joystick4Button0 + 4,
         // Button 5 on forth joystick
-        Joystick4Button5        = 415,
+        Joystick4Button5        = Joystick4Button0 + 5,
         // Button 6 on forth joystick
-        Joystick4Button6        = 416,
+        Joystick4Button6        = Joystick4Button0 + 6,
         // Button 7 on forth joystick
-        Joystick4Button7        = 417,
+        Joystick4Button7        = Joystick4Button0 + 7,
         // Button 8 on forth joystick
-        Joystick4Button8        = 418,
+        Joystick4Button8        = Joystick4Button0 + 8,
         // Button 9 on forth joystick
-        Joystick4Button9        = 419,
+        Joystick4Button9        = Joystick4Button0 + 9,
         // Button 10 on forth joystick
-        Joystick4Button10   = 420,
+        Joystick4Button10   = Joystick4Button0 + 10,
         // Button 11 on forth joystick
-        Joystick4Button11   = 421,
+        Joystick4Button11   = Joystick4Button0 + 11,
         // Button 12 on forth joystick
-        Joystick4Button12   = 422,
+        Joystick4Button12   = Joystick4Button0 + 12,
         // Button 13 on forth joystick
-        Joystick4Button13   = 423,
+        Joystick4Button13   = Joystick4Button0 + 13,
         // Button 14 on forth joystick
-        Joystick4Button14   = 424,
+        Joystick4Button14   = Joystick4Button0 + 14,
         // Button 15 on forth joystick
-        Joystick4Button15   = 425,
+        Joystick4Button15   = Joystick4Button0 + 15,
         // Button 16 on forth joystick
-        Joystick4Button16   = 426,
+        Joystick4Button16   = Joystick4Button0 + 16,
         // Button 17 on forth joystick
-        Joystick4Button17   = 427,
+        Joystick4Button17   = Joystick4Button0 + 17,
         // Button 18 on forth joystick
-        Joystick4Button18   = 428,
+        Joystick4Button18   = Joystick4Button0 + 18,
         // Button 19 on forth joystick
-        Joystick4Button19   = 429,
+        Joystick4Button19   = Joystick4Button0 + 19,
 
         // Button 0 on fifth joystick
-        Joystick5Button0        = 430,
+        Joystick5Button0        = Joystick4Button19 + 1,
         // Button 1 on fifth joystick
-        Joystick5Button1        = 431,
+        Joystick5Button1        = Joystick5Button0 + 1,
         // Button 2 on fifth joystick
-        Joystick5Button2        = 432,
+        Joystick5Button2        = Joystick5Button0 + 2,
         // Button 3 on fifth joystick
-        Joystick5Button3        = 433,
+        Joystick5Button3        = Joystick5Button0 + 3,
         // Button 4 on fifth joystick
-        Joystick5Button4        = 434,
+        Joystick5Button4        = Joystick5Button0 + 4,
         // Button 5 on fifth joystick
-        Joystick5Button5        = 435,
+        Joystick5Button5        = Joystick5Button0 + 5,
         // Button 6 on fifth joystick
-        Joystick5Button6        = 436,
+        Joystick5Button6        = Joystick5Button0 + 6,
         // Button 7 on fifth joystick
-        Joystick5Button7        = 437,
+        Joystick5Button7        = Joystick5Button0 + 7,
         // Button 8 on fifth joystick
-        Joystick5Button8        = 438,
+        Joystick5Button8        = Joystick5Button0 + 8,
         // Button 9 on fifth joystick
-        Joystick5Button9        = 439,
+        Joystick5Button9        = Joystick5Button0 + 9,
         // Button 10 on fifth joystick
-        Joystick5Button10   = 440,
+        Joystick5Button10   = Joystick5Button0 + 10,
         // Button 11 on fifth joystick
-        Joystick5Button11   = 441,
+        Joystick5Button11   = Joystick5Button0 + 11,
         // Button 12 on fifth joystick
-        Joystick5Button12   = 442,
+        Joystick5Button12   = Joystick5Button0 + 12,
         // Button 13 on fifth joystick
-        Joystick5Button13   = 443,
+        Joystick5Button13   = Joystick5Button0 + 13,
         // Button 14 on fifth joystick
-        Joystick5Button14   = 444,
+        Joystick5Button14   = Joystick5Button0 + 14,
         // Button 15 on fifth joystick
-        Joystick5Button15   = 445,
+        Joystick5Button15   = Joystick5Button0 + 15,
         // Button 16 on fifth joystick
-        Joystick5Button16   = 446,
+        Joystick5Button16   = Joystick5Button0 + 16,
         // Button 17 on fifth joystick
-        Joystick5Button17   = 447,
+        Joystick5Button17   = Joystick5Button0 + 17,
         // Button 18 on fifth joystick
-        Joystick5Button18   = 448,
+        Joystick5Button18   = Joystick5Button0 + 18,
         // Button 19 on fifth joystick
-        Joystick5Button19   = 449,
+        Joystick5Button19   = Joystick5Button0 + 19,
 
         // Button 0 on sixth joystick
-        Joystick6Button0        = 450,
+        Joystick6Button0        = Joystick5Button19 + 1,
         // Button 1 on sixth joystick
-        Joystick6Button1        = 451,
+        Joystick6Button1        = Joystick6Button0 + 1,
         // Button 2 on sixth joystick
-        Joystick6Button2        = 452,
+        Joystick6Button2        = Joystick6Button0 + 2,
         // Button 3 on sixth joystick
-        Joystick6Button3        = 453,
+        Joystick6Button3        = Joystick6Button0 + 3,
         // Button 4 on sixth joystick
-        Joystick6Button4        = 454,
+        Joystick6Button4        = Joystick6Button0 + 4,
         // Button 5 on sixth joystick
-        Joystick6Button5        = 455,
+        Joystick6Button5        = Joystick6Button0 + 5,
         // Button 6 on sixth joystick
-        Joystick6Button6        = 456,
+        Joystick6Button6        = Joystick6Button0 + 6,
         // Button 7 on sixth joystick
-        Joystick6Button7        = 457,
+        Joystick6Button7        = Joystick6Button0 + 7,
         // Button 8 on sixth joystick
-        Joystick6Button8        = 458,
+        Joystick6Button8        = Joystick6Button0 + 8,
         // Button 9 on sixth joystick
-        Joystick6Button9        = 459,
+        Joystick6Button9        = Joystick6Button0 + 9,
         // Button 10 on sixth joystick
-        Joystick6Button10   = 460,
+        Joystick6Button10   = Joystick6Button0 + 10,
         // Button 11 on sixth joystick
-        Joystick6Button11   = 461,
+        Joystick6Button11   = Joystick6Button0 + 11,
         // Button 12 on sixth joystick
-        Joystick6Button12   = 462,
+        Joystick6Button12   = Joystick6Button0 + 12,
         // Button 13 on sixth joystick
-        Joystick6Button13   = 463,
+        Joystick6Button13   = Joystick6Button0 + 13,
         // Button 14 on sixth joystick
-        Joystick6Button14   = 464,
+        Joystick6Button14   = Joystick6Button0 + 14,
         // Button 15 on sixth joystick
-        Joystick6Button15   = 465,
+        Joystick6Button15   = Joystick6Button0 + 15,
         // Button 16 on sixth joystick
-        Joystick6Button16   = 466,
+        Joystick6Button16   = Joystick6Button0 + 16,
         // Button 17 on sixth joystick
-        Joystick6Button17   = 467,
+        Joystick6Button17   = Joystick6Button0 + 17,
         // Button 18 on sixth joystick
-        Joystick6Button18   = 468,
+        Joystick6Button18   = Joystick6Button0 + 18,
         // Button 19 on sixth joystick
-        Joystick6Button19   = 469,
+        Joystick6Button19   = Joystick6Button0 + 19,
 
         // Button 0 on seventh joystick
-        Joystick7Button0        = 470,
+        Joystick7Button0        = Joystick6Button19 + 1,
         // Button 1 on seventh joystick
-        Joystick7Button1        = 471,
+        Joystick7Button1        = Joystick7Button0 + 1,
         // Button 2 on seventh joystick
-        Joystick7Button2        = 472,
+        Joystick7Button2        = Joystick7Button0 + 2,
         // Button 3 on seventh joystick
-        Joystick7Button3        = 473,
+        Joystick7Button3        = Joystick7Button0 + 3,
         // Button 4 on seventh joystick
-        Joystick7Button4        = 474,
+        Joystick7Button4        = Joystick7Button0 + 4,
         // Button 5 on seventh joystick
-        Joystick7Button5        = 475,
+        Joystick7Button5        = Joystick7Button0 + 5,
         // Button 6 on seventh joystick
-        Joystick7Button6        = 476,
+        Joystick7Button6        = Joystick7Button0 + 6,
         // Button 7 on seventh joystick
-        Joystick7Button7        = 477,
+        Joystick7Button7        = Joystick7Button0 + 7,
         // Button 8 on seventh joystick
-        Joystick7Button8        = 478,
+        Joystick7Button8        = Joystick7Button0 + 8,
         // Button 9 on seventh joystick
-        Joystick7Button9        = 479,
+        Joystick7Button9        = Joystick7Button0 + 9,
         // Button 10 on seventh joystick
-        Joystick7Button10   = 480,
+        Joystick7Button10   = Joystick7Button0 + 10,
         // Button 11 on seventh joystick
-        Joystick7Button11   = 481,
+        Joystick7Button11   = Joystick7Button0 + 11,
         // Button 12 on seventh joystick
-        Joystick7Button12   = 482,
+        Joystick7Button12   = Joystick7Button0 + 12,
         // Button 13 on seventh joystick
-        Joystick7Button13   = 483,
+        Joystick7Button13   = Joystick7Button0 + 13,
         // Button 14 on seventh joystick
-        Joystick7Button14   = 484,
+        Joystick7Button14   = Joystick7Button0 + 14,
         // Button 15 on seventh joystick
-        Joystick7Button15   = 485,
+        Joystick7Button15   = Joystick7Button0 + 15,
         // Button 16 on seventh joystick
-        Joystick7Button16   = 486,
+        Joystick7Button16   = Joystick7Button0 + 16,
         // Button 17 on seventh joystick
-        Joystick7Button17   = 487,
+        Joystick7Button17   = Joystick7Button0 + 17,
         // Button 18 on seventh joystick
-        Joystick7Button18   = 488,
+        Joystick7Button18   = Joystick7Button0 + 18,
         // Button 19 on seventh joystick
-        Joystick7Button19   = 489,
+        Joystick7Button19   = Joystick7Button0 + 19,
 
         // Button 0 on eight joystick
-        Joystick8Button0        = 490,
+        Joystick8Button0        = Joystick7Button19 + 1,
         // Button 1 on eight joystick
-        Joystick8Button1        = 491,
+        Joystick8Button1        = Joystick8Button0 + 1,
         // Button 2 on eight joystick
-        Joystick8Button2        = 492,
+        Joystick8Button2        = Joystick8Button0 + 2,
         // Button 3 on eight joystick
-        Joystick8Button3        = 493,
+        Joystick8Button3        = Joystick8Button0 + 3,
         // Button 4 on eight joystick
-        Joystick8Button4        = 494,
+        Joystick8Button4        = Joystick8Button0 + 4,
         // Button 5 on eight joystick
-        Joystick8Button5        = 495,
+        Joystick8Button5        = Joystick8Button0 + 5,
         // Button 6 on eight joystick
-        Joystick8Button6        = 496,
+        Joystick8Button6        = Joystick8Button0 + 6,
         // Button 7 on eight joystick
-        Joystick8Button7        = 497,
+        Joystick8Button7        = Joystick8Button0 + 7,
         // Button 8 on eight joystick
-        Joystick8Button8        = 498,
+        Joystick8Button8        = Joystick8Button0 + 8,
         // Button 9 on eight joystick
-        Joystick8Button9        = 499,
+        Joystick8Button9        = Joystick8Button0 + 9,
         // Button 10 on eight joystick
-        Joystick8Button10   = 500,
+        Joystick8Button10   = Joystick8Button0 + 10,
         // Button 11 on eight joystick
-        Joystick8Button11   = 501,
+        Joystick8Button11   = Joystick8Button0 + 11,
         // Button 12 on eight joystick
-        Joystick8Button12   = 502,
+        Joystick8Button12   = Joystick8Button0 + 12,
         // Button 13 on eight joystick
-        Joystick8Button13   = 503,
+        Joystick8Button13   = Joystick8Button0 + 13,
         // Button 14 on eight joystick
-        Joystick8Button14   = 504,
+        Joystick8Button14   = Joystick8Button0 + 14,
         // Button 15 on eight joystick
-        Joystick8Button15   = 505,
+        Joystick8Button15   = Joystick8Button0 + 15,
         // Button 16 on eight joystick
-        Joystick8Button16   = 506,
+        Joystick8Button16   = Joystick8Button0 + 16,
         // Button 17 on eight joystick
-        Joystick8Button17   = 507,
+        Joystick8Button17   = Joystick8Button0 + 17,
         // Button 18 on eight joystick
-        Joystick8Button18   = 508,
+        Joystick8Button18   = Joystick8Button0 + 18,
         // Button 19 on eight joystick
-        Joystick8Button19   = 509,
+        Joystick8Button19   = Joystick8Button0 + 19,
 
         // We could expose all 10 joysticks here, but I think that a user would rarely want to explicitly
         // specify an eight or higher joystick (and they still can using the string version of Input.KeyDown).

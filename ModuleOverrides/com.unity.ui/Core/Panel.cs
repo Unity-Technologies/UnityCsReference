@@ -215,7 +215,7 @@ namespace UnityEngine.UIElements
 
     internal interface IGlobalPanelDebugger
     {
-        bool InterceptMouseEvent(IPanel panel, IMouseEvent ev);
+        bool InterceptEvent(IPanel panel, EventBase ev);
         void OnContextClick(IPanel panel, ContextClickEvent ev);
     }
 
@@ -612,6 +612,8 @@ namespace UnityEngine.UIElements
 
         public IPanelDebug panelDebug { get; set; }
         public ILiveReloadSystem liveReloadSystem { get; set; }
+
+        internal virtual IGenericMenu CreateMenu() => new GenericDropdownMenu();
 
         public virtual void Update()
         {

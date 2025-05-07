@@ -189,6 +189,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_PackageFiltering.currentFilterTab == PackageFilterTab.AssetStore)
             {
                 var package = m_PackageDatabase.GetPackage(uniqueId);
+                if (package == null)
+                    return;
                 if (isNewItem)
                     TriggerOnListUpdate(added: new[] { package });
                 else

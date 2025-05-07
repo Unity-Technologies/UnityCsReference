@@ -207,7 +207,9 @@ namespace UnityEditor.PackageManager.UI
                     if (endIndex > 0)
                         id = id.Substring(0, endIndex);
 
-                    SelectPackageAndFilterStatic(id, PackageFilterTab.AssetStore);
+                    var packageFiltering = ServicesContainer.instance.Resolve<PackageFiltering>();
+                    var searchString = packageFiltering.currentFilterTab == PackageFilterTab.AssetStore ? packageFiltering.currentSearchText : string.Empty;
+                    SelectPackageAndFilterStatic(id, PackageFilterTab.AssetStore, searchText: searchString);
                 }
             }
         }

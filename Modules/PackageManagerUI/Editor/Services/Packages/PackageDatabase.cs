@@ -513,19 +513,6 @@ namespace UnityEditor.PackageManager.UI.Internal
                         specialInstallationChecklist.Add(package);
                 }
 
-                // It could happen that before the productId info was available, another package was created with packageName as the uniqueId
-                // Once the productId becomes available it should be the new uniqueId, we want to old package such that there won't be two
-                // entries of the same package with different uniqueIds (one productId, one with packageName)
-                if (!string.IsNullOrEmpty(package.productId) && !string.IsNullOrEmpty(package.name))
-                {
-                    var packageWithNameAsUniqueId = GetPackage(package.name);
-                    if (packageWithNameAsUniqueId != null)
-                    {
-                        packagesRemoved.Add(packageWithNameAsUniqueId);
-                        RemovePackage(package.name);
-                    }
-                }
-
                 // if the primary version is not fully fetched, trigger an extra fetch automatically right away to get results early
                 // since the primary version's display name is used in the package list
                 var primaryVersion = package.versions.primary;

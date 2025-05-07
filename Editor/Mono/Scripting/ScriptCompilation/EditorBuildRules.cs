@@ -78,6 +78,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return depth;
         }
 
+        private static string[] CombineDefineArrays(string[] defines, string[] extraPlayerDefines)
+        {
+            if (defines == null)
+                return null;
+
+            extraPlayerDefines = extraPlayerDefines ?? Array.Empty<string>();
+
+            var combined = new string[defines.Length + extraPlayerDefines.Length];
+            Array.Copy(defines, combined, defines.Length);
+            Array.Copy(extraPlayerDefines, 0, combined, defines.Length, extraPlayerDefines.Length);
+            return combined;
+        }
+
         public static Dictionary<string, TargetAssembly> CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies)
         {
             if (customScriptAssemblies == null)
@@ -98,7 +111,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     customAssembly.PathPrefix,
                     customAssembly.AdditionalPrefixes,
                     path => PathFilter(path, customAssembly.PathPrefix, lowerPathPrefix, customAssembly.AdditionalPrefixes, lowerAdditionalPathPrefixes),
-                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
+                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, CombineDefineArrays(defines, settings.ExtraGeneralDefines)),
                     customAssembly.CompilerOptions)
                 {
                     ExplicitPrecompiledReferences = customAssembly.PrecompiledReferences?.ToList() ?? new List<string>(),

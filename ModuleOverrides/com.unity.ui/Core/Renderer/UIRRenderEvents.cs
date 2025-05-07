@@ -924,20 +924,22 @@ namespace UnityEngine.UIElements.UIR.Implementation
         {
             bool isEditor = ve.panel.contextType == ContextType.Editor;
             var style = ve.resolvedStyle;
+            var playModeTintColor = (ve.panel.contextType == ContextType.Editor) ? UIElementsUtility.editorPlayModeTintColor : Color.white;
+
             if (ve.renderChainData.colorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.colorID, style.color, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.colorID, style.color * playModeTintColor, isEditor);
             if (ve.renderChainData.backgroundColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.backgroundColorID, style.backgroundColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.backgroundColorID, style.backgroundColor * playModeTintColor, isEditor);
             if (ve.renderChainData.borderLeftColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderLeftColorID, style.borderLeftColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderLeftColorID, style.borderLeftColor * playModeTintColor, isEditor);
             if (ve.renderChainData.borderTopColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderTopColorID, style.borderTopColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderTopColorID, style.borderTopColor * playModeTintColor, isEditor);
             if (ve.renderChainData.borderRightColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderRightColorID, style.borderRightColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderRightColorID, style.borderRightColor * playModeTintColor, isEditor);
             if (ve.renderChainData.borderBottomColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderBottomColorID, style.borderBottomColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.borderBottomColorID, style.borderBottomColor * playModeTintColor, isEditor);
             if (ve.renderChainData.tintColorID.IsValid())
-                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.tintColorID, style.unityBackgroundImageTintColor, isEditor);
+                renderChain.shaderInfoAllocator.SetColorValue(ve.renderChainData.tintColorID, style.unityBackgroundImageTintColor * playModeTintColor, isEditor);
         }
     }
 }

@@ -869,7 +869,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssemblySettings.OutputDirectory,
                 buildTarget,
                 scriptAssemblySettings.BuildingForEditor,
-                !scriptAssemblySettings.BuildingWithoutScriptUpdater));
+                !scriptAssemblySettings.BuildingWithoutScriptUpdater,
+                scriptAssemblySettings.ExtraGeneralDefines, scriptAssemblySettings));
 
             var cts = new CancellationTokenSource();
 

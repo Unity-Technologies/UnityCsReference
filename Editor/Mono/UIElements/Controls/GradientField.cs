@@ -107,6 +107,8 @@ namespace UnityEditor.UIElements
         VisualElement m_GradientTextureImage;
         readonly Background m_DefaultBackground = new Background();
 
+        bool isShowingGradientPicker => GradientPicker.visible && rawValue != null && ReferenceEquals(GradientPicker.gradient, rawValue);
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -186,6 +188,9 @@ namespace UnityEditor.UIElements
 
         void OnDetach()
         {
+            if (isShowingGradientPicker)
+                GradientPicker.CloseWindow(false);
+
             if (style.backgroundImage.value.texture != null)
             {
                 Object.DestroyImmediate(style.backgroundImage.value.texture);
@@ -249,6 +254,12 @@ namespace UnityEditor.UIElements
                 rawValue.mode = GradientMode.Blend;
             }
             UpdateGradientTexture();
+
+            // Update the GradientPicker if it's open and not currently being interacted with. (UUM-100664)
+            if (isShowingGradientPicker && GUIUtility.hotControl == 0)
+            {
+                GradientPicker.RefreshGradientData();
+            }
         }
 
         protected override void UpdateMixedValueContent()

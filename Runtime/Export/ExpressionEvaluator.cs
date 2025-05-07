@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
@@ -24,6 +25,7 @@ namespace UnityEngine
     [MovedFrom(true, "UnityEditor", "UnityEditor")]
     public class ExpressionEvaluator
     {
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal class Expression
         {
             internal Expression(string expression)
@@ -37,6 +39,23 @@ namespace UnityEngine
             public bool Evaluate<T>(ref T value, int index = 0, int count = 1)
             {
                 return EvaluateTokens(rpnTokens, ref value, index, count);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is Expression other)
+                    return rpnTokens.SequenceEqual(other.rpnTokens);
+                return false;
+            }
+
+            public override int GetHashCode()
+            {
+                return rpnTokens.GetHashCode();
+            }
+
+            public override string ToString()
+            {
+                return string.Join(" ", rpnTokens);
             }
 
             internal readonly string[] rpnTokens;

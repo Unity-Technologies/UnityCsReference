@@ -57,6 +57,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public virtual IEnumerable<AssetStoreLocalInfo> localInfos => m_LocalInfos.Values;
 
+        public virtual IEnumerable<AssetStoreProductInfo> productInfos => m_ProductInfos.Values;
+
         [NonSerialized]
         private ApplicationProxy m_Application;
         [NonSerialized]

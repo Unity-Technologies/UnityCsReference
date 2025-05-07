@@ -74,6 +74,12 @@ class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseFie
 
         if (field is BaseField<TValue> baseField)
         {
+            if (baseField.showMixedValue && boundProperty.hasMultipleDifferentValues)
+            {
+                // No need to update the field
+                return;
+            }
+
             baseField.SetValueWithoutNotify(lastValue);
         }
         else
@@ -97,5 +103,55 @@ class SerializedObjectBinding<TValue> : SerializedObjectBindingPropertyToBaseFie
         {
             field.value = lastValue;
         }
+    }
+
+    protected override bool SyncFieldValueToProperty()
+    {
+        var success = false;
+
+        if (boundProperty.m_SerializedObject.isEditingMultipleObjects
+            && field is BaseField<TValue>
+            && m_LastFieldExpression != null && m_LastFieldExpression.hasVariables)
+        {
+            if (typeof(TValue) == typeof(float) || typeof(TValue) == typeof(double))
+            {
+                success = true;
+                var allDoublesValues = boundProperty.allDoubleValues;
+                for (var i = 0; i < allDoublesValues.Length; i++)
+                {
+                    success = success && m_LastFieldExpression.Evaluate(ref allDoublesValues[i], i, allDoublesValues.Length);
+                }
+
+                if (success)
+                {
+                    boundProperty.allDoubleValues = allDoublesValues;
+                }
+            }
+            else if (typeof(TValue) == typeof(int) || typeof(TValue) == typeof(uint) || typeof(TValue) == typeof(long) || typeof(TValue) == typeof(ulong))
+            {
+                success = true;
+                var allLongValues = boundProperty.allLongValues;
+                for (var i = 0; i < allLongValues.Length; i++)
+                {
+                    success = success && m_LastFieldExpression.Evaluate(ref allLongValues[i], i, allLongValues.Length);
+                }
+
+                if (success)
+                {
+                    boundProperty.allLongValues = allLongValues;
+                }
+            }
+
+            if (success)
+            {
+                boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                return true;
+            }
+
+            // Invalid expression. No need to sync the field value to the property.
+            return false;
+        }
+
+        return base.SyncFieldValueToProperty();
     }
 }

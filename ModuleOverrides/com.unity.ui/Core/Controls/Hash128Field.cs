@@ -15,7 +15,6 @@ namespace UnityEngine.UIElements
     {
         // This property to alleviate the fact we have to cast all the time
         Hash128Input integerInput => (Hash128Input)textInputBase;
-        internal bool m_UpdateTextFromValue;
 
         /// <summary>
         /// Instantiates a <see cref="Hash128Field"/> using the data read from a UXML file.
@@ -63,7 +62,6 @@ namespace UnityEngine.UIElements
         public Hash128Field(string label, int maxLength = kMaxLengthNone)
             : base(label, maxLength, Char.MinValue, new Hash128Input())
         {
-            m_UpdateTextFromValue = true;
             SetValueWithoutNotify(new Hash128());
             AddToClassList(ussClassName);
             labelElement.AddToClassList(labelUssClassName);

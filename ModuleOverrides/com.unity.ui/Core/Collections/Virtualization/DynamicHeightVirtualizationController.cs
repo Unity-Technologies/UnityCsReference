@@ -201,9 +201,14 @@ namespace UnityEngine.UIElements
             }
             else if (firstVisibleIndex >= index)
             {
+                // We dont do anything if the scroll offset wont change (UUM-10285)
+                var newOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                if (newOffset == m_ScrollView.scrollOffset)
+                    return;
+
                 m_ForcedFirstVisibleItem = index;
                 m_ForcedLastVisibleItem = ReusableCollectionItem.UndefinedIndex;
-                m_ScrollView.scrollOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                m_ScrollView.scrollOffset = newOffset;
             }
             else // index > first
             {
@@ -678,7 +683,7 @@ namespace UnityEngine.UIElements
                     if (m_ActiveItems[i].rootElement.style.display == DisplayStyle.Flex)
                     {
                         // Items above the viewport bounds need to be sent back to the back of active items.
-                        if (itemContentOffset + itemHeight <= serializedData.scrollOffset.y)
+                        if (itemContentOffset + itemHeight < serializedData.scrollOffset.y)
                         {
                             item.rootElement.BringToFront(); // We send the element to the bottom of the list (front in z-order)
                             HideItem(i);

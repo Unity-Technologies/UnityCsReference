@@ -316,11 +316,10 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            var postSetupWithEmptyLeftPane = m_LeftPane == null;
             PostDisplaySetup();
 
             // If CollapseChild was called before the setup was complete, we need to call it again.
-            if (postSetupWithEmptyLeftPane && m_CollapseChildCalledBeforeSetupComplete)
+            if (m_CollapseChildCalledBeforeSetupComplete)
             {
                 CollapseChild(m_CollapsedChildIndex);
                 m_CollapseChildCalledBeforeSetupComplete = false;
