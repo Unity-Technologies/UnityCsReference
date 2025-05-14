@@ -372,7 +372,9 @@ namespace UnityEngine.UIElements
         /// </remarks>
         WhiteSpace whiteSpace { get; }
         /// <summary>
-        /// Fixed width of an element for the layout.
+        /// <summary>
+        /// Fixed width of an element for the layout, specified in pixels.
+        /// </summary>
         /// </summary>
         float width { get; }
         /// <summary>

@@ -625,7 +625,7 @@ namespace UnityEngine.UIElements
         {
             if (m_RootVisualElement != null)
             {
-               RemoveFromHierarchy();
+                RemoveFromHierarchy();
                 if (m_PanelSettings != null)
                     m_PanelSettings.panel.liveReloadSystem.UnregisterVisualTreeAssetTracker(m_RootVisualElement);
                 m_RootVisualElement = null;
@@ -643,6 +643,8 @@ namespace UnityEngine.UIElements
                     Debug.LogError("The UXML file set for the UIDocument could not be cloned.");
                 }
             }
+
+            m_OldUxml = sourceAsset;
 
             if (m_RootVisualElement == null)
             {
@@ -935,35 +937,31 @@ namespace UnityEngine.UIElements
         private VisualTreeAsset m_OldUxml = null;
         private float m_OldSortingOrder = k_DefaultSortingOrder;
 
+        // For unit tests
+        internal static int s_OnValidateCalled = 0;
+
         private void OnValidate()
         {
-            // UUM-57741. Don't try to validate the UI Document if the panel isn't initialized. Otherwise,
-            // the assignment of the visualTreeAsset below will indirectly create the panel. There are other
-            // systems listening to the panel creation to initialize themselves, which may do invalid
-            // operations for an OnValidate() call (e.g., the EventSystem will create GameObjects).
-            if (m_PanelSettings == null || !m_PanelSettings.isInitialized)
-            {
-                return;
-            }
+            s_OnValidateCalled++;
 
             if (!gameObject.activeInHierarchy)
             {
                 return;
             }
 
-            if (m_OldUxml != sourceAsset)
-            {
-                visualTreeAsset = sourceAsset;
-                m_OldUxml = sourceAsset;
-            }
-
-            if (m_PreviousPanelSettings != m_PanelSettings && m_RootVisualElement != null && m_RootVisualElement.panel != null)
+            if (m_PreviousPanelSettings != m_PanelSettings)
             {
                 // We'll use the setter as it guarantees the right behavior.
                 // It's necessary for the setter that the old value is still in place.
                 var tempPanelSettings = m_PanelSettings;
                 m_PanelSettings = m_PreviousPanelSettings;
                 panelSettings = tempPanelSettings;
+            }
+
+            if (m_OldUxml != sourceAsset)
+            {
+                visualTreeAsset = sourceAsset;
+                m_OldUxml = sourceAsset;
             }
 
             if (m_OldSortingOrder != m_SortingOrder)

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
@@ -156,15 +157,22 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
         obj.RegisterValueChangedCallback(SetReference);
         obj.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+        obj.AddToClassList(ObjectField.alignedFieldUssClassName);
 
+        // Track for Undo/Redo changes which can come from exposedPropertyTable
         Undo.UndoRedoCallback undoRedoCallback = () =>
         {
             m_Item.UpdateValue();
             obj.SetValueWithoutNotify(m_Item.currentReferenceValue);
         };
 
+        // Track the property for external changed including Undo/Redo
+        obj.TrackPropertyValue(prop, _ => undoRedoCallback());
         obj.RegisterCallback<AttachToPanelEvent>(evt => Undo.undoRedoPerformed += undoRedoCallback);
         obj.RegisterCallback<DetachFromPanelEvent>(evt => Undo.undoRedoPerformed -= undoRedoCallback);
+
+        // Set the serialized property so we can support drag and drop
+        obj.SetProperty(ObjectField.serializedPropertyKey, m_Item.exposedPropertyDefault);
 
         return obj;
     }

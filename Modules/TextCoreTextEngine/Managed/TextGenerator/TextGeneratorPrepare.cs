@@ -28,7 +28,7 @@ namespace UnityEngine.TextCore.Text
             // Find and cache Underline & Ellipsis characters.
             GetSpecialCharacters(generationSettings);
 
-            ComputeMarginSize(generationSettings.screenRect, generationSettings.margins);
+            ComputeMarginSize(generationSettings.screenRect, Vector4.zero);
 
             //ParseInputText
             PopulateTextBackingArray(generationSettings.renderedText);
@@ -36,13 +36,15 @@ namespace UnityEngine.TextCore.Text
             SetArraySizes(m_TextProcessingArray, generationSettings, textInfo);
 
             // Reset Font min / max used with Auto-sizing
-            if (generationSettings.autoSize)
-                m_FontSize = Mathf.Clamp(generationSettings.fontSize, generationSettings.fontSizeMin, generationSettings.fontSizeMax);
+            if (TextGenerationSettings.autoSize)
+#pragma warning disable CS0162 // Unreachable code detected
+                m_FontSize = Mathf.Clamp(generationSettings.fontSize, TextGenerationSettings.fontSizeMin, TextGenerationSettings.fontSizeMax);
+#pragma warning restore CS0162 // Unreachable code detected
             else
                 m_FontSize = generationSettings.fontSize;
 
-            m_MaxFontSize = generationSettings.fontSizeMax;
-            m_MinFontSize = generationSettings.fontSizeMin;
+            m_MaxFontSize = TextGenerationSettings.fontSizeMax;
+            m_MinFontSize = TextGenerationSettings.fontSizeMin;
             m_LineSpacingDelta = 0;
             m_CharWidthAdjDelta = 0;
 
@@ -84,7 +86,7 @@ namespace UnityEngine.TextCore.Text
             m_FontWeightStack.SetDefault(m_FontWeightInternal);
 
             m_CurrentFontAsset = generationSettings.fontAsset;
-            m_CurrentMaterial = generationSettings.material;
+            m_CurrentMaterial = generationSettings.fontAsset.material;
 
             m_CurrentMaterialIndex = 0;
 
@@ -95,7 +97,7 @@ namespace UnityEngine.TextCore.Text
             m_CurrentSpriteAsset = null;
 
             if (textInfo == null)
-                textInfo = new TextInfo(VertexDataLayout.Mesh);
+                textInfo = new TextInfo();
             else if (textInfo.textElementInfo.Length < m_InternalTextProcessingArraySize)
                 TextInfo.Resize(ref textInfo.textElementInfo, m_InternalTextProcessingArraySize, false);
 
@@ -152,7 +154,7 @@ namespace UnityEngine.TextCore.Text
             #endregion
 
             // Check if we should process Ligatures
-            bool ligature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
+            bool ligature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Clear Linked Text object if we have one
             //if (generationSettings.overflowMode == TextOverflowMode.Linked && m_linkedTextComponent != null && !m_IsCalculatingPreferredValues)
@@ -526,11 +528,11 @@ namespace UnityEngine.TextCore.Text
                 int referenceCount = m_MaterialReferences[i].referenceCount;
 
                 // Check to make sure buffer allocations can accommodate the required text elements.
-                if ((textInfo.meshInfo[i].vertexData == null && textInfo.meshInfo[i].vertices == null) || textInfo.meshInfo[i].vertexBufferSize < referenceCount * 4)
+                if (textInfo.meshInfo[i].vertexData == null || textInfo.meshInfo[i].vertexBufferSize < referenceCount * 4)
                 {
-                    if (textInfo.meshInfo[i].vertexData == null && textInfo.meshInfo[i].vertices == null)
+                    if (textInfo.meshInfo[i].vertexData == null )
                     {
-                        textInfo.meshInfo[i] = new MeshInfo(referenceCount + 1, textInfo.vertexDataLayout, generationSettings.isIMGUI);
+                        textInfo.meshInfo[i] = new MeshInfo(referenceCount + 1, generationSettings.isIMGUI);
                     }
                     else
                         textInfo.meshInfo[i].ResizeMeshInfo(referenceCount > 1024 ? referenceCount + 256 : Mathf.NextPowerOfTwo(referenceCount), generationSettings.isIMGUI);
@@ -606,15 +608,6 @@ namespace UnityEngine.TextCore.Text
 
                     return character;
                 }
-            }
-
-            // Search for the character in potential local Sprite Asset assigned to the text object.
-            if (generationSettings.spriteAsset != null)
-            {
-                SpriteCharacter spriteCharacter = FontAssetUtilities.GetSpriteCharacterFromSpriteAsset(unicode, generationSettings.spriteAsset, true);
-
-                if (spriteCharacter != null)
-                    return spriteCharacter;
             }
 
             if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
@@ -704,7 +697,7 @@ namespace UnityEngine.TextCore.Text
             if (textStyle != null && textStyle.hashCode != (int)MarkupTag.NORMAL)
                 TextGeneratorUtilities.InsertOpeningStyleTag(textStyle, ref m_TextProcessingArray, ref writeIndex, ref m_TextStyleStackDepth, ref m_TextStyleStacks, ref generationSettings);
 
-            var tagNoParsing = generationSettings.tagNoParsing;
+            var tagNoParsing = TextGenerationSettings.tagNoParsing;
 
             int readIndex = 0;
             for (; readIndex < srcLength; readIndex++)
@@ -944,7 +937,7 @@ namespace UnityEngine.TextCore.Text
             m_FontWeightStack.SetDefault(m_FontWeightInternal);
 
             m_CurrentFontAsset = generationSettings.fontAsset;
-            m_CurrentMaterial = generationSettings.material;
+            m_CurrentMaterial = generationSettings.fontAsset.material;
             m_CurrentMaterialIndex = 0;
 
             m_MaterialReferenceStack.SetDefault(new MaterialReference(m_CurrentMaterialIndex, m_CurrentFontAsset, null, m_CurrentMaterial, m_Padding));
@@ -978,7 +971,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             // Check if we should process Ligatures
-            bool ligature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
+            bool ligature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Parsing XML tags in the text
             for (int i = 0; i < textProcessingArray.Length && textProcessingArray[i].unicode != 0; i++)
@@ -1355,7 +1348,7 @@ namespace UnityEngine.TextCore.Text
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
-            bool populateLigature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
+            bool populateLigature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(k_HorizontalEllipsis, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
@@ -1395,7 +1388,7 @@ namespace UnityEngine.TextCore.Text
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
             TextSettings textSettings = generationSettings.textSettings;
-            bool populateLigature = generationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
+            bool populateLigature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);

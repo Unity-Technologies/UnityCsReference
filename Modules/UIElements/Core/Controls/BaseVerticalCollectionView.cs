@@ -926,7 +926,8 @@ namespace UnityEngine.UIElements
         Action<int, int> m_ItemIndexChangedCallback;
         Action m_ItemsSourceChangedCallback;
 
-        internal IVisualElementScheduledItem m_RebuildScheduled;
+        private IVisualElementScheduledItem m_RebuildScheduled;
+        internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
 
         private protected virtual void CreateVirtualizationController()
         {

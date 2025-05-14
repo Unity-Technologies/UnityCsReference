@@ -256,7 +256,7 @@ namespace UnityEditor
 
         static GUID EmptyGuid = new GUID("");
 
-        static Dictionary<BuildTarget, GUID> s_PlatformGUIDDataQuickLookup = new Dictionary<BuildTarget, GUID>();
+        static Dictionary<BuildTarget, GUID> s_BuildTargetToPlatformGUID = new Dictionary<BuildTarget, GUID>();
 
         // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead.
         // Changes here should be synced with the usage of
@@ -660,10 +660,7 @@ namespace UnityEditor
         /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
-            if (buildTarget == BuildTarget.StandaloneWindows) //workaround for win64 and win having the same guid in new Build Target system
-                buildTarget = BuildTarget.StandaloneWindows64;
-
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID value))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID value))
             {
                 var module = ModuleManager.FindPlatformSupportModule(value);
                 if (module != null && module is IDerivedBuildTargetProvider)
@@ -702,7 +699,7 @@ namespace UnityEditor
             if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
                 return value;
 
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID guid))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID guid))
                 return guid;
 
             return EmptyGuid;
@@ -721,7 +718,7 @@ namespace UnityEditor
             if (!platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 return platformGuid;
 
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
                 return basePlatformGuid;
 
             return EmptyGuid;
@@ -739,12 +736,15 @@ namespace UnityEditor
         {
             foreach (var platform in allPlatforms)
             {
+                // Capture BuildTarget to GUID mapping for all platforms.
+                // Considers that StandaloneWindows and StandaloneWindows64 are the same platform.
                 if (platform.Value.buildTarget != BuildTarget.StandaloneWindows
                     && platform.Value.subtarget != StandaloneBuildSubtarget.Server
-                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
-                    ) //workaround for win64 and win having the same guid in new Build Target system and for derived build targets
+                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 {
-                    s_PlatformGUIDDataQuickLookup.Add(platform.Value.buildTarget, platform.Key);
+                    s_BuildTargetToPlatformGUID.Add(platform.Value.buildTarget, platform.Key);
+                    if (platform.Value.buildTarget == BuildTarget.StandaloneWindows64)
+                        s_BuildTargetToPlatformGUID.Add(BuildTarget.StandaloneWindows, platform.Key);
                 }
 
                 var playbackEngineDirectory = BuildPipeline.GetPlaybackEngineDirectory(platform.Value.buildTarget, BuildOptions.None, false);

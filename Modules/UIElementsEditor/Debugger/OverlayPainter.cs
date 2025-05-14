@@ -401,6 +401,17 @@ namespace UnityEditor.UIElements.Debugger
         {
             var verts = new List<Vector2>(64);
             var cmd = ve.renderChainData.firstHeadCommand;
+
+            VisualElement coordinateRelativeTo = null;
+            if (ve.renderHints.HasFlag( RenderHints.BoneTransform))
+            {
+                coordinateRelativeTo = ve;
+            }
+            else
+            {
+                coordinateRelativeTo = ve.renderChainData.groupTransformAncestor;
+            }
+
             while (cmd != null && cmd.owner == ve)
             {
                 if (cmd.type == UnityEngine.UIElements.UIR.CommandType.Draw)
@@ -410,7 +421,7 @@ namespace UnityEditor.UIElements.Debugger
                     {
                         var index = allocPage.indices.cpuData[(int)cmd.mesh.allocIndices.start + cmd.indexOffset + i];
                         var vert = allocPage.vertices.cpuData[index];
-                        verts.Add(vert.position);
+                        verts.Add(coordinateRelativeTo == null ? vert.position : coordinateRelativeTo.LocalToWorld(vert.position));
                     }
                 }
                 cmd = cmd.next;

@@ -264,16 +264,20 @@ namespace UnityEngine.UIElements
                 right = p;
             }
 
-            right = CalculateProgressWidth(right);
+            right = CalculateOppositeProgressWidth(right);
             if (right >= 0)
             {
                 m_Progress.style.right = right;
             }
         }
 
-        const float k_MinVisibleProgress = 1.0f;
+        const float k_MinVisibleProgress = 0.0f;
+        const float k_AcceptedWidthEpsilon = 0.1f;
 
-        float CalculateProgressWidth(float width)
+        /// <summary>
+        /// Returns the opposite of the progress width to set as the "right" style. Ex: progress bar at 75% will return 25%.
+        /// </summary>
+        float CalculateOppositeProgressWidth(float width)
         {
             if (m_Background == null || m_Progress == null)
             {
@@ -285,8 +289,14 @@ namespace UnityEngine.UIElements
                 return 0f;
             }
 
-            var maxWidth = m_Background.layout.width - 2;
-            return maxWidth - Mathf.Max((maxWidth) * width / highValue, k_MinVisibleProgress);
+            var maxWidth = Mathf.Floor(m_Background.layout.width - 2);
+            var progressWidth = Mathf.Max((maxWidth) * width / highValue, k_MinVisibleProgress);
+            var oppositeProgressWidth = maxWidth - progressWidth;
+
+            // If the difference between the max width and the desired right position is too small, we don't want to display the progress bar.
+            m_Progress.style.width = Mathf.Abs(maxWidth - oppositeProgressWidth) < k_AcceptedWidthEpsilon ? new StyleLength(0f)
+                : new StyleLength(StyleKeyword.Auto);
+            return oppositeProgressWidth;
         }
     }
 

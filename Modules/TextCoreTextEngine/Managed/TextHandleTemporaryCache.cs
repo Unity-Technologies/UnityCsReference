@@ -59,7 +59,7 @@ namespace UnityEngine.TextCore.Text
                 }
                 else
                 {
-                    var textInfo = new TextInfo(VertexDataLayout.VBO);
+                    var textInfo = new TextInfo();
                     textHandle.TextInfoNode = new LinkedListNode<TextInfo>(textInfo);
                     s_TextInfoPool.AddFirst(textHandle.TextInfoNode);
                     textInfo.lastTimeInCache = currentFrame;

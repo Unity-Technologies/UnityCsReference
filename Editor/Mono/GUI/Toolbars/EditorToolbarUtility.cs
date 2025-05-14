@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Overlays;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
@@ -72,6 +74,68 @@ namespace UnityEditor.Toolbars
         internal static VisualTreeAsset LoadUxml(string name)
         {
             return EditorGUIUtility.Load($"{k_UxmlPath}{name}.uxml") as VisualTreeAsset;
+        }
+
+        internal static void UpdateIconContent(
+        string text,
+        string textIcon,
+        Texture2D icon,
+        TextElement textElement,
+        TextElement textIconElement,
+        Image iconElement)
+        {
+            if (text == string.Empty)
+            {
+                textElement.style.display = DisplayStyle.None;
+                textIconElement.style.display = DisplayStyle.None;
+            }
+            else
+                textElement.style.display = StyleKeyword.Null;
+
+            // First priority: image icon, if available
+            if (icon != null)
+            {
+                if (iconElement != null)
+                {
+                    iconElement.style.display = DisplayStyle.Flex;
+                    iconElement.image = icon;
+                }
+                if (textIconElement != null)
+                    textIconElement.style.display = DisplayStyle.None;
+            }
+            else if (iconElement != null && iconElement.resolvedStyle.backgroundImage != null)
+            {
+                if (textIconElement != null)
+                    textIconElement.style.display = DisplayStyle.None;
+                iconElement.style.display = DisplayStyle.Flex;
+            }
+            // Second priority: text icon, if available
+            else if (!string.IsNullOrEmpty(textIcon))
+            {
+                if (textIconElement != null)
+                {
+                    textIconElement.style.display = DisplayStyle.Flex;
+                    textIconElement.text = OverlayUtilities.GetSignificantLettersForIcon(textIcon);
+                }
+                if (iconElement != null)
+                    iconElement.style.display = DisplayStyle.None;
+            }
+            // Fall back: abbreviation of text.
+            else if (!string.IsNullOrEmpty(text))
+            {
+                if (textIconElement != null)
+                {
+                    textIconElement.style.display = StyleKeyword.Null;
+                    textIconElement.text = OverlayUtilities.GetSignificantLettersForIcon(text);
+                }
+                if (iconElement != null)
+                    iconElement.style.display = DisplayStyle.None;
+            }
+            else
+            {
+                if (iconElement != null)
+                    iconElement.style.display = DisplayStyle.Flex;
+            }
         }
     }
 }

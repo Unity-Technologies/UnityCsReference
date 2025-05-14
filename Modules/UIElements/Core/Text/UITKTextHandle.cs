@@ -198,12 +198,9 @@ namespace UnityEngine.UIElements
                
             }
 
-            tgs.material = tgs.fontAsset.material;
-
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
             tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
-            tgs.wordWrappingRatio = 0.4f;
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
             tgs.characterSpacing = style.letterSpacing.value;
@@ -214,8 +211,6 @@ namespace UnityEngine.UIElements
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
-            tgs.inverseYAxis = true;
-            tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
 

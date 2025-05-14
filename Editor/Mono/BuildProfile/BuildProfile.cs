@@ -403,6 +403,13 @@ namespace UnityEditor.Build.Profile
             }
 
             CheckSceneListConsistency();
+
+            // On disk changes to active profile may change platform guid.
+            // Specifically copying the entire YAML of a valid build profile.
+            if (this == BuildProfileContext.activeProfile && platformGuid != EditorUserBuildSettings.activePlatformGuid)
+            {
+                EditorUserBuildSettings.SwitchActiveBuildTargetGuid(this);
+            }
         }
 
         /// <summary>

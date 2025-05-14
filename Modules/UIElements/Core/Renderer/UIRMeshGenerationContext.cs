@@ -352,6 +352,10 @@ namespace UnityEngine.UIElements
         /// If a valid texture was passed, then the <see cref="Vertex.uv"/> values should be used to map the texture to the geometry.
         /// </remarks>
         /// <remarks>
+        /// You can call `MeshGenerationContext.Allocate()` multiple times for the same element or context.
+        /// To optimize performance, minimize the number of calls whenever possible.
+        /// </remarks>
+        /// <remarks>
         /// SA: [[MeshWriteData]]
         /// </remarks>
         /// <example>

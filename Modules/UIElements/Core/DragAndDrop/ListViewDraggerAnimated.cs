@@ -97,12 +97,16 @@ namespace UnityEngine.UIElements
             m_CurrentIndex = -1;
             foreach (var item in targetView.activeItems)
             {
-                if (item.id < 0 || item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
+                if (item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
                     continue;
 
                 if (item.index == m_Item.index && item.index < targetView.itemsSource.Count - 1)
                 {
                     var nextExpectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index + 1);
+                    // If the drop position is at the end, we will let the conditional check that is outside the loop to handle the animating.
+                    if (Mathf.Approximately(itemLayout.y, y))
+                        continue;
+
                     if (itemLayout.y <= y + nextExpectedHeight * 0.5f)
                     {
                         m_CurrentIndex = item.index;

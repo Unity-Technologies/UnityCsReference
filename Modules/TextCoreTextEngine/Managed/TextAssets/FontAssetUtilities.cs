@@ -441,5 +441,35 @@ namespace UnityEngine.TextCore.Text
 
             return null;
         }
+
+        public static uint GetCodePoint(string text, ref int index)
+        {
+            char c = text[index];
+            if (char.IsHighSurrogate(c)
+                && index + 1 < text.Length
+                && char.IsLowSurrogate(text[index + 1]))
+            {
+                uint cp = (uint)char.ConvertToUtf32(c, text[index + 1]);
+                index++;
+                return cp;
+            }
+
+            return c;
+        }
+
+        public static uint GetCodePoint(uint[] codesPoints, ref int index)
+        {
+            char c = (char)codesPoints[index];
+            if (char.IsHighSurrogate(c)
+                && index + 1 < codesPoints.Length
+                && char.IsLowSurrogate((char)codesPoints[index + 1]))
+            {
+                uint cp = (uint)char.ConvertToUtf32(c, (char)codesPoints[index + 1]);
+                index++;
+                return cp;
+            }
+
+            return c;
+        }
     }
 }

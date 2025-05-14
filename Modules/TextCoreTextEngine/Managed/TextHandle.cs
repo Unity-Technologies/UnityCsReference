@@ -38,7 +38,7 @@ namespace UnityEngine.TextCore.Text
 
             InitArray(ref s_Settings, () => new TextGenerationSettings());
             InitArray(ref s_Generators, () => new TextGenerator());
-            InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+            InitArray(ref s_TextInfosCommon, () => new TextInfo());
         }
 
         static TextGenerationSettings[] s_Settings;
@@ -74,7 +74,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_TextInfosCommon == null)
                 {
-                    InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+                    InitArray(ref s_TextInfosCommon, () => new TextInfo());
                 }
                 return s_TextInfosCommon;
             }
@@ -235,8 +235,6 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
 
-        protected readonly internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
-
         protected bool isDirty;
         public virtual void SetDirty()
         {
@@ -336,12 +334,6 @@ namespace UnityEngine.TextCore.Text
                 renderedWidth = settings.isIMGUI ? Mathf.Max(renderedWidth, lineInfo.length) : Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
             }
             renderedHeight = maxAscender - maxDescender;
-
-            // Adjust Preferred Width and Height to account for Margins.
-            renderedWidth += settings.margins.x > 0 ? settings.margins.x : 0;
-            renderedWidth += settings.margins.z > 0 ? settings.margins.z : 0;
-            renderedHeight += settings.margins.y > 0 ? settings.margins.y : 0;
-            renderedHeight += settings.margins.w > 0 ? settings.margins.w : 0;
 
             // Round Preferred Values to nearest 1/100.
             // The cast is now ok as we are working with real pixels values
@@ -683,5 +675,69 @@ namespace UnityEngine.TextCore.Text
         }
 
         internal virtual bool IsAdvancedTextEnabledForElement() { return false; }
+
+
+        //This method assumes the textInfo is populated
+        internal int GetTextElementCount()
+        {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetTextElementCount while using Advanced Text");
+                return 0;
+            }
+
+            return textInfo.textElementInfo.Length;
+        }
+
+        internal readonly record struct GlyphMetricsForOverlay
+        {
+            public GlyphMetricsForOverlay(ref TextElementInfo textElementInfo, float pixelPerPoint)
+            {
+                float inversePPP = 1 / pixelPerPoint;
+                this.isVisible = textElementInfo.isVisible;
+                this.origin = textElementInfo.origin * inversePPP;
+                this.xAdvance = textElementInfo.xAdvance * inversePPP;
+                this.ascentline = textElementInfo.ascender * inversePPP;
+                this.baseline = textElementInfo.baseLine * inversePPP;
+                this.descentline = textElementInfo.descender * inversePPP;
+                this.topLeft = textElementInfo.topLeft * inversePPP;
+                this.bottomLeft = textElementInfo.bottomLeft * inversePPP;
+                this.topRight = textElementInfo.topRight * inversePPP;
+                this.bottomRight = textElementInfo.bottomRight * inversePPP;
+                this.scale = textElementInfo.scale;
+                this.lineNumber = textElementInfo.lineNumber;
+                this.fontCapLine = textElementInfo.fontAsset.faceInfo.capLine * inversePPP;
+                this.fontMeanLine = textElementInfo.fontAsset.faceInfo.meanLine * inversePPP;
+            }
+
+            readonly public bool isVisible;
+            readonly public float origin;
+            readonly public float xAdvance;
+            readonly public float ascentline;
+            readonly public float baseline;
+            readonly public float descentline;
+            readonly public Vector3 topLeft;
+            readonly public Vector3 bottomLeft;
+            readonly public Vector3 topRight;
+            readonly public Vector3 bottomRight;
+            readonly public float scale;
+            readonly public int lineNumber;
+            readonly public float fontCapLine;
+            readonly public float fontMeanLine;
+
+        }
+
+        //This method assumes the textInfo is populated
+        internal GlyphMetricsForOverlay GetScaledCharacterMetrics(int i)
+        {
+            // The goal of this method is to keep the concept of scaling inside the textHandle
+            // It will also serve in the future to handle conversion from the nativeTextInfo too.
+            if (useAdvancedText)
+            {
+                throw new InvalidOperationException("Cannot use GetScaledCharacterMetrics while using Advanced Text");
+            }
+            return new GlyphMetricsForOverlay(ref textInfo.textElementInfo[i], GetPixelsPerPoint());
+        }
     }
 }
+

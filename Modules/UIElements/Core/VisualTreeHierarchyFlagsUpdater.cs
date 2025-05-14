@@ -32,7 +32,7 @@ namespace UnityEngine.UIElements
         protected const VersionChangeType AnythingChanged = ChildrenChanged | ParentChanged | VersionChanged;
 
         protected const VisualElementFlags BoundingBoxDirtyFlags =
-            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty;
+            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty  | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
@@ -93,17 +93,13 @@ namespace UnityEngine.UIElements
             }
         }
 
-        static void DirtyBoundingBoxHierarchy(VisualElement ve)
+        private static void DirtyBoundingBoxHierarchy(VisualElement ve)
         {
-            ve.isBoundingBoxDirty = true;
-            ve.isWorldBoundingBoxDirty = true;
-            var parent = ve.hierarchy.parent;
-            while (parent != null && !parent.isBoundingBoxDirty)
-            {
-                parent.isBoundingBoxDirty = true;
-                parent.isWorldBoundingBoxDirty = true;
-                parent = parent.hierarchy.parent;
-            }
+            // Even if all the local bounding box flags are dirty already, we need to check the first parent too.
+            // This is because other factors can impact the parent boundingBox besides our own boundingBox changing
+            // (for instance, if our ShouldClip() method or resolvedStyle.display return a different value).
+            ve.m_Flags |= BoundingBoxDirtyFlags;
+            DirtyParentHierarchy(ve.hierarchy.parent, BoundingBoxDirtyFlags);
         }
 
         protected static void DirtyParentHierarchy(VisualElement ve, VisualElementFlags flags)
