@@ -14,9 +14,11 @@ internal class ParticleSystemCurveEditor
     private Color[] m_Colors;
     private List<Color> m_AvailableColors;
     private DoubleCurvePresetsContentsForPopupWindow m_DoubleCurvePresets;
+    private Vector2 m_PresetScrollPosition;
+
 
     // Presets
-    public const float k_PresetsHeight = 30f;
+    public const float k_PresetsHeight = 45f;
 
     internal class Styles
     {
@@ -416,8 +418,7 @@ internal class ParticleSystemCurveEditor
         DoLabelForTopMostCurve(new Rect(rect.x + 4, rect.y, rect.width - 160, 20));
         DoRemoveSelectedButton(new Rect(curveEditorRect.x, curveEditorRect.y, curveEditorRect.width, 24));
         DoOptimizeCurveButton(new Rect(curveEditorRect.x, curveEditorRect.y, curveEditorRect.width, 24));
-        presetRect.x += 30;
-        presetRect.width -= 2 * 30;
+
         PresetCurveButtons(presetRect, rect);
 
         m_CurveEditor.OnGUI();
@@ -557,38 +558,36 @@ internal class ParticleSystemCurveEditor
             return;
 
         DoubleCurvePresetLibrary curveLibrary = m_DoubleCurvePresets.GetPresetLibraryEditor().GetCurrentLib();
-        const int maxNumPresets = 9;
         int numPresets = (curveLibrary != null) ? curveLibrary.Count() : 0;
-        int showNumPresets = Mathf.Min(numPresets, maxNumPresets);
 
-        float swatchWidth = 30;
-        float swatchHeight = 15;
-        float spaceBetweenSwatches = 10;
-        float presetButtonsWidth = showNumPresets * swatchWidth + (showNumPresets - 1) * spaceBetweenSwatches;
-        float flexWidth = (position.width - presetButtonsWidth) * 0.5f;
+        const float swatchWidth = 30f;
+        const float swatchHeight = 15f;
+        const float spaceBetweenSwatches = 5f;
+        const float presetDropdownSize = 16f;
+        const float horizontalScrollbarHeight = 15f;
+        const float presetDropdownCenteringOffset = 3f;
 
         // Preset swatch area
         float curY = (position.height - swatchHeight) * 0.5f;
-        float curX = 3.0f;
-        if (flexWidth > 0)
-            curX = flexWidth;
 
-        PresetDropDown(new Rect(curX - 20 + position.x, curY + position.y, 16, 16));
+        Rect presetDropDownRect = new Rect(spaceBetweenSwatches, curY - presetDropdownCenteringOffset, presetDropdownSize, presetDropdownSize);
+        Rect contentRect = new Rect(0, 0, numPresets * (swatchWidth + spaceBetweenSwatches) + presetDropDownRect.xMax, position.height - horizontalScrollbarHeight);
+        m_PresetScrollPosition = GUI.BeginScrollView(
+            position,               // Rectangle of the visible area
+            m_PresetScrollPosition, // Current scroll position
+            contentRect,            // Rectangle containing all content
+            false,                  // Always show horizontal scrollbar
+            false                   // Always show vertical scrollbar
+        );
 
-        GUI.BeginGroup(position);
+        PresetDropDown(presetDropDownRect);
 
         Color curveColor = Color.white;
         curveColor.a *= 0.6f;
-        for (int i = 0; i < showNumPresets; i++)
+
+        Rect swatchRect = new Rect(presetDropDownRect.xMax + spaceBetweenSwatches, curY, swatchWidth, swatchHeight);
+        for (int i = 0; i < numPresets; i++)
         {
-            if (i > 0)
-                curX += spaceBetweenSwatches;
-
-            Rect swatchRect = new Rect(curX, curY, swatchWidth, swatchHeight);
-
-            if (swatchRect.xMax > position.width)
-                break;
-
             s_Styles.presetTooltip.tooltip = curveLibrary.GetName(i);
             if (GUI.Button(swatchRect, s_Styles.presetTooltip, GUIStyle.none))
             {
@@ -601,10 +600,10 @@ internal class ParticleSystemCurveEditor
             }
             if (Event.current.type == EventType.Repaint)
                 curveLibrary.Draw(swatchRect, i);
-
-            curX += swatchWidth;
+            swatchRect.x += swatchWidth + spaceBetweenSwatches;
         }
-        GUI.EndGroup();
+
+        GUI.EndScrollView();
     }
 
     // Polynomial curves have limitations on how they have to be authored.

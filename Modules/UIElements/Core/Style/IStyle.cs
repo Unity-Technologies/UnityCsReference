@@ -11,6 +11,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Background image scaling in the element's box.
         /// </summary>
+        /// <remarks>
+        /// This property is deprecated. Use [[BackgroundPropertyHelper]] to set the background properties.
+        /// For more information, Refer to [[wiki:UIB-styling-ui-backgrounds#set-the-scale-mode-for-a-background-image|Set the scale mode for a background image]].
+        /// </remarks>
         [Obsolete("unityBackgroundScaleMode is deprecated. Use background-* properties instead.")]
         StyleEnum<ScaleMode> unityBackgroundScaleMode { get; set; }
     }

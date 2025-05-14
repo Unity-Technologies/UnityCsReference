@@ -58,17 +58,17 @@ namespace UnityEngine.UIElements
 
         public void HandleATag()
         {
-            m_TextEventHandler.HandleATag();
+            m_TextEventHandler?.HandleATag();
         }
 
         public void HandleLinkTag()
         {
-            m_TextEventHandler.HandleLinkTag();
+            m_TextEventHandler?.HandleLinkTag();
         }
 
         public void HandleLinkAndATagCallbacks()
         {
-            m_TextEventHandler.HandleLinkAndATagCallbacks();
+            m_TextEventHandler?.HandleLinkAndATagCallbacks();
         }
 
         public void UpdateMesh()
@@ -92,9 +92,8 @@ namespace UnityEngine.UIElements
             {
                 if (textGenerationInfo == IntPtr.Zero)
                     textGenerationInfo = TextGenerationInfo.Create();
-                bool success = false;
-                UpdateNative(ref success);
-
+                UpdateNative();
+                UpdateATGTextEventHandler();
                 return;
             }
 
@@ -166,12 +165,9 @@ namespace UnityEngine.UIElements
             }
             settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
 
-            tgs.material = tgs.fontAsset.material;
-
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
             tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
-            tgs.wordWrappingRatio = 0.4f;
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
             tgs.characterSpacing = style.letterSpacing.value;
@@ -182,8 +178,6 @@ namespace UnityEngine.UIElements
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
-            tgs.inverseYAxis = true;
-            tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
             // The screenRect in TextCore is not properly implemented with regards to the offset part, so zero it out for now and we will add it ourselves later
@@ -246,24 +240,29 @@ namespace UnityEngine.UIElements
         private bool wasAdvancedTextEnabledForElement;
         internal override bool IsAdvancedTextEnabledForElement()
         {
-            // When it's called on a thread it automatically means it's not ATG, so we just return false.
-            if (JobsUtility.IsExecutingJob)
-                return false;
+            return TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
+        }
 
-            bool isEnabled = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
-            // We need to cleanup caches to avoid exceptions when switching between advanced and non-advanced text
-            if (wasAdvancedTextEnabledForElement && !isEnabled && textGenerationInfo != IntPtr.Zero)
+        internal void ReleaseResourcesIfPossible()
+        {
+            bool usesATG = TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement);
+            if (wasAdvancedTextEnabledForElement && !usesATG && textGenerationInfo != IntPtr.Zero)
             {
                 TextGenerationInfo.Destroy(textGenerationInfo);
                 textGenerationInfo = IntPtr.Zero;
+                m_ATGTextEventHandler?.OnDestroy();
+                m_ATGTextEventHandler = null;
+                m_TextEventHandler = new TextEventHandler(m_TextElement);
             }
-            else if (!wasAdvancedTextEnabledForElement && isEnabled)
+            else if (!wasAdvancedTextEnabledForElement && usesATG)
             {
                 s_PermanentCache.RemoveTextInfoFromCache(this);
                 s_TemporaryCache.RemoveTextInfoFromCache(this);
+                m_TextEventHandler?.OnDestroy();
+                m_TextEventHandler = null;
+                m_ATGTextEventHandler = new ATGTextEventHandler(m_TextElement);
             }
-            wasAdvancedTextEnabledForElement = isEnabled;
-            return isEnabled;
+            wasAdvancedTextEnabledForElement = usesATG;
         }
 
         public override bool IsPlaceholder

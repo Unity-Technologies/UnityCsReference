@@ -20,7 +20,12 @@ namespace UnityEngine.TextCore.Text
     {
         public Vector3 position;
         public Color32 color;
+        /// UV0 contains the following information
+        /// X, Y are the UV coordinates of the glyph in the atlas texture.
         public Vector2 uv0;
+        // UV2 contains the following information
+        /// X is the texture index in the texture atlas array
+        /// Y is the SDF Scale where a negative value represents bold text
         public Vector2 uv2;
     }
 }

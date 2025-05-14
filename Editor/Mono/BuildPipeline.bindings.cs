@@ -703,6 +703,9 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options, bool assertUnsupportedPlatforms);
 
+        [FreeFunction]
+        internal static extern bool IsServerBuildPlatformSupported(BuildTarget target);
+
         internal static string GetBuildToolsDirectory(BuildTarget target)
         {
             return Path.Combine(GetPlaybackEngineDirectory(target, BuildOptions.None, false), "Tools");

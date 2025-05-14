@@ -269,6 +269,8 @@ namespace UnityEngine
         [NativeThrows]
         internal static extern DiagnosticSwitch[] diagnosticSwitches { get; }
 
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static DiagnosticSwitch GetDiagnosticSwitch(string name)
         {
             foreach (var diagnosticSwitch in diagnosticSwitches)

@@ -18,6 +18,12 @@ namespace UnityEngine.UIElements
             m_TextElement = textElement;
         }
 
+        public void OnDestroy()
+        {
+            UnRegisterLinkTagCallbacks();
+            UnRegisterHyperlinkCallbacks();
+        }
+
         EventCallback<PointerDownEvent> m_LinkTagOnPointerDown;
         EventCallback<PointerUpEvent> m_LinkTagOnPointerUp;
         EventCallback<PointerMoveEvent> m_LinkTagOnPointerMove;

@@ -72,6 +72,10 @@ namespace UnityEngine.UIElements
         LocalBounds3DDirty = 1 << 16,
         // The DataSource tracking of the element should not ne processed when the element has not been configured properly
         DetachedDataSource = 1 << 17,
+        // Element wants a GeometryChangedEvent if any of its descendent receives one
+        ReceivesHierarchyGeometryChangedEvents = 1 << 18,
+        // Element or descendent received a GeometryChangedEvent since last Layout update
+        BoundingBoxDirtiedSinceLastLayoutPass = 1 << 19,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | DetachedDataSource
@@ -1341,6 +1345,18 @@ namespace UnityEngine.UIElements
                 Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
+        internal bool receivesHierarchyGeometryChangedEvents
+        {
+            get => (m_Flags & VisualElementFlags.ReceivesHierarchyGeometryChangedEvents) == VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.ReceivesHierarchyGeometryChangedEvents : m_Flags & ~VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+        }
+
+        internal bool boundingBoxDirtiedSinceLastLayoutPass
+        {
+            get => (m_Flags & VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass) == VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass : m_Flags & ~VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+        }
+
         // which pseudo states would change the current VE styles if added
         internal PseudoStates triggerPseudoMask;
         // which pseudo states would change the current VE styles if removed
@@ -1355,6 +1371,8 @@ namespace UnityEngine.UIElements
             set
             {
                 PseudoStates diff = m_PseudoStates ^ value;
+                m_PseudoStates = value; // Set the new value before IncrementVersion so we can react to it.
+
                 if ((int)diff > 0)
                 {
                     if ((value & PseudoStates.Root) == PseudoStates.Root)
@@ -1365,7 +1383,7 @@ namespace UnityEngine.UIElements
                     if (diff != PseudoStates.Root)
                     {
                         var added = diff & value;
-                        var removed = diff & m_PseudoStates;
+                        var removed = diff ^ added;
 
                         if ((triggerPseudoMask & added) != 0
                             || (dependencyPseudoMask & removed) != 0)
@@ -1373,8 +1391,6 @@ namespace UnityEngine.UIElements
                             IncrementVersion(VersionChangeType.StyleSheet);
                         }
                     }
-
-                    m_PseudoStates = value;
                 }
             }
         }
@@ -1929,13 +1945,21 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
-        /// Changes the <see cref="VisualElement"/> enabled state. A disabled VisualElement does not receive most events.
+        /// Changes the <see cref="VisualElement"/> enabled state. A disabled visual element does not receive most events.
         /// </summary>
         /// <param name="value">New enabled state</param>
         /// <remarks>
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
-        /// <seealso cref="enabledSelf"/>
+        ///\\
+        ///\\ 
+        /// A disabled visual element does not receive most input events, such as mouse and keyboard events. However, it can still respond to Attach or Detach events, and geometry change events.
+        ///\\
+        ///\\
+        /// When an element is disabled, its style changes to visually indicate it's inactive.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[VisualElement.enabledSelf]]
         /// </remarks>
         public void SetEnabled(bool value)
         {
@@ -2006,9 +2030,9 @@ namespace UnityEngine.UIElements
         /// The value of this property reflects the value of <see cref="IResolvedStyle.visibility"/> for this element.
         /// The value is true for <see cref="Visibility.Visible"/> and false for <see cref="Visibility.Hidden"/>.
         /// Writing to this property writes to <see cref="IStyle.visibility"/>.
+        /// </remarks>
         /// <seealso cref="resolvedStyle"/>
         /// <seealso cref="style"/>
-        /// </remarks>
         [CreateProperty]
         public bool visible
         {

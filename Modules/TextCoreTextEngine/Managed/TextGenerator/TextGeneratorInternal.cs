@@ -191,8 +191,7 @@ namespace UnityEngine.TextCore.Text
 
             bool isColorGlyph = ((GlyphRasterModes)m_CurrentFontAsset.m_AtlasRenderMode & GlyphRasterModes.RASTER_MODE_COLOR) == GlyphRasterModes.RASTER_MODE_COLOR;
 
-            // Handle Vertex Colors & Vertex Color Gradient
-            if (generationSettings.fontColorGradient == null || isColorGlyph)
+            // Handle Vertex Colors
             {
                 // Special handling for color glyphs
                 vertexColor = isColorGlyph ? new Color32(255, 255, 255, vertexColor.a) : vertexColor;
@@ -201,34 +200,6 @@ namespace UnityEngine.TextCore.Text
                 textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = vertexColor;
                 textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = vertexColor;
                 textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.color = vertexColor;
-            }
-            else
-            {
-                if (!generationSettings.overrideRichTextColors && m_ColorStack.index > 1)
-                {
-                    textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.color = vertexColor;
-                    textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = vertexColor;
-                    textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = vertexColor;
-                    textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.color = vertexColor;
-                }
-                else // Handle Vertex Color Gradient
-                {
-                    // Use Vertex Color Gradient Preset (if one is assigned)
-                    if (generationSettings.fontColorGradientPreset != null)
-                    {
-                        textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.color = generationSettings.fontColorGradientPreset.bottomLeft * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = generationSettings.fontColorGradientPreset.topLeft * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = generationSettings.fontColorGradientPreset.topRight * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.color = generationSettings.fontColorGradientPreset.bottomRight * vertexColor;
-                    }
-                    else
-                    {
-                        textInfo.textElementInfo[m_CharacterCount].vertexBottomLeft.color = generationSettings.fontColorGradient.bottomLeft * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexTopLeft.color = generationSettings.fontColorGradient.topLeft * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexTopRight.color = generationSettings.fontColorGradient.topRight * vertexColor;
-                        textInfo.textElementInfo[m_CharacterCount].vertexBottomRight.color = generationSettings.fontColorGradient.bottomRight * vertexColor;
-                    }
-                }
             }
 
             if (m_ColorGradientPreset != null && !isColorGlyph)
@@ -292,8 +263,6 @@ namespace UnityEngine.TextCore.Text
             #endregion
 
             // Vertex Color Alpha
-            if (generationSettings.tintSprites)
-                m_TintSprite = true;
 
             Color32 spriteColor = m_TintSprite ? ColorUtilities.MultiplyColors(m_SpriteColor, vertexColor) : m_SpriteColor;
             spriteColor.a = spriteColor.a < m_FontColor32.a ? spriteColor.a < vertexColor.a ? spriteColor.a : vertexColor.a : m_FontColor32.a;
@@ -303,22 +272,6 @@ namespace UnityEngine.TextCore.Text
             Color32 c2 = spriteColor;
             Color32 c3 = spriteColor;
 
-            if (generationSettings.fontColorGradient != null)
-            {
-                if (generationSettings.fontColorGradientPreset != null) {
-                    c0 = m_TintSprite ? ColorUtilities.MultiplyColors(c0, generationSettings.fontColorGradientPreset.bottomLeft) : c0;
-                    c1 = m_TintSprite ? ColorUtilities.MultiplyColors(c1, generationSettings.fontColorGradientPreset.topLeft) : c1;
-                    c2 = m_TintSprite ? ColorUtilities.MultiplyColors(c2, generationSettings.fontColorGradientPreset.topRight) : c2;
-                    c3 = m_TintSprite ? ColorUtilities.MultiplyColors(c3, generationSettings.fontColorGradientPreset.bottomRight) : c3;
-                }
-                else
-                {
-                    c0 = m_TintSprite ? ColorUtilities.MultiplyColors(c0, generationSettings.fontColorGradient.bottomLeft) : c0;
-                    c1 = m_TintSprite ? ColorUtilities.MultiplyColors(c1, generationSettings.fontColorGradient.topLeft) : c1;
-                    c2 = m_TintSprite ? ColorUtilities.MultiplyColors(c2, generationSettings.fontColorGradient.topRight) : c2;
-                    c3 = m_TintSprite ? ColorUtilities.MultiplyColors(c3, generationSettings.fontColorGradient.bottomRight) : c3;
-                }
-            }
 
             if (m_ColorGradientPreset != null)
             {
@@ -426,7 +379,6 @@ namespace UnityEngine.TextCore.Text
             float posBottom = start.y - (underlineThickness + m_Padding) * maxScale;
             float posTop = start.y + m_Padding * maxScale;
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 // Left part of the underline
                 vertexData[index + 0].position = new Vector3(posLeft, posBottom);    // BL
@@ -446,51 +398,20 @@ namespace UnityEngine.TextCore.Text
                 vertexData[index + 10].position = new Vector3(posRight, posTop);      // TR
                 vertexData[index + 11].position = new Vector3(posRight, posBottom);   // BR
             }
-            else
-            {
-                Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
-                // Left part of the underline
-                vertices[index + 0] = new Vector3(posLeft, posBottom);    // BL
-                vertices[index + 1] = new Vector3(posLeft, posTop);       // TL
-                vertices[index + 2] = new Vector3(posMidLeft, posTop);    // TR
-                vertices[index + 3] = new Vector3(posMidLeft, posBottom); // BR
-
-                // Middle part of the underline
-                vertices[index + 4] = new Vector3(posMidLeft, posBottom);  // BL
-                vertices[index + 5] = new Vector3(posMidLeft, posTop);     // TL
-                vertices[index + 6] = new Vector3(posMidRight, posTop);    // TR
-                vertices[index + 7] = new Vector3(posMidRight, posBottom); // BR
-
-                // Right part of the underline
-                vertices[index + 8] = new Vector3(posMidRight, posBottom); // BL
-                vertices[index + 9] = new Vector3(posMidRight, posTop);    // TL
-                vertices[index + 10] = new Vector3(posRight, posTop);      // TR
-                vertices[index + 11] = new Vector3(posRight, posBottom);   // BR
-            }
             #endregion
 
-            // Handle potential axis inversion.
-            if (generationSettings.inverseYAxis)
+            // Handle axis inversion.
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
                 axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
                 {
                     for (int i = 0; i < 12; i++)
                     {
                         //vertices[index + i].x += axisOffset.x;
                         textInfo.meshInfo[m_CurrentMaterialIndex].vertexData[index + i].position.y = textInfo.meshInfo[m_CurrentMaterialIndex].vertexData[index + i].position.y * -1 + axisOffset.y;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < 12; i++)
-                    {
-                        //vertices[index + i].x += axisOffset.x;
-                        textInfo.meshInfo[m_CurrentMaterialIndex].vertices[index + i].y = textInfo.meshInfo[m_CurrentMaterialIndex].vertices[index + i].y * -1 + axisOffset.y;
                     }
                 }
             }
@@ -513,7 +434,6 @@ namespace UnityEngine.TextCore.Text
             float uvBottom = (underlineGlyphRect.y - m_Padding) * invAtlasHeight; // Why not use maxScale?
             float uvTop = (underlineGlyphRect.y + underlineGlyphRect.height + m_Padding) * invAtlasHeight;
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 // Left part of the underline
                 vertexData[0 + index].uv0 = new Vector4(uvLeft0, uvBottom); // BL
@@ -533,29 +453,7 @@ namespace UnityEngine.TextCore.Text
                 vertexData[10 + index].uv0 = new Vector4(uvRight1, uvTop);    // TR
                 vertexData[11 + index].uv0 = new Vector4(uvRight1, uvBottom); // BR
             }
-            else
-            {
-                float xScale = Mathf.Abs(sdfScale);
-                Vector4[] uvs0 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs0;
 
-                // Left part of the underline
-                uvs0[0 + index] = new Vector4(uvLeft0, uvBottom, 0, xScale); // BL
-                uvs0[1 + index] = new Vector4(uvLeft0, uvTop, 0, xScale);    // TL
-                uvs0[2 + index] = new Vector4(uvLeft1, uvTop, 0, xScale);    // TR
-                uvs0[3 + index] = new Vector4(uvLeft1, uvBottom, 0, xScale); // BR
-
-                // Middle part of the underline
-                uvs0[4 + index] = new Vector4(uvMid, uvBottom, 0, xScale); // BL
-                uvs0[5 + index] = new Vector4(uvMid, uvTop, 0, xScale);    // TL
-                uvs0[6 + index] = new Vector4(uvMid, uvTop, 0, xScale);    // TR
-                uvs0[7 + index] = new Vector4(uvMid, uvBottom, 0, xScale); // BR
-
-                // Right part of the underline
-                uvs0[8 + index] = new Vector4(uvRight0, uvBottom, 0, xScale);  // BL
-                uvs0[9 + index] = new Vector4(uvRight0, uvTop, 0, xScale);     // TL
-                uvs0[10 + index] = new Vector4(uvRight1, uvTop, 0, xScale);    // TR
-                uvs0[11 + index] = new Vector4(uvRight1, uvBottom, 0, xScale); // BR
-            }
             #endregion
 
             // UNDERLINE UV2
@@ -565,7 +463,6 @@ namespace UnityEngine.TextCore.Text
 
             float invMeshWidth = 1f / meshWidth;
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 float max_UvX = (vertexData[index + 2].position.x - start.x) * invMeshWidth;
 
@@ -589,33 +486,7 @@ namespace UnityEngine.TextCore.Text
                 vertexData[10 + index].uv2 = new Vector2(1, 1);
                 vertexData[11 + index].uv2 = new Vector2(1, 0);
             }
-            else
-            {
-                Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
-                float max_UvX = (vertices[index + 2].x - start.x) * invMeshWidth;
-
-                Vector2[] uvs2 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs2;
-
-                uvs2[0 + index] = new Vector2(0, 0);
-                uvs2[1 + index] = new Vector2(0, 1);
-                uvs2[2 + index] = new Vector2(max_UvX, 1);
-                uvs2[3 + index] = new Vector2(max_UvX, 0);
-
-                min_UvX = (vertices[index + 4].x - start.x) * invMeshWidth;
-                max_UvX = (vertices[index + 6].x - start.x) * invMeshWidth;
-
-                uvs2[4 + index] = new Vector2(min_UvX, 0);
-                uvs2[5 + index] = new Vector2(min_UvX, 1);
-                uvs2[6 + index] = new Vector2(max_UvX, 1);
-                uvs2[7 + index] = new Vector2(max_UvX, 0);
-
-                min_UvX = (vertices[index + 8].x - start.x) * invMeshWidth;
-
-                uvs2[8 + index] = new Vector2(min_UvX, 0);
-                uvs2[9 + index] = new Vector2(min_UvX, 1);
-                uvs2[10 + index] = new Vector2(1, 1);
-                uvs2[11 + index] = new Vector2(1, 0);
-            }
+          
             #endregion
 
             // UNDERLINE VERTEX COLORS
@@ -623,21 +494,13 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             underlineColor.a = m_FontColor32.a < underlineColor.a ? m_FontColor32.a : underlineColor.a;
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 for (int i = 0; i < 12; i++)
                 {
                     vertexData[i + index].color = underlineColor;
                 }
             }
-            else
-            {
-                Color32[] colors32 = textInfo.meshInfo[m_CurrentMaterialIndex].colors32;
-                for (int i = 0; i < 12; i++)
-                {
-                    colors32[i + index] = underlineColor;
-                }
-            }
+
             #endregion
 
             textInfo.meshInfo[m_CurrentMaterialIndex].vertexCount += k_VertexIncrease;
@@ -671,46 +534,26 @@ namespace UnityEngine.TextCore.Text
             // UNDERLINE VERTICES FOR (3) LINE SEGMENTS
             #region HIGHLIGHT VERTICES
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 vertexData[index + 0].position = start; // BL
                 vertexData[index + 1].position = new Vector3(start.x, end.y, 0); // TL
                 vertexData[index + 2].position = end; // TR
                 vertexData[index + 3].position = new Vector3(end.x, start.y, 0); // BR
             }
-            else
-            {
-                Vector3[] vertices = textInfo.meshInfo[m_CurrentMaterialIndex].vertices;
-                // Front Part of the Underline
-                vertices[index + 0] = start; // BL
-                vertices[index + 1] = new Vector3(start.x, end.y, 0); // TL
-                vertices[index + 2] = end; // TR
-                vertices[index + 3] = new Vector3(end.x, start.y, 0); // BR
-            }
 
             #endregion
 
-            if (generationSettings.inverseYAxis)
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
                 axisOffset.y = generationSettings.screenRect.height;
                 axisOffset.z = 0;
 
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
                 {
                     for (int i = 0; i < 4; i++)
                     {
                         //vertices[index + 0].x += axisOffset.x;
                         vertexData[index + i].position.y = vertexData[index + i].position.y * -1 + axisOffset.y;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < 4; i++)
-                    {
-                        //vertices[index + 0].x += axisOffset.x;
-                        textInfo.meshInfo[m_CurrentMaterialIndex].vertices[index + i].y = textInfo.meshInfo[m_CurrentMaterialIndex].vertices[index + i].y * -1 + axisOffset.y;
                     }
                 }
             }
@@ -726,7 +569,6 @@ namespace UnityEngine.TextCore.Text
             Vector2 uvGlyphCenter = new Vector2((glyphRect.x + (float)glyphRect.width / 2) / atlasWidth, (glyphRect.y + (float)glyphRect.height / 2) / atlasHeight);
             Vector2 uvTexelSize = new Vector2(1.0f / atlasWidth, 1.0f / atlasHeight);
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 // UVs for the Quad
                 vertexData[0 + index].uv0 = uvGlyphCenter - uvTexelSize; // BL
@@ -734,22 +576,13 @@ namespace UnityEngine.TextCore.Text
                 vertexData[2 + index].uv0 = uvGlyphCenter + uvTexelSize; // TR
                 vertexData[3 + index].uv0 = uvGlyphCenter + new Vector2(uvTexelSize.x, -uvTexelSize.y); // BR
             }
-            else
-            {
-                Vector4[] uvs0 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs0;
-                // UVs for the Quad
-                uvs0[0 + index] = uvGlyphCenter - uvTexelSize; // BL
-                uvs0[1 + index] = uvGlyphCenter + new Vector2(-uvTexelSize.x, uvTexelSize.y); // TL
-                uvs0[2 + index] = uvGlyphCenter + uvTexelSize; // TR
-                uvs0[3 + index] = uvGlyphCenter + new Vector2(uvTexelSize.x, -uvTexelSize.y); // BR
-            }
+
             #endregion
 
             // HIGHLIGHT UV2
             #region HANDLE UV2 - SDF SCALE
 
             Vector2 customUV = new Vector2(0, 1);
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 // HIGHLIGHT UV2
                 vertexData[0 + index].uv2 = customUV;
@@ -757,15 +590,7 @@ namespace UnityEngine.TextCore.Text
                 vertexData[2 + index].uv2 = customUV;
                 vertexData[3 + index].uv2 = customUV;
             }
-            else
-            {
-                Vector2[] uvs2 = textInfo.meshInfo[m_CurrentMaterialIndex].uvs2;
-                // HIGHLIGHT UV2
-                uvs2[0 + index] = customUV;
-                uvs2[1 + index] = customUV;
-                uvs2[2 + index] = customUV;
-                uvs2[3 + index] = customUV;
-            }
+
             #endregion
 
             // HIGHLIGHT VERTEX COLORS
@@ -773,20 +598,11 @@ namespace UnityEngine.TextCore.Text
             // Alpha is the lower of the vertex color or tag color alpha used.
             highlightColor.a = m_FontColor32.a < highlightColor.a ? m_FontColor32.a : highlightColor.a;
 
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 vertexData[0 + index].color = highlightColor;
                 vertexData[1 + index].color = highlightColor;
                 vertexData[2 + index].color = highlightColor;
                 vertexData[3 + index].color = highlightColor;
-            }
-            else
-            {
-                Color32[] colors = textInfo.meshInfo[m_CurrentMaterialIndex].colors32;
-                colors[0 + index] = highlightColor;
-                colors[1 + index] = highlightColor;
-                colors[2 + index] = highlightColor;
-                colors[3 + index] = highlightColor;
             }
             #endregion
 

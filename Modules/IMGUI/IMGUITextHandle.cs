@@ -232,7 +232,7 @@ namespace UnityEngine
             settings.fontAsset = settings.textSettings.GetCachedFontAsset(font);
             if (settings.fontAsset == null)
                 return;
-            var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
                 settings.fontAsset = GetBlurryFontAssetMapping((int)Math.Round((settings.fontSize * GUIUtility.pixelsPerPoint), MidpointRounding.AwayFromZero), settings.fontAsset);
@@ -240,7 +240,6 @@ namespace UnityEngine
             }
 
             settings.isEditorRenderingModeBitmap = shouldRenderBitmap;
-            settings.material = settings.fontAsset.material;
             if (!shouldRenderBitmap)
             {
                 settings.fontAsset.material.SetFloat("_Sharpness", settings.textSettings.GetEditorTextSharpness());
@@ -272,7 +271,6 @@ namespace UnityEngine
 
             settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
             settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
-            settings.wordWrappingRatio = 0.4f;
             if (rect.width > 0 && style.wordWrap)
             {
                 settings.textWrappingMode = TextWrappingMode.PreserveWhitespace;
@@ -290,10 +288,8 @@ namespace UnityEngine
             settings.paragraphSpacing = 0;
             settings.color = textColor;
 
-            settings.inverseYAxis = true;
             settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
-            settings.fontFeatures = m_ActiveFontFeatures;
         }
 
         static TextOverflowMode LegacyClippingToNewOverflow(TextClipping clipping)

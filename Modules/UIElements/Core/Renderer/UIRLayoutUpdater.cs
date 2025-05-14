@@ -95,6 +95,7 @@ namespace UnityEngine.UIElements
         }
 
         List<(Rect, Rect, VisualElement)> changeEventsList = new();
+        List<VisualElement> missedHierarchyChangeEventsList = new();
 
         public override void Update()
         {
@@ -129,6 +130,7 @@ namespace UnityEngine.UIElements
                     layoutLoop++;
                     recordedLayoutItemList.Add(record);
                 }
+                missedHierarchyChangeEventsList.Clear();
 
                 while (visualTree.layoutNode.IsDirty)
                 {
@@ -166,6 +168,11 @@ namespace UnityEngine.UIElements
                     }
                     k_DispatchChangeEventsMarker.Begin();
                     DispatchChangeEvents(changeEventsList, validateLayoutCount);
+                    if (!visualTree.layoutNode.IsDirty)
+                    {
+                        DispatchMissedHierarchyChangeEvents(missedHierarchyChangeEventsList, validateLayoutCount);
+                        missedHierarchyChangeEventsList.Clear();
+                    }
                     k_DispatchChangeEventsMarker.End();
 
                     if (validateLayoutCount++ >= kMaxValidateLayoutCount)
@@ -324,12 +331,26 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            // Only send GeometryChanged events when the layout changes
-            // (padding changes don't affect the element's outer geometry).
-            if ((layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged) && ve.HasSelfEventInterests(GeometryChangedEvent.EventCategory))
+            if (ve.HasSelfEventInterests(GeometryChangedEvent.EventCategory))
             {
-                changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, layoutRect, ve));
+                // Only send GeometryChanged events when the layout changes
+                // (padding changes don't affect the element's outer geometry).
+                if (layoutSizeChanged || layoutPositionChanged || isDisplayedJustChanged)
+                {
+                    changeEvents.Add((isDisplayedJustChanged ? Rect.zero : lastLayoutRect, layoutRect, ve));
+
+                    if (ve.receivesHierarchyGeometryChangedEvents)
+                        missedHierarchyChangeEventsList.Remove(ve);
+                }
+                // UUM-64521. Send a "Hierarchy" GeometryChangedEvent if anything moved in the hierarchy.
+                // We detect that with a cheap test of the boundingBox dirty flag. This may not always be
+                // strictly equivalent, but we're OK as long as we're not missing any of the descendents' events.
+                else if (ve.receivesHierarchyGeometryChangedEvents && ve.boundingBoxDirtiedSinceLastLayoutPass)
+                {
+                    missedHierarchyChangeEventsList.Add(ve);
+                }
             }
+            ve.boundingBoxDirtiedSinceLastLayoutPass = false;
 
             if (hasNewLayout)
             {
@@ -342,6 +363,19 @@ namespace UnityEngine.UIElements
             foreach ((var oldRect, var newRect, var ve) in changeEvents)
             {
                 using (var evt = GeometryChangedEvent.GetPooled(oldRect, newRect))
+                {
+                    evt.layoutPass = currentLayoutPass;
+                    evt.elementTarget = ve;
+                    EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, panel, ve);
+                }
+            }
+        }
+
+        private void DispatchMissedHierarchyChangeEvents(List<VisualElement> missedHierarchyChangeEvents, int currentLayoutPass)
+        {
+            foreach (var ve in missedHierarchyChangeEvents)
+            {
+                using (var evt = GeometryChangedEvent.GetPooled(Rect.zero, ve.layout))
                 {
                     evt.layoutPass = currentLayoutPass;
                     evt.elementTarget = ve;

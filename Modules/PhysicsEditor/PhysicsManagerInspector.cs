@@ -199,34 +199,26 @@ namespace UnityEditor
             var horizontalLabel = userData.sideLabels[userData.gridX];
             var verticalLabel = userData.topLabels[(userData.topLabels.childCount - 1) - userData.gridY];
 
-            //both side and top labels have the same number of active labels
-            //but only top labels has the exact number of children as it is being generated.
-            int totalLabelsPerside = userData.topLabels.childCount;
-
             //horizontal bar
             var horizontalBox = new Box();
             horizontalBox.AddToClassList("project-settings___physics__highlight-box");
             horizontalBox.style.height = horizontalLabel.resolvedStyle.height;
-            horizontalBox.style.width =
-                horizontalLabel.resolvedStyle.width + (totalLabelsPerside - userData.gridX) * (toggle.resolvedStyle.width + toggle.resolvedStyle.marginLeft + toggle.resolvedStyle.marginRight);
+            //we compute the width of the horizontal line by using the label width + grabbing the current toggle's parent as it is by default on grid X
+            horizontalBox.style.width = horizontalLabel.resolvedStyle.width + toggle.parent.resolvedStyle.width; 
 
             //absolute pos calculate for horizontal bar
-            horizontalBox.style.left = userData.sideLabels.resolvedStyle.width - horizontalLabel.resolvedStyle.width;
-            horizontalBox.style.top = userData.topLabels.resolvedStyle.width
-            + ((horizontalLabel.resolvedStyle.height) * userData.gridX) + horizontalLabel.resolvedStyle.paddingTop;
-
+            horizontalBox.style.left = horizontalLabel.resolvedStyle.left;
+            horizontalBox.style.top = userData.topLabels.resolvedStyle.width + horizontalLabel.resolvedStyle.top;
 
             //vertical bar
             var verticalBox = new Box();
             verticalBox.AddToClassList("project-settings___physics__highlight-box");
             verticalBox.style.width = verticalLabel.resolvedStyle.height;
-            verticalBox.style.height =
-                verticalLabel.resolvedStyle.width +
-                horizontalLabel.resolvedStyle.paddingRight +
-                (totalLabelsPerside - userData.gridY) * (toggle.resolvedStyle.height + toggle.resolvedStyle.marginTop + toggle.resolvedStyle.marginBottom);
+            //we compute the height of the vertical bar by taking the label width + going up the hierarchy of toggle lines and finding the toggle line that matches our gridY
+            verticalBox.style.height = verticalLabel.resolvedStyle.width + toggle.parent.parent[userData.gridY].resolvedStyle.width;
 
-            //absolute pos calculate for vertical bar
-            verticalBox.style.left = userData.sideLabels.resolvedStyle.width + verticalLabel.resolvedStyle.height * userData.gridY;
+            //absolute pos calculate for vertical bar, we use the .top (normally we would use .right but the label is rotated 90 deg so we need to account for that rotation) of the vertical label as part of the offset.
+            verticalBox.style.left = userData.sideLabels.resolvedStyle.width + userData.topLabels.resolvedStyle.height - verticalLabel.resolvedStyle.top - verticalLabel.resolvedStyle.height;
             verticalBox.style.top = userData.topLabels.resolvedStyle.width - verticalLabel.resolvedStyle.width;
 
             userData.overlay.Add(horizontalBox);

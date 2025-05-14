@@ -28,6 +28,14 @@ namespace UnityEngine.UIElements
         /// </summary>
         public void Add(StyleSheet styleSheet)
         {
+            Insert(count, styleSheet);
+        }
+
+        /// <summary>
+        /// Adds a style sheet for the owner element at a specified index
+        /// </summary>
+        public void Insert(int index, StyleSheet styleSheet)
+        {
             if (styleSheet == null)
                 throw new ArgumentNullException(nameof(styleSheet));
 
@@ -40,7 +48,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            m_Element.styleSheetList.Add(styleSheet);
+            m_Element.styleSheetList.Insert(index, styleSheet);
             m_Element.IncrementVersion(VersionChangeType.StyleSheet);
 
             m_Element.elementPanel?.liveReloadSystem.StartStyleSheetAssetTracking(styleSheet);

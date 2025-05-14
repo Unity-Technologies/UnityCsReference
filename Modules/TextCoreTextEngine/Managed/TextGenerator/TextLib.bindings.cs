@@ -29,51 +29,93 @@ namespace UnityEngine.TextCore.Text
             Debug.Assert((settings.fontStyle & FontStyles.Bold) == 0);// Bold need to be set by the fontWeight only.
             var textInfo = GenerateTextInternal(settings, textGenerationInfo);
 
+            return textInfo;
+        }
+
+        // The rasterization of glyph was extracted to its own method to ensure it is called on the main thread.
+        public void ProcessMeshInfos(NativeTextInfo textInfo, NativeTextGenerationSettings settings)
+        {
             foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
             {
                 var fa = FontAsset.GetFontAssetByID(meshInfo.fontAssetId);
                 meshInfo.fontAsset = fa;
+                meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>(fa.atlasTextures.Length);
+                for (int i = 0; i < fa.atlasTextures.Length; i++)
+                    meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+
+                var padding = settings.vertexPadding / 64.0f;
+                var inverseAtlasWidth = 1.0f / fa.atlasWidth;
+                var inverseAtlasHeight = 1.0f / fa.atlasHeight;
+
+                bool hasMultipleColors = false;
+                Color? previousColor = null;
 
                 // TODO we should add glyphs in batch instead
-                foreach (ref var textElementInfo in meshInfo.textElementInfos.AsSpan())
+                for (int i = 0; i < meshInfo.textElementInfos.Length; i++)
                 {
+                    ref var textElementInfo = ref meshInfo.textElementInfos[i];
                     var glyphID = textElementInfo.glyphID;
 
                     bool success = fa.TryAddGlyphInternal((uint)glyphID, out var glyph);
                     if (!success)
                         continue;
 
+                    var currentColor = textElementInfo.topLeft.color;
+                    if (previousColor.HasValue && previousColor.Value != currentColor)
+                    {
+                        hasMultipleColors = true;
+                    }
+                    previousColor = currentColor;
+
                     var glyphRect = glyph.glyphRect;
-                    var padding = settings.vertexPadding / 64.0f;
 
-                    Vector2 bottomLeftUV; // Bottom Left
-                    bottomLeftUV.x = (float)(glyphRect.x - padding) / fa.atlasWidth;
-                    bottomLeftUV.y = (float)(glyphRect.y - padding) / fa.atlasHeight;
+                    while (meshInfo.textElementInfoIndicesByAtlas.Count < fa.atlasTextures.Length)
+                        meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
 
-                    Vector2 topLeftUV; // Top Left
-                    topLeftUV.x = bottomLeftUV.x;
-                    topLeftUV.y = (float)(glyphRect.y + glyphRect.height + padding) / fa.atlasHeight;
+                    meshInfo.textElementInfoIndicesByAtlas[glyph.atlasIndex].Add(i);
 
-                    Vector2 topRightUV; // Top Right
-                    topRightUV.x = (float)(glyphRect.x + glyphRect.width + padding) / fa.atlasWidth;
-                    topRightUV.y = topLeftUV.y;
+                    bool allUVsAreZeroOrOne =
+                        (textElementInfo.bottomLeft.uv0.x == 0f || textElementInfo.bottomLeft.uv0.x == 1f) &&
+                        (textElementInfo.bottomLeft.uv0.y == 0f || textElementInfo.bottomLeft.uv0.y == 1f) &&
+                        (textElementInfo.topLeft.uv0.x == 0f || textElementInfo.topLeft.uv0.x == 1f) &&
+                        (textElementInfo.topLeft.uv0.y == 0f || textElementInfo.topLeft.uv0.y == 1f) &&
+                        (textElementInfo.topRight.uv0.x == 0f || textElementInfo.topRight.uv0.x == 1f) &&
+                        (textElementInfo.topRight.uv0.y == 0f || textElementInfo.topRight.uv0.y == 1f) &&
+                        (textElementInfo.bottomRight.uv0.x == 0f || textElementInfo.bottomRight.uv0.x == 1f) &&
+                        (textElementInfo.bottomRight.uv0.y == 0f || textElementInfo.bottomRight.uv0.y == 1f);
 
-                    Vector2 bottomRightUV; // Bottom Right
-                    bottomRightUV.x = topRightUV.x;
-                    bottomRightUV.y = bottomLeftUV.y;
+                    if (allUVsAreZeroOrOne)
+                    {
+                        float xMin = (glyphRect.x - padding) * inverseAtlasWidth;
+                        float yMin = (glyphRect.y - padding) * inverseAtlasHeight;
+                        float xMax = (glyphRect.x + glyphRect.width + padding) * inverseAtlasWidth;
+                        float yMax = (glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight;
 
-                    // The native code is not yet aware of the atlas, and glyphs for the underline+strikethrough have their UV manually eddited to
-                    // be stretched without side effect. We need to combine the position in the atlas with the expected position in the source glyph.
-                    textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomLeft.uv0);
-                    textElementInfo.topLeft.uv0 = topRightUV * textElementInfo.topLeft.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topLeft.uv0); ;
-                    textElementInfo.topRight.uv0 = topRightUV * textElementInfo.topRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.topRight.uv0); ;
-                    textElementInfo.bottomRight.uv0 = topRightUV * textElementInfo.bottomRight.uv0 + bottomLeftUV * (new Vector2(1, 1) - textElementInfo.bottomRight.uv0); ;
+                        textElementInfo.bottomLeft.uv0 = new Vector2(xMin, yMin);
+                        textElementInfo.topLeft.uv0    = new Vector2(xMin, yMax);
+                        textElementInfo.topRight.uv0   = new Vector2(xMax, yMax);
+                        textElementInfo.bottomRight.uv0= new Vector2(xMax, yMin);
+                    }
+                    else
+                    {
+                        Vector2 bottomLeftUV = new Vector2((glyphRect.x - padding) * inverseAtlasWidth,
+                                                            (glyphRect.y - padding) * inverseAtlasHeight);
+                        Vector2 topLeftUV = new Vector2(bottomLeftUV.x,
+                                                        (glyphRect.y + glyphRect.height + padding) * inverseAtlasHeight);
+                        Vector2 topRightUV = new Vector2((glyphRect.x + glyphRect.width + padding) * inverseAtlasWidth,
+                                                         topLeftUV.y);
+
+                        textElementInfo.bottomLeft.uv0 = topRightUV * textElementInfo.bottomLeft.uv0 + bottomLeftUV * (Vector2.one - textElementInfo.bottomLeft.uv0);
+                        textElementInfo.topLeft.uv0    = topRightUV * textElementInfo.topLeft.uv0    + bottomLeftUV * (Vector2.one - textElementInfo.topLeft.uv0);
+                        textElementInfo.topRight.uv0   = topRightUV * textElementInfo.topRight.uv0   + bottomLeftUV * (Vector2.one - textElementInfo.topRight.uv0);
+                        textElementInfo.bottomRight.uv0= topRightUV * textElementInfo.bottomRight.uv0+ bottomLeftUV * (Vector2.one - textElementInfo.bottomRight.uv0);
+                    }
                 }
+                meshInfo.hasMultipleColors = hasMultipleColors;
             }
-            return textInfo;
         }
 
-        [NativeMethod(Name = "TextLib::GenerateTextMesh")]
+        [NativeMethod(Name = "TextLib::GenerateTextMesh", IsThreadSafe = true)]
         private extern NativeTextInfo GenerateTextInternal(NativeTextGenerationSettings settings, IntPtr textGenerationInfo);
 
         [NativeMethod(Name = "TextLib::MeasureText")]
@@ -93,9 +135,9 @@ namespace UnityEngine.TextCore.Text
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class TextGenerationInfo
     {
+        [ThreadSafe]
         public static extern IntPtr Create();
 
-        [FreeFunction("TextGenerationInfo::Destroy",IsThreadSafe = true)]
         public static extern void Destroy(IntPtr ptr);
     }
 }

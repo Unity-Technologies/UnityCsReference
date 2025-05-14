@@ -59,6 +59,9 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// An integer used to sort focusables in the focus ring. Must be greater than or equal to zero.
         /// </summary>
+        /// <remarks>
+        /// Setting the `tabIndex` value to less than `0` (for example, `−1`) removes the element from the focus ring and tab navigation.
+        /// </remarks>
         [CreateProperty]
         public int tabIndex
         {

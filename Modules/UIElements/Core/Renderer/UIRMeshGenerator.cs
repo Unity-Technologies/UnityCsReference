@@ -21,10 +21,10 @@ namespace UnityEngine.UIElements.UIR
     interface IMeshGenerator
     {
         VisualElement currentElement { get; set; }
-        UITKTextJobSystem textJobSystem { get; set; }
+        TextJobSystem textJobSystem { get; set; }
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales);
         public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes);
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font);
-        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos);
         public void DrawRectangle(MeshGenerator.RectangleParams rectParams);
         public void DrawBorder(MeshGenerator.BorderParams borderParams);
         public void DrawVectorImage(VectorImage vectorImage, Vector2 offset, Angle rotationAngle, Vector2 scale);
@@ -67,12 +67,12 @@ namespace UnityEngine.UIElements.UIR
         {
             m_MeshGenerationContext = mgc;
             m_OnMeshGenerationDelegate = OnMeshGeneration;
-            textJobSystem = new UITKTextJobSystem();
+            textJobSystem = new TextJobSystem();
         }
 
         public VisualElement currentElement { get; set; }
 
-        public UITKTextJobSystem textJobSystem { get; set; }
+        public TextJobSystem textJobSystem { get; set; }
 
         public struct BorderParams
         {
@@ -609,22 +609,17 @@ namespace UnityEngine.UIElements.UIR
             rectParams.rectInset = inset;
         }
 
-        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
-        {
-            DrawTextInfo(vertices, indices, materials, renderModes);
-        }
-
-        TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo(VertexDataLayout.VBO);
+        TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo();
         TextCore.Text.TextGenerationSettings m_Settings = new TextCore.Text.TextGenerationSettings()
         {
             screenRect = Rect.zero,
             richText = true,
-            inverseYAxis = true
         };
 
         List<NativeSlice<Vertex>> m_VerticesArray = new List<NativeSlice<Vertex>>();
         List<NativeSlice<ushort>> m_IndicesArray = new List<NativeSlice<ushort>>();
-        List<Material> m_Materials = new List<Material>();
+        List<Texture2D> m_Atlases = new List<Texture2D>();
+        List<float> m_SdfScales = new List<float>();
         List<GlyphRenderMode> m_RenderModes = new List<GlyphRenderMode>();
 
         public void DrawText(string text, Vector2 pos, float fontSize, Color color, FontAsset font)
@@ -637,29 +632,11 @@ namespace UnityEngine.UIElements.UIR
             m_Settings.textSettings = textSettings;
             m_Settings.fontSize = fontSize;
             m_Settings.color = color;
-            m_Settings.material = font.material;
             m_Settings.textWrappingMode = TextWrappingMode.NoWrap;
 
             TextCore.Text.TextGenerator.GetTextGenerator().GenerateText(m_Settings, m_TextInfo);
 
             DrawTextBase(m_TextInfo, new NativeTextInfo(), pos, false);
-        }
-
-        public void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
-        {
-            DrawTextBase(null, textInfo, pos, true);
-
-            // Call Texture.Apply for all texture still dirty
-            // There are no other place where we are calling this to export the texture to the gpu
-            // for the ATG. This is as late as it could be right now.
-
-            // I am putting it here as this will only be call if an ATG-text has been modified
-            // and it will not be called when non-atg text only are modified
-            // Trying to keep the codepath separated for now.
-
-            // Finally, calling this once per text element is not optimal but the code underneath
-            // should simply retrun if there is nothing to apply
-            FontAsset.UpdateFontAssetsInUpdateQueue();
         }
 
         void DrawTextBase(TextCore.Text.TextInfo textInfo, NativeTextInfo nativeTextInfo, Vector2 pos, bool isNative)
@@ -690,8 +667,17 @@ namespace UnityEngine.UIElements.UIR
                     int quadCount = vertexCount >> 2;
                     int indexCount = quadCount * 6;
 
-                    m_Materials.Add(isNative ? fa.material : meshInfo.material);
+                    m_Atlases.Add(isNative ? (Texture2D)fa.material.mainTexture : (Texture2D)meshInfo.material.mainTexture);
                     m_RenderModes.Add(isNative ? fa.atlasRenderMode : meshInfo.glyphRenderMode);
+                    float sdfScale = 0;
+                    if (!TextGeneratorUtilities.IsBitmapRendering(m_RenderModes[^1]) && m_Atlases[^1].format == TextureFormat.Alpha8)
+                    {
+                        if (isNative)
+                            sdfScale = fa.atlasPadding + 1;
+                        else
+                            sdfScale = meshInfo.material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                    }
+                    m_SdfScales.Add(sdfScale);
 
                     m_MeshGenerationContext.AllocateTempMesh(vertexCount, indexCount, out var vertices, out var indices);
 
@@ -729,15 +715,34 @@ namespace UnityEngine.UIElements.UIR
                 Debug.Assert(remainingVertexCount == 0);
             }
 
-            DrawTextInfo(m_VerticesArray, m_IndicesArray, m_Materials, m_RenderModes);
+            DrawText(m_VerticesArray, m_IndicesArray, m_Atlases, m_RenderModes, m_SdfScales);
 
             m_VerticesArray.Clear();
             m_IndicesArray.Clear();
-            m_Materials.Clear();
+            m_Atlases.Clear();
+            m_SdfScales.Clear();
             m_RenderModes.Clear();
         }
 
-        void DrawTextInfo(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Material> materials, List<GlyphRenderMode> renderModes)
+        {
+            for (int i = 0; i < materials.Count; ++i)
+            {
+                var material = materials[i];
+                m_Atlases.Add(material.mainTexture as Texture2D);
+                float sdfScale = 0;
+                if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]) && m_Atlases[^1].format == TextureFormat.Alpha8)
+                    sdfScale = material.GetFloat(TextShaderUtilities.ID_GradientScale);
+                m_SdfScales.Add(sdfScale);
+            }
+
+            DrawText(vertices, indices, m_Atlases, renderModes, m_SdfScales);
+
+            m_Atlases.Clear();
+            m_SdfScales.Clear();
+        }
+
+        public void DrawText(List<NativeSlice<Vertex>> vertices, List<NativeSlice<ushort>> indices, List<Texture2D> atlases, List<GlyphRenderMode> renderModes, List<float> sdfScales)
         {
             if (vertices == null)
                 return;
@@ -748,11 +753,11 @@ namespace UnityEngine.UIElements.UIR
                     continue;
 
                 // SpriteAssets and Color Glyphs use an RGBA texture
-                if (((Texture2D)materials[i].mainTexture).format != TextureFormat.Alpha8)
+                if (atlases[i].format != TextureFormat.Alpha8)
                 {
                     // Assume a sprite asset or Color Glyph
                     MakeText(
-                        materials[i].mainTexture,
+                        atlases[i],
                         vertices[i],
                         indices[i],
                         false,
@@ -762,28 +767,20 @@ namespace UnityEngine.UIElements.UIR
                 }
                 else
                 {
-                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
-                    // GradientScale property which results in sdfScale always being 0.
-
-                    float sdfScale = 0;
-                    if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[i]))
-                        sdfScale = materials[i].GetFloat(TextShaderUtilities.ID_GradientScale);
-
-                    var sharpnessId = TextShaderUtilities.ID_Sharpness;
-                    var sharpness = materials[i].HasProperty(sharpnessId) ? materials[i].GetFloat(sharpnessId) : 0.0f;
+                    var sharpness = 0.0f;
                     // Set the dynamic-color hint on TextCore fancy-text or the EditorUIE shader applies the
                     // tint over the fragment output, affecting the outline/shadows.
                     if (sharpness == 0.0f && currentElement.panel.contextType == ContextType.Editor)
-                    {
                         sharpness = TextUtilities.textSettings.GetEditorTextSharpness();
-                    }
 
+                    // SDF scale is used to differentiate between Bitmap and SDF. The Bitmap Material doesn't have the
+                    // GradientScale property which results in sdfScale always being 0.
                     MakeText(
-                        materials[i].mainTexture,
+                        atlases[i],
                         vertices[i],
                         indices[i],
                         true,
-                        sdfScale,
+                        sdfScales[i],
                         sharpness,
                         false);
                 }
@@ -800,7 +797,7 @@ namespace UnityEngine.UIElements.UIR
             {
                 position = new Vector3(vertex.position.x + posOffset.x, vertex.position.y + posOffset.y, UIRUtility.k_MeshPosZ),
                 uv = new Vector2(vertex.uv0.x, vertex.uv0.y),
-                tint = isColorGlyph ? Color.white : vertex.color,
+                tint = isColorGlyph ? new Color32(255, 255, 255, vertex.color.a) : vertex.color,
                 // TODO: Don't set the flags here. The mesh conversion should perform these changes
                 flags = new Color32(0, (byte)(dilate * 255), 0, isDynamicColor ? (byte)UIRUtility.k_DynamicColorEnabledText : (byte)UIRUtility.k_DynamicColorDisabled)
             };

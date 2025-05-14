@@ -368,7 +368,19 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// See <see cref="Vertex.position"/> for details on geometry generation conventions. If a valid texture was passed, then the returned <see cref="MeshWriteData"/> will also describe a rectangle for the UVs to use to sample the passed texture. This is needed because textures passed to this API can be internally copied into a larger atlas.
         /// </remarks>
-        /// <returns>An object that gives access to the newely allocated data. If the returned vertex count is 0, then allocation failed (the system ran out of memory).</returns>
+        /// <remarks>
+        /// If a valid texture was passed, then the <see cref="Vertex.uv"/> values should be used to map the texture to the geometry.
+        /// </remarks>
+        /// <remarks>
+        /// You can call `MeshGenerationContext.Allocate()` multiple times for the same element or context.
+        /// To optimize performance, minimize the number of calls whenever possible.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[MeshWriteData]]
+        /// </remarks>
+        /// <example>
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/TexturedElement.cs"/>
+        /// </example>
         public MeshWriteData Allocate(int vertexCount, int indexCount, Texture texture = null)
         {
             using (k_AllocateMarker.Auto())
@@ -445,11 +457,6 @@ namespace UnityEngine.UIElements
             if (font == null)
                 font = TextUtilities.GetFontAsset(visualElement);
             meshGenerator.DrawText(text, pos, fontSize, color, font);
-        }
-
-        internal void DrawNativeText(NativeTextInfo textInfo, Vector2 pos)
-        {
-            meshGenerator.DrawNativeText(textInfo, pos);
         }
 
         /// <summary>

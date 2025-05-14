@@ -264,10 +264,10 @@ namespace UnityEditor.UIElements.Debugger
         public void SetKeyword(StyleKeyword keyword)
         {
             StyleDebug.SetInlineKeyword(m_SelectedElement.style, m_PropertyInfo.id, keyword);
-            fullUpdateParents();
+            FullUpdateParents();
         }
 
-        void fullUpdateParents()
+        void FullUpdateParents()
         {
             //Find the parent and update the list of properties.
             // This is needed when unsetting a property because the match rules need to be updated
@@ -276,7 +276,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 if (propDebug is StylesDebugger prop)
                 {
-                    prop.UpdateMatchs();
+                    prop.UpdateMatches();
                     break;
                 }
                 propDebug = propDebug.parent;
@@ -411,7 +411,7 @@ namespace UnityEditor.UIElements.Debugger
             {
                 var vector3Field = UpdateORCreateField<Vector3Field, Vector3>(scale.value);
                 vector3Field.Query<FloatField>().Children<Label>().ForEach(l => l.style.minWidth = 0);
-                
+
             }
             else if (val is Translate)
             {
@@ -702,7 +702,7 @@ namespace UnityEditor.UIElements.Debugger
                     }
                 }
             }
-            
+
             StyleDebug.SetInlineStyleValue(m_SelectedElement.style, m_PropertyInfo.id, val);
             SetSpecificity(StyleDebug.InlineSpecificity);
         }

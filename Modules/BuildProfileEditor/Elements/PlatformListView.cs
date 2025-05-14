@@ -205,8 +205,8 @@ namespace UnityEditor.Build.Profile.Elements
                     return;
                 }
             }
-
-            Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
+            // Disabled warning message. See PLAT-12653.
+            //Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
         }
 
         static List<ClassicItemData> GetPlatformListData(BuildProfileDataSource dataSource)

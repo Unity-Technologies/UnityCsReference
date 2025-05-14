@@ -8,8 +8,6 @@ namespace UnityEngine.TextCore.Text
     {
         public void LayoutPhase(TextInfo textInfo, TextGenerationSettings generationSettings, float maxVisibleDescender)
         {
-            var margins = generationSettings.margins;
-            var pageToDisplay = generationSettings.pageToDisplay;
             int lastVertIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
             // Partial clear of the vertices array to mark unused vertices as degenerate.
@@ -31,10 +29,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.TopJustified:
                 case TextAlignment.TopFlush:
                 case TextAlignment.TopGeoAligned:
-                    if (generationSettings.overflowMode != TextOverflowMode.Page)
-                        anchorOffset = corners[1] + new Vector3(0 + margins.x, 0 - m_MaxAscender - margins.y, 0);
-                    else
-                        anchorOffset = corners[1] + new Vector3(0 + margins.x, 0 - textInfo.pageInfo[pageToDisplay].ascender - margins.y, 0);
+                    anchorOffset = corners[1] + new Vector3(0 , 0 - m_MaxAscender, 0);
                     break;
 
                 // Middle Vertically
@@ -44,10 +39,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.MiddleJustified:
                 case TextAlignment.MiddleFlush:
                 case TextAlignment.MiddleGeoAligned:
-                    if (generationSettings.overflowMode != TextOverflowMode.Page)
-                        anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0 + margins.x, 0 - (m_MaxAscender + margins.y + maxVisibleDescender - margins.w) / 2, 0);
-                    else
-                        anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0 + margins.x, 0 - (textInfo.pageInfo[pageToDisplay].ascender + margins.y + textInfo.pageInfo[pageToDisplay].descender - margins.w) / 2, 0);
+                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0, 0 - (m_MaxAscender + maxVisibleDescender) / 2, 0);
                     break;
 
                 // Bottom Vertically
@@ -57,10 +49,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.BottomJustified:
                 case TextAlignment.BottomFlush:
                 case TextAlignment.BottomGeoAligned:
-                    if (generationSettings.overflowMode != TextOverflowMode.Page)
-                        anchorOffset = corners[0] + new Vector3(0 + margins.x, 0 - maxVisibleDescender + margins.w, 0);
-                    else
-                        anchorOffset = corners[0] + new Vector3(0 + margins.x, 0 - textInfo.pageInfo[pageToDisplay].descender + margins.w, 0);
+                    anchorOffset = corners[0] + new Vector3(0, 0 - maxVisibleDescender, 0);
                     break;
 
                 // Baseline Vertically
@@ -70,7 +59,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.BaselineJustified:
                 case TextAlignment.BaselineFlush:
                 case TextAlignment.BaselineGeoAligned:
-                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0 + margins.x, 0, 0);
+                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0, 0, 0);
                     break;
 
                 // Midline Vertically
@@ -80,7 +69,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.MidlineJustified:
                 case TextAlignment.MidlineFlush:
                 case TextAlignment.MidlineGeoAligned:
-                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0 + margins.x, 0 - (m_MeshExtents.max.y + margins.y + m_MeshExtents.min.y - margins.w) / 2, 0);
+                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0, 0 - (m_MeshExtents.max.y + m_MeshExtents.min.y) / 2, 0);
                     break;
 
                 // Capline Vertically
@@ -90,7 +79,7 @@ namespace UnityEngine.TextCore.Text
                 case TextAlignment.CaplineJustified:
                 case TextAlignment.CaplineFlush:
                 case TextAlignment.CaplineGeoAligned:
-                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0 + margins.x, 0 - (m_MaxCapHeight - margins.y - margins.w) / 2, 0);
+                    anchorOffset = (corners[0] + corners[1]) / 2 + new Vector3(0, 0 - (m_MaxCapHeight) / 2, 0);
                     break;
             }
             #endregion
@@ -119,7 +108,6 @@ namespace UnityEngine.TextCore.Text
             float underlineEndScale = 0;
             float underlineMaxScale = 0;
             float underlineBaseLine = TextGeneratorUtilities.largePositiveFloat;
-            int lastPage = 0;
 
             float strikethroughPointSize = 0;
             float strikethroughScale = 0;
@@ -225,7 +213,7 @@ namespace UnityEngine.TextCore.Text
                         if (char.IsControl(lastCharOfCurrentLine) == false && currentLine < m_LineNumber || isFlush || lineInfo.maxAdvance > lineInfo.width)
                         {
                             // First character of each line.
-                            if (currentLine != lastLine || i == 0 || i == generationSettings.firstVisibleCharacter)
+                            if (currentLine != lastLine || i == 0 || i == TextGenerationSettings.firstVisibleCharacter)
                             {
                                 if (!generationSettings.isRightToLeft)
                                     justificationOffset = new Vector3(lineInfo.marginLeft, 0, 0);
@@ -245,7 +233,7 @@ namespace UnityEngine.TextCore.Text
 
                                 if (isFirstSeperator) { spaces -= 1; visibleCount += 1; }
 
-                                float ratio = spaces > 0 ? generationSettings.wordWrappingRatio : 1;
+                                float ratio = spaces > 0 ? TextGenerationSettings.wordWrappingRatio : 1;
 
                                 if (spaces < 1) spaces = 1;
 
@@ -293,118 +281,22 @@ namespace UnityEngine.TextCore.Text
                         // CHARACTERS
                         case TextElementType.Character:
                             Extents lineExtents = lineInfo.lineExtents;
-                            float uvOffset = (generationSettings.uvLineOffset * currentLine) % 1; // + m_uvOffset.x;
 
                             // Setup UV2 based on Character Mapping Options Selected
 
                             #region Handle UV Mapping Options
 
-                            switch (generationSettings.horizontalMapping)
-                            {
-                                case TextureMapping.Character:
-                                    textElementInfos[i].vertexBottomLeft.uv2.x = 0; //+ m_uvOffset.x;
-                                    textElementInfos[i].vertexTopLeft.uv2.x = 0; //+ m_uvOffset.x;
-                                    textElementInfos[i].vertexTopRight.uv2.x = 1; //+ m_uvOffset.x;
-                                    textElementInfos[i].vertexBottomRight.uv2.x = 1; //+ m_uvOffset.x;
-                                    break;
 
-                                case TextureMapping.Line:
-                                    if (generationSettings.textAlignment != TextAlignment.MiddleJustified)
-                                    {
-                                        textElementInfos[i].vertexBottomLeft.uv2.x = (textElementInfos[i].vertexBottomLeft.position.x - lineExtents.min.x) / (lineExtents.max.x - lineExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexTopLeft.uv2.x = (textElementInfos[i].vertexTopLeft.position.x - lineExtents.min.x) / (lineExtents.max.x - lineExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexTopRight.uv2.x = (textElementInfos[i].vertexTopRight.position.x - lineExtents.min.x) / (lineExtents.max.x - lineExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexBottomRight.uv2.x = (textElementInfos[i].vertexBottomRight.position.x - lineExtents.min.x) / (lineExtents.max.x - lineExtents.min.x) + uvOffset;
-                                        break;
-                                    }
-                                    else // Special Case if Justified is used in Line Mode.
-                                    {
-                                        textElementInfos[i].vertexBottomLeft.uv2.x = (textElementInfos[i].vertexBottomLeft.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexTopLeft.uv2.x = (textElementInfos[i].vertexTopLeft.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexTopRight.uv2.x = (textElementInfos[i].vertexTopRight.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                        textElementInfos[i].vertexBottomRight.uv2.x = (textElementInfos[i].vertexBottomRight.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                        break;
-                                    }
+                            textElementInfos[i].vertexBottomLeft.uv2.x = 0;
+                            textElementInfos[i].vertexTopLeft.uv2.x = 0;
+                            textElementInfos[i].vertexTopRight.uv2.x = 1;
+                            textElementInfos[i].vertexBottomRight.uv2.x = 1;
 
-                                case TextureMapping.Paragraph:
-                                    textElementInfos[i].vertexBottomLeft.uv2.x = (textElementInfos[i].vertexBottomLeft.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                    textElementInfos[i].vertexTopLeft.uv2.x = (textElementInfos[i].vertexTopLeft.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                    textElementInfos[i].vertexTopRight.uv2.x = (textElementInfos[i].vertexTopRight.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                    textElementInfos[i].vertexBottomRight.uv2.x = (textElementInfos[i].vertexBottomRight.position.x + justificationOffset.x - m_MeshExtents.min.x) / (m_MeshExtents.max.x - m_MeshExtents.min.x) + uvOffset;
-                                    break;
+                            textElementInfos[i].vertexBottomLeft.uv2.y = 0;
+                            textElementInfos[i].vertexTopLeft.uv2.y = 1;
+                            textElementInfos[i].vertexTopRight.uv2.y = 1;
+                            textElementInfos[i].vertexBottomRight.uv2.y = 0;
 
-                                case TextureMapping.MatchAspect:
-
-                                    switch (generationSettings.verticalMapping)
-                                    {
-                                        case TextureMapping.Character:
-                                            textElementInfos[i].vertexBottomLeft.uv2.y = 0; // + m_uvOffset.y;
-                                            textElementInfos[i].vertexTopLeft.uv2.y = 1; // + m_uvOffset.y;
-                                            textElementInfos[i].vertexTopRight.uv2.y = 0; // + m_uvOffset.y;
-                                            textElementInfos[i].vertexBottomRight.uv2.y = 1; // + m_uvOffset.y;
-                                            break;
-
-                                        case TextureMapping.Line:
-                                            textElementInfos[i].vertexBottomLeft.uv2.y = (textElementInfos[i].vertexBottomLeft.position.y - lineExtents.min.y) / (lineExtents.max.y - lineExtents.min.y) + uvOffset;
-                                            textElementInfos[i].vertexTopLeft.uv2.y = (textElementInfos[i].vertexTopLeft.position.y - lineExtents.min.y) / (lineExtents.max.y - lineExtents.min.y) + uvOffset;
-                                            textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexBottomLeft.uv2.y;
-                                            textElementInfos[i].vertexBottomRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
-                                            break;
-
-                                        case TextureMapping.Paragraph:
-                                            textElementInfos[i].vertexBottomLeft.uv2.y = (textElementInfos[i].vertexBottomLeft.position.y - m_MeshExtents.min.y) / (m_MeshExtents.max.y - m_MeshExtents.min.y) + uvOffset;
-                                            textElementInfos[i].vertexTopLeft.uv2.y = (textElementInfos[i].vertexTopLeft.position.y - m_MeshExtents.min.y) / (m_MeshExtents.max.y - m_MeshExtents.min.y) + uvOffset;
-                                            textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexBottomLeft.uv2.y;
-                                            textElementInfos[i].vertexBottomRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
-                                            break;
-
-                                        case TextureMapping.MatchAspect:
-                                            Debug.Log("ERROR: Cannot Match both Vertical & Horizontal.");
-                                            break;
-                                    }
-
-                                    //float xDelta = 1 - (_uv2s[vert_index + 0].y * textMeshCharacterInfo[i].AspectRatio); // Left aligned
-                                    float xDelta = (1 - ((textElementInfos[i].vertexBottomLeft.uv2.y + textElementInfos[i].vertexTopLeft.uv2.y) * textElementInfos[i].aspectRatio)) / 2; // Center of Rectangle
-
-                                    textElementInfos[i].vertexBottomLeft.uv2.x = (textElementInfos[i].vertexBottomLeft.uv2.y * textElementInfos[i].aspectRatio) + xDelta + uvOffset;
-                                    textElementInfos[i].vertexTopLeft.uv2.x = textElementInfos[i].vertexBottomLeft.uv2.x;
-                                    textElementInfos[i].vertexTopRight.uv2.x = (textElementInfos[i].vertexTopLeft.uv2.y * textElementInfos[i].aspectRatio) + xDelta + uvOffset;
-                                    textElementInfos[i].vertexBottomRight.uv2.x = textElementInfos[i].vertexTopRight.uv2.x;
-                                    break;
-                            }
-
-                            switch (generationSettings.verticalMapping)
-                            {
-                                case TextureMapping.Character:
-                                    textElementInfos[i].vertexBottomLeft.uv2.y = 0; // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopLeft.uv2.y = 1; // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopRight.uv2.y = 1; // + m_uvOffset.y;
-                                    textElementInfos[i].vertexBottomRight.uv2.y = 0; // + m_uvOffset.y;
-                                    break;
-
-                                case TextureMapping.Line:
-                                    textElementInfos[i].vertexBottomLeft.uv2.y = (textElementInfos[i].vertexBottomLeft.position.y - lineInfo.descender) / (lineInfo.ascender - lineInfo.descender); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopLeft.uv2.y = (textElementInfos[i].vertexTopLeft.position.y - lineInfo.descender) / (lineInfo.ascender - lineInfo.descender); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
-                                    textElementInfos[i].vertexBottomRight.uv2.y = textElementInfos[i].vertexBottomLeft.uv2.y;
-                                    break;
-
-                                case TextureMapping.Paragraph:
-                                    textElementInfos[i].vertexBottomLeft.uv2.y = (textElementInfos[i].vertexBottomLeft.position.y - m_MeshExtents.min.y) / (m_MeshExtents.max.y - m_MeshExtents.min.y); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopLeft.uv2.y = (textElementInfos[i].vertexTopLeft.position.y - m_MeshExtents.min.y) / (m_MeshExtents.max.y - m_MeshExtents.min.y); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
-                                    textElementInfos[i].vertexBottomRight.uv2.y = textElementInfos[i].vertexBottomLeft.uv2.y;
-                                    break;
-
-                                case TextureMapping.MatchAspect:
-                                    float yDelta = (1 - ((textElementInfos[i].vertexBottomLeft.uv2.x + textElementInfos[i].vertexTopRight.uv2.x) / textElementInfos[i].aspectRatio)) / 2; // Center of Rectangle
-
-                                    textElementInfos[i].vertexBottomLeft.uv2.y = yDelta + (textElementInfos[i].vertexBottomLeft.uv2.x / textElementInfos[i].aspectRatio); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexTopLeft.uv2.y = yDelta + (textElementInfos[i].vertexTopRight.uv2.x / textElementInfos[i].aspectRatio); // + m_uvOffset.y;
-                                    textElementInfos[i].vertexBottomRight.uv2.y = textElementInfos[i].vertexBottomLeft.uv2.y;
-                                    textElementInfos[i].vertexTopRight.uv2.y = textElementInfos[i].vertexTopLeft.uv2.y;
-                                    break;
-                            }
 
                             #endregion
 
@@ -444,14 +336,7 @@ namespace UnityEngine.TextCore.Text
                     // Handle maxVisibleCharacters, maxVisibleLines and Overflow Page Mode.
                     #region Handle maxVisibleCharacters / maxVisibleLines / Page Mode
 
-                    if (i < generationSettings.maxVisibleCharacters && wordCount < generationSettings.maxVisibleWords && currentLine < generationSettings.maxVisibleLines && generationSettings.overflowMode != TextOverflowMode.Page)
-                    {
-                        textElementInfos[i].vertexBottomLeft.position += offset;
-                        textElementInfos[i].vertexTopLeft.position += offset;
-                        textElementInfos[i].vertexTopRight.position += offset;
-                        textElementInfos[i].vertexBottomRight.position += offset;
-                    }
-                    else if (i < generationSettings.maxVisibleCharacters && wordCount < generationSettings.maxVisibleWords && currentLine < generationSettings.maxVisibleLines && generationSettings.overflowMode == TextOverflowMode.Page && textElementInfos[i].pageNumber == pageToDisplay)
+                    if (i < TextGenerationSettings.maxVisibleCharacters && wordCount < TextGenerationSettings.maxVisibleWords && currentLine < TextGenerationSettings.maxVisibleLines)
                     {
                         textElementInfos[i].vertexBottomLeft.position += offset;
                         textElementInfos[i].vertexTopLeft.position += offset;
@@ -468,16 +353,15 @@ namespace UnityEngine.TextCore.Text
                     }
                     #endregion
 
-                    bool convertToLinearSpace = generationSettings.shouldConvertToLinearSpace;
 
                     // Fill Vertex Buffers for the various types of element
                     if (elementType == TextElementType.Character)
                     {
-                        TextGeneratorUtilities.FillCharacterVertexBuffers(i, convertToLinearSpace, generationSettings, textInfo);
+                        TextGeneratorUtilities.FillCharacterVertexBuffers(i, generationSettings.shouldConvertToLinearSpace, generationSettings, textInfo);
                     }
                     else if (elementType == TextElementType.Sprite)
                     {
-                        TextGeneratorUtilities.FillSpriteVertexBuffers(i, convertToLinearSpace, generationSettings, textInfo);
+                        TextGeneratorUtilities.FillSpriteVertexBuffers(i, generationSettings.shouldConvertToLinearSpace, generationSettings, textInfo);
                     }
                 }
                 #endregion
@@ -606,10 +490,9 @@ namespace UnityEngine.TextCore.Text
                 if (isUnderline)
                 {
                     bool isUnderlineVisible = true;
-                    int currentPage = textInfo.textElementInfo[i].pageNumber;
                     textInfo.textElementInfo[i].underlineVertexIndex = lastVertIndex;
 
-                    if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && currentPage + 1 != generationSettings.pageToDisplay))
+                    if (i > TextGenerationSettings.maxVisibleCharacters || currentLine > TextGenerationSettings.maxVisibleLines)
                         isUnderlineVisible = false;
 
                     // We only use the scale of visible characters.
@@ -617,8 +500,7 @@ namespace UnityEngine.TextCore.Text
                     {
                         underlineMaxScale = Mathf.Max(underlineMaxScale, textInfo.textElementInfo[i].scale);
                         xScaleMax = Mathf.Max(xScaleMax, Mathf.Abs(xScale));
-                        underlineBaseLine = Mathf.Min(currentPage == lastPage ? underlineBaseLine : TextGeneratorUtilities.largePositiveFloat, textInfo.textElementInfo[i].baseLine + currentFontAsset.faceInfo.underlineOffset * underlineMaxScale);
-                        lastPage = currentPage; // Need to track pages to ensure we reset baseline for the new pages.
+                        underlineBaseLine = Mathf.Min( underlineBaseLine, textInfo.textElementInfo[i].baseLine + currentFontAsset.faceInfo.underlineOffset * underlineMaxScale);
                     }
 
                     if (beginUnderline == false && isUnderlineVisible == true && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
@@ -727,7 +609,7 @@ namespace UnityEngine.TextCore.Text
                     bool isStrikeThroughVisible = true;
                     textInfo.textElementInfo[i].strikethroughVertexIndex = m_MaterialReferences[m_Underline.materialIndex].referenceCount * 4;
 
-                    if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && textInfo.textElementInfo[i].pageNumber + 1 != generationSettings.pageToDisplay))
+                    if (i > TextGenerationSettings.maxVisibleCharacters || currentLine > TextGenerationSettings.maxVisibleLines)
                         isStrikeThroughVisible = false;
 
                     if (beginStrikethrough == false && isStrikeThroughVisible && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
@@ -819,9 +701,8 @@ namespace UnityEngine.TextCore.Text
                 if (isHighlight)
                 {
                     bool isHighlightVisible = true;
-                    int currentPage = textInfo.textElementInfo[i].pageNumber;
 
-                    if (i > generationSettings.maxVisibleCharacters || currentLine > generationSettings.maxVisibleLines || (generationSettings.overflowMode == TextOverflowMode.Page && currentPage + 1 != generationSettings.pageToDisplay))
+                    if (i > TextGenerationSettings.maxVisibleCharacters || currentLine > TextGenerationSettings.maxVisibleLines)
                         isHighlightVisible = false;
 
                     if (beginHighlight == false && isHighlightVisible == true && i <= lineInfo.lastVisibleCharacterIndex && unicode != 10 && unicode != 11 && unicode != 13)
@@ -930,7 +811,6 @@ namespace UnityEngine.TextCore.Text
             textInfo.spriteCount = m_SpriteCount;
             textInfo.lineCount = lineCount;
             textInfo.wordCount = wordCount != 0 && m_CharacterCount > 0 ? wordCount : 1;
-            textInfo.pageCount = m_PageNumber + 1;
         }
     }
 }

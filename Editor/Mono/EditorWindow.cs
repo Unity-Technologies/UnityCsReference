@@ -120,6 +120,9 @@ namespace UnityEditor
             }
         }
 
+        // This list contains all the editor windows that are already enabled/active/alive.
+        // It is important to check if your window is contained in this list before doing anything,
+        // such like UI build/rebuild.
         internal static List<EditorWindow> activeEditorWindows { get; } = new List<EditorWindow>();
 
         internal void SaveViewData()
@@ -1258,7 +1261,7 @@ namespace UnityEditor
                     if (!da)
                     {
                         if(m_Parent.window.showMode == ShowMode.Tooltip || m_Parent.window.showMode == ShowMode.PopupMenu)
-                            m_Parent.window.position = m_Parent.window.FitWindowRectToScreen(value, true, false);
+                            m_Parent.window.position = ContainerWindow.FitRectToScreen(value, value.center, true, m_Parent.window);
                         else
                             m_Parent.window.position = value;
                         m_Parent.window.OnResize();

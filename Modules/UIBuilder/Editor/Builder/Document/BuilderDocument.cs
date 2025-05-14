@@ -8,6 +8,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using System;
 using System.IO;
+using UnityEditor.UIElements.StyleSheets;
+using UnityEngine.Serialization;
+using Object = UnityEngine.Object;
 
 namespace Unity.UI.Builder
 {
@@ -25,6 +28,17 @@ namespace Unity.UI.Builder
             Runtime, // obsolete but leave it for compatibility
             Custom
         }
+
+        [Serializable]
+        public struct UxmlURIToThemeStyleSheetURIEntry
+        {
+            public string UxmlURI;
+            public string ThemeStyleSheetURI;
+            public CanvasTheme CanvasTheme;
+        }
+
+        [SerializeField]
+        List<UxmlURIToThemeStyleSheetURIEntry> m_SavedBuilderUxmlToThemeStyleSheetList = new List<UxmlURIToThemeStyleSheetURIEntry>();
 
         //
         // Serialized Data
@@ -137,8 +151,12 @@ namespace Unity.UI.Builder
         public CanvasTheme currentCanvasTheme => m_CurrentCanvasTheme;
         public ThemeStyleSheet currentCanvasThemeStyleSheet => m_CurrentCanvasThemeStyleSheetReference.asset;
 
-        public void ChangeDocumentTheme(VisualElement documentElement, CanvasTheme canvasTheme, ThemeStyleSheet themeSheet)
+        private ThemeStyleSheetManager m_ThemeManager;
+
+        public void ChangeDocumentTheme(VisualElement documentElement, CanvasTheme canvasTheme, ThemeStyleSheet themeSheet, ThemeStyleSheetManager themeStyleSheetManager, bool isInit = false)
         {
+            if (themeStyleSheetManager != null && m_ThemeManager != themeStyleSheetManager)
+                m_ThemeManager = themeStyleSheetManager;
             m_CurrentCanvasTheme = canvasTheme;
             m_CurrentCanvasThemeStyleSheetReference = themeSheet;
 
@@ -146,6 +164,45 @@ namespace Unity.UI.Builder
             {
                 themeSheet.isDefaultStyleSheet = true;
             }
+
+            // Only replace the entry on Load, not on Builder Init
+            if (!string.IsNullOrEmpty(activeOpenUXMLFile.uxmlPath) && !isInit)
+            {
+                var existingEntry =
+                    m_SavedBuilderUxmlToThemeStyleSheetList.Find(entry =>
+                    {
+                        var assetPath = Path.GetFileNameWithoutExtension(entry.UxmlURI);
+                        var response = URIHelpers.ValidateAssetURL(assetPath, entry.UxmlURI);
+                        if (response.resolvedQueryAsset is VisualTreeAsset vta)
+                        {
+                            return vta == activeOpenUXMLFile.visualTreeAsset;
+                        }
+
+                        return false;
+                    });
+
+                if (!string.IsNullOrEmpty(existingEntry.UxmlURI))
+                {
+                    m_SavedBuilderUxmlToThemeStyleSheetList.Remove(existingEntry);
+                }
+
+                var newEntry = new UxmlURIToThemeStyleSheetURIEntry
+                {
+                    UxmlURI = URIHelpers.MakeAssetUri(activeOpenUXMLFile.visualTreeAsset),
+                    ThemeStyleSheetURI = URIHelpers.MakeAssetUri(themeSheet),
+                    CanvasTheme = m_CurrentCanvasTheme
+                };
+
+                // Do not save entry if it is using the default theme
+                var projectDefaultTssAsset = m_ThemeManager.FindProjectDefaultRuntimeThemeAsset();
+
+                // If we find a Default Runtime Theme in the project, use that as the default theme
+                // Otherwise we use the built-in Default Runtime Theme
+                var defaultTssAsset = projectDefaultTssAsset == null ? m_ThemeManager.builtInDefaultRuntimeTheme : projectDefaultTssAsset;
+                if (themeSheet != defaultTssAsset)
+                    m_SavedBuilderUxmlToThemeStyleSheetList.Add(newEntry);
+            }
+
             RefreshStyle(documentElement);
         }
 
@@ -298,10 +355,55 @@ namespace Unity.UI.Builder
         internal bool SaveNewTemplateFileFromHierarchy(string newTemplatePath, string uxml)
             => activeOpenUXMLFile.SaveNewTemplateFileFromHierarchy(newTemplatePath, uxml);
 
-        public void LoadDocument(VisualTreeAsset visualTreeAsset, VisualElement documentElement)
+        public void LoadDocument(VisualTreeAsset visualTreeAsset, VisualElement documentElement, ThemeStyleSheetManager themeStyleSheetManager)
         {
             activeOpenUXMLFile.LoadDocument(visualTreeAsset, documentElement);
+            if (themeStyleSheetManager != null && m_ThemeManager != themeStyleSheetManager)
+                m_ThemeManager = themeStyleSheetManager;
+            ForceUpdateDocumentTheme();
             SaveToDisk();
+        }
+
+        private void ForceUpdateDocumentTheme()
+        {
+            if (m_ThemeManager == null)
+                return;
+
+            // Find the entry. If it exists and is custom, use it to set the theme. Otherwise, use the editor themes or the default runtime theme.
+            var forceToRuntimeTheme = false;
+            var existingEntry =
+                m_SavedBuilderUxmlToThemeStyleSheetList.Find(entry =>
+                {
+                    var assetPath = Path.GetFileNameWithoutExtension(entry.UxmlURI);
+                    var response = URIHelpers.ValidateAssetURL(assetPath, entry.UxmlURI);
+                    if (response.resolvedQueryAsset is VisualTreeAsset vta)
+                    {
+                        return vta == activeOpenUXMLFile.visualTreeAsset;
+                    }
+
+                    return false;
+                });
+            if (!string.IsNullOrEmpty(existingEntry.UxmlURI) && existingEntry.CanvasTheme == CanvasTheme.Custom)
+            {
+                m_CurrentCanvasTheme = existingEntry.CanvasTheme;
+                var themeSheetAssetPath = Path.GetFileNameWithoutExtension(existingEntry.ThemeStyleSheetURI);
+                var response = URIHelpers.ValidateAssetURL(themeSheetAssetPath, existingEntry.ThemeStyleSheetURI);
+                if (response.resolvedQueryAsset is ThemeStyleSheet themeStyleSheet)
+                    m_CurrentCanvasThemeStyleSheetReference =
+                        themeStyleSheet;
+                else
+                    forceToRuntimeTheme = true;
+            }
+            else if (existingEntry.CanvasTheme == CanvasTheme.Custom)
+                forceToRuntimeTheme = true;
+
+            if (!forceToRuntimeTheme)
+                return;
+
+            m_CurrentCanvasTheme = CanvasTheme.Custom;
+            var projectDefaultTssAsset = m_ThemeManager.FindProjectDefaultRuntimeThemeAsset();
+            var defaultTssAsset = projectDefaultTssAsset == null ? m_ThemeManager.builtInDefaultRuntimeTheme : projectDefaultTssAsset;
+            m_CurrentCanvasThemeStyleSheetReference = defaultTssAsset;
         }
 
         //
@@ -452,6 +554,18 @@ namespace Unity.UI.Builder
 
         public void SaveToDisk()
         {
+            // Before saving, clear entries with deleted UXMLs from ThemeStyleSheetList
+            var BuilderUxmlToThemeStyleSheetListCopy = new List<UxmlURIToThemeStyleSheetURIEntry>(m_SavedBuilderUxmlToThemeStyleSheetList);
+            foreach (var entry in BuilderUxmlToThemeStyleSheetListCopy)
+            {
+                var assetPath = Path.GetFileNameWithoutExtension(entry.UxmlURI);
+                var response = URIHelpers.ValidateAssetURL(assetPath, entry.UxmlURI);
+                if (response.resolvedQueryAsset is not VisualTreeAsset)
+                {
+                    m_SavedBuilderUxmlToThemeStyleSheetList.Remove(entry);
+                }
+            }
+
             var json = EditorJsonUtility.ToJson(this, true);
 
             var folderPath = BuilderConstants.builderDocumentDiskJsonFolderAbsolutePath;

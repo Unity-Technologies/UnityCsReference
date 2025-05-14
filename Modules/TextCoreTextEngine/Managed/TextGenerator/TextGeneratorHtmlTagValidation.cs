@@ -383,7 +383,7 @@ namespace UnityEngine.TextCore.Text
                                     if (paramCount != 4) return false;
 
                                     highlightPadding = new Offset(m_AttributeParameterValues[0], m_AttributeParameterValues[1], m_AttributeParameterValues[2], m_AttributeParameterValues[3]);
-                                    highlightPadding *= m_FontSize * 0.01f * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                    highlightPadding *= m_FontSize * 0.01f ;
                                     break;
                             }
                         }
@@ -409,7 +409,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SUBSCRIPT:
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.subscriptSize > 0 ? m_CurrentFontAsset.faceInfo.subscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
-                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.subscriptOffset * fontScale * m_FontScaleMultiplier;
 
                         m_FontStyleStack.Add(FontStyles.Subscript);
@@ -431,7 +431,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.SUPERSCRIPT:
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.superscriptSize > 0 ? m_CurrentFontAsset.faceInfo.superscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
-                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.superscriptOffset * fontScale * m_FontScaleMultiplier;
 
                         m_FontStyleStack.Add(FontStyles.Superscript);
@@ -508,11 +508,11 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_XAdvance = value * (generationSettings.isOrthographic ? 1.0f : 0.1f);
+                                m_XAdvance = value;
                                 //m_isIgnoringAlignment = true;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_XAdvance = value * m_CurrentFontSize * (generationSettings.isOrthographic ? 1.0f : 0.1f);
+                                m_XAdvance = value * m_CurrentFontSize;
                                 //m_isIgnoringAlignment = true;
                                 return true;
                             case TagUnitType.Percentage:
@@ -533,10 +533,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_BaselineOffset = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_BaselineOffset = value ;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_BaselineOffset = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_BaselineOffset = value  * m_CurrentFontSize;
                                 return true;
                             case TagUnitType.Percentage:
                                 //m_BaselineOffset = m_MarginHeight * val / 100;
@@ -547,14 +547,8 @@ namespace UnityEngine.TextCore.Text
                         m_BaselineOffset = 0;
                         return true;
                     case MarkupTag.PAGE:
-                        // This tag only works when Overflow - Page mode is used.
-                        if (generationSettings.overflowMode == TextOverflowMode.Page)
-                        {
-                            m_XAdvance = 0 + m_TagLineIndent + m_TagIndent;
-                            m_LineOffset = 0;
-                            m_PageNumber += 1;
-                            m_IsNewPage = true;
-                        }
+                        // This tag only works when Overflow - Page mode is used
+                        // TODO Remove page tag parsing
                         return true;
                     case MarkupTag.NO_BREAK:
                         m_IsNonBreakingSpace = true;
@@ -783,10 +777,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_XAdvance += value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_XAdvance += value ;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_XAdvance += value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_XAdvance += value * m_CurrentFontSize;
                                 return true;
                             case TagUnitType.Percentage:
                                 // Not applicable
@@ -924,7 +918,7 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_Width = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_Width = value ;
                                 break;
                             case TagUnitType.FontUnits:
                                 return false;
@@ -1159,10 +1153,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_CSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_CSpacing = value ;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_CSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_CSpacing = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 return false;
@@ -1188,10 +1182,10 @@ namespace UnityEngine.TextCore.Text
                         switch (m_XmlAttribute[0].unitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MonoSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MonoSpacing = value;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MonoSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MonoSpacing = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 return false;
@@ -1220,10 +1214,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_TagIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_TagIndent = value;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_TagIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_TagIndent = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_TagIndent = m_MarginWidth * value / 100;
@@ -1246,10 +1240,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_TagLineIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_TagLineIndent = value;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_TagLineIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_TagLineIndent = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_TagLineIndent = m_MarginWidth * value / 100;
@@ -1270,11 +1264,7 @@ namespace UnityEngine.TextCore.Text
                         if (m_XmlAttribute[0].valueType == TagValueType.None || m_XmlAttribute[0].valueType == TagValueType.NumericalValue)
                         {
                             // No Sprite Asset is assigned to the text object
-                            if (generationSettings.spriteAsset != null)
-                            {
-                                m_CurrentSpriteAsset = generationSettings.spriteAsset;
-                            }
-                            else if (textSettings.defaultSpriteAsset != null)
+                            if (textSettings.defaultSpriteAsset != null)
                             {
                                 m_CurrentSpriteAsset = textSettings.defaultSpriteAsset;
                             }
@@ -1454,10 +1444,10 @@ namespace UnityEngine.TextCore.Text
                                 switch (tagUnitType)
                                 {
                                     case TagUnitType.Pixels:
-                                        m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                        m_MarginLeft = value;
                                         break;
                                     case TagUnitType.FontUnits:
-                                        m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                        m_MarginLeft = value * m_CurrentFontSize;
                                         break;
                                     case TagUnitType.Percentage:
                                         m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1484,10 +1474,10 @@ namespace UnityEngine.TextCore.Text
                                             switch (m_XmlAttribute[i].unitType)
                                             {
                                                 case TagUnitType.Pixels:
-                                                    m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                                    m_MarginLeft = value;
                                                     break;
                                                 case TagUnitType.FontUnits:
-                                                    m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                                    m_MarginLeft = value * m_CurrentFontSize;
                                                     break;
                                                 case TagUnitType.Percentage:
                                                     m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1505,10 +1495,10 @@ namespace UnityEngine.TextCore.Text
                                             switch (m_XmlAttribute[i].unitType)
                                             {
                                                 case TagUnitType.Pixels:
-                                                    m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                                    m_MarginRight = value ;
                                                     break;
                                                 case TagUnitType.FontUnits:
-                                                    m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                                    m_MarginRight = value * m_CurrentFontSize;
                                                     break;
                                                 case TagUnitType.Percentage:
                                                     m_MarginRight = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1535,10 +1525,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MarginLeft = value;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MarginLeft = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1555,10 +1545,10 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MarginRight = value ;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MarginRight = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_MarginRight = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1575,13 +1565,13 @@ namespace UnityEngine.TextCore.Text
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_LineHeight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_LineHeight = value ;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_LineHeight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_LineHeight = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
-                                fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                                fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                                 m_LineHeight = generationSettings.fontAsset.faceInfo.lineHeight * value / 100 * fontScale;
                                 break;
                         }

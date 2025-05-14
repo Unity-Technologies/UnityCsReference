@@ -13,25 +13,26 @@ namespace UnityEngine.UIElements
 {
     internal partial class UITKTextHandle
     {
-        ATGTextEventHandler m_ATGTextEventHandler;
+        internal ATGTextEventHandler m_ATGTextEventHandler;
         // int LinkID: The identifier for the link.
         // TagType: Specifies the type of tag (either Hyperlink or Link).
         // string Attribute: For Hyperlink, this is the 'href' attribute; for Link, it's the associated attribute.
         List<(int, TagType, string)> m_Links;//Not clearing links would result in a leak of strings and enum, but no class, so no consideration for clearing the list at the moment
         private List<(int, TagType, string)> Links => m_Links ??= new();
+        internal Color atgHyperlinkColor = Color.blue;
 
         public void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
         {
             if (!ConvertUssToNativeTextGenerationSettings())
                 return;
+
             nativeSettings.text = textToMeasure.CreateString();
             nativeSettings.screenWidth = float.IsNaN(width) ? Int32.MaxValue : (int)(width * 64.0f);
             nativeSettings.screenHeight = float.IsNaN(height) ? Int32.MaxValue : (int)(height * 64.0f);
 
             if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
             {
-                Color hyperlinkColor =  (m_TextElement.panel as Panel)?.HyperlinkColor ?? Color.blue;
-                RichTextTagParser.CreateTextGenerationSettingsArray(ref nativeSettings, Links, hyperlinkColor);
+                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor);
             }
             else
                 nativeSettings.textSpans = null;
@@ -39,23 +40,17 @@ namespace UnityEngine.UIElements
             // Passing a zero pointer instead of the cached textGenerationInfo because it is possible that calling the measure will not
             // change the size, there will therefore be no full layout of the glyph and the textGenerationInfo will not have the final
             // glyph position populated and it breaks TextLib.FindIntersectingLink
-            preferredSize = TextLib.MeasureText(nativeSettings, IntPtr.Zero);
+            preferredSize = textLib.MeasureText(nativeSettings, IntPtr.Zero);
         }
 
-        public NativeTextInfo UpdateNative(ref bool success)
+        public (NativeTextInfo, bool) UpdateNative(bool generateNativeSettings = true)
         {
-            if (!ConvertUssToNativeTextGenerationSettings())
-            {
-                success = false;
-                return default;
-            }
-
-            success = true;
+            if (generateNativeSettings && !ConvertUssToNativeTextGenerationSettings())
+                return (default, false);
 
             if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
             {
-                Color hyperlinkColor = (m_TextElement.panel as Panel)?.HyperlinkColor ?? Color.blue;
-                RichTextTagParser.CreateTextGenerationSettingsArray(ref nativeSettings, Links, hyperlinkColor);
+                CreateTextGenerationSettingsArray(ref nativeSettings, Links, atgHyperlinkColor);
             }
             else
                 nativeSettings.textSpans = null;
@@ -65,10 +60,13 @@ namespace UnityEngine.UIElements
                 textGenerationInfo = TextGenerationInfo.Create();
                 m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
             }
-            var textInfo = TextLib.GenerateText(nativeSettings, textGenerationInfo);
-            UpdateATGTextEventHandler(nativeSettings);
+            var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo);
+            return (textInfo, true);
+        }
 
-            return textInfo;
+        public void ProcessMeshInfos(NativeTextInfo textInfo)
+        {
+            textLib.ProcessMeshInfos(textInfo, nativeSettings);
         }
 
         private (bool, bool) hasLinkAndHyperlink()
@@ -109,29 +107,22 @@ namespace UnityEngine.UIElements
             return (m_Links[id].Item2,   m_Links[id].Item3);
         }
 
-        private void UpdateATGTextEventHandler(NativeTextGenerationSettings setting)
+        // Needs to be called on the main thread
+        internal void UpdateATGTextEventHandler()
         {
             if (m_ATGTextEventHandler == null)
                 return;
 
             var (hasLink, hasHyperlink) = hasLinkAndHyperlink();
             if (hasLink)
-            {
                 m_ATGTextEventHandler.RegisterLinkTagCallbacks();
-            }
             else
-            {
                 m_ATGTextEventHandler.UnRegisterLinkTagCallbacks();
-            }
 
             if (hasHyperlink)
-            {
                 m_ATGTextEventHandler.RegisterHyperlinkCallbacks();
-            }
             else
-            {
                 m_ATGTextEventHandler.UnRegisterHyperlinkCallbacks();
-            }
         }
 
         internal bool ConvertUssToNativeTextGenerationSettings()
@@ -139,10 +130,11 @@ namespace UnityEngine.UIElements
             var fa = TextUtilities.GetFontAsset(m_TextElement);
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
             {
-                Debug.LogError($"Advanced text system cannot render using static font asset {fa.name}");
+                Debug.LogError($"Advanced text system cannot render using static font asset {fa.faceInfo.familyName}");
                 return false;
             }
             var style = m_TextElement.computedStyle;
+            nativeSettings.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement).nativeTextSettings;
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
@@ -159,54 +151,6 @@ namespace UnityEngine.UIElements
             nativeSettings.fontAsset = fa.nativeFontAsset;
             nativeSettings.languageDirection = m_TextElement.localLanguageDirection.toTextCore();
             nativeSettings.vertexPadding = (int)(GetVertexPadding(fa) * 64.0f);
-
-            var textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
-            List<IntPtr> globalFontAssetFallbacks = new List<IntPtr>();
-            if (textSettings != null && textSettings.fallbackFontAssets != null)
-            {
-                foreach (var fallback in textSettings.fallbackFontAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
-                    {
-                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
-                        continue;
-                    }
-                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
-                }
-            }
-
-            if (textSettings != null && textSettings.fallbackOSFontAssets != null)
-            {
-                foreach (var fallback in textSettings.fallbackOSFontAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
-                    {
-                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
-                        continue;
-                    }
-                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
-                }
-            }
-
-            if (textSettings != null && textSettings.emojiFallbackTextAssets != null)
-            {
-                foreach (FontAsset fallback in textSettings.emojiFallbackTextAssets)
-                {
-                    if (fallback == null)
-                        continue;
-                    if (fallback.atlasPopulationMode == AtlasPopulationMode.Static && fallback.characterTable.Count > 0)
-                    {
-                        Debug.LogWarning($"Advanced text system cannot use static font asset {fallback.name} as fallback.");
-                        continue;
-                    }
-                    globalFontAssetFallbacks.Add(fallback.nativeFontAsset);
-                }
-            }
-            nativeSettings.globalFontAssetFallbacks = globalFontAssetFallbacks.ToArray();
 
             //Bold is not part of the font style in css and in text native, but it is in textCore/Uitk
             var sourcefontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
@@ -235,8 +179,7 @@ namespace UnityEngine.UIElements
             return true;
         }
 
-
-        private TextAsset GetICUAsset()
+        TextAsset GetICUAsset()
         {
             if (m_TextElement.panel is null)
                 throw new InvalidOperationException("Text cannot be processed on elements not in a panel");
@@ -283,19 +226,19 @@ namespace UnityEngine.UIElements
 
         static TextLib s_TextLib;
 
-        internal protected TextLib TextLib
+        internal protected TextLib textLib
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (s_TextLib == null)
-                {
-                    s_TextLib = new TextLib(GetICUAsset().bytes);
-                }
+                InitTextLib();
                 return s_TextLib;
             }
         }
 
-
+        internal protected void InitTextLib()
+        {
+            s_TextLib ??= new TextLib(GetICUAsset().bytes);
+        }
     }
 }

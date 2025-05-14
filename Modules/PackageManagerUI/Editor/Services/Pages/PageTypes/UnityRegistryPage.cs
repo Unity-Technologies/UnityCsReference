@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override bool RefreshSupportedStatusFiltersOnEntitlementPackageChange()
         {
             var oldSupportedStatusFilters = m_SupportedStatusFilters;
-            m_SupportedStatusFilters = visualStates.Any(v => m_PackageDatabase.GetPackage(v.packageUniqueId)?.hasEntitlements == true)
+            m_SupportedStatusFilters = m_PackageDatabase.allPackages.Any(p => ShouldInclude(p) && p.hasEntitlements)
                 ? new[] { PageFilters.Status.UpdateAvailable, PageFilters.Status.SubscriptionBased }
                 : new[] { PageFilters.Status.UpdateAvailable };
 

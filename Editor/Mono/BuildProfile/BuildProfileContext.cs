@@ -65,12 +65,7 @@ namespace UnityEditor.Build.Profile
         {
             get
             {
-                // Active Build profile may be deleted from the project.
-                var activeProfile = EditorUserBuildSettings.activeBuildProfile;
-                if (activeProfile != null && activeProfile.CanBuildLocally())
-                    return activeProfile;
-
-                return null;
+                return EditorUserBuildSettings.activeBuildProfile;
             }
 
             set

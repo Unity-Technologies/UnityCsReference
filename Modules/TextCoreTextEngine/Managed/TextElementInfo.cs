@@ -30,7 +30,6 @@ namespace UnityEngine.TextCore.Text
         public Glyph alternativeGlyph;
         public FontAsset fontAsset;
         public SpriteAsset spriteAsset;
-        public int spriteIndex;
         public Material material;
         public int materialReferenceIndex;
         public bool isUsingAlternateTypeface;
@@ -38,7 +37,6 @@ namespace UnityEngine.TextCore.Text
         public float pointSize;
 
         public int lineNumber;
-        public int pageNumber;
 
         public int vertexIndex;
         public TextVertex vertexTopLeft;
@@ -73,7 +71,7 @@ namespace UnityEngine.TextCore.Text
 
         public override string ToString()
         {
-            return $"{nameof(character)}: {character}\n{nameof(index)}: {index}\n{nameof(elementType)}: {elementType}\n{nameof(stringLength)}: {stringLength}\n{nameof(textElement)}: {textElement}\n{nameof(alternativeGlyph)}: {alternativeGlyph}\n{nameof(fontAsset)}: {fontAsset}\n{nameof(spriteAsset)}: {spriteAsset}\n{nameof(spriteIndex)}: {spriteIndex}\n{nameof(material)}: {material}\n{nameof(materialReferenceIndex)}: {materialReferenceIndex}\n{nameof(isUsingAlternateTypeface)}: {isUsingAlternateTypeface}\n{nameof(pointSize)}: {pointSize}\n{nameof(lineNumber)}: {lineNumber}\n{nameof(pageNumber)}: {pageNumber}\n{nameof(vertexIndex)}: {vertexIndex}\n{nameof(vertexTopLeft)}: {vertexTopLeft}\n{nameof(vertexBottomLeft)}: {vertexBottomLeft}\n{nameof(vertexTopRight)}: {vertexTopRight}\n{nameof(vertexBottomRight)}: {vertexBottomRight}\n{nameof(topLeft)}: {topLeft}\n{nameof(bottomLeft)}: {bottomLeft}\n{nameof(topRight)}: {topRight}\n{nameof(bottomRight)}: {bottomRight}\n{nameof(origin)}: {origin}\n{nameof(ascender)}: {ascender}\n{nameof(baseLine)}: {baseLine}\n{nameof(descender)}: {descender}\n{nameof(adjustedAscender)}: {adjustedAscender}\n{nameof(adjustedDescender)}: {adjustedDescender}\n{nameof(adjustedHorizontalAdvance)}: {adjustedHorizontalAdvance}\n{nameof(xAdvance)}: {xAdvance}\n{nameof(aspectRatio)}: {aspectRatio}\n{nameof(scale)}: {scale}\n{nameof(color)}: {color}\n{nameof(underlineColor)}: {underlineColor}\n{nameof(underlineVertexIndex)}: {underlineVertexIndex}\n{nameof(strikethroughColor)}: {strikethroughColor}\n{nameof(strikethroughVertexIndex)}: {strikethroughVertexIndex}\n{nameof(highlightColor)}: {highlightColor}\n{nameof(highlightState)}: {highlightState}\n{nameof(style)}: {style}\n{nameof(isVisible)}: {isVisible}";
+            return $"{nameof(character)}: {character}\n{nameof(index)}: {index}\n{nameof(elementType)}: {elementType}\n{nameof(stringLength)}: {stringLength}\n{nameof(textElement)}: {textElement}\n{nameof(alternativeGlyph)}: {alternativeGlyph}\n{nameof(fontAsset)}: {fontAsset}\n{nameof(spriteAsset)}: {spriteAsset}\n{nameof(material)}: {material}\n{nameof(materialReferenceIndex)}: {materialReferenceIndex}\n{nameof(isUsingAlternateTypeface)}: {isUsingAlternateTypeface}\n{nameof(pointSize)}: {pointSize}\n{nameof(lineNumber)}: {lineNumber}\n{nameof(vertexIndex)}: {vertexIndex}\n{nameof(vertexTopLeft)}: {vertexTopLeft}\n{nameof(vertexBottomLeft)}: {vertexBottomLeft}\n{nameof(vertexTopRight)}: {vertexTopRight}\n{nameof(vertexBottomRight)}: {vertexBottomRight}\n{nameof(topLeft)}: {topLeft}\n{nameof(bottomLeft)}: {bottomLeft}\n{nameof(topRight)}: {topRight}\n{nameof(bottomRight)}: {bottomRight}\n{nameof(origin)}: {origin}\n{nameof(ascender)}: {ascender}\n{nameof(baseLine)}: {baseLine}\n{nameof(descender)}: {descender}\n{nameof(adjustedAscender)}: {adjustedAscender}\n{nameof(adjustedDescender)}: {adjustedDescender}\n{nameof(adjustedHorizontalAdvance)}: {adjustedHorizontalAdvance}\n{nameof(xAdvance)}: {xAdvance}\n{nameof(aspectRatio)}: {aspectRatio}\n{nameof(scale)}: {scale}\n{nameof(color)}: {color}\n{nameof(underlineColor)}: {underlineColor}\n{nameof(strikethroughColor)}: {strikethroughColor}\n{nameof(highlightColor)}: {highlightColor}\n{nameof(highlightState)}: {highlightState}\n{nameof(style)}: {style}\n{nameof(isVisible)}: {isVisible}";
         }
 
         // Used in automated tests.

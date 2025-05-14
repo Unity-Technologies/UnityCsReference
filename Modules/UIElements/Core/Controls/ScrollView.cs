@@ -1042,6 +1042,8 @@ namespace UnityEngine.UIElements
             m_CapturedTargetPointerMoveCallback = OnPointerMove;
             m_CapturedTargetPointerUpCallback = OnPointerUp;
             scrollOffset = Vector2.zero;
+
+            m_ContentContainer.receivesHierarchyGeometryChangedEvents = true;
         }
 
         private ScrollViewMode m_Mode;

@@ -14,7 +14,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements
 {
-    internal class UITKTextJobSystem
+    class UITKTextJobSystem
     {
         class ManagedJobData
         {
@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
             {
                 if (materials != null)
                 {
-                    s_MaterialPool.Release(materials);
+                    s_MaterialsPool.Release(materials);
                     s_VerticesPool.Release(vertices);
                     s_IndicesPool.Release(indices);
                     s_RenderModesPool.Release(renderModes);
@@ -54,7 +54,7 @@ namespace UnityEngine.UIElements
             return inst;
         }, OnGetManagedJob, inst => { inst.visualElement = null; }, null, false);
 
-        static UnityEngine.Pool.ObjectPool<List<Material>> s_MaterialPool = new(() =>
+        static UnityEngine.Pool.ObjectPool<List<Material>> s_MaterialsPool = new(() =>
         {
             var inst = new List<Material>();
             return inst;
@@ -160,7 +160,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private void GenerateTextJobified(MeshGenerationContext mgc, object _)
+        void GenerateTextJobified(MeshGenerationContext mgc, object _)
         {
             TextCore.Text.TextGenerator.IsExecutingJob = false;
             k_UpdateMainThreadMarker.Begin();
@@ -232,11 +232,11 @@ namespace UnityEngine.UIElements
             }
         }
 
-        private static void ConvertMeshInfoToUIRVertex(MeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
+        static void ConvertMeshInfoToUIRVertex(MeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Material> materials, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes)
         {
-            lock (s_MaterialPool)
+            lock (s_MaterialsPool)
             {
-                materials = s_MaterialPool.Get();
+                materials = s_MaterialsPool.Get();
                 verticesArray = s_VerticesPool.Get();
                 indicesArray = s_IndicesPool.Get();
                 renderModes = s_RenderModesPool.Get();
@@ -268,7 +268,6 @@ namespace UnityEngine.UIElements
 
                     materials.Add(meshInfo.material);
                     renderModes.Add(meshInfo.glyphRenderMode);
-
                     bool hasGradientScale = meshInfo.glyphRenderMode != GlyphRenderMode.SMOOTH && meshInfo.glyphRenderMode != GlyphRenderMode.COLOR;
                     bool isDynamicColor = meshInfo.applySDF && !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 

@@ -491,59 +491,16 @@ namespace UnityEditor
             {
                 styles = new Styles();
             }
-
-            if (!UnityConnect.instance.canBuildWithUPID)
-            {
-                ShowAlert();
-            }
-            GUILayout.Space(5);
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(10);
-            GUILayout.BeginVertical();
-
-            string message = "";
-            var buildSettingsLocked = !AssetDatabase.IsOpenForEdit(kEditorBuildSettingsPath, out message, StatusQueryOptions.UseCachedIfPossible);
-
-            using (new EditorGUI.DisabledScope(buildSettingsLocked))
-            {
-                ActiveScenesGUI();
-                // Clear all and Add Current Scene
-                GUILayout.BeginHorizontal();
-                if (buildSettingsLocked)
-                {
-                    GUI.enabled = true;
-                    if (GUILayout.Button(styles.checkOut))
-                        AssetDatabase.MakeEditable(kEditorBuildSettingsPath);
-                    GUILayout.Label(message);
-                    GUI.enabled = false;
-                }
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button(styles.addOpenSource))
-                    AddOpenScenes();
-                GUILayout.EndHorizontal();
-            }
-
-            GUILayout.Space(10);
-
-            GUILayout.BeginHorizontal(GUILayout.Height(400));
-            ActiveBuildTargetsGUI();
-            GUILayout.Space(10);
-            GUILayout.BeginVertical();
-            ShowBuildTargetSettings();
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(10);
-            GUILayout.EndVertical();
-            GUILayout.Space(10);
-            GUILayout.EndHorizontal();
+            // Override the 'old' build settings window in favor of the new build profile window.
+            BuildPipeline.ShowBuildProfileWindow();
+            Close();
         }
 
         static bool IsAnyStandaloneModuleLoaded()
         {
             return ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneLinux64) ||
-                ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX) ||
-                ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows);
+                   ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneOSX) ||
+                   ModuleManager.IsPlatformSupportLoadedByBuildTarget(BuildTarget.StandaloneWindows);
         }
 
         static bool IsVirtualTexturingSettingsValid(BuildPlatform platform)

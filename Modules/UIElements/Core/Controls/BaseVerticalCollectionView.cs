@@ -524,7 +524,7 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Returns or sets the selected item's index in the data source. If multiple items are selected, returns the
-        /// first selected item's index. If multiple items are provided, sets them all as selected.
+        /// first selected item's index. If multiple items are provided, sets them all as selected. If no item is selected, returns -1.
         /// </summary>
         [CreateProperty]
         public int selectedIndex
@@ -918,7 +918,8 @@ namespace UnityEngine.UIElements
         Action<int, int> m_ItemIndexChangedCallback;
         Action m_ItemsSourceChangedCallback;
 
-        internal IVisualElementScheduledItem m_RebuildScheduled;
+        private IVisualElementScheduledItem m_RebuildScheduled;
+        internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
 
         private protected virtual void CreateVirtualizationController()
         {

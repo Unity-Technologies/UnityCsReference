@@ -193,7 +193,7 @@ namespace UnityEditor.IMGUI.Controls
 
             size.y = Mathf.Clamp(size.y, minSize.y, maxSize.y);
 
-            var fitRect = ContainerWindow.FitRectToScreen(new Rect(buttonRect.x, buttonRect.y, size.x, size.y), true, true);
+            var fitRect = ContainerWindow.FitRectToMouseScreen(new Rect(buttonRect.x, buttonRect.y, size.x, size.y), true, null);
             // If the scrollbar is visible, we want to add extra space to compensate it
             if (fitRect.height < size.y)
                 size.x += GUI.skin.verticalScrollbar.fixedWidth;
