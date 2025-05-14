@@ -236,7 +236,7 @@ namespace UnityEngine
             if (settings.fontAsset == null)
                 return;
 
-            var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
                 settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset);
@@ -262,7 +262,6 @@ namespace UnityEngine
 
             }
 
-            settings.material = settings.fontAsset.material;
             settings.text = text;
 
             var tempAlignment = style.alignment;
@@ -287,7 +286,6 @@ namespace UnityEngine
 
             settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
             settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
-            settings.wordWrappingRatio = 0.4f;
             if (rect.width > 0 && style.wordWrap)
             {
                 settings.textWrappingMode = TextWrappingMode.PreserveWhitespace;
@@ -305,10 +303,8 @@ namespace UnityEngine
             settings.paragraphSpacing = 0;
             settings.color = textColor;
 
-            settings.inverseYAxis = true;
             settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
-            settings.fontFeatures = m_ActiveFontFeatures;
 
             settings.emojiFallbackSupport = true;
             settings.extraPadding = 6.0f;

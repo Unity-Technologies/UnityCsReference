@@ -1660,8 +1660,10 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < text.Length; i++)
             {
-                if (!m_CharacterLookupDictionary.ContainsKey(text[i]))
-                    missingCharacters.Add(text[i]);
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
+                    missingCharacters.Add((char)character);
             }
 
             if (missingCharacters.Count == 0)
@@ -1692,7 +1694,8 @@ namespace UnityEngine.TextCore.Text
             for (int i = 0; i < text.Length; i++)
             {
                 bool isMissingCharacter = true;
-                uint character = text[i];
+
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
 
                 if (m_CharacterLookupDictionary.ContainsKey(character))
                     continue;
@@ -1763,7 +1766,9 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < text.Length; i++)
             {
-                if (!m_CharacterLookupDictionary.ContainsKey(text[i]))
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
                     return false;
             }
 

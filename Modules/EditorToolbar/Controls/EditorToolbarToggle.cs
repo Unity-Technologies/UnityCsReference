@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Overlays;
 using UnityEditor.UIElements;
 using UnityEngine;
@@ -19,79 +20,40 @@ namespace UnityEditor.Toolbars
         internal const string k_TextElementName = "EditorToolbarToggleText";
 
         public new const string ussClassName = "unity-editor-toolbar-toggle";
-        internal static readonly string toggleNoIconClassName = ussClassName + "-noicon";
+
+        Image m_IconElement;
+        TextElement m_TextIconElement;
+        TextElement m_TextElement;
 
         Texture2D m_OnIcon;
         Texture2D m_OffIcon;
 
-        TextElement m_TextElement;
-        TextElement m_TextIconElement;
-        Image m_IconElement;
+        string m_TextIcon;
+        string m_Text;
 
         public new string text
         {
-            get => m_TextElement?.text;
+            get => m_Text;
             set
             {
-                if (string.IsNullOrEmpty(value))
-                {
-                    m_TextElement?.RemoveFromHierarchy();
-                    m_TextElement = null;
+                if (m_Text == value)
                     return;
-                }
-
-                if (m_TextElement == null)
-                {
-                    m_TextElement = new TextElement();
-                    m_TextElement.name = k_TextElementName;
-                    m_TextElement.AddToClassList(textClassName);
-
-                    var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
-                    if (m_IconElement != null)
-                        input.Insert(input.IndexOf(m_IconElement) + 1, m_TextElement);
-                    else if (m_TextIconElement != null)
-                        input.Insert(input.IndexOf(m_TextIconElement) + 1, m_TextElement);
-                    else
-                        input.Add(m_TextElement);
-                }
-
-                m_TextElement.text = value;
-                UpdateIconState();
-                UpdateTextIconState();
+                m_Text = value;
+                if (m_TextElement != null)
+                    m_TextElement.text = m_Text;
+                UpdateIcon();
             }
         }
 
         public string textIcon
         {
-            get => m_TextIconElement?.text;
+            get => m_TextIcon;
             set
             {
-                if (m_TextIconElement == null)
-                {
-                    m_IconElement?.RemoveFromHierarchy();
-                    m_IconElement = null;
-                    m_OffIcon = null;
-                    m_OnIcon = null;
-
-                    m_TextIconElement = new TextElement();
-                    m_TextIconElement.name = k_TextIconElementName;
-                    m_TextIconElement.AddToClassList(textIconClassName);
-
-                    var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
-                    if (m_TextElement != null)
-                    {
-                        m_TextElement.RemoveFromHierarchy();
-                        input.Add(m_TextIconElement);
-                        input.Add(m_TextElement);
-                    }
-                    else
-                    {
-                        input.Add(m_TextIconElement);
-                    }
-                }
-
-                m_TextIconElement.text = OverlayUtilities.GetSignificantLettersForIcon(value);
-                UpdateTextIconState();
+                if (m_TextIcon == value)
+                    return;
+                m_TextIcon = value;
+                UpdateIcon();
             }
         }
 
@@ -100,10 +62,8 @@ namespace UnityEditor.Toolbars
             get => offIcon;
             set
             {
-                CreateIconElement();
-
                 offIcon = onIcon = value;
-                UpdateIconState();
+                UpdateIcon();
             }
         }
 
@@ -112,10 +72,8 @@ namespace UnityEditor.Toolbars
             get => m_OnIcon;
             set
             {
-                CreateIconElement();
-
                 m_OnIcon = value;
-                UpdateIconState();
+                UpdateIcon();
             }
         }
 
@@ -124,10 +82,8 @@ namespace UnityEditor.Toolbars
             get => m_OffIcon;
             set
             {
-                CreateIconElement();
-
                 m_OffIcon = value;
-                UpdateIconState();
+                UpdateIcon();
             }
         }
 
@@ -137,26 +93,16 @@ namespace UnityEditor.Toolbars
         public EditorToolbarToggle(Texture2D icon) : this(string.Empty, icon, icon) {}
         public EditorToolbarToggle(Texture2D onIcon, Texture2D offIcon) : this(string.Empty, onIcon, offIcon) {}
 
+        public EditorToolbarToggle(string textIcon, string label) : this(label, null, null)
+        {
+            this.textIcon = textIcon;
+        }
+
         public EditorToolbarToggle(string text, Texture2D onIcon, Texture2D offIcon)
         {
-            AddToClassList(ussClassName);
-
-            this.onIcon = onIcon;
-            this.offIcon = offIcon;
-            this.text = text;
-
-            UpdateIconState();
+            InitializeToggle(text, onIcon, offIcon, textIcon);
         }
 
-        public EditorToolbarToggle(string textIcon, string label)
-        {
-            AddToClassList(ussClassName);
-
-            this.textIcon = textIcon;
-            this.text = label;
-
-            UpdateTextIconState();
-        }
 
         public override void SetValueWithoutNotify(bool newValue)
         {
@@ -166,70 +112,49 @@ namespace UnityEditor.Toolbars
                 UpdateIcon();
         }
 
-        void UpdateIcon()
+        void InitializeToggle(string text, Texture2D onIcon, Texture2D offIcon, string textIcon)
         {
-            if (m_IconElement == null)
-                return;
+            AddToClassList(ussClassName);
 
-            m_IconElement.image = value ? onIcon : offIcon;
+            m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
+            m_IconElement.AddToClassList(iconClassName);
+
+            m_TextIconElement = new TextElement { name = k_TextIconElementName };
+            m_TextIconElement.AddToClassList(textIconClassName);
+
+            m_TextElement = new TextElement { name = k_TextElementName };
+            m_TextElement.AddToClassList(textClassName);
+
+            var container = this.Q<VisualElement>(className: Toggle.inputUssClassName);
+            container.Add(m_IconElement);
+            container.Add(m_TextIconElement);
+            container.Add(m_TextElement);
+
+            this.onIcon = onIcon;
+            this.offIcon = offIcon;
+            this.text = text;
+            this.textIcon = textIcon;
+
+            UpdateIcon();
+            RegisterCallback<GeometryChangedEvent>(GeometryChanged);
         }
 
-        void UpdateIconState()
+        // Since it is possible that a toggle icon is set through styling, we want to update again when layout/styling is done.
+        void GeometryChanged(GeometryChangedEvent evt)
         {
-            if (m_IconElement == null)
-                return;
-
-            if (icon == null && (text != null && text != string.Empty))
-            {
-                if (!m_IconElement.ClassListContains(toggleNoIconClassName))
-                    m_IconElement.AddToClassList(toggleNoIconClassName);
-            }
-            else if (icon && m_IconElement.ClassListContains(toggleNoIconClassName))
-            {
-                m_IconElement.RemoveFromClassList(toggleNoIconClassName);
-            }
-
             UpdateIcon();
         }
 
-        void UpdateTextIconState()
+        void UpdateIcon()
         {
-            if (m_TextIconElement == null)
-                return;
-
-            if ((m_TextIconElement == null || string.IsNullOrEmpty(textIcon)) && (text != null && text != string.Empty))
-            {
-                if (!m_TextIconElement.ClassListContains(toggleNoIconClassName))
-                    m_TextIconElement.AddToClassList(toggleNoIconClassName);
-            }
-            else if (m_TextIconElement != null && m_TextIconElement.ClassListContains(toggleNoIconClassName))
-            {
-                m_TextIconElement.RemoveFromClassList(toggleNoIconClassName);
-            }
-        }
-
-        void CreateIconElement()
-        {
-            if (m_IconElement == null)
-            {
-                m_TextIconElement?.RemoveFromHierarchy();
-                m_TextIconElement = null;
-
-                var input = this.Q<VisualElement>(className: Toggle.inputUssClassName);
-                m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
-                m_IconElement.AddToClassList(iconClassName);
-
-                if (m_TextElement != null)
-                {
-                    m_TextElement.RemoveFromHierarchy();
-                    input.Add(m_IconElement);
-                    input.Add(m_TextElement);
-                }
-                else
-                {
-                    input.Add(m_IconElement);
-                }
-            }
+            EditorToolbarUtility.UpdateIconContent(
+                m_Text,
+                m_TextIcon,
+                value ? onIcon : offIcon,
+                m_TextElement,
+                m_TextIconElement,
+                m_IconElement
+            );
         }
     }
 }

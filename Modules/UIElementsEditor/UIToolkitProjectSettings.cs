@@ -43,6 +43,25 @@ namespace UnityEditor.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Action<bool> onEnableAdvancedTextChanged;
 
+
+        [SerializeField]
+        private bool m_EnableLowLevelDebugger = false;
+
+        internal static bool EnableLowLevelDebugger
+        {
+            get => instance.m_EnableLowLevelDebugger;
+            set
+            {
+                if (instance.m_EnableLowLevelDebugger == value)
+                    return;
+                instance.m_EnableLowLevelDebugger = value;
+                onEnableLowLevelDebuggerChanged?.Invoke(value);
+                instance.Save();
+            }
+        }
+
+        internal static Action<bool> onEnableLowLevelDebuggerChanged;
+
         public void Save()
         {
             Save(true);
@@ -165,3 +184,4 @@ namespace UnityEditor.UIElements
         }
     }
 }
+

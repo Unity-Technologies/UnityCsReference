@@ -236,7 +236,6 @@ namespace UnityEngine.UIElements
         private static List<PanelSettings> s_PotentiallyEmptyPanelSettings = new List<PanelSettings>();
         internal static void RemoveUnusedPanels()
         {
-
             foreach (PanelSettings psetting in s_PotentiallyEmptyPanelSettings)
             {
                 var m_AttachedUIDocumentsList = psetting.m_AttachedUIDocumentsList;
@@ -246,10 +245,22 @@ namespace UnityEngine.UIElements
                     // It'll be recreated if it's used again.
                     psetting.DisposePanel();
                 }
-
             }
-
             s_PotentiallyEmptyPanelSettings.Clear();
+
+            // This check is necessary because neither OnDisable or OnDestroy are called when deleting an asset
+            // from the project browser.
+            List<PanelSettings> toDispose = null;
+            foreach (var panel in GetSortedPlayerPanels())
+            {
+                if (!panel.ownerObject && panel.ownerObject is PanelSettings psettings)
+                    (toDispose ??= new()).Add(psettings);
+            }
+            if (toDispose != null)
+            {
+                foreach (var psettings in toDispose)
+                    psettings.DisposePanel();
+            }
         }
 
         public static void RegisterPlayerloopCallback()
