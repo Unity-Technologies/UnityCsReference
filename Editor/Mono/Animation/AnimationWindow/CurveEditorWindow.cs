@@ -30,12 +30,13 @@ namespace UnityEditor
         }
 
         //const int kToolbarHeight = 17;
-        const int kPresetsHeight = 46;
+        const int kPresetsHeight = 50;
 
         static CurveEditorWindow s_SharedCurveEditor;
 
         internal CurveEditor m_CurveEditor;
 
+        Vector2 m_PresetScrollPosition;
         AnimationCurve m_Curve;
         Color m_Color;
 
@@ -469,20 +470,38 @@ namespace UnityEditor
             m_CurveEditor.OnGUI();
 
             // Preset swatch area
-            GUI.Box(new Rect(0, position.height - kPresetsHeight, position.width, kPresetsHeight), "", ms_Styles.curveSwatchArea);
+            var presetRect = new Rect(0, position.height - kPresetsHeight, position.width, kPresetsHeight);
+            GUI.Box(presetRect, "", ms_Styles.curveSwatchArea);
+
             Color curveColor = m_Color;
             curveColor.a *= 0.6f;
-            const float margin = 45f;
             const float width = 40f;
             const float height = 25f;
-            float yPos = position.height - kPresetsHeight + (kPresetsHeight - height) * 0.5f;
+            const float spaceBetweenSwatches = 5f;
+            const float presetDropdownSize = 16f;
+            const float horizontalScrollbarHeight = 15f;
+            const float presetDropdownCenteringOffset = 2f;
+            float yPos = (kPresetsHeight - height) * 0.5f;
             InitCurvePresets();
             CurvePresetLibrary curveLibrary = m_CurvePresets.GetPresetLibraryEditor().GetCurrentLib();
             if (curveLibrary != null)
             {
-                for (int i = 0; i < curveLibrary.Count(); i++)
+                var numPresets = curveLibrary.Count();
+                var presetDropDownRect = new Rect(spaceBetweenSwatches, yPos + presetDropdownCenteringOffset, presetDropdownSize, presetDropdownSize);
+                Rect contentRect = new Rect(0, 0, numPresets * (width + spaceBetweenSwatches) + presetDropDownRect.xMax, presetRect.height - horizontalScrollbarHeight);
+                m_PresetScrollPosition = GUI.BeginScrollView(
+                    presetRect,               // Rectangle of the visible area
+                    m_PresetScrollPosition,   // Current scroll position
+                    contentRect,              // Rectangle containing all content
+                    false,                    // Always show horizontal scrollbar
+                    false                     // Always show vertical scrollbar
+                );
+
+                PresetDropDown(presetDropDownRect);
+
+                Rect swatchRect = new Rect(presetDropDownRect.xMax + spaceBetweenSwatches, yPos, width, height);
+                for (int i = 0; i < numPresets; i++)
                 {
-                    Rect swatchRect = new Rect(margin + (width + 5f) * i, yPos, width, height);
                     m_GUIContent.tooltip = curveLibrary.GetName(i);
                     if (GUI.Button(swatchRect, m_GUIContent, ms_Styles.curveSwatch))
                     {
@@ -496,13 +515,10 @@ namespace UnityEditor
                     if (Event.current.type == EventType.Repaint)
                         curveLibrary.Draw(swatchRect, i);
 
-                    if (swatchRect.xMax > position.width - 2 * margin)
-                        break;
+                    swatchRect.x += width + spaceBetweenSwatches;
                 }
+                GUI.EndScrollView();
             }
-
-            Rect presetDropDownButtonRect = new Rect(margin - 20f, yPos + 5f, 20, 20);
-            PresetDropDown(presetDropDownButtonRect);
 
             // For adding default preset curves
             //if (EditorGUI.DropdownButton(new Rect (position.width -26, yPos, 20, 20), GUIContent.none, FocusType.Passive, "OL Plus"))

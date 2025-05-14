@@ -21,6 +21,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (parent == null || content == null)
                 return;
 
+            instance?.Hide();
             instance = new DropdownElement();
             instance.Add(content);
             instance.m_Content = content;

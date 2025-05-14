@@ -232,7 +232,6 @@ namespace UnityEngine.TextCore.Text
         int m_LineVisibleCharacterCount;
         int m_LineVisibleSpaceCount;
         int m_FirstOverflowCharacterIndex;
-        int m_PageNumber;
         float m_MarginLeft;
         float m_MarginRight;
         float m_Width;
@@ -240,7 +239,6 @@ namespace UnityEngine.TextCore.Text
         float m_MaxCapHeight;
         float m_MaxAscender;
         float m_MaxDescender;
-        bool m_IsNewPage;
         bool m_IsNonBreakingSpace;
         WordWrapState m_SavedWordWrapState;
         WordWrapState m_SavedLineState;
@@ -322,17 +320,17 @@ namespace UnityEngine.TextCore.Text
             #region Check Auto-Sizing (Upper Font Size Bounds)
 
             fontSizeDelta = m_MaxFontSize - m_MinFontSize;
-            if ( /* !m_isCharacterWrappingEnabled && */ generationSettings.autoSize && fontSizeDelta > 0.051f && m_FontSize < generationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
+            if ( /* !m_isCharacterWrappingEnabled && */ TextGenerationSettings.autoSize && fontSizeDelta > 0.051f && m_FontSize < TextGenerationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
             {
                 // Reset character width adjustment delta
-                if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100)
+                if (m_CharWidthAdjDelta < TextGenerationSettings.charWidthMaxAdj / 100)
                     m_CharWidthAdjDelta = 0;
 
                 m_MinFontSize = m_FontSize;
 
                 float sizeDelta = Mathf.Max((m_MaxFontSize - m_FontSize) / 2, 0.05f);
                 m_FontSize += sizeDelta;
-                m_FontSize = Mathf.Min((int)(m_FontSize * 20 + 0.5f) / 20f, generationSettings.charWidthMaxAdj);
+                m_FontSize = Mathf.Min((int)(m_FontSize * 20 + 0.5f) / 20f, TextGenerationSettings.charWidthMaxAdj);
 
                 return;
             }
@@ -358,10 +356,6 @@ namespace UnityEngine.TextCore.Text
             {
                 // Clear unused vertices
                 textInfo.meshInfo[i].ClearUnusedVertices();
-
-                // Sort the geometry of the sub-text objects if needed.
-                if (generationSettings.geometrySortingOrder != VertexSortingOrder.Normal)
-                    textInfo.meshInfo[i].SortGeometry(VertexSortingOrder.Reverse);
             }
         }
     }

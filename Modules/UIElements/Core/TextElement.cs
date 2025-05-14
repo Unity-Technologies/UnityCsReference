@@ -191,9 +191,12 @@ namespace UnityEngine.UIElements
             UpdateVisibleText();
         }
 
-        private void OnAttachToPanel(AttachToPanelEvent attachEvent)
+        void OnAttachToPanel(AttachToPanelEvent attachEvent)
         {
             (attachEvent.destinationPanel as BaseVisualElementPanel)?.liveReloadSystem.RegisterTextElement(this);
+            uitkTextHandle.ReleaseResourcesIfPossible();
+            // The Hyperlink getter on the panel is not thread safe
+            uitkTextHandle.atgHyperlinkColor = (panel as Panel)?.HyperlinkColor ?? Color.blue;
         }
 
         private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)
@@ -201,6 +204,7 @@ namespace UnityEngine.UIElements
             uitkTextHandle.RemoveTextInfoFromPermanentCache();
             uitkTextHandle.RemoveTextInfoFromTemporaryCache();
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
+            uitkTextHandle.ReleaseResourcesIfPossible();
         }
 
         private string m_Text = String.Empty;
@@ -257,8 +261,14 @@ namespace UnityEngine.UIElements
         }
 
         bool m_ParseEscapeSequences;
+
         /// <summary>
-        /// Specifies whether escape sequences are displayed as is or if they are replaced by the character they represent.
+        /// Determines how escape sequences are displayed.
+        /// When set to <c>true</c>, escape sequences (such as `\n`, `\t`)
+        /// are parsed and transformed into their corresponding characters. For example,
+        /// '\n' will insert a new line.
+        /// When set to <c>false</c>, escape sequences are displayed as raw text
+        /// (for example, `\n` is shown as the characters '\' followed by 'n').
         /// </summary>
         [CreateProperty]
         public bool parseEscapeSequences
@@ -323,24 +333,8 @@ namespace UnityEngine.UIElements
 
             if (TextUtilities.IsFontAssigned(this))
             {
-                if (TextUtilities.IsAdvancedTextEnabledForElement(this))
-                {
-                    bool isSuccess = false;
-                    var textInfo = uitkTextHandle.UpdateNative(ref isSuccess);
-                    if (isSuccess)
-                    {
-                        mgc.DrawNativeText(textInfo, contentRect.min);
-
-                        if (selection.HasSelection() && selectingManipulator.HasFocus())
-                            DrawNativeHighlighting(mgc);
-                        else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
-                            DrawCaret(mgc);
-                    }
-                }
-                else
-                {
-                    mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
-                }
+                uitkTextHandle.ReleaseResourcesIfPossible();
+                mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
             }
         }
 
@@ -355,6 +349,14 @@ namespace UnityEngine.UIElements
                 isElided = uitkTextHandle.IsElided();
 
             UpdateTooltip();
+        }
+
+        internal void OnGenerateTextOverNative(MeshGenerationContext mgc)
+        {
+            if (selection.HasSelection() && selectingManipulator.HasFocus())
+                DrawNativeHighlighting(mgc);
+            else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
+                DrawCaret(mgc);
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)

@@ -1257,15 +1257,6 @@ namespace UnityEngine.UIElements
                     }
 
                     break;
-                case StylePropertyId.Display:
-                    if (layoutData.Read().display != (DisplayStyle)newValue)
-                    {
-                        layoutData.Write().display = (DisplayStyle)newValue;
-                        ve.layoutNode.Display = (LayoutDisplay)newValue;
-                        ve.IncrementVersion(VersionChangeType.Layout);
-                    }
-
-                    break;
                 case StylePropertyId.FlexDirection:
                     if (layoutData.Read().flexDirection != (FlexDirection)newValue)
                     {
@@ -1764,8 +1755,6 @@ namespace UnityEngine.UIElements
                     return result;
                 }
 
-                case StylePropertyId.Display:
-                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldStyle.layoutData.Read().display, (int)newStyle.layoutData.Read().display, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Flex:
                 {
                     bool result = false;
@@ -2127,12 +2116,6 @@ namespace UnityEngine.UIElements
                     oldData.bottom != newData.bottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Bottom, oldData.bottom, newData.bottom, durationMs, delayMs, easingCurve);
-                }
-
-                if (hasRunningAnimation ||
-                    oldData.display != newData.display)
-                {
-                    result |= element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldData.display, (int)newData.display, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -2722,14 +2705,6 @@ namespace UnityEngine.UIElements
                     }
 
                     return result;
-                }
-
-                case StylePropertyId.Display:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.display : (DisplayStyle)sv.number;
-                    if (sv.keyword == StyleKeyword.None)
-                        to = DisplayStyle.None;
-                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)computedStyle.layoutData.Read().display, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.FlexBasis:

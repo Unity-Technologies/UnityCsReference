@@ -264,9 +264,6 @@ namespace UnityEngine.UIElements
 
         void RadioButtonValueChangedCallback(ChangeEvent<bool> evt)
         {
-            if (m_UpdatingButtons)
-                return;
-
             if (evt.newValue)
             {
                 var radioButton = evt.target as RadioButton;
@@ -281,7 +278,7 @@ namespace UnityEngine.UIElements
         public override void SetValueWithoutNotify(int newValue)
         {
             base.SetValueWithoutNotify(newValue);
-            UpdateRadioButtons();
+            UpdateRadioButtons(true);
         }
 
         /// <summary>
@@ -301,7 +298,7 @@ namespace UnityEngine.UIElements
         /// to the hierarchy).
         /// All the buttons get untoggled if the index is out of bound.
         /// </summary>
-        void UpdateRadioButtons()
+        void UpdateRadioButtons(bool notify)
         {
             if (panel == null)
                 return;
@@ -313,13 +310,29 @@ namespace UnityEngine.UIElements
             if (value >= 0 && value < radioButtons.Count)
             {
                 m_SelectedRadioButton = radioButtons[value];
-                m_SelectedRadioButton.value = true;
+                if (notify)
+                    m_SelectedRadioButton.value = true;
+                else
+                    m_SelectedRadioButton.SetValueWithoutNotify(true);
+
+                // Set the rest to false
+                foreach (var radioButton in radioButtons)
+                {
+                    if (radioButton != m_SelectedRadioButton)
+                        if (notify)
+                            radioButton.value = false;
+                        else
+                            radioButton.SetValueWithoutNotify(false);
+                }
             }
             else
             {
                 foreach (var radioButton in radioButtons)
                 {
-                    radioButton.value = false;
+                    if (notify)
+                        radioButton.value = false;
+                    else
+                        radioButton.SetValueWithoutNotify(false);
                 }
             }
 
@@ -330,7 +343,7 @@ namespace UnityEngine.UIElements
         {
             if (m_UpdatingButtons)
                 return;
-            schedule.Execute(UpdateRadioButtons);
+            schedule.Execute(() => UpdateRadioButtons(false));
             m_UpdatingButtons = true;
         }
 
@@ -344,6 +357,15 @@ namespace UnityEngine.UIElements
                 return;
             m_RegisteredRadioButtons.Add(radioButton);
             radioButton.RegisterValueChangedCallback(m_RadioButtonValueChangedCallback);
+
+            // If the user sets a value before the radio button is registered, we need to update the radio button group's value
+            if (value == -1 && radioButton.value)
+            {
+                using var _ = ListPool<RadioButton>.Get(out var radioButtons);
+                GetAllRadioButtons(radioButtons);
+
+                SetValueWithoutNotify(radioButtons.IndexOf(radioButton));
+            }
             ScheduleRadioButtons();
         }
 

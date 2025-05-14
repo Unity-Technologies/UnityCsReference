@@ -53,15 +53,15 @@ namespace UnityEditor
         {
             public GUIContent previewSpeed = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is also affected by the Time Scale setting in the Time Manager.");
             public GUIContent previewSpeedDisabled = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time");
-            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles");
+            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time", "Playback Time since the Particle System has started");
+            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles", "Particles count");
             public GUIContent subEmitterParticleCount = EditorGUIUtility.TrTextContent("Sub Emitter Particles");
-            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range");
-            public GUIContent play = EditorGUIUtility.TrTextContent("Play");
+            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range", "Start speed minimum and maximum values");
+            public GUIContent play = EditorGUIUtility.TrTextContent("Play", "Play Particle System");
             public GUIContent playDisabled = EditorGUIUtility.TrTextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop");
-            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause");
-            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart");
+            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop", "Stop Particle System");
+            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause", "Pause Particle System");
+            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart", "Restart Particle System");
             public GUIContent addParticleSystem = EditorGUIUtility.TrTextContent("", "Create Particle System");
             public GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
             public GUIContent showOnlySelected = EditorGUIUtility.TrTextContent("Show Only Selected", "Hide all unselected Particle Systems in the current Effect.");

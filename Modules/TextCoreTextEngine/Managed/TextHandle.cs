@@ -38,7 +38,7 @@ namespace UnityEngine.TextCore.Text
 
             InitArray(ref s_Settings, () => new TextGenerationSettings());
             InitArray(ref s_Generators, () => new TextGenerator());
-            InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+            InitArray(ref s_TextInfosCommon, () => new TextInfo());
         }
 
         static TextGenerationSettings[] s_Settings;
@@ -74,7 +74,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_TextInfosCommon == null)
                 {
-                    InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+                    InitArray(ref s_TextInfosCommon, () => new TextInfo());
                 }
                 return s_TextInfosCommon;
             }
@@ -130,8 +130,6 @@ namespace UnityEngine.TextCore.Text
                 return useAdvancedText ? nativeSettings.text.Length : textInfo.characterCount;
             }
         }
-
-
 
         public virtual void AddTextInfoToPermanentCache()
         {
@@ -201,8 +199,6 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
-
-        protected internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         protected bool isDirty;
         public void SetDirty()
@@ -303,12 +299,6 @@ namespace UnityEngine.TextCore.Text
                 renderedWidth = settings.isIMGUI ? Mathf.Max(renderedWidth, lineInfo.length) : Mathf.Max(renderedWidth, lineInfo.lineExtents.max.x - lineInfo.lineExtents.min.x);
             }
             renderedHeight = maxAscender - maxDescender;
-
-            // Adjust Preferred Width and Height to account for Margins.
-            renderedWidth += settings.margins.x > 0 ? settings.margins.x : 0;
-            renderedWidth += settings.margins.z > 0 ? settings.margins.z : 0;
-            renderedHeight += settings.margins.y > 0 ? settings.margins.y : 0;
-            renderedHeight += settings.margins.w > 0 ? settings.margins.w : 0;
 
             // Round Preferred Values to nearest 5/100.
             renderedWidth = (int)(renderedWidth * 100 + 1f) / 100f;

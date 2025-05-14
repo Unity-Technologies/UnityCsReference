@@ -12,9 +12,13 @@ namespace UnityEngine.UIElements
 {
     /// <summary>
     /// A <see cref="VisualElement"/> representing a source texture.
-    ///
-    /// **Note**: This is not related to the `UnityEngine.UI.Image` uGUI control. This is the Image control for the UI Toolkit framework.
     /// </summary>
+    /// <remarks>
+    /// SA: [[wiki:UIE-uxml-element-Image|UXML element Image]].\\
+    ///\\
+    /// **Note**: This is the Image control for the UI Toolkit framework. This is not related to the
+    /// <a href="https://docs.unity3d.com/Packages/com.unity.ugui@latest/index.html?subfolder=/api/UnityEngine.UI.Image.html">UnityEngine.UI.Image</a> uGUI control.
+    /// </remarks>
     public class Image : VisualElement
     {
         internal static readonly BindingId imageProperty = nameof(image);
@@ -67,6 +71,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The texture to display in this image. If you assign a `Texture` or `Texture2D`, the Image element will resize and show the assigned texture.
         /// </summary>
+        /// <example>
+        /// The following example creates an `Image` element and assigns a texture to it.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/AddImageExample.cs"/>
+        /// </example>
         [CreateProperty]
         public Texture image
         {

@@ -9,6 +9,9 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Helper to convert between background properties and ScaleMode.
     /// </summary>
+    /// <remarks>
+    /// For more information, Refer to [[wiki:UIB-styling-ui-backgrounds#set-the-scale-mode-for-a-background-image|Set the scale mode for a background image]].
+    /// </remarks>
     public static class BackgroundPropertyHelper
     {
         /// <summary>

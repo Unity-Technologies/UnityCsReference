@@ -34,11 +34,14 @@ namespace UnityEngine.UIElements
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_ExampleElement.uxml"/>
     /// </example>
     /// <example>
-    /// <para>When you create a custom control, the default name used in UXML and UI Builder is the element type name (C# class name).
-    /// However, you can customize the name to make it easier to refer to the element.</para>
-    /// <para>__Note__: You are still required to reference the classes' namespace in UXML.</para>
-    /// <para>To create a custom name for an element, provide a value to the @@name@@ property.
-    /// For example, if you create the following custom button:</para>
+    /// When you create a custom control, the default name used in UXML and UI Builder is the element type name (C# class name).
+    /// However, you can customize the name to make it easier to refer to the element.
+    ///\\
+    ///\\
+    ///__Note__: You are still required to reference the classes' namespace in UXML.
+    /// To create a custom name for an element, provide a value to the @@name@@ property.
+    ///\\
+    /// For example, if you create the following custom button:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CustomButtonElement.cs"/>
     /// </example>
     /// <example>

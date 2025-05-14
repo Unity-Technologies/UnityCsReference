@@ -469,6 +469,13 @@ namespace UnityEngine.UIElements
 
         void OnColumnResized(int index, float width)
         {
+            if (m_View.isRebuildScheduled)
+            {
+                // We are waiting on a rebuild, so our elements are most likely not the right ones.
+                // We'll let the rebuild handle the new width.
+                return;
+            }
+
             foreach (var item in m_View.activeItems)
             {
                 item.bindableElement.ElementAt(index).style.width = width;
