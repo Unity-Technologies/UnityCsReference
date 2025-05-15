@@ -188,11 +188,11 @@ namespace UnityEditor
         extern public static bool GetDiscreteIntValue([NotNull] GameObject root, EditorCurveBinding binding, out int data);
         public static bool GetObjectReferenceValue(GameObject root, EditorCurveBinding binding, out Object data)
         {
-            data = Internal_GetObjectReferenceValue(root, binding);
-            return data != null;
+            data = Internal_GetObjectReferenceValue(root, binding, out bool result);
+            return result;
         }
 
-        extern private static Object Internal_GetObjectReferenceValue([NotNull] GameObject root, EditorCurveBinding binding);
+        extern private static Object Internal_GetObjectReferenceValue([NotNull] GameObject root, EditorCurveBinding binding, out bool result);
 
         extern public static Object GetAnimatedObject([NotNull] GameObject root, EditorCurveBinding binding);
 

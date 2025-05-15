@@ -129,14 +129,36 @@ namespace UnityEngine.UIElements
                 var targetDisplay = pointerEvent.displayIndex;
                 var deltaPosition = pointerEvent.deltaPosition;
 
-                var pointerIdBase = pointerEvent.eventSource switch
+                var (pointerIdBase, pointerIdCount) = pointerEvent.eventSource switch
                 {
-                    EventSource.Touch => PointerId.touchPointerIdBase,
-                    EventSource.Pen => PointerId.penPointerIdBase,
-                    EventSource.TrackedDevice => PointerId.trackedPointerIdBase,
-                    _ => PointerId.mousePointerId
+                    EventSource.Mouse => (PointerId.mousePointerId, 1),
+                    EventSource.Touch => (PointerId.touchPointerIdBase, PointerId.touchPointerCount),
+                    EventSource.Pen => (PointerId.penPointerIdBase, PointerId.penPointerCount),
+                    EventSource.TrackedDevice => (PointerId.trackedPointerIdBase, PointerId.trackedPointerCount),
+                    _ => (PointerId.invalidPointerId, 1)
                 };
+
+                if (pointerIdBase == PointerId.invalidPointerId)
+                {
+                    if (m_EventSystem.verbose)
+                        m_EventSystem.Log("Pointer event source not supported: " + pointerEvent + " (source=" + pointerEvent.eventSource + ")");
+                    return;
+                }
+
+                if (pointerEvent.pointerIndex < 0 || pointerEvent.pointerIndex >= pointerIdCount)
+                {
+                    if (m_EventSystem.verbose)
+                        m_EventSystem.Log("Pointer index out of range: " + pointerEvent + " (index=" + pointerEvent.pointerIndex + ", should have 0 <= index < " + pointerIdCount + ")");
+                    return;
+                }
+
                 var pointerId = pointerIdBase + pointerEvent.pointerIndex;
+                if (pointerId < 0 || pointerId >= PointerId.maxPointers)
+                {
+                    if (m_EventSystem.verbose)
+                        m_EventSystem.Log("Pointer id out of range: " + pointerEvent + " (id=" + pointerId + ", should have 0 <= id < " + PointerId.maxPointers + ")");
+                    return;
+                }
 
                 var deltaTime = m_LastPointerTimestamp != DiscreteTime.Zero ? (float)(pointerEvent.timestamp - m_LastPointerTimestamp) : 0;
                 m_NextPointerTimestamp = pointerEvent.timestamp;

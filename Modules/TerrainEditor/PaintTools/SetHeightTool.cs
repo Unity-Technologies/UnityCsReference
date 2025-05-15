@@ -17,7 +17,7 @@ namespace UnityEditor.TerrainTools
             Local
         }
 
-        const string k_ToolName = "Set Height";
+        internal const string k_ToolName = "Set Height";
         public override string OnIcon => "TerrainOverlays/SetHeight_On.png";
         public override string OffIcon => "TerrainOverlays/SetHeight.png";
 

@@ -575,7 +575,7 @@ namespace UnityEditor.Search
                     label: t.Name,
                     replacement: $"t:{t.Name}",
                     data: t,
-                    help: $"Search {t.Name}",
+                    help: $"Search {ObjectNames.NicifyVariableName(t.Name)}",
                     type: blockType,
                     icon: GetTypeIcon(t),
                     color: QueryColors.type);

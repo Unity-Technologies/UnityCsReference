@@ -380,8 +380,6 @@ namespace UnityEditor.Search
 
         static void EnableContentRefresh()
         {
-            if (!Utils.IsMainProcess())
-                return;
             s_ContentRefreshedEnabled = true;
         }
 

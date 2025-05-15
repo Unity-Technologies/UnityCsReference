@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
+using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEngine.UIElements
 {
@@ -613,6 +614,7 @@ namespace UnityEngine.UIElements
 
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
+            using var scope = new UITKScope();
             Debug.Assert(dispatcher != null, "dispatcher != null");
             dispatcher?.Dispatch(e, this, dispatchMode);
         }
@@ -1287,6 +1289,7 @@ namespace UnityEngine.UIElements
 
         public override void ValidateLayout()
         {
+            using var scope = new UITKScope();
             // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
             // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
             // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
@@ -1321,6 +1324,7 @@ namespace UnityEngine.UIElements
 
         public override void TickSchedulingUpdaters()
         {
+            using var scope = new UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
             // Dispatch all timer update messages to each scheduled item
             timerEventScheduler.UpdateScheduledEvents(); //This entire thing should become an updater
@@ -1396,6 +1400,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
+            using var scope = new UITKScope();
             m_RepaintVersion = version;
 
             repaintData.repaintEvent = e;
@@ -1415,6 +1420,7 @@ namespace UnityEngine.UIElements
 
         public override void Render()
         {
+            using var scope = new UITKScope();
             m_MarkerRender.Begin();
             base.Render();
             m_MarkerRender.End();

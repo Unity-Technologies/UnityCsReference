@@ -68,6 +68,9 @@ namespace Unity.UI.Builder
 
         VisualElement m_TextGeneratorStyle;
 
+        // Controllers
+        public UxmlBatchedChangesController batchedChangesController { get; }
+
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
         BuilderInspectorStyleFields m_StyleFields;
@@ -244,6 +247,9 @@ namespace Unity.UI.Builder
             m_Selection = selection;
             m_PaneWindow = paneWindow;
 
+            // Controllers
+            batchedChangesController = new UxmlBatchedChangesController(this);
+
             // Load Template
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uxml");
@@ -373,6 +379,7 @@ namespace Unity.UI.Builder
             m_AttributesSection.Dispose();
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
+            batchedChangesController.Dispose();
             UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
         }
 
@@ -1402,7 +1409,8 @@ namespace Unity.UI.Builder
                     dimensionStyleField.dispatchMode = previousDispatchMode.Value;
             }
 
-            m_AttributesSection.ProcessBatchedChanges();
+            // Force submit the pending committed value changes
+            batchedChangesController.ProcessBatchedChanges();
         }
 
         public void SelectionChanged()

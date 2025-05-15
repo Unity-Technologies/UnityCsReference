@@ -6,6 +6,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Collections;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -36,6 +37,31 @@ namespace Unity.Profiling.LowLevel.Unsafe
         [FieldOffset(16)] public readonly byte* NameUtf8;
 
         public string Name => ProfilerUnsafeUtility.Utf8ToString(NameUtf8, NameUtf8Len);
+    }
+
+    internal readonly struct UnsafeAllocLabel
+    {
+        internal readonly IntPtr pointer;
+        internal readonly Allocator allocator;
+
+        public UnsafeAllocLabel(string areaName, string objectName, Allocator allocator = Allocator.Persistent)
+        {
+            if (string.IsNullOrEmpty(areaName))
+                throw new ArgumentNullException(nameof(areaName));
+
+            if (string.IsNullOrEmpty(objectName))
+                throw new ArgumentNullException(nameof(objectName));
+
+            if (allocator != Allocator.Persistent && allocator != Allocator.Domain)
+                throw new ArgumentException("Only Allocator.Persistent and Allocator.Domain support allocating with a label");
+
+            this.allocator = allocator;
+            this.pointer = ProfilerUnsafeUtility.GetOrCreateMemLabel(areaName, objectName);
+        }
+
+        internal long RelatedMemorySize => ProfilerUnsafeUtility.GetMemLabelRelatedMemorySize(pointer);
+
+        public bool Created => pointer != IntPtr.Zero;
     }
 
     [NativeHeader("Runtime/Profiler/ScriptBindings/ProfilerUnsafeUtility.bindings.h")]
@@ -220,5 +246,13 @@ namespace Unity.Profiling.LowLevel.Unsafe
             [ThreadSafe]
             get;
         }
+
+        [ThreadSafe(ThrowsException = false)]
+        [NativeConditional("ENABLE_MEM_PROFILER")]
+        internal static extern IntPtr GetOrCreateMemLabel(string areaName, string objectName);
+
+        [ThreadSafe(ThrowsException = true)]
+        [NativeConditional("ENABLE_MEM_PROFILER")]
+        internal static extern long GetMemLabelRelatedMemorySize(IntPtr label);
     }
 }

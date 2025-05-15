@@ -40,6 +40,7 @@ namespace UnityEngine.UIElements
     ///\\
     ///__Note__: You are still required to reference the classes' namespace in UXML.
     /// To create a custom name for an element, provide a value to the @@name@@ property.
+    ///\\
     /// For example, if you create the following custom button:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CustomButtonElement.cs"/>
     /// </example>

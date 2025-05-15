@@ -31,7 +31,8 @@ namespace UnityEngine.UIElements
         public static Vector2 CameraTransformWorldToPanel(IPanel panel, Vector3 worldPosition, Camera camera)
         {
             Vector2 screenPoint = camera.WorldToScreenPoint(worldPosition);
-            screenPoint.y = Screen.height - screenPoint.y; // Flip y axis. TODO: add appropriate #if (if necessary)
+            float displayHeight = UIElementsRuntimeUtility.GetEditorDisplayHeight(camera.targetDisplay);
+            screenPoint = UIElementsRuntimeUtility.FlipY(screenPoint, displayHeight);
             return ((BaseRuntimePanel)panel).ScreenToPanel(screenPoint);
         }
 

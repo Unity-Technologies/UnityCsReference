@@ -35,13 +35,15 @@ class AIDropdownContent : PopupWindowContent
 
     internal Data data = new()
     {
-        text = "I have read and agree to the <link=terms><color=#7BAEFA>Unity AI Terms of Service</color></link> and the <link=supplemental><color=#7BAEFA>Generative AI Supplemental Privacy Notice.</color></link>"
-            + "\n\nI acknowledge and understand Unity AI uses <link=thirdparty><color=#7BAEFA>these third-party services</color></link>.",
+        text = "Use of Unity AI is governed by the <link=terms><color=#7BAEFA>Unity Terms of Service</color></link>."
+            + "\n\nBy proceeding, I acknowledge and understand that Unity AI integrates third-party services, and I " +
+            "confirm that I have reviewed and agreed to the respective terms of use for these services, as outlined " +
+            "in the <link=thirdparty><color=#7BAEFA>Unity AI Models and Partners</color></link> page.",
         links = new()
         {
             new() {id = "terms", url = "https://unity.com/legal/terms-of-service"},
             new() {id = "supplemental", url = "https://unity.com/legal/supplemental-privacy-statement-unity-muse"},
-            new() {id = "thirdparty", url = "https://unity.com/legal/terms-of-service"}
+            new() {id = "thirdparty", url = "https://unity.com/legal/unityai-models-partners"}
         },
         noInternet = "You need an internet connection to be able to use the AI features.",
         installingPackages = "Installing packages",
@@ -52,7 +54,7 @@ class AIDropdownContent : PopupWindowContent
             "com.unity.ai.assistant"
         },
 
-        installButtonText = "Agree and install AI features"
+        installButtonText = "Agree and install Unity AI"
     };
 
     Label m_Text;
@@ -227,10 +229,7 @@ class AIDropdownContent : PopupWindowContent
 
     void OnClicked()
     {
-        if (Unsupported.IsDeveloperMode())
-            Debug.Log("This button is currently a placeholder. It’s visible only in developer mode and does not perform any action because the associated packages have not yet been published. This behavior is expected for now.");
-        else
-            Debug.Log($"Installing AI Packages.\n{string.Join("\n", data.packages)}");
+        Debug.Log($"Installing AI Packages.\n{string.Join("\n", data.packages)}");
 
         AIDropdownConfig.instance.termsAccepted = true;
 

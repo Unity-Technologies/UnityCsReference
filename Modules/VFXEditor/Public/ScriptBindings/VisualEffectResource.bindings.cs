@@ -73,6 +73,7 @@ namespace UnityEditor.VFX
     {
         public VFXLayoutElementDesc[] layout;
         public uint capacity;
+        public string debugName; // always there in editor
         public GraphicsBuffer.Target target;
         public uint size;
         public uint stride;
@@ -135,6 +136,7 @@ namespace UnityEditor.VFX
     {
         public VFXLayoutElementDesc[] layout;
         public uint capacity;
+        public string debugName;
         public uint stride;
         public VFXCPUBufferData initialData;
     }

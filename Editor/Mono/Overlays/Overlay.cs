@@ -642,7 +642,7 @@ namespace UnityEditor.Overlays
 
             ApplySize(m_ResizeTarget, IsResizable(), sizeOverridden);
 
-            var position = canvas.ClampToOverlayWindow(new Rect(floatingPosition, m_Size)).position;
+            var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
         }
 

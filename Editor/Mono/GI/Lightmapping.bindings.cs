@@ -241,12 +241,24 @@ namespace UnityEditor
 
         // Starts an asynchronous bake job.
         [FreeFunction]
-        public static extern bool BakeAsync();
+        internal static extern bool BakeAsyncImpl();
 
-        // Stars a synchronous bake job.
+        // Starts a synchronous bake job.
         [FreeFunction]
-        public static extern bool Bake();
+        internal static extern bool BakeImpl();
+                
+        public static bool BakeAsync()
+        {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+            return BakeAsyncImpl();
+        }
 
+        public static bool Bake()
+        {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+            return BakeImpl();
+        }
+        
         // Cancels the currently running asynchronous bake job.
         [FreeFunction("CancelLightmapping")]
         public static extern void Cancel();
@@ -716,6 +728,7 @@ namespace UnityEditor.Experimental
 
         public static bool BakeAsync(Scene targetScene)
         {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
             return BakeSceneAsync(targetScene);
         }
 
@@ -726,6 +739,7 @@ namespace UnityEditor.Experimental
 
         public static bool Bake(Scene targetScene)
         {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
             return BakeScene(targetScene);
         }
 

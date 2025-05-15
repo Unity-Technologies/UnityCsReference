@@ -167,7 +167,7 @@ namespace UnityEditor
             return templates;
         }
 
-        public void SelectionUI(SerializedProperty templateProp)
+        public void SelectionUI(SerializedProperty templateProp, PlayerSettings playerSettings)
         {
             if (s_Styles == null)
                 s_Styles = new Styles();
@@ -219,9 +219,9 @@ namespace UnityEditor
                         templateCustomKeys = Templates[GetTemplateIndex(templateProp.stringValue)].CustomKeys;
                         foreach (string key in templateCustomKeys)
                         {
-                            string value = PlayerSettings.GetTemplateCustomValue(key);
+                            string value = playerSettings.GetTemplateCustomValue_Internal(key);
                             value = EditorGUILayout.TextField(PrettyTemplateKeyName(key), value);
-                            PlayerSettings.SetTemplateCustomValue(key, value);
+                            playerSettings.SetTemplateCustomValue_Internal(key, value);
                         }
                     }
 
@@ -234,7 +234,7 @@ namespace UnityEditor
                         GUIUtility.hotControl = 0;
                         GUIUtility.keyboardControl = 0;
                         templateProp.serializedObject.ApplyModifiedProperties();
-                        PlayerSettings.templateCustomKeys = templateCustomKeys;
+                        playerSettings.SetTemplateCustomKeys_Internal(templateCustomKeys);
                         templateProp.serializedObject.Update();
                     }
                 }

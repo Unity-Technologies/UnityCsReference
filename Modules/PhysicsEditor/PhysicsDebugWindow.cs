@@ -111,10 +111,11 @@ namespace UnityEditor
             public static readonly GUIContent colorVariaition = EditorGUIUtility.TrTextContent("Variation", "Random color variation that is added on top of the base color");
             public static readonly GUIContent centerOfMassUseScreenSize = EditorGUIUtility.TrTextContent("Constant screen size", "Use constant screen size for the center of mass gizmos");
             public static readonly GUIContent inertiaTensorScale = EditorGUIUtility.TrTextContent("Inertia Tensor scale", "Scale by which the original inertia tensor is multiplied before drawing");
+            public static readonly GUIContent useSceneCam = EditorGUIUtility.TrTextContent("Use Scene View Camera", "Draws Collider geometry onto the scene view if enabled. If disabled the geometry will be drawn onto the game view using the main camera.");
             public static readonly GUIContent forceOverdraw = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
             public static readonly GUIContent transparency = EditorGUIUtility.TrTextContent("Transparency");
             public static readonly GUIContent viewDistance = EditorGUIUtility.TrTextContent("View Distance", "Lower bound on distance from camera to physics geometry.");
-            public static readonly GUIContent terrainTilesMax = EditorGUIUtility.TrTextContent("Terrain Tiles Max", "Number of mesh tiles to drawn.");
+            public static readonly GUIContent terrainTilesMax = EditorGUIUtility.TrTextContent("Terrain Tiles Max", "Number of terrain mesh tiles to draw.");
             public static readonly GUIContent gizmosSection = EditorGUIUtility.TrTextContent("Gizmos settings:");
             #endregion
 
@@ -150,7 +151,6 @@ namespace UnityEditor
             #region Overlay
             public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TrTextContent("Collision Geometry");
             public static readonly GUIContent enableMouseSelect = EditorGUIUtility.TrTextContent("Mouse Select");
-            public static readonly GUIContent useSceneCam = EditorGUIUtility.TrTextContent("Use Scene Cam");
             #endregion
 
             #region Buttons
@@ -584,6 +584,9 @@ namespace UnityEditor
 
             PhysicsVisualizationSettings.forceOverdraw = EditorGUILayout.Toggle(Style.forceOverdraw
                 , PhysicsVisualizationSettings.forceOverdraw);
+
+            PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Style.useSceneCam
+                , PhysicsVisualizationSettings.useSceneCam);
 
             PhysicsVisualizationSettings.viewDistance = EditorGUILayout.FloatField(Style.viewDistance
                 , PhysicsVisualizationSettings.viewDistance);

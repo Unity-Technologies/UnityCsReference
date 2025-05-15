@@ -132,7 +132,6 @@ namespace UnityEditor.U2D
         private string m_Hash;
         private int m_PreviewPage = 0;
         private int m_TotalPages = 0;
-        const float kPrefixLabelWidth = 290f;
         private int[] m_OptionValues = null;
         private string[] m_OptionDisplays = null;
         private Texture2D[] m_PreviewTextures = null;
@@ -365,9 +364,6 @@ namespace UnityEditor.U2D
 
             serializedObject.Update();
 
-            var oldWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = kPrefixLabelWidth;
-
             HandleCommonSettingUI();
 
             GUILayout.Space(EditorGUI.kSpacing);
@@ -418,7 +414,6 @@ namespace UnityEditor.U2D
                 }
             }
 
-            EditorGUIUtility.labelWidth = oldWidth;
             serializedObject.ApplyModifiedProperties();
         }
 

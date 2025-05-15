@@ -127,11 +127,9 @@ namespace UnityEngine.UIElements
         float viewportMaxOffset => m_ScrollView.scrollOffset.y + m_ScrollView.contentViewport.layout.height;
 
         Action m_FillCallback;
-        Action m_ScrollCallback;
         Action m_ScrollResetCallback;
         Action<ReusableCollectionItem> m_GeometryChangedCallback;
         IVisualElementScheduledItem m_ScheduledItem;
-        IVisualElementScheduledItem m_ScrollScheduledItem;
         IVisualElementScheduledItem m_ScrollResetScheduledItem;
         Predicate<int> m_IndexOutOfBoundsPredicate;
 
@@ -147,7 +145,6 @@ namespace UnityEngine.UIElements
             : base(collectionView)
         {
             m_FillCallback = Fill;
-            m_ScrollCallback = OnScrollUpdate;
             m_GeometryChangedCallback = OnRecycledItemGeometryChanged;
             m_IndexOutOfBoundsPredicate = IsIndexOutOfBounds;
             m_ScrollResetCallback = ResetScroll;
@@ -229,9 +226,14 @@ namespace UnityEngine.UIElements
             }
             else if (firstVisibleIndex >= index)
             {
+                // We dont do anything if the scroll offset wont change (UUM-10285)
+                var newOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                if (newOffset == m_ScrollView.scrollOffset)
+                    return;
+
                 m_ForcedFirstVisibleItem = index;
                 m_ForcedLastVisibleItem = ReusableCollectionItem.UndefinedIndex;
-                m_ScrollView.scrollOffset = new Vector2(0, GetContentHeightForIndex(index - 1));
+                m_ScrollView.scrollOffset = newOffset;
             }
             else // index > first
             {
@@ -369,12 +371,6 @@ namespace UnityEngine.UIElements
                 m_ScheduledItem = null;
             }
 
-            if (m_ScrollScheduledItem?.isActive == true)
-            {
-                m_ScrollScheduledItem.Pause();
-                m_ScrollScheduledItem = null;
-            }
-
             if (m_ScrollResetScheduledItem?.isActive == true)
             {
                 m_ScrollResetScheduledItem.Pause();
@@ -382,7 +378,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        void OnScrollUpdate()
+        protected override void OnScrollUpdate()
         {
             var scrollOffset = float.IsNegativeInfinity(m_DelayedScrollOffset.y) ? m_ScrollView.scrollOffset : m_DelayedScrollOffset;
             if (float.IsNaN(m_ScrollView.contentViewport.layout.height) || float.IsNaN(scrollOffset.y))
@@ -464,9 +460,11 @@ namespace UnityEngine.UIElements
                     var inserting = m_ScrollInsertionList;
 
                     var checkIndex = 0;
-                    while (firstVisibleIndex > m_ActiveItems[checkIndex].index)
+                    var lastIndex = -1; // Ignore out of order items (UUM-103037)
+                    while (firstVisibleIndex > m_ActiveItems[checkIndex].index && lastIndex < m_ActiveItems[checkIndex].index)
                     {
                         var first = m_ActiveItems[checkIndex];
+                        lastIndex = first.index;
                         inserting.Add(first);
                         checkIndex++;
 
@@ -793,18 +791,6 @@ namespace UnityEngine.UIElements
 
             m_ScheduledItem.Pause();
             m_ScheduledItem.Resume();
-        }
-
-        void ScheduleScroll()
-        {
-            if (m_ScrollScheduledItem == null)
-            {
-                m_ScrollScheduledItem = m_CollectionView.schedule.Execute(m_ScrollCallback);
-                return;
-            }
-
-            m_ScrollScheduledItem.Pause();
-            m_ScrollScheduledItem.Resume();
         }
 
         void ScheduleScrollDirectionReset()

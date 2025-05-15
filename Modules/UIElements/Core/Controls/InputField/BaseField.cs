@@ -529,6 +529,8 @@ namespace UnityEngine.UIElements
             return worldBound;
         }
 
+        internal override Rect GetTooltipRect() => ComputeTooltipRect();
+
         internal TValueType ValidatedValue(TValueType value)
         {
             if (onValidateValue != null)

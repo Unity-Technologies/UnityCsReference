@@ -965,6 +965,12 @@ namespace UnityEngine.UIElements
             {
                 // If we're not a child of any other UIDocument stretch to take the full screen.
                 m_RootVisualElement.EnableInClassList(k_RootStyleClassName, parentUI == null);
+
+                // Reset inline styles thay may have been set if the PanelSetting was
+                // previously set to world-space rendering.
+                m_RootVisualElement.style.position = StyleKeyword.Null;
+                m_RootVisualElement.style.width = StyleKeyword.Null;
+                m_RootVisualElement.style.height = StyleKeyword.Null;
             }
             else
             {
@@ -1238,6 +1244,9 @@ namespace UnityEngine.UIElements
         private void OnDrawGizmosSelected()
         {
             if (m_RootVisualElement == null)
+                return;
+
+            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
                 return;
 
             var bb = LocalBoundsFromPivotSource();

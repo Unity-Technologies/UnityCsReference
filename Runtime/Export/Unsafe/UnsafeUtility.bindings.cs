@@ -8,6 +8,8 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using System.Runtime.CompilerServices;
 using Unity.Burst;
+using Unity.Profiling.LowLevel.Unsafe;
+using UnityEngine.Profiling;
 
 namespace Unity.Collections.LowLevel.Unsafe
 {
@@ -101,8 +103,21 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void* Malloc(long size, int alignment, Allocator allocator);
 
+        unsafe internal static void* Malloc(long size, int alignment, UnsafeAllocLabel label)
+        {
+            return MallocWithCustomLabel(size, alignment, label.allocator, label.pointer);
+        }
+
+        [ThreadSafe(ThrowsException = true)]
+        unsafe static extern void* MallocWithCustomLabel(long size, int alignment, Allocator allocator, IntPtr label);
+
         [ThreadSafe(ThrowsException = true)]
         unsafe public static extern void Free(void* memory, Allocator allocator);
+
+        unsafe internal static void Free(void* memory, UnsafeAllocLabel label)
+        {
+            Free(memory, label.allocator);
+        }
 
         public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
 

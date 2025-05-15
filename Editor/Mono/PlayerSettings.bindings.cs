@@ -1518,6 +1518,12 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsThreadingModeForPlatform(BuildTarget platform, GfxThreadingMode gfxJobMode);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetSwitchGraphicsJobsSyncAfterKick();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetSwitchGraphicsJobsSyncAfterKick(bool syncAfterKick);
+
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();
 
@@ -1979,5 +1985,15 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void EnsureUnityConnectSettingsEqual(PlayerSettings target, PlayerSettings source);
+
+        [NativeMethod("SetTemplateCustomKeys")]
+        internal extern void SetTemplateCustomKeys_Internal(string[] templateCustomKeys);
+
+        [NativeMethod("SetTemplateCustomValue")]
+        internal extern void SetTemplateCustomValue_Internal(string name, string value);
+
+        [NativeMethod("GetTemplateCustomValue")]
+        internal extern string GetTemplateCustomValue_Internal(string name);
+
     }
 }

@@ -194,7 +194,8 @@ namespace UnityEngine.UIElements
         internal static readonly string ussFoldoutChildDepthClassName = $"{Foldout.ussClassName}__{ussClassName}--depth-";
         internal static readonly List<string> ussFoldoutChildDepthClassNames;
 
-        internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope(bool beginUitk = true) { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = beginUitk; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
+        internal struct UITKScope : IDisposable { private bool wasUITK; public UITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = true; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
+        internal struct NotUITKScope : IDisposable { private bool wasUITK; public NotUITKScope() { wasUITK = GUIUtility.isUITK; GUIUtility.isUITK = false; } public void Dispose() { GUIUtility.isUITK = wasUITK; } }
 
         static IMGUIContainer()
         {
@@ -697,7 +698,7 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            using var scope = new UITKScope();
+            using var scope = new NotUITKScope();
 
             EventType originalEventType = e.rawType;
             if (originalEventType != EventType.Layout)
@@ -854,7 +855,7 @@ namespace UnityEngine.UIElements
 
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
-            using var scope = new UITKScope();
+            using var scope = new NotUITKScope();
 
             bool restoreCurrentEvent = false;
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)

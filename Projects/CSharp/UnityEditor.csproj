@@ -3057,6 +3057,9 @@
     <Compile Include="..\..\Editor\Mono\ProgressScope.cs">
       <Link>Editor\Mono\ProgressScope.cs</Link>
     </Compile>
+    <Compile Include="..\..\Editor\Mono\Progress\AssemblyInfo.cs">
+      <Link>Editor\Mono\Progress\AssemblyInfo.cs</Link>
+    </Compile>
     <Compile Include="..\..\Editor\Mono\Progress\Progress.bindings.cs">
       <Link>Editor\Mono\Progress\Progress.bindings.cs</Link>
     </Compile>
@@ -8484,6 +8487,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\BuilderSelection.cs">
       <Link>Modules\UIBuilder\Editor\Builder\BuilderSelection.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Controllers\UxmlBatchedChangesController.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\Controllers\UxmlBatchedChangesController.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Document\BuilderDocument.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Document\BuilderDocument.cs</Link>
     </Compile>
@@ -8804,6 +8810,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\UxmlAttributeFieldPropertyDrawers.cs">
       <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\Fields\UxmlAttributeFieldPropertyDrawers.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\UxmlAttributesView\IBatchedUxmlChangesListener.cs">
+      <Link>Modules\UIBuilder\Editor\Builder\UxmlAttributesView\IBatchedUxmlChangesListener.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Builder\Viewport\BuilderCanvas.cs">
       <Link>Modules\UIBuilder\Editor\Builder\Viewport\BuilderCanvas.cs</Link>
@@ -9789,7 +9798,7 @@
     <Compile Include="..\..\Modules\XREditor\XRManagementInstaller.cs">
       <Link>Modules\XREditor\XRManagementInstaller.cs</Link>
     </Compile>
-    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_666e/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
+    <Reference Include="../../artifacts/Stevedore/unity-compiler-win-x64_34ed/Unity.CompilationPipeline.Common/Unity.CompilationPipeline.Common.dll" />
     <Reference Include="../../External/Unity.Cecil/builds/lib/net40/Unity.Cecil.dll" />
     <Reference Include="../../External/ExCSS/builds/builds/lib/net35/ExCSS.Unity.dll" />
     <Reference Include="../../Tools/Bee/build/Distribution/BeeDriver2/Bee.BeeDriver2.dll" />

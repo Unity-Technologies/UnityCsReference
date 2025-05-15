@@ -16,6 +16,7 @@ namespace UnityEditor.UIElements
         const string k_EnableEventDebugger = "enable-event-debugger";
         const string k_EnableLayoutDebugger = "enable-layout-debugger";
         const string k_EnableTextAdvanced = "enable-text-advanced";
+        const string k_enableDebuggerLowLevelName = "enable-debugger-low-level";
 
         private VisualElement m_HelpVisualTree;
         private VisualTreeAsset m_UIToolkitTemplate;
@@ -108,6 +109,13 @@ namespace UnityEditor.UIElements
             enableTextAdvancedToggle.RegisterValueChangedCallback(e =>
             {
                 UIToolkitProjectSettings.enableAdvancedText = e.newValue;
+            });
+
+            var enableDebuggerLowLevelToggle = rootElement.Q<Toggle>(k_enableDebuggerLowLevelName);
+            enableDebuggerLowLevelToggle.SetValueWithoutNotify(UIToolkitProjectSettings.EnableLowLevelDebugger);
+            enableDebuggerLowLevelToggle.RegisterValueChangedCallback(e =>
+            {
+                UIToolkitProjectSettings.EnableLowLevelDebugger = e.newValue;
             });
 
             base.OnActivate(searchContext, rootElement);

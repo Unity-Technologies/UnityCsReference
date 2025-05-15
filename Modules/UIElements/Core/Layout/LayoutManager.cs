@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using Unity.Collections;
 using Unity.Profiling;
 using UnityEngine.Scripting;
@@ -130,12 +131,18 @@ class ManagedObjectStore<T> where T : class
 
 internal class LayoutManager : IDisposable
 {
-    static bool s_Initialized;
+    enum SharedManagerState
+    {
+        Uninitialized, // The SharedManager was not accessed yet
+        Initialized, // The SharedManager was accessed and created
+        Shutdown // The SharedManager was disposed and must not be-created
+    }
+    static SharedManagerState s_Initialized;
     static bool s_AppDomainUnloadRegistered;
 
     static LayoutManager s_SharedInstance;
 
-    public static bool IsSharedManagerCreated => s_Initialized;
+    public static bool IsSharedManagerCreated => s_Initialized == SharedManagerState.Initialized;
 
     public static LayoutManager SharedManager
     {
@@ -148,20 +155,30 @@ internal class LayoutManager : IDisposable
 
     static readonly List<LayoutManager> s_Managers = new List<LayoutManager>();
 
+    // Important: Assumptions about Order of operations for Initialize() and Shutdown()
+    // 1. Initialize() is always called first on the main thread.
+    //    This is because VisualElement instances do not support being created on other threads.
+    //    Later on Initialize() it is called on the finalizer thread when a VisualElement is finalized.
+    //    THEREFORE there shouldn't be any race condition for the transition between Uninitialized and Initialized.
+    // 2. Shutdown() is only called after the first call to Initialize()
+    //    Since it is registered on the AppDomain unload event as part of Initialize().
+    //    We also assume the AppDomain unload will not happen right in the middle of Initialize()'s execution.
+    //    THEREFORE there shouldn't be any race condition for the transition between Initialized and Shutdown.
     static void Initialize()
     {
-        if (s_Initialized)
+        // If the SharedManager was already created, we're good
+        // If it was shut down, we do not want to re-create it
+        if (s_Initialized != SharedManagerState.Uninitialized)
             return;
 
-        s_Initialized = true;
+        s_Initialized = SharedManagerState.Initialized;
 
         if (!s_AppDomainUnloadRegistered)
         {
             // important: this will always be called from a special unload thread (main thread will be blocking on this)
             AppDomain.CurrentDomain.DomainUnload += (_, __) =>
             {
-                if (s_Initialized)
-                    Shutdown();
+               Shutdown();
             };
 
             s_AppDomainUnloadRegistered = true;
@@ -172,10 +189,10 @@ internal class LayoutManager : IDisposable
 
     static void Shutdown()
     {
-        if (!s_Initialized)
+        if (s_Initialized != SharedManagerState.Initialized)
             return;
 
-        s_Initialized = false;
+        s_Initialized = SharedManagerState.Shutdown;
 
         s_SharedInstance.Dispose();
     }
@@ -347,6 +364,8 @@ internal class LayoutManager : IDisposable
         }
     }
 
+    // Note: this operation is safe regardless of if the LayoutManager has been shutdown or not.
+    // The nodes to free are ignored because the LayoutManager has already released all of their memory.
     public void EnqueueNodeForRecycling(ref LayoutNode node)
     {
         if (node.IsUndefined)

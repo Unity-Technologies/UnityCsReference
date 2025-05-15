@@ -609,12 +609,11 @@ namespace UnityEngine.UIElements.UIR
             rectParams.rectInset = inset;
         }
 
-        TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo(VertexDataLayout.VBO);
+        TextCore.Text.TextInfo m_TextInfo = new TextCore.Text.TextInfo();
         TextCore.Text.TextGenerationSettings m_Settings = new TextCore.Text.TextGenerationSettings()
         {
             screenRect = Rect.zero,
             richText = true,
-            inverseYAxis = true
         };
 
         List<NativeSlice<Vertex>> m_VerticesArray = new List<NativeSlice<Vertex>>();
@@ -633,7 +632,6 @@ namespace UnityEngine.UIElements.UIR
             m_Settings.textSettings = textSettings;
             m_Settings.fontSize = (int)Mathf.Round(fontSize);
             m_Settings.color = color;
-            m_Settings.material = font.material;
             m_Settings.textWrappingMode = TextWrappingMode.NoWrap;
 
             TextCore.Text.TextGenerator.GetTextGenerator().GenerateText(m_Settings, m_TextInfo);

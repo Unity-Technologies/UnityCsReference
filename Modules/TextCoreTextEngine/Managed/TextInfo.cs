@@ -8,14 +8,6 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.TextCore.Text
 {
-    struct PageInfo
-    {
-        public int firstCharacterIndex;
-        public int lastCharacterIndex;
-        public float ascender;
-        public float baseLine;
-        public float descender;
-    }
 
     /// <summary>
     /// Structure containing information about the individual words contained in the text object.
@@ -42,7 +34,6 @@ namespace UnityEngine.TextCore.Text
         public int wordCount;
         public int linkCount;
         public int lineCount;
-        public int pageCount;
 
         public int materialCount;
 
@@ -50,12 +41,10 @@ namespace UnityEngine.TextCore.Text
         public WordInfo[] wordInfo;
         public LinkInfo[] linkInfo;
         public LineInfo[] lineInfo;
-        public PageInfo[] pageInfo;
         public MeshInfo[] meshInfo;
 
         public double lastTimeInCache;
         public Action removedFromCache;
-        public VertexDataLayout vertexDataLayout { get; private set; }
         public bool hasMultipleColors = false;
 
 
@@ -66,13 +55,11 @@ namespace UnityEngine.TextCore.Text
         }
 
         // Default Constructor
-        public TextInfo(VertexDataLayout vertexDataLayout)
+        public TextInfo()
         {
-            this.vertexDataLayout = vertexDataLayout;
             textElementInfo = new TextElementInfo[4];
             wordInfo = new WordInfo[1];
             lineInfo = new LineInfo[1];
-            pageInfo = new PageInfo[1];
             linkInfo = Array.Empty<LinkInfo>();
             meshInfo = Array.Empty<MeshInfo>();
             materialCount = 0;
@@ -89,7 +76,6 @@ namespace UnityEngine.TextCore.Text
             wordCount = 0;
             linkCount = 0;
             lineCount = 0;
-            pageCount = 0;
             spriteCount = 0;
             hasMultipleColors = false;
 
@@ -137,25 +123,6 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        internal void ClearPageInfo()
-        {
-            if (pageInfo == null)
-                pageInfo = new PageInfo[2];
-
-            int length = pageInfo.Length;
-
-            for (int i = 0; i < length; i++)
-            {
-                pageInfo[i].firstCharacterIndex = 0;
-                pageInfo[i].lastCharacterIndex = 0;
-                pageInfo[i].ascender = -32767;
-                pageInfo[i].baseLine = 0;
-                pageInfo[i].descender = 32767;
-            }
-        }
 
         /// <summary>
         /// Function to resize any of the structure contained in the TextInfo class.
@@ -208,28 +175,26 @@ namespace UnityEngine.TextCore.Text
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, Rect screenRect, float lineHeight, bool useXAdvance = false, bool inverseYAxis = true)
         {
             var result = screenRect.position;
+
             if (characterCount == 0 || index < 0)
                 return inverseYAxis ? new Vector2(0, lineHeight) : result;
 
+            int adjustedIndex = index;
             if (index >= characterCount)
-                index = characterCount - 1;
-
-            var character = textElementInfo[index];
-            var line = lineInfo[character.lineNumber];
-
-            if (index >= characterCount - 1 || useXAdvance)
             {
-                result += inverseYAxis ?
-                    new Vector2(character.xAdvance, screenRect.height - line.descender) :
-                    new Vector2(character.xAdvance, line.descender);
-                return result;
+                adjustedIndex = characterCount - 1;
+                useXAdvance = true;
             }
 
-            result += inverseYAxis ?
-                new Vector2(character.origin, screenRect.height - line.descender) :
-                new Vector2(character.origin, line.descender);
+            var charInfo = textElementInfo[adjustedIndex];
+            var lineInfo = this.lineInfo[charInfo.lineNumber];
 
-            return result;
+            float xPos = useXAdvance ? charInfo.xAdvance : charInfo.origin;
+            float yPos = inverseYAxis ?
+                screenRect.height - lineInfo.descender :
+                lineInfo.descender;
+
+            return result + new Vector2(xPos, yPos);
         }
 
         //TODO add special handling for 1 character...
@@ -574,6 +539,11 @@ namespace UnityEngine.TextCore.Text
 
         private static bool PointIntersectRectangle(Vector3 m, Vector3 a, Vector3 b, Vector3 c, Vector3 d)
         {
+            // A zero area rectangle is not valid for this method.
+            Vector3 normal = Vector3.Cross(b - a, d - a);
+            if (normal == Vector3.zero)
+                return false;
+
             Vector3 ab = b - a;
             Vector3 am = m - a;
             Vector3 bc = c - b;
@@ -594,6 +564,13 @@ namespace UnityEngine.TextCore.Text
         /// <returns></returns>
         private static float DistanceToLine(Vector3 a, Vector3 b, Vector3 point)
         {
+            // If a and b are the same point, just return distance to that point
+            if (a == b)
+            {
+                Vector3 diff = point - a;
+                return Vector3.Dot(diff, diff);
+            }
+
             Vector3 n = b - a;
             Vector3 pa = a - point;
 

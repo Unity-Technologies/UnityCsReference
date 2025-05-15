@@ -10,12 +10,12 @@ namespace UnityEditor.Search
     static class Icons
     {
         public static string iconFolder = $"Icons/QuickSearch";
-        public static Texture2D quicksearch = EditorGUIUtility.FindTexture("Search Icon");
-        public static Texture2D shortcut = EditorGUIUtility.FindTexture("Shortcut Icon");
-        public static Texture2D staticAPI = EditorGUIUtility.FindTexture("cs Script Icon");
-        public static Texture2D settings = EditorGUIUtility.FindTexture("Settings Icon");
-        public static Texture2D favorite = EditorGUIUtility.FindTexture("Favorite Icon");
-        public static Texture2D store = EditorGUIUtility.FindTexture("AssetStore Icon");
+        public static Texture2D quicksearch = EditorGUIUtility.LoadIcon("Search Icon");
+        public static Texture2D shortcut = EditorGUIUtility.LoadIcon("Shortcut Icon");
+        public static Texture2D staticAPI = EditorGUIUtility.LoadIcon("cs Script Icon");
+        public static Texture2D settings = EditorGUIUtility.LoadIcon("Settings Icon");
+        public static Texture2D favorite = EditorGUIUtility.LoadIcon("Favorite Icon");
+        public static Texture2D store = EditorGUIUtility.LoadIcon("AssetStore Icon");
         public static Texture2D help = EditorGUIUtility.LoadIcon($"Icons/_Help.png");
         public static Texture2D clear = EditorGUIUtility.LoadIcon("StyleSheets/Northstar/Images/clear.png");
         public static Texture2D quickSearchWindow = EditorGUIUtility.LoadIcon($"{iconFolder}/SearchWindow.png");
@@ -26,6 +26,6 @@ namespace UnityEditor.Search
         public static Texture2D packageInstalled = EditorGUIUtility.LoadIcon($"{iconFolder}/package_installed.png");
         public static Texture2D packageUpdate = EditorGUIUtility.LoadIcon($"{iconFolder}/package_update.png");
         public static Texture2D dependencies = EditorGUIUtility.LoadIcon("UnityEditor.FindDependencies");
-        public static Texture2D toggles = EditorGUIUtility.FindTexture("MoreOptions");
+        public static Texture2D toggles = EditorGUIUtility.LoadIcon("MoreOptions");
     }
 }
