@@ -59,7 +59,7 @@ namespace UnityEngine
         {
             if (exceptiono == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with null exception");
             var exception = exceptiono as System.Exception;
-            if (exception == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with an exceptoin that was not of type System.Exception");
+            if (exception == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with an exception that was not of type System.Exception");
 
             // StackTrace might not be available
             StringBuilder sb = new StringBuilder(exception.StackTrace == null ? 512 : exception.StackTrace.Length * 2);
