@@ -19,10 +19,10 @@ namespace UnityEditor.IMGUI.Controls
     //   - Override the virtual methods for further customization (rendering, dragging, renaming etc)
     //   - Adjust layout properties
 
-    public abstract partial class TreeView
+    public abstract partial class TreeView<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         public delegate bool DoFoldoutCallback(Rect position, bool expandedState, GUIStyle style);
-        public delegate List<int> GetNewSelectionFunction(TreeViewItem clickedItem, bool keepMultiSelection, bool useActionKeyAsShift);
+        public delegate List<TIdentifier> GetNewSelectionFunction(TreeViewItem<TIdentifier> clickedItem, bool keepMultiSelection, bool useActionKeyAsShift);
 
         protected GetNewSelectionFunction getNewSelectionOverride
         {
@@ -38,34 +38,34 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        TreeViewController m_TreeView;
+        internal TreeViewController<TIdentifier> m_TreeView;
         TreeViewControlDataSource m_DataSource;
         TreeViewControlGUI m_GUI;
         TreeViewControlDragging m_Dragging;
         MultiColumnHeader m_MultiColumnHeader;
-        List<TreeViewItem> m_DefaultRows;
+        List<TreeViewItem<TIdentifier>> m_DefaultRows;
         int m_TreeViewKeyControlID;
 
         OverriddenMethods m_OverriddenMethods;
         protected DoFoldoutCallback foldoutOverride { get; set; }
 
-        public TreeView(TreeViewState state)
+        public TreeView(TreeViewState<TIdentifier> state)
         {
             Init(state);
         }
 
-        public TreeView(TreeViewState state, MultiColumnHeader multiColumnHeader)
+        public TreeView(TreeViewState<TIdentifier> state, MultiColumnHeader multiColumnHeader)
         {
             m_MultiColumnHeader = multiColumnHeader;
             Init(state);
         }
 
-        void Init(TreeViewState state)
+        void Init(TreeViewState<TIdentifier> state)
         {
             if (state == null)
                 throw new ArgumentNullException("state", "Invalid TreeViewState: it is null");
 
-            m_TreeView = new TreeViewController(null, state);
+            m_TreeView = new TreeViewController<TIdentifier>(null, state);
             m_DataSource = new TreeViewControlDataSource(m_TreeView, this);
             m_GUI = new TreeViewControlGUI(m_TreeView, this);
             m_Dragging = new TreeViewControlDragging(m_TreeView, this);
@@ -93,15 +93,16 @@ namespace UnityEditor.IMGUI.Controls
         //    b) Override BuildRows to handle how the rows are generated: Create the rows list
         //       only visiting expanded items. Also override GetAncestors and GetDescendantsWithChildren
         //       to use the backend data to fetch this information (since it might not be available in the TreeView)
-        protected abstract TreeViewItem BuildRoot();
+        protected abstract TreeViewItem<TIdentifier> BuildRoot();
 
 
         // Default implementation of BuildRows assumes full tree was built in BuildRoot. With full tree we can also support search out of the box
-        protected virtual IList<TreeViewItem> BuildRows(TreeViewItem root)
+        protected virtual IList<TreeViewItem<TIdentifier>> BuildRows(TreeViewItem<TIdentifier> root) => BuildRowsInternal(root);
+        internal virtual IList<TreeViewItem<TIdentifier>> BuildRowsInternal(TreeViewItem<TIdentifier> root)
         {
             // Reuse cached list (for capacity)
             if (m_DefaultRows == null)
-                m_DefaultRows = new List<TreeViewItem>(100);
+                m_DefaultRows = new List<TreeViewItem<TIdentifier>>(100);
             m_DefaultRows.Clear();
 
             if (hasSearch)
@@ -123,18 +124,18 @@ namespace UnityEditor.IMGUI.Controls
             m_TreeView.Repaint();
         }
 
-        public TreeViewState state { get { return m_TreeView.state; } }
+        public TreeViewState<TIdentifier> state { get { return m_TreeView.state; } }
         public MultiColumnHeader multiColumnHeader { get { return m_MultiColumnHeader; } set { m_MultiColumnHeader = value; }}
 
         // internal for testing
-        internal TreeViewController controller => m_TreeView;
+        internal TreeViewController<TIdentifier> controller => m_TreeView;
 
-        protected TreeViewItem rootItem
+        protected TreeViewItem<TIdentifier> rootItem
         {
             get { return m_TreeView.data.root; }
         }
 
-        protected TreeViewItem hoveredItem
+        protected TreeViewItem<TIdentifier> hoveredItem
         {
             get { return m_TreeView.hoveredItem; }
         }
@@ -261,7 +262,9 @@ namespace UnityEditor.IMGUI.Controls
             return m_TreeView.gui.GetRowRect(row, GUIClip.visibleRect.width);
         }
 
-        public virtual IList<TreeViewItem> GetRows()
+        public virtual IList<TreeViewItem<TIdentifier>> GetRows() => GetRowsInternal();
+
+        internal virtual IList<TreeViewItem<TIdentifier>> GetRowsInternal()
         {
             if (!isInitialized)
                 return null;
@@ -269,17 +272,17 @@ namespace UnityEditor.IMGUI.Controls
             return m_TreeView.data.GetRows();
         }
 
-        protected IList<TreeViewItem> FindRows(IList<int> ids)
+        protected IList<TreeViewItem<TIdentifier>> FindRows(IList<TIdentifier> ids)
         {
             return GetRows().Where(item => ids.Contains(item.id)).ToList();
         }
 
-        protected TreeViewItem FindItem(int id, TreeViewItem searchFromThisItem)
+        protected TreeViewItem<TIdentifier> FindItem(TIdentifier id, TreeViewItem<TIdentifier> searchFromThisItem)
         {
-            return TreeViewUtility.FindItem(id, searchFromThisItem);
+            return TreeViewUtility<TIdentifier>.FindItem(id, searchFromThisItem);
         }
 
-        protected int FindRowOfItem(TreeViewItem item)
+        protected int FindRowOfItem(TreeViewItem<TIdentifier> item)
         {
             return GetRows().IndexOf(item);
         }
@@ -297,30 +300,30 @@ namespace UnityEditor.IMGUI.Controls
 
         public void CollapseAll()
         {
-            SetExpanded(new int[0]);
+            SetExpanded(new TIdentifier[0]);
         }
 
-        public void SetExpandedRecursive(int id, bool expanded)
+        public void SetExpandedRecursive(TIdentifier id, bool expanded)
         {
             m_DataSource.SetExpandedWithChildren(id, expanded);
         }
 
-        public bool SetExpanded(int id, bool expanded)
+        public bool SetExpanded(TIdentifier id, bool expanded)
         {
             return m_DataSource.SetExpanded(id, expanded);
         }
 
-        public void SetExpanded(IList<int> ids)
+        public void SetExpanded(IList<TIdentifier> ids)
         {
             m_DataSource.SetExpandedIDs(ids.ToArray());
         }
 
-        public IList<int> GetExpanded()
+        public IList<TIdentifier> GetExpanded()
         {
             return m_DataSource.GetExpandedIDs();
         }
 
-        public bool IsExpanded(int id)
+        public bool IsExpanded(TIdentifier id)
         {
             return m_DataSource.IsExpanded(id);
         }
@@ -338,17 +341,17 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Selection interface
-        public IList<int> GetSelection()
+        public IList<TIdentifier> GetSelection()
         {
             return m_TreeView.GetSelection();
         }
 
-        public void SetSelection(IList<int> selectedIDs)
+        public void SetSelection(IList<TIdentifier> selectedIDs)
         {
             SetSelection(selectedIDs, TreeViewSelectionOptions.None);
         }
 
-        public void SetSelection(IList<int> selectedIDs, TreeViewSelectionOptions options)
+        public void SetSelection(IList<TIdentifier> selectedIDs, TreeViewSelectionOptions options)
         {
             bool fireSelectionChanged = (options & TreeViewSelectionOptions.FireSelectionChanged) != 0;
             bool revealSelectionAndFrameLastSelected = (options & TreeViewSelectionOptions.RevealAndFrame) != 0;
@@ -359,7 +362,7 @@ namespace UnityEditor.IMGUI.Controls
                 m_TreeView.NotifyListenersThatSelectionChanged();
         }
 
-        public bool IsSelected(int id)
+        public bool IsSelected(TIdentifier id)
         {
             return m_TreeView.IsSelected(id);
         }
@@ -393,18 +396,18 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        protected void SelectionClick(TreeViewItem item, bool keepMultiSelection)
+        protected void SelectionClick(TreeViewItem<TIdentifier> item, bool keepMultiSelection)
         {
             m_TreeView.SelectionClick(item, keepMultiSelection);
         }
 
         // Rename interface
-        public bool BeginRename(TreeViewItem item)
+        public bool BeginRename(TreeViewItem<TIdentifier> item)
         {
             return BeginRename(item, 0f);
         }
 
-        public bool BeginRename(TreeViewItem item, float delay)
+        public bool BeginRename(TreeViewItem<TIdentifier> item, float delay)
         {
             return m_GUI.BeginRename(item, delay);
         }
@@ -415,7 +418,7 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Frame interface
-        public void FrameItem(int id)
+        public void FrameItem(TIdentifier id)
         {
             bool animated = false;
             m_TreeView.Frame(id, true, false, animated);
@@ -478,17 +481,17 @@ namespace UnityEditor.IMGUI.Controls
 
         // GUI helper methods (for custon drawing)
 
-        protected float GetFoldoutIndent(TreeViewItem item)
+        protected float GetFoldoutIndent(TreeViewItem<TIdentifier> item)
         {
             return m_GUI.GetFoldoutIndent(item);
         }
 
-        protected float GetContentIndent(TreeViewItem item)
+        protected float GetContentIndent(TreeViewItem<TIdentifier> item)
         {
             return m_GUI.GetContentIndent(item);
         }
 
-        protected IList<int> SortItemIDsInRowOrder(IList<int> ids)
+        protected IList<TIdentifier> SortItemIDsInRowOrder(IList<TIdentifier> ids)
         {
             return m_TreeView.SortIDsInVisiblityOrder(ids);
         }
@@ -503,7 +506,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        protected void AddExpandedRows(TreeViewItem root, IList<TreeViewItem> rows)
+        protected void AddExpandedRows(TreeViewItem<TIdentifier> root, IList<TreeViewItem<TIdentifier>> rows)
         {
             if (root == null)
                 throw new ArgumentNullException("root", "root is null");
@@ -512,35 +515,35 @@ namespace UnityEditor.IMGUI.Controls
                 throw new ArgumentNullException("rows", "rows is null");
 
             if (root.hasChildren)
-                foreach (TreeViewItem child in root.children)
+                foreach (TreeViewItem<TIdentifier> child in root.children)
                     GetExpandedRowsRecursive(child, rows);
         }
 
-        void GetExpandedRowsRecursive(TreeViewItem item, IList<TreeViewItem> expandedRows)
+        void GetExpandedRowsRecursive(TreeViewItem<TIdentifier> item, IList<TreeViewItem<TIdentifier>> expandedRows)
         {
             if (item == null)
-                Debug.LogError("Found a TreeViewItem that is null. Invalid use of AddExpandedRows(): This method is only valid to call if you have built the full tree of TreeViewItems.");
+                Debug.LogError("Found a TreeViewItem<TIdentifier> that is null. Invalid use of AddExpandedRows(): This method is only valid to call if you have built the full tree of TreeViewItems.");
 
             expandedRows.Add(item);
 
             if (item.hasChildren && IsExpanded(item.id))
-                foreach (TreeViewItem child in item.children)
+                foreach (TreeViewItem<TIdentifier> child in item.children)
                     GetExpandedRowsRecursive(child, expandedRows);
         }
 
-        protected virtual void SelectionChanged(IList<int> selectedIds)
+        protected virtual void SelectionChanged(IList<TIdentifier> selectedIds)
         {
         }
 
-        protected virtual void SingleClickedItem(int id)
+        protected virtual void SingleClickedItem(TIdentifier id)
         {
         }
 
-        protected virtual void DoubleClickedItem(int id)
+        protected virtual void DoubleClickedItem(TIdentifier id)
         {
         }
 
-        protected virtual void ContextClickedItem(int id)
+        protected virtual void ContextClickedItem(TIdentifier id)
         {
         }
 
@@ -561,43 +564,47 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Used to reveal an item
-        protected virtual IList<int> GetAncestors(int id)
+        protected virtual IList<TIdentifier> GetAncestors(TIdentifier id)
         {
             var item = FindItem(id);
             if (item == null)
-                return new List<int>();
+                return new List<TIdentifier>();
 
             // Default behavior assumes complete tree
-            HashSet<int> parentsAbove = new HashSet<int>();
-            TreeViewUtility.GetParentsAboveItem(item, parentsAbove);
+            HashSet<TIdentifier> parentsAbove = new HashSet<TIdentifier>();
+            TreeViewUtility<TIdentifier>.GetParentsAboveItem(item, parentsAbove);
             return parentsAbove.ToArray();
         }
 
         // Used to expand children recursively below an item
-        protected virtual IList<int> GetDescendantsThatHaveChildren(int id)
+        protected virtual IList<TIdentifier> GetDescendantsThatHaveChildren(TIdentifier id)
         {
             // Default behavior assumes complete tree
-            HashSet<int> parentsBelow = new HashSet<int>();
-            TreeViewUtility.GetParentsBelowItem(FindItem(id), parentsBelow);
+            HashSet<TIdentifier> parentsBelow = new HashSet<TIdentifier>();
+            TreeViewUtility<TIdentifier>.GetParentsBelowItem(FindItem(id), parentsBelow);
             return parentsBelow.ToArray();
         }
 
-        TreeViewItem FindItem(int id)
+        TreeViewItem<TIdentifier> FindItem(TIdentifier id)
         {
             if (rootItem == null)
                 throw new InvalidOperationException("FindItem failed: root item has not been created yet");
 
-            return TreeViewUtility.FindItem(id, rootItem);
+            return TreeViewUtility<TIdentifier>.FindItem(id, rootItem);
         }
 
         // Selection
-        protected virtual bool CanMultiSelect(TreeViewItem item)
+        protected virtual bool CanMultiSelect(TreeViewItem<TIdentifier> item) => CanMultiSelectInternal(item);
+
+        internal virtual bool CanMultiSelectInternal(TreeViewItem<TIdentifier> item)
         {
             return true; // default behavior
         }
 
         // Renaming
-        protected virtual bool CanRename(TreeViewItem item)
+        protected virtual bool CanRename(TreeViewItem<TIdentifier> item) => CanRenameInternal(item);
+
+        internal virtual bool CanRenameInternal(TreeViewItem<TIdentifier> item)
         {
             return false; // Default to false so user have to enable renaming if wanted
         }
@@ -607,7 +614,9 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Dragging
-        protected virtual bool CanStartDrag(CanStartDragArgs args)
+        protected virtual bool CanStartDrag(CanStartDragArgs args) => CanStartDragInternal(args);
+
+        internal virtual bool CanStartDragInternal(CanStartDragArgs args)
         {
             return false;
         }
@@ -616,17 +625,22 @@ namespace UnityEditor.IMGUI.Controls
         {
         }
 
-        protected virtual DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args)
+        protected virtual DragAndDropVisualMode HandleDragAndDrop(DragAndDropArgs args) => HandleDragAndDropInternal(args);
+        internal virtual DragAndDropVisualMode HandleDragAndDropInternal(DragAndDropArgs args)
         {
             return DragAndDropVisualMode.None;
         }
 
-        protected virtual bool CanBeParent(TreeViewItem item)
+        protected virtual bool CanBeParent(TreeViewItem<TIdentifier> item) => CanBeParentInternal(item);
+
+        internal virtual bool CanBeParentInternal(TreeViewItem<TIdentifier> item)
         {
             return true; // default behavior
         }
 
-        protected virtual bool CanChangeExpandedState(TreeViewItem item)
+        protected virtual bool CanChangeExpandedState(TreeViewItem<TIdentifier> item) => CanChangeExpandedStateInternal(item);
+
+        internal virtual bool CanChangeExpandedStateInternal(TreeViewItem<TIdentifier> item)
         {
             // Default: Ignore expansion (foldout arrow) when showing search results
             if (m_TreeView.isSearching)
@@ -634,13 +648,17 @@ namespace UnityEditor.IMGUI.Controls
             return item.hasChildren;
         }
 
-        protected virtual bool DoesItemMatchSearch(TreeViewItem item, string search)
+        protected virtual bool DoesItemMatchSearch(TreeViewItem<TIdentifier> item, string search) => DoesItemMatchSearchInternal(item, search);
+
+        internal virtual bool DoesItemMatchSearchInternal(TreeViewItem<TIdentifier> item, string search)
         {
             return item.displayName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // Custom GUI
-        protected virtual void RowGUI(RowGUIArgs args)
+        protected virtual void RowGUI(RowGUIArgs args) => RowGUIInternal(args);
+
+        internal virtual void RowGUIInternal(RowGUIArgs args)
         {
             m_GUI.DefaultRowGUI(args);
         }
@@ -662,12 +680,16 @@ namespace UnityEditor.IMGUI.Controls
             m_GUI.RefreshRowRects(GetRows());
         }
 
-        protected virtual float GetCustomRowHeight(int row, TreeViewItem item)
+        protected virtual float GetCustomRowHeight(int row, TreeViewItem<TIdentifier> item) => GetCustomRowHeightInternal(row, item);
+
+        internal virtual float GetCustomRowHeightInternal(int row, TreeViewItem<TIdentifier> item)
         {
             return rowHeight;
         }
 
-        protected virtual Rect GetRenameRect(Rect rowRect, int row, TreeViewItem item)
+        protected virtual Rect GetRenameRect(Rect rowRect, int row, TreeViewItem<TIdentifier> item) => GetRenameRectInternal(rowRect, row, item);
+
+        internal virtual Rect GetRenameRectInternal(Rect rowRect, int row, TreeViewItem<TIdentifier> item)
         {
             return m_GUI.DefaultRenameRect(rowRect, row, item);
         }
@@ -704,24 +726,24 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        protected static void SetupParentsAndChildrenFromDepths(TreeViewItem root, IList<TreeViewItem> rows)
+        protected static void SetupParentsAndChildrenFromDepths(TreeViewItem<TIdentifier> root, IList<TreeViewItem<TIdentifier>> rows)
         {
-            TreeViewUtility.SetChildParentReferences(rows, root);
+            TreeViewUtility<TIdentifier>.SetChildParentReferences(rows, root);
         }
 
-        protected static void SetupDepthsFromParentsAndChildren(TreeViewItem root)
+        protected static void SetupDepthsFromParentsAndChildren(TreeViewItem<TIdentifier> root)
         {
-            TreeViewUtility.SetDepthValuesForItems(root);
+            TreeViewUtility<TIdentifier>.SetDepthValuesForItems(root);
         }
 
-        protected static List<TreeViewItem> CreateChildListForCollapsedParent()
+        protected static List<TreeViewItem<TIdentifier>> CreateChildListForCollapsedParent()
         {
-            return LazyTreeViewDataSource.CreateChildListForCollapsedParent();
+            return LazyTreeViewDataSource<TIdentifier>.CreateChildListForCollapsedParent();
         }
 
-        protected static bool IsChildListForACollapsedParent(IList<TreeViewItem> childList)
+        protected static bool IsChildListForACollapsedParent(IList<TreeViewItem<TIdentifier>> childList)
         {
-            return LazyTreeViewDataSource.IsChildListForACollapsedParent(childList);
+            return LazyTreeViewDataSource<TIdentifier>.IsChildListForACollapsedParent(childList);
         }
 
         class OverriddenMethods
@@ -732,33 +754,68 @@ namespace UnityEditor.IMGUI.Controls
             public readonly bool hasBuildRows;
             public readonly bool hasGetCustomRowHeight;
 
-            public OverriddenMethods(TreeView treeView)
+            public OverriddenMethods(TreeView<TIdentifier> treeView)
             {
                 Type type = treeView.GetType();
-                hasRowGUI = IsOverridden(type, "RowGUI");
-                hasHandleDragAndDrop = IsOverridden(type, "HandleDragAndDrop");
-                hasGetRenameRect = IsOverridden(type, "GetRenameRect");
-                hasBuildRows = IsOverridden(type, "BuildRows");
-                hasGetCustomRowHeight = IsOverridden(type, "GetCustomRowHeight");
-                ValidateOverriddenMethods(treeView);
-            }
+                var methods = type.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
+                bool hasCanRename = false, hasRenameEnded = false;
+                bool hasCanStartDragAndDrop = false, hasSetupDragAndDrop = false;
 
-            static bool IsOverridden(Type type, string methodName)
-            {
-                var methodInfo = type.GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Instance);
-                if (methodInfo != null)
-                    return methodInfo.GetBaseDefinition().DeclaringType != methodInfo.DeclaringType;
+                foreach (var method in methods)
+                {
+                    if (method.GetBaseDefinition().DeclaringType == method.DeclaringType)
+                        continue;
 
-                Debug.LogError("IsOverridden: method name not found: " + methodName + " (check spelling against method declaration)");
-                return false;
-            }
+                    switch (method.Name)
+                    {
+                        case "RowGUI":
+                        {
+                            hasRowGUI = true;
+                            break;
+                        }
+                        case "HandleDragAndDrop":
+                        {
+                            hasHandleDragAndDrop = true;
+                            break;
+                        }
+                        case "GetRenameRect":
+                        {
+                            hasGetRenameRect = true;
+                            break;
+                        }
+                        case "BuildRows":
+                        {
+                            hasBuildRows = true;
+                            break;
+                        }
+                        case "GetCustomRowHeight":
+                        {
+                            hasGetCustomRowHeight = true;
+                            break;
+                        }
+                        case "CanRename":
+                        {
+                            hasCanRename = true;
+                            break;
+                        }
+                        case "RenameEnded":
+                        {
+                            hasRenameEnded = true;
+                            break;
+                        }
+                        case "CanStartDrag":
+                        {
+                            hasCanStartDragAndDrop = true;
+                            break;
+                        }
+                        case "SetupDragAndDrop":
+                        {
+                            hasSetupDragAndDrop = true;
+                            break;
+                        }
+                    }
+                }
 
-            void ValidateOverriddenMethods(TreeView treeView)
-            {
-                Type type = treeView.GetType();
-
-                bool hasCanRename = IsOverridden(type, "CanRename");
-                bool hasRenameEnded = IsOverridden(type, "RenameEnded");
                 if (hasRenameEnded != hasCanRename)
                 {
                     if (hasCanRename)
@@ -768,8 +825,6 @@ namespace UnityEditor.IMGUI.Controls
                         Debug.LogError(type.Name + ": If you are overriding RenameEnded you should also override CanRename (to allow renaming).");
                 }
 
-                bool hasCanStartDragAndDrop = IsOverridden(type, "CanStartDrag");
-                bool hasSetupDragAndDrop = IsOverridden(type, "SetupDragAndDrop");
                 if (hasCanStartDragAndDrop != hasSetupDragAndDrop)
                 {
                     if (hasCanStartDragAndDrop)
@@ -782,9 +837,9 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Nested because they are used by protected methods
-        protected struct RowGUIArgs
+        protected internal struct RowGUIArgs
         {
-            public TreeViewItem item;
+            public TreeViewItem<TIdentifier> item;
             public string label;
             public Rect rowRect;
             public int row;
@@ -835,34 +890,34 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        protected struct DragAndDropArgs
+        protected internal struct DragAndDropArgs
         {
             public DragAndDropPosition dragAndDropPosition;
-            public TreeViewItem parentItem;
+            public TreeViewItem<TIdentifier> parentItem;
             public int insertAtIndex;
             public bool performDrop;
         }
 
         protected struct SetupDragAndDropArgs
         {
-            public IList<int> draggedItemIDs;
+            public IList<TIdentifier> draggedItemIDs;
         }
 
-        protected struct CanStartDragArgs
+        protected internal struct CanStartDragArgs
         {
-            public TreeViewItem draggedItem;
-            public IList<int> draggedItemIDs;
+            public TreeViewItem<TIdentifier> draggedItem;
+            public IList<TIdentifier> draggedItemIDs;
         }
 
         protected struct RenameEndedArgs
         {
             public bool acceptedRename;
-            public int itemID;
+            public TIdentifier itemID;
             public string originalName;
             public string newName;
         }
 
-        protected enum DragAndDropPosition
+        protected internal enum DragAndDropPosition
         {
             UponItem,
             BetweenItems,

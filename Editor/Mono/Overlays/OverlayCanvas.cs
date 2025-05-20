@@ -539,27 +539,26 @@ namespace UnityEditor.Overlays
             m_MouseInCurrentCanvas = false;
         }
 
-        internal Rect ClampToOverlayWindow(Rect rect)
+        Rect GetBoundaryRect()
         {
-            return ClampRectToBounds(rootVisualElement.localBound, rect);
+            var rect = rootVisualElement.localBound;
+            rect.xMin += k_OverlayMinVisibleArea;
+            rect.yMin += k_OverlayMinVisibleArea;
+            rect.xMax -= k_OverlayMinVisibleArea;
+            rect.yMax -= k_OverlayMinVisibleArea;
+            return rect;
         }
 
-        // ensure that a minimum area of a rect is within boundary
-        internal static Rect ClampRectToBounds(Rect boundary, Rect rectToClamp)
+        // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
+        internal Rect EnsureOverlapsWindow(Rect rect)
         {
-            if (rectToClamp.x > boundary.xMax - k_OverlayMinVisibleArea)
-                rectToClamp.x = boundary.xMax - k_OverlayMinVisibleArea;
+            return OverlayUtilities.EnsureRectOverlapsRect(rect, GetBoundaryRect());
+        }
 
-            if (rectToClamp.xMax < boundary.xMin + k_OverlayMinVisibleArea)
-                rectToClamp.x = (boundary.xMin + k_OverlayMinVisibleArea) - rectToClamp.width;
-
-            if (rectToClamp.y > boundary.yMax - k_OverlayMinVisibleArea)
-                rectToClamp.y = boundary.yMax - k_OverlayMinVisibleArea;
-
-            if (rectToClamp.y < boundary.yMin)
-                rectToClamp.y = boundary.yMin;
-
-            return rectToClamp;
+        // This ensure the given rect is fully within the window (unless the window is smaller then the rect)
+        internal Rect ClampToWindow(Rect rect)
+        {
+            return OverlayUtilities.ClampRectToRect(rect, GetBoundaryRect());
         }
 
         // clamp all overlays to  root visual element's new bounds

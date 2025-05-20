@@ -21,6 +21,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 using UnityEditor.Connect;
 using UnityEditor.Utils;
 using UnityEditor.Build.Profile;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -220,13 +221,13 @@ namespace UnityEditor
 
         BuildPlayerSceneTreeView m_TreeView;
         [SerializeField]
-        IMGUI.Controls.TreeViewState m_TreeViewState;
+        TreeViewState m_TreeViewState;
         void ActiveScenesGUI()
         {
             if (m_TreeView == null)
             {
                 if (m_TreeViewState == null)
-                    m_TreeViewState = new IMGUI.Controls.TreeViewState();
+                    m_TreeViewState = new TreeViewState();
                 m_TreeView = new BuildPlayerSceneTreeView(m_TreeViewState);
                 m_TreeView.Reload();
             }

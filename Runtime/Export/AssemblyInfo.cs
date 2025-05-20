@@ -82,6 +82,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.2D")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Deployment")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Tooling")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Application")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.PlayerBuildAndRun")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetBundles")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
@@ -187,4 +192,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Subsystem.Registration")]
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
 
+
+// Test Assemblies
+[assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
 

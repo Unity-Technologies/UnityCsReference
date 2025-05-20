@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {

@@ -7,11 +7,20 @@ using UnityEngine;
 using UnityEngine.TerrainTools;
 using System;
 using UnityEngine.Rendering;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.TerrainTools
 {
     internal class PaintDetailsTool : TerrainPaintToolWithOverlays<PaintDetailsTool>
     {
+        [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintToolWithOverlays<PaintDetailsTool>();
+        }
+
         internal const string k_ToolName = "Paint Details";
         public override string OnIcon => "TerrainOverlays/PaintDetails_On.png";
         public override string OffIcon => "TerrainOverlays/PaintDetails.png";

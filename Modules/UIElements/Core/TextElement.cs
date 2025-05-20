@@ -178,13 +178,42 @@ namespace UnityEngine.UIElements
 
             generateVisualContent += OnGenerateVisualContent;
             edition.GetDefaultValueType = GetDefaultValueType;
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
-        string GetDefaultValueType() { return ""; }
+        string GetDefaultValueType() { return string.Empty; }
 
         internal UITKTextHandle uitkTextHandle { get; set; }
+
+
+        // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
+        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),
+            typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
+            typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
+            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
+            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent),
+            typeof(GeometryChangedEvent), typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent)
+        )]
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
+            base.HandleEventBubbleUp(evt);
+
+            if (evt.target == this)
+            {
+                switch (evt)
+                {
+                    case GeometryChangedEvent @event:
+                        OnGeometryChanged(@event);
+                        return;
+                    case AttachToPanelEvent @event:
+                        OnAttachToPanel(@event);
+                        return;
+                    case DetachFromPanelEvent @event:
+                        OnDetachFromPanel(@event);
+                        return;
+                }
+            }
+
+            EditionHandleEvent(evt);
+        }
 
         private void OnGeometryChanged(GeometryChangedEvent e)
         {
@@ -327,14 +356,17 @@ namespace UnityEngine.UIElements
         private bool m_WasElided;
 
         // Used in tests
-        internal void OnGenerateVisualContent(MeshGenerationContext mgc)
+        internal static void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            UpdateVisibleText();
-
-            if (TextUtilities.IsFontAssigned(this))
+            if (mgc.visualElement is TextElement element)
             {
-                uitkTextHandle.ReleaseResourcesIfPossible();
-                mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+                element.UpdateVisibleText();
+
+                if (TextUtilities.IsFontAssigned(element))
+                {
+                    element.uitkTextHandle.ReleaseResourcesIfPossible();
+                    mgc.meshGenerator.textJobSystem.GenerateText(mgc, element);
+                }
             }
         }
 

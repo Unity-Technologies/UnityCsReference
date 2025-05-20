@@ -47,6 +47,7 @@ namespace UnityEngine
         [NativeProperty("m_FontSize", false, TargetType.Field)] public extern int fontSize { get; set; }
         [NativeProperty("m_FontStyle", false, TargetType.Field)] public extern FontStyle fontStyle { get; set; }
         [NativeProperty("m_RichText", false, TargetType.Field)] public extern bool richText { get; set; }
+        [NativeProperty("m_IsGizmo", false, TargetType.Field)] internal extern bool isGizmo { get; set; }
 
         [Obsolete("Don't use clipOffset - put things inside BeginGroup instead. This functionality will be removed in a later version.", false)]
         [NativeProperty("m_ClipOffset", false, TargetType.Field)] public extern Vector2 clipOffset { get; set; }

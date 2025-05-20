@@ -33,17 +33,17 @@ namespace UnityEngine.TextCore.Text
             if (generationSettings.textSettings == null)
                 return Vector2.zero;
 
-            float fontSize = generationSettings.autoSize ? generationSettings.fontSizeMax : m_FontSize;
+            float fontSize = TextGenerationSettings.autoSize ? TextGenerationSettings.fontSizeMax : m_FontSize;
 
             // Reset auto sizing point size bounds
-            m_MinFontSize = generationSettings.fontSizeMin;
-            m_MaxFontSize = generationSettings.fontSizeMax;
+            m_MinFontSize = TextGenerationSettings.fontSizeMin;
+            m_MaxFontSize = TextGenerationSettings.fontSizeMax;
             m_CharWidthAdjDelta = 0;
 
             Vector2 margin = new Vector2(m_MarginWidth != 0 ? m_MarginWidth : TextGeneratorUtilities.largePositiveFloat, m_MarginHeight != 0 ? m_MarginHeight : TextGeneratorUtilities.largePositiveFloat);
             m_AutoSizeIterationCount = 0;
 
-            return CalculatePreferredValues(ref fontSize, margin, generationSettings.autoSize, generationSettings, textInfo);
+            return CalculatePreferredValues(ref fontSize, margin, TextGenerationSettings.autoSize, generationSettings, textInfo);
         }
 
         /// <summary>
@@ -70,7 +70,7 @@ namespace UnityEngine.TextCore.Text
             }
 
             m_CurrentFontAsset = generationSettings.fontAsset;
-            m_CurrentMaterial = generationSettings.material;
+            m_CurrentMaterial = generationSettings.fontAsset.material;
             m_CurrentMaterialIndex = 0;
             m_MaterialReferenceStack.SetDefault(new MaterialReference(0, m_CurrentFontAsset, null, m_CurrentMaterial, m_Padding));
 
@@ -82,9 +82,9 @@ namespace UnityEngine.TextCore.Text
 
             // Calculate the scale of the font based on selected font size and sampling point size.
             // baseScale is calculated using the font asset assigned to the text object.
-            float baseScale = (fontSize / generationSettings.fontAsset.faceInfo.pointSize * generationSettings.fontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+            float baseScale = (fontSize / generationSettings.fontAsset.faceInfo.pointSize * generationSettings.fontAsset.faceInfo.scale);
             float currentElementScale = baseScale;
-            float currentEmScale = fontSize * 0.01f * (generationSettings.isOrthographic ? 1 : 0.1f);
+            float currentEmScale = fontSize * 0.01f;
             m_FontScaleMultiplier = 1;
             m_ShouldRenderBitmap = generationSettings.fontAsset.IsBitmap();
 
@@ -129,9 +129,9 @@ namespace UnityEngine.TextCore.Text
             m_IsDrivenLineSpacing = false;
             m_LastBaseGlyphIndex = int.MinValue;
 
-            bool kerning = generationSettings.fontFeatures.Contains(OTL_FeatureTag.kern);
-            bool markToBase = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mark);
-            bool markToMark = generationSettings.fontFeatures.Contains(OTL_FeatureTag.mkmk);
+            bool kerning = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.kern);
+            bool markToBase = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.mark);
+            bool markToMark = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.mkmk);
 
             TextSettings textSettings = generationSettings.textSettings;
 
@@ -263,7 +263,7 @@ namespace UnityEngine.TextCore.Text
 
                 #region Linked Text
 
-                if (m_CharacterCount < generationSettings.firstVisibleCharacter && charCode != k_EndOfText)
+                if (m_CharacterCount < TextGenerationSettings.firstVisibleCharacter && charCode != k_EndOfText)
                 {
                     m_InternalTextElementInfo[m_CharacterCount].isVisible = false;
                     m_InternalTextElementInfo[m_CharacterCount].character = (char)k_ZeroWidthSpace;
@@ -332,7 +332,7 @@ namespace UnityEngine.TextCore.Text
                     // The sprite scale calculations are based on the font asset assigned to the text object.
                     if (m_CurrentSpriteAsset.faceInfo.pointSize > 0)
                     {
-                        float spriteScale = (m_CurrentFontSize / m_CurrentSpriteAsset.faceInfo.pointSize * m_CurrentSpriteAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        float spriteScale = (m_CurrentFontSize / m_CurrentSpriteAsset.faceInfo.pointSize * m_CurrentSpriteAsset.faceInfo.scale);
                         currentElementScale = sprite.scale * sprite.glyph.scale * spriteScale;
                         elementAscentLine = m_CurrentSpriteAsset.faceInfo.ascentLine;
 
@@ -341,7 +341,7 @@ namespace UnityEngine.TextCore.Text
                     }
                     else
                     {
-                        float spriteScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        float spriteScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale);
                         currentElementScale = m_CurrentFontAsset.faceInfo.ascentLine / sprite.glyph.metrics.height * sprite.scale * sprite.glyph.scale * spriteScale;
                         float scaleDelta = spriteScale / currentElementScale;
                         elementAscentLine = m_CurrentFontAsset.faceInfo.ascentLine * scaleDelta;
@@ -371,9 +371,9 @@ namespace UnityEngine.TextCore.Text
 
                     float adjustedScale;
                     if (isInjectedCharacter && m_TextProcessingArray[i].unicode == 0x0A && m_CharacterCount != m_FirstCharacterOfLine)
-                        adjustedScale = textInfo.textElementInfo[m_CharacterCount - 1].pointSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f);
+                        adjustedScale = textInfo.textElementInfo[m_CharacterCount - 1].pointSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale;
                     else
-                        adjustedScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f);
+                        adjustedScale = m_CurrentFontSize * smallCapsMultiplier / m_CurrentFontAsset.m_FaceInfo.pointSize * m_CurrentFontAsset.m_FaceInfo.scale;
 
                     // Special handling for injected Ellipsis
                     if (isInjectedCharacter && charCode == k_HorizontalEllipsis)
@@ -641,7 +641,7 @@ namespace UnityEngine.TextCore.Text
                 }
 
                 // Max text object ascender and cap height
-                if (m_LineNumber == 0 || m_IsNewPage)
+                if (m_LineNumber == 0)
                 {
                     if (isFirstCharacterOfLine || isWhiteSpace == false)
                     {
@@ -717,7 +717,7 @@ namespace UnityEngine.TextCore.Text
 
                                 #region Character Width Adjustments
 
-                                if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100 && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
+                                if (m_CharWidthAdjDelta < TextGenerationSettings.charWidthMaxAdj / 100 && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                 {
                                     float adjustedTextWidth = textWidth;
 
@@ -727,7 +727,7 @@ namespace UnityEngine.TextCore.Text
 
                                     float adjustmentDelta = textWidth - (widthOfTextArea - 0.0001f);
                                     m_CharWidthAdjDelta += adjustmentDelta / adjustedTextWidth;
-                                    m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, generationSettings.charWidthMaxAdj / 100);
+                                    m_CharWidthAdjDelta = Mathf.Min(m_CharWidthAdjDelta, TextGenerationSettings.charWidthMaxAdj / 100);
 
                                     Profiler.EndSample();
                                     return Vector2.zero;
@@ -739,13 +739,13 @@ namespace UnityEngine.TextCore.Text
 
                                 #region Text Auto-Sizing (Text greater than vertical bounds)
 
-                                if (fontSize > generationSettings.fontSizeMin && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
+                                if (fontSize > TextGenerationSettings.fontSizeMin && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
                                 {
                                     m_MaxFontSize = fontSize;
 
                                     float sizeDelta = Mathf.Max((fontSize - m_MinFontSize) / 2, 0.05f);
                                     fontSize -= sizeDelta;
-                                    fontSize = Mathf.Max((int)(fontSize * 20 + 0.5f) / 20f, generationSettings.fontSizeMin);
+                                    fontSize = Mathf.Max((int)(fontSize * 20 + 0.5f) / 20f, TextGenerationSettings.fontSizeMin);
 
                                     // TODO: Need to investigate this value when moving it to a service as TMP might require this value to be zero.
                                     //       It's currently omitted as UITK expects the text height to be auto-increased if a word becomes longer
@@ -760,7 +760,7 @@ namespace UnityEngine.TextCore.Text
 
                             // Adjust line spacing if necessary
                             float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
-                            if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false && !m_IsNewPage)
+                            if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false)
                             {
                                 //AdjustLineOffset(m_FirstCharacterOfLine, m_CharacterCount, baselineAdjustmentDelta);
                                 m_MaxDescender -= baselineAdjustmentDelta;
@@ -776,7 +776,7 @@ namespace UnityEngine.TextCore.Text
                             if (!isMaxVisibleDescenderSet)
                                 maxVisibleDescender = m_MaxDescender;
 
-                            if (generationSettings.useMaxVisibleDescender && (m_CharacterCount >= generationSettings.maxVisibleCharacters || m_LineNumber >= generationSettings.maxVisibleLines))
+                            if (TextGenerationSettings.useMaxVisibleDescender && (m_CharacterCount >= TextGenerationSettings.maxVisibleCharacters || m_LineNumber >= TextGenerationSettings.maxVisibleLines))
                                 isMaxVisibleDescenderSet = true;
 
                             // Store first character of the next line.
@@ -793,12 +793,12 @@ namespace UnityEngine.TextCore.Text
                             // Compute potential new line offset in the event a line break is needed.
                             if (m_LineHeight == k_FloatUnset)
                             {
-                                m_LineOffset += 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + generationSettings.lineSpacing * currentEmScale;
+                                m_LineOffset += 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + TextGenerationSettings.lineSpacing * currentEmScale;
                                 m_IsDrivenLineSpacing = false;
                             }
                             else
                             {
-                                m_LineOffset += m_LineHeight + generationSettings.lineSpacing * currentEmScale;
+                                m_LineOffset += m_LineHeight + TextGenerationSettings.lineSpacing * currentEmScale;
                                 m_IsDrivenLineSpacing = true;
                             }
 
@@ -828,7 +828,7 @@ namespace UnityEngine.TextCore.Text
 
                 #region Adjust Line Spacing
 
-                if (m_LineOffset > 0 && !TextGeneratorUtilities.Approximately(m_MaxLineAscender, m_StartOfLineAscender) && m_IsDrivenLineSpacing == false && !m_IsNewPage)
+                if (m_LineOffset > 0 && !TextGeneratorUtilities.Approximately(m_MaxLineAscender, m_StartOfLineAscender) && m_IsDrivenLineSpacing == false)
                 {
                     float offsetDelta = m_MaxLineAscender - m_StartOfLineAscender;
 
@@ -901,13 +901,11 @@ namespace UnityEngine.TextCore.Text
                 {
                     // Check if Line Spacing of previous line needs to be adjusted.
                     float baselineAdjustmentDelta = m_MaxLineAscender - m_StartOfLineAscender;
-                    if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false && !m_IsNewPage)
+                    if (m_LineOffset > 0 && Math.Abs(baselineAdjustmentDelta) > 0.01f && m_IsDrivenLineSpacing == false )
                     {
                         m_MaxDescender -= baselineAdjustmentDelta;
                         m_LineOffset += baselineAdjustmentDelta;
                     }
-
-                    m_IsNewPage = false;
 
                     // Calculate lineAscender & make sure if last character is superscript or subscript that we check that as well.
                     //float lineAscender = m_MaxLineAscender - m_LineOffset;
@@ -933,13 +931,13 @@ namespace UnityEngine.TextCore.Text
                         // Apply Line Spacing with special handling for VT char(11)
                         if (m_LineHeight == k_FloatUnset)
                         {
-                            float lineOffsetDelta = 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            float lineOffsetDelta = 0 - m_MaxLineDescender + ascender + (lineGap + m_LineSpacingDelta) * baseScale + (TextGenerationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_LineOffset += lineOffsetDelta;
                             m_IsDrivenLineSpacing = false;
                         }
                         else
                         {
-                            m_LineOffset += m_LineHeight + (generationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
+                            m_LineOffset += m_LineHeight + (TextGenerationSettings.lineSpacing + (charCode == k_LineFeed || charCode == k_ParagraphSeparator ? generationSettings.paragraphSpacing : 0)) * currentEmScale;
                             m_IsDrivenLineSpacing = true;
                         }
 
@@ -1052,17 +1050,17 @@ namespace UnityEngine.TextCore.Text
             #region Check Auto-Sizing (Upper Font Size Bounds)
 
             fontSizeDelta = m_MaxFontSize - m_MinFontSize;
-            if (isTextAutoSizingEnabled && fontSizeDelta > 0.051f && fontSize < generationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
+            if (isTextAutoSizingEnabled && fontSizeDelta > 0.051f && fontSize < TextGenerationSettings.fontSizeMax && m_AutoSizeIterationCount < m_AutoSizeMaxIterationCount)
             {
                 // Reset character width adjustment delta
-                if (m_CharWidthAdjDelta < generationSettings.charWidthMaxAdj / 100)
+                if (m_CharWidthAdjDelta < TextGenerationSettings.charWidthMaxAdj / 100)
                     m_CharWidthAdjDelta = 0;
 
                 m_MinFontSize = fontSize;
 
                 float sizeDelta = Mathf.Max((m_MaxFontSize - fontSize) / 2, 0.05f);
                 fontSize += sizeDelta;
-                fontSize = Mathf.Min((int)(fontSize * 20 + 0.5f) / 20f, generationSettings.fontSizeMax);
+                fontSize = Mathf.Min((int)(fontSize * 20 + 0.5f) / 20f, TextGenerationSettings.fontSizeMax);
 
                 Profiler.EndSample();
                 return Vector2.zero;
@@ -1071,13 +1069,6 @@ namespace UnityEngine.TextCore.Text
             #endregion End Auto-sizing Check
 
             m_IsCalculatingPreferredValues = false;
-
-            // Adjust Preferred Width and Height to account for Margins.
-            renderedWidth += generationSettings.margins.x > 0 ? generationSettings.margins.x : 0;
-            renderedWidth += generationSettings.margins.z > 0 ? generationSettings.margins.z : 0;
-
-            renderedHeight += generationSettings.margins.y > 0 ? generationSettings.margins.y : 0;
-            renderedHeight += generationSettings.margins.w > 0 ? generationSettings.margins.w : 0;
 
             if (NeedToRound)
             {

@@ -23,7 +23,7 @@ namespace UnityEditor.Search
         public static readonly string descriptionClassName = ussClassName.WithUssElement("description");
         public static readonly string helperBackgroundClassName = ussClassName.WithUssElement("helper-background");
 
-        public static readonly Texture2D recentSearchesIcon = EditorGUIUtility.FindTexture("UndoHistory");
+        public static readonly Texture2D recentSearchesIcon = EditorGUIUtility.LoadIconRequired("UndoHistory");
 
         private bool m_Disposed;
         private QueryBuilder m_Areas;

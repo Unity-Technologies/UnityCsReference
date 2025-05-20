@@ -14,6 +14,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         RegistryType availableRegistryType { get; }
         bool loadAllVersions { get; }
         string name { get; }
+        string displayName { get; }
         VersionsInfo availableVersions { get; }
         bool isDiscoverable { get; }
         bool isDeprecated { get; }
@@ -31,6 +32,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public RegistryType availableRegistryType { get; }
         public bool loadAllVersions { get; }
         public string name => m_NewestInfo.name;
+        public string displayName => m_NewestInfo.displayName;
         public VersionsInfo availableVersions => m_NewestInfo.versions;
         public bool isDiscoverable => mainSearchInfo != null;
         public bool isDeprecated => m_NewestInfo.unityLifecycle?.isDeprecated ?? false;

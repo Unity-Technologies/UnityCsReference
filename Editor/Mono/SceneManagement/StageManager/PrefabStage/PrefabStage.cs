@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting.APIUpdating;
+using TreeViewDragging = UnityEditor.IMGUI.Controls.TreeViewDragging<int>;
 
 namespace UnityEditor.SceneManagement
 {

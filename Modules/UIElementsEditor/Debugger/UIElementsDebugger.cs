@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEditor.ShortcutManagement;
 using UnityEditor.UIElements.Text;
 using UnityEngine;
 using UnityEngine.UIElements;
+
+using TextElement = UnityEngine.UIElements.TextElement;
 
 namespace UnityEditor.UIElements.Debugger
 {
@@ -82,6 +85,11 @@ namespace UnityEditor.UIElements.Debugger
 
         [SerializeField]
         private bool m_ShowTextureAtlasViewer = false;
+
+        [SerializeField]
+        private TextInfoOverlay.DisplayOption m_ShowTextMetrics = TextInfoOverlay.DisplayOption.None;
+
+
 
         public DebuggerSelection selection { get; } = new DebuggerSelection();
         public VisualElement selectedElement => selection.element;
@@ -181,6 +189,18 @@ namespace UnityEditor.UIElements.Debugger
                 if (m_ShowTextureAtlasViewer == value)
                     return;
                 m_ShowTextureAtlasViewer = value;
+                onStateChange?.Invoke();
+            }
+        }
+
+        public TextInfoOverlay.DisplayOption showTextMetrics
+        {
+            get { return m_ShowTextMetrics; }
+            set
+            {
+                if (m_ShowTextMetrics == value)
+                    return;
+                m_ShowTextMetrics = value;
                 onStateChange?.Invoke();
             }
         }
@@ -293,6 +313,7 @@ namespace UnityEditor.UIElements.Debugger
 
         private DebuggerTreeView m_TreeViewContainer;
         private StylesDebugger m_StylesDebuggerContainer;
+        ScrollView m_ScrollView;
 
         private DebuggerContext m_Context;
         private RepaintOverlayPainter m_RepaintOverlay;
@@ -372,6 +393,7 @@ namespace UnityEditor.UIElements.Debugger
 
             m_ShowTextMetrics.RegisterValueChangedCallback(e =>
             {
+                m_Context.showTextMetrics = (TextInfoOverlay.DisplayOption)e.newValue;
                 m_TextInfoOverlay.displayOption = (TextInfoOverlay.DisplayOption)e.newValue;
                 m_ShowTextMetrics.Q<TextElement>().text = "Text Overlays";
             });
@@ -415,8 +437,18 @@ namespace UnityEditor.UIElements.Debugger
             m_TreeViewContainer = new DebuggerTreeView(m_Context.selection, SelectElement);
             splitter.Add(m_TreeViewContainer);
 
-            m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection);
-            splitter.Add(m_StylesDebuggerContainer);
+            
+
+            m_ScrollView = new ScrollView();
+            m_ScrollView.Add(m_StylesDebuggerContainer = new StylesDebugger(m_Context.selection));
+
+            m_ScrollView.Add(new TextDebugger(m_Context.selection));
+            m_ScrollView.Add(new LayoutDebuggerTab(m_Context.selection));
+            m_ScrollView.Add(new RenderDataDebuggerTab(m_Context.selection));
+            m_ScrollView.Add(new PanelTab(m_Context.selection));
+            
+            splitter.Add(m_ScrollView);
+
 
             DebuggerEventDispatchUtilities.s_GlobalPanelDebug = this;
 
@@ -429,6 +461,276 @@ namespace UnityEditor.UIElements.Debugger
             OnContextChange();
 
             EditorApplication.update += EditorUpdate;
+
+            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged += (_) =>Refresh();
+        }
+
+        internal abstract class DebuggerFoldout : Foldout
+        {
+            DebuggerSelection m_DebuggerSelection;
+            protected VisualElement m_SelectedElement;
+
+
+            public DebuggerFoldout(string name, DebuggerSelection debuggerSelection) :base()
+            {
+                text = name;
+                viewDataKey = name;
+
+                m_DebuggerSelection = debuggerSelection;
+
+                m_DebuggerSelection.onSelectedElementChanged += element => selectedElement = element;
+                selectedElement = m_DebuggerSelection.element;
+
+                this.RegisterValueChangedCallback( e=> Refresh());
+                this.value = false;
+                updateVisiblity();
+            }
+
+            protected VisualElement selectedElement
+            {
+                get
+                {
+                    return m_SelectedElement;
+                }
+                set
+                {
+                    if (m_SelectedElement == value)
+                        return;
+
+
+                    m_SelectedElement = value;
+                    this.RefreshIfNeeded();
+                }
+            }
+
+            public void RefreshIfNeeded()
+            {
+                if (IsActive())
+                    Refresh();
+            }
+
+            bool IsActive()
+            {
+                updateVisiblity();
+                return value && style.display == DisplayStyle.Flex;
+            }
+
+            void updateVisiblity()
+            {
+                style.display = UIToolkitProjectSettings.EnableLowLevelDebugger ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+
+            protected abstract void Refresh();
+        }
+
+        internal class LayoutDebuggerTab : DebuggerFoldout
+        {
+            TextField m_layout;
+            TextField m_isManual;
+            public LayoutDebuggerTab(DebuggerSelection debuggerSelection) : base("Layout", debuggerSelection)
+            {
+                Add(m_layout = new TextField("Layout") { isReadOnly = true, multiline = true });
+                Add(m_isManual = new TextField("Is Manual") { isReadOnly = true });
+            }
+
+            protected override void Refresh()
+            {
+                if (selectedElement == null)
+                {
+                    m_layout.text = "No Element selected";
+                    m_isManual.text = "";
+                }
+                else
+                {
+                    unsafe
+                    {
+                        var layout = selectedElement.layoutNode.Layout;
+                        m_layout.text = $"Overflow: {layout.HadOverflow}\n" +
+                                        $"ComputedFlexBasis: {layout.ComputedFlexBasis}\n" +
+                                        $"ComputedFlexBasisGeneration: {layout.ComputedFlexBasisGeneration}\n" +
+                                        $"LastPointScaleFactor: {layout.LastPointScaleFactor}\n" +
+                                        $"Measured: {layout.MeasuredDimensions[0]}, {layout.MeasuredDimensions[1]}\n";
+                    }
+
+                    m_isManual.text = $"{selectedElement.isLayoutManual}";
+
+                }
+
+            }
+        }
+
+        internal class RenderDataDebuggerTab : DebuggerFoldout
+        {
+            TextField m_ClippingRect;
+            TextField m_ClippingRectMinusGroup;
+            TextField m_ClippingRectIsInfinite;
+            TextField m_LocalFlipsWinding;
+            TextField m_WorldFlipsWinding;
+            TextField m_ClipMethod;
+            TextField m_ChildrenStencilRef;
+            TextField m_ChildrenMaskDepth;
+            public RenderDataDebuggerTab(DebuggerSelection debuggerSelection) : base("RenderData", debuggerSelection)
+            {
+                Add(m_ClippingRect = new("Clipping Rect") { isReadOnly = true });
+                Add(m_ClippingRectMinusGroup = new("Clipping Rect Minus Group") { isReadOnly = true });
+                Add(m_ClippingRectIsInfinite = new("Clipping Rect Is Infinite") { isReadOnly = true });
+                Add(m_LocalFlipsWinding = new("Local Flips Winding") { isReadOnly = true });
+                Add(m_WorldFlipsWinding = new("World Flips Winding") { isReadOnly = true });
+                Add(m_ClipMethod = new("Clip Method") { isReadOnly = true });
+                Add(m_ChildrenStencilRef = new("Children Stencil Ref") { isReadOnly = true });
+                Add(m_ChildrenMaskDepth = new("Children Mask Depth") { isReadOnly = true });
+            }
+
+            protected override void Refresh()
+            {
+                if (selectedElement != null &&  selectedElement.renderData != null)
+                {
+                    var data = selectedElement.renderData;
+                    m_ClippingRect.text = data.clippingRect.ToString();
+                    m_ClippingRectMinusGroup.text = data.clippingRectMinusGroup.ToString();
+                    m_ClippingRectIsInfinite.text = data.clippingRectIsInfinite.ToString();
+                    m_LocalFlipsWinding.text = data.localFlipsWinding.ToString();
+                    m_WorldFlipsWinding.text = data.worldFlipsWinding.ToString();
+                    m_ClipMethod.text = data.clipMethod.ToString();
+                    m_ChildrenStencilRef.text = data.childrenStencilRef.ToString();
+                    m_ChildrenMaskDepth.text = data.childrenMaskDepth.ToString();
+
+                }
+                else
+                {
+                    m_ClippingRect.text = "";
+                    m_ClippingRectMinusGroup.text = "";
+                    m_ClippingRectIsInfinite.text = "";
+                    m_LocalFlipsWinding.text = "";
+                    m_WorldFlipsWinding.text = "";
+                    m_ClipMethod.text = "";
+                    m_ChildrenStencilRef.text = "";
+                    m_ChildrenMaskDepth.text = "";
+                }
+
+            }
+        }
+
+        internal class PanelTab : DebuggerFoldout
+        {
+            readonly TextField nameField;
+            readonly TextField scale;
+            readonly ObjectField panelSettings;
+
+
+            public PanelTab(DebuggerSelection debuggerSelection) : base("Panel", debuggerSelection)
+            {
+                Add(nameField = new TextField("Owner Name") { isReadOnly = true });
+                Add(panelSettings = new ObjectField("Owner/Panel Settings") { allowSceneObjects = false});
+                Add(scale = new TextField("Scale") { isReadOnly = true });
+            }
+
+            protected override void Refresh()
+            {
+                if (selectedElement != null)
+                {
+                    var panel = selectedElement.elementPanel;
+                    nameField.text = panel.ownerObject.name;
+                    scale.text = $" scale: { panel.scale}, pixelPerPoint {panel.pixelsPerPoint}, scaledPixelPerPoint {panel.scaledPixelsPerPoint}";
+                    panelSettings.value = panel.ownerObject;
+                }
+            }
+        }
+
+
+        internal class TextDebugger : DebuggerFoldout
+        {
+
+            TextField m_GenerationSettings;
+            ObjectField m_fontAsset;
+            ObjectField m_textSettings;
+            TextField m_CacheInfo;
+            TextField m_UnicodeResult;
+            TextField m_SizeInfo;
+            TextField m_CursorInfo;
+
+
+            public TextDebugger(DebuggerSelection debuggerSelection):base("Text", debuggerSelection)
+            {
+
+                
+                Add(m_GenerationSettings = new TextField("Generation Settings") { isReadOnly = true, multiline = true });
+
+                Add(m_fontAsset = new ObjectField("Font Asset") { allowSceneObjects = false });
+
+                Add(m_textSettings = new ObjectField("Text Settings") { allowSceneObjects = false, pseudoStates = PseudoStates.Disabled });
+                Add(m_CacheInfo = new TextField("Measurement Info") { isReadOnly = true, multiline = true });
+                Add(m_UnicodeResult = new TextField("Unicode Input") { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } });
+                Add(m_SizeInfo = new TextField("Size Info") { isReadOnly = true, multiline = true, style = { whiteSpace = WhiteSpace.Normal } });
+                Add(m_CursorInfo = new TextField("Cursor Info") { isReadOnly = true });
+            }
+
+
+            protected override void Refresh()
+            {
+                
+                var textElement = m_SelectedElement as TextElement;
+                if (textElement == null || textElement.uitkTextHandle.IsAdvancedTextEnabledForElement())
+                {
+                    if (m_SelectedElement == null)
+                        m_GenerationSettings.text = "No Element selected";
+                    else if(textElement == null)
+                        m_GenerationSettings.text = "No Text Element selected";
+                    else
+                        m_GenerationSettings.text = "Advanced Text is not yet supported by this foldout";
+
+                    m_fontAsset.value = null;
+                    m_textSettings.value = null;
+                    m_CacheInfo.text = null;
+                    m_UnicodeResult.text = null;
+                    m_SizeInfo.text = null;
+                }
+                else
+                {
+                    var handle = textElement.uitkTextHandle;
+                    if (handle.ConvertUssToTextGenerationSettings(true))
+                    {
+                        var settings = UnityEngine.TextCore.Text.TextHandle.settings;
+                        m_GenerationSettings.text = settings.ToString();
+
+                        m_fontAsset.value = settings.fontAsset;
+                        m_textSettings.value = settings.textSettings;
+
+                    }
+                    else
+                    {
+                        m_GenerationSettings.text = "Failed to get Text Generation Settings";
+                        m_fontAsset.value = null;
+                        m_textSettings.value = null;
+                    }
+
+                    m_CacheInfo.text = handle.MeasuredWidth.HasValue ? $"Measured:{handle.MeasuredWidth} Rounded:{handle.RoundedWidth} PixelPerPoint:{handle.LastPixelPerPoint}" : "No cache";
+
+                    m_UnicodeResult.text = StringToHex(textElement.text);
+
+                    m_SizeInfo.text = $"input:{textElement.text.Length} glyphs:{handle.GetTextElementCount()}";
+
+                    m_CursorInfo.text = textElement.isSelectable ? $"Cursor:{textElement.selectingManipulator.cursorIndex} Selection:{textElement.selectingManipulator.selectIndex}" : "Not Selectable";
+
+                }
+
+            }
+            private string StringToHex(string hexstring)
+            {
+                if( string.IsNullOrEmpty(hexstring))
+                    return string.Empty;
+
+                StringBuilder sb = new StringBuilder();
+                for(int i =0; i<hexstring.Length; i++) 
+                {
+                    var t = hexstring[i];
+                    sb.Append("U").Append(Convert.ToInt32(t).ToString("X4"));
+
+                    if (i < hexstring.Length - 1)
+                        sb.Append(", ");
+                }
+                return sb.ToString();
+            }
         }
 
         public new void OnDisable()
@@ -439,6 +741,8 @@ namespace UnityEditor.UIElements.Debugger
 
             if (DebuggerEventDispatchUtilities.s_GlobalPanelDebug == this)
                 DebuggerEventDispatchUtilities.s_GlobalPanelDebug = null;
+
+            UIToolkitProjectSettings.onEnableLowLevelDebuggerChanged -= (_) => Refresh();
         }
 
         void EditorUpdate()
@@ -468,8 +772,16 @@ namespace UnityEditor.UIElements.Debugger
                         SelectElement(selectedElement);
                 }
 
-                m_StylesDebuggerContainer.RefreshStylePropertyDebugger();
+                m_StylesDebuggerContainer?.RefreshStylePropertyDebugger();
                 m_DebuggerWindow.Repaint();
+
+                foreach( var child in m_ScrollView.Children())
+                {
+                    if (child is DebuggerFoldout foldout)
+                    {
+                        foldout.RefreshIfNeeded();
+                    }
+                }
             }
 
             panelDebug?.MarkDebugContainerDirtyRepaint();
@@ -484,6 +796,7 @@ namespace UnityEditor.UIElements.Debugger
             m_ShowDrawStatsToggle?.SetValueWithoutNotify(m_Context.showDrawStats);
             m_BreakBatchesToggle?.SetValueWithoutNotify(m_Context.breakBatches);
             m_ShowWireframeToggle?.SetValueWithoutNotify(m_Context.showWireframe);
+            m_ShowTextMetrics?.SetValueWithoutNotify( m_Context.showTextMetrics);
 
             ApplyToPanel(m_Context);
 
@@ -498,7 +811,7 @@ namespace UnityEditor.UIElements.Debugger
             else
             {
                 m_TreeViewContainer.DrawOverlay(mgc);
-                m_StylesDebuggerContainer.RefreshBoxModelView(mgc);
+                m_StylesDebuggerContainer?.RefreshBoxModelView(mgc);
 
                 if (m_Context.showRepaintOverlay)
                     m_RepaintOverlay.Draw(mgc);
@@ -508,6 +821,8 @@ namespace UnityEditor.UIElements.Debugger
                 DrawLayoutBounds(mgc);
             if (m_Context.showWireframe)
                 DrawWireframe(mgc);
+            if(m_Context.showTextMetrics != TextInfoOverlay.DisplayOption.None)
+                m_TextInfoOverlay.Draw(mgc, m_Context.showTextMetrics);
         }
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType changeTypeFlag)

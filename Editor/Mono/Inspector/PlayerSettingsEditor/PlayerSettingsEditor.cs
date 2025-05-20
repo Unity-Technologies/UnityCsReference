@@ -165,6 +165,7 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
+            public static readonly GUIContent graphicsJobsSyncAfterKick = EditorGUIUtility.TrTextContent("Sync after kick (fallback)", "This prevents graphics jobs from running in parallel to the render thread. Enable this if you see artifacts with graphics jobs.");
             public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
             public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
             public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
@@ -1028,7 +1029,7 @@ namespace UnityEditor
 
         private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
         {
-            return buildTarget == NamedBuildTarget.Standalone;
+            return buildTarget == NamedBuildTarget.Standalone || buildTarget == NamedBuildTarget.VisionOS;
         }
 
         private void OnPresetSelectorClosed()
@@ -2121,10 +2122,12 @@ namespace UnityEditor
                     SettingsContent.shaderPrecisionModelOptions);
                 if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
                 {
-                    m_ShaderPrecisionModel.intValue = (int) newShaderPrecisionModel;
+                    m_ShaderPrecisionModel.intValue = (int)newShaderPrecisionModel;
                     serializedObject.ApplyModifiedProperties();
                     if (IsActivePlayerSettingsEditor())
-                        PlayerSettings.SyncShaderPrecisionModel();
+                    {
+                        EditorApplication.delayCall += () => PlayerSettings.SyncShaderPrecisionModel();
+                    }
                 }
             }
 
@@ -2408,6 +2411,9 @@ namespace UnityEditor
                 platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
 
+            bool graphicsJobsSyncAfterKick = PlayerSettings.GetSwitchGraphicsJobsSyncAfterKick();
+            bool newGraphicsJobsSyncAfterKick = graphicsJobsSyncAfterKick;
+
             if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
             {
                 // on XBoxOne, we only have kGfxJobModeNative active for DX12 API and kGfxJobModeLegacy for the DX11 API
@@ -2464,6 +2470,23 @@ namespace UnityEditor
                     {
                         EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
                     }
+                    // Optional fallback to previous graphics jobs implementation on Switch.
+                    if (platform.namedBuildTarget == NamedBuildTarget.NintendoSwitch && newGraphicsJobs)
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            /* (kaychang) Currently disabled.
+                            if (GUI.enabled)
+                            {
+                                newGraphicsJobsSyncAfterKick = EditorGUILayout.Toggle(SettingsContent.graphicsJobsSyncAfterKick, graphicsJobsSyncAfterKick);
+                            }
+                            else
+                            {
+                                EditorGUILayout.Toggle(SettingsContent.graphicsJobsSyncAfterKick, graphicsJobsSyncAfterKick);
+                            }
+                            */
+                        }
+                    }
                 }
                 if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
                 {
@@ -2478,6 +2501,11 @@ namespace UnityEditor
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                         GUIUtility.ExitGUI();
                     }
+                }
+                if (EditorGUI.EndChangeCheck() && (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick))
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                    PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
                 }
             }
             if (gfxJobModesSupported && newGraphicsJobs)

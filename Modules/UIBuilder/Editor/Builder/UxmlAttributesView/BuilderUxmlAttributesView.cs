@@ -23,7 +23,7 @@ namespace Unity.UI.Builder
     /// <summary>
     /// This view displays and edits the list of uxml attributes of an object in a uxml document.
     /// </summary>
-    internal class BuilderUxmlAttributesView : IDisposable
+    internal class BuilderUxmlAttributesView : IDisposable, IBatchedUxmlChangesListener
     {
         static readonly string s_AttributeFieldRowUssClassName = "unity-builder-attribute-field-row";
         static readonly string s_AttributeFieldUssClassName = "unity-builder-attribute-field";
@@ -31,7 +31,7 @@ namespace Unity.UI.Builder
         static readonly string s_UxmlMenuUssClassName = "unity-builder-uxml-object-menu";
         public static readonly string builderSerializedPropertyFieldName = "unity-builder-serialized-property-field";
         static readonly string s_TempSerializedRootPath = nameof(TempSerializedData.serializedData);
-        static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
+        internal static readonly PropertyName UndoGroupPropertyKey = "__UnityUndoGroup";
 
         // Used in tests.
         // ReSharper disable MemberCanBePrivate.Global
@@ -40,7 +40,7 @@ namespace Unity.UI.Builder
         internal const string postAttributeValueChangedMarkerName = "BuilderUxmlAttributesView.PostAttributeValueChange";
         // ReSharper restore MemberCanBePrivate.Global
 
-        const string k_ArraySizeRelativePath = "Array.size";
+        public static readonly string ArraySizeRelativePath = "Array.size";
         const string k_ArraySizePart = "size";
 
         static readonly ProfilerMarker k_UpdateAttributeOverrideStyleMarker = new (attributeOverrideMarkerName);
@@ -65,15 +65,13 @@ namespace Unity.UI.Builder
         internal UxmlSerializedDataDescription m_SerializedDataDescription;
         internal SerializedObject m_CurrentElementSerializedObject;
         TempSerializedData m_TempSerializedData;
-        int? m_CurrentUndoGroup;
-        readonly List<(VisualElement target, SerializedProperty property)> m_BatchedChanges = new();
-        readonly List<(VisualElement target, SerializedProperty property)> m_BatchedUxmlObjectChanges = new();
         bool m_DocumentUndoRecorded;
-        static bool s_IsInsideUndoRedoUpdate;
 
         public string serializedRootPath { get; set; }
 
         public IVisualElementScheduledItem refreshScheduledItem;
+
+        private bool m_HasUxmlChangeFlag;
 
         internal class UxmlAssetSerializedDataRoot : VisualElement
         {
@@ -205,10 +203,15 @@ namespace Unity.UI.Builder
 
         public BuilderUxmlAttributesView(BuilderInspector inspector = null)
         {
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             BindingsStyleHelpers.HandleRightClickMenu = HandleRightClickMenu;
             this.inspector = inspector;
-            SerializedObjectBindingContext.PostProcessTrackedPropertyChanges += ProcessBatchedChanges;
+
+            if (inspector?.batchedChangesController == null)
+                return;
+
+            this.inspector.batchedChangesController.deserializeElement += DeserializeElement;
+            this.inspector.batchedChangesController.notifyAllChangesProcessed += NotifyAllChangesProcessed;
+            this.inspector.batchedChangesController.onUndoRedoPerformedByController += CallDeserializeOnElementActionWrapper;
         }
 
         public void Dispose()
@@ -218,28 +221,16 @@ namespace Unity.UI.Builder
 
         protected virtual void Dispose(bool disposing)
         {
-            if (disposing)
-            {
-                Undo.undoRedoPerformed -= OnUndoRedoPerformed;
-                BindingsStyleHelpers.HandleRightClickMenu = null;
-                SerializedObjectBindingContext.PostProcessTrackedPropertyChanges -= ProcessBatchedChanges;
-            }
-        }
+            if (!disposing)
+                return;
 
-        void OnUndoRedoPerformed()
-        {
-            CallDeserializeOnElement();
+            BindingsStyleHelpers.HandleRightClickMenu = null;
+            if (inspector?.batchedChangesController == null)
+                return;
 
-            try
-            {
-                // We need to discard any change events that happen during the undo/redo update in order to avoid reapplying those changes.
-                s_IsInsideUndoRedoUpdate = true;
-                inspector?.elementPanel?.TickSchedulingUpdaters();
-            }
-            finally
-            {
-                s_IsInsideUndoRedoUpdate = false;
-            }
+            inspector.batchedChangesController.deserializeElement -= DeserializeElement;
+            inspector.batchedChangesController.notifyAllChangesProcessed -= NotifyAllChangesProcessed;
+            inspector.batchedChangesController.onUndoRedoPerformedByController -= CallDeserializeOnElementActionWrapper;
         }
 
         bool HandleRightClickMenu(VisualElement ve)
@@ -422,33 +413,40 @@ namespace Unity.UI.Builder
             if (serializedRootPath == null)
                 return;
 
-            var path = $"{serializedRootPath}.{property}";
-            var result = SynchronizePath(path, false);
-            var dataDescription = UxmlSerializedDataRegistry.GetDescription(result.attributeOwner.GetType().FullName);
-            var attribute = dataDescription.FindAttributeWithPropertyName(property);
-            if (attribute == null)
-                return;
-
             var bindableElement = fieldElement?.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
                 return;
 
-            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+            var path = $"{serializedRootPath}.{property}";
+            var result = SynchronizePath(path, false);
 
             object value;
-            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
-
-            if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
-                UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
+            if (result.attributeOwner == null && result.attributeDescription.isUxmlObject)
             {
-                value = uxmlValue;
+                value = null;
             }
             else
             {
-                value = attribute.defaultValueClone;
+
+                var dataDescription = UxmlSerializedDataRegistry.GetDescription(result.attributeOwner.GetType().FullName);
+                var attribute = dataDescription.FindAttributeWithPropertyName(property);
+                if (attribute == null)
+                    return;
+
+                if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
+                    UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
+                {
+                    value = uxmlValue;
+                }
+                else
+                {
+                    value = attribute.defaultValueClone;
+                }
             }
 
+            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
             if (handler.hasPropertyDrawer)
             {
                 serializedProperty.boxedValue = value;
@@ -516,6 +514,9 @@ namespace Unity.UI.Builder
         public void ResetAttributesOwner()
         {
             SetAttributesOwner(null, null);
+
+            // For tests, update loops run in inversed order. Clear propertyFields to avoid tracking.
+            inspector.attributesSection.attributesContainer.Clear();
         }
 
         /// <summary>
@@ -943,7 +944,7 @@ namespace Unity.UI.Builder
 
             var propertyField = new PropertyField { bindingPath = serializedProperty.propertyPath };
             drawerRoot.Add(propertyField);
-            TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty);
+            inspector.batchedChangesController.TrackCustomPropertyDrawerFields(drawerRoot, serializedProperty, this, m_UxmlDocument, m_CurrentElement != null );
 
             // The hiearachy is not complete yet so we need to defer the update
             root.schedule.Execute(() => UpdateCustomPropertyDrawerAttributeOverrideStyle(drawerRoot));
@@ -998,73 +999,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        void TrackCustomPropertyDrawerListElements(VisualElement listField, SerializedProperty property)
-        {
-            TrackElementPropertyValue(listField, property.FindPropertyRelative(k_ArraySizeRelativePath));
-
-            for (int i = 0; i < property.arraySize; i++)
-            {
-                var item = property.GetArrayElementAtIndex(i);
-                TrackCustomPropertyDrawerFields(listField, item);
-            }
-        }
-
-        void TrackCustomPropertyDrawerFields(VisualElement uxmlObjectField, SerializedProperty property)
-        {
-            var instance = property.boxedValue;
-            if (instance == null)
-                return;
-
-            var dataDescription = UxmlSerializedDataRegistry.GetDescription(instance.GetType().DeclaringType.FullName);
-            var itemRoot = new UxmlAssetSerializedDataRoot
-            {
-                dataDescription = dataDescription,
-                rootPath = property.propertyPath,
-                name = property.propertyPath
-            };
-            uxmlObjectField.Add(itemRoot);
-
-            foreach (var desc in dataDescription.serializedAttributes)
-            {
-                var fieldElement = new UxmlSerializedDataAttributeField { name = desc.serializedField.Name };
-                fieldElement.SetLinkedAttributeDescription(desc);
-
-                itemRoot.Add(fieldElement);
-                var p = property.FindPropertyRelative(desc.serializedField.Name);
-
-                if (desc.isUxmlObject)
-                {
-                    // Track a UxmlObject field/list that we do not have control of.
-                    fieldElement.TrackPropertyValue(p, OnTrackedUxmlObjectReferenceChanged);
-
-                    if (p.isArray)
-                        TrackCustomPropertyDrawerListElements(fieldElement, p);
-                    else
-                        TrackCustomPropertyDrawerFields(fieldElement, p);
-                }
-                else
-                {
-                    TrackElementPropertyValue(fieldElement, p);
-                }
-            }
-        }
-
-        void OnTrackedUxmlObjectReferenceChanged(object element, SerializedProperty property)
-        {
-            var fieldElement = element as VisualElement;
-            fieldElement.Clear();
-
-            if (property.isArray)
-                TrackCustomPropertyDrawerListElements(fieldElement, property);
-            else
-                TrackCustomPropertyDrawerFields(fieldElement, property);
-
-            if (s_IsInsideUndoRedoUpdate || m_CurrentElement == null)
-                return;
-
-            m_BatchedUxmlObjectChanges.Add((fieldElement, property));
-        }
-
         internal void AddUxmlObjectToSerializedData(SerializedProperty property, Type type)
         {
             Undo.RegisterCompleteObjectUndo(property.m_SerializedObject.targetObject, GetUndoMessage(property));
@@ -1081,10 +1015,10 @@ namespace Unity.UI.Builder
 
         internal void SyncUxmlObjectChanges(string propertyPath)
         {
-            if (s_IsInsideUndoRedoUpdate)
+            if (inspector.batchedChangesController.isInsideUndoRedoUpdate)
                 return;
 
-            var undoGroup = GetCurrentUndoGroup();
+            var undoGroup = inspector.batchedChangesController.GetCurrentUndoGroup();
             Undo.IncrementCurrentGroup();
             SynchronizePath(propertyPath, true);
             CallDeserializeOnElement();
@@ -1352,14 +1286,41 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void ToggleUxmlChangeFlagForView(bool enabled)
+        {
+            m_HasUxmlChangeFlag = enabled;
+        }
+        
+        public void DeserializeElement()
+        {
+            if (!m_HasUxmlChangeFlag)
+                return;
+            // Apply changes to the whole element
+            m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+
+            CallDeserializeOnElement();
+
+            // Now resync as its possible that the setters made changes during Deserialize, e.g clamping values.
+            m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, uxmlSerializedData);
+        }
+
+        public void NotifyAllChangesProcessed()
+        {
+            if (!m_HasUxmlChangeFlag)
+                return;
+            // Update the serialized object to reflect the changes made by PostAttributeValueChange.
+            m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
+            m_HasUxmlChangeFlag = false;
+        }
+
         internal struct SynchronizePathResult
         {
-            public bool success;
-            public UxmlAsset uxmlAsset;
-            public object serializedData;
-            public UxmlSerializedDataDescription dataDescription;
-            public UxmlSerializedAttributeDescription attributeDescription;
-            public object attributeOwner;
+            public bool success { get; set; }
+            public UxmlAsset uxmlAsset { get; set; }
+            public object serializedData { get; set; }
+            public UxmlSerializedDataDescription dataDescription { get; set; }
+            public UxmlSerializedAttributeDescription attributeDescription { get; set; }
+            public object attributeOwner { get; set; }
         }
 
         /// <summary>
@@ -1369,7 +1330,7 @@ namespace Unity.UI.Builder
         /// <param name="propertyPath">The full serialized property path.</param>
         /// <param name="changeUxmlAssets">Whether to add missing UXML assets in the path.</param>
         /// <returns></returns>
-        internal SynchronizePathResult SynchronizePath(string propertyPath, bool changeUxmlAssets)
+        public SynchronizePathResult SynchronizePath(string propertyPath, bool changeUxmlAssets)
         {
             SynchronizePathResult result = default;
 
@@ -1446,7 +1407,8 @@ namespace Unity.UI.Builder
                 if (attributeObjectDescription == null)
                     break;
 
-                result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out result.attributeOwner);
+                result.attributeDescription.TryGetValueFromObject(result.attributeOwner, out var updatedAttributeOwner);
+                result.attributeOwner = updatedAttributeOwner;
 
                 var parentUxmlSerializedData = currentUxmlSerializedData as UxmlSerializedData;
                 currentUxmlSerializedData = result.attributeDescription.GetSerializedValue(parentUxmlSerializedData);
@@ -1713,6 +1675,7 @@ namespace Unity.UI.Builder
                 UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
                 m_DocumentUndoRecorded = true;
             }
+            UndoRecordDocument(BuilderConstants.ModifyUxmlObject);
         }
 
         protected void TrackElementPropertyValue(VisualElement target, SerializedProperty property)
@@ -1725,7 +1688,10 @@ namespace Unity.UI.Builder
 
             // We use TrackPropertyValue because it does not send a change event when it is bound and its safer
             // than relying on change events which may not always be sent, such as when using a custom drawer.
-            target.TrackPropertyValue(property, OnTrackedPropertyValueChange);
+            if (inspector.batchedChangesController.isInsideUndoRedoUpdate || m_CurrentElement == null)
+                return;
+
+            inspector.batchedChangesController.TrackPropertyValue(target, property, this, uxmlDocument);
         }
 
         protected void TrackElementPropertyValue(VisualElement target, string path)
@@ -1734,146 +1700,7 @@ namespace Unity.UI.Builder
             TrackElementPropertyValue(target, property);
         }
 
-        void OnTrackedPropertyValueChange(object obj, SerializedProperty property)
-        {
-            if (s_IsInsideUndoRedoUpdate || m_CurrentElement == null || obj is not VisualElement target)
-                return;
 
-            m_BatchedChanges.Add((target, property));
-        }
-
-        int GetCurrentUndoGroup()
-        {
-            // We track the undo group so we can fold multiple change events into 1.
-            if (m_CurrentUndoGroup == null)
-            {
-                m_CurrentUndoGroup = Undo.GetCurrentGroup();
-                EditorApplication.delayCall += () => m_CurrentUndoGroup = null;
-            }
-
-            return m_CurrentUndoGroup.Value;
-        }
-
-        internal void ProcessBatchedChanges()
-        {
-            var hasUxmlObjectChanges = m_BatchedUxmlObjectChanges.Count > 0;
-            if (m_BatchedChanges.Count == 0 && !hasUxmlObjectChanges)
-                return;
-
-            var undoGroup = GetCurrentUndoGroup();
-            using var pool = ListPool<(UxmlAsset uxmlOwner, VisualElement fieldElement, object newValue, UxmlSerializedData serializedData)>.Get(out var changesToProcess);
-            using var poolObject = ListPool<VisualElement>.Get(out var uxmlObjectChangesToProcess);
-
-            try
-            {
-                foreach (var changeEvent in m_BatchedChanges)
-                {
-                    var fieldElement = GetRootFieldElement(changeEvent.target);
-                    if (fieldElement.panel == null)
-                        continue;
-
-                    Undo.IncrementCurrentGroup();
-                    var revertGroup = Undo.GetCurrentGroup();
-                    var result = SynchronizePath(changeEvent.property.propertyPath, true);
-                    if (!result.success)
-                        continue;
-
-                    if (result.serializedData is not UxmlSerializedData currentUxmlSerializedData)
-                        continue;
-
-                    var description = result.attributeDescription ?? fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
-                    var currentAttributeUxmlOwner = result.uxmlAsset;
-                    var newValue = description.GetSerializedValue(currentUxmlSerializedData);
-
-                    if (result.attributeOwner != null)
-                    {
-                        description.TryGetValueFromObject(result.attributeOwner, out var previousValue);
-
-                        // Unity serializes null values as default objects, so we need to do the same to compare.
-                        if (!description.isUxmlObject && previousValue == null && !typeof(Object).IsAssignableFrom(description.type) && description.type.GetConstructor(Type.EmptyTypes) != null)
-                            previousValue = Activator.CreateInstance(description.type);
-
-                        if (newValue is VisualTreeAsset vta && inspector.document.WillCauseCircularDependency(vta))
-                        {
-                            description.SetSerializedValue(currentUxmlSerializedData, previousValue);
-                            BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
-                                BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
-                            return;
-                        }
-
-                        // We choose to disregard callbacks when the value remains unchanged,
-                        // which can occur during an Undo/Redo when the bound fields are updated.
-                        // To do this we compare the value on the attribute owner to its serialized value,
-                        // if they match then we consider them to have not changed.
-                        if (UxmlAttributeComparison.ObjectEquals(previousValue, newValue))
-                        {
-                            Undo.RevertAllDownToGroup(revertGroup);
-                            continue;
-                        }
-                    }
-
-                    // Apply the attribute flags before we CallDeserializeOnElement
-                    description.SetSerializedValueAttributeFlags(currentUxmlSerializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
-                    changesToProcess.Add((currentAttributeUxmlOwner, fieldElement, newValue, currentUxmlSerializedData));
-                }
-
-                foreach (var changeEvent in m_BatchedUxmlObjectChanges)
-                {
-                    var fieldElement = GetRootFieldElement(changeEvent.target);
-                    if (fieldElement.panel == null)
-                        continue;
-
-                    var result = SynchronizePath(changeEvent.property.propertyPath, true);
-                    if (!result.success)
-                        continue;
-
-                    uxmlObjectChangesToProcess.Add(fieldElement);
-                }
-            }
-            finally
-            {
-                m_BatchedChanges.Clear();
-                m_BatchedUxmlObjectChanges.Clear();
-            }
-
-            // Apply changes to the whole element
-            m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-            CallDeserializeOnElement();
-
-            // Now resync as its possible that the setters made changes during Deserialize, e.g clamping values.
-            m_SerializedDataDescription.SyncSerializedData(m_CurrentElement, uxmlSerializedData);
-
-            foreach (var change in changesToProcess)
-            {
-                if (change.newValue == null || !UxmlAttributeConverter.TryConvertToString(change.newValue, m_UxmlDocument, out var stringValue))
-                    stringValue = change.newValue?.ToString();
-
-                PostAttributeValueChange(change.fieldElement, stringValue, change.uxmlOwner);
-
-                // Use the undo group of the field if it has one, otherwise use the current undo group
-                var fieldUndoGroup = change.fieldElement.Q<BindableElement>()?.GetProperty(UndoGroupPropertyKey);
-                if (fieldUndoGroup != null)
-                    undoGroup = (int)fieldUndoGroup;
-            }
-
-            foreach (var fieldElement in uxmlObjectChangesToProcess)
-            {
-                if (fieldElement.GetFirstAncestorOfType<CustomPropertyDrawerField>() is { } customPropertyDrawer)
-                    UpdateCustomPropertyDrawerAttributeOverrideStyle(customPropertyDrawer);
-            }
-
-            // Update the serialized object to reflect the changes made by PostAttributeValueChange.
-            m_CurrentElementSerializedObject.UpdateIfRequiredOrScript();
-
-            // If inline editing is enabled on a property that has a UXML binding, we cache the binding
-            // to preview the inline value in the canvas.
-            if (inspector.cachedBinding != null)
-            {
-                inspector.currentVisualElement.ClearBinding(inspector.cachedBinding.property);
-            }
-            Undo.CollapseUndoOperations(undoGroup);
-        }
 
         /// <summary>
         /// Refreshes the value and status of the specified field.
@@ -2532,6 +2359,11 @@ namespace Unity.UI.Builder
             uxmlSerializedData.Deserialize(element, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml | UxmlSerializedData.UxmlAttributeFlags.DefaultValue);
         }
 
+        private void CallDeserializeOnElementActionWrapper()
+        {
+            CallDeserializeOnElement();
+        }
+
         internal void CallInitOnElement()
         {
             if (!callInitOnValueChange)
@@ -2696,6 +2528,17 @@ namespace Unity.UI.Builder
             }
         }
 
+        public void AttributeValueChanged(VisualElement target, string propertyPath, UxmlAsset uxmlOwner)
+        {
+            PostAttributeValueChange(target, propertyPath, uxmlOwner);
+        }
+
+        public void UxmlObjectChanged(VisualElement fieldElement)
+        {
+            if (fieldElement.GetFirstAncestorOfType<CustomPropertyDrawerField>() is { } customPropertyDrawer)
+                UpdateCustomPropertyDrawerAttributeOverrideStyle(customPropertyDrawer);
+        }
+
         void OnAttributeValueChange(ChangeEvent<string> evt)
         {
             var field = evt.elementTarget as TextField;
@@ -2723,7 +2566,7 @@ namespace Unity.UI.Builder
                 prop.stringValue = evt.newValue;
                 m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
 
-                OnTrackedPropertyValueChange(field, prop);
+                inspector.batchedChangesController.TrackPropertyValue(field, prop, this, uxmlDocument);
             }
             else
             {

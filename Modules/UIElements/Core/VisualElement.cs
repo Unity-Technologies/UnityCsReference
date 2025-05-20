@@ -78,6 +78,10 @@ namespace UnityEngine.UIElements
         PointerCapture = 1 << 19,
         // Element is a root UIDocument
         IsWorldSpaceRootUIDocument = 1 << 20,
+        // Element wants a GeometryChangedEvent if any of its descendent receives one
+        ReceivesHierarchyGeometryChangedEvents = 1 << 21,
+        // Element or descendent received a GeometryChangedEvent since last Layout update
+        BoundingBoxDirtiedSinceLastLayoutPass = 1 << 22,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty | DetachedDataSource
@@ -1449,6 +1453,18 @@ namespace UnityEngine.UIElements
                 Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
+        internal bool receivesHierarchyGeometryChangedEvents
+        {
+            get => (m_Flags & VisualElementFlags.ReceivesHierarchyGeometryChangedEvents) == VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.ReceivesHierarchyGeometryChangedEvents : m_Flags & ~VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+        }
+
+        internal bool boundingBoxDirtiedSinceLastLayoutPass
+        {
+            get => (m_Flags & VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass) == VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass : m_Flags & ~VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+        }
+
         // which pseudo states would change the current VE styles if added
         internal PseudoStates triggerPseudoMask;
         // which pseudo states would change the current VE styles if removed
@@ -2108,8 +2124,14 @@ namespace UnityEngine.UIElements
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
         ///\\
+        ///\\ 
         /// A disabled visual element does not receive most input events, such as mouse and keyboard events. However, it can still respond to Attach or Detach events, and geometry change events.
-        /// <seealso cref="enabledSelf"/>
+        ///\\
+        ///\\
+        /// When an element is disabled, its style changes to visually indicate it's inactive.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[VisualElement.enabledSelf]]
         /// </remarks>
         public void SetEnabled(bool value)
         {

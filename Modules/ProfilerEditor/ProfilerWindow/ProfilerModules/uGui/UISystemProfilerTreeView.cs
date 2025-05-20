@@ -10,6 +10,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Profiling;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {

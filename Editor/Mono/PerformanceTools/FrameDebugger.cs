@@ -16,6 +16,8 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Rendering.Analytics;
 
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace UnityEditor
 {
     internal class FrameDebuggerWindow : EditorWindow
@@ -52,6 +54,8 @@ namespace UnityEditor
         private bool IsDisabledInEditor => !FrameDebugger.enabled;
         private bool IsEnablingFrameDebugger => m_EnablingWaitCounter < k_NeedToRepaintFrames;
         private bool HasEventHashChanged => FrameDebuggerUtility.eventsHash != m_FrameEventsHash;
+        
+        private readonly Lazy<GUIContent> m_HelpButtonContent = new(() => EditorGUIUtility.TrIconContent("_Help", "Open Manual (in a web browser)"));
 
 
         [ShortcutManagement.Shortcut("Analysis/FrameDebugger/Enable")]
@@ -68,6 +72,15 @@ namespace UnityEditor
             wnd.titleContent = EditorGUIUtility.TrTextContent("Frame Debugger");
             wnd.minSize = new Vector2(1000f, 500f);
             return wnd;
+        }
+        
+        void ShowButton(Rect r)
+        {
+            if (GUI.Button(r, m_HelpButtonContent.Value, EditorStyles.iconButton))
+            {
+                var url = $"https://docs.unity3d.com/{Help.GetShortReleaseVersion()}/Documentation/Manual/FrameDebugger.html";
+                Help.BrowseURL(url);
+            }
         }
 
         internal void ToggleFrameDebuggerEnabled()

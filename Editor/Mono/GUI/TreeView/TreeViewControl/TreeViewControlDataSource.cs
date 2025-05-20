@@ -8,13 +8,13 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    public partial class TreeView
+    public partial class TreeView<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        internal class TreeViewControlDataSource : LazyTreeViewDataSource
+        internal class TreeViewControlDataSource : LazyTreeViewDataSource<TIdentifier>
         {
-            readonly TreeView m_Owner;
+            readonly TreeView<TIdentifier> m_Owner;
 
-            public TreeViewControlDataSource(TreeViewController treeView, TreeView owner) : base(treeView)
+            public TreeViewControlDataSource(TreeViewController<TIdentifier> treeView, TreeView<TIdentifier> owner) : base(treeView)
             {
                 m_Owner = owner;
 
@@ -68,7 +68,7 @@ namespace UnityEditor.IMGUI.Controls
                     m_Owner.m_GUI.RefreshRowRects(m_Rows);
             }
 
-            public void SearchFullTree(string search, List<TreeViewItem> result)
+            public void SearchFullTree(string search, List<TreeViewItem<TIdentifier>> result)
             {
                 if (string.IsNullOrEmpty(search))
                     throw new ArgumentException("Invalid search: cannot be null or empty", "search");
@@ -76,11 +76,11 @@ namespace UnityEditor.IMGUI.Controls
                 if (result == null)
                     throw new ArgumentException("Invalid list: cannot be null", "result");
 
-                var stack = new Stack<TreeViewItem>();
+                var stack = new Stack<TreeViewItem<TIdentifier>>();
                 stack.Push(m_RootItem);
                 while (stack.Count > 0)
                 {
-                    TreeViewItem current = stack.Pop();
+                    TreeViewItem<TIdentifier> current = stack.Pop();
                     if (current.children != null)
                     {
                         foreach (var child in current.children)
@@ -99,34 +99,34 @@ namespace UnityEditor.IMGUI.Controls
                 result.Sort((x, y) => EditorUtility.NaturalCompare(x.displayName, y.displayName));
             }
 
-            protected override void GetParentsAbove(int id, HashSet<int> ancestors)
+            protected override void GetParentsAbove(TIdentifier id, HashSet<TIdentifier> ancestors)
             {
                 foreach (var ancestor in m_Owner.GetAncestors(id))
                     ancestors.Add(ancestor);
             }
 
-            protected override void GetParentsBelow(int id, HashSet<int> children)
+            protected override void GetParentsBelow(TIdentifier id, HashSet<TIdentifier> children)
             {
                 foreach (var child in m_Owner.GetDescendantsThatHaveChildren(id))
                     children.Add(child);
             }
 
-            public override bool IsExpandable(TreeViewItem item)
+            public override bool IsExpandable(TreeViewItem<TIdentifier> item)
             {
                 return m_Owner.CanChangeExpandedState(item);
             }
 
-            public override bool CanBeMultiSelected(TreeViewItem item)
+            public override bool CanBeMultiSelected(TreeViewItem<TIdentifier> item)
             {
                 return m_Owner.CanMultiSelect(item);
             }
 
-            public override bool CanBeParent(TreeViewItem item)
+            public override bool CanBeParent(TreeViewItem<TIdentifier> item)
             {
                 return m_Owner.CanBeParent(item);
             }
 
-            public override bool IsRenamingItemAllowed(TreeViewItem item)
+            public override bool IsRenamingItemAllowed(TreeViewItem<TIdentifier> item)
             {
                 return m_Owner.CanRename(item);
             }

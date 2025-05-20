@@ -5,6 +5,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor.Search
 {
@@ -43,22 +46,22 @@ namespace UnityEditor.Search
     }
 
     [System.Obsolete("IMGUI is not support anymore. Use ITableView interface instead.", error: false)] // 2023.1
-    public class PropertyTable : UnityEditor.IMGUI.Controls.TreeView, System.IDisposable
+    public class PropertyTable : TreeView, System.IDisposable
     {
-        public PropertyTable(string serializationUID, ITableView tableView) : base(new IMGUI.Controls.TreeViewState()) => throw new System.NotSupportedException();
+        public PropertyTable(string serializationUID, ITableView tableView) : base(new TreeViewState()) => throw new System.NotSupportedException();
         protected override void BeforeRowsGUI() => throw new System.NotSupportedException();
-        protected override UnityEditor.IMGUI.Controls.TreeViewItem BuildRoot() => throw new System.NotSupportedException();
-        protected override System.Collections.Generic.IList<UnityEditor.IMGUI.Controls.TreeViewItem> BuildRows(UnityEditor.IMGUI.Controls.TreeViewItem root) => throw new System.NotSupportedException();
-        protected override bool CanStartDrag(UnityEditor.IMGUI.Controls.TreeView.CanStartDragArgs args) => throw new System.NotSupportedException();
+        protected override TreeViewItem BuildRoot() => throw new System.NotSupportedException();
+        protected override System.Collections.Generic.IList<TreeViewItem> BuildRows(TreeViewItem root) => throw new System.NotSupportedException();
+        protected override bool CanStartDrag(TreeView.CanStartDragArgs args) => throw new System.NotSupportedException();
         public void Dispose() => throw new System.NotSupportedException();
         protected override void DoubleClickedItem(int id) => throw new System.NotSupportedException();
         public void FrameColumn(int columnIndex) => throw new System.NotSupportedException();
-        protected override DragAndDropVisualMode HandleDragAndDrop(UnityEditor.IMGUI.Controls.TreeView.DragAndDropArgs args) => throw new System.NotSupportedException();
+        protected override DragAndDropVisualMode HandleDragAndDrop(TreeView.DragAndDropArgs args) => throw new System.NotSupportedException();
         protected override void KeyEvent() => throw new System.NotSupportedException();
         public override void OnGUI(UnityEngine.Rect tableRect) => throw new System.NotSupportedException();
-        protected override void RowGUI(UnityEditor.IMGUI.Controls.TreeView.RowGUIArgs args) => throw new System.NotSupportedException();
+        protected override void RowGUI(TreeView.RowGUIArgs args) => throw new System.NotSupportedException();
         protected override void SelectionChanged(System.Collections.Generic.IList<int> selectedIds) => throw new System.NotSupportedException();
-        protected override void SetupDragAndDrop(UnityEditor.IMGUI.Controls.TreeView.SetupDragAndDropArgs args) => throw new System.NotSupportedException();
+        protected override void SetupDragAndDrop(TreeView.SetupDragAndDropArgs args) => throw new System.NotSupportedException();
     }
 
 }

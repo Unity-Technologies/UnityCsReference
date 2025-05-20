@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 
 // The TreeView requires implementations from the following three interfaces:
@@ -13,7 +14,7 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    internal interface ITreeViewGUI
+    internal interface ITreeViewGUI<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         void OnInitialize();
 
@@ -29,23 +30,23 @@ namespace UnityEditor.IMGUI.Controls
         Rect GetRowRect(int row, float rowWidth);
         Rect GetRectForFraming(int row);
 
-        int GetNumRowsOnPageUpDown(TreeViewItem fromItem, bool pageUp, float heightOfTreeView);
+        int GetNumRowsOnPageUpDown(TreeViewItem<TIdentifier> fromItem, bool pageUp, float heightOfTreeView);
 
         // OnGUI: Implement to handle TreeView OnGUI
-        void OnRowGUI(Rect rowRect, TreeViewItem item, int row, bool selected, bool focused);
+        void OnRowGUI(Rect rowRect, TreeViewItem<TIdentifier> item, int row, bool selected, bool focused);
         void BeginRowGUI();                                                                     // use for e.g clearing state before OnRowGUI calls
         void EndRowGUI();                                                                       // use for handling stuff after all rows have had their OnRowGUI
 
         // Ping Item interface (implement a rendering of a 'ping' for a Item).
-        void BeginPingItem(TreeViewItem item, float topPixelOfRow, float availableWidth);
+        void BeginPingItem(TreeViewItem<TIdentifier> item, float topPixelOfRow, float availableWidth);
         void EndPingItem();
 
         // Rename interface (BeginRename should return true if rename is handled)
-        bool BeginRename(TreeViewItem item, float delay);
+        bool BeginRename(TreeViewItem<TIdentifier> item, float delay);
         void EndRename();
-        Rect GetRenameRect(Rect rowRect, int row, TreeViewItem item);
+        Rect GetRenameRect(Rect rowRect, int row, TreeViewItem<TIdentifier> item);
 
-        float GetContentIndent(TreeViewItem item);
+        float GetContentIndent(TreeViewItem<TIdentifier> item);
 
         float halfDropBetweenHeight { get; }
         float topRowMargin { get; }

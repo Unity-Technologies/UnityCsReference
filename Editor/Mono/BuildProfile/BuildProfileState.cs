@@ -68,6 +68,11 @@ namespace UnityEditor.Build.Profile
         public ActionState buildAndRunAction { get; set; } = ActionState.Enabled;
 
         /// <summary>
+        /// Allows invoking of Cloud Build for the selected profile.
+        /// </summary>
+        public ActionState buildInCloudPackageAction { get; set; } = ActionState.Enabled;
+
+        /// <summary>
         /// Additional actions shown in the Build Profile Window as generally defined by the Build Profile Extension.
         /// </summary>
         /// <remarks>

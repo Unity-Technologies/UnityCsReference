@@ -209,9 +209,9 @@ namespace UnityEditor.ShortcutManagement
 
             contextType.text = shortcutEntry.context != ContextManager.globalContextType
                 ? ObjectNames.NicifyVariableName(shortcutEntry.context.Name) : string.Empty;
+            contextElement.tooltip = contextType.text;
             tag.text = shortcutEntry.tag;
-            contextElement.tooltip = shortcutEntry.context != ContextManager.globalContextType
-                ? shortcutEntry.context.Name : string.Empty;
+
             if (!string.IsNullOrWhiteSpace(tag.text)) contextElement.tooltip += $" ({tag.text})";
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());

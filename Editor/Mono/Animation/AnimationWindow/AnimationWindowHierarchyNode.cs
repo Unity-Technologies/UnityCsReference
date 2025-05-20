@@ -6,6 +6,8 @@ using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+
 
 namespace UnityEditorInternal
 {

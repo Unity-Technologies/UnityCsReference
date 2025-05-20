@@ -111,6 +111,7 @@ namespace UnityEditor
 
         public static string GetInspectorTitle(Object obj, bool multiObjectEditing)
         {
+            // Note: The following condition is true when the native MonoBehaviour/ScriptableObject is destroyed but not its managed counterpart
             if (obj == null && (object)obj != null && (obj is MonoBehaviour || obj is ScriptableObject))
                 return L10n.Tr(" (Script)");
 

@@ -12,6 +12,7 @@ using UnityEditor.SceneManagement;
 using System.Text;
 using static UnityEditor.GameObjectTreeViewGUI;
 using Object = UnityEngine.Object;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {

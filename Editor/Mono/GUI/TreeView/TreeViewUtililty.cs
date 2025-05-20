@@ -8,24 +8,24 @@ using System.Linq;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    internal static class TreeViewUtility
+    internal static class TreeViewUtility<TIdentifier> where TIdentifier : unmanaged, IEquatable<TIdentifier>
     {
-        internal static void SetParentAndChildrenForItems(IList<TreeViewItem> rows, TreeViewItem root)
+        internal static void SetParentAndChildrenForItems(IList<TreeViewItem<TIdentifier>> rows, TreeViewItem<TIdentifier> root)
         {
             SetChildParentReferences(rows, root);
         }
 
         // For setting depths values based on children state of the items
-        internal static void SetDepthValuesForItems(TreeViewItem root)
+        internal static void SetDepthValuesForItems(TreeViewItem<TIdentifier> root)
         {
             if (root == null)
                 throw new ArgumentNullException("root", "The root is null");
 
-            Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
+            Stack<TreeViewItem<TIdentifier>> stack = new Stack<TreeViewItem<TIdentifier>>();
             stack.Push(root);
             while (stack.Count > 0)
             {
-                TreeViewItem current = stack.Pop();
+                TreeViewItem<TIdentifier> current = stack.Pop();
                 if (current.children != null)
                 {
                     foreach (var child in current.children)
@@ -40,36 +40,36 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        internal static List<TreeViewItem> FindItemsInList(IEnumerable<int> itemIDs, IList<TreeViewItem> treeViewItems)
+        internal static List<TreeViewItem<TIdentifier>> FindItemsInList(IEnumerable<TIdentifier> itemIDs, IList<TreeViewItem<TIdentifier>> treeViewItems)
         {
             return (from x in treeViewItems where itemIDs.Contains(x.id) select x).ToList();
         }
 
-        internal static TreeViewItem FindItemInList<T>(int id, IList<T> treeViewItems) where T : TreeViewItem
+        internal static TreeViewItem<TIdentifier> FindItemInList<T>(TIdentifier id, IList<T> treeViewItems) where T : TreeViewItem<TIdentifier>
         {
-            return treeViewItems.FirstOrDefault(t => t.id == id);
+            return treeViewItems.FirstOrDefault(t => t.id.Equals(id));
         }
 
         // Assumes full tree
-        internal static TreeViewItem FindItem(int id, TreeViewItem searchFromThisItem)
+        internal static TreeViewItem<TIdentifier> FindItem(TIdentifier id, TreeViewItem<TIdentifier> searchFromThisItem)
         {
             return FindItemRecursive(id, searchFromThisItem);
         }
 
-        static TreeViewItem FindItemRecursive(int id, TreeViewItem item)
+        static TreeViewItem<TIdentifier> FindItemRecursive(TIdentifier id, TreeViewItem<TIdentifier> item)
         {
             if (item == null)
                 return null;
 
-            if (item.id == id)
+            if (item.id.Equals(id))
                 return item;
 
             if (!item.hasChildren)
                 return null;
 
-            foreach (TreeViewItem child in item.children)
+            foreach (TreeViewItem<TIdentifier> child in item.children)
             {
-                TreeViewItem result = FindItemRecursive(id, child);
+                TreeViewItem<TIdentifier> result = FindItemRecursive(id, child);
                 if (result != null)
                     return result;
             }
@@ -77,12 +77,12 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Assumes full tree
-        internal static void GetParentsAboveItem(TreeViewItem fromItem, HashSet<int> parentsAbove)
+        internal static void GetParentsAboveItem(TreeViewItem<TIdentifier> fromItem, HashSet<TIdentifier> parentsAbove)
         {
             if (fromItem == null)
                 throw new ArgumentNullException("fromItem");
 
-            TreeViewItem parent = fromItem.parent;
+            TreeViewItem<TIdentifier> parent = fromItem.parent;
             while (parent != null)
             {
                 parentsAbove.Add(parent.id);
@@ -91,21 +91,21 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Assumes full tree
-        internal static void GetParentsBelowItem(TreeViewItem fromItem, HashSet<int> parentsBelow)
+        internal static void GetParentsBelowItem(TreeViewItem<TIdentifier> fromItem, HashSet<TIdentifier> parentsBelow)
         {
             if (fromItem == null)
                 throw new ArgumentNullException("fromItem");
 
-            Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
+            Stack<TreeViewItem<TIdentifier>> stack = new Stack<TreeViewItem<TIdentifier>>();
             stack.Push(fromItem);
 
             while (stack.Count > 0)
             {
-                TreeViewItem current = stack.Pop();
+                TreeViewItem<TIdentifier> current = stack.Pop();
                 if (current.hasChildren)
                 {
                     parentsBelow.Add(current.id);
-                    if (LazyTreeViewDataSource.IsChildListForACollapsedParent(current.children))
+                    if (LazyTreeViewDataSource<TIdentifier>.IsChildListForACollapsedParent(current.children))
                         throw new InvalidOperationException("Invalid tree for finding descendants: Ensure a complete tree when using this utillity method.");
 
                     foreach (var foo in current.children)
@@ -116,7 +116,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        internal static void DebugPrintToEditorLogRecursive(TreeViewItem item)
+        internal static void DebugPrintToEditorLogRecursive(TreeViewItem<TIdentifier> item)
         {
             if (item == null)
                 return;
@@ -125,14 +125,14 @@ namespace UnityEditor.IMGUI.Controls
             if (!item.hasChildren)
                 return;
 
-            foreach (TreeViewItem child in item.children)
+            foreach (TreeViewItem<TIdentifier> child in item.children)
             {
                 DebugPrintToEditorLogRecursive(child);
             }
         }
 
         // Setup child and parent references based on the depth of the tree view items in 'visibleItems'
-        internal static void SetChildParentReferences(IList<TreeViewItem> visibleItems, TreeViewItem root)
+        internal static void SetChildParentReferences(IList<TreeViewItem<TIdentifier>> visibleItems, TreeViewItem<TIdentifier> root)
         {
             for (int i = 0; i < visibleItems.Count; i++)
                 visibleItems[i].parent = null;
@@ -150,7 +150,7 @@ namespace UnityEditor.IMGUI.Controls
             // Ensure items without a parent gets 'root' as parent
             if (rootChildCount > 0)
             {
-                var rootChildren = new List<TreeViewItem>(rootChildCount);
+                var rootChildren = new List<TreeViewItem<TIdentifier>>(rootChildCount);
                 for (int i = 0; i < visibleItems.Count; i++)
                 {
                     if (visibleItems[i].parent == null)
@@ -162,21 +162,21 @@ namespace UnityEditor.IMGUI.Controls
                 root.children = rootChildren;
             }
             else
-                root.children = new List<TreeViewItem>();
+                root.children = new List<TreeViewItem<TIdentifier>>();
         }
 
-        static void SetChildren(TreeViewItem item, List<TreeViewItem> newChildList)
+        static void SetChildren(TreeViewItem<TIdentifier> item, List<TreeViewItem<TIdentifier>> newChildList)
         {
             // Do not touch children if we have a LazyParent and did not find any children == keep lazy children
-            if (LazyTreeViewDataSource.IsChildListForACollapsedParent(item.children) && newChildList == null)
+            if (LazyTreeViewDataSource<TIdentifier>.IsChildListForACollapsedParent(item.children) && newChildList == null)
                 return;
 
             item.children = newChildList;
         }
 
-        static void SetChildParentReferences(int parentIndex, IList<TreeViewItem> visibleItems)
+        static void SetChildParentReferences(int parentIndex, IList<TreeViewItem<TIdentifier>> visibleItems)
         {
-            TreeViewItem parent = visibleItems[parentIndex];
+            TreeViewItem<TIdentifier> parent = visibleItems[parentIndex];
             bool alreadyHasValidChildren = parent.children != null && parent.children.Count > 0 && parent.children[0] != null;
             if (alreadyHasValidChildren)
                 return;
@@ -194,10 +194,10 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             // Fill child array
-            List<TreeViewItem> childList = null;
+            List<TreeViewItem<TIdentifier>> childList = null;
             if (childCount != 0)
             {
-                childList = new List<TreeViewItem>(childCount); // Allocate once
+                childList = new List<TreeViewItem<TIdentifier>>(childCount); // Allocate once
                 childCount = 0;
                 for (int i = parentIndex + 1; i < visibleItems.Count; i++)
                 {

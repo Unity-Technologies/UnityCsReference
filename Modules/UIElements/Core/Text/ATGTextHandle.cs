@@ -26,11 +26,10 @@ namespace UnityEngine.UIElements
             if (!ConvertUssToNativeTextGenerationSettings())
                 return;
 
-            var scale = GetPixelsPerPoint();
             // Insert zero width space to avoid TextField from collapsing when empty. UUM-90538
             nativeSettings.text = textToMeasure.valueLength > 0 ? textToMeasure.CreateString() : "\u200B";
-            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width *scale* 64.0f);
-            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height *scale* 64.0f);
+            nativeSettings.screenWidth = float.IsNaN(width) ? TextLib.k_unconstrainedScreenSize : (int)(width * 64.0f);
+            nativeSettings.screenHeight = float.IsNaN(height) ? TextLib.k_unconstrainedScreenSize : (int)(height * 64.0f);
 
             if (m_TextElement.enableRichText && !String.IsNullOrEmpty(nativeSettings.text))
             {

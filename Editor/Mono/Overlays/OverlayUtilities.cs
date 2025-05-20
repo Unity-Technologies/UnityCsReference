@@ -64,7 +64,24 @@ namespace UnityEditor.Overlays
             }
         }
 
-        // Rect is in world space
+        // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
+        public static Rect EnsureRectOverlapsRect(Rect rect, Rect boundary)
+        {
+            if (rect.x > boundary.xMax)
+                rect.x = boundary.xMax;
+
+            if (rect.xMax < boundary.xMin)
+                rect.x = (boundary.xMin) - rect.width;
+
+            if (rect.y > boundary.yMax)
+                rect.y = boundary.yMax;
+
+            if (rect.y < boundary.yMin)
+                rect.y = boundary.yMin;
+
+            return rect;
+        }
+
         public static Rect ClampRectToRect(Rect rect, Rect clampingRect)
         {
             rect.position -= rect.max - ClampPositionToRect(rect.max, clampingRect);
@@ -72,7 +89,6 @@ namespace UnityEditor.Overlays
             return rect;
         }
 
-        // position is in world space
         public static Vector2 ClampPositionToRect(Vector2 position, Rect clampingRect)
         {
             //keep mouse position within bounds for picking, mathf.epsilon is too small

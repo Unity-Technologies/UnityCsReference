@@ -19,8 +19,10 @@ namespace UnityEditor
     // OnEvent () - Should be called early in an OnGUI of an EditorWindow that is using this RenameOverlay (handles closing if clicking outside and closing while receving any input while delayed, and caches controlID for text field)
     // OnGUI (GUIStyle textFieldStyle) - Should be called late to ensure rendered on top and early for non-repaint event to handle input before other ui logic
 
+    internal class RenameOverlay : RenameOverlay<int>{}
+
     [System.Serializable]
-    internal class RenameOverlay
+    internal class RenameOverlay<TValue>
     {
         [SerializeField]
         bool m_UserAcceptedRename;
@@ -31,7 +33,7 @@ namespace UnityEditor
         [SerializeField]
         Rect m_EditFieldRect;
         [SerializeField]
-        int m_UserData;
+        TValue m_UserData;
         [SerializeField]
         bool m_IsWaitingForDelay;
         [SerializeField]
@@ -56,7 +58,7 @@ namespace UnityEditor
         public string name { get {return m_Name; } internal set { m_Name = value; } }
         public string originalName { get {return m_OriginalName; }}
         public bool userAcceptedRename { get {return m_UserAcceptedRename; }}
-        public int userData { get {return m_UserData; }}
+        public TValue userData { get {return m_UserData; }}
         public bool isWaitingForDelay { get {return m_IsWaitingForDelay; }}
         public Rect editFieldRect { get {return m_EditFieldRect; } set {m_EditFieldRect = value; }}
         public bool isRenamingFilename {get {return m_IsRenamingFilename; } set {m_IsRenamingFilename = value; }}
@@ -71,7 +73,7 @@ namespace UnityEditor
         private int m_TextFieldControlID;
 
         // Returns true if started renaming
-        public bool BeginRename(string name, int userData, float delay)
+        public bool BeginRename(string name, TValue userData, float delay)
         {
             if (m_IsRenaming)
             {
@@ -154,7 +156,7 @@ namespace UnityEditor
             m_Name = "";
             m_OriginalName = "";
             m_EditFieldRect = new Rect();
-            m_UserData = 0;
+            m_UserData = default;
             m_IsWaitingForDelay = false;
             m_OriginalEventType = EventType.Ignore;
             Undo.undoRedoEvent -= UndoRedoWasPerformed;

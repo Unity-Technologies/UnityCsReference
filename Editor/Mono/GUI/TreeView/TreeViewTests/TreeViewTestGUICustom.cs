@@ -5,6 +5,8 @@
 using System.ComponentModel;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 
 namespace UnityEditor.TreeViewExamples

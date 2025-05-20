@@ -6,6 +6,11 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Experimental;
 using UnityEngine;
 
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+
+
 namespace UnityEditor.TreeViewExamples
 {
     internal class FooTreeViewItem : TreeViewItem

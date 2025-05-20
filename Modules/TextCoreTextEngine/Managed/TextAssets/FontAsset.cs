@@ -614,7 +614,7 @@ namespace UnityEngine.TextCore.Text
         internal static FontAsset? CreateFontAssetInternal(string familyName, string styleName, int pointSize = 90)
         {
             if (FontEngine.TryGetSystemFontReference(familyName, styleName, out FontReference fontRef))
-                return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
+                return CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
             return null;
         }
 
@@ -680,7 +680,7 @@ namespace UnityEngine.TextCore.Text
             FontAsset fontAsset = null;
 
             if (FontEngine.TryGetSystemFontReference(familyName, null, out FontReference fontRef))
-                fontAsset = CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
+                fontAsset = CreateFontAsset(fontRef.filePath, fontRef.faceIndex, pointSize, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.DynamicOS, true);
 
             if (fontAsset == null)
                 return null;
@@ -720,7 +720,8 @@ namespace UnityEngine.TextCore.Text
             var fontAsset = CreateFontAssetInstance(null, atlasPadding, renderMode, atlasWidth, atlasHeight, atlasPopulationMode, enableMultiAtlasSupport);
 
             // Set font file path
-            fontAsset.m_SourceFontFilePath = fontFilePath;
+            if (fontAsset)
+                fontAsset.m_SourceFontFilePath = fontFilePath;
 
             return fontAsset;
         }
@@ -792,6 +793,11 @@ namespace UnityEngine.TextCore.Text
             fontAsset.m_Version = "1.1.0";
             fontAsset.faceInfo = FontEngine.GetFaceInfo();
 
+            if (renderMode == GlyphRenderMode.DEFAULT)
+            {
+                renderMode = FontEngine.IsColorFontFace() ? GlyphRenderMode.COLOR : GlyphRenderMode.SDFAA;
+            }
+
             if (atlasPopulationMode == AtlasPopulationMode.Dynamic && font != null)
             {
                 fontAsset.sourceFontFile = font;
@@ -826,9 +832,19 @@ namespace UnityEngine.TextCore.Text
                 packingModifier = 0;
 
                 if (texFormat == TextureFormat.Alpha8)
-                    tmpMaterial = new Material(TextShaderUtilities.ShaderRef_MobileBitmap);
+                {
+                    if (TextShaderUtilities.ShaderRef_MobileBitmap)
+                        tmpMaterial = new Material(TextShaderUtilities.ShaderRef_MobileBitmap);
+                    else
+                        return null;
+                }
                 else
-                    tmpMaterial = new Material(TextShaderUtilities.ShaderRef_Sprite);
+                {
+                    if (TextShaderUtilities.ShaderRef_Sprite)
+                        tmpMaterial = new Material(TextShaderUtilities.ShaderRef_Sprite);
+                    else
+                        return null;
+                }
 
                 //tmp_material.name = texture.name + " Material";
                 tmpMaterial.SetTexture(TextShaderUtilities.ID_MainTex, texture);
@@ -1660,8 +1676,10 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < text.Length; i++)
             {
-                if (!m_CharacterLookupDictionary.ContainsKey(text[i]))
-                    missingCharacters.Add(text[i]);
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
+                    missingCharacters.Add((char)character);
             }
 
             if (missingCharacters.Count == 0)
@@ -1692,7 +1710,8 @@ namespace UnityEngine.TextCore.Text
             for (int i = 0; i < text.Length; i++)
             {
                 bool isMissingCharacter = true;
-                uint character = text[i];
+
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
 
                 if (m_CharacterLookupDictionary.ContainsKey(character))
                     continue;
@@ -1763,7 +1782,9 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < text.Length; i++)
             {
-                if (!m_CharacterLookupDictionary.ContainsKey(text[i]))
+                uint character = FontAssetUtilities.GetCodePoint(text, ref i);
+
+                if (!m_CharacterLookupDictionary.ContainsKey(character))
                     return false;
             }
 

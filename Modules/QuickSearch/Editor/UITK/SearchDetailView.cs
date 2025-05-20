@@ -43,7 +43,7 @@ namespace UnityEditor.Search
         public static readonly string actionButtonClassName = ussClassName.WithUssElement("action-button");
         public static readonly string actionButtonMoreClassName = ussClassName.WithUssElement("action-button-more");
 
-        public static readonly GUIContent previewInspectorContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", "Open Inspector (F4)", EditorGUIUtility.FindTexture("UnityEditor.InspectorWindow"));
+        public static readonly GUIContent previewInspectorContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", "Open Inspector (F4)", EditorGUIUtility.LoadIcon("UnityEditor.InspectorWindow"));
         public static readonly GUIContent moreActionsContent = EditorGUIUtility.TrTextContentWithIcon(string.Empty, "Open actions menu", Icons.more);
 
         public SearchDetailView(string name, ISearchView viewModel, params string[] classes) : base(name, viewModel, classes)

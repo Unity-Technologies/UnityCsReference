@@ -9,7 +9,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal static class SemVersionExtension
     {
-        private static readonly Regex k_ExpRegex = new Regex(@"^exp(\-(?<feature>[A-Za-z0-9-]+))?(\.(?<iteration>[1-9]\d*))?$");
+        private static readonly Regex k_ExpRegex = new Regex(@"^exp(\-(?<feature>[A-Za-z0-9-]+))?(\.(?<iteration>[0-9]\d*))?$");
 
         public static string StripTag(this SemVersion version)
         {
@@ -31,8 +31,8 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (string.IsNullOrEmpty(version.Prerelease))
                 return PackageTag.Release;
-            var match = k_ExpRegex.Match(version.Prerelease);
-            return match.Success && match.Groups["iteration"].Success && match.Groups["feature"].Value.Length <= 10 ? PackageTag.Experimental : PackageTag.PreRelease;
+
+            return k_ExpRegex.Match(version.Prerelease).Success ? PackageTag.Experimental : PackageTag.PreRelease;
         }
     }
 }

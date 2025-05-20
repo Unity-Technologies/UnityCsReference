@@ -71,6 +71,10 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The texture to display in this image. If you assign a `Texture` or `Texture2D`, the Image element will resize and show the assigned texture.
         /// </summary>
+        /// <example>
+        /// The following example creates an `Image` element and assigns a texture to it.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/AddImageExample.cs"/>
+        /// </example>
         [CreateProperty]
         public Texture image
         {

@@ -8,36 +8,36 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    public class TreeViewItem : System.IComparable<TreeViewItem>
+    public class TreeViewItem<TIdentifier> : System.IComparable<TreeViewItem<TIdentifier>>
     {
-        int m_ID; // The id should be unique for all items in TreeView because it is used for searching, selection etc.
-        TreeViewItem m_Parent;
-        List<TreeViewItem> m_Children = null;
+        TIdentifier m_ID; // The id should be unique for all items in TreeView because it is used for searching, selection etc.
+        TreeViewItem<TIdentifier> m_Parent;
+        List<TreeViewItem<TIdentifier>> m_Children = null;
         int m_Depth;
         string m_DisplayName;
         Texture2D m_Icon;
 
         public TreeViewItem() { }
 
-        public TreeViewItem(int id)
+        public TreeViewItem(TIdentifier id)
         {
             m_ID = id;
         }
 
-        public TreeViewItem(int id, int depth)
+        public TreeViewItem(TIdentifier id, int depth)
         {
             m_ID = id;
             m_Depth = depth;
         }
 
-        public TreeViewItem(int id, int depth, string displayName)
+        public TreeViewItem(TIdentifier id, int depth, string displayName)
         {
             m_Depth = depth;
             m_ID = id;
             m_DisplayName = displayName;
         }
 
-        internal TreeViewItem(int id, int depth, TreeViewItem parent, string displayName)
+        internal TreeViewItem(TIdentifier id, int depth, TreeViewItem<TIdentifier> parent, string displayName)
         {
             m_Depth = depth;
             m_Parent = parent;
@@ -45,18 +45,25 @@ namespace UnityEditor.IMGUI.Controls
             m_DisplayName = displayName;
         }
 
-        public virtual int id { get { return m_ID; } set { m_ID = value; } }
+        public virtual TIdentifier id { get { return m_ID; } set { m_ID = value; } }
         public virtual string displayName { get { return m_DisplayName; } set { m_DisplayName = value; } }
         public virtual int depth { get { return m_Depth; } set { m_Depth = value; } }
         public virtual bool hasChildren { get { return m_Children != null && m_Children.Count > 0; } }
-        public virtual List<TreeViewItem> children { get { return m_Children; } set { m_Children = value; } }
-        public virtual TreeViewItem parent { get { return m_Parent; } set { m_Parent = value; } }
+
+        internal virtual List<TreeViewItem<TIdentifier>> childrenInternal { get { return m_Children; } set { m_Children = value; } }
+
+        public virtual List<TreeViewItem<TIdentifier>> children { get { return childrenInternal; } set { childrenInternal = value; } }
+
+        internal virtual TreeViewItem<TIdentifier> ParentInternal { get { return m_Parent; } set { m_Parent = value; } }
+
+        public virtual TreeViewItem<TIdentifier> parent { get => ParentInternal; set { ParentInternal = value; } }
+
         public virtual Texture2D icon { get { return m_Icon; } set { m_Icon = value; } }
 
-        public void AddChild(TreeViewItem child)
+        public void AddChild(TreeViewItem<TIdentifier> child)
         {
             if (m_Children == null)
-                m_Children = new List<TreeViewItem>();
+                m_Children = new List<TreeViewItem<TIdentifier>>();
 
             m_Children.Add(child);
 
@@ -64,9 +71,14 @@ namespace UnityEditor.IMGUI.Controls
                 child.parent = this;
         }
 
-        public virtual int CompareTo(TreeViewItem other)
+        internal virtual int CompareToInternal(TreeViewItem<TIdentifier> other)
         {
             return displayName.CompareTo(other.displayName);
+        }
+
+        public virtual int CompareTo(TreeViewItem<TIdentifier> other)
+        {
+            return CompareToInternal(other);
         }
 
         public override string ToString()
@@ -77,9 +89,9 @@ namespace UnityEditor.IMGUI.Controls
 
     internal static class TreeViewItemExtension
     {
-        internal static bool Exists(this TreeViewItem parentItem, Func<TreeViewItem, bool> condition)
+        internal static bool Exists<TIdentifier>(this TreeViewItem<TIdentifier> parentItem, Func<TreeViewItem<TIdentifier>, bool> condition)
         {
-            foreach (TreeViewItem tvitem in parentItem.hasChildren ? parentItem.children : new List<TreeViewItem>())
+            foreach (TreeViewItem<TIdentifier> tvitem in parentItem.hasChildren ? parentItem.children : new List<TreeViewItem<TIdentifier>>())
             {
                 if (condition(tvitem))
                     return true;
@@ -91,9 +103,9 @@ namespace UnityEditor.IMGUI.Controls
         }
     }
 
-    class TreeViewItemAlphaNumericSort : IComparer<TreeViewItem>
+    class TreeViewItemAlphaNumericSort<TIdentifier> : IComparer<TreeViewItem<TIdentifier>>
     {
-        public int Compare(TreeViewItem lhs, TreeViewItem rhs)
+        public int Compare(TreeViewItem<TIdentifier> lhs, TreeViewItem<TIdentifier> rhs)
         {
             if (lhs == rhs) return 0;
             if (lhs == null) return -1;

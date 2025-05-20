@@ -2116,7 +2116,15 @@ namespace UnityEngine.Rendering
         All = Color | Depth | Stencil,
         DepthStencil = Depth | Stencil,
         ColorDepth = Color | Depth,
-        ColorStencil = Color | Stencil
+        ColorStencil = Color | Stencil,
+        Color0 = 1 << 3,
+        Color1 = 1 << 4,
+        Color2 = 1 << 5,
+        Color3 = 1 << 6,
+        Color4 = 1 << 7,
+        Color5 = 1 << 8,
+        Color6 = 1 << 9,
+        Color7 = 1 << 10,
     }
 
     //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h

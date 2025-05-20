@@ -12,6 +12,11 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using LazyTreeViewDataSource = UnityEditor.IMGUI.Controls.LazyTreeViewDataSource<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewItemAlphaNumericSort = UnityEditor.IMGUI.Controls.TreeViewItemAlphaNumericSort<int>;
 
 namespace UnityEditor
 {

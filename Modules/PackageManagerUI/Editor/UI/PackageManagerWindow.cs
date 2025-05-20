@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
-            minSize = new Vector2(748, 250);
+            minSize = new Vector2(280, 250);
             BuildGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
@@ -307,7 +307,7 @@ namespace UnityEditor.PackageManager.UI
         private static void ShowWindow()
         {
             instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(748, 250);
+            instance.minSize = new Vector2(280, 250);
             instance.Show();
         }
 

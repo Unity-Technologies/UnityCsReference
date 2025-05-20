@@ -746,6 +746,7 @@ namespace UnityEditor
                         {
                             SetActiveEntry(entry);
                             m_LastActiveEntryIndex = entry.globalLineIndex;
+                            m_TextScroll = Vector2.zero;
                             activeEntryChanged?.Invoke();
                         }
 

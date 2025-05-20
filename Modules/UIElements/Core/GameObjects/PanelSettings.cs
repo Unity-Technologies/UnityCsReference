@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine.Serialization;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -611,7 +612,7 @@ namespace UnityEngine.UIElements
 
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
-        internal static Func<int, Vector2> GetGameViewResolution;
+        internal static Func<int, Vector2?> GetGameViewResolution;
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
         internal static Func<bool> IsAdvancedTextEnabled;
 
@@ -678,6 +679,18 @@ namespace UnityEngine.UIElements
         [SerializeField]
         [HideInInspector]
         private Shader m_RuntimeWorldShader;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_SDFShader;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_BitmapShader;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_SpriteShader;
 
         [SerializeField]
         [HideInInspector]
@@ -851,6 +864,18 @@ namespace UnityEngine.UIElements
             {
                 m_RuntimeWorldShader = Shader.Find(Shaders.k_RuntimeWorld);
             }
+            if (m_SDFShader == null)
+            {
+                m_SDFShader = Shader.Find(TextShaderUtilities.k_SDFText);
+            }
+            if (m_BitmapShader == null)
+            {
+                m_BitmapShader = Shader.Find(TextShaderUtilities.k_BitmapText);
+            }
+            if (m_SpriteShader == null)
+            {
+                m_SpriteShader = Shader.Find(TextShaderUtilities.k_SpriteText);
+            }
             m_PanelAccess.SetTargetTexture();
         }
 
@@ -1018,7 +1043,7 @@ namespace UnityEngine.UIElements
             }
 
             // In the Unity Editor, Display.displays is not supported; displays.Length always has a value of 1, regardless of how many displays you have connected.
-            return new(Vector2.zero, GetGameViewResolution(m_TargetDisplay));
+            return new (Vector2.zero, GetGameViewResolution(m_TargetDisplay) ?? new (Display.main.renderingWidth, Display.main.renderingHeight));
         }
 
         internal void AttachAndInsertUIDocumentToVisualTree(UIDocument uiDocument)
@@ -1032,7 +1057,7 @@ namespace UnityEngine.UIElements
                 m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
             }
 
-            m_AttachedUIDocumentsList.AddToListAndToVisualTree(uiDocument, visualTree);
+            m_AttachedUIDocumentsList.AddToListAndToVisualTree(uiDocument, visualTree, false);
         }
 
         internal void DetachUIDocument(UIDocument uiDocument)

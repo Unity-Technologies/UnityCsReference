@@ -27,6 +27,8 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_ParentField;
         private ObjectField m_SourceAssetField;
 
+        private EnumField m_PositionEnumField;
+
         private Foldout m_WorldSpaceDimensionsFoldout;
         private EnumField m_WorldSpaceSizeField;
         private VisualElement m_WorldSpaceWidthField;
@@ -53,6 +55,8 @@ namespace UnityEditor.UIElements.Inspector
             m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
 
+            m_PositionEnumField = m_RootVisualElement.MandatoryQ<EnumField>("position-field");
+
             m_WorldSpaceDimensionsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("world-space-dimensions");
             m_WorldSpaceSizeField = m_RootVisualElement.MandatoryQ<EnumField>("size-mode");
             m_WorldSpaceWidthField = m_RootVisualElement.MandatoryQ<VisualElement>("width-field");
@@ -72,6 +76,7 @@ namespace UnityEditor.UIElements.Inspector
         {
             m_ParentField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
             m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
+            m_PositionEnumField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
             m_WorldSpaceSizeField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
         }
 
@@ -88,8 +93,10 @@ namespace UnityEditor.UIElements.Inspector
 
             m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
 
-            bool worldSpaceVisible = (uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace);
-            m_WorldSpaceDimensionsFoldout.style.display = worldSpaceVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            bool isRootDocument = uiDocument.parentUI == null;
+            m_PositionEnumField.style.display = isRootDocument ? DisplayStyle.None : DisplayStyle.Flex;
+
+            m_WorldSpaceDimensionsFoldout.style.display = uiDocument.isTransformControlledByGameObject ? DisplayStyle.Flex : DisplayStyle.None;
 
             bool isFixedSize = (uiDocument.worldSpaceSizeMode == UIDocument.WorldSpaceSizeMode.Fixed);
             var display = isFixedSize ? DisplayStyle.Flex : DisplayStyle.None;
