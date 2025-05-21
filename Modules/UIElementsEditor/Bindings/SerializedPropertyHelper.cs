@@ -62,9 +62,9 @@ namespace UnityEditor.UIElements.Bindings
             return p.colorValue;
         }
 
-        public static UnityEngine.Object GetObjectRefPropertyValue(SerializedProperty p)
+        public static T GetObjectRefPropertyValue<T>(SerializedProperty p) where T: UnityEngine.Object
         {
-            return p.objectReferenceValue;
+            return p.objectReferenceValue as T;
         }
 
         public static int GetLayerMaskPropertyValue(SerializedProperty p)
@@ -231,7 +231,7 @@ namespace UnityEditor.UIElements.Bindings
             p.colorValue = v;
         }
 
-        public static void SetObjectRefPropertyValue(SerializedProperty p, UnityEngine.Object v)
+        public static void SetObjectRefPropertyValue<T>(SerializedProperty p, T v) where T : UnityEngine.Object
         {
             p.objectReferenceValue = v;
         }

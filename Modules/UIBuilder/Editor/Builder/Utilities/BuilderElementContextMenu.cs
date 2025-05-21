@@ -211,6 +211,7 @@ namespace Unity.UI.Builder
             var isLinkedInstancedVTAActiveVTA = linkedInstancedVTA == activeOpenUXML.visualTreeAsset;
             var isLinkedVEADirectChild = activeOpenUXML.visualTreeAsset.templateAssets.Contains(linkedTemplateVEA);
             var isSelector = documentElement != null && BuilderSharedStyles.IsSelectorElement(documentElement);
+            var isStyleSheet = documentElement != null && BuilderSharedStyles.IsStyleSheetElement(documentElement);
 
             var showOpenInBuilder = linkedInstancedVTA != null;
             var showReturnToParentAction = isLinkedOpenVTAActiveVTA && activeOpenUXML.isChildSubDocument;
@@ -313,7 +314,7 @@ namespace Unity.UI.Builder
                     });
             }
 
-            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector)
+            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector && !isStyleSheet)
             {
                 evt.menu.AppendSeparator();
 

@@ -317,16 +317,8 @@ namespace UnityEngine.UIElements
                 : DropdownMenuAction.Status.Hidden;
         }
 
-        // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
-        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),
-            typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
-            typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
-            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
-            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent))]
-        protected override void HandleEventBubbleUp(EventBase evt)
+        void EditionHandleEvent(EventBase evt)
         {
-            base.HandleEventBubbleUp(evt);
-
             if (selection.isSelectable)
             {
                 var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;

@@ -5,37 +5,31 @@
 using UnityEngine;
 using UnityEditor;
 using System.Collections;
+using System.Collections.Generic;
 using System;
 
 #pragma warning disable 649
 
 namespace UnityEditor
 {
-    class RagdollBuilder : ScriptableWizard
+    class RagdollBuilder
     {
+        public Animator animator; // Reference to the Animator Component
+
         public Transform pelvis;
-
-        public Transform leftHips = null;
-        public Transform leftKnee = null;
-        public Transform leftFoot = null;
-
-        public Transform rightHips = null;
-        public Transform rightKnee = null;
-        public Transform rightFoot = null;
-
-        public Transform leftArm = null;
-        public Transform leftElbow = null;
-
-        public Transform rightArm = null;
-        public Transform rightElbow = null;
-
-        public Transform middleSpine = null;
-        public Transform head = null;
-
+        public Transform leftHips, leftKnee, leftFoot;
+        public Transform rightHips, rightKnee, rightFoot;
+        public Transform leftArm, leftElbow;
+        public Transform rightArm, rightElbow;
+        public Transform middleSpine, head;
 
         public float totalMass = 20;
         public float strength = 0.0F;
+        public bool flipForward = false;
 
+        public string helpString { get; set; } = "Set up your ragdoll by assigning bones and ensuring a T-stand pose.";
+        public string errorString { get; set; } = "";
+        public bool isValid { get; set; } = true;
         Vector3 right = Vector3.right;
         Vector3 up = Vector3.up;
         Vector3 forward = Vector3.forward;
@@ -43,7 +37,64 @@ namespace UnityEditor
         Vector3 worldRight = Vector3.right;
         Vector3 worldUp = Vector3.up;
         Vector3 worldForward = Vector3.forward;
-        public bool flipForward = false;
+
+        private bool advancedFoldout = false;
+
+        private static readonly Dictionary<string, HumanBodyBones> boneMapping = new()
+        {
+            { "Pelvis", HumanBodyBones.Hips },
+            { "Left Hips", HumanBodyBones.LeftUpperLeg },
+            { "Left Knee", HumanBodyBones.LeftLowerLeg },
+            { "Left Foot", HumanBodyBones.LeftFoot },
+            { "Right Hips", HumanBodyBones.RightUpperLeg },
+            { "Right Knee", HumanBodyBones.RightLowerLeg },
+            { "Right Foot", HumanBodyBones.RightFoot },
+            { "Left Arm", HumanBodyBones.LeftUpperArm },
+            { "Left Elbow", HumanBodyBones.LeftLowerArm },
+            { "Right Arm", HumanBodyBones.RightUpperArm },
+            { "Right Elbow", HumanBodyBones.RightLowerArm },
+            { "Middle Spine", HumanBodyBones.Spine },
+            { "Head", HumanBodyBones.Head }
+        };
+
+        internal void AutoAssignTransforms()
+        {
+            if (animator == null || animator.avatar == null || !animator.avatar.isHuman)
+            {
+                Debug.LogError("Animator or Humanoid Avatar is missing!");
+                return;
+            }
+
+            Clear(); // clearing all bones
+
+            foreach (var bonePair in boneMapping)
+            {
+                Transform boneTransform = animator.GetBoneTransform(bonePair.Value);
+                if (boneTransform != null)
+                {
+                    switch (bonePair.Key)
+                    {
+                        case "Pelvis": pelvis = boneTransform; break;
+                        case "Left Hips": leftHips = boneTransform; break;
+                        case "Left Knee": leftKnee = boneTransform; break;
+                        case "Left Foot": leftFoot = boneTransform; break;
+                        case "Right Hips": rightHips = boneTransform; break;
+                        case "Right Knee": rightKnee = boneTransform; break;
+                        case "Right Foot": rightFoot = boneTransform; break;
+                        case "Left Arm": leftArm = boneTransform; break;
+                        case "Left Elbow": leftElbow = boneTransform; break;
+                        case "Right Arm": rightArm = boneTransform; break;
+                        case "Right Elbow": rightElbow = boneTransform; break;
+                        case "Middle Spine": middleSpine = boneTransform; break;
+                        case "Head": head = boneTransform; break;
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"Bone '{bonePair.Key}' not found in Avatar.");
+                }
+            }
+        }
 
         class BoneInfo
         {
@@ -65,11 +116,28 @@ namespace UnityEditor
 
             public ArrayList children = new ArrayList();
             public float density;
-            public float summedMass;// The mass of this and all children bodies
+            public float summedMass; // The mass of this and all children bodies
         }
 
         ArrayList bones;
         BoneInfo rootBone;
+
+        internal void Clear()
+        {
+            pelvis = null;
+            leftHips = null;
+            leftKnee = null;
+            leftFoot = null;
+            rightHips = null;
+            rightKnee = null;
+            rightFoot = null;
+            leftArm = null;
+            leftElbow = null;
+            rightArm = null;
+            rightElbow = null;
+            middleSpine = null;
+            head = null;
+        }
 
         string CheckConsistency()
         {
@@ -107,10 +175,66 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("GameObject/3D Object/Ragdoll...", false, 2000)]
-        static void CreateWizard()
+        internal void OnGUI()
         {
-            ScriptableWizard.DisplayWizard<RagdollBuilder>("Create Ragdoll");
+            EditorGUILayout.LabelField("Use Animator component to automatically assign ragdoll bones.");
+
+            // Animator & Auto-Fill on the same line
+            EditorGUILayout.BeginHorizontal();
+            animator = (Animator)EditorGUILayout.ObjectField("Animator", animator, typeof(Animator), true);
+            if (GUILayout.Button("Auto-Fill", GUILayout.Width(100)))
+            {
+                AutoAssignTransforms();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            // Parameters (Total mass and strength)
+            totalMass = EditorGUILayout.FloatField("Total Mass", totalMass);
+            strength = EditorGUILayout.FloatField("Strength", strength);
+
+            // Flip axis toggle (for adjusting the forward direction)
+            flipForward = EditorGUILayout.Toggle("Flip Forward Axis", flipForward);
+
+            GUILayout.Space(10);
+
+            // Advanced Bone Setup Foldout
+            advancedFoldout = EditorGUILayout.Foldout(advancedFoldout, "Advanced Bone Setup", true);
+            if (advancedFoldout)
+            {
+                if (!string.IsNullOrEmpty(errorString))
+                {
+                    EditorGUILayout.HelpBox(errorString, MessageType.Error);
+                }
+
+                GUILayout.Space(10);
+
+                // Pelvis
+                pelvis = EditorGUILayout.ObjectField("Pelvis", pelvis, typeof(Transform), true) as Transform;
+
+                // Left Leg
+                leftHips = EditorGUILayout.ObjectField("Left Hips", leftHips, typeof(Transform), true) as Transform;
+                leftKnee = EditorGUILayout.ObjectField("Left Knee", leftKnee, typeof(Transform), true) as Transform;
+                leftFoot = EditorGUILayout.ObjectField("Left Foot", leftFoot, typeof(Transform), true) as Transform;
+
+                // Right Leg
+                rightHips = EditorGUILayout.ObjectField("Right Hips", rightHips, typeof(Transform), true) as Transform;
+                rightKnee = EditorGUILayout.ObjectField("Right Knee", rightKnee, typeof(Transform), true) as Transform;
+                rightFoot = EditorGUILayout.ObjectField("Right Foot", rightFoot, typeof(Transform), true) as Transform;
+
+                // Left Arm
+                leftArm = EditorGUILayout.ObjectField("Left Arm", leftArm, typeof(Transform), true) as Transform;
+                leftElbow = EditorGUILayout.ObjectField("Left Elbow", leftElbow, typeof(Transform), true) as Transform;
+
+                // Right Arm
+                rightArm = EditorGUILayout.ObjectField("Right Arm", rightArm, typeof(Transform), true) as Transform;
+                rightElbow = EditorGUILayout.ObjectField("Right Elbow", rightElbow, typeof(Transform), true) as Transform;
+
+                // Spine and Head
+                middleSpine = EditorGUILayout.ObjectField("Middle Spine", middleSpine, typeof(Transform), true) as Transform;
+                head = EditorGUILayout.ObjectField("Head", head, typeof(Transform), true) as Transform;
+            }
         }
 
         void DecomposeVector(out Vector3 normalCompo, out Vector3 tangentCompo, Vector3 outwardDir, Vector3 outwardNormal)
@@ -136,22 +260,26 @@ namespace UnityEditor
                 forward = -forward;
         }
 
-        void OnWizardUpdate()
+        internal void OnWizardUpdate()
         {
             errorString = CheckConsistency();
             CalculateAxes();
 
             if (errorString.Length != 0)
             {
-                helpString = "Drag all bones from the hierarchy into their slots.\nMake sure your character is in T-Stand.\n";
+                helpString = "Drag Animator component to auto-fill all the ragdoll bones.\nOtherwise, manually drag all bones from the hierarchy into their slots.\nMake sure your character is in T-Stand.";
+        		isValid = false;
             }
             else
             {
-                helpString = "Make sure your character is in T-Stand.\nMake sure the blue axis faces in the same direction the chracter is looking.\nUse flipForward to flip the direction";
-            }
-
-            isValid = errorString.Length == 0;
+                helpString = "Make sure your character is in T-Stand.\nMake sure the blue axis faces in the same direction the chracter is looking.\nUse flipForward to flip the direction.";
+                isValid = true;
+			}
         }
+
+        public bool hasAnyBonesAssigned => head != null || pelvis != null || leftHips != null || leftKnee != null || leftFoot != null ||
+        rightHips != null || rightKnee != null || rightFoot != null || leftArm != null ||
+        leftElbow != null || rightArm != null || rightElbow != null || middleSpine != null;
 
         void PrepareBones()
         {
@@ -182,7 +310,7 @@ namespace UnityEditor
             AddJoint("Head", head, "Middle Spine", worldRight, worldForward, -40, 25, 25, null, 1, 1.0F);
         }
 
-        void OnWizardCreate()
+        internal void OnWizardCreate()
         {
             Cleanup();
             BuildCapsules();
@@ -417,25 +545,6 @@ namespace UnityEditor
             return direction;
         }
 
-        static int SecondLargestComponent(Vector3 point)
-        {
-            int smallest = SmallestComponent(point);
-            int largest = LargestComponent(point);
-            if (smallest < largest)
-            {
-                int temp = largest;
-                largest = smallest;
-                smallest = temp;
-            }
-
-            if (smallest == 0 && largest == 1)
-                return 2;
-            else if (smallest == 0 && largest == 2)
-                return 1;
-            else
-                return 0;
-        }
-
         Bounds Clip(Bounds bounds, Transform relativeTo, Transform clipTransform, bool below)
         {
             int axis = LargestComponent(bounds.size);
@@ -509,7 +618,7 @@ namespace UnityEditor
         void AddHeadCollider()
         {
             if (head.GetComponent<Collider>())
-                Destroy(head.GetComponent<Collider>());
+                Undo.DestroyObjectImmediate(head.GetComponent<Collider>());
 
             float radius = Vector3.Distance(leftArm.transform.position, rightArm.transform.position);
             radius /= 4;

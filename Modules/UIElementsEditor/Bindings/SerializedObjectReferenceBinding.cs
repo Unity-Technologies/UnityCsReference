@@ -21,8 +21,8 @@ internal class SerializedObjectReferenceBinding : SerializedObjectBindingPropert
     void SetBinding(ObjectField c, SerializedObjectBindingContext context, SerializedProperty property)
     {
         property.unsafeMode = true;
-        propGetValue = SerializedPropertyHelper.GetObjectRefPropertyValue;
-        propSetValue = SerializedPropertyHelper.SetObjectRefPropertyValue;
+        propGetValue = SerializedPropertyHelper.GetObjectRefPropertyValue<Object>;
+        propSetValue = SerializedPropertyHelper.SetObjectRefPropertyValue<Object>;
         propCompareValues = SerializedPropertyHelper.ValueEquals;
 
         SetContext(context, property);

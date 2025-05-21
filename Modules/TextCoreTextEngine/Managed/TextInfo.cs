@@ -175,28 +175,26 @@ namespace UnityEngine.TextCore.Text
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, Rect screenRect, float lineHeight, bool useXAdvance = false, bool inverseYAxis = true)
         {
             var result = screenRect.position;
+
             if (characterCount == 0 || index < 0)
                 return inverseYAxis ? new Vector2(0, lineHeight) : result;
 
+            int adjustedIndex = index;
             if (index >= characterCount)
-                index = characterCount - 1;
-
-            var character = textElementInfo[index];
-            var line = lineInfo[character.lineNumber];
-
-            if (index >= characterCount - 1 || useXAdvance)
             {
-                result += inverseYAxis ?
-                    new Vector2(character.xAdvance, screenRect.height - line.descender) :
-                    new Vector2(character.xAdvance, line.descender);
-                return result;
+                adjustedIndex = characterCount - 1;
+                useXAdvance = true;
             }
 
-            result += inverseYAxis ?
-                new Vector2(character.origin, screenRect.height - line.descender) :
-                new Vector2(character.origin, line.descender);
+            var charInfo = textElementInfo[adjustedIndex];
+            var lineInfo = this.lineInfo[charInfo.lineNumber];
 
-            return result;
+            float xPos = useXAdvance ? charInfo.xAdvance : charInfo.origin;
+            float yPos = inverseYAxis ?
+                screenRect.height - lineInfo.descender :
+                lineInfo.descender;
+
+            return result + new Vector2(xPos, yPos);
         }
 
         //TODO add special handling for 1 character...

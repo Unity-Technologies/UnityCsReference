@@ -41,10 +41,10 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Explicit)]
-    internal unsafe struct IntegrationInfo
+    public unsafe struct IntegrationInfo
     {
         [Flags]
-        public enum SupportedUnityFeatures
+        internal enum SupportedUnityFeatures
         {
             None = 0,
             DynamicsSupport = 1 << 1,
@@ -55,23 +55,25 @@ namespace UnityEngine
             CharacterControllerSupport = 1 << 6
         };
 
-        public const uint k_InvalidID = 0;
-        public const uint k_FallbackIntegrationId = 0xDECAFBAD;
+        internal const uint k_InvalidID = 0;
+        internal const uint k_FallbackIntegrationId = 0xDECAFBAD;
 
         [FieldOffset(0)]
-        public readonly uint Id;
+        readonly uint m_Id;
         [FieldOffset(4)]
-        public fixed ushort IntegrationVersion[3];
+        fixed ushort m_IntegrationVersion[3];
         [FieldOffset(10)]
-        public fixed ushort SdkVersion[3];
+        fixed ushort m_SdkVersion[3];
         [FieldOffset(16)]
-        public readonly SupportedUnityFeatures m_Features;
+        readonly SupportedUnityFeatures m_Features;
         [FieldOffset(20)]
         fixed byte m_Name[16];
         [FieldOffset(36)]
         fixed byte m_Desc[220];
 
-        public unsafe string Name {
+        public readonly uint id => m_Id;
+
+        public unsafe string name {
             get
             {
                 fixed(byte* ptr = m_Name)
@@ -79,7 +81,7 @@ namespace UnityEngine
             }
         }
 
-        public unsafe string Description
+        public unsafe string description
         {
             get
             {
@@ -87,6 +89,8 @@ namespace UnityEngine
                     return Marshal.PtrToStringAnsi(new IntPtr(ptr));
             }
         }
+
+        public bool isFallback => id == k_FallbackIntegrationId;
     }
 
     [NativeHeader("Modules/Physics/PhysicsQuery.h")]
@@ -102,6 +106,7 @@ namespace UnityEngine
         public const int AllLayers = ~0;
 
         extern private unsafe static void GetIntegrationInfos(out IntPtr integrations, out ulong integrationCount);
+        extern private unsafe static void GetCurrentIntegrationInfo(out IntPtr integration);
 
         internal static ReadOnlySpan<IntegrationInfo> GetIntegrationInfos()
         {
@@ -115,7 +120,13 @@ namespace UnityEngine
             }
         }
 
-        extern internal static uint GetCurrentIntegrationId();
+        public unsafe static IntegrationInfo GetCurrentIntegrationInfo()
+        {
+            IntPtr infoPtr;
+            GetCurrentIntegrationInfo(out infoPtr);
+
+            return *(IntegrationInfo*)infoPtr.ToPointer();
+        }
 
         extern public static Vector3 gravity { [ThreadSafe] get; set; }
         extern public static float defaultContactOffset { get; set; }
