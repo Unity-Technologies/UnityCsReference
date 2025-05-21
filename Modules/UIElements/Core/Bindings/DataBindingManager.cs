@@ -529,11 +529,18 @@ namespace UnityEngine.UIElements
                 if (null == dataSource)
                     return;
 
-                m_SourcesToRemove.Remove(dataSource);
+                // If the data source was scheduled to be removed, then the callbacks have already
+                // been removed, so we should force them to be added.
+                var shouldRegisterChangeTracking = m_SourcesToRemove.Remove(dataSource);
 
                 if (!m_SourceInfos.TryGetValue(dataSource, out var info))
                 {
                     m_SourceInfos[dataSource] = info = GetPooledSourceInfo();
+                    shouldRegisterChangeTracking = true;
+                }
+
+                if (shouldRegisterChangeTracking)
+                {
                     if (dataSource is INotifyBindablePropertyChanged notifier)
                         notifier.propertyChanged += m_Handler;
 

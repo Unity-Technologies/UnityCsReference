@@ -353,18 +353,48 @@ namespace UnityEngine.UIElements
         internal static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            var screenHeight = Screen.height;
-            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
-                screenHeight = Display.displays[targetDisplay].systemHeight;
-            position.y = screenHeight - position.y;
-            return position;
+            return FlipY(position, GetRuntimeDisplayHeight(targetDisplay));
         }
 
         internal static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
         {
             // Flip deltas Y axis between input and UITK
+            return FlipDeltaY(delta);
+        }
+
+        internal static Vector2 PanelToScreenBottomLeftPosition(Vector2 panelPosition, int targetDisplay)
+        {
+            // Flip positions Y axis between input and UITK
+            return FlipY(panelPosition, GetRuntimeDisplayHeight(targetDisplay));
+        }
+
+        internal static Vector2 FlipY(Vector2 p, float displayHeight)
+        {
+            p.y = displayHeight - p.y;
+            return p;
+        }
+
+        private static Vector2 FlipDeltaY(Vector2 delta)
+        {
             delta.y = -delta.y;
             return delta;
+        }
+
+        private static float GetRuntimeDisplayHeight(int targetDisplay)
+        {
+            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
+                return Display.displays[targetDisplay].systemHeight;
+
+            return Screen.height;
+        }
+
+        // Seems to not work well if used in unit tests, e.g. MacEditor Arm64 EventSystemTests.ClickEventIsSent
+        internal static float GetEditorDisplayHeight(int targetDisplay)
+        {
+            var gameViewResolution = PanelSettings.GetGameViewResolution(targetDisplay);
+            if (gameViewResolution.HasValue)
+                return gameViewResolution.Value.y;
+            return GetRuntimeDisplayHeight(targetDisplay);
         }
 
         // Don't rely on Application.isPlaying because its value is true for a few extra frames

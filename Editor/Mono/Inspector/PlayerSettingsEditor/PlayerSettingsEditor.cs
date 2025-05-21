@@ -1027,7 +1027,7 @@ namespace UnityEditor
 
         private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
         {
-            return buildTarget == NamedBuildTarget.Standalone;
+            return buildTarget == NamedBuildTarget.Standalone || buildTarget == NamedBuildTarget.VisionOS;
         }
 
         private void OnPresetSelectorClosed()

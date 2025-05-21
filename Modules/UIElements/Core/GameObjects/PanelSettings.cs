@@ -543,7 +543,7 @@ namespace UnityEngine.UIElements
 
         internal static Action<BaseRuntimePanel> CreateRuntimePanelDebug;
         internal static Func<ThemeStyleSheet> GetOrCreateDefaultTheme;
-        internal static Func<int, Vector2> GetGameViewResolution;
+        internal static Func<int, Vector2?> GetGameViewResolution;
         internal static Action<PanelSettings> SetPanelSettingsAssetDirty;
         internal static Func<bool> IsAdvancedTextEnabled;
 
@@ -923,7 +923,7 @@ namespace UnityEngine.UIElements
             }
 
             // In the Unity Editor, Display.displays is not supported; displays.Length always has a value of 1, regardless of how many displays you have connected.
-            return new(Vector2.zero, GetGameViewResolution(m_TargetDisplay));
+            return new (Vector2.zero, GetGameViewResolution(m_TargetDisplay) ?? new (Display.main.renderingWidth, Display.main.renderingHeight));
         }
 
         internal void AttachAndInsertUIDocumentToVisualTree(UIDocument uiDocument)

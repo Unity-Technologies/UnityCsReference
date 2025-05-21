@@ -76,7 +76,7 @@ namespace UnityEngine.UIElements
 
         bool IStylePropertyAnimations.StartEnum(StylePropertyId id, int from, int to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
-            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+            return GetStylePropertyAnimationSystem().StartTransitionEnum(this, id, from, to, durationMs, delayMs, easingCurve);
         }
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, Background from, Background to, int durationMs, int delayMs, Func<float, float> easingCurve)
