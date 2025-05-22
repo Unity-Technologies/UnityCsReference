@@ -274,7 +274,7 @@ namespace UnityEditor
             bool toggled = EditorGUI.DropdownButton(rect, toggleContent, FocusType.Keyboard, ParticleSystemStyles.Get().popup);
             if (toggled)
             {
-                PopupWindowWithoutFocus.Show(rect, new MaskFieldDropDown(layerMaskProp));
+                PopupWindow.Show(rect, new MaskFieldDropDown(layerMaskProp));
                 GUIUtility.ExitGUI();
             }
         }
