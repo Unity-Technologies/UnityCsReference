@@ -12,7 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void Resolve(bool force = true);
         AddRequest Add(string identifier);
         AddAndRemoveRequest AddAndRemove(string[] packagesToAdd = null, string[] packagesToRemove = null);
-        AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes);
+        AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes, bool dryRun = false);
         EmbedRequest Embed(string packageName);
         GetRegistriesRequest GetRegistries();
         ListRequest List(bool offlineMode, bool includeIndirectDependencies);
@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         RemoveScopedRegistryRequest RemoveScopedRegistry(string registryName);
         SearchRequest Search(string packageIdOrName, bool offlineMode);
         SearchRequest SearchAll(bool offlineMode);
-        UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options);
+        UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options, bool dryRun = false);
         GetCacheRootRequest GetCacheRoot();
         SetCacheRootRequest SetCacheRoot(string path);
         ClearCacheRootRequest ClearCacheRoot();
@@ -44,9 +44,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Client.AddAndRemove(packagesToAdd, packagesToRemove);
         }
 
-        public AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes)
+        public AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes, bool dryRun = false)
         {
-            return Client.AddScopedRegistry(registryName, url, scopes);
+            return Client.AddScopedRegistry(registryName, url, scopes, dryRun);
         }
 
         public EmbedRequest Embed(string packageName)
@@ -84,9 +84,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return Client.SearchAll(offlineMode);
         }
 
-        public UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options)
+        public UpdateScopedRegistryRequest UpdateScopedRegistry(string registryName, UpdateScopedRegistryOptions options, bool dryRun = false)
         {
-            return Client.UpdateScopedRegistry(registryName, options);
+            return Client.UpdateScopedRegistry(registryName, options, dryRun);
         }
 
         public GetCacheRootRequest GetCacheRoot()

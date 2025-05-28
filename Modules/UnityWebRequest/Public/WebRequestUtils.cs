@@ -563,14 +563,14 @@ namespace UnityEngineInternal
                 if (!targetUri.IsLoopback)
                     return targetUri.OriginalString;
                 string path = targetUri.AbsolutePath;
+                var original = targetUri.OriginalString;
                 if (path.Contains("%"))
                 {
                     if (path.Contains('+'))
                     {
                         // if URI has both % and +, we don't know if + mean itself or is an escape for space
                         // what we want is for correct absolute path passed to Uri constructor to work
-                        // otherwise it's users responsibility to ensure proper escaping
-                        var original = targetUri.OriginalString;
+                        // otherwise it's users responsibility to ensure proper escaping                       
                         if (!original.StartsWith("file:"))
                         {
                             return "file://" + original;
@@ -580,6 +580,7 @@ namespace UnityEngineInternal
                 }
                 if (path.Length > 0 && path[0] != '/')
                     path = '/' + path;
+
                 return "file://" + path;
             }
 

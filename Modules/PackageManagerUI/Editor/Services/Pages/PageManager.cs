@@ -206,7 +206,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var pagesToRemove = new HashSet<string>();
             foreach (var page in scopedRegistryPages)
             {
-                if (scopedRegistries.TryGetValue(page.registry.id, out var registryInfo))
+                if (scopedRegistries.TryGetValue(page.scopedRegistry.id, out var registryInfo))
                     page.UpdateRegistry(registryInfo);
                 else
                     pagesToRemove.Add(page.id);

@@ -55,6 +55,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         RefreshOptions refreshOptions { get; }
 
+        RegistryInfo scopedRegistry { get; }
+
         bool ShouldInclude(IPackage package);
 
         bool isActivePage { get; }

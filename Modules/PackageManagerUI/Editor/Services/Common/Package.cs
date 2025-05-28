@@ -54,7 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 }
 
                 var primary = versions.primary;
-                if (primary.HasTag(PackageTag.Deprecated) && primary.isInstalled)
+                if ((primary.isInstalled && primary.HasTag(PackageTag.Deprecated)) || compliance.status != PackageComplianceStatus.Compliant)
                     return PackageState.Error;
 
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)
@@ -97,6 +97,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool m_IsDeprecated;
         public virtual bool isDeprecated => m_IsDeprecated;
 
+        [SerializeField]
+        private PackageCompliance m_Compliance;
+        public virtual PackageCompliance compliance => m_Compliance;
+
         // errors on the package level (not just about a particular version)
         [SerializeField]
         private List<UIError> m_Errors;
@@ -137,7 +141,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             LinkPackageAndVersions();
         }
 
-        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
+        private Package(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, PackageCompliance compliance = null)
         {
             m_Name = name;
             m_VersionList = versionList;
@@ -152,6 +156,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_IsDeprecated = versionList.primary?.HasTag(PackageTag.InstalledFromPath) == false && isDeprecated;
             m_DeprecationMessage = deprecationMessage;
 
+            m_Compliance = compliance ?? new PackageCompliance();
+
             LinkPackageAndVersions();
         }
 
@@ -160,9 +166,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // package modifications that's not caught by the package change events.
         internal class Factory : BaseService
         {
-            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null)
+            public Package CreatePackage(string name, IVersionList versionList, Product product = null, bool isDiscoverable = true, bool isDeprecated = false, string deprecationMessage = null, PackageCompliance compliance = null)
             {
-                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage);
+                return new Package(name, versionList, product, isDiscoverable, isDeprecated, deprecationMessage, compliance);
             }
 
             public void AddError(Package package, UIError error)

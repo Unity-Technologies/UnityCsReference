@@ -147,7 +147,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return false;
 
             m_Registries.Add(registry);
-            if (m_RegistryInfoDraft.original == null && m_RegistryInfoDraft.name == registry.name)
+            if (m_RegistryInfoDraft.original is null && m_RegistryInfoDraft.name == registry.name)
             {
                 m_UserSelectedRegistryName = registry.name;
                 isUserAddingNewScopedRegistry = false;
@@ -231,7 +231,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             m_RegistryInfoDraft.OnEnable();
 
-            if (m_RegistryInfoDraft.original == null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry)
+            if (m_RegistryInfoDraft.original is null && !m_RegistryInfoDraft.hasUnsavedChanges && !isUserAddingNewScopedRegistry)
             {
                 var firstScopedRegistry = scopedRegistries.FirstOrDefault();
                 if (firstScopedRegistry != null)

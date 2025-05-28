@@ -57,10 +57,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         public const string k_SelectedClassName = "selected";
         public const string k_Id = "packagesincluded";
 
-        private string m_Link;
-
-        private string infoBoxUrl => $"https://docs.unity3d.com/{m_Application?.shortUnityVersion}/Documentation/Manual";
-
         private IPackageVersion m_FeatureVersion;
 
         private readonly IPackageDatabase m_PackageDatabase;
@@ -83,7 +79,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ContentContainer.Add(root);
 
             cache = new VisualElementCache(root);
-            dependencyInfoBox.Q<Button>().clickable.clicked += () => m_Application.OpenURL($"{infoBoxUrl}/{m_Link}");
         }
 
         public FeatureState GetFeatureState(IPackageVersion version)
@@ -200,12 +195,12 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(dependencyInfoBox, featureState == FeatureState.Customized);
             if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)
             {
-                m_Link = "fs-details.html";
+                dependencyInfoBox.readMoreUrl= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/fs-details.html";
                 dependencyInfoBox.text = L10n.Tr("This package has been customized.");
             }
             else
             {
-                m_Link = "upm-ui-remove.html";
+                dependencyInfoBox.readMoreUrl= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/upm-ui-remove.html";
                 dependencyInfoBox.text = L10n.Tr("This package has been manually changed.");
             }
         }
@@ -220,13 +215,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         private VisualElementCache cache { get; }
-        private VisualElement dependenciesOuterContainer => cache.Get<VisualElement>("featureDependenciesOuterContainer");
         private VisualElement dependencyList => cache.Get<VisualElement>("featureDependenciesList");
         private SelectableLabel dependencyTitle => cache.Get<SelectableLabel>("featureDependencyTitle");
         private SelectableLabel dependencyVersion => cache.Get<SelectableLabel>("featureDependencyVersion");
         private Label versionState => cache.Get<Label>("versionState");
         private SelectableLabel dependencyDesc => cache.Get<SelectableLabel>("featureDependencyDesc");
-        private HelpBox dependencyInfoBox => cache.Get<HelpBox>("featureDependencyInfoBox");
+        private HelpBoxWithOptionalReadMore dependencyInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("featureDependencyInfoBox");
         private VisualElement fillerLeftContainer => cache.Get<VisualElement>("fillerLeftContainer");
         private Button dependencyLink => cache.Get<Button>("featureDependencyLink");
     }

@@ -20,6 +20,7 @@ namespace UnityEditor
                 yield return "Services/Version Control";
                 //Modules/EditorToolbar/ToolbarElements/*.cs
                 yield return "Editor Utility/Store";
+                yield return "Package Management/Package Manager";
                 //Editor/Mono/GUI/Toolbars/MainToolbarImguiContainer.cs
                 yield return "Editor Utility/Imgui Subtoolbars";
             }
@@ -42,7 +43,6 @@ namespace UnityEditor
                 yield return "Editor Utility/Layout";
                 yield return "Editor Utility/Search";
                 yield return "Editor Utility/Modes";
-                yield return "Package Manager/PreviewPackagesInUse";
                 yield return "Editor Utility/Undo";
                 // Modules/Multiplayer/MultiplayerRoleDropdown.cs
                 yield return "Multiplayer/MultiplayerRole";

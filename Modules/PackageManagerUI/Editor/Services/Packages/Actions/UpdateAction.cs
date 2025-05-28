@@ -40,6 +40,7 @@ internal class UpdateAction : UpdateActionBase
 
     public override bool IsVisible(IPackageVersion version) =>
         version is { isInstalled: true, isDirectDependency: true }
+        && version.package.compliance.status == PackageComplianceStatus.Compliant
         && !version.HasTag(PackageTag.InstalledFromPath)
         && version != GetUpdateTarget(version)
         && m_PageManager.activePage.visualStates.Get(version.package?.uniqueId)?.isLocked != true;

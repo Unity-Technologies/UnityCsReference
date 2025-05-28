@@ -350,7 +350,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, PackageManagerWindow.instance) { position = position};
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_Application, PackageManagerWindow.instance) { position = position};
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }

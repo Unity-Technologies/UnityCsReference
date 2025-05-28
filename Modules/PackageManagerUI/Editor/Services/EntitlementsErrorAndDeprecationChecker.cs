@@ -33,7 +33,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                     // Package Manager Window always seems to default to name ascending order
                     var packages = request.Result;
 
-                    if (FindEntitielmentErrorAndOpenPackageManager(packages))
+                    if (FindEntitlementErrorAndOpenPackageManager(packages))
                         return;
                     FindDeprecationPackagesAndOpenPackageManager(packages);
                 };
@@ -41,7 +41,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // Returns true if packages with entitlement errors are found and package manager window is opened
-        private static bool FindEntitielmentErrorAndOpenPackageManager(PackageCollection packages)
+        private static bool FindEntitlementErrorAndOpenPackageManager(PackageCollection packages)
         {
             var entitlementErrorPackage = packages.Where(p => p.entitlements?.isAllowed == false
                        || p.errors.Any(error =>

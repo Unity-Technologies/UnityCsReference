@@ -21,6 +21,7 @@ namespace UnityEditor
     [NativeHeader("Runtime/Input/TimeManager.h")]
     [NativeHeader("Editor/Src/ProjectVersion.h")]
     [NativeHeader("Runtime/Misc/BuildSettings.h")]
+    [NativeHeader("Runtime/Interfaces/ILicensing.h")]
     [StaticAccessor("EditorApplicationBindings", StaticAccessorType.DoubleColon)]
     public sealed partial class EditorApplication
     {
@@ -139,7 +140,7 @@ namespace UnityEditor
             get { return ScriptingRuntimeVersion.Latest; }
         }
 
-        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        [StaticAccessor("GetILicensing()", StaticAccessorType.Arrow)]
         internal static extern string GetLicenseType();
 
         // Prevents loading of assemblies when it is inconvenient.

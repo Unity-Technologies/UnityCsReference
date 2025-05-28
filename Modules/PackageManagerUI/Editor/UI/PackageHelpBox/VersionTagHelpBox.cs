@@ -6,10 +6,13 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal class VersionTagHelpBox : PackageHelpBoxWithReadMore
+    internal class VersionTagHelpBox : PackageBaseHelpBox
     {
-        public VersionTagHelpBox(IApplicationProxy application) : base(application)
+        private readonly IApplicationProxy m_Application;
+        public VersionTagHelpBox(IApplicationProxy application)
         {
+            m_Application = application;
+
             messageType = HelpBoxMessageType.Info;
         }
 
@@ -22,13 +25,13 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (version.HasTag(PackageTag.Experimental))
             {
                 text = L10n.Tr("Experimental package versions are experiments in the early stages of development. They are usually not supported by package authors and it is not recommended to use them in production.");
-                m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-exp.html";
+                readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-exp.html";
                 UIUtils.SetElementDisplay(this, true);
             }
             else if (version.HasTag(PackageTag.PreRelease))
             {
                 text = L10n.Tr("Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
-                m_ReadMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+                readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
                 UIUtils.SetElementDisplay(this, true);
             }
         }

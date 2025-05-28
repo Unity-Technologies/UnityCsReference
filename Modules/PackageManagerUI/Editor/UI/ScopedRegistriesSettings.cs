@@ -11,8 +11,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class ScopedRegistriesSettings : VisualElement
     {
-        private static readonly string k_AddNewScopedRegistryText = L10n.Tr("New Scoped Registry");
-        private const string k_SelectedRegistryClass = "selectedRegistry";
         private const string k_NewRegistryClass = "newRegistry";
         private const string k_SelectedScopeClass = "selectedScope";
 
@@ -28,11 +26,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             public override object CreateInstance() => new ScopedRegistriesSettings();
         }
+        private Dictionary<string, RegistryItem> m_ExistingRegistryItems = new Dictionary<string, RegistryItem>();
+        internal IReadOnlyDictionary<string, RegistryItem> registryItems => m_ExistingRegistryItems;
 
-        private Dictionary<string, Label> m_RegistryLabels = new Dictionary<string, Label>();
-        internal IReadOnlyDictionary<string, Label> registryLabels => m_RegistryLabels;
-
-        private Label m_NewScopedRegistryLabel;
+        private readonly RegistryItem m_NewScopedRegistryItem;
 
         internal RegistryInfoDraft draft => m_SettingsProxy.registryInfoDraft;
 
@@ -59,18 +56,17 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(root);
             cache = new VisualElementCache(root);
 
-            scopedRegistriesInfoBox.Q<Button>().clickable.clicked += () =>
-            {
-                m_ApplicationProxy.OpenURL($"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html#security");
-            };
+            scopedRegistriesInfoBox.readMoreUrl =
+                $"https://docs.unity3d.com/{m_ApplicationProxy.shortUnityVersion}/Documentation/Manual/upm-scoped.html#security";
+
             applyRegistriesButton.clickable.clicked += ApplyChanges;
             revertRegistriesButton.clickable.clicked += RevertChanges;
             registryNameTextField.RegisterValueChangedCallback(OnRegistryNameChanged);
             registryUrlTextField.RegisterValueChangedCallback(OnRegistryUrlChanged);
 
-            m_NewScopedRegistryLabel = new Label();
-            m_NewScopedRegistryLabel.AddToClassList(k_NewRegistryClass);
-            m_NewScopedRegistryLabel.OnLeftClick(() => OnRegistryLabelClicked(null));
+            // We pre-create the new scoped registry item, as otherwise it would be re-created each time we refresh the list
+            m_NewScopedRegistryItem = new RegistryItem(null).SetLabelClick(() => OnRegistryItemClicked(null));
+            m_NewScopedRegistryItem.AddToClassList(k_NewRegistryClass);
 
             addRegistryButton.clickable.clicked += AddRegistryClicked;
             removeRegistryButton.clickable.clicked += RemoveRegistryClicked;
@@ -113,7 +109,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UpdateRegistryList();
                 UpdateRegistryDetails();
                 RefreshScopeSelection();
-                RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
+                RefreshApplyAndRevertButtons();
             }
         }
 
@@ -125,7 +121,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void AddRegistryClicked()
         {
-            if (draft.original == null)
+            if (draft.original is null)
                 return;
 
             if (!ShowUnsavedChangesDialog())
@@ -151,18 +147,20 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void RemoveRegistryClicked()
         {
-            if (draft.original != null)
+            if (draft.original is not null)
             {
-                string message;
+                bool deleteRegistry;
                 if (AnyPackageInstalledFromRegistry(draft.original.name))
                 {
-                    message = L10n.Tr("There are packages in your project that are from this scoped registry, please remove them before removing the scoped registry.");
-                    m_ApplicationProxy.DisplayDialog("cannotDeleteScopedRegistry", L10n.Tr("Cannot delete scoped registry"), message, L10n.Tr("OK"));
-                    return;
+                    var message = L10n.Tr("There are packages in your project that are from this scoped registry, deleting the scoped registry might break these packages, are you sure you want to continue?");
+                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistryWithInstalledPackages", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("Delete anyway"), L10n.Tr("Cancel"));
+                }
+                else
+                {
+                    var message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
+                    deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistry", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("OK"), L10n.Tr("Cancel"));
                 }
 
-                message = L10n.Tr("You are about to delete a scoped registry, are you sure you want to continue?");
-                var deleteRegistry = m_ApplicationProxy.isBatchMode || m_ApplicationProxy.DisplayDialog("deleteScopedRegistry", L10n.Tr("Deleting a scoped registry"), message, L10n.Tr("OK"), L10n.Tr("Cancel"));
 
                 if (deleteRegistry)
                 {
@@ -206,36 +204,62 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private void ApplyChanges()
         {
-            if (draft.isUrlOrScopesUpdated && AnyPackageInstalledFromRegistry(draft.original.name) &&
-                !m_ApplicationProxy.DisplayDialog("updateScopedRegistry",
-                    L10n.Tr("Updating a scoped registry"),
-                    L10n.Tr("There are packages in your project that are from this scoped registry, updating the URL or the scopes could result in errors in your project. Are you sure you want to continue?"),
-                    L10n.Tr("OK"), L10n.Tr("Cancel")))
-                return;
+            CheckRegistryDraftCompliance(
+               successCallback: registryInfo =>
+               {
+                   if (registryInfo.compliance.status == RegistryComplianceStatus.NonCompliant)
+                   {
+                       var violation = registryInfo.compliance.violations[0];
+                       if (m_ApplicationProxy.DisplayDialog("nonCompliantRegistry",
+                           L10n.Tr("Restricted registry"),
+                           string.Format(L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"), violation.message),
+                           L10n.Tr("Read More"), L10n.Tr("Close")))
+                           m_ApplicationProxy.OpenURL(violation.readMoreLink);
 
-            if (draft.Validate())
-            {
-                var scopes = draft.sanitizedScopes.ToArray();
+                       return;
+                   }
 
-                if (draft.original != null)
-                    m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, scopes);
-                else
-                    m_UpmRegistryClient.AddRegistry(draft.name, draft.url, scopes);
-            }
+                   if (draft.isUrlOrScopesUpdated && AnyPackageInstalledFromRegistry(draft.original.name) &&
+                       !m_ApplicationProxy.DisplayDialog("updateScopedRegistry",
+                           L10n.Tr("Updating a scoped registry"),
+                           L10n.Tr("There are packages in your project that are from this scoped registry, updating the URL or the scopes could result in errors in your project. Are you sure you want to continue?"),
+                           L10n.Tr("OK"), L10n.Tr("Cancel")))
+                       return;
+
+                   if (draft.Validate())
+                   {
+                       if (draft.original is not null)
+                           m_UpmRegistryClient.UpdateRegistry(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray());
+                       else
+                           m_UpmRegistryClient.AddRegistry(draft.name, draft.url, draft.sanitizedScopes.ToArray());
+                   }
+                   else
+                   {
+                       RefreshErrorBox();
+                   }
+               },
+               errorCallback: error =>
+               {
+                   draft.errorMessage = error.message;
+                   RefreshErrorBox();
+               }
+            );
+        }
+
+        private void CheckRegistryDraftCompliance(Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
+        {
+            if (draft.original is not null)
+                m_UpmRegistryClient.UpdateRegistryDryRun(draft.original.name, draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
             else
-            {
-                RefreshErrorBox();
-            }
+                m_UpmRegistryClient.AddRegistryDryRun(draft.name, draft.url, draft.sanitizedScopes.ToArray(), successCallback, errorCallback);
         }
 
         private void RevertChanges()
         {
             draft.RevertChanges();
-            if (draft.original != null)
-                GetRegistryLabel(draft.original.name).text = draft.original.name;
-            else
+            RefreshDraftRegistryItem();
+            if (draft.original is null)
             {
-                m_NewScopedRegistryLabel.text = k_AddNewScopedRegistryText;
                 var lastScopedRegistry = m_SettingsProxy.scopedRegistries.LastOrDefault();
                 if (lastScopedRegistry != null)
                 {
@@ -247,38 +271,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             UpdateRegistryDetails();
         }
 
-        private Label GetRegistryLabel(string registryName)
-        {
-            if (string.IsNullOrEmpty(registryName))
-                return m_NewScopedRegistryLabel;
-            return m_RegistryLabels.TryGetValue(registryName, out var label) ? label : null;
-        }
-
         private void OnRegistryNameChanged(ChangeEvent<string> evt)
         {
             draft.RegisterOnUndo(k_EditRegistryName);
             draft.name = evt.newValue;
-            RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
-            RefreshSelectedLabelText();
+            RefreshApplyAndRevertButtons();
+            RefreshDraftRegistryItem();
         }
 
         private void OnRegistryUrlChanged(ChangeEvent<string> evt)
         {
             draft.RegisterOnUndo(k_EditRegistryUrl);
             draft.url = evt.newValue;
-            RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
-            RefreshSelectedLabelText();
+            RefreshApplyAndRevertButtons();
+            RefreshDraftRegistryItem();
         }
 
         private void OnRegistryScopesChanged(ChangeEvent<string> evt = null)
         {
             draft.RegisterOnUndo(k_EditRegistryScopes);
             draft.SetScopes(scopesList.Children().Cast<TextField>().Select(textField => textField.value));
-            RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
-            RefreshSelectedLabelText();
+            RefreshApplyAndRevertButtons();
+            RefreshDraftRegistryItem();
         }
 
-        private void OnRegistryLabelClicked(string registryName)
+        private void OnRegistryItemClicked(string registryName)
         {
             if (draft.original?.name == registryName)
                 return;
@@ -287,10 +304,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             draft.RegisterWithOriginalOnUndo(k_RegistrySelectionChange);
-            GetRegistryLabel(draft.original?.name)?.EnableInClassList(k_SelectedRegistryClass, false);
             m_SettingsProxy.SelectRegistry(registryName);
-            GetRegistryLabel(registryName).EnableInClassList(k_SelectedRegistryClass, true);
-            removeRegistryButton.SetEnabled(canEditSelectedRegistry);
+
+            RefreshDraftRegistryItem();
+            RefreshRegistryItemSelections();
+            RefreshAddAndRemoveRegistryButtons();
             UpdateRegistryDetails();
         }
 
@@ -301,9 +319,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             RefreshScopeSelection();
         }
 
-        private void OnRegistryOperationError(string name, UIError error)
+        private void OnRegistryOperationError(string registryName, UIError error)
         {
-            if ((draft.original?.name ?? draft.name) == name)
+            if ((draft.original?.name ?? draft.name) == registryName)
             {
                 draft.errorMessage = error.message;
                 RefreshErrorBox();
@@ -363,11 +381,11 @@ namespace UnityEditor.PackageManager.UI.Internal
         internal void UpdateRegistryList()
         {
             registriesList.Clear();
-            m_RegistryLabels.Clear();
+            m_ExistingRegistryItems.Clear();
 
             foreach (var registryInfo in m_SettingsProxy.scopedRegistries)
             {
-                if (m_RegistryLabels.ContainsKey(registryInfo.name))
+                if (m_ExistingRegistryItems.ContainsKey(registryInfo.name))
                 {
                     // Workaround because registries are keyed by registryInfo.name rather than registryInfo.id.
                     // Without this, the UI just fails to render and there's an uncaught
@@ -380,32 +398,16 @@ namespace UnityEditor.PackageManager.UI.Internal
                     );
                     continue;
                 }
-                var label = new Label(registryInfo.name);
-                label.OnLeftClick(() => OnRegistryLabelClicked(registryInfo.name));
 
-                var isSelected = draft.original?.name == registryInfo.name;
-                if (isSelected)
-                {
-                    label.AddToClassList(k_SelectedRegistryClass);
-                    label.text = GetLabelText(draft);
-                }
-                m_RegistryLabels.Add(registryInfo.name, label);
-                registriesList.Add(label);
+                var registryItem = new RegistryItem(registryInfo).SetLabelClick(() => OnRegistryItemClicked(registryInfo.name));
+                m_ExistingRegistryItems.Add(registryInfo.name, registryItem);
+                registriesList.Add(registryItem);
             }
+            registriesList.Add(m_NewScopedRegistryItem);
 
-            // draft.original == null indicates the new scoped registry is selected no matter what reason is it
-            // isUserAddingNewScopedRegistry: the user specifically added the `adding new scoped registry` label. The value would be false
-            // when you open the settings page with 0 scoped registry in the manifest.json
-            var showAddNewScopedRegistryLabel = draft.original == null || m_SettingsProxy.isUserAddingNewScopedRegistry;
-            if (showAddNewScopedRegistryLabel)
-            {
-                m_NewScopedRegistryLabel.EnableInClassList(k_SelectedRegistryClass, draft.original == null);
-                m_NewScopedRegistryLabel.text = GetLabelText(draft, true);
-                registriesList.Add(m_NewScopedRegistryLabel);
-            }
-
-            addRegistryButton.SetEnabled(!showAddNewScopedRegistryLabel);
-            removeRegistryButton.SetEnabled(registriesList.childCount > 0 && !(showAddNewScopedRegistryLabel && registriesList.childCount == 1) && canEditSelectedRegistry);
+            RefreshDraftRegistryItem();
+            RefreshRegistryItemSelections();
+            RefreshAddAndRemoveRegistryButtons();
         }
 
         private void UpdateRegistryDetails()
@@ -422,28 +424,44 @@ namespace UnityEditor.PackageManager.UI.Internal
                 RefreshScopeSelection();
             removeScopeButton.SetEnabled(scopesList.childCount > 1);
 
-            RefreshButtonText(draft.original == null);
-            RefreshButtonState(draft.original == null, draft.hasUnsavedChanges);
+            RefreshApplyAndRevertButtons();
             RefreshErrorBox();
+            RefreshNonCompliantStatus();
         }
 
-        private void RefreshButtonText(bool isAddNewRegistry)
+        private void RefreshApplyAndRevertButtons()
         {
+            var isAddNewRegistry = draft.original is null;
+            var hasUnsavedChanges = draft.hasUnsavedChanges;
+
             revertRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Cancel") : L10n.Tr("Revert");
-            applyRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Save") : L10n.Tr("Apply");
-        }
-
-        private void RefreshButtonState(bool isAddNewRegistry, bool hasUnsavedChanges)
-        {
             revertRegistriesButton.SetEnabled(isAddNewRegistry || hasUnsavedChanges);
+
+            applyRegistriesButton.text = isAddNewRegistry ? L10n.Tr("Save") : L10n.Tr("Apply");
             applyRegistriesButton.SetEnabled(hasUnsavedChanges);
         }
 
-        private void RefreshSelectedLabelText()
+        private void RefreshDraftRegistryItem()
         {
-            var label = draft.original != null ? GetRegistryLabel(draft.original.name) : m_NewScopedRegistryLabel;
-            if (label != null)
-                label.text = GetLabelText(draft);
+            if (draft.original is null)
+                m_NewScopedRegistryItem.RefreshDraft(draft);
+            else
+                m_ExistingRegistryItems.GetValueOrDefault(draft.original.name)?.RefreshDraft(draft);
+            UIUtils.SetElementDisplay(m_NewScopedRegistryItem, draft.original is null || m_SettingsProxy.isUserAddingNewScopedRegistry);
+        }
+
+        private void RefreshRegistryItemSelections()
+        {
+            var selectedRegistryName = draft.original?.name;
+            foreach (var (registryName, registryItem) in m_ExistingRegistryItems)
+                registryItem.SetSelected(registryName == selectedRegistryName);
+            m_NewScopedRegistryItem.SetSelected(draft.original is null);
+        }
+
+        private void RefreshAddAndRemoveRegistryButtons()
+        {
+            addRegistryButton.SetEnabled(draft.original is not null);
+            removeRegistryButton.SetEnabled(canEditSelectedRegistry && m_ExistingRegistryItems.Count > 0);
         }
 
         private void RefreshErrorBox()
@@ -452,27 +470,28 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(scopedRegistryErrorBox, !string.IsNullOrEmpty(scopedRegistryErrorBox.text));
         }
 
-        private static string GetLabelText(RegistryInfoDraft draft, bool newScopedRegistry = false)
+        private void RefreshNonCompliantStatus()
         {
-            if (newScopedRegistry || draft.original == null)
-                return (draft.original != null || string.IsNullOrEmpty(draft.name)) ? k_AddNewScopedRegistryText : $"* {draft.name}";
-            else
-                return draft.hasUnsavedChanges ? $"* {draft.name}" : draft.name;
+            var isDraftNonCompliant = draft.original?.compliance.status == RegistryComplianceStatus.NonCompliant;
+            UIUtils.SetElementDisplay(scopedRegistryNonCompliantErrorBox, isDraftNonCompliant);
+            if (!isDraftNonCompliant)
+                return;
+
+            var violation = draft.original.compliance.violations[0];
+            scopedRegistryNonCompliantErrorBox.text = string.Format(
+                L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"),
+                violation.message);
+            scopedRegistryNonCompliantErrorBox.readMoreUrl = violation.readMoreLink;
         }
 
-        private VisualElementCache cache { get; set; }
+        private VisualElementCache cache { get; }
 
-        private bool canEditSelectedRegistry
-        {
-            get
-            {
-                // Disallow editing existing registries defined in User or Global UPM configuration files for now
-                return draft.original == null || draft.original.configSource == ConfigSource.Project;
-            }
-        }
+        // Disallow editing existing registries defined in User or Global UPM configuration files for now
+        private bool canEditSelectedRegistry =>  draft.original is null || draft.original.configSource == ConfigSource.Project;
 
-        private HelpBox scopedRegistriesInfoBox => cache.Get<HelpBox>("scopedRegistriesInfoBox");
+        private HelpBoxWithOptionalReadMore scopedRegistriesInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("scopedRegistriesInfoBox");
         private HelpBox scopedRegistryErrorBox => cache.Get<HelpBox>("scopedRegistryErrorBox");
+        internal HelpBoxWithOptionalReadMore scopedRegistryNonCompliantErrorBox => cache.Get<HelpBoxWithOptionalReadMore>("scopedRegistryNonCompliantErrorBox");
         internal VisualElement registriesList => cache.Get<VisualElement>("registriesList");
         internal VisualElement registriesRightContainer => cache.Get<VisualElement>("registriesRightContainer");
         internal TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");

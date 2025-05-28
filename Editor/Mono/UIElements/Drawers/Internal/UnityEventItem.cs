@@ -113,14 +113,10 @@ namespace UnityEditor.UIElements
             leftColumn.Add(listenerTarget);
             listenerTarget.RegisterCallback<ChangeEvent<UnityEngine.Object>>((e) =>
             {
-                var isTargetValid = e.newValue != null;
-
-                if (!isTargetValid)
-                {
+                if (UnityEventDrawer.ShouldClearMethodAfterTargetChanged(m_PropertyData.listener, e.newValue))
                     functionDropdown.value = null;
-                }
 
-                functionDropdown.SetEnabled(isTargetValid);
+                functionDropdown.SetEnabled(e.newValue != null);
 
                 UpdateParameterField();
             });

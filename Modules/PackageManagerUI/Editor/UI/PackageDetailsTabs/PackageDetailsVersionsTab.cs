@@ -16,6 +16,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly VisualElement m_VersionsToolbar;
         private readonly Button m_VersionsShowOthersButton;
         private readonly Label m_LoadingLabel;
+        private readonly Label m_NonCompliantPackageLabel;
 
         private IPackageVersion m_Version;
 
@@ -25,7 +26,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IPageManager m_PageManager;
-        private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IUpmCache m_UpmCache;
         private readonly IPackageLinkFactory m_PackageLinkFactory;
         public PackageDetailsVersionsTab(IUnityConnectProxy unityConnect,
@@ -35,7 +35,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             IPackageDatabase packageDatabase,
             IPackageOperationDispatcher operationDispatcher,
             IPageManager pageManager,
-            IProjectSettingsProxy settingsProxy,
             IUpmCache upmCache,
             IPackageLinkFactory packageLinkFactory) : base(unityConnect)
         {
@@ -47,7 +46,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PackageDatabase = packageDatabase;
             m_OperationDispatcher = operationDispatcher;
             m_PageManager = pageManager;
-            m_SettingsProxy = settingsProxy;
             m_UpmCache = upmCache;
             m_PackageLinkFactory = packageLinkFactory;
 
@@ -65,6 +63,10 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_LoadingLabel = new Label { name = "versionsLoadingLabel", text = L10n.Tr("Loading...") };
             m_Container.Add(m_LoadingLabel);
+
+            m_NonCompliantPackageLabel = new Label { name = "nonCompliantPackageLabel", text = L10n.Tr("Information is unavailable because the package comes from a restricted registry.") };
+            m_NonCompliantPackageLabel.AddToClassList("packageDetailsTabMessage");
+            m_ContentContainer.Add(m_NonCompliantPackageLabel);
 
             m_VersionsShowOthersButton.clickable.clicked += ShowOthersVersion;
         }
@@ -104,18 +106,24 @@ namespace UnityEditor.PackageManager.UI.Internal
                 historyItem.StopSpinner();
             m_VersionHistoryList.Clear();
 
+            UIUtils.SetElementDisplay(m_Container, false);
+            UIUtils.SetElementDisplay(m_NonCompliantPackageLabel, false);
+
             var versions = m_Version?.package?.versions;
             if (versions == null)
+                return;
+
+            if (m_Version.package.compliance.status != PackageComplianceStatus.Compliant)
             {
-                UIUtils.SetElementDisplay(m_Container, false);
+                UIUtils.SetElementDisplay(m_NonCompliantPackageLabel, true);
                 return;
             }
 
+            UIUtils.SetElementDisplay(m_Container, true);
             UIUtils.SetElementDisplay(m_VersionsToolbar, versions.numUnloadedVersions > 0);
             UIUtils.SetElementDisplay(m_LoadingLabel, false);
 
             var primaryVersion = m_Version.package?.versions.primary;
-
             foreach (var v in versions.Reverse())
             {
                 PackageAction action;
@@ -143,8 +151,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
                 m_VersionHistoryList.Add(versionHistoryItem);
             }
-
-            UIUtils.SetElementDisplay(m_Container, true);
         }
     }
 }

@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
-using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -69,6 +68,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnEnable();
             packageSearchBar.OnEnable();
+            nonCompliantRegistryMessage.OnEnable();
             signInBar.OnEnable();
             packageList.OnEnable();
             packageManagerToolbar.OnEnable();
@@ -207,6 +207,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnDisable();
             packageSearchBar.OnDisable();
+            nonCompliantRegistryMessage.OnDisable();
             signInBar.OnDisable();
             packageList.OnDisable();
             packageManagerToolbar.OnDisable();
@@ -292,7 +293,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, anchorWindow);
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_ApplicationProxy, anchorWindow);
 
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;
@@ -363,6 +364,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private VisualElementCache cache { set; get; }
 
         public PackageSearchBar packageSearchBar => cache.Get<PackageSearchBar>("packageSearchBar");
+        public PartiallyNonCompliantRegistryMessage nonCompliantRegistryMessage => cache.Get<PartiallyNonCompliantRegistryMessage>("partiallyNonCompliantRegistryMessage");
         public SignInBar signInBar => cache.Get<SignInBar>("signInBar");
         public PackageList packageList => cache.Get<PackageList>("packageList");
         public PackageDetails packageDetails => cache.Get<PackageDetails>("packageDetails");

@@ -20,20 +20,24 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected string[] m_Scopes = null;
         public string[] scopes => m_Scopes;
+        [SerializeField]
+        protected bool m_DryRun = false;
+        public bool dryRun => m_DryRun;
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-        public void Add(string name, string url, string[] scopes)
+        public void Add(string name, string url, string[] scopes, bool dryRun = false)
         {
             m_RegistryName = name;
             m_RegistryUrl = url;
             m_Scopes = scopes;
+            m_DryRun = dryRun;
             Start();
         }
 
         protected override AddScopedRegistryRequest CreateRequest()
         {
-            return m_ClientProxy.AddScopedRegistry(registryName, registryUrl, scopes);
+            return m_ClientProxy.AddScopedRegistry(registryName, registryUrl, scopes, dryRun);
         }
     }
 }

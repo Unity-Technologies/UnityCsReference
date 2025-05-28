@@ -422,33 +422,40 @@ namespace Unity.UI.Builder
             if (serializedRootPath == null)
                 return;
 
-            var path = $"{serializedRootPath}.{property}";
-            var result = SynchronizePath(path, false);
-            var dataDescription = UxmlSerializedDataRegistry.GetDescription(result.attributeOwner.GetType().FullName);
-            var attribute = dataDescription.FindAttributeWithPropertyName(property);
-            if (attribute == null)
-                return;
-
             var bindableElement = fieldElement?.Q<BindableElement>();
             var binding = bindableElement?.GetBinding(BindingExtensions.s_SerializedBindingId);
             if (binding is not SerializedObjectBindingBase bindingBase)
                 return;
 
-            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+            var path = $"{serializedRootPath}.{property}";
+            var result = SynchronizePath(path, false);
 
             object value;
-            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
-
-            if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
-                UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
+            if (result.attributeOwner == null && result.attributeDescription.isUxmlObject)
             {
-                value = uxmlValue;
+                value = null;
             }
             else
             {
-                value = attribute.defaultValueClone;
+
+                var dataDescription = UxmlSerializedDataRegistry.GetDescription(result.attributeOwner.GetType().FullName);
+                var attribute = dataDescription.FindAttributeWithPropertyName(property);
+                if (attribute == null)
+                    return;
+
+                if (result.uxmlAsset.TryGetAttributeValue(attribute.name, out var uxmlValueString) &&
+                    UxmlAttributeConverter.TryConvertFromString(attribute.type, uxmlValueString, new CreationContext(m_UxmlDocument), out var uxmlValue))
+                {
+                    value = uxmlValue;
+                }
+                else
+                {
+                    value = attribute.defaultValueClone;
+                }
             }
 
+            var serializedProperty = m_CurrentElementSerializedObject.FindProperty(path);
+            var handler = ScriptAttributeUtility.GetHandler(serializedProperty);
             if (handler.hasPropertyDrawer)
             {
                 serializedProperty.boxedValue = value;

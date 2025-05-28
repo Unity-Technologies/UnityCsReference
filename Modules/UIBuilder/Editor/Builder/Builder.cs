@@ -304,6 +304,9 @@ namespace Unity.UI.Builder
 
         public override void DiscardChanges()
         {
+            // Ensure stylesheet cache will be up to date.
+            UnityEngine.UIElements.StyleSheets.StyleSheetCache.ClearCaches();
+
             // Restore UXML and USS assets from backup
             document.RestoreAssetsFromBackup();
 

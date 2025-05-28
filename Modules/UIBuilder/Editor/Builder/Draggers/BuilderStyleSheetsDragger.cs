@@ -75,6 +75,9 @@ namespace Unity.UI.Builder
                 BuilderSharedStyles.MoveSelectorBetweenStyleSheets(
                     oldStyleSheetElement, newStyleSheetElement, selectorElementToReparent, undo);
 
+                paneWindow.commandHandler.UpdateStyleSheetUssPreview(oldStyleSheetElement.GetStyleSheet());
+                paneWindow.commandHandler.UpdateStyleSheetUssPreview(newStyleSheetElement.GetStyleSheet());
+
                 undo = false;
             }
 

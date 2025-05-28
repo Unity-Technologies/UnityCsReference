@@ -28,12 +28,17 @@ namespace UnityEditor.UIElements
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
             PanelSettings.GetGameViewResolution = (int display) =>
                 {
+                    // For events to work properly with multiple GameView on the same display, we need to prioritize the focused window
+                    var mainPlayModeView = PlayModeView.GetMainPlayModeView();
+                    if (mainPlayModeView?.targetDisplay == display)
+                        return mainPlayModeView.targetSize;
+
                     foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())
                     {
                         if (playModeView.targetDisplay == display)
                             return playModeView.targetSize;
                     }
-                    return new(Display.main.renderingWidth, Display.main.renderingHeight);
+                    return null;
                 };
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
             PanelSettings.IsAdvancedTextEnabled = () => UIToolkitProjectSettings.enableAdvancedText;

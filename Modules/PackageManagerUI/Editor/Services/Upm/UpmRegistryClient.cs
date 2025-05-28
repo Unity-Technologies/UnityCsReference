@@ -20,6 +20,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         void UpdateRegistry(string oldName, string newName, string url, string[] scopes);
         void RemoveRegistry(string name);
 
+        void AddRegistryDryRun(string name, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null);
+        void UpdateRegistryDryRun(string oldName, string newName, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null);
+
         void CheckRegistriesChanged();
     }
 
@@ -46,19 +49,29 @@ namespace UnityEditor.PackageManager.UI.Internal
         private UpmRemoveRegistryOperation m_RemoveRegistryOperation;
         private UpmRemoveRegistryOperation removeRegistryOperation => CreateOperation(ref m_RemoveRegistryOperation);
 
-        private readonly IUpmCache m_UpmCache;
         private readonly IProjectSettingsProxy m_SettingsProxy;
         private readonly IClientProxy m_ClientProxy;
+        private readonly IUpmCache m_UpmCache;
         private readonly IApplicationProxy m_ApplicationProxy;
-        public UpmRegistryClient(IUpmCache upmCache,
-            IProjectSettingsProxy settingsProxy,
+        public UpmRegistryClient(IProjectSettingsProxy settingsProxy,
             IClientProxy clientProxy,
+            IUpmCache upmCache,
             IApplicationProxy applicationProxy)
         {
-            m_UpmCache = RegisterDependency(upmCache);
             m_SettingsProxy = RegisterDependency(settingsProxy);
             m_ClientProxy = RegisterDependency(clientProxy);
+            m_UpmCache = RegisterDependency(upmCache);
             m_ApplicationProxy = RegisterDependency(applicationProxy);
+        }
+
+        public override void OnEnable()
+        {
+            m_UpmCache.onScopedRegistriesPotentiallyChanged += CheckRegistriesChanged;
+        }
+
+        public override void OnDisable()
+        {
+            m_UpmCache.onScopedRegistriesPotentiallyChanged -= CheckRegistriesChanged;
         }
 
         public void AddRegistry(string name, string url, string[] scopes)
@@ -102,15 +115,31 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (string.IsNullOrEmpty(name))
                 return;
 
-            var installedPackageInfoOnRegistry = m_UpmCache.installedPackageInfos.Where(p => p.registry?.name == name);
-            if (installedPackageInfoOnRegistry.Any())
-            {
-                Debug.LogError(string.Format(L10n.Tr("[Package Manager Window] There are packages installed from the registry {0}. Please remove the packages before removing the registry."), name));
-                return;
-            }
             removeRegistryOperation.Remove(name);
             removeRegistryOperation.onProcessResult += OnProcessRemoveRegistryResult;
             removeRegistryOperation.onOperationError += (op, error) => onRegistryOperationError?.Invoke(name, error);
+        }
+
+        public void AddRegistryDryRun(string name, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
+        {
+            var operation = new UpmAddRegistryOperation();
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.Add(name, url, scopes, true);
+            if (successCallback != null)
+                operation.onProcessResult += request => successCallback.Invoke(request.Result);
+            if (errorCallback != null)
+                operation.onOperationError += (_, error) => errorCallback.Invoke(error);
+        }
+
+        public void UpdateRegistryDryRun(string oldName, string newName, string url, string[] scopes, Action<RegistryInfo> successCallback = null, Action<UIError> errorCallback = null)
+        {
+            var operation = new UpmUpdateRegistryOperation();
+            operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
+            operation.Update(oldName, newName, url, scopes, true);
+            if (successCallback != null)
+                operation.onProcessResult += request => successCallback.Invoke(request.Result);
+            if (errorCallback != null)
+                operation.onOperationError += (_, error) => errorCallback.Invoke(error);
         }
 
         private void OnProcessRemoveRegistryResult(RemoveScopedRegistryRequest request)
@@ -143,9 +172,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (m_SettingsProxy.registries.Any() && m_SettingsProxy.registries.Count < registriesCount)
                 onRegistriesAdded?.Invoke(registriesCount - m_SettingsProxy.registries.Count);
 
-            if (!registriesListResult.SequenceEqual(m_SettingsProxy.registries, new RegistryInfoComparer()))
+            if (!registriesListResult.IsEquivalentTo(m_SettingsProxy.registries))
             {
-                var name = registriesListResult.FirstOrDefault(r => !m_SettingsProxy.registries.Contains(r, new RegistryInfoComparer()))?.name;
+                var name = registriesListResult.FirstOrDefault(r => !m_SettingsProxy.registries.Any(r.IsEquivalentTo))?.name;
                 if (!string.IsNullOrEmpty(name))
                     m_SettingsProxy.SelectRegistry(name);
 
@@ -163,41 +192,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             operation = new T();
             operation.ResolveDependencies(m_ClientProxy, m_ApplicationProxy);
             return operation;
-        }
-
-        internal class RegistryInfoComparer : IEqualityComparer<RegistryInfo>
-        {
-            public bool Equals(RegistryInfo x, RegistryInfo y)
-            {
-                if (x == y)
-                    return true;
-
-                if (x == null || y == null)
-                    return false;
-
-                var equals = (x.id ?? string.Empty) == (y.id ?? string.Empty) &&
-                    (x.name ?? string.Empty) == (y.name ?? string.Empty) &&
-                    (x.url ?? string.Empty) == (y.url ?? string.Empty) &&
-                    x.isDefault == y.isDefault;
-
-                if (!equals)
-                    return false;
-
-                var xScopes = x.scopes ?? new string[0];
-                var yScopes = y.scopes ?? new string[0];
-
-                return xScopes.Where(s => !string.IsNullOrEmpty(s)).SequenceEqual(yScopes.Where(s => !string.IsNullOrEmpty(s)));
-            }
-
-            public int GetHashCode(RegistryInfo obj)
-            {
-                var hashCode = (obj.id != null ? obj.id.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (obj.name != null ? obj.name.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (obj.url != null ? obj.url.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ (obj.scopes != null ? obj.scopes.GetHashCode() : 0);
-                hashCode = (hashCode * 397) ^ obj.isDefault.GetHashCode();
-                return hashCode;
-            }
         }
 
         public void OnBeforeSerialize()

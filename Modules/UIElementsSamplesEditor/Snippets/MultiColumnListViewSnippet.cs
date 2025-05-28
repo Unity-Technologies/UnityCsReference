@@ -17,7 +17,7 @@ namespace UnityEditor.UIElements.Samples
             // Create some list of data, here simply numbers in interval [1, 20]
             const int itemCount = 20;
             var items = new List<string>(itemCount);
-            for (int i = 1; i <= itemCount; i++)
+            for (var i = 0; i < itemCount; i++)
                 items.Add(i.ToString());
 
             // The columns were created in the UXML but they can also be set using MultiColumnTreeView.columns here.
@@ -42,10 +42,11 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // For each column, set Column.bindCell to bind an initialized cell to a data item.
-            multiColumnListView.columns["index"].bindCell = (VisualElement element, int index) =>
-                (element as Label).text = items[index];
-            multiColumnListView.columns["active"].bindCell = (VisualElement element, int index) =>
-                (element as Toggle).value = index % 2 == 0;
+            multiColumnListView.columns["index"].bindCell = (element, index) =>
+                ((Label)element).text = items[index];
+
+            multiColumnListView.columns["active"].bindCell = (element, index) =>
+                ((Toggle)element).value = index % 2 == 0;
 
             // Callback invoked when the user double clicks an item
             multiColumnListView.itemsChosen += (selectedItems) =>
@@ -54,9 +55,12 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // Callback invoked when the user changes the selection inside the MultiColumnListView
-            multiColumnListView.selectionChanged += (selectedItems) =>
+            multiColumnListView.selectedIndicesChanged += (selectedIndices) =>
             {
-                Debug.Log("Items selected: " + string.Join(", ", selectedItems));
+                Debug.Log("Index selected: " + string.Join(", ", selectedIndices));
+
+                // Note: selectedIndices can also be used to get the selected items from the itemsSource directly or
+                // by using multiColumnListView.viewController.GetItemForIndex(index).
             };
             /// </sample>
         }

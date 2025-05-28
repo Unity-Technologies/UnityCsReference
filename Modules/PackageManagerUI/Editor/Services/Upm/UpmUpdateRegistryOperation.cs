@@ -23,22 +23,26 @@ namespace UnityEditor.PackageManager.UI.Internal
         [SerializeField]
         protected string[] m_Scopes = null;
         public string[] scopes => m_Scopes;
+        [SerializeField]
+        protected bool m_DryRun = false;
+        public bool dryRun => m_DryRun;
 
         public override RefreshOptions refreshOptions => RefreshOptions.None;
 
-        public void Update(string oldName, string newName, string url, string[] scopes)
+        public void Update(string oldName, string newName, string url, string[] scopes, bool dryRun = false)
         {
             m_RegistryName = oldName;
             m_NewRegistryName = newName;
             m_RegistryUrl = url;
             m_Scopes = scopes;
+            m_DryRun = dryRun;
             Start();
         }
 
         protected override UpdateScopedRegistryRequest CreateRequest()
         {
             var updatedregistryName = string.IsNullOrEmpty(newRegistryName) ? registryName : newRegistryName;
-            return m_ClientProxy.UpdateScopedRegistry(registryName,  new UpdateScopedRegistryOptions(updatedregistryName, registryUrl, scopes));
+            return m_ClientProxy.UpdateScopedRegistry(registryName,  new UpdateScopedRegistryOptions(updatedregistryName, registryUrl, scopes), dryRun);
         }
     }
 }

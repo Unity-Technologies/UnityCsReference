@@ -14,10 +14,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         RegistryType availableRegistryType { get; }
         bool loadAllVersions { get; }
         string name { get; }
+        string displayName { get; }
         VersionsInfo availableVersions { get; }
         bool isDiscoverable { get; }
         bool isDeprecated { get; }
         string deprecationMessage { get; }
+        PackageCompliance compliance { get; }
         PackageInfo GetSearchInfo(string version);
         bool IsVersionDeprecated(string version);
     }
@@ -30,10 +32,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public RegistryType availableRegistryType { get; }
         public bool loadAllVersions { get; }
         public string name => m_NewestInfo.name;
+        public string displayName => m_NewestInfo.displayName;
         public VersionsInfo availableVersions => m_NewestInfo.versions;
         public bool isDiscoverable => mainSearchInfo != null;
         public bool isDeprecated => m_NewestInfo.unityLifecycle?.isDeprecated ?? false;
         public string deprecationMessage => isDeprecated ? m_NewestInfo.unityLifecycle.deprecationMessage : null;
+        public PackageCompliance compliance => m_NewestInfo.compliance;
 
         private readonly Dictionary<string, PackageInfo> m_ExtraSearchInfos;
         private readonly PackageInfo m_NewestInfo;

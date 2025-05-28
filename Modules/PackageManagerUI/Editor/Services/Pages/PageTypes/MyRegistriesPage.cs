@@ -22,7 +22,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public override bool ShouldInclude(IPackage package)
         {
-            return package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries);
+            return package is { compliance.status: PackageComplianceStatus.Compliant }
+                   && package.versions.Any(v => v.availableRegistry == RegistryType.MyRegistries);
         }
 
         public override string GetGroupName(IPackage package)
