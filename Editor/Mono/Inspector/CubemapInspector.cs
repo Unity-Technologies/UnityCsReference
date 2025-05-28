@@ -12,11 +12,27 @@ namespace UnityEditor
     [CustomEditor(typeof(Cubemap))]
     internal class CubemapInspector : TextureInspector
     {
-        static private readonly string[] kSizes = { "16", "32", "64", "128" , "256" , "512" , "1024" , "2048" };
-        static private readonly int[] kSizesValues = { 16, 32, 64, 128, 256, 512, 1024, 2048 };
-        const int kTextureSize = 64;
+        internal static class Styles
+        {
+            public const int faceThumbnailSize = 64;
 
-        private static readonly string kNativeTextureNotice = L10n.Tr("External texture: Unity cannot make changes to this Cubemap.");
+            public static readonly string nativeTextureInfo = L10n.Tr("External texture: Unity cannot make changes to this Cubemap.");
+            public static readonly string compressedTextureInfo = L10n.Tr("Compressed texture: Unity can only make limited changes to this Cubemap.");
+
+            public static readonly string[] faceSelectionLabels = { "Right\n(+X)", "Left\n(-X)", "Top\n(+Y)", "Bottom\n(-Y)", "Front\n(+Z)", "Back\n(-Z)" };
+
+            public static readonly string faceSizeLabel = L10n.Tr("Face size");
+            public static readonly string faceSizeWarning = L10n.Tr("Lowering face size is a destructive operation, you might need to re-assign the textures later to fix resolution issues. It's preferable to use Cubemap texture import type instead of Legacy Cubemap assets.");
+            public static readonly string[] faceSizeOptionLabels = { "16", "32", "64", "128", "256", "512", "1024", "2048" };
+            public static readonly int[] faceSizeOptionValues = { 16, 32, 64, 128, 256, 512, 1024, 2048 };
+
+            public static readonly string generateMipmapLabel = L10n.Tr("Generate Mipmap");
+            public static readonly GUIContent streamingMipmapLevelsContent = EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script.");
+
+            public static readonly string linearLabel = L10n.Tr("Linear");
+
+            public static readonly string readableLabel = L10n.Tr("Readable");
+        }
 
         private Texture2D[] m_Images;
 
@@ -35,10 +51,10 @@ namespace UnityEditor
             m_Images = null;
         }
 
-        private void InitTexturesFromCubemap()
+        private void InitFaceThumbnailsFromCubemap()
         {
             var c = target as Cubemap;
-            if (c is null || c.isNativeTexture)
+            if (c is null || c.isNativeTexture || GraphicsFormatUtility.IsCompressedFormat(c.format))
             {
                 return;
             }
@@ -56,23 +72,9 @@ namespace UnityEditor
                 }
                 else
                 {
-                    // When the Cubemap is compressed, avoid "CopyCubemapFaceIntoTexture" due to potentially very high decompression cost. (example: Cubemap with no mipmaps)
-                    // Note: the CopyTexture approach may produce results that look slightly different if "CopyCubemapFaceIntoTexture" would have downscaled to kTextureSize.
-                    if (GraphicsFormatUtility.IsCompressedFormat(c.format) && SystemInfo.copyTextureSupport.HasFlag(CopyTextureSupport.DifferentTypes))
-                    {
-                        int previewSize = System.Math.Clamp(kTextureSize, c.width >> (c.mipmapCount - 1), c.width);
-                        m_Images[i] = new Texture2D(previewSize, previewSize, c.format, false);
-                        m_Images[i].hideFlags = HideFlags.HideAndDontSave;
-
-                        int mipToCopy = (int)(System.Math.Log(c.width, 2) - System.Math.Log(previewSize, 2));
-                        Graphics.CopyTexture(c, i, mipToCopy, m_Images[i], 0, 0);
-                    }
-                    else
-                    {
-                        m_Images[i] = new Texture2D(kTextureSize, kTextureSize, TextureFormat.RGBA32, false);
-                        m_Images[i].hideFlags = HideFlags.HideAndDontSave;
-                        TextureUtil.CopyCubemapFaceIntoTexture(c, (CubemapFace)i, m_Images[i]);
-                    }
+                    m_Images[i] = new Texture2D(Styles.faceThumbnailSize, Styles.faceThumbnailSize, TextureFormat.RGBA32, false);
+                    m_Images[i].hideFlags = HideFlags.HideAndDontSave;
+                    TextureUtil.CopyCubemapFaceIntoTexture(c, (CubemapFace)i, m_Images[i]);
                 }
             }
         }
@@ -85,70 +87,178 @@ namespace UnityEditor
 
             if (c.isNativeTexture)
             {
-                EditorGUILayout.HelpBox(kNativeTextureNotice, MessageType.Info);
+                EditorGUILayout.HelpBox(Styles.nativeTextureInfo, MessageType.Info);
                 return;
             }
 
-            if (m_Images == null)
-                InitTexturesFromCubemap();
+            // A number of option we present in the "full" inspector rely on reformatting or writing to the Cubemap to achieve the desired effect.
+            // These operations are not possible on compressed Cubemaps, so we display a limited version of the inspector for them.
+            bool isCompressedTex = GraphicsFormatUtility.IsCompressedFormat(c.format);
+            if (!isCompressedTex)
+            {
+                DisplayFullInspector(c);
+            }
+            else
+            {
+                DisplayInspectorForCompressedCubemap(c);
+            }
+        }
 
-            EditorGUIUtility.labelWidth = 50;
-
-            GUILayout.BeginVertical();
-
-            GUILayout.BeginHorizontal();
-            ShowFace("Right\n(+X)", CubemapFace.PositiveX);
-            ShowFace("Left\n(-X)", CubemapFace.NegativeX);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            ShowFace("Top\n(+Y)", CubemapFace.PositiveY);
-            ShowFace("Bottom\n(-Y)", CubemapFace.NegativeY);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            ShowFace("Front\n(+Z)", CubemapFace.PositiveZ);
-            ShowFace("Back\n(-Z)", CubemapFace.NegativeZ);
-            GUILayout.EndHorizontal();
-
-            GUILayout.EndVertical();
-
-            EditorGUIUtility.labelWidth = 0;
+        private void DisplayFullInspector(Cubemap c)
+        {
+            HandleFaceSelectionGUI();
 
             EditorGUILayout.Space();
 
-            EditorGUI.BeginChangeCheck();
+            HandleFaceSizeGUI(c);
+            bool useMipMap = HandleGenerateMipmapGUI(c);
 
-            EditorGUILayout.HelpBox("Lowering face size is a destructive operation, you might need to re-assign the textures later to fix resolution issues. It's preferable to use Cubemap texture import type instead of Legacy Cubemap assets.", MessageType.Warning);
-            int faceSize = TextureUtil.GetGPUWidth(c);
-            faceSize = EditorGUILayout.IntPopup("Face size", faceSize, kSizes, kSizesValues);
-
-            int mipMaps = TextureUtil.GetMipmapCount(c);
-            bool useMipMap = EditorGUILayout.Toggle("Generate Mipmap", mipMaps > 1);
-
-            bool streamingMipmaps = TextureUtil.GetCubemapStreamingMipmaps(c);
             if (useMipMap)
             {
-                EditorGUI.indentLevel++;
-                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Stream Mipmap Levels", "Don't load image data immediately but wait till image data is requested from script."), streamingMipmaps);
-                EditorGUI.indentLevel--;
+                using (new EditorGUI.IndentLevelScope())
+                {
+                    HandleStreamingMipmapGUI(c);
+                }
             }
 
-            bool linear = TextureUtil.GetLinearSampled(c);
-            linear = EditorGUILayout.Toggle("Linear", linear);
+            HandleLinearSamplingGUI(c);
+            HandleReadableGUI(c);
+        }
 
-            bool readable = TextureUtil.IsCubemapReadable(c);
-            readable = EditorGUILayout.Toggle("Readable", readable);
+        private void DisplayInspectorForCompressedCubemap(Cubemap c)
+        {
+            EditorGUILayout.HelpBox(Styles.compressedTextureInfo, MessageType.Info);
 
-            if (EditorGUI.EndChangeCheck())
+            bool usesMipMap = TextureUtil.GetMipmapCount(c) > 1;
+            if (usesMipMap)
             {
-                // reformat the cubemap
-                if (TextureUtil.ReformatCubemap(c, faceSize, faceSize, c.format, useMipMap, linear))
-                    InitTexturesFromCubemap();
+                HandleStreamingMipmapGUI(c);
+            }
+            HandleReadableGUI(c);
+        }
 
-                TextureUtil.MarkCubemapReadable(c, readable);
-                TextureUtil.SetCubemapStreamingMipmaps(c, streamingMipmaps);
-                c.Apply();
+        private void HandleFaceSelectionGUI()
+        {
+            if (m_Images == null)
+                InitFaceThumbnailsFromCubemap();
+
+            EditorGUIUtility.labelWidth = 50;
+
+            using (new GUILayout.VerticalScope())
+            {
+                for (int face = 0; face < 6; face += 2)
+                {
+                    using (new GUILayout.HorizontalScope())
+                    {
+                        ShowFace(Styles.faceSelectionLabels[face], (CubemapFace)face);
+                        ShowFace(Styles.faceSelectionLabels[face + 1], (CubemapFace)face + 1);
+                    }
+                }
+            }
+
+            EditorGUIUtility.labelWidth = 0;
+        }
+
+        private int HandleFaceSizeGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                EditorGUILayout.HelpBox(Styles.faceSizeWarning, MessageType.Warning);
+                int faceSize = TextureUtil.GetGPUWidth(c);
+                faceSize = EditorGUILayout.IntPopup(Styles.faceSizeLabel, faceSize, Styles.faceSizeOptionLabels, Styles.faceSizeOptionValues);
+
+                if (changed.changed)
+                {
+                    HandleCubemapReformatting(c, faceSize: faceSize);
+                }
+
+                return faceSize;
+            }
+        }
+
+        private bool HandleGenerateMipmapGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                int mipMaps = TextureUtil.GetMipmapCount(c);
+                bool useMipMap = EditorGUILayout.Toggle(Styles.generateMipmapLabel, mipMaps > 1);
+
+                if (changed.changed)
+                {
+                    HandleCubemapReformatting(c, useMipMap: useMipMap);
+                }
+
+                return useMipMap;
+            }
+        }
+
+        private bool HandleStreamingMipmapGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                bool streamingMipmaps = TextureUtil.GetCubemapStreamingMipmaps(c);
+                streamingMipmaps = EditorGUILayout.Toggle(Styles.streamingMipmapLevelsContent, streamingMipmaps);
+
+                if (changed.changed)
+                {
+                    TextureUtil.SetCubemapStreamingMipmaps(c, streamingMipmaps);
+                }
+
+                return streamingMipmaps;
+            }
+        }
+
+        private bool HandleLinearSamplingGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                bool linear = TextureUtil.GetLinearSampled(c);
+                linear = EditorGUILayout.Toggle(Styles.linearLabel, linear);
+
+                if (changed.changed)
+                {
+                    HandleCubemapReformatting(c, linear: linear);
+                }
+
+                return linear;
+            }
+        }
+
+        private bool HandleReadableGUI(Cubemap c)
+        {
+            using (var changed = new EditorGUI.ChangeCheckScope())
+            {
+                bool readable = TextureUtil.IsCubemapReadable(c);
+                readable = EditorGUILayout.Toggle(Styles.readableLabel, readable);
+
+                if (changed.changed)
+                {
+                    TextureUtil.MarkCubemapReadable(c, readable);
+                }
+
+                return readable;
+            }
+        }
+
+        private void HandleCubemapReformatting(Cubemap c, int? faceSize = null, bool? useMipMap = null, bool? linear = null)
+        {
+            // If a value has not been provided, assume that it has not changed and needs to be fetched.
+            if (faceSize == null)
+            {
+                faceSize = TextureUtil.GetGPUWidth(c);
+            }
+            if (useMipMap == null)
+            {
+                useMipMap = TextureUtil.GetMipmapCount(c) > 1;
+            }
+            if (linear == null)
+            {
+                linear = TextureUtil.GetLinearSampled(c);
+            }
+
+            if (TextureUtil.ReformatCubemap(c, faceSize.Value, faceSize.Value, c.format, useMipMap.Value, linear.Value))
+            {
+                InitFaceThumbnailsFromCubemap();
             }
         }
 
@@ -182,13 +292,14 @@ namespace UnityEditor
         // Variation of ObjectField where label is not restricted to one line
         public static Object ObjectField(string label, Object obj, System.Type objType, bool allowSceneObjects, params GUILayoutOption[] options)
         {
-            GUILayout.BeginHorizontal();
-            Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, EditorGUI.kSingleLineHeight * 2, EditorStyles.label, GUILayout.ExpandWidth(false));
-            GUI.Label(r, label, EditorStyles.label);
-            r = GUILayoutUtility.GetAspectRect(1, EditorStyles.objectField, GUILayout.Width(64));
-            Object retval = EditorGUI.ObjectField(r, obj, objType, allowSceneObjects);
-            GUILayout.EndHorizontal();
-            return retval;
+            using (new GUILayout.HorizontalScope())
+            {
+                Rect r = GUILayoutUtility.GetRect(EditorGUIUtility.labelWidth, EditorGUI.kSingleLineHeight * 2, EditorStyles.label, GUILayout.ExpandWidth(false));
+                GUI.Label(r, label, EditorStyles.label);
+                r = GUILayoutUtility.GetAspectRect(1, EditorStyles.objectField, GUILayout.Width(64));
+                Object retval = EditorGUI.ObjectField(r, obj, objType, allowSceneObjects);
+                return retval;
+            }
         }
     }
 }

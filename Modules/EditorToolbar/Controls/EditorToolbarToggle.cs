@@ -16,8 +16,8 @@ namespace UnityEditor.Toolbars
         internal const string textClassName = EditorToolbar.elementLabelClassName;
         internal const string iconClassName = EditorToolbar.elementIconClassName;
 
-        internal const string k_TextIconElementName = "EditorToolbarToggleTextIcon";
-        internal const string k_TextElementName = "EditorToolbarToggleText";
+        internal const string textIconElementName = "EditorToolbarToggleTextIcon";
+        internal const string textElementName = "EditorToolbarToggleText";
 
         public new const string ussClassName = "unity-editor-toolbar-toggle";
 
@@ -119,10 +119,10 @@ namespace UnityEditor.Toolbars
             m_IconElement = new Image { scaleMode = ScaleMode.ScaleToFit };
             m_IconElement.AddToClassList(iconClassName);
 
-            m_TextIconElement = new TextElement { name = k_TextIconElementName };
+            m_TextIconElement = new TextElement { name = textIconElementName };
             m_TextIconElement.AddToClassList(textIconClassName);
 
-            m_TextElement = new TextElement { name = k_TextElementName };
+            m_TextElement = new TextElement { name = textElementName };
             m_TextElement.AddToClassList(textClassName);
 
             var container = this.Q<VisualElement>(className: Toggle.inputUssClassName);

@@ -327,7 +327,16 @@ namespace UnityEditor.Build.Profile
         /// <see cref="m_BuildProfileContextMenu"/>.
         /// </summary>
         internal BuildProfileListEditableLabel CreateEditableLabelItem() => new BuildProfileListEditableLabel(
-            m_BuildProfileContextMenu.UpdateBuildProfileLabelName,
+            (object buildProfileObject, string buildProfileLabelName) =>
+            {
+                bool isUpdated = m_BuildProfileContextMenu.UpdateBuildProfileLabelName(buildProfileObject, buildProfileLabelName);
+                if (isUpdated)
+                {
+                    // The same path is used to force a repaint of the profile editor
+                    OnBuildProfileCreated(buildProfileObject as BuildProfile);
+                }
+                return isUpdated;
+            },
             m_BuildProfileContextMenu.AddBuildProfileContextMenu());
 
         /// <summary>
@@ -633,7 +642,7 @@ namespace UnityEditor.Build.Profile
                 modules.Add(profile.platformGuid,
                     new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
                 {
-                    platformId = profile.platformGuid,
+                    platformId = profile.platformGuid.ToString(),
                     platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
                     count = 1
                 }));

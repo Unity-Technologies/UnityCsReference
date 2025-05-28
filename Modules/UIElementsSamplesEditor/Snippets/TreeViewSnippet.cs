@@ -25,9 +25,9 @@ namespace UnityEditor.UIElements.Samples
 
                 var treeViewSubItemsData = new List<TreeViewItemData<string>>(10);
                 for (var j = 0; j < 10; j++)
-                    treeViewSubItemsData.Add(new TreeViewItemData<string>(itemIndex + j + 1, (j+1).ToString()));
+                    treeViewSubItemsData.Add(new TreeViewItemData<string>(itemIndex + j + 1, $"Data {i+1}-{j+1}"));
 
-                var treeViewItemData = new TreeViewItemData<string>(itemIndex, (i+1).ToString(), treeViewSubItemsData);
+                var treeViewItemData = new TreeViewItemData<string>(itemIndex, $"Data {i+1}", treeViewSubItemsData);
                 items.Add(treeViewItemData);
             };
 
@@ -42,7 +42,8 @@ namespace UnityEditor.UIElements.Samples
             Action<VisualElement, int> bindItem = (e, i) =>
             {
                 var item = treeView.GetItemDataForIndex<string>(i);
-                (e as Label).text = item;
+                var id = treeView.GetIdForIndex(i);
+                ((Label)e).text = $"ID {id} - {item}";
             };
 
             treeView.SetRootItems(items);
@@ -58,9 +59,14 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // Callback invoked when the user changes the selection inside the TreeView
-            treeView.selectedIndicesChanged += (selectedItems) =>
+            treeView.selectedIndicesChanged += (selectedIndices) =>
             {
-                Debug.Log("Items selected: " + string.Join(", ", selectedItems));
+                var log = "IDs selected: ";
+                foreach (var index in selectedIndices)
+                {
+                    log += $"{treeView.GetIdForIndex(index)}, ";
+                }
+                Debug.Log(log.TrimEnd(',', ' '));
             };
             /// </sample>
             #endregion

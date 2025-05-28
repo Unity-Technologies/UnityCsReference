@@ -96,7 +96,7 @@ namespace UnityEngine.TextCore.Text
             s_FallbackOSFontAssetInternal = fontAssets;
         }
 
-        internal virtual List<FontAsset> GetFallbackFontAssets(int textPixelSize = -1)
+        internal virtual List<FontAsset> GetFallbackFontAssets(bool isRaster, int textPixelSize = -1)
         {
             return fallbackFontAssets;
         }

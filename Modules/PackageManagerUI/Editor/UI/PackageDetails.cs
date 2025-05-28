@@ -197,9 +197,6 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         void RefreshExtensions(IPackage package)
         {
-            UIUtils.SetElementDisplay(customContainer, customContainer.childCount > 0); // ExtensionV1
-            UIUtils.SetElementDisplay(extensionContainer, extensionContainer.childCount > 0); // ExtensionV2
-
             // For now packageInfo, package and packageVersion will all be null when there are multiple packages selected.
             // This way no single select UI will be displayed for multi-select. We might handle it differently in the future in a new story
             if (PackageManagerExtensions.extensionsGUICreated)
@@ -214,6 +211,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
 
             m_ExtensionManager.SendPackageSelectionChangedEvent(package);
+
+            // We refresh the extension container visibility after the selection event is triggered because extensions could modify the child elements during the event
+            UIUtils.SetElementDisplay(customContainer, customContainer.childCount > 0); // ExtensionV1
+            UIUtils.SetElementDisplay(extensionContainer, extensionContainer.childCount > 0); // ExtensionV2
         }
 
         private void OnPackagesChanged(PackagesChangeArgs args)

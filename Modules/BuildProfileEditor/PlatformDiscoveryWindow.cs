@@ -115,7 +115,7 @@ namespace UnityEditor.Build.Profile
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
-                platformId = card.platformId,
+                platformId = card.platformId.ToString(),
                 platformDisplayName = card.displayName,
             }));
         }
@@ -287,7 +287,7 @@ namespace UnityEditor.Build.Profile
                 m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
                 {
                     wasProfileCreated = true,
-                    platformId = m_SelectedCard.platformId,
+                    platformId = m_SelectedCard.platformId.ToString(),
                     platformDisplayName = m_SelectedCard.displayName,
                 });
                 Close();

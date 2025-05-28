@@ -4,6 +4,7 @@
 
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
@@ -84,6 +85,7 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     internal class Folders
     {
+        [ThreadAndSerializationSafe]
         public static extern string GetPackagesPath();
         public static extern bool IsPackagedAssetPath(string path);
         public static extern string[] GetPackagesPaths();

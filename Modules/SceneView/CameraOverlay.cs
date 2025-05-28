@@ -39,7 +39,7 @@ namespace UnityEditor
             text = k_NoCameraFound;
 
             // The button will always reflect the Viewpoint's gameobject name.
-            var textElement = this.Query<TextElement>().Children<TextElement>().First();
+            var textElement = this.Q<TextElement>(textElementName);
             textElement.bindingPath = "m_Name";
 
             m_Overlay = overlay;

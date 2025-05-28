@@ -132,7 +132,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 creationType = (isClassic)
                     ? BuildProfileCreatedEvent.CreationType.DuplicateClassic
                     : BuildProfileCreatedEvent.CreationType.DuplicateProfile,
-                platformId = duplicatedProfile.platformGuid,
+                platformId = duplicatedProfile.platformGuid.ToString(),
                 platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(duplicatedProfile.platformGuid),
             }));
 

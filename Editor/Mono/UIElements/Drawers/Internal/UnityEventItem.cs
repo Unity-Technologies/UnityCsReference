@@ -191,8 +191,8 @@ namespace UnityEditor.UIElements
                 }
 
                 objectParameter.objectType = desiredType;
-                objectParameter.value = argument.objectReferenceValue;
-           }
+                objectParameter.SetValueWithoutNotify(argument.objectReferenceValue);
+            }
             else
             {
                 parameterProperty.BindProperty(argument);

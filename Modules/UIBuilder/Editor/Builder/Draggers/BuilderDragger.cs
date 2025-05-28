@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -453,6 +451,9 @@ namespace Unity.UI.Builder
                 return;
 
             s_CurrentlyActiveBuilderDragger ??= this;
+
+            // Resetting state in mouse down in case mouse up did not get handled properly. (UUM-104962)
+            m_Active = false;
 
             m_Start = evt.mousePosition;
             m_WeStartedTheDrag = true;
