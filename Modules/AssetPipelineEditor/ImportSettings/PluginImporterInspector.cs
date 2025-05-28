@@ -96,8 +96,6 @@ namespace UnityEditor
 
         private Compatibility m_Preload;
 
-        private readonly static BuildTarget[] m_StandaloneTargets = BuildTargetDiscovery.StandaloneBuildTargets;
-
         internal class DefineConstraint
         {
             public string name;
@@ -174,7 +172,7 @@ namespace UnityEditor
 
         private static bool IsStandaloneTarget(BuildTarget buildTarget)
         {
-            return m_StandaloneTargets.Contains(buildTarget);
+            return BuildTargetDiscovery.StandaloneBuildTargets.Contains(buildTarget);
         }
 
         private Compatibility compatibleWithStandalone
@@ -182,7 +180,7 @@ namespace UnityEditor
             get
             {
                 bool compatible = false;
-                foreach (var t in m_StandaloneTargets)
+                foreach (var t in BuildTargetDiscovery.StandaloneBuildTargets)
                 {
                     // Return mixed value if one of the values is mixed
                     if (m_CompatibleWithPlatform[(int)t] == Compatibility.Mixed)
@@ -196,7 +194,7 @@ namespace UnityEditor
 
             set
             {
-                foreach (var t in m_StandaloneTargets)
+                foreach (var t in BuildTargetDiscovery.StandaloneBuildTargets)
                     m_CompatibleWithPlatform[(int)t] = value;
             }
         }

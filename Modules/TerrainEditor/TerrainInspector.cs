@@ -468,59 +468,30 @@ namespace UnityEditor
 
         internal void SelectToolByType(Type toolType)
         {
-            if(!m_TypeToToolName.ContainsKey(toolType))
-            {
-                return;
-            }
-
-            if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(toolType) && typeof(ITerrainPaintTool).IsAssignableFrom(toolType))
-            {
-                // case: terrain tool with overlays
-                SelectOverlaysTool(m_TypeToToolName[toolType]);
-                return;
-            }
-
-            // case: else its an old terrain tool
             SelectToolByName(m_TypeToToolName[toolType]);
-
         }
 
         internal void SelectToolByName(string toolName)
         {
+            Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
+                $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
+            ITerrainPaintTool tool;
             // check if old terrain tool or new overlays terrain tool
             if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(m_ToolNameToType[toolName]) &&
                 typeof(ITerrainPaintTool).IsAssignableFrom(m_ToolNameToType[toolName]))
             {
                 // case: terrain tool with overlays
-                SelectOverlaysTool(toolName);
-                return;
+                // can select tool using GetSingleton bc its an editor tool (this function is not called for old terrain tools)
+                tool = (ITerrainPaintTool)EditorToolManager.GetSingleton(m_ToolNameToType[toolName]);
             }
-
-            // else its an old terrain tool
-            var instanceProperty = m_ToolNameToType[toolName].GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
-            var mi = instanceProperty.GetGetMethod();
-            ITerrainPaintTool tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
-
-            Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
-                $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
-
-            SetCurrentPaintToolInactive();
-            selectedCategory = GetCategory(toolName);
-            lastTextureResolutionPerTile = 0;
-            if (IsPaintTool(toolName))
+            else
             {
-                m_ActivePaintToolIndex = GetPaintToolIndex(toolName);
+                // else its an old terrain tool
+                var instanceProperty = m_ToolNameToType[toolName].GetProperty("instance", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy);
+                var mi = instanceProperty.GetGetMethod();
+                tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
             }
-            SetCurrentPaintToolActive(tool);
-            Repaint();
-        }
-
-        internal void SelectOverlaysTool(string toolName)
-        {
-            // can select tool using GetSingleton bc its an editor tool (this function is not called for old terrain tools)
-            var tool = (ITerrainPaintTool)EditorToolManager.GetSingleton(m_ToolNameToType[toolName]);
-            Debug.Assert(!string.IsNullOrEmpty(toolName) && m_ToolNameToType.ContainsKey(toolName),
-                $"Cannot select tool with invalid tool name: {toolName}. Make sure the tool name is correct and that the tool is loaded.");
+            
             selectedCategory = GetCategory(toolName);
             lastTextureResolutionPerTile = 0;
             SetCurrentPaintToolInactive();
@@ -543,21 +514,6 @@ namespace UnityEditor
                 }
             }
             return -1;
-        }
-
-
-        [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
-        static void SelectPlaceTreeTool(ShortcutArguments args)
-        {
-            ChangeTool(args, editor => editor.selectedCategory = TerrainTool.PlaceTree);
-        }
-
-        [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolShortcutContext), KeyCode.F6)]
-        static void SelectPaintDetailTool(ShortcutArguments args)
-        {
-            ChangeTool(args, editor => editor.selectedCategory = TerrainTool.PaintDetail);
         }
 
         [FormerlyPrefKeyAs("Terrain/Previous Brush", ",")]
@@ -820,7 +776,8 @@ namespace UnityEditor
                     var mi = instanceProperty.GetGetMethod();
                     tool = (ITerrainPaintTool)mi.Invoke(null, null); // create the tool
                     toolName = tool.GetName();
-                } else if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(klass) && typeof(ITerrainPaintTool).IsAssignableFrom(klass))
+                }
+                else if (typeof(ITerrainPaintToolWithOverlays).IsAssignableFrom(klass) && typeof(ITerrainPaintTool).IsAssignableFrom(klass))
                 {
                     // case: overlays terrain tools
                     tool = (ITerrainPaintTool)EditorToolManager.GetSingleton(klass);
@@ -831,6 +788,8 @@ namespace UnityEditor
                 {
                     Debug.LogWarning("tool is inheriting from neither ITerrainPaintTool nor ITerrainPaintToolWithOverlays");
                 }
+                // add the type, it will use the overriden version of the tool from the name;
+                m_TypeToToolName[klass] = toolName;
 
                 // if a tool with the given tool name already exists
                 if (m_ToolNameToType.TryGetValue(toolName, out var existingToolType))
@@ -846,11 +805,11 @@ namespace UnityEditor
                     }
                 }
 
-                if(m_ToolsMap.TryGetValue(toolName, out var existingTool))
+                if (m_ToolsMap.TryGetValue(toolName, out var existingTool))
                 {
                     if (klass.Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Any()) continue;
 
-                    if(existingTool.GetType().Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
+                    if (existingTool.GetType().Assembly.GetCustomAttributes(typeof(AssemblyIsEditorAssembly), false).Length == 0)
                     {
                         Debug.LogWarning($"A TerrainTools override already exists for {toolName}. Check to make sure there are not multiple tools with the same tool name in your project. This specific tool will not be loaded.");
                         continue;
@@ -858,7 +817,6 @@ namespace UnityEditor
                 }
                 m_ToolsMap[toolName] = tool;
                 m_ToolNameToType[toolName] = klass;
-                m_TypeToToolName[klass] = toolName;
 
                 // need to track paint category tools for the dropdown selection
                 if (IsPaintTool(toolName) && !paintToolNames.Contains(toolName))
@@ -869,7 +827,6 @@ namespace UnityEditor
 
             m_PaintToolNames = paintToolNames.ToArray();
         }
-
 
         void Initialize()
         {

@@ -36,6 +36,7 @@ namespace UnityEditor.UIElements
                     return;
                 instance.m_EnableAdvancedText = value;
                 onEnableAdvancedTextChanged?.Invoke(value);
+                ATGAnalytics.ReportATGEnabled(value);
                 instance.Save();
             }
         }

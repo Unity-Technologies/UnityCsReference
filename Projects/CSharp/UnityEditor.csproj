@@ -9063,6 +9063,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\VisualTreeAssetExtensions\VisualTreeAssetUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElementsEditor\ATGAnalytics.cs">
+      <Link>Modules\UIElementsEditor\ATGAnalytics.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElementsEditor\AssemblyInfo.cs">
       <Link>Modules\UIElementsEditor\AssemblyInfo.cs</Link>
     </Compile>

@@ -620,7 +620,7 @@ namespace UnityEditor
                     !IsAnyStandaloneModuleLoaded()));
         }
 
-        static bool IsEditorInstalledWithHub()
+        internal static bool IsEditorInstalledWithHub()
         {
             var applicationFolderPath = Directory.GetParent(EditorApplication.applicationPath).FullName;
             var path = "";

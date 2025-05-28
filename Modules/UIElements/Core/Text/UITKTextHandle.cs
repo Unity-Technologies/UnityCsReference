@@ -55,8 +55,8 @@ namespace UnityEngine.UIElements
         internal Vector2 ATGRoundedSizes { get; set; }
 
 
-        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
-        internal static Func<int, bool> CanGenerateFallbackFontAssets;
+        internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<int, bool, bool> CanGenerateFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
         protected TextElement m_TextElement;
@@ -180,16 +180,16 @@ namespace UnityEngine.UIElements
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
             
             // When we render in bitmap mode, we need provide proper coordinates to textCore so that the alignment is done properly
-            // The output of freetype is in pixels corrdinate on screen, unlike UIToolkit. 
+            // The output of freetype is in pixels corrdinate on screen, unlike UIToolkit.
             var shouldRenderBitmap = TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap && tgs.fontAsset.IsEditorFont;
             if (shouldRenderBitmap)
             {
                 
                 // ScalePixelsPerPoint is invalid if the VisualElement is not in a panel
-                FontAsset fa = GetBlurryFontAssetMapping( tgs.fontSize, tgs.fontAsset);
+                FontAsset fa = GetBlurryFontAssetMapping(tgs.fontSize, tgs.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
 
                 // Fallbacks also need to be generated on the Main Thread
-                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize);
+                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
                 if (!canGenerateFallbacks || !fa)
                     return false;
 

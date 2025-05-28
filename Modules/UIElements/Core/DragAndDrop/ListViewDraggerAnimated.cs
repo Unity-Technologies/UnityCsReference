@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
                 {
                     var nextExpectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index + 1);
                     // If the drop position is at the end, we will let the conditional check that is outside the loop to handle the animating.
-                    if (Mathf.Approximately(itemLayout.y, y))
+                    if (Mathf.Approximately(itemLayout.y + nextExpectedHeight, contentHeight))
                         continue;
 
                     if (itemLayout.y <= y + nextExpectedHeight * 0.5f)

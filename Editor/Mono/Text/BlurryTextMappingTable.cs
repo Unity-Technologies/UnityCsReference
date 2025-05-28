@@ -14,13 +14,9 @@ namespace UnityEditor
     internal class BlurryTextCaching
     {
         [SerializeField]
-        public List<FontAsset> m_SrcFontAsset = new ();
-        [SerializeField]
-        public List<FontAsset> m_FontAssetCorrespondingFontAssets = new ();
-        [SerializeField]
-        public List<int> m_FontAssetPointSize = new ();
+        private List<FontAssetEntry> m_Entries = new();
 
-        Dictionary<Tuple<int, FontAsset>, FontAsset> m_FontAssetPointSizeLookup = new ();
+        private Dictionary<Tuple<int, FontAsset, bool>, FontAsset> m_FontAssetPointSizeLookup = new();
 
         public void InitializeLookups()
         {
@@ -29,25 +25,38 @@ namespace UnityEditor
 
             m_FontAssetPointSizeLookup.Clear();
 
-            for (int i = 0; i < m_SrcFontAsset.Count; i++)
+            foreach (var entry in m_Entries)
             {
-                var key = Tuple.Create(m_FontAssetPointSize[i], m_SrcFontAsset[i]);
-                m_FontAssetPointSizeLookup.TryAdd(key, m_FontAssetCorrespondingFontAssets[i]);
+                var key = Tuple.Create(entry.pointSize, entry.sourceFontAsset, entry.isRaster);
+                m_FontAssetPointSizeLookup.TryAdd(key, entry.correspondingFontAsset);
             }
         }
 
-        public void Add(FontAsset srcFontAsset, int pointSize, FontAsset dstFontAsset)
+        public void Add(FontAsset sourceFontAsset, int pointSize, bool isRaster, FontAsset correspondingFontAsset)
         {
-            m_SrcFontAsset.Add(srcFontAsset);
-            m_FontAssetPointSize.Add(pointSize);
-            m_FontAssetCorrespondingFontAssets.Add(dstFontAsset);
+            m_Entries.Add(new FontAssetEntry
+            {
+                sourceFontAsset = sourceFontAsset,
+                pointSize = pointSize,
+                isRaster = isRaster,
+                correspondingFontAsset = correspondingFontAsset
+            });
 
-            m_FontAssetPointSizeLookup.Add(Tuple.Create(pointSize, srcFontAsset), dstFontAsset);
+            m_FontAssetPointSizeLookup.Add(Tuple.Create(pointSize, sourceFontAsset, isRaster), correspondingFontAsset);
         }
 
-        public FontAsset Find(FontAsset srcFontAsset, int pointSize)
+        public FontAsset Find(FontAsset sourceFontAsset, int pointSize, bool isRaster)
         {
-            return m_FontAssetPointSizeLookup.TryGetValue(Tuple.Create(pointSize, srcFontAsset), out var dstFontAsset) ? dstFontAsset : null;
+            return m_FontAssetPointSizeLookup.TryGetValue(Tuple.Create(pointSize, sourceFontAsset, isRaster), out var correspondingFontAsset) ? correspondingFontAsset : null;
+        }
+
+        [Serializable]
+        private class FontAssetEntry
+        {
+            public FontAsset sourceFontAsset;
+            public FontAsset correspondingFontAsset;
+            public int pointSize;
+            public bool isRaster;
         }
     }
 }
