@@ -148,9 +148,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             var assetStorePackageInstaller = Register(new AssetStorePackageInstaller(ioProxy, assetStoreCache, assetDatabaseProxy, assetSelectionHandler, applicationProxy));
             var assetStoreDownloadManager = Register(new AssetStoreDownloadManager(applicationProxy, unityConnectProxy, ioProxy, assetStoreCache, assetStoreUtils, assetStoreRestAPI, assetStoreCachePathProxy, localInfoHandler));
 
-            var upmCache = Register(new UpmCache(uniqueIdMapper));
+            var upmCache = Register(new UpmCache(uniqueIdMapper, settingsProxy));
             var upmClient = Register(new UpmClient(upmCache, fetchStatusTracker, ioProxy, clientProxy, applicationProxy));
-            var upmRegistryClient = Register(new UpmRegistryClient(upmCache, settingsProxy, clientProxy, applicationProxy));
+            var upmRegistryClient = Register(new UpmRegistryClient(settingsProxy, clientProxy, upmCache, applicationProxy));
 
             var packageDatabase = Register(new PackageDatabase(uniqueIdMapper, assetDatabaseProxy, upmCache, ioProxy));
             var pageFactory = Register(new PageFactory(unityConnectProxy, packageManagerPrefs, assetStoreClient, packageDatabase, upmCache));

@@ -18,7 +18,7 @@ namespace UnityEditor.UIElements.Samples
             // Create some list of data, here simply numbers in interval [1, 1000]
             const int itemCount = 1000;
             var items = new List<string>(itemCount);
-            for (int i = 1; i <= itemCount; i++)
+            for (var i = 0; i < itemCount; i++)
                 items.Add(i.ToString());
 
             // The "makeItem" function will be called as needed
@@ -29,7 +29,7 @@ namespace UnityEditor.UIElements.Samples
             // will recycle elements created by the "makeItem"
             // and invoke the "bindItem" callback to associate
             // the element with the matching data item (specified as an index in the list)
-            Action<VisualElement, int> bindItem = (e, i) => (e as Label).text = items[i];
+            Action<VisualElement, int> bindItem = (e, i) => ((Label)e).text = items[i];
 
             var listView = container.Q<ListView>();
             listView.makeItem = makeItem;
@@ -44,9 +44,12 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // Callback invoked when the user changes the selection inside the ListView
-            listView.selectionChanged += (selectedItems) =>
+            listView.selectedIndicesChanged += (selectedIndices) =>
             {
-                Debug.Log("Items selected: " + string.Join(", ", selectedItems));
+                Debug.Log("Index selected: " + string.Join(", ", selectedIndices));
+
+                // Note: selectedIndices can also be used to get the selected items from the itemsSource directly or
+                // by using listView.viewController.GetItemForIndex(index).
             };
             /// </sample>
             #endregion

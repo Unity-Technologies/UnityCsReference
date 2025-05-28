@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Serialization;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor.PackageManager
@@ -44,7 +45,11 @@ namespace UnityEditor.PackageManager
         [NativeName("configSource")]
         private ConfigSource m_ConfigSource;
 
-        internal RegistryInfo(string id = "", string name = "", string url = "", string[] scopes = null, bool isDefault = false, SearchCapabilities capabilities = SearchCapabilities.None, ConfigSource configSource = ConfigSource.Unknown)
+        [SerializeField]
+        [NativeName("compliance")]
+        private RegistryCompliance m_Compliance;
+
+        internal RegistryInfo(string id = "", string name = "", string url = "", string[] scopes = null, bool isDefault = false, SearchCapabilities capabilities = SearchCapabilities.None, ConfigSource configSource = ConfigSource.Unknown, RegistryCompliance compliance = null)
         {
             m_Id = id;
             m_Name = name;
@@ -53,6 +58,7 @@ namespace UnityEditor.PackageManager
             m_IsDefault = isDefault;
             m_Capabilities = capabilities;
             m_ConfigSource = configSource;
+            m_Compliance = compliance ?? new RegistryCompliance();
         }
 
         internal string id { get { return m_Id;  } }
@@ -62,5 +68,6 @@ namespace UnityEditor.PackageManager
         public bool isDefault { get { return m_IsDefault; } }
         internal SearchCapabilities capabilities { get { return m_Capabilities; } }
         internal ConfigSource configSource { get { return m_ConfigSource; } }
+        internal RegistryCompliance compliance { get { return m_Compliance; } }
     }
 }

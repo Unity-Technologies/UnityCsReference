@@ -9,7 +9,6 @@ using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEditor.UIElements;
 using UnityEditor.PackageManager.UI.Internal;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI
 {

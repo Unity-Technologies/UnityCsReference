@@ -799,6 +799,7 @@ namespace UnityEngine.TextCore.Text
                             // For IMGUI, we want to treat the a tag as we do with the link tag
                             if (generationSettings.isIMGUI && textInfo != null)
                             {
+                                CloseLastLinkTag(textInfo);
                                 int index = textInfo.linkCount;
 
                                 if (index + 1 > textInfo.linkInfo.Length)
@@ -821,9 +822,11 @@ namespace UnityEngine.TextCore.Text
                                 }
                                 if (m_XmlAttribute[1].valueLength > 0)
                                     textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, lastIndex - 1);
+                                textInfo.linkCount += 1;
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {
+                                CloseLastLinkTag(textInfo);
                                 // Make sure linkInfo array is of appropriate size.
                                 int index = textInfo.linkCount;
 
@@ -834,8 +837,9 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[1].valueStartIndex;
                                 textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
+                                textInfo.linkInfo[index].linkTextLength = -1;
+                                textInfo.linkCount += 1;
                             }
-                            textInfo.linkCount += 1;
                         }
                         return true;
 
@@ -858,6 +862,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.LINK:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
+                            CloseLastLinkTag(textInfo);
                             int index = textInfo.linkCount;
 
                             if (index + 1 > textInfo.linkInfo.Length)
@@ -868,16 +873,22 @@ namespace UnityEngine.TextCore.Text
 
                             textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[0].valueStartIndex;
                             textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
+                            textInfo.linkInfo[index].linkTextLength = -1;
+
+                            textInfo.linkCount += 1;
                         }
                         return true;
                     case MarkupTag.SLASH_LINK:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
-                            if (textInfo.linkCount < textInfo.linkInfo.Length)
+                            if (textInfo.linkInfo.Length <= 0 || textInfo.linkCount <= 0)
                             {
-                                textInfo.linkInfo[textInfo.linkCount].linkTextLength = m_CharacterCount - textInfo.linkInfo[textInfo.linkCount].linkTextfirstCharacterIndex;
-
-                                textInfo.linkCount += 1;
+                                if (generationSettings.textSettings.displayWarnings)
+                                    Debug.LogWarning($"There seems to be an issue with the formatting of the <link> tag. Possible issues include: missing or misplaced closing '>', missing or incorrect attribute, or unclosed quotes for attribute values. Please review the tag syntax.");
+                            }
+                            else
+                            {
+                                textInfo.linkInfo[textInfo.linkCount - 1].linkTextLength = m_CharacterCount - textInfo.linkInfo[textInfo.linkCount - 1].linkTextfirstCharacterIndex;
                             }
                         }
                         return true;
@@ -1714,6 +1725,24 @@ namespace UnityEngine.TextCore.Text
             #endregion
 
             return false;
+        }
+
+        internal void CloseLastLinkTag(TextInfo textInfo)
+        {
+            if (textInfo.linkInfo.Length > 0 && textInfo.linkCount > 0)
+                CloseLinkTag(textInfo, textInfo.linkCount - 1);
+        }
+
+        internal void CloseAllLinkTags(TextInfo textInfo)
+        {
+            for (int i = textInfo.linkCount - 1; i >= 0; i--)
+                CloseLinkTag(textInfo, i);
+        }
+
+        private void CloseLinkTag(TextInfo textInfo, int index)
+        {
+            if (textInfo.linkInfo[index].linkTextLength == -1)
+                textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
         }
 
         void ClearMarkupTagAttributes()

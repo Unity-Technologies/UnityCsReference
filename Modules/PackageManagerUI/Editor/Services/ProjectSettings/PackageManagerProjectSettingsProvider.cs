@@ -36,6 +36,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             internal static readonly string stylesheetCommon = "StyleSheets/Extensions/base/common.uss";
             internal static readonly string stylesheetDark = "StyleSheets/Extensions/base/dark.uss";
             internal static readonly string stylesheetLight = "StyleSheets/Extensions/base/light.uss";
+            // We use those stylesheet variables for icons
+            internal static readonly string styleSheetPackageManagerDark = "StyleSheets/PackageManager/Dark.uss";
+            internal static readonly string styleSheetPackageManagerLight = "StyleSheets/PackageManager/Light.uss";
         }
 
         public PackageManagerProjectSettingsProvider(string path, SettingsScope scopes, IEnumerable<string> keywords = null)
@@ -51,6 +54,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.scopedRegistriesSettings);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.projectSettings);
                 rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.stylesheetDark : StylesheetPath.stylesheetLight);
+                rootVisualElement.AddStyleSheetPath(EditorGUIUtility.isProSkin ? StylesheetPath.styleSheetPackageManagerDark : StylesheetPath.styleSheetPackageManagerLight);
                 rootVisualElement.AddStyleSheetPath(StylesheetPath.stylesheetCommon);
                 rootVisualElement.styleSheets.Add(m_ResourceLoader.packageManagerCommonStyleSheet);
 
@@ -80,11 +84,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                         m_SettingsProxy.scopedRegistriesSettingsExpanded = changeEvent.newValue;
                 });
 
-                preReleaseInfoBox.Q<Button>().clickable.clicked += () =>
-                {
-                    m_Application.OpenURL($"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html");
-                };
-
+                preReleaseInfoBox.readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
 
                 RefreshEnablePreReleasePackagesCheckbox();
                 enablePreReleasePackages.RegisterValueChangedCallback(changeEvent =>
@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        private HelpBox preReleaseInfoBox => cache.Get<HelpBox>("preReleaseInfoBox");
+        private HelpBoxWithOptionalReadMore preReleaseInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("preReleaseInfoBox");
         private Toggle enablePreReleasePackages => rootVisualElement.Q<Toggle>("enablePreReleasePackages");
         private Foldout advancedSettingsFoldout => rootVisualElement.Q<Foldout>("advancedSettingsFoldout");
         private Foldout scopedRegistriesSettingsFoldout => rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout");

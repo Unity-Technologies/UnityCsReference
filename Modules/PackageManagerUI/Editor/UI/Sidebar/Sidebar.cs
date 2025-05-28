@@ -20,6 +20,7 @@ internal class Sidebar : ScrollView
     private IUpmRegistryClient m_UpmRegistryClient;
     private IProjectSettingsProxy m_SettingsProxy;
     private IPageManager m_PageManager;
+    private IPackageDatabase m_PackageDatabase;
 
     private Dictionary<string, SidebarRow> m_ScopedRegistryRows = new();
     private SidebarRow m_CurrentlySelectedRow;
@@ -30,6 +31,7 @@ internal class Sidebar : ScrollView
         m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
         m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
         m_PageManager = container.Resolve<IPageManager>();
+        m_PackageDatabase = container.Resolve<IPackageDatabase>();
     }
 
     public Sidebar()
@@ -40,7 +42,9 @@ internal class Sidebar : ScrollView
     public void OnEnable()
     {
         m_UpmRegistryClient.onRegistriesModified += UpdateScopedRegistryRelatedRows;
+        m_UpmRegistryClient.onRegistriesModified += UpdateComplianceRelatedRow;
         m_PageManager.onActivePageChanged += OnActivePageChanged;
+        m_PackageDatabase.onPackagesChanged += OnPackageChanged;
     }
 
     public void OnCreateGUI()
@@ -52,7 +56,9 @@ internal class Sidebar : ScrollView
     public void OnDisable()
     {
         m_UpmRegistryClient.onRegistriesModified -= UpdateScopedRegistryRelatedRows;
+        m_UpmRegistryClient.onRegistriesModified -= UpdateComplianceRelatedRow;
         m_PageManager.onActivePageChanged -= OnActivePageChanged;
+        m_PackageDatabase.onPackagesChanged -= OnPackageChanged;
     }
 
     private void CreateRows()
@@ -60,6 +66,7 @@ internal class Sidebar : ScrollView
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id));
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id), isIndented: true);
+        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id), isIndented: true);
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id));
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id));
@@ -72,6 +79,7 @@ internal class Sidebar : ScrollView
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyRegistriesPage.k_Id));
 
+        UpdateComplianceRelatedRow();
         UpdateScopedRegistryRelatedRows();
     }
 
@@ -106,9 +114,29 @@ internal class Sidebar : ScrollView
         m_CurrentlySelectedRow?.SetSelected(true);
     }
 
+    private void UpdateComplianceRelatedRow()
+    {
+        var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
+        var showNonCompliantPage = m_PackageDatabase.allPackages.Any(nonCompliancePage.ShouldInclude);
+
+        UIUtils.SetElementDisplay(GetRow(InProjectNonCompliancePage.k_Id), showNonCompliantPage);
+
+        if (!showNonCompliantPage && m_PageManager.activePage == nonCompliancePage)
+            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
+    }
+
+    private void OnPackageChanged(PackagesChangeArgs args)
+    {
+        if (args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Concat(args.progressUpdated).All(p => p.compliance.status == PackageComplianceStatus.Compliant))
+            return;
+        UpdateComplianceRelatedRow();
+    }
+
     private void UpdateScopedRegistryRelatedRows()
     {
-        var scopedRegistryPages = m_SettingsProxy.scopedRegistries.Select(r => m_PageManager.GetPage(r)).ToArray();
+        var scopedRegistryPages = m_SettingsProxy.scopedRegistries
+        .Where(r => r.compliance.status != RegistryComplianceStatus.NonCompliant)
+        .Select(r => m_PageManager.GetPage(r)).ToArray();
 
         // We remove the rows from the hierarchy so we can add it back later with the right order
         foreach (var row in m_ScopedRegistryRows.Values)

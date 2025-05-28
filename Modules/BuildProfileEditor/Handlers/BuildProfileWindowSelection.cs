@@ -30,6 +30,7 @@ namespace UnityEditor.Build.Profile.Handlers
         readonly Label m_SelectedProfilePlatformLabel;
 
         readonly List<BuildProfile> m_SelectedBuildProfiles;
+        readonly Dictionary<GUID, int> m_MultiSelectLabelCountMap;
 
         internal bool IsSingleSelection() => m_SelectedBuildProfiles.Count == 1;
         internal bool IsMultipleSelection() => m_SelectedBuildProfiles.Count > 1;
@@ -44,6 +45,7 @@ namespace UnityEditor.Build.Profile.Handlers
         {
             m_PlatformListViews = platformListView;
             m_SelectedBuildProfiles = new List<BuildProfile>();
+            m_MultiSelectLabelCountMap = new Dictionary<GUID, int>();
             m_SelectedProfileImage = rootVisualElement.Q<Image>("selected-profile-image");
             m_SelectedProfileNameLabel = rootVisualElement.Q<Label>("selected-profile-name");
             m_SelectedProfilePlatformLabel = rootVisualElement.Q<Label>("selected-profile-platform");
@@ -55,6 +57,7 @@ namespace UnityEditor.Build.Profile.Handlers
             {
                 m_SelectedProfileImage.image = BuildProfileModuleUtil.GetPlatformIcon(string.Empty);
                 m_SelectedProfileNameLabel.text = $"{m_SelectedBuildProfiles.Count} Build Profiles";
+                m_SelectedProfilePlatformLabel.text = GetMultiSelectLabelString();
             }
             else
             {
@@ -169,6 +172,35 @@ namespace UnityEditor.Build.Profile.Handlers
         internal void ClearSelectedProfiles()
         {
             m_SelectedBuildProfiles.Clear();
+        }
+
+        string GetMultiSelectLabelString()
+        {
+            string labelText = string.Empty;
+
+            foreach (var buildProfile in m_SelectedBuildProfiles)
+            {
+                if (!m_MultiSelectLabelCountMap.TryAdd(new GUID(buildProfile.platformId), 1))
+                {
+                    m_MultiSelectLabelCountMap[new GUID(buildProfile.platformId)]++;
+                }
+            }
+
+            int index = 0;
+            foreach (var platform in m_MultiSelectLabelCountMap)
+            {
+                var platformName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platform.Key.ToString());
+                labelText += $"{platform.Value} {platformName}";
+
+                if (++index < m_MultiSelectLabelCountMap.Count)
+                {
+                    labelText += ", ";
+                }
+            }
+
+            labelText += $" {TrText.buildProfilesName}";
+            m_MultiSelectLabelCountMap.Clear();
+            return labelText;
         }
     }
 }

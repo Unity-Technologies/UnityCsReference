@@ -166,6 +166,10 @@ namespace UnityEditor.PackageManager
         [NativeName("editorCompatibility")]
         private EditorCompatibilityInfo m_EditorCompatibility = new EditorCompatibilityInfo();
 
+        [SerializeField]
+        [NativeName("compliance")]
+        private PackageCompliance m_Compliance = new PackageCompliance();
+
         internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -202,6 +206,8 @@ namespace UnityEditor.PackageManager
         public string deprecationMessage { get { return m_DeprecationMessage; } }
         internal AssetStoreInfo assetStore { get { return m_Entitlements.licensingModel == EntitlementLicensingModel.AssetStore ? m_AssetStore : null; } }
         internal EditorCompatibilityInfo editorCompatibility { get { return m_EditorCompatibility; } }
+
+        internal PackageCompliance compliance { get { return m_Compliance; } }
 
         public DateTime? datePublished
         {

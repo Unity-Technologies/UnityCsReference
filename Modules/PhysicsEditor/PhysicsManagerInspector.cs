@@ -97,13 +97,13 @@ namespace UnityEditor
 
                     int currentChoiceIndex = 0;
                     uint currentSerializedId = serializedObject.FindProperty("m_CurrentBackendId").uintValue;
-                    uint currentId = Physics.GetCurrentIntegrationId();
+                    uint currentId = Physics.GetCurrentIntegrationInfo().id;
 
                     for (int i = 0; i < infos.Length; ++i)
                     {
                         IntegrationInfo info = infos[i];
-                        classicEngineDropdown.choices.Add(info.Name);
-                        if (currentSerializedId == info.Id)
+                        classicEngineDropdown.choices.Add(info.name);
+                        if (currentSerializedId == info.id)
                             currentChoiceIndex = i;
                     }
 
@@ -118,15 +118,15 @@ namespace UnityEditor
                         if (evt.newValue == evt.previousValue)
                             return;
 
-                        uint oldIntegrationId = Physics.GetCurrentIntegrationId();
+                        uint oldIntegrationId = Physics.GetCurrentIntegrationInfo().id;
                         uint newIntegrationId = 0;
                         ReadOnlySpan<IntegrationInfo> integrationInfos = Physics.GetIntegrationInfos();
                         for (int i = 0; i < integrationInfos.Length; ++i)
                         {
                             IntegrationInfo info = integrationInfos[i];
-                            if (info.Name == evt.newValue)
+                            if (info.name == evt.newValue)
                             {
-                                newIntegrationId = info.Id;
+                                newIntegrationId = info.id;
                             }
                         }
 
@@ -138,7 +138,7 @@ namespace UnityEditor
 
                         //enable warning box if we are swapping and set the correct text depending on integration
                         classicEngineHelpboxWarning.text = newIntegrationId == IntegrationInfo.k_FallbackIntegrationId? Content.classicFallbackWarning : Content.classicWarning;
-                        classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationId();
+                        classicEngineHelpboxWarning.visible = newIntegrationId != Physics.GetCurrentIntegrationInfo().id;
                     });
 
                     var ecsEngineDropdown = rootElement.Q<DropdownField>(name: "ecs-dropdown");
@@ -455,6 +455,7 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_AutoSyncTransforms")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ReuseCollisionCallbacks")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_InvokeCollisionCallbacks")));
+            tab.Add(new PropertyField(serializedObject.FindProperty("m_GenerateOnTriggerStayEvents")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ContactPairsMode")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_BroadphaseType")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_FrictionType")));

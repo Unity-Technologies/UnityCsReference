@@ -112,7 +112,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static string GetComponentMenuName(Type type)
+        static object GetComponentMenuName(Type type)
         {
             var attrs = type.GetCustomAttributes(typeof(AddComponentMenu), false);
             if (attrs.Length > 0)

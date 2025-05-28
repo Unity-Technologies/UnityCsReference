@@ -60,13 +60,13 @@ namespace UnityEditor.PackageManager
             return new AddAndRemoveRequest(operationId, status);
         }
 
-        internal static AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes)
+        internal static AddScopedRegistryRequest AddScopedRegistry(string registryName, string url, string[] scopes, bool dryRun = false)
         {
             if (string.IsNullOrWhiteSpace(registryName))
                 throw new ArgumentException("Registry name cannot be null, empty or whitespace", nameof(registryName));
 
             long operationId;
-            var status = AddScopedRegistry(out operationId, registryName, url, scopes);
+            var status = AddScopedRegistry(out operationId, registryName, url, scopes, dryRun);
             return new AddScopedRegistryRequest(operationId, status);
         }
 
@@ -200,13 +200,13 @@ namespace UnityEditor.PackageManager
             return new PackRequest(operationId, status);
         }
 
-        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryId, UpdateScopedRegistryOptions options)
+        internal static UpdateScopedRegistryRequest UpdateScopedRegistry(string registryId, UpdateScopedRegistryOptions options, bool dryRun = false)
         {
             if (string.IsNullOrWhiteSpace(registryId))
                 throw new ArgumentException("Registry ID cannot be null, empty or whitespace", nameof(registryId));
 
             long operationId;
-            var status = UpdateScopedRegistry(out operationId, registryId, options);
+            var status = UpdateScopedRegistry(out operationId, registryId, options, dryRun);
             return new UpdateScopedRegistryRequest(operationId, status);
         }
     }

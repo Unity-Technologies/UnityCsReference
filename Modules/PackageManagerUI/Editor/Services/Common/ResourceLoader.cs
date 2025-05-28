@@ -63,6 +63,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/PackageDetailsHeader.uss",
                 "StyleSheets/PackageManager/Sidebar.uss",
                 "StyleSheets/PackageManager/SignInBar.uss",
+                "StyleSheets/PackageManager/PartiallyNonCompliantRegistryMessage.uss"
             };
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";
