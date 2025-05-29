@@ -16,6 +16,8 @@ using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditor
 {

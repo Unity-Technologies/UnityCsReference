@@ -14,6 +14,12 @@ using UnityEngine.Assertions;
 using static UnityEditor.AssetsTreeViewDataSource;
 using static UnityEditorInternal.InternalEditorUtility;
 
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
+
 namespace UnityEditor
 {
     internal class AssetsTreeViewGUI : TreeViewGUI

@@ -4,7 +4,8 @@
 
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor.TreeViewExamples
 {

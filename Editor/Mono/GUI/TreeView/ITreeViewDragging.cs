@@ -16,12 +16,12 @@ namespace UnityEditor.IMGUI.Controls
 
 
     // DragNDrop interface for tree views
-    internal interface ITreeViewDragging
+    internal interface ITreeViewDragging<TIdentifier>
     {
         void OnInitialize();
-        bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition);
-        void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs);
-        bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row);             // 'targetItem' is null when not hovering over any target Item.  Returns true if drag was handled.
+        bool CanStartDrag(TreeViewItem<TIdentifier> targetItem, List<TIdentifier> draggedItemIDs, Vector2 mouseDownPosition);
+        void StartDrag(TreeViewItem<TIdentifier> draggedItem, List<TIdentifier> draggedItemIDs);
+        bool DragElement(TreeViewItem<TIdentifier> targetItem, Rect targetItemRect, int row);             // 'targetItem' is null when not hovering over any target Item.  Returns true if drag was handled.
         void DragCleanup(bool revertExpanded);
         int GetDropTargetControlID();
         int GetRowMarkerControlID();

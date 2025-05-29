@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+
 
 namespace UnityEditor
 {

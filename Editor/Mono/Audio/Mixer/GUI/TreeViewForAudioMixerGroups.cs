@@ -8,6 +8,11 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Audio;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
+
 
 namespace UnityEditor
 {

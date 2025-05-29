@@ -11,18 +11,18 @@ namespace UnityEditor.IMGUI.Controls
     // Setup animation, tracks animation, fires callback when done (fully expanded/collapsed)
     //
 
-    internal class TreeViewItemExpansionAnimator
+    internal class TreeViewItemExpansionAnimator<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        TreeViewAnimationInput m_Setup; // when null we are not animating
+        TreeViewAnimationInput<TIdentifier> m_Setup; // when null we are not animating
         bool m_InsideGUIClip;
         Rect m_CurrentClipRect;
         static bool s_Debug = false;
 
-        public void BeginAnimating(TreeViewAnimationInput setup)
+        public void BeginAnimating(TreeViewAnimationInput<TIdentifier> setup)
         {
             if (m_Setup != null)
             {
-                if (m_Setup.item.id == setup.item.id && m_Setup.expanding != setup.expanding)
+                if (m_Setup.item.id.Equals(setup.item.id) && m_Setup.expanding != setup.expanding)
                 {
                     // If same item (changed expand/collapse while animating) then just change direction, but skip the time that already passed
                     if (m_Setup.elapsedTime >= 0)
@@ -64,7 +64,7 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Returns true if row should be culled
-        public bool CullRow(int row, ITreeViewGUI gui)
+        public bool CullRow(int row, ITreeViewGUI<TIdentifier> gui)
         {
             if (!isAnimating)
             {
@@ -198,12 +198,12 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        public bool IsAnimating(int itemID)
+        public bool IsAnimating(TIdentifier itemID)
         {
             if (!isAnimating)
                 return false;
 
-            return m_Setup.item.id == itemID;
+            return m_Setup.item.id.Equals(itemID);
         }
 
         // 1 fully expanded, 0 fully collapsed
@@ -259,7 +259,7 @@ namespace UnityEditor.IMGUI.Controls
         }
     }
 
-    internal class TreeViewAnimationInput
+    internal class TreeViewAnimationInput<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         public TreeViewAnimationInput()
         {
@@ -302,10 +302,10 @@ namespace UnityEditor.IMGUI.Controls
         public double animationDuration { get; set; }
         public bool expanding { get; set; }
         public bool includeChildren { get; set; }
-        public TreeViewItem item { get; set; }
-        public TreeViewController treeView { get; set; }
+        public TreeViewItem<TIdentifier> item { get; set; }
+        public TreeViewController<TIdentifier> treeView { get; set; }
 
-        public System.Action<TreeViewAnimationInput> animationEnded; // set to get a callback when animation ends
+        public System.Action<TreeViewAnimationInput<TIdentifier>> animationEnded; // set to get a callback when animation ends
 
         public void FireAnimationEndedEvent()
         {

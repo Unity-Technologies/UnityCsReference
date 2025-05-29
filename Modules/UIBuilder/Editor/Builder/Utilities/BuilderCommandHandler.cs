@@ -611,5 +611,11 @@ namespace Unity.UI.Builder
             newSelectorField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
             newSelectorField.Focus();
         }
+
+        public void UpdateStyleSheetUssPreview(StyleSheet styleSheet)
+        {
+            var ussFile = m_PaneWindow.document.activeOpenUXMLFile.openUSSFiles.Find(x => x.styleSheet == styleSheet);
+            ussFile.GeneratePreview();
+        }
     }
 }

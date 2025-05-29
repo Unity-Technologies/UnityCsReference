@@ -19,6 +19,7 @@ using UnityEngine.Audio;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditor
 {

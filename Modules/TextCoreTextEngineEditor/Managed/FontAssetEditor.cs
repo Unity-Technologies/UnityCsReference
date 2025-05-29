@@ -264,7 +264,6 @@ namespace UnityEditor.TextCore.Text
 
         private System.DateTime timeStamp;
 
-
         public void OnEnable()
         {
             m_FaceInfo_prop = serializedObject.FindProperty("m_FaceInfo");
@@ -482,7 +481,18 @@ namespace UnityEditor.TextCore.Text
                     {
                         EditorGUI.BeginChangeCheck();
                         // TODO: Switch shaders depending on GlyphRenderMode.
-                        EditorGUILayout.PropertyField(m_AtlasRenderMode_prop);
+                        var glyphRenderValues = (GlyphRenderMode[])Enum.GetValues(typeof(GlyphRenderMode));
+                        GlyphRenderMode currentValue = glyphRenderValues[m_AtlasRenderMode_prop.enumValueIndex];
+                        GlyphRenderModeUI selectedUI = (GlyphRenderModeUI)currentValue;
+
+                        selectedUI = (GlyphRenderModeUI)EditorGUILayout.EnumPopup("Render Mode", selectedUI);
+                        GlyphRenderMode updatedValue = (GlyphRenderMode)selectedUI;
+                        if (updatedValue != currentValue)
+                        {
+                            int updatedIndex = Array.IndexOf(glyphRenderValues, updatedValue);
+                            m_AtlasRenderMode_prop.enumValueIndex = updatedIndex;
+                            m_DisplayDestructiveChangeWarning = true;
+                        }
                         EditorGUILayout.PropertyField(m_SamplingPointSize_prop, new GUIContent("Sampling Point Size"));
                         if (EditorGUI.EndChangeCheck())
                         {

@@ -1661,6 +1661,8 @@ namespace UnityEngine.TextCore.Text
 
                 m_CharacterCount += 1;
             }
+
+            CloseAllLinkTags(textInfo);
         }
 
         void InsertNewLine(int i, float baseScale, float currentElementScale, float currentEmScale, float boldSpacingAdjustment, float characterSpacingAdjustment, float width, float lineGap, ref bool isMaxVisibleDescenderSet, ref float maxVisibleDescender, TextGenerationSettings generationSettings, TextInfo textInfo)

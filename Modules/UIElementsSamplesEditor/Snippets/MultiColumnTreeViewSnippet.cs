@@ -22,9 +22,9 @@ namespace UnityEditor.UIElements.Samples
 
                 var treeViewSubItemsData = new List<TreeViewItemData<string>>(10);
                 for (var j = 0; j < 10; j++)
-                    treeViewSubItemsData.Add(new TreeViewItemData<string>(itemIndex + j + 1, (j+1).ToString()));
+                    treeViewSubItemsData.Add(new TreeViewItemData<string>(itemIndex + j + 1, $"Data {i+1}-{j+1}"));
 
-                var treeViewItemData = new TreeViewItemData<string>(itemIndex, (i+1).ToString(), treeViewSubItemsData);
+                var treeViewItemData = new TreeViewItemData<string>(itemIndex, $"Data {i+1}", treeViewSubItemsData);
                 items.Add(treeViewItemData);
             }
 
@@ -37,7 +37,7 @@ namespace UnityEditor.UIElements.Samples
 
             // For each column, set Column.makeCell to initialize each node in the tree.
             // You can index the columns array with names or numerical indices.
-            multiColumnTreeView.columns["index"].makeCell = () => new Label();
+            multiColumnTreeView.columns["data"].makeCell = () => new Label();
             multiColumnTreeView.columns["active"].makeCell = () =>
             {
                 var toggle = new Toggle();
@@ -46,10 +46,15 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // For each column, set Column.bindCell to bind an initialized node to a data item.
-            multiColumnTreeView.columns["index"].bindCell = (VisualElement element, int index) =>
-                (element as Label).text = multiColumnTreeView.GetItemDataForIndex<string>(index);
-            multiColumnTreeView.columns["active"].bindCell = (VisualElement element, int index) =>
-                (element as Toggle).value = index % 2 == 0;
+            multiColumnTreeView.columns["data"].bindCell = (element, index) =>
+            {
+                var item = multiColumnTreeView.GetItemDataForIndex<string>(index);
+                var id = multiColumnTreeView.GetIdForIndex(index);
+                ((Label)element).text = $"ID {id} - {item}";
+            };
+
+            multiColumnTreeView.columns["active"].bindCell = (element, index) =>
+                ((Toggle)element).value = index % 2 == 0;
 
             // Callback invoked when the user double clicks an item
             multiColumnTreeView.itemsChosen += (selectedItems) =>
@@ -58,9 +63,14 @@ namespace UnityEditor.UIElements.Samples
             };
 
             // Callback invoked when the user changes the selection inside the ListView
-            multiColumnTreeView.selectionChanged += (selectedItems) =>
+            multiColumnTreeView.selectedIndicesChanged += (selectedIndices) =>
             {
-                Debug.Log("Items selected: " + string.Join(", ", selectedItems));
+                var log = "IDs selected: ";
+                foreach (var index in selectedIndices)
+                {
+                    log += $"{multiColumnTreeView.GetIdForIndex(index)}, ";
+                }
+                Debug.Log(log.TrimEnd(',', ' '));
             };
             /// </sample>
         }

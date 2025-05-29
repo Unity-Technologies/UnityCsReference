@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    public partial class TreeView
+    public partial class TreeView<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         public static class DefaultGUI
         {
@@ -62,7 +62,7 @@ namespace UnityEditor.IMGUI.Controls
             {
                 // Make a copy of lineStyle since left padding is being dynamically changed on that
                 // Note the left padding of 0 for exact placement of content after foldout or icon
-                foldoutLabel = new GUIStyle(TreeViewGUI.Styles.lineStyle);
+                foldoutLabel = new GUIStyle(TreeViewGUI<TIdentifier>.Styles.lineStyle);
                 foldoutLabel.padding.left = 0;
 
                 // For generic labels use same padding values as the standard EditorStyles.label for consistency

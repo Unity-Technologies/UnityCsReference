@@ -9,6 +9,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditorInternal
 {

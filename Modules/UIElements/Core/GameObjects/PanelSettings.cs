@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine.Serialization;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements.UIR;
 
 namespace UnityEngine.UIElements
@@ -681,6 +682,18 @@ namespace UnityEngine.UIElements
 
         [SerializeField]
         [HideInInspector]
+        private Shader m_SDFShader;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_BitmapShader;
+
+        [SerializeField]
+        [HideInInspector]
+        private Shader m_SpriteShader;
+
+        [SerializeField]
+        [HideInInspector]
         internal TextAsset m_ICUDataAsset;
 
         /// <summary>
@@ -850,6 +863,18 @@ namespace UnityEngine.UIElements
             if (m_RuntimeWorldShader == null)
             {
                 m_RuntimeWorldShader = Shader.Find(Shaders.k_RuntimeWorld);
+            }
+            if (m_SDFShader == null)
+            {
+                m_SDFShader = Shader.Find(TextShaderUtilities.k_SDFText);
+            }
+            if (m_BitmapShader == null)
+            {
+                m_BitmapShader = Shader.Find(TextShaderUtilities.k_BitmapText);
+            }
+            if (m_SpriteShader == null)
+            {
+                m_SpriteShader = Shader.Find(TextShaderUtilities.k_SpriteText);
             }
             m_PanelAccess.SetTargetTexture();
         }
@@ -1032,7 +1057,7 @@ namespace UnityEngine.UIElements
                 m_AttachedUIDocumentsList.RemoveFromListAndFromVisualTree(uiDocument);
             }
 
-            m_AttachedUIDocumentsList.AddToListAndToVisualTree(uiDocument, visualTree);
+            m_AttachedUIDocumentsList.AddToListAndToVisualTree(uiDocument, visualTree, false);
         }
 
         internal void DetachUIDocument(UIDocument uiDocument)

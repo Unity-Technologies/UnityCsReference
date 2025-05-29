@@ -26,7 +26,9 @@ namespace UnityEditor.ShortcutManagement
         public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue,
             string acceptButtonText, Func<string, string> validator, Action<string> action, float windowWidth = 380f, float windowHeight = 160f)
         {
-            var promptWindow = GetWindow<PromptWindow>(true, title, true);
+            var promptWindow = GetWindowDontShow<PromptWindow>();
+
+            promptWindow.titleContent = new GUIContent(title);
 
             // TODO: Ideally the window size should be fixed according to its contents
             promptWindow.minSize = promptWindow.maxSize = new Vector2(windowWidth, windowHeight);
@@ -44,7 +46,7 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.m_TextField.Focus();
             promptWindow.UpdateValidation();
 
-            promptWindow.ShowModal();
+            promptWindow.ShowAuxWindow();
         }
 
         void OnEnable()

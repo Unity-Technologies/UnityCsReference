@@ -29,25 +29,25 @@ namespace UnityEditor.IMGUI.Controls
      */
 
     [System.Serializable]
-    public class TreeViewState
+    public class TreeViewState<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        public List<int> selectedIDs { get { return m_SelectedIDs; } set { m_SelectedIDs = value; } }
-        public int lastClickedID { get { return m_LastClickedID; } set { m_LastClickedID = value; } }
-        public List<int> expandedIDs { get { return m_ExpandedIDs; } set { m_ExpandedIDs = value; } }
-        internal RenameOverlay renameOverlay { get { return m_RenameOverlay; } set { m_RenameOverlay = value; } }
+        public List<TIdentifier> selectedIDs { get { return m_SelectedIDs; } set { m_SelectedIDs = value; } }
+        public TIdentifier lastClickedID { get { return m_LastClickedID; } set { m_LastClickedID = value; } }
+        public List<TIdentifier> expandedIDs { get { return m_ExpandedIDs; } set { m_ExpandedIDs = value; } }
+        internal RenameOverlay<TIdentifier> renameOverlay { get { return m_RenameOverlay; } set { m_RenameOverlay = value; } }
 
         public string searchString { get { return m_SearchString; } set { m_SearchString = value; } }
         public Vector2 scrollPos;
 
         // Selection state
-        [SerializeField] private List<int> m_SelectedIDs = new List<int>();
-        [SerializeField] private int m_LastClickedID; // used for navigation
+        [SerializeField] private List<TIdentifier> m_SelectedIDs = new List<TIdentifier>();
+        [SerializeField] private TIdentifier m_LastClickedID; // used for navigation
 
         // Expanded state (assumed sorted)
-        [SerializeField] private List<int> m_ExpandedIDs = new List<int>();
+        [SerializeField] private List<TIdentifier> m_ExpandedIDs = new List<TIdentifier>();
 
         // Rename and create asset state
-        [SerializeField] private RenameOverlay m_RenameOverlay = new RenameOverlay();
+        [SerializeField] private RenameOverlay<TIdentifier> m_RenameOverlay = new RenameOverlay<TIdentifier>();
 
         // Search state (can be used by Datasource to filter tree when reloading)
         [SerializeField] private string m_SearchString;
@@ -59,41 +59,41 @@ namespace UnityEditor.IMGUI.Controls
         }
     }
 
-    internal struct TreeViewSelectState
+    internal struct TreeViewSelectState<TIdentifier>
     {
-        public List<int> selectedIDs;
-        public int lastClickedID;
+        public List<TIdentifier> selectedIDs;
+        public TIdentifier lastClickedID;
         public bool keepMultiSelection;
         public bool useShiftAsActionKey;
     }
 
-    internal class TreeViewController
+    internal class TreeViewController<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        public System.Action<int[]> selectionChangedCallback { get; set; } // ids
-        public System.Action<int> itemSingleClickedCallback { get; set; } // id
-        public System.Action<int> itemDoubleClickedCallback { get; set; } // id
-        public System.Action<int[], bool> dragEndedCallback { get; set; } // dragged ids, if null then drag was not allowed, bool == true if dragging tree view items from own treeview, false if drag was started outside
-        public System.Action<int> contextClickItemCallback { get; set; } // clicked item id
+        public System.Action<TIdentifier[]> selectionChangedCallback { get; set; } // ids
+        public System.Action<TIdentifier> itemSingleClickedCallback { get; set; } // id
+        public System.Action<TIdentifier> itemDoubleClickedCallback { get; set; } // id
+        public System.Action<TIdentifier[], bool> dragEndedCallback { get; set; } // dragged ids, if null then drag was not allowed, bool == true if dragging tree view items from own treeview, false if drag was started outside
+        public System.Action<TIdentifier> contextClickItemCallback { get; set; } // clicked item id
         public System.Action contextClickOutsideItemsCallback { get; set; }
         public System.Action keyboardInputCallback { get; set; }
         public System.Action expandedStateChanged { get; set; }
         public System.Action<string> searchChanged { get; set; }
         public System.Action<Vector2> scrollChanged { get; set; }
-        public System.Action<int, Rect> onGUIRowCallback { get; set; }  // <id, Rect of row>
+        public System.Action<TIdentifier, Rect> onGUIRowCallback { get; set; }  // <id, Rect of row>
 
-        internal System.Action<int, Rect> onFoldoutButton { get; set; }  // <id, Rect of row>
+        internal System.Action<TIdentifier, Rect> onFoldoutButton { get; set; }  // <id, Rect of row>
 
         // Main state
         GUIView m_GUIView;                                              // Containing view for this tree: used for checking if we have focus and for requesting repaints
-        public ITreeViewDataSource data { get; set; }                   // Data provider for this tree: handles data fetching
-        public ITreeViewDragging dragging { get; set; }                 // Handle dragging
-        public ITreeViewGUI gui { get; set; }                           // Handles GUI (input and rendering)
-        public TreeViewState state { get; set; }                        // State that persists script reloads
+        public ITreeViewDataSource<TIdentifier> data { get; set; }                   // Data provider for this tree: handles data fetching
+        public ITreeViewDragging<TIdentifier> dragging { get; set; }                 // Handle dragging
+        public ITreeViewGUI<TIdentifier> gui { get; set; }                           // Handles GUI (input and rendering)
+        public TreeViewState<TIdentifier> state { get; set; }                        // State that persists script reloads
         public GUIStyle horizontalScrollbarStyle { get; set; }
         public GUIStyle verticalScrollbarStyle { get; set; }
         public GUIStyle scrollViewStyle { get; set; }
-        public TreeViewItemExpansionAnimator expansionAnimator { get { return m_ExpansionAnimator; } }
-        readonly TreeViewItemExpansionAnimator m_ExpansionAnimator = new TreeViewItemExpansionAnimator();
+        public TreeViewItemExpansionAnimator<TIdentifier> expansionAnimator { get { return m_ExpansionAnimator; } }
+        readonly TreeViewItemExpansionAnimator<TIdentifier> m_ExpansionAnimator = new TreeViewItemExpansionAnimator<TIdentifier>();
         AnimFloat m_FramingAnimFloat;
 
         bool m_StopIteratingItems;
@@ -106,10 +106,10 @@ namespace UnityEditor.IMGUI.Controls
 
         struct IntegerCache
         {
-            List<int> m_List;
-            HashSet<int> m_HashSet;
+            List<TIdentifier> m_List;
+            HashSet<TIdentifier> m_HashSet;
 
-            public bool Contains(int id)
+            public bool Contains(TIdentifier id)
             {
                 if (m_HashSet == null)
                     return false;
@@ -117,19 +117,19 @@ namespace UnityEditor.IMGUI.Controls
                 return m_HashSet.Contains(id);
             }
 
-            public void Set(List<int> list)
+            public void Set(List<TIdentifier> list)
             {
                 if (list == null)
                     throw new ArgumentNullException(nameof(list));
 
                 if (!Equals(list))
                 {
-                    m_List = new List<int>(list);
-                    m_HashSet = new HashSet<int>(list);
+                    m_List = new List<TIdentifier>(list);
+                    m_HashSet = new HashSet<TIdentifier>(list);
                 }
             }
 
-            public List<int> Get()
+            public List<TIdentifier> Get()
             {
                 return m_List;
             }
@@ -151,7 +151,7 @@ namespace UnityEditor.IMGUI.Controls
                 return m_List.Count > 0;
             }
 
-            bool Equals(List<int> list)
+            bool Equals(List<TIdentifier> list)
             {
                 if (m_List == null || list == null)
                     return false;
@@ -162,7 +162,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 for (int i = 0; i < count; ++i)
                 {
-                    if (list[i] != m_List[i])
+                    if (!list[i].Equals(m_List[i]))
                         return false;
                 }
 
@@ -188,15 +188,15 @@ namespace UnityEditor.IMGUI.Controls
 
         const double kSlowSelectTimeout = 0.2;
         const float kSpaceForScrollBar = 16f;
-        public TreeViewItem hoveredItem { get; set; }
+        public TreeViewItem<TIdentifier> hoveredItem { get; set; }
 
-        public TreeViewController(EditorWindow editorWindow, TreeViewState treeViewState)
+        public TreeViewController(EditorWindow editorWindow, TreeViewState<TIdentifier> treeViewState)
         {
             m_GUIView = editorWindow ? editorWindow.m_Parent : GUIView.current;
             state = treeViewState;
         }
 
-        public void Init(Rect rect, ITreeViewDataSource data, ITreeViewGUI gui, ITreeViewDragging dragging)
+        public void Init(Rect rect, ITreeViewDataSource<TIdentifier> data, ITreeViewGUI<TIdentifier> gui, ITreeViewDragging<TIdentifier> dragging)
         {
             this.data = data;
             this.gui = gui;
@@ -229,7 +229,7 @@ namespace UnityEditor.IMGUI.Controls
             get { return m_DragSelection.HasValues(); }
         }
 
-        public bool IsDraggingItem(TreeViewItem item)
+        public bool IsDraggingItem(TreeViewItem<TIdentifier> item)
         {
             return m_DragSelection.Contains(item.id);
         }
@@ -276,7 +276,7 @@ namespace UnityEditor.IMGUI.Controls
             get { return m_VisibleRect; }
         }
 
-        public bool IsSelected(int id)
+        public bool IsSelected(TIdentifier id)
         {
             return state.selectedIDs.Contains(id);
         }
@@ -286,23 +286,23 @@ namespace UnityEditor.IMGUI.Controls
             return state.selectedIDs.Count > 0;
         }
 
-        public int[] GetSelection()
+        public TIdentifier[] GetSelection()
         {
             return state.selectedIDs.ToArray();
         }
 
-        public int[] GetRowIDs()
+        public TIdentifier[] GetRowIDs()
         {
             return (from item in data.GetRows() select item.id).ToArray();
         }
 
-        public void SetSelection(int[] selectedIDs, bool revealSelectionAndFrameLastSelected)
+        public void SetSelection(TIdentifier[] selectedIDs, bool revealSelectionAndFrameLastSelected)
         {
             const bool animatedFraming = false;
             SetSelection(selectedIDs, revealSelectionAndFrameLastSelected, animatedFraming);
         }
 
-        public void SetSelection(int[] selectedIDs, bool revealSelectionAndFrameLastSelected, bool animatedFraming)
+        public void SetSelection(TIdentifier[] selectedIDs, bool revealSelectionAndFrameLastSelected, bool animatedFraming)
         {
             // Keep for debugging
             //Debug.Log ("SetSelection: new selection: " + DebugUtils.ListToString(new List<int>(selectedIDs)));
@@ -315,21 +315,21 @@ namespace UnityEditor.IMGUI.Controls
                     data.RevealItems(selectedIDs);
                 }
 
-                state.selectedIDs = new List<int>(selectedIDs);
+                state.selectedIDs = new List<TIdentifier>(selectedIDs);
 
                 // Ensure that our key navigation is setup
                 bool hasLastClicked = state.selectedIDs.IndexOf(state.lastClickedID) >= 0;
                 if (!hasLastClicked)
                 {
                     // See if we can find a valid id, we check the last selected (selectedids might contain invalid ids e.g scene objects in project browser and vice versa)
-                    int lastSelectedID = selectedIDs.Last();
+                    TIdentifier lastSelectedID = selectedIDs.Last();
                     if (data.GetRow(lastSelectedID) != -1)
                     {
                         state.lastClickedID = lastSelectedID;
                         hasLastClicked = true;
                     }
                     else
-                        state.lastClickedID = 0;
+                        state.lastClickedID = default;
                 }
 
                 if (revealSelectionAndFrameLastSelected && hasLastClicked)
@@ -338,14 +338,14 @@ namespace UnityEditor.IMGUI.Controls
             else
             {
                 state.selectedIDs.Clear();
-                state.lastClickedID = 0;
+                state.lastClickedID = default;
             }
 
             // Should not fire callback since this is called from outside
             // NotifyListenersThatSelectionChanged ()
         }
 
-        public TreeViewItem FindItem(int id)
+        public TreeViewItem<TIdentifier> FindItem(TIdentifier id)
         {
             return data.FindItem(id);
         }
@@ -384,12 +384,12 @@ namespace UnityEditor.IMGUI.Controls
             return hasKeyFocus && (GUIUtility.keyboardControl == m_KeyboardControlID);
         }
 
-        static internal int GetItemControlID(TreeViewItem item)
+        static internal int GetItemControlID(TreeViewItem<TIdentifier> item)
         {
-            return ((item != null) ? item.id : 0) + 10000000;
+            return ((item != null) ? item.id.GetHashCode() : 0) + 10000000;
         }
 
-        public void HandleUnusedMouseEventsForItem(Rect rect, TreeViewItem item, int row)
+        public void HandleUnusedMouseEventsForItem(Rect rect, TreeViewItem<TIdentifier> item, int row)
         {
             int itemControlID = GetItemControlID(item);
 
@@ -434,7 +434,7 @@ namespace UnityEditor.IMGUI.Controls
                                     m_DragSelection.Clear();
 
                                     if (m_AllowRenameOnMouseUp)
-                                        m_AllowRenameOnMouseUp = (state.selectedIDs.Count == 1 && state.selectedIDs[0] == item.id); // If first time selection then prevent starting a rename on the following mouse up after this mouse down
+                                        m_AllowRenameOnMouseUp = (state.selectedIDs.Count == 1 && state.selectedIDs[0].Equals(item.id)); // If first time selection then prevent starting a rename on the following mouse up after this mouse down
 
                                     SelectionClick(item, false);
 
@@ -485,8 +485,8 @@ namespace UnityEditor.IMGUI.Controls
                         if (rect.Contains(evt.mousePosition))
                         {
                             Rect renameActivationRect = gui.GetRenameRect(rect, row, item);
-                            List<int> selected = state.selectedIDs;
-                            if (m_AllowRenameOnMouseUp && selected != null && selected.Count == 1 && selected[0] == item.id && renameActivationRect.Contains(evt.mousePosition) && !EditorGUIUtility.HasHolddownKeyModifiers(evt))
+                            List<TIdentifier> selected = state.selectedIDs;
+                            if (m_AllowRenameOnMouseUp && selected != null && selected.Count == 1 && selected[0].Equals(item.id) && renameActivationRect.Contains(evt.mousePosition) && !EditorGUIUtility.HasHolddownKeyModifiers(evt))
                             {
                                 BeginNameEditing(0.5f);
                             }
@@ -533,7 +533,7 @@ namespace UnityEditor.IMGUI.Controls
                 selectionChangedCallback(state.selectedIDs.ToArray());
         }
 
-        public void NotifyListenersThatDragEnded(int[] draggedIDs, bool draggedItemsFromOwnTreeView)
+        public void NotifyListenersThatDragEnded(TIdentifier[] draggedIDs, bool draggedItemsFromOwnTreeView)
         {
             if (dragEndedCallback != null)
                 dragEndedCallback(draggedIDs, draggedItemsFromOwnTreeView);
@@ -554,14 +554,14 @@ namespace UnityEditor.IMGUI.Controls
             m_TotalRect = rect;
         }
 
-        public bool IsItemDragSelectedOrSelected(TreeViewItem item)
+        public bool IsItemDragSelectedOrSelected(TreeViewItem<TIdentifier> item)
         {
             return m_DragSelection.HasValues() ? m_DragSelection.Contains(item.id) : m_CachedSelection.Contains(item.id);
         }
 
         public bool animatingExpansion { get { return m_UseExpansionAnimation && m_ExpansionAnimator.isAnimating; } }
 
-        void DoItemGUI(TreeViewItem item, int row, float rowWidth, bool hasFocus)
+        void DoItemGUI(TreeViewItem<TIdentifier> item, int row, float rowWidth, bool hasFocus)
         {
             // Check valid row
             if (row < 0 || row >= data.rowCount)
@@ -787,7 +787,7 @@ namespace UnityEditor.IMGUI.Controls
             // This can happen e.g when dragging items or items are expanding/collapsing.
             m_StopIteratingItems = false;
 
-            TreeViewItem currentHoveredItem = null;
+            TreeViewItem<TIdentifier> currentHoveredItem = null;
 
             int rowOffset = 0;
             for (int i = 0; i < numVisibleRows; ++i)
@@ -847,7 +847,7 @@ namespace UnityEditor.IMGUI.Controls
             hoveredItem = currentHoveredItem;
         }
 
-        private void ExpansionAnimationEnded(TreeViewAnimationInput setup)
+        private void ExpansionAnimationEnded(TreeViewAnimationInput<TIdentifier> setup)
         {
             // When collapsing we delay the actual collapse until the animation is done
             if (!setup.expanding)
@@ -866,7 +866,7 @@ namespace UnityEditor.IMGUI.Controls
             return (height > kThreshold) ? kMaxDuration : (height * kMaxDuration / kThreshold);
         }
 
-        public void UserInputChangedExpandedState(TreeViewItem item, int row, bool expand)
+        public void UserInputChangedExpandedState(TreeViewItem<TIdentifier> item, int row, bool expand)
         {
             var includeChildren = Event.current.alt;
             if (useExpansionAnimation)
@@ -881,7 +881,7 @@ namespace UnityEditor.IMGUI.Controls
                 Rect allRowsRect = GetRectForRows(rowStart, rowEnd, rowWidth);
 
                 float duration = GetAnimationDuration(allRowsRect.height);
-                var input = new TreeViewAnimationInput
+                var input = new TreeViewAnimationInput<TIdentifier>
                 {
                     animationDuration = duration,
                     startRow = rowStart,
@@ -903,7 +903,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        internal void ChangeExpandedState(TreeViewItem item, bool expand, bool includeChildren)
+        internal void ChangeExpandedState(TreeViewItem<TIdentifier> item, bool expand, bool includeChildren)
         {
             if (includeChildren)
                 data.SetExpandedWithChildren(item, expand);
@@ -970,7 +970,7 @@ namespace UnityEditor.IMGUI.Controls
                     }
                     if (deselectOnUnhandledMouseDown && containsMouse && Event.current.button == 0 && state.selectedIDs.Count > 0)
                     {
-                        SetSelection(new int[0], false);
+                        SetSelection(new TIdentifier[0], false);
                         NotifyListenersThatSelectionChanged();
                     }
 
@@ -997,11 +997,11 @@ namespace UnityEditor.IMGUI.Controls
                 return false;
 
             var visibleItems = data.GetRows();
-            TreeViewItem visibleAndSelectedItem = null;
+            TreeViewItem<TIdentifier> visibleAndSelectedItem = null;
 
-            foreach (int id in state.selectedIDs)
+            foreach (TIdentifier id in state.selectedIDs)
             {
-                TreeViewItem item = visibleItems.FirstOrDefault(i => i.id == id);
+                TreeViewItem<TIdentifier> item = visibleItems.FirstOrDefault(i => i.id.Equals(id));
                 if (visibleAndSelectedItem == null)
                     visibleAndSelectedItem = item;
                 else if (item != null)
@@ -1024,7 +1024,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        TreeViewItem GetItemAndRowIndex(int id, out int row)
+        TreeViewItem<TIdentifier> GetItemAndRowIndex(TIdentifier id, out int row)
         {
             row = data.GetRow(id);
             if (row == -1)
@@ -1032,7 +1032,7 @@ namespace UnityEditor.IMGUI.Controls
             return data.GetItem(row);
         }
 
-        void HandleFastCollapse(TreeViewItem item, int row)
+        void HandleFastCollapse(TreeViewItem<TIdentifier> item, int row)
         {
             if (item.depth == 0)
             {
@@ -1060,7 +1060,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        void HandleFastExpand(TreeViewItem item, int row)
+        void HandleFastExpand(TreeViewItem<TIdentifier> item, int row)
         {
             int rowCount = data.rowCount;
 
@@ -1075,7 +1075,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        private void ChangeFolding(int[] ids, bool expand)
+        private void ChangeFolding(TIdentifier[] ids, bool expand)
         {
             // Handle folding of single item and multiple items separately
             // Animation is only supported for folding of single item
@@ -1085,7 +1085,7 @@ namespace UnityEditor.IMGUI.Controls
                 ChangeFoldingForMultipleItems(ids, expand);
         }
 
-        private void ChangeFoldingForSingleItem(int id, bool expand)
+        private void ChangeFoldingForSingleItem(TIdentifier id, bool expand)
         {
             // Skip any ongoing animation first because it could affect the row count.
             // I.e. if the item to be collapsed is in a row that no longer exists after the animation is done and the rows refreshed in InitIfNeeded, skiping the animation later would cause an IndexOufOfBounds in HandleFastCollapse
@@ -1093,7 +1093,7 @@ namespace UnityEditor.IMGUI.Controls
             expansionAnimator.SkipAnimating();
 
             int row;
-            TreeViewItem item = GetItemAndRowIndex(id, out row);
+            TreeViewItem<TIdentifier> item = GetItemAndRowIndex(id, out row);
             if (item != null)
             {
                 if (data.IsExpandable(item) && data.IsExpanded(item) != expand)
@@ -1108,14 +1108,14 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        private void ChangeFoldingForMultipleItems(int[] ids, bool expand)
+        private void ChangeFoldingForMultipleItems(TIdentifier[] ids, bool expand)
         {
             // Collect items that should be expanded/collapsed
-            var parents = new HashSet<int>();
+            var parents = new HashSet<TIdentifier>();
             foreach (var id in ids)
             {
                 int row;
-                TreeViewItem item = GetItemAndRowIndex(id, out row);
+                TreeViewItem<TIdentifier> item = GetItemAndRowIndex(id, out row);
                 if (item != null)
                 {
                     if (data.IsExpandable(item) && data.IsExpanded(item) != expand)
@@ -1132,7 +1132,7 @@ namespace UnityEditor.IMGUI.Controls
             }
             else
             {
-                var expandedIDs = new HashSet<int>(data.GetExpandedIDs());
+                var expandedIDs = new HashSet<TIdentifier>(data.GetExpandedIDs());
                 if (expand)
                     expandedIDs.UnionWith(parents);
                 else
@@ -1193,7 +1193,7 @@ namespace UnityEditor.IMGUI.Controls
                     case KeyCode.PageUp:
                     {
                         Event.current.Use();
-                        TreeViewItem lastClickedItem = data.FindItem(state.lastClickedID);
+                        TreeViewItem<TIdentifier> lastClickedItem = data.FindItem(state.lastClickedID);
                         if (lastClickedItem != null)
                         {
                             int numRowsPageUp = gui.GetNumRowsOnPageUpDown(lastClickedItem, true, m_TotalRect.height);
@@ -1205,7 +1205,7 @@ namespace UnityEditor.IMGUI.Controls
                     case KeyCode.PageDown:
                     {
                         Event.current.Use();
-                        TreeViewItem lastClickedItem = data.FindItem(state.lastClickedID);
+                        TreeViewItem<TIdentifier> lastClickedItem = data.FindItem(state.lastClickedID);
                         if (lastClickedItem != null)
                         {
                             int numRowsPageDown = gui.GetNumRowsOnPageUpDown(lastClickedItem, true, m_TotalRect.height);
@@ -1237,10 +1237,10 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        static internal int GetIndexOfID(IList<TreeViewItem> items, int id)
+        static internal int GetIndexOfID(IList<TreeViewItem<TIdentifier>> items, TIdentifier id)
         {
             for (int i = 0; i < items.Count; ++i)
-                if (items[i].id == id)
+                if (items[i].id.Equals(id))
                     return i;
             return -1;
         }
@@ -1269,15 +1269,15 @@ namespace UnityEditor.IMGUI.Controls
             SelectionByKey(visibleRows[newIndex]);
         }
 
-        public Func<TreeViewItem, bool, bool, List<int>> getNewSelectionOverride { private get; set; }
+        public Func<TreeViewItem<TIdentifier>, bool, bool, List<TIdentifier>> getNewSelectionOverride { private get; set; }
 
         // Returns list of selected ids
-        List<int> GetNewSelection(TreeViewItem clickedItem, bool keepMultiSelection, bool useShiftAsActionKey)
+        List<TIdentifier> GetNewSelection(TreeViewItem<TIdentifier> clickedItem, bool keepMultiSelection, bool useShiftAsActionKey)
         {
             if (getNewSelectionOverride != null)
                 return getNewSelectionOverride(clickedItem, keepMultiSelection, useShiftAsActionKey);
 
-            var selectState = new TreeViewSelectState() {
+            var selectState = new TreeViewSelectState<TIdentifier>() {
                 selectedIDs = state.selectedIDs,
                 lastClickedID = state.lastClickedID,
                 keepMultiSelection = keepMultiSelection,
@@ -1287,19 +1287,19 @@ namespace UnityEditor.IMGUI.Controls
             return data.GetNewSelection(clickedItem, selectState);
         }
 
-        void SelectionByKey(TreeViewItem itemSelected)
+        void SelectionByKey(TreeViewItem<TIdentifier> itemSelected)
         {
             var newSelection = GetNewSelection(itemSelected, false, true);
             NewSelectionFromUserInteraction(newSelection, itemSelected.id);
         }
 
-        public void SelectionClick(TreeViewItem itemClicked, bool keepMultiSelection)
+        public void SelectionClick(TreeViewItem<TIdentifier> itemClicked, bool keepMultiSelection)
         {
             var newSelection = GetNewSelection(itemClicked, keepMultiSelection, false);
-            NewSelectionFromUserInteraction(newSelection, itemClicked != null ? itemClicked.id : 0);
+            NewSelectionFromUserInteraction(newSelection, itemClicked != null ? itemClicked.id : default);
         }
 
-        void NewSelectionFromUserInteraction(List<int> newSelection, int itemID)
+        void NewSelectionFromUserInteraction(List<TIdentifier> newSelection, TIdentifier itemID)
         {
             state.lastClickedID = itemID;
 
@@ -1370,13 +1370,13 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        public void Frame(int id, bool frame, bool ping)
+        public void Frame(TIdentifier id, bool frame, bool ping)
         {
             const bool animated = false;
             Frame(id, frame, ping, animated);
         }
 
-        public void Frame(int id, bool frame, bool ping, bool animated)
+        public void Frame(TIdentifier id, bool frame, bool ping, bool animated)
         {
             float topPixelOfRow = -1f;
 
@@ -1404,7 +1404,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 if (topPixelOfRow >= 0f && row >= 0 && row < data.rowCount)
                 {
-                    TreeViewItem item = data.GetRows()[row];
+                    TreeViewItem<TIdentifier> item = data.GetRows()[row];
                     float scrollBarOffset = GetContentSize().y > m_TotalRect.height ? -kSpaceForScrollBar : 0f;
                     gui.BeginPingItem(item, topPixelOfRow, m_TotalRect.width + scrollBarOffset);
                 }
@@ -1422,19 +1422,19 @@ namespace UnityEditor.IMGUI.Controls
 
 
         // Hidden items (under collapsed items) are added last
-        public List<int> SortIDsInVisiblityOrder(IList<int> ids)
+        public List<TIdentifier> SortIDsInVisiblityOrder(IList<TIdentifier> ids)
         {
             if (ids.Count <= 1)
                 return ids.ToList(); // no sorting needed
 
             var visibleRows = data.GetRows();
-            List<int> sorted = new List<int>();
+            List<TIdentifier> sorted = new List<TIdentifier>();
             for (int i = 0; i < visibleRows.Count; ++i)
             {
-                int id = visibleRows[i].id;
+                var id = visibleRows[i].id;
                 for (int j = 0; j < ids.Count; ++j)
                 {
-                    if (ids[j] == id)
+                    if (ids[j].Equals(id))
                     {
                         sorted.Add(id);
                         break;

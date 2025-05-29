@@ -9,6 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+
 namespace UnityEditorInternal
 {
     internal class AnimationWindowHierarchyGUI : TreeViewGUI

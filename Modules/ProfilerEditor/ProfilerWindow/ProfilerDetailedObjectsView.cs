@@ -11,6 +11,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
 using UnityEngine.Profiling;
 using UnityEngine;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditorInternal.Profiling
 {

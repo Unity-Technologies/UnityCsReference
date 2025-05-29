@@ -139,6 +139,13 @@ namespace UnityEngine.TextCore.Text
         private static float m_clamp = 1.0f;
         public static bool isInitialized = false;
 
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static readonly string k_SDFText = "Hidden/TextCore/Distance Field SSD";
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static readonly string k_BitmapText = "Hidden/Internal-GUITextureClipText";
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static readonly string k_SpriteText = "Hidden/TextCore/Sprite";
+
 
         /// <summary>
         /// Returns a reference to the mobile distance field shader.
@@ -149,7 +156,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (((System.Object)k_ShaderRef_MobileSDF) == null)
-                    k_ShaderRef_MobileSDF = Shader.Find("Hidden/TextCore/Distance Field SSD");
+                    k_ShaderRef_MobileSDF = Shader.Find(k_SDFText);
 
                 return k_ShaderRef_MobileSDF;
             }
@@ -164,7 +171,7 @@ namespace UnityEngine.TextCore.Text
             get
             {
                 if (k_ShaderRef_MobileBitmap == null)
-                    k_ShaderRef_MobileBitmap = Shader.Find("Hidden/Internal-GUITextureClipText");
+                    k_ShaderRef_MobileBitmap = Shader.Find(k_BitmapText);
 
                 return k_ShaderRef_MobileBitmap;
             }
@@ -181,7 +188,7 @@ namespace UnityEngine.TextCore.Text
                     k_ShaderRef_Sprite = Shader.Find("Text/Sprite");
 
                     if (k_ShaderRef_Sprite == null)
-                        k_ShaderRef_Sprite = Shader.Find("Hidden/TextCore/Sprite");
+                        k_ShaderRef_Sprite = Shader.Find(k_SpriteText);
                 }
                 return k_ShaderRef_Sprite;
             }

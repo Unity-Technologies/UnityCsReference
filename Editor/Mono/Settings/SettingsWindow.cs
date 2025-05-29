@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
 using UnityEngine.Bindings;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {

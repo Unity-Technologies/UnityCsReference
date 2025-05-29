@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -16,27 +17,28 @@ namespace UnityEditor.IMGUI.Controls
     //
     // Note: if dealing with very large trees use LazyTreeViewDataSource instead: it assumes that tree only contains visible items.
 
-    internal abstract class TreeViewDataSource : ITreeViewDataSource
+internal abstract class TreeViewDataSource<TIdentifier> : ITreeViewDataSource<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        protected readonly TreeViewController m_TreeView;                   // TreeView using this data source
-        protected TreeViewItem m_RootItem;
-        protected IList<TreeViewItem> m_Rows;
+        protected TreeViewController<TIdentifier> m_TreeView { get { return m_TreeViewInternal; } set { m_TreeViewInternal = value; } } // TreeView using this data source
+        protected TreeViewController<TIdentifier> m_TreeViewInternal;                   // TreeView using this data source
+        protected TreeViewItem<TIdentifier> m_RootItem;
+        protected IList<TreeViewItem<TIdentifier>> m_Rows;
         protected bool m_NeedRefreshRows = true;
-        protected TreeViewItem m_FakeItem;
+        protected TreeViewItem<TIdentifier> m_FakeItem;
 
         public bool showRootItem { get; set; }
         public bool rootIsCollapsable { get; set; }
         public bool alwaysAddFirstItemToSearchResult { get; set; } // is only used in searches when showRootItem is false. It Doesn't make sense for visible roots
-        public TreeViewItem root { get { return m_RootItem; } }
+        public TreeViewItem<TIdentifier> root { get { return m_RootItem; } }
         public System.Action onVisibleRowsChanged;
 
-        protected List<int> expandedIDs
+        protected List<TIdentifier> expandedIDs
         {
             get {return m_TreeView.state.expandedIDs; }
             set { m_TreeView.state.expandedIDs = value; }
         }
 
-        public TreeViewDataSource(TreeViewController treeView)
+        public TreeViewDataSource(TreeViewController<TIdentifier> treeView)
         {
             m_TreeView = treeView;
             showRootItem = true;
@@ -58,27 +60,27 @@ namespace UnityEditor.IMGUI.Controls
             FetchData();
         }
 
-        virtual public TreeViewItem FindItem(int id)
+        virtual public TreeViewItem<TIdentifier> FindItem(TIdentifier id)
         {
-            return TreeViewUtility.FindItem(id, m_RootItem);
+            return TreeViewUtility<TIdentifier>.FindItem(id, m_RootItem);
         }
 
-        virtual public bool IsRevealed(int id)
+        virtual public bool IsRevealed(TIdentifier id)
         {
-            IList<TreeViewItem> rows = GetRows();
-            return TreeViewController.GetIndexOfID(rows, id) >= 0;
+            IList<TreeViewItem<TIdentifier>> rows = GetRows();
+            return TreeViewController<TIdentifier>.GetIndexOfID(rows, id) >= 0;
         }
 
-        virtual public void RevealItem(int id)
+        virtual public void RevealItem(TIdentifier id)
         {
             if (IsRevealed(id))
                 return;
 
             // Reveal (expand parents up to root)
-            TreeViewItem item = FindItem(id);
+            TreeViewItem<TIdentifier> item = FindItem(id);
             if (item != null)
             {
-                TreeViewItem parent = item.parent;
+                TreeViewItem<TIdentifier> parent = item.parent;
                 while (parent != null)
                 {
                     SetExpanded(parent, true);
@@ -87,9 +89,9 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        virtual public void RevealItems(int[] ids)
+        virtual public void RevealItems(TIdentifier[] ids)
         {
-            HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
+            HashSet<TIdentifier> expandedSet = new HashSet<TIdentifier>(expandedIDs);
             int orgSize = expandedSet.Count;
 
             // Add all parents above id
@@ -98,10 +100,10 @@ namespace UnityEditor.IMGUI.Controls
                 if (IsRevealed(id))
                     continue;
                 // Reveal (expand parents up to root)
-                TreeViewItem item = FindItem(id);
+                TreeViewItem<TIdentifier> item = FindItem(id);
                 if (item != null)
                 {
-                    TreeViewItem parent = item.parent;
+                    TreeViewItem<TIdentifier> parent = item.parent;
                     while (parent != null)
                     {
                         expandedSet.Add(parent.id);
@@ -129,42 +131,42 @@ namespace UnityEditor.IMGUI.Controls
         //----------------------------
         // Visible Item section
 
-        protected void GetVisibleItemsRecursive(TreeViewItem item, IList<TreeViewItem> items)
+        protected void GetVisibleItemsRecursive(TreeViewItem<TIdentifier> item, IList<TreeViewItem<TIdentifier>> items)
         {
             if (item != m_RootItem || showRootItem)
                 items.Add(item);
 
             if (item.hasChildren && IsExpanded(item))
-                foreach (TreeViewItem child in item.children)
+                foreach (TreeViewItem<TIdentifier> child in item.children)
                     GetVisibleItemsRecursive(child, items);
         }
 
-        protected void SearchRecursive(TreeViewItem item, string search, IList<TreeViewItem> searchResult)
+        protected void SearchRecursive(TreeViewItem<TIdentifier> item, string search, IList<TreeViewItem<TIdentifier>> searchResult)
         {
             if (item.displayName.ToLower().Contains(search))
                 searchResult.Add(item);
 
             if (item.children != null)
-                foreach (TreeViewItem child in item.children)
+                foreach (TreeViewItem<TIdentifier> child in item.children)
                     SearchRecursive(child, search, searchResult);
         }
 
-        virtual protected List<TreeViewItem> ExpandedRows(TreeViewItem root)
+        virtual protected List<TreeViewItem<TIdentifier>> ExpandedRows(TreeViewItem<TIdentifier> root)
         {
-            var result = new List<TreeViewItem>();
+            var result = new List<TreeViewItem<TIdentifier>>();
             GetVisibleItemsRecursive(m_RootItem, result);
             return result;
         }
 
         // Searches the current tree by displayName.
-        virtual protected List<TreeViewItem> Search(TreeViewItem root, string search)
+        virtual protected List<TreeViewItem<TIdentifier>> Search(TreeViewItem<TIdentifier> root, string search)
         {
-            var result = new List<TreeViewItem>();
+            var result = new List<TreeViewItem<TIdentifier>>();
 
             if (showRootItem)
             {
                 SearchRecursive(root, search, result);
-                result.Sort(new TreeViewItemAlphaNumericSort());
+                result.Sort(new TreeViewItemAlphaNumericSort<TIdentifier>());
             }
             else
             {
@@ -176,7 +178,7 @@ namespace UnityEditor.IMGUI.Controls
                     {
                         SearchRecursive(root.children[i], search, result);
                     }
-                    result.Sort(new TreeViewItemAlphaNumericSort());
+                    result.Sort(new TreeViewItemAlphaNumericSort<TIdentifier>());
 
                     if (alwaysAddFirstItemToSearchResult)
                         result.Insert(0, root.children[0]);
@@ -194,24 +196,25 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        virtual public int GetRow(int id)
+        virtual public int GetRow(TIdentifier id)
         {
             var rows = GetRows();
             for (int row = 0; row < rows.Count; ++row)
             {
-                if (rows[row].id == id)
+                if (rows[row].id.Equals(id))
                     return row;
             }
             return -1;
         }
 
-        virtual public TreeViewItem GetItem(int row)
+        virtual public TreeViewItem<TIdentifier> GetItem(int row)
         {
             return GetRows()[row];
         }
 
         // Get the flattend tree of visible items.
-        virtual public IList<TreeViewItem> GetRows()
+        virtual public IList<TreeViewItem<TIdentifier>> GetRows() => GetRowsInternal();
+        virtual public IList<TreeViewItem<TIdentifier>> GetRowsInternal()
         {
             InitIfNeeded();
             return m_Rows;
@@ -232,7 +235,7 @@ namespace UnityEditor.IMGUI.Controls
                 else
                 {
                     Debug.LogError("TreeView root item is null. Ensure that your TreeViewDataSource sets up at least a root item.");
-                    m_Rows = new List<TreeViewItem>();
+                    m_Rows = new List<TreeViewItem<TIdentifier>>();
                 }
 
                 m_NeedRefreshRows = false;
@@ -254,25 +257,25 @@ namespace UnityEditor.IMGUI.Controls
         //----------------------------
         // Expanded/collapsed section
 
-        virtual public int[] GetExpandedIDs()
+        virtual public TIdentifier[] GetExpandedIDs()
         {
             return expandedIDs.ToArray();
         }
 
-        virtual public void SetExpandedIDs(int[] ids)
+        virtual public void SetExpandedIDs(TIdentifier[] ids)
         {
-            expandedIDs = new List<int>(ids);
+            expandedIDs = new List<TIdentifier>(ids);
             expandedIDs.Sort();
             m_NeedRefreshRows = true;
             OnExpandedStateChanged();
         }
 
-        virtual public bool IsExpanded(int id)
+        virtual public bool IsExpanded(TIdentifier id)
         {
             return expandedIDs.BinarySearch(id) >= 0;
         }
 
-        virtual public bool SetExpanded(int id, bool expand)
+        virtual public bool SetExpanded(TIdentifier id, bool expand)
         {
             bool expanded = IsExpanded(id);
             if (expand != expanded)
@@ -294,12 +297,12 @@ namespace UnityEditor.IMGUI.Controls
             return false;
         }
 
-        virtual public void SetExpandedWithChildren(int id, bool expand)
+        virtual public void SetExpandedWithChildren(TIdentifier id, bool expand)
         {
             SetExpandedWithChildren(FindItem(id), expand);
         }
 
-        virtual public void SetExpandedWithChildren(TreeViewItem fromItem, bool expand)
+        virtual public void SetExpandedWithChildren(TreeViewItem<TIdentifier> fromItem, bool expand)
         {
             if (fromItem == null)
             {
@@ -307,11 +310,11 @@ namespace UnityEditor.IMGUI.Controls
                 return;
             }
 
-            HashSet<int> parents = new HashSet<int>();
-            TreeViewUtility.GetParentsBelowItem(fromItem, parents);
+            HashSet<TIdentifier> parents = new HashSet<TIdentifier>();
+            TreeViewUtility<TIdentifier>.GetParentsBelowItem(fromItem, parents);
 
             // Get existing expanded in hashset
-            HashSet<int> oldExpandedSet = new HashSet<int>(expandedIDs);
+            HashSet<TIdentifier> oldExpandedSet = new HashSet<TIdentifier>(expandedIDs);
 
             if (expand)
                 oldExpandedSet.UnionWith(parents);
@@ -322,17 +325,19 @@ namespace UnityEditor.IMGUI.Controls
             SetExpandedIDs(oldExpandedSet.ToArray());
         }
 
-        virtual public void SetExpanded(TreeViewItem item, bool expand)
+        virtual public void SetExpanded(TreeViewItem<TIdentifier> item, bool expand)
         {
             SetExpanded(item.id, expand);
         }
 
-        virtual public bool IsExpanded(TreeViewItem item)
+        virtual public bool IsExpanded(TreeViewItem<TIdentifier> item) => IsExpandedInternal(item);
+        virtual public bool IsExpandedInternal(TreeViewItem<TIdentifier> item)
         {
             return IsExpanded(item.id);
         }
 
-        virtual public bool IsExpandable(TreeViewItem item)
+        virtual public bool IsExpandable(TreeViewItem<TIdentifier> item) => IsExpandableInternal(item);
+        virtual public bool IsExpandableInternal(TreeViewItem<TIdentifier> item)
         {
             // Ignore expansion (foldout arrow) when showing search results
             if (m_TreeView.isSearching)
@@ -340,27 +345,36 @@ namespace UnityEditor.IMGUI.Controls
             return item.hasChildren;
         }
 
-        virtual public bool CanBeMultiSelected(TreeViewItem item)
+        virtual public bool CanBeMultiSelected(TreeViewItem<TIdentifier> item)
         {
             return true;
         }
 
-        virtual public bool CanBeParent(TreeViewItem item)
+        virtual public bool CanBeParent(TreeViewItem<TIdentifier> item) => CanBeParentInternal(item);
+        virtual public bool CanBeParentInternal(TreeViewItem<TIdentifier> item)
         {
             return true;
         }
 
-        virtual public List<int> GetNewSelection(TreeViewItem clickedItem, TreeViewSelectState selectState)
+        virtual public List<TIdentifier> GetNewSelection(TreeViewItem<TIdentifier> clickedItem, TreeViewSelectState<TIdentifier> selectState)
         {
             // Get ids from items
             var visibleRows = GetRows();
-            List<int> allIDs = new List<int>(visibleRows.Count);
+            List<TIdentifier> allIDs = new List<TIdentifier>(visibleRows.Count);
             for (int i = 0; i < visibleRows.Count; ++i)
                 allIDs.Add(visibleRows[i].id);
 
             bool allowMultiselection = CanBeMultiSelected(clickedItem);
 
-            return InternalEditorUtility.GetNewSelection(clickedItem.id, allIDs, selectState.selectedIDs, selectState.lastClickedID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection);
+            // todo: add support for other types of TIdentifier, Importantly 'InstanceID'
+            if (clickedItem.id is int clickedIntID && selectState.lastClickedID is int lastClickedIntID)
+                return  InternalEditorUtility.GetNewSelection(
+                    clickedIntID, allIDs as List<int>,
+                    selectState.selectedIDs as List<int>,
+                    lastClickedIntID, selectState.keepMultiSelection, selectState.useShiftAsActionKey, allowMultiselection
+                ) as List<TIdentifier>;
+
+            throw new System.NotImplementedException("InternalEditorUtility.GetNewSelection not implemented for type " + clickedItem.id.GetType());
         }
 
         virtual public void OnExpandedStateChanged()
@@ -372,7 +386,7 @@ namespace UnityEditor.IMGUI.Controls
         //----------------------------
         // Renaming section
 
-        virtual public bool IsRenamingItemAllowed(TreeViewItem item)
+        virtual public bool IsRenamingItemAllowed(TreeViewItem<TIdentifier> item)
         {
             return true;
         }
@@ -381,7 +395,7 @@ namespace UnityEditor.IMGUI.Controls
         // Insert tempoary Item section
 
         // Fake Item should be inserted into the m_VisibleRows (not the tree itself).
-        virtual public void InsertFakeItem(int id, int parentID, string name, Texture2D icon)
+        virtual public void InsertFakeItem(TIdentifier id, TIdentifier parentID, string name, Texture2D icon)
         {
             Debug.LogError("InsertFakeItem missing implementation");
         }
@@ -397,7 +411,7 @@ namespace UnityEditor.IMGUI.Controls
                 return;
 
             var visibleRows = GetRows();
-            int index = TreeViewController.GetIndexOfID(visibleRows, m_FakeItem.id);
+            int index = TreeViewController<TIdentifier>.GetIndexOfID(visibleRows, m_FakeItem.id);
             if (index != -1)
             {
                 visibleRows.RemoveAt(index);

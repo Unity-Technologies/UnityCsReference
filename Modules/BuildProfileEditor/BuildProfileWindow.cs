@@ -206,6 +206,7 @@ namespace UnityEditor.Build.Profile
             else
             {
                 m_BuildProfileInspectorElement.Clear();
+                m_BuildProfileInspectorHeaderElement.Clear();
                 UpdateFormButtonState(null);
             }
 
@@ -410,20 +411,11 @@ namespace UnityEditor.Build.Profile
                 parent.buildAction, child.buildAction));
             m_BuildAndRunButton.ApplyActionState(BuildProfileWorkflowState.CalculateActionState(
                 parent.buildAndRunAction, child.buildAndRunAction));
+            m_BuildInCloudPackageButton.ApplyActionState(BuildProfileWorkflowState.CalculateActionState(
+                parent.buildInCloudPackageAction, child.buildInCloudPackageAction));
 
             m_BuildAndRunButton.text = child.buildAndRunButtonDisplayName;
             m_BuildButton.SetText(child.buildButtonDisplayName);
-
-            // Unity Build Automation button available only for build profiles.
-            if (m_BuildProfileSelection.IsSingleSelection()
-                && !BuildProfileContext.IsClassicPlatformProfile(m_BuildProfileSelection.Get(0)))
-            {
-                m_BuildInCloudPackageButton.Show();
-            }
-            else
-            {
-                m_BuildInCloudPackageButton.Hide();
-            }
 
             // Additional actions are always directly applied to the parent window state.
             if (parent.additionalActions == child.additionalActions)
@@ -540,6 +532,7 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.activateAction = ActionState.Hidden;
                 m_WindowState.buildAction = ActionState.Hidden;
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
+                m_WindowState.buildInCloudPackageAction = ActionState.Hidden;
                 m_WindowState.Refresh();
             }
             else if (profile.IsActiveBuildProfileOrPlatform())
@@ -547,6 +540,7 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.activateAction = ActionState.Hidden;
                 m_WindowState.buildAction = ActionState.Enabled;
                 m_WindowState.buildAndRunAction = ActionState.Enabled;
+                m_WindowState.buildInCloudPackageAction = BuildProfileContext.IsClassicPlatformProfile(profile) ? ActionState.Hidden : ActionState.Enabled;
                 m_WindowState.Refresh();
             }
             else
@@ -555,6 +549,7 @@ namespace UnityEditor.Build.Profile
                 m_WindowState.activateAction = canBuild ? ActionState.Enabled : ActionState.Hidden;
                 m_WindowState.buildAction = canBuild ? ActionState.Disabled : ActionState.Hidden;
                 m_WindowState.buildAndRunAction = ActionState.Hidden;
+                m_WindowState.buildInCloudPackageAction = BuildProfileContext.IsClassicPlatformProfile(profile) ? ActionState.Hidden : ActionState.Enabled;
                 m_WindowState.Refresh();
             }
         }
@@ -634,9 +629,9 @@ namespace UnityEditor.Build.Profile
                 }
 
                 modules.Add(profile.platformGuid,
-                    new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
+                new BuildProfileWorkflowReport(new BuildProfileWorkflowReport.Payload()
                 {
-                    platformId = profile.platformGuid,
+                    platformId = profile.platformGuid.ToString(),
                     platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
                     count = 1
                 }));

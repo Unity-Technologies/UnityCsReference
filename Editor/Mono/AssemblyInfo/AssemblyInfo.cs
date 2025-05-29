@@ -208,3 +208,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
 
+// Test Assemblies
+[assembly: InternalsVisibleTo("Unity.Core.UnityEvent.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
+

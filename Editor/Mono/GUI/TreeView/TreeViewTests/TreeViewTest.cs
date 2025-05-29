@@ -5,7 +5,11 @@
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Profiling;
-
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using ITreeViewGUI = UnityEditor.IMGUI.Controls.ITreeViewGUI<int>;
+using ITreeViewDragging = UnityEditor.IMGUI.Controls.ITreeViewDragging<int>;
+using ITreeViewDataSource = UnityEditor.IMGUI.Controls.ITreeViewDataSource<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor.TreeViewExamples
 {

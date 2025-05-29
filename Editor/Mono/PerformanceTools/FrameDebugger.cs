@@ -16,6 +16,8 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Networking.PlayerConnection;
 using UnityEditor.Rendering.Analytics;
 
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace UnityEditor
 {
     internal class FrameDebuggerWindow : EditorWindow

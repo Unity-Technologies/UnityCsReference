@@ -51,7 +51,8 @@ class AIDropdownContent : PopupWindowContent
         packages = new()
         {
             "com.unity.ai.generators",
-            "com.unity.ai.assistant"
+            "com.unity.ai.assistant",
+            "com.unity.ai.inference"
         },
 
         installButtonText = "Agree and install Unity AI"
@@ -110,7 +111,16 @@ class AIDropdownContent : PopupWindowContent
         {
             style =
             {
-                alignItems = Align.Center
+                alignItems = Align.Center,
+                justifyContent = Justify.Center,
+                flexDirection = FlexDirection.Row,
+            }
+        };
+        var loadingSpinner = new LoadingSpinner
+        {
+            style =
+            {
+                marginRight = 4
             }
         };
         var loadingLabel = new Label(data.installingPackages)
@@ -122,6 +132,7 @@ class AIDropdownContent : PopupWindowContent
                 marginBottom = 8
             }
         };
+        loading.Add(loadingSpinner);
         loading.Add(loadingLabel);
         return loading;
     }

@@ -1413,14 +1413,14 @@ namespace UnityEngine
             return defaultPhysicsScene.GetRayIntersection(ray, distance, DefaultRaycastLayers);
         }
 
-        public static RaycastHit2D GetRayIntersection(Ray ray, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
+        public static RaycastHit2D GetRayIntersection(Ray ray, float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return defaultPhysicsScene.GetRayIntersection(ray, distance, layerMask);
         }
 
         public static int GetRayIntersection(Ray ray, float distance, List<RaycastHit2D> results, [DefaultValue("Physics2D.DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
-            return defaultPhysicsScene.GetRayIntersection(ray, distance, results);
+            return defaultPhysicsScene.GetRayIntersection(ray, distance, results, layerMask);
         }
 
         [ExcludeFromDocs]
@@ -1438,7 +1438,7 @@ namespace UnityEngine
         // Needs the [RequiredByNativeCode] attribute as it is called by reflection
         // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
         [RequiredByNativeCode]
-        public static RaycastHit2D[] GetRayIntersectionAll(Ray ray, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
+        public static RaycastHit2D[] GetRayIntersectionAll(Ray ray, float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return GetRayIntersectionAll_Internal(defaultPhysicsScene, ray.origin, ray.direction, distance, layerMask);
         }
@@ -1449,8 +1449,9 @@ namespace UnityEngine
 
         // Needs the [RequiredByNativeCode] attribute as it is called by reflection
         // from GraphicsRaycaster.cs, to avoid a hard dependency to this module.
+        [ExcludeFromDocs]
         [RequiredByNativeCode]
-        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, [DefaultValue("Mathf.Infinity")] float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask)
+        public static int GetRayIntersectionNonAlloc(Ray ray, RaycastHit2D[] results, float distance, [DefaultValue("DefaultRaycastLayers")] int layerMask = Physics2D.DefaultRaycastLayers)
         {
             return defaultPhysicsScene.GetRayIntersection(ray, distance, results, layerMask);
         }

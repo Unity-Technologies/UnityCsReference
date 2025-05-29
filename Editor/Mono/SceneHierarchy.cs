@@ -15,6 +15,10 @@ using UnityEditorInternal;
 using UnityEngine.Assertions;
 using System.Text;
 using UnityEngine.UIElements;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -86,7 +90,7 @@ namespace UnityEditor
         const int kInvalidSceneHandle = 0;
         bool m_RectSelectInProgress;
 
-        IMGUI.Controls.TreeViewController m_TreeView;
+        TreeViewController m_TreeView;
         [SerializeField]
         TreeViewState m_TreeViewState;
 
@@ -227,7 +231,7 @@ namespace UnityEditor
             get { return m_TreeViewState; }
         }
 
-        internal IMGUI.Controls.TreeViewController treeView
+        internal TreeViewController treeView
         {
             get
             {
@@ -270,7 +274,7 @@ namespace UnityEditor
             if (m_SortingObjects == null)
                 SetUpSortMethodLists();
 
-            m_TreeView = new IMGUI.Controls.TreeViewController(m_EditorWindow, m_TreeViewState);
+            m_TreeView = new TreeViewController(m_EditorWindow, m_TreeViewState);
             m_TreeView.itemDoubleClickedCallback += TreeViewItemDoubleClicked;
             m_TreeView.selectionChangedCallback += TreeViewSelectionChanged;
             m_TreeView.onGUIRowCallback += OnRowGUICallback;

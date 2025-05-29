@@ -99,16 +99,55 @@ namespace UnityEngine
 
         extern public GradientColorKey[] colorKeys
         {
-            [FreeFunction("Gradient_Bindings::GetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::GetColorKeysArray", IsThreadSafe = true, HasExplicitThis = true)] get;
+            [FreeFunction("Gradient_Bindings::SetColorKeysWithSpan", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
 
         extern public GradientAlphaKey[] alphaKeys
         {
-            [FreeFunction("Gradient_Bindings::GetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::GetAlphaKeysArray", IsThreadSafe = true, HasExplicitThis = true)] get;
+            [FreeFunction("Gradient_Bindings::SetAlphaKeysWithSpan", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
 
+        extern public int colorKeyCount
+        {
+            [FreeFunction("Gradient_Bindings::GetColorKeyCount", IsThreadSafe = true, HasExplicitThis = true)]
+            get;
+        }
+
+        extern public int alphaKeyCount
+        {
+            [FreeFunction("Gradient_Bindings::GetAlphaKeyCount", IsThreadSafe = true, HasExplicitThis = true)]
+            get;
+        }
+
+        public void GetColorKeys(Span<GradientColorKey> keys)
+        {
+            if (colorKeyCount > keys.Length)
+                throw new ArgumentException("Destination array must be large enough to store the keys", "keys");
+            GetColorKeysWithSpan(keys);
+        }
+
+        public void GetAlphaKeys(Span<GradientAlphaKey> keys)
+        {
+            if (alphaKeyCount > keys.Length)
+                throw new ArgumentException("Destination array must be large enough to store the keys", "keys");
+            GetAlphaKeysWithSpan(keys);
+        }
+
+        [FreeFunction(Name = "Gradient_Bindings::SetColorKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public void SetColorKeys(ReadOnlySpan<GradientColorKey> keys);
+
+        [FreeFunction(Name = "Gradient_Bindings::SetAlphaKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public unsafe void SetAlphaKeys(ReadOnlySpan<GradientAlphaKey> keys);
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "Gradient_Bindings::GetColorKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private void GetColorKeysWithSpan(Span<GradientColorKey> keys);
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "Gradient_Bindings::GetAlphaKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private void GetAlphaKeysWithSpan(Span<GradientAlphaKey> keys);
 
         [NativeProperty(IsThreadSafe = true)] extern public GradientMode mode { get; set; }
         [NativeProperty(IsThreadSafe = true)] extern public ColorSpace colorSpace { get; set; }
@@ -116,8 +155,14 @@ namespace UnityEngine
         [NativeProperty(IsThreadSafe = true)] extern internal Color constantColor { get; set; }
 
         // Setup Gradient with an array of color keys and alpha keys
-        [FreeFunction(Name = "Gradient_Bindings::SetKeys", IsThreadSafe = true, HasExplicitThis = true)]
-        extern public void SetKeys(GradientColorKey[] colorKeys, GradientAlphaKey[] alphaKeys);
+        public void SetKeys(GradientColorKey[] colorKeys, GradientAlphaKey[] alphaKeys)
+        {
+            SetKeys(colorKeys.AsSpan(), alphaKeys.AsSpan());
+        }
+
+        // Setup Gradient with an array of color keys and alpha keys
+        [FreeFunction(Name = "Gradient_Bindings::SetKeysWithSpans", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public void SetKeys(ReadOnlySpan<GradientColorKey> colorKeys, ReadOnlySpan<GradientAlphaKey> alphaKeys);
 
         public override bool Equals(object o)
         {
