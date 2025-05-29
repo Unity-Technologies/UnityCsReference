@@ -313,7 +313,13 @@ namespace UnityEngine
         private static readonly Lazy<bool> s_DetectInvalidImguiAPIUsages = new Lazy<bool>(() => (bool)Debug.GetDiagnosticSwitch("DetectInvalidImguiAPIUsages").value);
         internal static bool DetectInvalidImguiAPIUsages => s_DetectInvalidImguiAPIUsages.Value;
 
-
+        /// <summary>
+        /// This boolean is meant to indicate that we are in a section of UITK's code where using IMGUI api that rely on a global state would be suspicious.
+        /// For example, calling GUIUtility.PixelPerPoint in a geometryChange event would probably work in the editor but not at runtime.
+        /// The boolean is not necessarily set to true when we are in UITK code. At the time of writing this, the scheduler, bindings, inpsector throtling are not covered.
+        /// It is set to true during GeometryChangedEvent, for Event Dispatching and during Repaints.
+        /// As this is used along DetectInvalidImguiAPIUsages above, new invalid calls will be detected over time as the scope expands.
+        /// </summary>
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static bool isUITK { get; set; } = false;
 

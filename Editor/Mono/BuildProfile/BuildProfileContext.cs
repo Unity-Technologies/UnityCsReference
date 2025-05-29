@@ -153,7 +153,7 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        string GetProfileGUID(BuildProfile profile)
+        static string GetProfileGUID(BuildProfile profile)
         {
             var profilePath = AssetDatabase.GetAssetPath(profile);
             var profileGuid = AssetDatabase.AssetPathToGUID(profilePath);

@@ -333,10 +333,6 @@ namespace UnityEngine.TextCore.Text
 
         public float bottom { get { return m_Bottom; } set { m_Bottom = value; } }
 
-        public float horizontal { get { return m_Left; } set { m_Left = value; m_Right = value; } }
-
-        public float vertical { get { return m_Top; } set { m_Top = value; m_Bottom = value; } }
-
         /// <summary>
         ///
         /// </summary>
@@ -368,18 +364,6 @@ namespace UnityEngine.TextCore.Text
             m_Bottom = bottom;
         }
 
-        /// <summary>
-        ///
-        /// </summary>
-        /// <param name="horizontal"></param>
-        /// <param name="vertical"></param>
-        public Offset(float horizontal, float vertical)
-        {
-            m_Left = horizontal;
-            m_Right = horizontal;
-            m_Top = vertical;
-            m_Bottom = vertical;
-        }
 
         public static bool operator ==(Offset lhs, Offset rhs)
         {
@@ -720,26 +704,6 @@ namespace UnityEngine.TextCore.Text
 
             lastIndex = endIndex;
             return value;
-        }
-
-        /// <summary>
-        /// Function to pack scale information in the UV2 Channel.
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="y"></param>
-        /// <param name="scale"></param>
-        /// <returns></returns>
-        public static Vector2 PackUV(float x, float y, float scale)
-        {
-            Vector2 output;
-
-            output.x = (int)(x * 511);
-            output.y = (int)(y * 511);
-
-            output.x = (output.x * 4096) + output.y;
-            output.y = scale;
-
-            return output;
         }
 
         // /// <summary>
@@ -1167,7 +1131,7 @@ namespace UnityEngine.TextCore.Text
 
         private static void InsertTextStyleInTextProcessingArray(ref TextProcessingElement[] charBuffer, ref int writeIndex, uint[] styleDefinition, ref int textStyleStackDepth, ref TextProcessingStack<int>[] textStyleStacks, ref TextGenerationSettings generationSettings)
         {
-            var tagNoParsing = generationSettings.tagNoParsing;
+            var tagNoParsing = TextGenerationSettings.tagNoParsing;
             int styleLength = styleDefinition.Length;
 
             // Make sure text processing buffer is of sufficient size
@@ -1315,7 +1279,7 @@ namespace UnityEngine.TextCore.Text
         {
             TextStyle style = null;
 
-            TextStyleSheet styleSheet = generationSetting.styleSheet;
+            TextStyleSheet styleSheet = null;
 
             // Get Style from Style Sheet potentially assigned to text object.
             if (styleSheet != null)
@@ -1436,68 +1400,6 @@ namespace UnityEngine.TextCore.Text
         }
 
         /// <summary>
-        /// Get Hashcode for a given tag.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="index"></param>
-        /// <param name="closeIndex"></param>
-        /// <returns></returns>
-        static int GetTagHashCode(ref int[] text, int index, out int closeIndex)
-        {
-            int hashCode = 0;
-            closeIndex = 0;
-
-            for (int i = index; i < text.Length; i++)
-            {
-                // Skip quote '"' character
-                if (text[i] == 34)
-                    continue;
-
-                // Break at '>'
-                if (text[i] == 62)
-                {
-                    closeIndex = i;
-                    break;
-                }
-
-                hashCode = (hashCode << 5) + hashCode ^ (int)TextUtilities.ToUpperASCIIFast((char)text[i]);
-            }
-
-            return hashCode;
-        }
-
-        /// <summary>
-        /// Get Hashcode for a given tag.
-        /// </summary>
-        /// <param name="text"></param>
-        /// <param name="index"></param>
-        /// <param name="closeIndex"></param>
-        /// <returns></returns>
-        static int GetTagHashCode(ref string text, int index, out int closeIndex)
-        {
-            int hashCode = 0;
-            closeIndex = 0;
-
-            for (int i = index; i < text.Length; i++)
-            {
-                // Skip quote '"' character
-                if (text[i] == 34)
-                    continue;
-
-                // Break at '>'
-                if (text[i] == 62)
-                {
-                    closeIndex = i;
-                    break;
-                }
-
-                hashCode = (hashCode << 5) + hashCode ^ (int)TextUtilities.ToUpperASCIIFast(text[i]);
-            }
-
-            return hashCode;
-        }
-
-        /// <summary>
         /// Store vertex attributes into the appropriate TMP_MeshInfo.
         /// </summary>
         /// <param name="i"></param>
@@ -1516,7 +1418,6 @@ namespace UnityEngine.TextCore.Text
             textInfo.textElementInfo[i].vertexIndex = indexX4;
 
             // Setup Vertices for Characters
-            if (generationSettings.inverseYAxis)
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
@@ -1531,7 +1432,6 @@ namespace UnityEngine.TextCore.Text
                 Vector3 position = textElementInfoArray[i].vertexBottomLeft.position;
                 position.y *= -1;
 
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
                 {
                     textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = position + axisOffset;
                     position = textElementInfoArray[i].vertexTopLeft.position;
@@ -1544,84 +1444,33 @@ namespace UnityEngine.TextCore.Text
                     position.y *= -1;
                     textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = position + axisOffset;
                 }
-                else
-                {
-                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexTopLeft.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexTopRight.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexBottomRight.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
-                }
             }
-            else
-            {
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
-                {
-                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = textElementInfoArray[i].vertexBottomLeft.position;
-                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = textElementInfoArray[i].vertexTopLeft.position;
-                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = textElementInfoArray[i].vertexTopRight.position;
-                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = textElementInfoArray[i].vertexBottomRight.position;
-                }
-                else
-                {
-                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
-                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
-                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
-                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
-                }
-            }
+           
 
             // Setup UVS0
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv0 = textElementInfoArray[i].vertexBottomLeft.uv;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv0 = textElementInfoArray[i].vertexTopLeft.uv;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv0 = textElementInfoArray[i].vertexTopRight.uv;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv0 = textElementInfoArray[i].vertexBottomRight.uv;
             }
-            else
-            {
-                textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
-                textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
-                textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
-                textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
-            }
+
 
             // Setup UVS2
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv2 = textElementInfoArray[i].vertexBottomLeft.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv2 = textElementInfoArray[i].vertexTopLeft.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv2 = textElementInfoArray[i].vertexTopRight.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv2 = textElementInfoArray[i].vertexBottomRight.uv2;
             }
-            else
-            {
-                textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
-            }
+
 
             // setup Vertex Colors
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
-            }
-            else
-            {
-                textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
-                textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
-                textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
-                textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
             }
 
             textInfo.meshInfo[materialIndex].vertexCount = indexX4 + 4;
@@ -1643,7 +1492,6 @@ namespace UnityEngine.TextCore.Text
             textInfo.textElementInfo[i].vertexIndex = indexX4;
 
             // Handle potential axis inversion
-            if (generationSettings.inverseYAxis)
             {
                 Vector3 axisOffset;
                 axisOffset.x = 0;
@@ -1653,7 +1501,6 @@ namespace UnityEngine.TextCore.Text
                 Vector3 position = textElementInfoArray[i].vertexBottomLeft.position;
                 position.y *= -1;
 
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
                 {
                     textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = position + axisOffset;
                     position = textElementInfoArray[i].vertexTopLeft.position;
@@ -1666,84 +1513,30 @@ namespace UnityEngine.TextCore.Text
                     position.y *= -1;
                     textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = position + axisOffset;
                 }
-                else
-                {
-                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexTopLeft.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexTopRight.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = position + axisOffset;
-                    position = textElementInfoArray[i].vertexBottomRight.position;
-                    position.y *= -1;
-                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = position + axisOffset;
-                }
-            }
-            else
-            {
-                if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
-                {
-                    textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].position = textElementInfoArray[i].vertexBottomLeft.position;
-                    textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].position = textElementInfoArray[i].vertexTopLeft.position;
-                    textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].position = textElementInfoArray[i].vertexTopRight.position;
-                    textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].position = textElementInfoArray[i].vertexBottomRight.position;
-                }
-                else
-                {
-                    textInfo.meshInfo[materialIndex].vertices[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.position;
-                    textInfo.meshInfo[materialIndex].vertices[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.position;
-                    textInfo.meshInfo[materialIndex].vertices[2 + indexX4] = textElementInfoArray[i].vertexTopRight.position;
-                    textInfo.meshInfo[materialIndex].vertices[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.position;
-                }
             }
 
             // Setup UVS0
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv0 = textElementInfoArray[i].vertexBottomLeft.uv;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv0 = textElementInfoArray[i].vertexTopLeft.uv;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv0 = textElementInfoArray[i].vertexTopRight.uv;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv0 = textElementInfoArray[i].vertexBottomRight.uv;
             }
-            else
-            {
-                textInfo.meshInfo[materialIndex].uvs0[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv;
-                textInfo.meshInfo[materialIndex].uvs0[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv;
-                textInfo.meshInfo[materialIndex].uvs0[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv;
-                textInfo.meshInfo[materialIndex].uvs0[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv;
-            }
 
             // Setup UVS2
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].uv2 = textElementInfoArray[i].vertexBottomLeft.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].uv2 = textElementInfoArray[i].vertexTopLeft.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].uv2 = textElementInfoArray[i].vertexTopRight.uv2;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].uv2 = textElementInfoArray[i].vertexBottomRight.uv2;
             }
-            else
-            {
-                textInfo.meshInfo[materialIndex].uvs2[0 + indexX4] = textElementInfoArray[i].vertexBottomLeft.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[1 + indexX4] = textElementInfoArray[i].vertexTopLeft.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[2 + indexX4] = textElementInfoArray[i].vertexTopRight.uv2;
-                textInfo.meshInfo[materialIndex].uvs2[3 + indexX4] = textElementInfoArray[i].vertexBottomRight.uv2;
-            }
 
             // setup Vertex Colors
-            if (textInfo.vertexDataLayout == VertexDataLayout.VBO)
             {
                 textInfo.meshInfo[materialIndex].vertexData[0 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
                 textInfo.meshInfo[materialIndex].vertexData[1 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
                 textInfo.meshInfo[materialIndex].vertexData[2 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
                 textInfo.meshInfo[materialIndex].vertexData[3 + indexX4].color = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
-            }
-            else
-            {
-                textInfo.meshInfo[materialIndex].colors32[0 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomLeft.color) : textElementInfoArray[i].vertexBottomLeft.color;
-                textInfo.meshInfo[materialIndex].colors32[1 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopLeft.color) : textElementInfoArray[i].vertexTopLeft.color;
-                textInfo.meshInfo[materialIndex].colors32[2 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexTopRight.color) : textElementInfoArray[i].vertexTopRight.color;
-                textInfo.meshInfo[materialIndex].colors32[3 + indexX4] = convertToLinearSpace ? GammaToLinear(textElementInfoArray[i].vertexBottomRight.color) : textElementInfoArray[i].vertexBottomRight.color;
             }
             textInfo.meshInfo[materialIndex].vertexCount = indexX4 + 4;
         }

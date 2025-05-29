@@ -1279,6 +1279,10 @@ namespace UnityEditorInternal
 
         public static CurveWrapper GetCurveWrapper(AnimationWindowCurve curve, AnimationClip clip)
         {
+            //Discrete and PPtr curves are not allowed to create curve wrappers.
+            if (curve.isDiscreteCurve || curve.isPPtrCurve)
+                return null;
+
             CurveWrapper curveWrapper = new CurveWrapper();
             curveWrapper.renderer = CreateRendererForCurve(curve);
             curveWrapper.preProcessKeyMovementDelegate = CreateKeyPreprocessorForCurve(curve);

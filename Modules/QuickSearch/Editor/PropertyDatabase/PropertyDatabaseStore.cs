@@ -992,8 +992,11 @@ namespace UnityEditor.Search
             using (LockWrite())
             {
                 m_Br?.Dispose();
+                m_Br = null;
                 m_Bw?.Dispose();
+                m_Bw = null;
                 m_Fs?.Dispose();
+                m_Fs = null;
             }
         }
 

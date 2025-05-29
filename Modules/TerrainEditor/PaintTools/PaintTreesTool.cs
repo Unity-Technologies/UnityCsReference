@@ -7,11 +7,20 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.TerrainTools;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor.TerrainTools
 {
     internal class PaintTreesUtils
     {
+        [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolShortcutContext), KeyCode.F5)]
+        static void SelectShortcut(ShortcutArguments args)
+        {
+            TerrainToolShortcutContext context = (TerrainToolShortcutContext)args.context;
+            context.SelectPaintToolWithOverlays<PaintTreesTool>();
+        }
+
         public static bool ValidateTreePrototype(Terrain terrain, int treePrototype)
         {
             int prototypeCount = TerrainInspectorUtil.GetPrototypeCount(terrain.terrainData);

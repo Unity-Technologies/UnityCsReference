@@ -5,6 +5,7 @@
 using System.IO;
 using UnityEngine;
 using UnityEditorInternal;
+using RenameOverlay = UnityEditor.RenameOverlay<int>;
 
 namespace UnityEditor
 {

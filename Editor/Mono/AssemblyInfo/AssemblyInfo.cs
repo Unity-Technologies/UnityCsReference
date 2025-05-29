@@ -35,6 +35,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.BuildPipeline")]
@@ -199,9 +200,15 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
 
 // Module test assemblies
+[assembly: InternalsVisibleTo("Unity.Modules.iOSExtensions.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PlatformIcons.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
+
+// Test Assemblies
+[assembly: InternalsVisibleTo("Unity.Core.UnityEvent.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
 

@@ -68,9 +68,9 @@ namespace UnityEditor.Presets
         internal static SearchProvider CreateProvider()
         {
             var QE = new QueryEngine<Preset>(new QueryValidationOptions() { validateFilters = true, skipUnknownFilters = true });
-            QE.SetFilter("t", GetType, new[] {":"}).AddOrUpdatePropositionData(category: "Presets", label: "Preset Type", help: "Filter the presets by the type of the target object.");
-            QE.SetFilter<string>("prop", GetProperty, new []{":"}).AddOrUpdatePropositionData(category: "Presets", label: "Preset Property", help: "Filter presets with a specific property.");
-            QE.SetFilter<string>("exclude", GetExcludedProperty, new []{":"}).AddOrUpdatePropositionData(category: "Presets", label: "Excluded Property", help: "Filter the presets with a specific excluded property.");
+            QE.SetFilter("t", GetType, new[] {":"}).AddOrUpdatePropositionData(category: "Presets", label: "Preset Type", replacement: "t:", help: "Filter the presets by the type of the target object.", color: QueryColors.type);
+            QE.SetFilter<string>("prop", GetProperty, new []{":"}).AddOrUpdatePropositionData(category: "Presets", label: "Preset Property", replacement: "prop:", help: "Filter presets with a specific property.");
+            QE.SetFilter<string>("exclude", GetExcludedProperty, new []{":"}).AddOrUpdatePropositionData(category: "Presets", label: "Excluded Property", replacement: "exclude:", help: "Filter the presets with a specific excluded property.");
             QE.SetSearchDataCallback(SearchWords, StringComparison.OrdinalIgnoreCase);
             SearchValue.SetupEngine(QE);
 

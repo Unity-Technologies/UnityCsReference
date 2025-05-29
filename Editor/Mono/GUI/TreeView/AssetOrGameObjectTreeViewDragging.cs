@@ -13,6 +13,10 @@ using UnityEditorInternal;
 using UnityEngine.Assertions;
 using Object = UnityEngine.Object;
 
+using TreeViewDragging = UnityEditor.IMGUI.Controls.TreeViewDragging<int>;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+
 namespace UnityEditor
 {
     // Implements dragging behavior for HierarchyProperty based data: Assets or GameObjects

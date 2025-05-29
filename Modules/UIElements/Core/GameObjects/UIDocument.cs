@@ -19,7 +19,7 @@ namespace UnityEngine.UIElements
             uiDocument.rootVisualElement?.RemoveFromHierarchy();
         }
 
-        internal void AddToListAndToVisualTree(UIDocument uiDocument, VisualElement visualTree, int firstInsertIndex = 0)
+        internal void AddToListAndToVisualTree(UIDocument uiDocument, VisualElement visualTree, bool ignoreContentContainer, int firstInsertIndex = 0)
         {
             int index = 0;
             foreach (var sibling in m_AttachedUIDocuments)
@@ -68,13 +68,14 @@ namespace UnityEngine.UIElements
 
                     if (previousInTree != null)
                     {
-                        index = visualTree.IndexOf(previousInTree) + 1;
+                        index = visualTree.IndexOf(previousInTree, ignoreContentContainer) + 1;
                     }
                 }
 
-                if (index > visualTree.childCount)
+                int childCount = visualTree.ChildCount(ignoreContentContainer);
+                if (index > childCount)
                 {
-                    index = visualTree.childCount;
+                    index = childCount;
                 }
             }
             else
@@ -89,13 +90,13 @@ namespace UnityEngine.UIElements
             }
 
             int insertionIndex = firstInsertIndex + index;
-            if (insertionIndex < visualTree.childCount)
+            if (insertionIndex < visualTree.ChildCount(ignoreContentContainer))
             {
-                visualTree.Insert(insertionIndex, uiDocument.rootVisualElement);
+                visualTree.Insert(insertionIndex, uiDocument.rootVisualElement, ignoreContentContainer);
             }
             else
             {
-                visualTree.Add(uiDocument.rootVisualElement);
+                visualTree.Add(uiDocument.rootVisualElement, ignoreContentContainer);
             }
         }
     }
@@ -331,15 +332,57 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_SortingOrder = k_DefaultSortingOrder;
 
-        internal enum WorldSpaceSizeMode
+        /// <summary>
+        /// An enum describing how the world-space UIDocument will be sized.
+        /// </summary>
+        public enum WorldSpaceSizeMode
         {
+            /// <summary>
+            /// The size of the UIDocument will be determined from the layout size of the root element.
+            /// </summary>
             Dynamic,
+
+            /// <summary>
+            /// The size of the UIDocument will be fixed to the values provided in <see cref="worldSpaceSize"/>.
+            /// </summary>
             Fixed
         }
 
         [SerializeField]
+        private Position m_Position = Position.Relative;
+
+        /// <summary>
+        /// The position (relative or absolute) of the root visual element. Relative only applies for nested UIDocuments.
+        /// </summary>
+        public Position position
+        {
+            get { return m_Position; }
+            set
+            {
+                if (m_Position == value)
+                    return;
+                m_Position = value;
+                SetupPosition();
+            }
+        }
+
+        [SerializeField]
         private WorldSpaceSizeMode m_WorldSpaceSizeMode = WorldSpaceSizeMode.Fixed;
-        internal WorldSpaceSizeMode worldSpaceSizeMode => m_WorldSpaceSizeMode;
+
+        /// <summary>
+        /// Defines how the size of the root element is calculated for world space.
+        /// </summary>
+        public WorldSpaceSizeMode worldSpaceSizeMode
+        {
+            get { return m_WorldSpaceSizeMode; }
+            set
+            {
+                if (m_WorldSpaceSizeMode == value)
+                    return;
+                m_WorldSpaceSizeMode = value;
+                SetupWorldSpaceSize();
+            }
+        }
 
         [SerializeField]
         private float m_WorldSpaceWidth = 1920;
@@ -347,8 +390,30 @@ namespace UnityEngine.UIElements
         [SerializeField]
         private float m_WorldSpaceHeight = 1080;
 
+        /// <summary>
+        /// When the <see cref="worldSpaceSizeMode"/> is set to <see cref="WorldSpaceSizeMode.Fixed"/>, this property
+        /// determines the size of the UIDocument in world space.
+        /// </summary>
+        public Vector2 worldSpaceSize
+        {
+            get { return new Vector2(m_WorldSpaceWidth, m_WorldSpaceHeight); }
+            set
+            {
+                if (m_WorldSpaceWidth == value.x && m_WorldSpaceHeight == value.y)
+                    return;
+                m_WorldSpaceWidth = value.x;
+                m_WorldSpaceHeight = value.y;
+                SetupWorldSpaceSize();
+            }
+        }
+
         [SerializeField]
         private PivotReferenceSize m_PivotReferenceSize;
+
+        private bool isWorldSpace => (m_PanelSettings != null && m_PanelSettings.renderMode == PanelRenderMode.WorldSpace);
+
+        internal bool isTransformControlledByGameObject => isWorldSpace && (m_ParentUI == null || m_Position == Position.Absolute);
+
 
         /// <summary>
         /// Defines how the size of the container is calculated for pivot positioning.
@@ -495,9 +560,13 @@ namespace UnityEngine.UIElements
 
             AddOrRemoveRendererComponent();
 
-            if (!panelSettings.panel.isFlat)
+            if (isWorldSpace)
             {
-                SetTransform();
+                if (isTransformControlledByGameObject)
+                    SetTransform();
+                else
+                    ClearTransform();
+
                 UpdateRenderer();
                 if (panelSettings.colliderUpdateMode != ColliderUpdateMode.Keep
                     && Application.isPlaying
@@ -566,7 +635,7 @@ namespace UnityEngine.UIElements
         {
             // Automatically add the UIRenderer component when working in world-space
             TryGetComponent<UIRenderer>(out var renderer);
-            if (m_PanelSettings != null && m_PanelSettings.panel?.drawsInCameras == true)
+            if (isWorldSpace)
             {
                 if (renderer == null)
                     gameObject.AddComponent<UIRenderer>();
@@ -843,7 +912,7 @@ namespace UnityEngine.UIElements
             OnValidate();
         }
 
-        private void AddChildAndInsertContentToVisualTree(UIDocument child)
+        internal void AddChildAndInsertContentToVisualTree(UIDocument child)
         {
             if (m_ChildrenContent == null)
             {
@@ -856,7 +925,8 @@ namespace UnityEngine.UIElements
                 m_ChildrenContent.RemoveFromListAndFromVisualTree(child);
             }
 
-            m_ChildrenContent.AddToListAndToVisualTree(child, m_RootVisualElement, m_FirstChildInsertIndex);
+            bool ignoreContentContainer = (child.position == Position.Absolute);
+            m_ChildrenContent.AddToListAndToVisualTree(child, m_RootVisualElement, ignoreContentContainer, m_FirstChildInsertIndex);
         }
 
         private void RemoveChild(UIDocument child)
@@ -956,26 +1026,57 @@ namespace UnityEngine.UIElements
             SetupRootClassList();
         }
 
+        internal void SetupPosition()
+        {
+            if (m_RootVisualElement == null || m_ParentUI == null)
+                return; // The position property is only relevant for nested UIDocuments
+
+            if (isTransformControlledByGameObject)
+                m_RootVisualElement.style.position = Position.Absolute;
+            else
+                m_RootVisualElement.style.position = m_Position;
+
+            // We need to re-add ourselves in the list as the position influences
+            // if we're part of the content-container or not.
+            m_ParentUI.AddChildAndInsertContentToVisualTree(this);
+        }
+
         private void SetupRootClassList()
         {
             if (m_RootVisualElement == null)
                 return;
 
-            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+            if (!isWorldSpace)
             {
                 // If we're not a child of any other UIDocument stretch to take the full screen.
                 m_RootVisualElement.EnableInClassList(k_RootStyleClassName, parentUI == null);
+
+                // Reset inline styles thay may have been set if the PanelSetting was
+                // previously set to world-space rendering.
+                m_RootVisualElement.style.position = StyleKeyword.Null;
+                m_RootVisualElement.style.width = StyleKeyword.Null;
+                m_RootVisualElement.style.height = StyleKeyword.Null;
             }
             else
             {
-                UpdateWorldSpaceSize();
+                SetupWorldSpaceSize();
             }
+
+            SetupPosition();
         }
 
-        private void UpdateWorldSpaceSize()
+        private void SetupWorldSpaceSize()
         {
             if (m_RootVisualElement == null)
                 return;
+
+            if (!isTransformControlledByGameObject)
+            {
+                // Nested use-case. We shouldn't provide a fixed size.
+                m_RootVisualElement.style.width = StyleKeyword.Null;
+                m_RootVisualElement.style.height = StyleKeyword.Null;
+                return;
+            }
 
             if (m_WorldSpaceSizeMode == WorldSpaceSizeMode.Fixed)
             {
@@ -1229,10 +1330,12 @@ namespace UnityEngine.UIElements
                 m_OldSortingOrder = m_SortingOrder;
             }
 
-            if (m_PanelSettings != null && m_PanelSettings.renderMode == PanelRenderMode.WorldSpace)
+            if (isWorldSpace)
             {
-                UpdateWorldSpaceSize();
+                SetupWorldSpaceSize();
             }
+
+            SetupPosition();
         }
 
         private void OnDrawGizmosSelected()
@@ -1240,11 +1343,37 @@ namespace UnityEngine.UIElements
             if (m_RootVisualElement == null)
                 return;
 
-            var bb = LocalBoundsFromPivotSource();
+            if (panelSettings == null || panelSettings.renderMode != PanelRenderMode.WorldSpace)
+                return;
+
+            // Find the first UIDoc that's controlled by a GameObject
+            var gameObjectDoc = this;
+            while (gameObjectDoc != null && !gameObjectDoc.isTransformControlledByGameObject)
+                gameObjectDoc = gameObjectDoc.parentUI;
+
+            if (gameObjectDoc == null)
+                return;
+
+            Bounds bb;
+            if (isTransformControlledByGameObject)
+            {
+                bb = LocalBoundsFromPivotSource();
+            }
+            else
+            {
+                // Relative mode gizmos are drawn relative to the next ancestor that's
+                // controlled by a GameObject transform
+                var bbox = m_RootVisualElement.boundingBoxWithoutNested;
+                bbox.position += m_RootVisualElement.layout.position;
+                m_RootVisualElement.ChangeCoordinatesTo(gameObjectDoc.rootVisualElement, bbox);
+                bb = new Bounds(bbox.center, bbox.size);
+            }
+
             if (!IsValidBounds(bb))
                 return;
 
-            var toGameObject = TransformToGameObjectMatrix();
+
+            var toGameObject = gameObjectDoc.TransformToGameObjectMatrix();
             VisualElement.TransformAlignedBounds(ref toGameObject, ref bb);
 
             var matrixBackup = Gizmos.matrix;
@@ -1252,7 +1381,7 @@ namespace UnityEngine.UIElements
             Vector3 center = bb.center;
             Vector3 size = bb.size;
             Gizmos.color = new Color(1.0f, 1.0f, 1.0f, 0.5f);
-            Gizmos.matrix = transform.localToWorldMatrix;
+            Gizmos.matrix = gameObjectDoc.transform.localToWorldMatrix;
             Gizmos.DrawWireCube(center, size);
 
             Gizmos.matrix = matrixBackup;

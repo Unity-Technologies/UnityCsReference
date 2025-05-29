@@ -4,10 +4,8 @@
 
 using System;
 using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.IO;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
@@ -103,6 +101,7 @@ namespace UnityEditor
         private float m_HoldScrollOffset;
         private double m_HoldScrollTimestamp;
         private Rect m_TabAreaRect = Rect.zero;
+        private int? newlyAddedTabIndex = null;
 
         internal int pendingSelect = -1;
         internal int pendingSelectVersion = 0;
@@ -209,6 +208,11 @@ namespace UnityEditor
             Invoke("OnAddedAsTab", pane);
             Repaint();
             window?.UnsavedStateChanged();
+
+            // Make sure the newly added tab is visible.
+            // We can skip the first one to gain some performance.
+            if (idx > 0)
+                newlyAddedTabIndex = idx;
         }
 
         public void RemoveTab(EditorWindow pane) { RemoveTab(pane, killIfEmpty: true); }
@@ -357,6 +361,12 @@ namespace UnityEditor
             // Exit if the window was destroyed after entering play mode or on domain-reload.
             if (window == null)
                 return;
+
+            if (newlyAddedTabIndex.HasValue)
+            {
+                EnsureNewlyAddedTabIsVisible(newlyAddedTabIndex.Value);
+                newlyAddedTabIndex = null;
+            }
 
             if (actualView)
                 GUI.color = actualView.rootVisualElement.playModeTintColor;
@@ -772,6 +782,61 @@ namespace UnityEditor
             }
 
             return -1;
+        }
+
+        void EnsureNewlyAddedTabIsVisible(int index)
+        {
+            if (m_TabAreaRect.xMax == 0.0f)
+                return;
+
+            if (index < 0 || index >= m_Panes.Count)
+                return;
+
+            // Get the X position and width of the selected tab.
+            var selectedTabX = CalculateTabXPosition(index);
+            var selectedTabWidth = GetTabWidth(Styles.dragTab, index);
+
+            // Calculate the left and right edges of the tab.
+            var leftEdge = selectedTabX;
+            var rightEdge = selectedTabX + selectedTabWidth;
+
+            // Adjust the scroll offset if the tab is outside the visible range.
+            if (leftEdge < m_TabAreaRect.xMin + m_ScrollOffset)
+            {
+                m_ScrollOffset = leftEdge - m_TabAreaRect.xMin;
+            }
+            else if (rightEdge > m_TabAreaRect.xMax + m_ScrollOffset)
+            {
+                m_ScrollOffset = rightEdge - m_TabAreaRect.xMax;
+            }
+        }
+
+        float CalculateTabXPosition(int index)
+        {
+            var xPos = m_TabAreaRect.xMin;
+            for (var i = 0; i < index; i++)
+            {
+                float tabWidth = GetTabWidth(Styles.dragTab, i);
+                xPos += tabWidth;
+            }
+
+            return xPos;
+        }
+
+        // internal method for testing.
+        internal bool IsTabVisible(int index)
+        {
+            var tabPosition = CalculateTabXPosition(index);
+            var tabWidth = GetTabWidth(Styles.dragTab, index);
+
+            // Calculate the left and right edges of the tab.
+            var leftEdge = tabPosition;
+            var rightEdge = tabPosition + tabWidth;
+
+            if (leftEdge >= m_TabAreaRect.xMin + m_ScrollOffset && rightEdge <= m_TabAreaRect.xMax + m_ScrollOffset)
+                return true;
+
+            return false;
         }
 
         // Hack to get around Unity crashing when we have circular references in saved stuff

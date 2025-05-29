@@ -6,6 +6,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewDragging = UnityEditor.IMGUI.Controls.TreeViewDragging<int>;
 
 namespace UnityEditor.TreeViewExamples
 {

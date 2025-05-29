@@ -109,13 +109,12 @@ namespace UnityEditor.Search
 
         internal override void DrawItemContent(AdvancedDropdownItem item, Rect rect, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
-            if (item.children.Any())
+            if (item.hasChildren || item.userData is not SearchProposition proposition)
             {
                 base.DrawItemContent(item, rect, content, isHover, isActive, on, hasKeyboardFocus);
                 return;
             }
 
-            var proposition = (SearchProposition)item.userData;
             var bgColor = proposition.color;
             if (bgColor == Color.clear)
                 bgColor = QueryColors.filter;
@@ -224,7 +223,7 @@ namespace UnityEditor.Search
 
         static ItemSearchData[] s_ItemSearchDatas = new ItemSearchData[3];
         internal static bool DoSearchItemMatch(in AdvancedDropdownItem item, in string[] words, out bool didMatchStart)
-        {            
+        {
             void PrepareItemData(int index, string data)
             {
                 s_ItemSearchDatas[index].data = data;
@@ -236,18 +235,25 @@ namespace UnityEditor.Search
                 }
             }
 
+            // We should only have items with valid SearchPropositions. However, it can happen that
+            // this method is called with an AdvancedDropdownItem that has no userData (or that userData is not a SearchProposition),
+            // which is the case when there is no propositions so the root item becomes a searchable item. In that case, we should
+            // just return false so that the item is not shown in the search results.
+            if (item.userData is not SearchProposition proposition)
+            {
+                didMatchStart = false;
+                return false;
+            }
+
             var itemDataCount = 0;
             PrepareItemData(itemDataCount++, item.displayName);
             PrepareItemData(itemDataCount++, item.name);
-            if (item.userData is SearchProposition proposition)
-            {
-                PrepareItemData(itemDataCount++, proposition.replacement);
-            }
+            PrepareItemData(itemDataCount++, proposition.replacement);
 
             didMatchStart = false;
             var fp = -1;
             foreach (var w in words)
-            {                
+            {
                 for (var i = 0; i < itemDataCount; ++i)
                 {
                     if (s_ItemSearchDatas[i].isValid)

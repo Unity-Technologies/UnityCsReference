@@ -52,6 +52,7 @@ namespace UnityEditor
             }
         }
 
+        internal bool is2DViewpoint => hasActiveViewpoint && activeViewpoint is ICameraLensData lensData && lensData.Orthographic;
         internal event Action<bool> cameraLookThroughStateChanged;
 
         [SerializeField] SceneView m_SceneView;
@@ -174,27 +175,13 @@ namespace UnityEditor
 
             float scale = cameraOverscanSettings.scale;
 
-            if (sceneViewIsPerspective)
+            if (!lensData.Orthographic)
             {
-                // Perspective camera scope
-                if (lensData.Orthographic == true)
-                {
-                    Undo.RecordObject(activeViewpoint.TargetObject, $"Camera {activeViewpoint.TargetObject.name} set to perspective.");
-                    lensData.Orthographic = false;
-                }
-
                 m_SceneView.camera.orthographic = false;
                 m_SceneView.camera.fieldOfView = m_SceneView.GetVerticalFOV(lensData.FieldOfView, scale);
             }
             else
             {
-                // Orthographic camera scope
-                if (lensData.Orthographic == false)
-                {
-                    Undo.RecordObject(activeViewpoint.TargetObject, $"Camera {activeViewpoint.TargetObject.name} set to orthographic.");
-                    lensData.Orthographic = true;
-                }
-
                 m_SceneView.camera.orthographic = true;
                 m_SceneView.camera.orthographicSize = lensData.OrthographicSize * scale;
             }
@@ -349,7 +336,9 @@ namespace UnityEditor
 
         void AlignSceneViewToViewpoint()
         {
-            m_SceneView.rotation = activeViewpoint.Rotation;
+            if (!m_SceneView.in2DMode)
+                m_SceneView.rotation = activeViewpoint.Rotation;
+
             m_SceneView.pivot = activeViewpoint.Position + activeViewpoint.Rotation * new Vector3(0, 0, m_SceneView.cameraDistance);
         }
     }

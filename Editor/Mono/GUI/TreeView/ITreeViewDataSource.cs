@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,12 +16,12 @@ using UnityEngine;
 namespace UnityEditor.IMGUI.Controls
 {
     // Represents a complete data tree
-    internal interface ITreeViewDataSource
+    internal interface ITreeViewDataSource<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
         void OnInitialize();
 
         // Return root of tree
-        TreeViewItem root { get; }
+        TreeViewItem<TIdentifier> root { get; }
 
         // For data sources where GetRows() might be an expensive operation
         int rowCount { get; }
@@ -31,44 +32,44 @@ namespace UnityEditor.IMGUI.Controls
         void InitIfNeeded();
 
         // Find Item by id
-        TreeViewItem FindItem(int id);
+        TreeViewItem<TIdentifier> FindItem(TIdentifier id);
 
         // Get current row of an item (using the current expanded state in TreeViewState)
         // Returns -1 if not found
-        int GetRow(int id);
+        int GetRow(TIdentifier id);
 
         // Check rowCount before requesting
-        TreeViewItem GetItem(int row);
+        TreeViewItem<TIdentifier> GetItem(int row);
 
         // Get the flattened tree of visible items. If possible use GetItem(int row) instead
-        IList<TreeViewItem> GetRows();
+        IList<TreeViewItem<TIdentifier>> GetRows();
 
-        bool IsRevealed(int id);
+        bool IsRevealed(TIdentifier id);
 
-        void RevealItem(int id);
-        void RevealItems(int[] ids);
+        void RevealItem(TIdentifier id);
+        void RevealItems(TIdentifier[] ids);
 
         // Expand / collapse interface
         // The DataSource has the interface for this because it should be able to rebuild
         // tree when expanding
-        void SetExpandedWithChildren(TreeViewItem item, bool expand);
-        void SetExpanded(TreeViewItem item, bool expand);
-        bool IsExpanded(TreeViewItem item);
-        bool IsExpandable(TreeViewItem item);
-        void SetExpandedWithChildren(int id, bool expand);
-        int[] GetExpandedIDs();
-        void SetExpandedIDs(int[] ids);
-        bool SetExpanded(int id, bool expand);
-        bool IsExpanded(int id);
+        void SetExpandedWithChildren(TreeViewItem<TIdentifier> item, bool expand);
+        void SetExpanded(TreeViewItem<TIdentifier> item, bool expand);
+        bool IsExpanded(TreeViewItem<TIdentifier> item);
+        bool IsExpandable(TreeViewItem<TIdentifier> item);
+        void SetExpandedWithChildren(TIdentifier id, bool expand);
+        TIdentifier[] GetExpandedIDs();
+        void SetExpandedIDs(TIdentifier[] ids);
+        bool SetExpanded(TIdentifier id, bool expand);
+        bool IsExpanded(TIdentifier id);
 
         // Selection
-        bool CanBeMultiSelected(TreeViewItem item);
-        bool CanBeParent(TreeViewItem item);
-        List<int> GetNewSelection(TreeViewItem clickedItem, TreeViewSelectState selectState);
+        bool CanBeMultiSelected(TreeViewItem<TIdentifier> item);
+        bool CanBeParent(TreeViewItem<TIdentifier> item);
+        List<TIdentifier> GetNewSelection(TreeViewItem<TIdentifier> clickedItem, TreeViewSelectState<TIdentifier> selectState);
 
         // Renaming
-        bool IsRenamingItemAllowed(TreeViewItem item);
-        void InsertFakeItem(int id, int parentID, string name, Texture2D icon);
+        bool IsRenamingItemAllowed(TreeViewItem<TIdentifier> item);
+        void InsertFakeItem(TIdentifier id, TIdentifier parentID, string name, Texture2D icon);
         void RemoveFakeItem();
         bool HasFakeItem();
 

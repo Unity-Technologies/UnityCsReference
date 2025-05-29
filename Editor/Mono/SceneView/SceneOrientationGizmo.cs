@@ -405,12 +405,15 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
         // Button (overlayed over the labels) to toggle between iso and perspective
         if (!view.in2DMode && !view.isRotationLocked)
         {
-            if (GUI.Button(labelRect, m_PerspectiveIsoControlID, GUIContent.none, Styles.viewLabelStyleLeftAligned))
+            using (new EditorGUI.DisabledScope(view.viewpoint.hasActiveViewpoint))
             {
-                if (Event.current.button == 1)
-                    DisplayContextMenu(labelRect, view);
-                else
-                    ViewSetOrtho(view, !view.orthographic);
+                if (GUI.Button(labelRect, m_PerspectiveIsoControlID, GUIContent.none, Styles.viewLabelStyleLeftAligned))
+                {
+                    if (Event.current.button == 1)
+                        DisplayContextMenu(labelRect, view);
+                    else
+                        ViewSetOrtho(view, !view.orthographic);
+                }
             }
         }
 

@@ -791,7 +791,7 @@ namespace UnityEditor.AssetImporters
             var mixed = EditorGUI.showMixedValue;
             EditorGUI.showMixedValue = m_SelectedImporterType == k_MultipleSelectedImporterTypes;
             GUILayout.Label(Styles.ImporterSelection);
-            var newSelection = EditorGUILayout.Popup(m_SelectedImporterType, m_AvailableImporterTypesOptions);
+            var newSelection = EditorGUILayout.Popup(m_SelectedImporterType, m_AvailableImporterTypesOptions, GUILayout.MaxWidth(350));
             if (newSelection != m_SelectedImporterType)
             {
                 // cancel any pending changes if we are switching the importer.

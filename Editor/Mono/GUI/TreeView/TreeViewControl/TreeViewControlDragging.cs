@@ -8,29 +8,29 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    public partial class TreeView
+    public partial class TreeView<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        private class TreeViewControlDragging : TreeViewDragging
+        private class TreeViewControlDragging : TreeViewDragging<TIdentifier>
         {
-            private TreeView m_Owner;
+            private TreeView<TIdentifier> m_Owner;
 
-            public TreeViewControlDragging(TreeViewController treeView, TreeView owner)
+            public TreeViewControlDragging(TreeViewController<TIdentifier> treeView, TreeView<TIdentifier> owner)
                 : base(treeView)
             {
                 m_Owner = owner;
             }
 
-            public override bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition)
+            public override bool CanStartDrag(TreeViewItem<TIdentifier> targetItem, List<TIdentifier> draggedItemIDs, Vector2 mouseDownPosition)
             {
                 return m_Owner.CanStartDrag(new CanStartDragArgs { draggedItem = targetItem, draggedItemIDs = draggedItemIDs });
             }
 
-            public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
+            public override void StartDrag(TreeViewItem<TIdentifier> draggedItem, List<TIdentifier> draggedItemIDs)
             {
                 m_Owner.SetupDragAndDrop(new SetupDragAndDropArgs { draggedItemIDs = draggedItemIDs});
             }
 
-            public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPosition)
+            public override DragAndDropVisualMode DoDrag(TreeViewItem<TIdentifier> parentItem, TreeViewItem<TIdentifier> targetItem, bool perform, DropPosition dropPosition)
             {
                 if (m_Owner.m_OverriddenMethods.hasHandleDragAndDrop)
                 {
@@ -48,7 +48,7 @@ namespace UnityEditor.IMGUI.Controls
                 return DragAndDropVisualMode.None;
             }
 
-            DragAndDropPosition GetDragAndDropPosition(TreeViewItem parentItem, TreeViewItem targetItem)
+            DragAndDropPosition GetDragAndDropPosition(TreeViewItem<TIdentifier> parentItem, TreeViewItem<TIdentifier> targetItem)
             {
                 if (parentItem == null)
                     return DragAndDropPosition.OutsideItems;

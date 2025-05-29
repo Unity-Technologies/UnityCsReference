@@ -6,6 +6,7 @@ using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.UIElements;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor.Build.Profile.Elements
 {

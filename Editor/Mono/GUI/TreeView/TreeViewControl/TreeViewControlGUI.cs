@@ -8,24 +8,24 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    public partial class TreeView
+    public partial class TreeView<TIdentifier> where TIdentifier : unmanaged, System.IEquatable<TIdentifier>
     {
-        class TreeViewControlGUI : TreeViewGUI
+        class TreeViewControlGUI : TreeViewGUI<TIdentifier>
         {
-            readonly TreeView m_Owner;
+            readonly TreeView<TIdentifier> m_Owner;
             List<Rect> m_RowRects;                           // If m_RowRects is null fixed row height is used
             Rect[] m_CellRects;                              // Allocated once and reused
             const float k_BackgroundWidth = 100000f;         // The TreeView can have a horizontal scrollbar so ensure to fill out the entire width of the background
             public float borderWidth = 1f;
 
-            public TreeViewControlGUI(TreeViewController treeView, TreeView owner)
+            public TreeViewControlGUI(TreeViewController<TIdentifier> treeView, TreeView<TIdentifier> owner)
                 : base(treeView)
             {
                 m_Owner = owner;
                 cellMargin = MultiColumnHeader.DefaultGUI.columnContentMargin;
             }
 
-            public void RefreshRowRects(IList<TreeViewItem> rows)
+            public void RefreshRowRects(IList<TreeViewItem<TIdentifier>> rows)
             {
                 if (m_RowRects == null)
                     m_RowRects = new List<Rect>(rows.Count);
@@ -83,7 +83,7 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             // We only override DrawIconAndLabel (and not OnRowGUI) so the user only have to care about item content rendering; and not drag marker rendering, renaming and foldout button
-            protected override void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
+            protected override void OnContentGUI(Rect rect, int row, TreeViewItem<TIdentifier> item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
             {
                 // We do not support pinging in the TreeView (to simplify api)
                 if (isPinging)
@@ -91,7 +91,7 @@ namespace UnityEditor.IMGUI.Controls
 
                 // Make sure the GUI contents for each row is starting with its own controlID unique to its item. This prevents key-focus of a control (e.g a float field)
                 // to jump from row to row when mouse scrolling (due to culling of rows and the assigning of controlIDs in call-order)
-                GUIUtility.GetControlID(TreeViewController.GetItemControlID(item), FocusType.Passive);
+                GUIUtility.GetControlID(TreeViewController<TIdentifier>.GetItemControlID(item), FocusType.Passive);
 
                 if (m_Owner.m_OverriddenMethods.hasRowGUI)
                 {
@@ -151,7 +151,7 @@ namespace UnityEditor.IMGUI.Controls
                 base.OnContentGUI(args.rowRect, args.row, args.item, args.label, args.selected, args.focused, false, false);
             }
 
-            protected override Rect DoFoldout(Rect rowRect, TreeViewItem item, int row)
+            protected override Rect DoFoldout(Rect rowRect, TreeViewItem<TIdentifier> item, int row)
             {
                 // For multicolumn setup we need to ensure foldouts are clipped so they are not in the next column
                 if (m_Owner.multiColumnHeader != null)
@@ -160,7 +160,7 @@ namespace UnityEditor.IMGUI.Controls
                 return base.DoFoldout(rowRect, item, row);
             }
 
-            Rect DoMultiColumnFoldout(Rect rowRect, TreeViewItem item, int row)
+            Rect DoMultiColumnFoldout(Rect rowRect, TreeViewItem<TIdentifier> item, int row)
             {
                 if (!m_Owner.multiColumnHeader.IsColumnVisible(columnIndexForTreeFoldouts))
                     return new Rect();
@@ -180,7 +180,7 @@ namespace UnityEditor.IMGUI.Controls
                 return base.DoFoldout(cellRect, item, row);
             }
 
-            public override Rect GetRenameRect(Rect rowRect, int row, TreeViewItem item)
+            public override Rect GetRenameRect(Rect rowRect, int row, TreeViewItem<TIdentifier> item)
             {
                 if (m_Owner.m_OverriddenMethods.hasGetRenameRect)
                 {
@@ -190,7 +190,7 @@ namespace UnityEditor.IMGUI.Controls
                 return base.GetRenameRect(rowRect, row, item);
             }
 
-            public Rect DefaultRenameRect(Rect rowRect, int row, TreeViewItem item)
+            public Rect DefaultRenameRect(Rect rowRect, int row, TreeViewItem<TIdentifier> item)
             {
                 return base.GetRenameRect(rowRect, row, item);
             }
@@ -305,7 +305,7 @@ namespace UnityEditor.IMGUI.Controls
                 }
             }
 
-            protected override void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+            protected override void DrawItemBackground(Rect rect, int row, TreeViewItem<TIdentifier> item, bool selected, bool focused)
             {
                 base.DrawItemBackground(rect, row, item, selected, focused);
 

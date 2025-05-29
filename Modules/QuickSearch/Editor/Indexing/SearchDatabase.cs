@@ -459,8 +459,6 @@ namespace UnityEditor.Search
                 EditorApplication.delayCall += SearchService.RefreshWindows;
                 Dispatcher.Emit(SearchEvent.SearchIndexesChanged, new SearchEventPayload(new HeadlessSearchViewState(), updated, deleted, moved));
             }
-
-            Providers.FindProvider.Update(updated, deleted, moved);
         }
 
         public static Settings LoadSettings(string settingsPath)

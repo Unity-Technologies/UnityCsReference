@@ -3,9 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -173,7 +176,11 @@ namespace UnityEngine
         extern public float Evaluate(float time);
 
         //  All keys defined in the animation curve.
-        public Keyframe[] keys { get { return GetKeys(); } set { SetKeys(value); } }
+        extern public Keyframe[] keys
+        {
+            [FreeFunction("AnimationCurveBindings::GetKeysArray", HasExplicitThis = true, IsThreadSafe = true)] get;
+            [FreeFunction("AnimationCurveBindings::SetKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)] set;
+        }
 
         // Add a new key to the curve.
         [FreeFunction("AnimationCurveBindings::AddKeySmoothTangents", HasExplicitThis = true, IsThreadSafe = true)]
@@ -211,18 +218,30 @@ namespace UnityEngine
             get;
         }
 
-        // Replace all keyframes with the /keys/ array.
-        [FreeFunction("AnimationCurveBindings::SetKeys", HasExplicitThis = true, IsThreadSafe = true)]
-        extern private void SetKeys(Keyframe[] keys);
-
         [NativeThrows]
         [FreeFunction("AnimationCurveBindings::GetKey", HasExplicitThis = true, IsThreadSafe = true)]
         extern private Keyframe GetKey(int index);
 
-        [FreeFunction("AnimationCurveBindings::GetKeys", HasExplicitThis = true, IsThreadSafe = true)]
-        extern private Keyframe[] GetKeys();
+        [FreeFunction("AnimationCurveBindings::GetKeysArray", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private Keyframe[] GetKeysArray();
 
-		[FreeFunction("AnimationCurveBindings::GetHashCode", HasExplicitThis = true, IsThreadSafe = true)]
+        public unsafe void GetKeys(Span<Keyframe> keys)
+        {
+            var count = length;
+            if (count > keys.Length)
+                throw new ArgumentException("Destination array must be large enough to store the keys", "keys");
+            GetKeysWithSpan(keys);
+        }
+
+        [System.Security.SecurityCritical] // to prevent accidentally making this public in the future
+        [FreeFunction(Name = "AnimationCurveBindings::GetKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern private void GetKeysWithSpan(Span<Keyframe> keys);
+
+        // Replace all keyframes with the /keys/ array.
+        [FreeFunction("AnimationCurveBindings::SetKeysWithSpan", HasExplicitThis = true, IsThreadSafe = true)]
+        extern public void SetKeys(ReadOnlySpan<Keyframe> keys);
+
+        [FreeFunction("AnimationCurveBindings::GetHashCode", HasExplicitThis = true, IsThreadSafe = true)]
         extern public override int GetHashCode();
 
         // Smooth the in and out tangents of the keyframe at /index/.

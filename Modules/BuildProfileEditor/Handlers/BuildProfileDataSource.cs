@@ -132,7 +132,7 @@ namespace UnityEditor.Build.Profile.Handlers
                 creationType = (isClassic)
                     ? BuildProfileCreatedEvent.CreationType.DuplicateClassic
                     : BuildProfileCreatedEvent.CreationType.DuplicateProfile,
-                platformId = duplicatedProfile.platformGuid,
+                platformId = duplicatedProfile.platformGuid.ToString(),
                 platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(duplicatedProfile.platformGuid),
             }));
 
@@ -300,7 +300,7 @@ namespace UnityEditor.Build.Profile.Handlers
             return Path.Combine(directory, $"{newName}{extension}");
         }
 
-        static string SanitizeFileName(string name)
+        internal static string SanitizeFileName(string name)
         {
             var invalidChars = Path.GetInvalidFileNameChars();
             if (name.IndexOfAny(invalidChars) == -1)

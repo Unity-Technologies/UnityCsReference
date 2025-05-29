@@ -14,6 +14,10 @@ using UnityEditorInternal.VersionControl;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+
 
 namespace UnityEditor
 {

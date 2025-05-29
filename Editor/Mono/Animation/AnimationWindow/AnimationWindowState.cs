@@ -9,6 +9,7 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditorInternal
 {
@@ -903,14 +904,14 @@ namespace UnityEditorInternal
                 {
                     List<CurveWrapper> activeCurveWrappers = new List<CurveWrapper>();
                     foreach (AnimationWindowCurve curve in activeCurves)
-                        if (!curve.isDiscreteCurve)
-                            activeCurveWrappers.Add(AnimationWindowUtility.GetCurveWrapper(curve, curve.clip));
+                        if (AnimationWindowUtility.GetCurveWrapper(curve, curve.clip) is CurveWrapper wrapper)
+                            activeCurveWrappers.Add(wrapper);
 
                     // If there are no active curves, we would end up with empty curve editor so we just give all curves insteads
                     if (!activeCurveWrappers.Any())
                         foreach (AnimationWindowCurve curve in filteredCurves)
-                            if (!curve.isDiscreteCurve)
-                                activeCurveWrappers.Add(AnimationWindowUtility.GetCurveWrapper(curve, curve.clip));
+                            if (AnimationWindowUtility.GetCurveWrapper(curve, curve.clip) is CurveWrapper wrapper)
+                                activeCurveWrappers.Add(wrapper);
 
                     m_ActiveCurveWrappersCache = activeCurveWrappers.ToArray();
                 }

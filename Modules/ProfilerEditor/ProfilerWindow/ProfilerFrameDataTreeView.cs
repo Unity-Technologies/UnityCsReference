@@ -13,6 +13,9 @@ using UnityEngine.Assertions;
 using Unity.Profiling;
 using System.Collections.ObjectModel;
 using System.Runtime.CompilerServices;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditorInternal
 {

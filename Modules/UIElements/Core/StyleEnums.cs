@@ -285,6 +285,14 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// The element displays normally.
         /// </summary>
+        /// <example nocheck="true">
+        /// The following example sets the display style of an element to `DisplayStyle.Flex`:
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// myElement.style.display = DisplayStyle.Flex;
+        /// ]]>
+        /// </code>
+        /// </example>
         Flex = LayoutDisplay.Flex,
         /// <summary>
         /// The element isn't visible and absent from the layout.

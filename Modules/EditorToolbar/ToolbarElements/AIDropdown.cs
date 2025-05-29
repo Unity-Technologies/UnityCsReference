@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars;
 
@@ -18,9 +17,6 @@ class AIDropdown : EditorToolbarDropdown
 
     public AIDropdown()
     {
-        // Only showing the button in developer mode until beta period where packages to install will be published.
-        style.display = Unsupported.IsDeveloperMode() ? DisplayStyle.Flex : DisplayStyle.None;
-
         name = "AIDropdown";
         text = L10n.Tr("AI");
         icon = EditorGUIUtility.FindTexture("AISparkle Icon");

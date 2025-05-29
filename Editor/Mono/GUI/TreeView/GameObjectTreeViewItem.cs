@@ -5,6 +5,8 @@
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+
 
 namespace UnityEditor
 {

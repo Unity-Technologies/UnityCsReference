@@ -10,6 +10,7 @@ using System.Linq;
 using UnityEditorInternal;
 using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 using Object = UnityEngine.Object;
+using RenameOverlay = UnityEditor.RenameOverlay<int>;
 
 namespace UnityEditor
 {

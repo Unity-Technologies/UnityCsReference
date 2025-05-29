@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEditor.Audio;
 using UnityEditor.IMGUI.Controls;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {

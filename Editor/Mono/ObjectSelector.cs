@@ -19,6 +19,7 @@ using UnityEngine.Audio;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditor
 {
@@ -628,6 +629,12 @@ namespace UnityEditor
                 };
                 Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
                 {
+                    bool notifySelectorClosedOnly = false;
+                    if (m_SearchSessionHandler.context is ObjectSelectorSearchContext c)
+                    {
+                        notifySelectorClosedOnly = (c.endSessionModes & ObjectSelectorSearchEndSessionModes.CloseSelector) == ObjectSelectorSearchEndSessionModes.CloseSelector;
+                    }
+
                     m_SearchSessionHandler.EndSession();
                     if (canceled)
                     {
@@ -643,9 +650,17 @@ namespace UnityEditor
                     }
 
                     m_EditedProperty = null;
-                    NotifySelectorClosed(false);
 
-                    ObjectSelector.DestroySharedSelector();
+                    // When force closing the selector because we are opening a new ObjectSelector, we must not destroy the shared selector.
+                    if (notifySelectorClosedOnly)
+                    {
+                        NotifySelectorClosed(false);
+                    }
+                    else
+                    {
+                        // This will call OnDisable, which will call NotifySelectorClosed(false)
+                        DestroySharedSelector();
+                    }
                 };
 
                 if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))

@@ -20,7 +20,7 @@ namespace UnityEditor.Build.Profile
             /// <summary>
             /// Platform ID of the target build profile.
             /// </summary>
-            public GUID platformId;
+            public string platformId;
 
             /// <summary>
             /// Platform display name of the target build profile.
@@ -60,7 +60,7 @@ namespace UnityEditor.Build.Profile
 
             EditorAnalytics.SendAnalytic(new BuildProfileBuildTimeEvent(new BuildProfileBuildTimeEvent.Payload
             {
-                platformId = profile.platformGuid,
+                platformId = profile.platformId,
                 platformDisplayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(profile.platformGuid),
                 profileAssetGUID = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(profile))
             }));

@@ -13,6 +13,13 @@ using UnityEditorInternal;
 using UnityEditor.Experimental;
 using AssetReference = UnityEditorInternal.InternalEditorUtility.AssetReference;
 
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using LazyTreeViewDataSource = UnityEditor.IMGUI.Controls.LazyTreeViewDataSource<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewSelectState = UnityEditor.IMGUI.Controls.TreeViewSelectState<int>;
+
+
 namespace UnityEditor
 {
     // AssetsTreeViewDataSource only fetches current visible items of the asset database tree, because we derive from LazyTreeViewDataSource

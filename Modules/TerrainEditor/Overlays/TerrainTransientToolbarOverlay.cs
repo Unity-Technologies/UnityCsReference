@@ -40,6 +40,7 @@ namespace UnityEditor.TerrainTools
     {
         bool m_OverlaysPackageInstalled;
         internal static ITerrainPaintToolWithOverlays s_LastSelectedTool;
+        internal static TerrainTool s_LastSelectedTerrainCategory;
 
         // See also
         // - SceneViewToolbars
@@ -148,8 +149,9 @@ namespace UnityEditor.TerrainTools
         private OverlayToolbar CreateAndReturnTerrainTransientToolbar()
         {
             var lastSelectedTool = s_LastSelectedTool; // need to keep track of this because it gets reset in the TerrainTransientToolbar constructor
+            var lastSelectedTerrainCategory = s_LastSelectedTerrainCategory;
             m_TerrainToolbarOverlay = new TerrainTransientToolbar();
-            if (lastSelectedTool != null) m_TerrainToolbarOverlay.SetToolActive(lastSelectedTool, true);
+            if (lastSelectedTool != null && lastSelectedTerrainCategory != TerrainTool.TerrainSettings) m_TerrainToolbarOverlay.SetToolActive(lastSelectedTool, true);
             return m_TerrainToolbarOverlay;
         }
 
@@ -281,10 +283,13 @@ namespace UnityEditor.TerrainTools
             return noRepeats;
         }
 
-        private void LoadTool(TerrainCategory category)
+        private void LoadTool(TerrainCategory category, bool setToolActiveInInspector = true)
         {
             LoadTool(m_CategoryToTools[category], category);
             if (m_CategoryToLastUsedTool[category] is NoneTool) return; // check for an empty category, most likely custom tools
+
+            if (!setToolActiveInInspector) return;
+
             // set the tool active in inspector if it is a paint tool (this is because the paint tools are all in the same drop down)
             // materials tools, custom tools, and sculpt tools = paint tools
             // however, do not check for specific categories because people may put custom tools in whichever category they wish
@@ -372,6 +377,9 @@ namespace UnityEditor.TerrainTools
                     LoadTool(m_CategoryToTools[category], category);
                 }
             }
+
+            if (TerrainInspector.s_activeTerrainInspectorInstance)
+                TerrainTransientToolbarOverlay.s_LastSelectedTerrainCategory = TerrainInspector.s_activeTerrainInspectorInstance.selectedCategory;
 
             //item.Key is the button, item.Value is the tool
             foreach (var item in m_ButtonToTool)
@@ -511,7 +519,7 @@ namespace UnityEditor.TerrainTools
 
             UpdateMenu(); // make the first button activate
 
-            LoadTool(TerrainCategory.Sculpt);
+            LoadTool(TerrainCategory.Sculpt, false);
 
             UpdateState(); // this should set the default first buttons to be active (in this case, the first tool in sculptTools)
 

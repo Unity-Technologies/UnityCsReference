@@ -54,7 +54,7 @@ namespace UnityEditor.Overlays
             get => SnapToFloatingPosition(floatingSnapCorner, m_LockAnchor ? m_FloatingSnapOffset : floatingSnapOffset);
             set
             {
-                var position = canvas.ClampToOverlayWindow(new Rect(value, rootVisualElement.rect.size)).position;
+                var position = canvas.EnsureOverlapsWindow(new Rect(value, rootVisualElement.rect.size)).position;
                 UpdateSnapping(position);
             }
         }

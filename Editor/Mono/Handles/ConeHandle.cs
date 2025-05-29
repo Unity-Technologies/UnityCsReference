@@ -9,6 +9,9 @@ namespace UnityEditor
 {
     public sealed partial class Handles
     {
+        static readonly int[] k_HandleIndices = { 0, 1, 0, 2, 0, 3, 0, 4 };
+        static Vector3[] s_HandlePoints = new Vector3[5];
+
         internal static Vector2 DoConeHandle(Quaternion rotation, Vector3 position, Vector2 angleAndRange, float angleScale, float rangeScale, bool handlesOnly)
         {
             float spotAngle = angleAndRange.x;
@@ -31,23 +34,27 @@ namespace UnityEditor
             temp = GUI.changed;
             GUI.changed = false;
 
+            var centerPos = position + forward * actualRange;
             float lightDisc = actualRange * Mathf.Tan(Mathf.Deg2Rad * spotAngle / 2.0f) * angleScale;
-            lightDisc = SizeSlider(position + forward * actualRange, up, lightDisc);
-            lightDisc = SizeSlider(position + forward * actualRange, -up, lightDisc);
-            lightDisc = SizeSlider(position + forward * actualRange, right, lightDisc);
-            lightDisc = SizeSlider(position + forward * actualRange, -right, lightDisc);
+            lightDisc = SizeSlider(centerPos, up, lightDisc);
+            lightDisc = SizeSlider(centerPos, -up, lightDisc);
+            lightDisc = SizeSlider(centerPos, right, lightDisc);
+            lightDisc = SizeSlider(centerPos, -right, lightDisc);
             if (GUI.changed)
                 spotAngle = Mathf.Clamp((Mathf.Rad2Deg * Mathf.Atan(lightDisc / (actualRange * angleScale)) * 2), 0.0F, 179F);
             GUI.changed |= temp;
 
             // Draw disc
-            if (!handlesOnly)
+            if (!handlesOnly && Event.current.type == EventType.Repaint)
             {
-                Handles.DrawLine(position, (position + forward * actualRange) + up * lightDisc);
-                Handles.DrawLine(position, (position + forward * actualRange) - up * lightDisc);
-                Handles.DrawLine(position, (position + forward * actualRange) + right * lightDisc);
-                Handles.DrawLine(position, (position + forward * actualRange) - right * lightDisc);
-                DrawWireDisc(position + actualRange * forward, forward, lightDisc);
+                s_HandlePoints[0] = centerPos;
+                s_HandlePoints[1] = centerPos + up * lightDisc;
+                s_HandlePoints[2] = centerPos - up * lightDisc;
+                s_HandlePoints[3] = centerPos + right * lightDisc;
+                s_HandlePoints[4] = centerPos - right * lightDisc;
+
+                DrawLines(s_HandlePoints, k_HandleIndices);
+                DrawWireDisc(centerPos, forward, lightDisc);
             }
 
             return new Vector2(spotAngle, range);

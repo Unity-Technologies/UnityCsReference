@@ -218,11 +218,19 @@ namespace UnityEditor.Toolbars
         {
             value = sceneView.in2DMode;
             sceneView.modeChanged2D += OnModeChanged;
+            sceneView.viewpoint.cameraLookThroughStateChanged += OnViewpointChanged;
+            OnViewpointChanged(sceneView.viewpoint.hasActiveViewpoint);
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)
         {
+            sceneView.viewpoint.cameraLookThroughStateChanged -= OnViewpointChanged;
             sceneView.modeChanged2D -= OnModeChanged;
+        }
+
+        void OnViewpointChanged(bool active)
+        {
+            SetEnabled(!active);
         }
 
         void OnModeChanged(bool enabled)

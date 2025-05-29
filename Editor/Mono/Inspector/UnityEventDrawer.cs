@@ -369,6 +369,23 @@ namespace UnityEditorInternal
             return (PersistentListenerMode)mode.enumValueIndex;
         }
 
+        internal static bool ShouldClearMethodAfterTargetChanged(SerializedProperty listener, Object newValue)
+        {
+            // If the type is the same we dont need to clear the method
+            var typeProperty = listener.FindPropertyRelative(kInstanceTypePath);
+            var typeString = typeProperty.stringValue;
+            if (!string.IsNullOrEmpty(typeString))
+            {
+                var objType = Type.GetType(typeString, false);
+
+                if (objType == null || newValue == null || newValue.GetType() != objType)
+                    return true;
+            }
+
+            // Clear if the value is null
+            return newValue == null;
+        }
+
         protected virtual void DrawEvent(Rect rect, int index, bool isActive, bool isFocused)
         {
             var pListener = m_ListenersArray.GetArrayElementAtIndex(index);
@@ -396,8 +413,10 @@ namespace UnityEditorInternal
             {
                 GUI.Box(goRect, GUIContent.none);
                 EditorGUI.PropertyField(goRect, listenerTarget, GUIContent.none);
-                if (EditorGUI.EndChangeCheck())
+                if (EditorGUI.EndChangeCheck() && ShouldClearMethodAfterTargetChanged(pListener, listenerTarget.objectReferenceValue))
+                {
                     methodName.stringValue = null;
+                }
             }
 
             SerializedProperty argument = GetArgument(pListener);
