@@ -311,15 +311,21 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        void ClearWindowData()
+        {
+            m_PlatformConfigs.Clear();
+            m_NameLinks.Clear();
+            m_AddtionalInfoLabel.Clear();
+            m_PackagesListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+        }
+
         /// <summary>
         /// Verify editor can create build profiles for the currently selected card. Otherwise
         /// display relevant documentation to the user.
         /// </summary>
         void OnCardSelected(BuildProfileCard card)
         {
-            m_PlatformConfigs.Clear();
-            m_NameLinks.Clear();
-            m_AddtionalInfoLabel.Clear();
+            ClearWindowData();
             m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(
                 BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId));
             m_SelectedCard = card;

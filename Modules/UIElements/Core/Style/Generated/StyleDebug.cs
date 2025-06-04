@@ -173,6 +173,8 @@ namespace UnityEngine.UIElements
                     return computedStyle.unitySliceType;
                 case StylePropertyId.UnityTextAlign:
                     return computedStyle.unityTextAlign;
+                case StylePropertyId.UnityTextAutoSize:
+                    return computedStyle.unityTextAutoSize;
                 case StylePropertyId.UnityTextGenerator:
                     return computedStyle.unityTextGenerator;
                 case StylePropertyId.UnityTextOutlineColor:
@@ -353,6 +355,8 @@ namespace UnityEngine.UIElements
                     return typeof(SliceType);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(TextAnchor);
+                case StylePropertyId.UnityTextAutoSize:
+                    return typeof(TextAutoSize);
                 case StylePropertyId.UnityTextGenerator:
                     return typeof(TextGeneratorType);
                 case StylePropertyId.UnityTextOutlineColor:
@@ -557,6 +561,8 @@ namespace UnityEngine.UIElements
                     return style.unitySliceType;
                 case StylePropertyId.UnityTextAlign:
                     return style.unityTextAlign;
+                case StylePropertyId.UnityTextAutoSize:
+                    return style.unityTextAutoSize;
                 case StylePropertyId.UnityTextGenerator:
                     return style.unityTextGenerator;
                 case StylePropertyId.UnityTextOutlineColor:
@@ -812,6 +818,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = (StyleEnum<TextAnchor>)value;
+                    break;
+                case StylePropertyId.UnityTextAutoSize:
+                    style.unityTextAutoSize = (StyleTextAutoSize)value;
                     break;
                 case StylePropertyId.UnityTextGenerator:
                     style.unityTextGenerator = (StyleEnum<TextGeneratorType>)value;
@@ -1075,6 +1084,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     style.unityTextAlign = keyword;
                     break;
+                case StylePropertyId.UnityTextAutoSize:
+                    style.unityTextAutoSize = keyword;
+                    break;
                 case StylePropertyId.UnityTextGenerator:
                     style.unityTextGenerator = keyword;
                     break;
@@ -1337,6 +1349,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     return new()
                     {};
+                case StylePropertyId.UnityTextAutoSize:
+                    return new()
+                    {StyleKeyword.None};
                 case StylePropertyId.UnityTextGenerator:
                     return new()
                     {};
@@ -1522,6 +1537,8 @@ namespace UnityEngine.UIElements
                     return (StyleEnum<SliceType>)(SliceType)value;
                 case StylePropertyId.UnityTextAlign:
                     return (StyleEnum<TextAnchor>)(TextAnchor)value;
+                case StylePropertyId.UnityTextAutoSize:
+                    return (StyleTextAutoSize)(TextAutoSize)value;
                 case StylePropertyId.UnityTextGenerator:
                     return (StyleEnum<TextGeneratorType>)(TextGeneratorType)value;
                 case StylePropertyId.UnityTextOutlineColor:
@@ -1702,6 +1719,8 @@ namespace UnityEngine.UIElements
                     return typeof(StyleEnum<SliceType>);
                 case StylePropertyId.UnityTextAlign:
                     return typeof(StyleEnum<TextAnchor>);
+                case StylePropertyId.UnityTextAutoSize:
+                    return typeof(StyleTextAutoSize);
                 case StylePropertyId.UnityTextGenerator:
                     return typeof(StyleEnum<TextGeneratorType>);
                 case StylePropertyId.UnityTextOutlineColor:

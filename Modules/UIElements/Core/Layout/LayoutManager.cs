@@ -6,6 +6,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Unity.Collections;
 using Unity.Profiling;
@@ -42,20 +43,23 @@ delegate float LayoutBaselineFunction(
     float width,
     float height);
 
-class ManagedObjectStore<T> where T : class
+class ManagedObjectStore<T>
 {
     const int k_ChunkSize = 1024 * 2; // 2k elements per 'chunk'
+
+    private readonly int m_ChunkSize;
 
     int m_Length;
 
     readonly List<T[]> m_Chunks;
     readonly Queue<int> m_Free;
 
-    public ManagedObjectStore()
+    public ManagedObjectStore(int chunkSize = k_ChunkSize)
     {
+        m_ChunkSize = chunkSize;
         m_Chunks = new List<T[]>
         {
-            new T[k_ChunkSize]
+            new T[m_ChunkSize]
         };
 
         m_Length = 1;
@@ -66,10 +70,10 @@ class ManagedObjectStore<T> where T : class
     public T GetValue(int index)
     {
         if (index == 0)
-            return null;
+            return default;
 
-        var chunkIndex = index / k_ChunkSize;
-        var indexInChunk = index % k_ChunkSize;
+        var chunkIndex = index / m_ChunkSize;
+        var indexInChunk = index % m_ChunkSize;
 
         return m_Chunks[chunkIndex][indexInChunk];
     }
@@ -80,8 +84,8 @@ class ManagedObjectStore<T> where T : class
         {
             if (value != null)
             {
-                var chunkIndex = index / k_ChunkSize;
-                var indexInChunk = index % k_ChunkSize;
+                var chunkIndex = index / m_ChunkSize;
+                var indexInChunk = index % m_ChunkSize;
 
                 // We have an index already and the value we are assigning is non-null. Perform a simple update.
                 m_Chunks[chunkIndex][indexInChunk] = value;
@@ -91,8 +95,8 @@ class ManagedObjectStore<T> where T : class
                 // We have an index but the assigned value is null. Treat this as a removal and record the index as free for re-use.
                 m_Free.Enqueue(index);
 
-                var chunkIndex = index / k_ChunkSize;
-                var indexInChunk = index % k_ChunkSize;
+                var chunkIndex = index / m_ChunkSize;
+                var indexInChunk = index % m_ChunkSize;
 
                 m_Chunks[chunkIndex][indexInChunk] = default;
 
@@ -107,8 +111,8 @@ class ManagedObjectStore<T> where T : class
                 // Use the free list if available.
                 index = m_Free.Dequeue();
 
-                var chunkIndex = index / k_ChunkSize;
-                var indexInChunk = index % k_ChunkSize;
+                var chunkIndex = index / m_ChunkSize;
+                var indexInChunk = index % m_ChunkSize;
 
                 m_Chunks[chunkIndex][indexInChunk] = value;
             }
@@ -117,11 +121,11 @@ class ManagedObjectStore<T> where T : class
                 // Otherwise allocate a new entry.
                 index = m_Length++;
 
-                if (index >= m_Chunks.Count * k_ChunkSize)
-                    m_Chunks.Add(new T[k_ChunkSize]);
+                if (index >= m_Chunks.Count * m_ChunkSize)
+                    m_Chunks.Add(new T[m_ChunkSize]);
 
-                var chunkIndex = index / k_ChunkSize;
-                var indexInChunk = index % k_ChunkSize;
+                var chunkIndex = index / m_ChunkSize;
+                var indexInChunk = index % m_ChunkSize;
 
                 m_Chunks[chunkIndex][indexInChunk] = value;
             }
@@ -220,9 +224,9 @@ internal class LayoutManager : IDisposable
 
     readonly LayoutHandle m_DefaultConfig;
 
-    readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new();
-    readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new();
-    readonly ManagedObjectStore<WeakReference<VisualElement>> m_ManagedOwners = new();
+    readonly ManagedObjectStore<LayoutMeasureFunction> m_ManagedMeasureFunctions = new(k_CapacitySmall);
+    readonly ManagedObjectStore<LayoutBaselineFunction> m_ManagedBaselineFunctions = new(k_CapacitySmall);
+    readonly ManagedObjectStore<GCHandle> m_ManagedOwners = new();
 
     readonly ProfilerMarker m_CollectMarker = new ("UIElements.CollectLayoutNodes");
 
@@ -277,6 +281,10 @@ internal class LayoutManager : IDisposable
 
                 data->Children.Dispose();
                 data->Children = new();
+
+                var owner = m_ManagedOwners.GetValue(data->ManagedOwnerIndex);
+                if (owner.IsAllocated)
+                    owner.Free();
             }
         }
 
@@ -384,9 +392,14 @@ internal class LayoutManager : IDisposable
             data.Children.Dispose();
             data.Children = new();
         }
-        m_ManagedMeasureFunctions.UpdateValue(ref data.ManagedMeasureFunctionIndex, null);
-        m_ManagedBaselineFunctions.UpdateValue(ref data.ManagedBaselineFunctionIndex, null);
-        m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, null);
+
+        data.UsesMeasure = false;
+        data.UsesBaseline = false;
+
+        GCHandle owner = m_ManagedOwners.GetValue(data.ManagedOwnerIndex);
+        if (owner.IsAllocated)
+            owner.Free();
+        m_ManagedOwners.UpdateValue(ref data.ManagedOwnerIndex, default);
         m_Nodes.Free(handle);
     }
 
@@ -396,18 +409,6 @@ internal class LayoutManager : IDisposable
             TryRecycleNodes();
     }
 
-    public LayoutMeasureFunction GetMeasureFunction(LayoutHandle handle)
-    {
-        return m_ManagedMeasureFunctions.GetValue(GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex);
-    }
-
-    public void SetMeasureFunction(LayoutHandle handle, LayoutMeasureFunction value)
-    {
-        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Setting Measure method on a node with no Owner");
-        ref var index = ref GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex;
-        m_ManagedMeasureFunctions.UpdateValue(ref index, value);
-    }
-
     public VisualElement GetOwner(LayoutHandle handle)
     {
         //This assumes an internal behavior of the managed object store... invalid could be -1 instead
@@ -415,31 +416,51 @@ internal class LayoutManager : IDisposable
             return null;
 
         // Will throw if the weak referenc is not in the list
-        m_ManagedOwners.GetValue(GetAccess().GetNodeData(handle).ManagedOwnerIndex).TryGetTarget(out var ve);
-        return ve;
+        return m_ManagedOwners.GetValue(GetAccess().GetNodeData(handle).ManagedOwnerIndex).Target as VisualElement;
     }
 
     public void SetOwner(LayoutHandle handle, VisualElement value)
     {
         if (value == null)
         {
-            if (GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex != 0) Debug.LogWarning("Node with no owner has a Measure method");
-            if (GetAccess().GetNodeData(handle).ManagedBaselineFunctionIndex != 0) Debug.LogWarning("Node with no owner has a baseline method");
+            if (GetAccess().GetNodeData(handle).UsesMeasure) Debug.LogWarning("Node with no owner uses measure feature");
+            if (GetAccess().GetNodeData(handle).UsesBaseline) Debug.LogWarning("Node with no owner uses baseline feature");
         }
         ref var index = ref GetAccess().GetNodeData(handle).ManagedOwnerIndex;
-        m_ManagedOwners.UpdateValue(ref index, new(value));
+
+        GCHandle gcHandle = m_ManagedOwners.GetValue(index);
+        if (gcHandle.IsAllocated)
+            gcHandle.Free();
+
+        if (value == null)
+            gcHandle = default;
+        else
+            gcHandle = GCHandle.Alloc(value, GCHandleType.Weak);
+
+        m_ManagedOwners.UpdateValue(ref index, gcHandle);
     }
 
+    public LayoutMeasureFunction GetMeasureFunction(LayoutHandle handle)
+    {
+        int index = GetAccess().GetConfigData(handle).ManagedMeasureFunctionIndex;
+        return m_ManagedMeasureFunctions.GetValue(index);
+    }
+
+    public void SetMeasureFunction(LayoutHandle handle, LayoutMeasureFunction value)
+    {
+        ref var index = ref GetAccess().GetConfigData(handle).ManagedMeasureFunctionIndex;
+        m_ManagedMeasureFunctions.UpdateValue(ref index, value);
+    }
 
     public LayoutBaselineFunction GetBaselineFunction(LayoutHandle handle)
     {
-        return m_ManagedBaselineFunctions.GetValue(GetAccess().GetNodeData(handle).ManagedMeasureFunctionIndex);
+        int index = GetAccess().GetConfigData(handle).ManagedBaselineFunctionIndex;
+        return m_ManagedBaselineFunctions.GetValue(index);
     }
 
     public void SetBaselineFunction(LayoutHandle handle, LayoutBaselineFunction value)
     {
-        if (GetAccess().GetNodeData(handle).ManagedOwnerIndex == 0) Debug.LogWarning("Setting Baseline method on a node with no Owner");
-        ref var index = ref GetAccess().GetNodeData(handle).ManagedBaselineFunctionIndex;
+        ref var index = ref GetAccess().GetConfigData(handle).ManagedBaselineFunctionIndex;
         m_ManagedBaselineFunctions.UpdateValue(ref index, value);
     }
 }

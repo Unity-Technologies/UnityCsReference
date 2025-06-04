@@ -106,6 +106,7 @@ namespace UnityEngine.UIElements
         public int unitySliceTop => rareData.Read().unitySliceTop;
         public SliceType unitySliceType => rareData.Read().unitySliceType;
         public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
+        public TextAutoSize unityTextAutoSize => rareData.Read().unityTextAutoSize;
         public TextGeneratorType unityTextGenerator => inheritedData.Read().unityTextGenerator;
         public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
         public float unityTextOutlineWidth => inheritedData.Read().unityTextOutlineWidth;
@@ -445,6 +446,9 @@ namespace UnityEngine.UIElements
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.Write().unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
                         break;
+                    case StylePropertyId.UnityTextAutoSize:
+                        rareData.Write().unityTextAutoSize = reader.ReadTextAutoSize(0);
+                        break;
                     case StylePropertyId.UnityTextGenerator:
                         inheritedData.Write().unityTextGenerator = (TextGeneratorType)reader.ReadEnum(StyleEnumType.TextGeneratorType, 0);
                         break;
@@ -773,6 +777,11 @@ namespace UnityEngine.UIElements
             inheritedData.Write().textShadow = st;
         }
 
+        public void ApplyStyleTextAutoSize(TextAutoSize st)
+        {
+            rareData.Write().unityTextAutoSize = st;
+        }
+
         public void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle other)
         {
             switch (id)
@@ -1008,6 +1017,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = other.inheritedData.Read().unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextAutoSize:
+                    rareData.Write().unityTextAutoSize = other.rareData.Read().unityTextAutoSize;
                     break;
                 case StylePropertyId.UnityTextGenerator:
                     inheritedData.Write().unityTextGenerator = other.inheritedData.Read().unityTextGenerator;
@@ -3337,6 +3349,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = InitialStyle.unityTextAlign;
                     break;
+                case StylePropertyId.UnityTextAutoSize:
+                    rareData.Write().unityTextAutoSize = InitialStyle.unityTextAutoSize;
+                    break;
                 case StylePropertyId.UnityTextGenerator:
                     inheritedData.Write().unityTextGenerator = InitialStyle.unityTextGenerator;
                     break;
@@ -3596,7 +3611,8 @@ namespace UnityEngine.UIElements
             {
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unitySliceType != y.unitySliceType ||
                     x.textOverflow != y.textOverflow ||
-                    x.unitySliceScale != y.unitySliceScale))
+                    x.unitySliceScale != y.unitySliceScale ||
+                    x.unityTextAutoSize != y.unityTextAutoSize))
                 {
                     changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
                 }

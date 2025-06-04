@@ -549,6 +549,37 @@ namespace UnityEditor.Modules
         }
 
         /// <summary>
+        /// Helper method for rendering an IMGUI popup over an enum.
+        /// </summary>
+        protected bool ShowIMGUIPopupOption<T>
+        (
+            GUIContent label,
+            T[] options,
+            GUIContent[] optionString,
+            T currentSetting,
+            out T returnSettings
+        ) where T : Enum
+        {
+            using var vertical = new EditorGUILayout.VerticalScope();
+            returnSettings = currentSetting;
+
+            // Find the index of the currently set value relative to the GUI layout
+            var selectedIndex = Array.FindIndex(options,
+                match => match.Equals(currentSetting));
+            selectedIndex = selectedIndex < 0 ? 0 : selectedIndex;
+
+            EditorGUI.BeginChangeCheck();
+            var newIndex = EditorGUILayout.Popup(label, selectedIndex, optionString);
+            if (EditorGUI.EndChangeCheck())
+            {
+                returnSettings = options[newIndex];
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Helper method for rendering an IMGUI popup for GUIContent
         /// option values
         /// </summary>

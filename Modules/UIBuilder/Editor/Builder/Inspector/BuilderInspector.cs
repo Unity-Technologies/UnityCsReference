@@ -67,6 +67,7 @@ namespace Unity.UI.Builder
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
         VisualElement m_TextGeneratorStyle;
+        VisualElement m_TextAutoSizeStyle;
 
         // Controllers
         public UxmlBatchedChangesController batchedChangesController { get; }
@@ -256,9 +257,11 @@ namespace Unity.UI.Builder
             template.CloneTree(this);
 
             m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
+            m_TextAutoSizeStyle = this.Q<BuilderStyleRow>(null, "unity-text-auto-size");
 
             UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
             m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            m_TextAutoSizeStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -1763,6 +1766,7 @@ namespace Unity.UI.Builder
         void ChangeTextGeneratorStyleVisibility(bool show)
         {
             m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            m_TextAutoSizeStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

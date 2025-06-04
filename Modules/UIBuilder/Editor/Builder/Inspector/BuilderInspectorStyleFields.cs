@@ -355,6 +355,15 @@ namespace Unity.UI.Builder
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "color"), out var colorTooltip))
                     textShadowStyleField.UpdateSubFieldVisualInputTooltips(offsetXTooltip, offsetYTooltip, blurRadiusTooltip, colorTooltip);
             }
+            else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
+            {
+                textAutoSizeStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTextAutoSize(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "min"), out var minSizeTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "max"), out var maxSizeTooltip))
+                    textAutoSizeStyleField.UpdateSubFieldVisualInputTooltips(minSizeTooltip, maxSizeTooltip);
+            }
             else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
             {
                 transformOriginStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTransformOrigin(e, styleName));
@@ -831,6 +840,17 @@ namespace Unity.UI.Builder
                 var uiField = fieldElement as TextShadowStyleField;
                 var value = GetComputedStyleTextShadowValue(val);
                 if (useStyleProperty && styleProperty.TryGetTextShadow(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                uiField.SetValueWithoutNotify(value);
+                return true;
+            }
+
+            if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField)
+            {
+                var uiField = fieldElement as TextAutoSizeStyleField;
+                var value = GetComputedStyleTextAutoSizeValue(val);
+                if (useStyleProperty && styleProperty.TryGetTextAutoSize(styleSheet, out var propertyValue))
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
@@ -1424,6 +1444,10 @@ namespace Unity.UI.Builder
                      fieldElement is TextShadowStyleField textShadowStyleField)
             {
                 DispatchChangeEvent(textShadowStyleField);
+            }
+            else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
+            {
+                DispatchChangeEvent(textAutoSizeStyleField);
             }
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
@@ -2698,6 +2722,16 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeTextAutoSize(ChangeEvent<TextAutoSize> e, string styleName)
+        {
+            var field = e.target as TextAutoSizeStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetTextAutoSize(styleSheet, e.newValue);
+            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
+        }
+
         void OnFieldValueChangeTransformOrigin(ChangeEvent<TransformOrigin> e, string styleName)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
@@ -2882,6 +2916,11 @@ namespace Unity.UI.Builder
             return val is StyleTextShadow || val is TextShadow;
         }
 
+        static public bool IsComputedStyleTextAutoSize(object val)
+        {
+            return val is StyleTextAutoSize || val is TextAutoSize;
+        }
+
         static public bool IsComputedStyleTransformOrigin(object val)
         {
             return val is StyleTransformOrigin || val is TransformOrigin;
@@ -2952,6 +2991,15 @@ namespace Unity.UI.Builder
                 return textShadow;
 
             var style = (StyleTextShadow)val;
+            return style.value;
+        }
+
+        static public TextAutoSize GetComputedStyleTextAutoSizeValue(object val)
+        {
+            if (val is TextAutoSize textAutoSize)
+                return textAutoSize;
+
+            var style = (StyleTextAutoSize)val;
             return style.value;
         }
 

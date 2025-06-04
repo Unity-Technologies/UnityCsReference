@@ -358,6 +358,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
         /// <summary>
+        /// Automatically adjusts the text size to best fit its container using specified minimum and maximum values.
+        /// </summary>
+        StyleTextAutoSize unityTextAutoSize { get; set; }
+        /// <summary>
         /// Switches between Unity's standard and advanced text generator
         /// </summary>
         /// <remarks>

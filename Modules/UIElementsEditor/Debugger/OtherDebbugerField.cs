@@ -87,7 +87,7 @@ namespace UnityEngine.UIElements
 
 
             m_angleField.RegisterValueChangedCallback(e =>
-            {   
+            {
                 if (e.newValue != value.angle)
                 {
                     var newVal = value;
@@ -114,6 +114,72 @@ namespace UnityEngine.UIElements
             base.SetValueWithoutNotify(rotate);
             m_angleField.SetValueWithoutNotify(value.angle);
             m_axisField.SetValueWithoutNotify(value.axis);
+        }
+    }
+
+    internal class TextAutoSizeField : BaseField<TextAutoSize>
+    {
+        EnumField mode = new EnumField("Mode");
+        StyleLengthField minSize = new StyleLengthField("Min Size");
+        StyleLengthField maxSize = new StyleLengthField("Max Size");
+
+        public TextAutoSizeField() : this(null) { }
+        public TextAutoSizeField(string label) : this(label, TextAutoSize.None()) { }
+        public TextAutoSizeField(string label, TextAutoSize tas) : base(label)
+        {
+            style.flexBasis = StyleKeyword.Auto;
+            style.flexShrink = 0;
+            mode.style.flexGrow = 1;
+            minSize.style.flexGrow = 1;
+            maxSize.style.flexGrow = 1;
+
+            VisualElement content = new() { style = { flexDirection = FlexDirection.Row, flexShrink = 0 } };
+            content.Add(mode);
+            content.Add(minSize);
+            content.Add(maxSize);
+            visualInput = content;
+            content.Query<Label>().ForEach(l => l.style.minWidth = 0);
+
+            mode.Init(TextAutoSizeMode.None);
+            mode.RegisterValueChangedCallback(e =>
+            {
+                if ((TextAutoSizeMode)e.newValue != value.mode)
+                {
+                    var newVal = value;
+                    newVal.mode = (TextAutoSizeMode)e.newValue;
+                    value = newVal;
+                }
+            });
+
+            minSize.RegisterValueChangedCallback(e =>
+            {
+                if (!Mathf.Approximately(e.newValue.value.value, value.minSize.value))
+                {
+                    var newVal = value;
+                    newVal.minSize = e.newValue.value;
+                    value = newVal;
+                }
+            });
+
+            maxSize.RegisterValueChangedCallback(e =>
+            {
+                if (!Mathf.Approximately(e.newValue.value.value, value.maxSize.value))
+                {
+                    var newVal = value;
+                    newVal.maxSize = e.newValue.value;
+                    value = newVal;
+                }
+            });
+
+            SetValueWithoutNotify(tas);
+        }
+
+        public override void SetValueWithoutNotify(TextAutoSize tas)
+        {
+            base.SetValueWithoutNotify(tas);
+            mode.SetValueWithoutNotify(value.mode);
+            minSize.SetValueWithoutNotify(value.minSize.value);
+            maxSize.SetValueWithoutNotify(value.maxSize.value);
         }
     }
 
@@ -302,7 +368,6 @@ namespace UnityEngine.UIElements
             x.SetValueWithoutNotify(value.x);
             y.SetValueWithoutNotify(value.y);
         }
-
     }
 }
 

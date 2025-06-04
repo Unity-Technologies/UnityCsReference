@@ -107,6 +107,17 @@ namespace UnityEngine.UIElements
             return StyleKeyword.Null;
         }
 
+        // public StyleTextAutoSize GetStyleTextAutoSize(StylePropertyId id)
+        // {
+        //     var inline = new StyleValue();
+        //     if (TryGetStyleValue(id, ref inline))
+        //     {
+        //         // ReadTextAutoSize parses the composite value starting at index 0.
+        //         return new StyleTextAutoSize(inline., inline.keyword);
+        //     }
+        //     return StyleKeyword.Null;
+        // }
+
 
         public bool TryGetStyleValue(StylePropertyId id, ref StyleValue value)
         {
@@ -156,6 +167,9 @@ namespace UnityEngine.UIElements
 
         private bool m_HasInlineTextShadow;
         private StyleTextShadow m_InlineTextShadow;
+
+        private bool m_HasInlineTextAutoSize;
+        private StyleTextAutoSize m_InlineTextAutoSize;
 
         private bool m_HasInlineTransformOrigin;
         private StyleTransformOrigin m_InlineTransformOrigin;
@@ -236,6 +250,8 @@ namespace UnityEngine.UIElements
                     return m_HasInlineCursor;
                 case StylePropertyId.TextShadow:
                     return m_HasInlineTextShadow;
+                case StylePropertyId.UnityTextAutoSize:
+                    return m_HasInlineTextAutoSize;
                 case StylePropertyId.TransformOrigin:
                     return m_HasInlineTransformOrigin;
                 case StylePropertyId.Translate:
@@ -285,6 +301,11 @@ namespace UnityEngine.UIElements
             if (ve.style.textShadow.keyword != StyleKeyword.Null)
             {
                 computedStyle.ApplyStyleTextShadow(ve.style.textShadow.value);
+            }
+
+            if (ve.style.unityTextAutoSize.keyword != StyleKeyword.Null)
+            {
+                computedStyle.ApplyStyleTextAutoSize(ve.style.unityTextAutoSize.value);
             }
 
             if (m_HasInlineTransformOrigin)
@@ -348,6 +369,27 @@ namespace UnityEngine.UIElements
                 }
             }
         }
+
+        StyleTextAutoSize IStyle.unityTextAutoSize
+        {
+            get
+            {
+                var inlineTextAutoSize = new StyleTextAutoSize();
+                if (TryGetInlineTextAutoSize(ref inlineTextAutoSize))
+                    return inlineTextAutoSize;
+                return StyleKeyword.Null;
+            }
+            set
+            {
+                if (SetInlineTextAutoSize(value))
+                {
+                    ve.IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
+                }
+            }
+        }
+
+
+
 
         StyleBackgroundSize IStyle.backgroundSize
         {
@@ -924,6 +966,40 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private bool SetInlineTextAutoSize(StyleTextAutoSize inlineValue)
+        {
+            var styleTextAutoSize = new StyleTextAutoSize();
+            if (TryGetInlineTextAutoSize(ref styleTextAutoSize))
+            {
+                if (styleTextAutoSize.value == inlineValue.value && styleTextAutoSize.keyword == inlineValue.keyword)
+                    return false;
+            }
+            else if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                return false;
+            }
+
+            styleTextAutoSize.value = inlineValue.value;
+            styleTextAutoSize.keyword = inlineValue.keyword;
+
+            if (inlineValue.keyword == StyleKeyword.Null)
+            {
+                m_HasInlineTextAutoSize = false;
+                return RemoveInlineStyle(StylePropertyId.UnityTextAutoSize);
+            }
+
+            m_InlineTextAutoSize = styleTextAutoSize;
+            m_HasInlineTextAutoSize = true;
+            ApplyStyleTextAutoSize(styleTextAutoSize);
+
+            return true;
+        }
+
+        private void ApplyStyleTextAutoSize(StyleTextAutoSize textAutoSize)
+        {
+                ve.computedStyle.ApplyStyleTextAutoSize(textAutoSize.value);
+        }
+
         private bool SetInlineTransformOrigin(StyleTransformOrigin inlineValue)
         {
             var styleTransformOrigin = new StyleTransformOrigin();
@@ -1276,6 +1352,16 @@ namespace UnityEngine.UIElements
             if (m_HasInlineTextShadow)
             {
                 value = m_InlineTextShadow;
+                return true;
+            }
+            return false;
+        }
+
+        public bool TryGetInlineTextAutoSize(ref StyleTextAutoSize value)
+        {
+            if (m_HasInlineTextAutoSize)
+            {
+                value = m_InlineTextAutoSize;
                 return true;
             }
             return false;

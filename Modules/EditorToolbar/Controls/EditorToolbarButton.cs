@@ -16,8 +16,8 @@ namespace UnityEditor.Toolbars
         internal const string textIconClassName = EditorToolbar.elementTextIconClassName;
         internal const string iconClassName = EditorToolbar.elementIconClassName;
 
-        internal const string k_TextElementName = "EditorToolbarButtonText";
-        internal const string k_TextIconElementName = "EditorToolbarButtonTextIcon";
+        internal const string textElementName = "EditorToolbarButtonText";
+        internal const string textIconElementName = "EditorToolbarButtonTextIcon";
 
         Image m_IconElement;
         TextElement m_TextIconElement;
@@ -80,11 +80,11 @@ namespace UnityEditor.Toolbars
             m_IconElement.AddToClassList(iconClassName);
 
             m_TextIconElement = new TextElement();
-            m_TextIconElement.name = k_TextIconElementName;
+            m_TextIconElement.name = textIconElementName;
             m_TextIconElement.AddToClassList(textIconClassName);
 
             m_TextElement = new TextElement();
-            m_TextElement.name = k_TextElementName;
+            m_TextElement.name = textElementName;
             m_TextElement.AddToClassList(textClassName);
 
 

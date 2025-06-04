@@ -22,6 +22,9 @@ namespace UnityEngine.UIElements
     class FixedItemHeightDecoratorAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    class SelectableTextElementAttribute : PropertyAttribute { }
+
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     class MultilineDecoratorAttribute : PropertyAttribute { }
 
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

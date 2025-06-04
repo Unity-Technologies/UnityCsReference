@@ -114,12 +114,15 @@ internal class ATGTextJobSystem
         {
             var jobHandle = textJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
+            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
         else
+        {
             for (int i = 0; i < textJobDatas.Count; i++)
                 textJob.Execute(i);
+            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, false);
+        }
 
-        mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         k_ATGTextJobMarker.End();
     }
 

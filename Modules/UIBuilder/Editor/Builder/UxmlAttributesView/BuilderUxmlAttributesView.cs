@@ -769,6 +769,13 @@ namespace Unity.UI.Builder
                 else if (attributeName == "z")
                     return vec3IntField.value.z;
             }
+            else if (currentElement is TextElement textElement)
+            {
+                if (attributeName == "selectable")
+                {
+                    return textElement.selection.isSelectable;
+                }
+            }
 
             return null;
         }
@@ -2471,6 +2478,7 @@ namespace Unity.UI.Builder
                     currentAttributesUxmlOwner.RemoveAttribute(attributeName);
                     var description = fieldElement.GetLinkedAttributeDescription() as UxmlSerializedAttributeDescription;
                     description.SyncDefaultValue(currentSerializedData, true);
+
                     CallDeserializeOnElement();
                 }
 

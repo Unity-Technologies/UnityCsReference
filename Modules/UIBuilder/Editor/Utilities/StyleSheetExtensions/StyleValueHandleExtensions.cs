@@ -52,6 +52,12 @@ namespace Unity.UI.Builder
             styleSheet.WriteString(ref valueHandle, value);
         }
 
+        public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Enum value)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleSheet.WriteEnum(ref valueHandle, value);
+        }
+
         public static void SetValue(this StyleSheet styleSheet, StyleValueHandle valueHandle, Object value)
         {
             // Undo/Redo

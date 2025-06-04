@@ -391,7 +391,9 @@ namespace UnityEditor.Overlays
                 {
                     menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
                     {
-                        DeletePreset(preset);
+	                    DeletePreset(preset);
+	                    window.overlayCanvas.SetLastAppliedPresetName(OverlayCanvas.k_DefaultPresetName);
+	                    window.overlayCanvas.afterOverlaysInitialized.Invoke();
                     });
                 }
             }
@@ -405,6 +407,7 @@ namespace UnityEditor.Overlays
                 {
                     RevertPreferencesPresetsToDefault();
                     ReloadAllPresets();
+                    window.overlayCanvas.ApplyPreset(GetDefaultPreset(window.GetType()));
                 }
             });
         }

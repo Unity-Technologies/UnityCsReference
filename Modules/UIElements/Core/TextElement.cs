@@ -60,6 +60,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
             [SerializeField] bool parseEscapeSequences;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags parseEscapeSequences_UxmlAttributeFlags;
+            [SelectableTextElement]
             [FormerlySerializedAs("selectable")]
             [SerializeField, UxmlAttribute("selectable")] bool isSelectable;
             [FormerlySerializedAs("selectable_UxmlAttributeFlags")]
@@ -118,8 +119,8 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
             UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences" };
             UxmlBoolAttributeDescription m_Selectable = new UxmlBoolAttributeDescription { name = "selectable" };
-            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click" };
-            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click" };
+            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "double-click-selects-word" };
+            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "triple-click-selects-line" };
             UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
 
             /// <summary>

@@ -457,6 +457,7 @@ namespace UnityEngine.UIElements
             // m_VisualPanel.SetOwner(this);
 
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
+            layoutConfig.Measure = VisualElement.Measure;
 
             m_UIElementsBridge = new RuntimeUIElementsBridge();
         }

@@ -93,6 +93,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleInt, int> m_UnitySliceTop;
         private StylePropertyData<StyleEnum<SliceType>, SliceType> m_UnitySliceType;
         private StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> m_UnityTextAlign;
+        private StylePropertyData<StyleTextAutoSize, TextAutoSize> m_UnityTextAutoSize;
         private StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> m_UnityTextGenerator;
         private StylePropertyData<StyleColor, Color> m_UnityTextOutlineColor;
         private StylePropertyData<StyleFloat, float> m_UnityTextOutlineWidth;
@@ -1546,6 +1547,25 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
+        public StylePropertyData<StyleTextAutoSize, TextAutoSize> unityTextAutoSize
+        {
+            get => m_UnityTextAutoSize;
+            private set
+            {
+                m_UnityTextAutoSize.target = value.target;
+                if (m_UnityTextAutoSize == value)
+                {
+                    value.Dispose();
+                    return;
+                }
+
+                m_UnityTextAutoSize.Dispose();
+                m_UnityTextAutoSize = value;
+                Notify();
+            }
+        }
+
+        [CreateProperty]
         public StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> unityTextGenerator
         {
             get => m_UnityTextGenerator;
@@ -1775,6 +1795,7 @@ namespace UnityEngine.UIElements
             unitySliceTop = ComputeStyleProperty(element, nameof(unitySliceTop), element.style.unitySliceTop, element.computedStyle.unitySliceTop, in context);
             unitySliceType = ComputeStyleProperty(element, nameof(unitySliceType), element.style.unitySliceType, element.computedStyle.unitySliceType, in context);
             unityTextAlign = ComputeStyleProperty(element, nameof(unityTextAlign), element.style.unityTextAlign, element.computedStyle.unityTextAlign, in context);
+            unityTextAutoSize = ComputeStyleProperty(element, nameof(unityTextAutoSize), element.style.unityTextAutoSize, element.computedStyle.unityTextAutoSize, in context);
             unityTextGenerator = ComputeStyleProperty(element, nameof(unityTextGenerator), element.style.unityTextGenerator, element.computedStyle.unityTextGenerator, in context);
             unityTextOutlineColor = ComputeStyleProperty(element, nameof(unityTextOutlineColor), element.style.unityTextOutlineColor, element.computedStyle.unityTextOutlineColor, in context);
             unityTextOutlineWidth = ComputeStyleProperty(element, nameof(unityTextOutlineWidth), element.style.unityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth, in context);
@@ -1863,6 +1884,7 @@ namespace UnityEngine.UIElements
             m_UnitySliceTop.Dispose();
             m_UnitySliceType.Dispose();
             m_UnityTextAlign.Dispose();
+            m_UnityTextAutoSize.Dispose();
             m_UnityTextGenerator.Dispose();
             m_UnityTextOutlineColor.Dispose();
             m_UnityTextOutlineWidth.Dispose();
