@@ -134,6 +134,19 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static TextAutoSize ToTextAutoSize(this StyleKeyword keyword)
+        {
+            switch (keyword)
+            {
+                case StyleKeyword.None:
+                    return TextAutoSize.None();
+                default:
+                    Debug.LogAssertion($"Unexpected StyleKeyword '{keyword.ToString()}'");
+                    return new TextAutoSize();
+            }
+
+        }
+
         internal static Length ToLength(this StyleLength styleLength)
         {
             switch (styleLength.keyword)

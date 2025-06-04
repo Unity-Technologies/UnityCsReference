@@ -403,6 +403,10 @@ namespace UnityEditor.UIElements.Debugger
 
                 Add(m_SpecificityLabel);
             }
+            else if (val is TextAutoSize textAutoSize)
+            {
+                UpdateORCreateField<TextAutoSizeField, TextAutoSize>(textAutoSize);
+            }
             else if (val is Rotate)
             {
                 UpdateORCreateField<RotateField, Rotate >(val);
@@ -646,6 +650,10 @@ namespace UnityEditor.UIElements.Debugger
                         textShadow.blurRadius = newBlur;
 
                     val = new StyleTextShadow(textShadow);
+                }
+                else if (val is TextAutoSize textAutoSize)
+                {
+                    val = new StyleTextAutoSize((TextAutoSize)newValue);
                 }
                 else if (type == typeof(StyleEnum<Overflow>) && newValue is OverflowInternal)
                 {

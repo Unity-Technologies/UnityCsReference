@@ -33,6 +33,11 @@ namespace UnityEngine.TextCore
         internal VerticalAlignment verticalAlignment;
 
         public int fontSize;        // Encoded in Fixed Point.
+
+        public bool bestFit;
+        public int maxFontSize;          // Encoded in Fixed Point.
+        public int minFontSize;          // Encoded in Fixed Point.
+
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
 
@@ -93,6 +98,9 @@ namespace UnityEngine.TextCore
         {
             text = tgs.text;
             fontSize = tgs.fontSize;
+            bestFit = tgs.bestFit;
+            maxFontSize = tgs.maxFontSize;
+            minFontSize = tgs.minFontSize;
             screenWidth = tgs.screenWidth;
             screenHeight = tgs.screenHeight;
             wordWrap = tgs.wordWrap;
@@ -137,6 +145,9 @@ namespace UnityEngine.TextCore
                 $"{nameof(screenWidth)}: {screenWidth}\n" +
                 $"{nameof(screenHeight)}: {screenHeight}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
+                $"{nameof(bestFit)}: {bestFit}\n" +
+                $"{nameof(maxFontSize)}: {maxFontSize}\n" +
+                $"{nameof(minFontSize)}: {minFontSize}\n" +
                 $"{nameof(wordWrap)}: {wordWrap}\n" +
                 $"{nameof(languageDirection)}: {languageDirection}\n" +
                 $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +

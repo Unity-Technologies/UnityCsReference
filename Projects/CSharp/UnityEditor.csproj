@@ -9030,6 +9030,9 @@
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\StyleVariableUtilities.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\StyleVariableUtilities.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TextAutoSizeStyleField.cs">
+      <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TextAutoSizeStyleField.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIBuilder\Editor\Utilities\StyleField\TextShadowStyleField.cs">
       <Link>Modules\UIBuilder\Editor\Utilities\StyleField\TextShadowStyleField.cs</Link>
     </Compile>

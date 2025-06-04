@@ -557,7 +557,7 @@ By default, Windows will combine these under a single taskbar item.");
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
-                EditorTextSettings.currentEditorTextRenderingMode = m_EditorTextRenderingMode;
+                EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
                 EditorApplication.UpdateEditorTextRenderingMode(m_EditorTextRenderingMode);
 
                 // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
@@ -565,7 +565,7 @@ By default, Windows will combine these under a single taskbar item.");
                 EditorUtility.RequestScriptReload();
             }
 
-            if (m_EditorTextRenderingMode == EditorTextRenderingMode.SDF)
+            if (EditorTextSettings.currentEditorTextRenderingMode == EditorTextRenderingMode.SDF)
                 m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
@@ -1237,7 +1237,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
             EditorPrefs.SetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", m_EditorTextSharpness);
-            EditorTextSettings.currentEditorTextRenderingMode = m_EditorTextRenderingMode;
+            EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
             EditorApplication.RequestRepaintAllTexts(VersionChangeType.Repaint);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);

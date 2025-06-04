@@ -470,6 +470,43 @@ namespace UnityEngine.UIElements.StyleSheets
             return value;
         }
 
+        public static TextAutoSize ReadTextAutoSize(int valCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3)
+        {
+            switch (valCount)
+            {
+                case 0:
+                case 1:
+                case 2:
+                    return TextAutoSize.None();
+                case 3:
+                    if (val2.handle.valueType == StyleValueType.Keyword && (StyleValueKeyword)val2.handle.valueIndex == StyleValueKeyword.None)
+                        return TextAutoSize.None();
+
+                    if (val1.handle.valueType == StyleValueType.Enum)
+                    {
+                        var enumValue = (TextAutoSizeMode)ReadEnum(StyleEnumType.TextAutoSizeMode, val1);
+                        if (enumValue == TextAutoSizeMode.None)
+                            return TextAutoSize.None();
+
+                        if (enumValue == TextAutoSizeMode.BestFit)
+                        {
+                            var autoSize = new TextAutoSize();
+                            autoSize.mode = enumValue;
+
+                            if (val2.sheet.TryReadDimension(val2.handle, out var minSize))
+                                autoSize.minSize = minSize.ToLength();
+                            if (val3.sheet.TryReadDimension(val3.handle, out var maxSize))
+                                autoSize.maxSize = maxSize.ToLength();
+
+                            return autoSize;
+                        }
+                    }
+                    break;
+            }
+
+            return TextAutoSize.None();
+        }
+
         internal static Cursor ReadCursor(int valueCount, StylePropertyValue val1, StylePropertyValue val2, StylePropertyValue val3, float dpiScaling = 1.0f)
         {
             var cursor = new Cursor();

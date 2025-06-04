@@ -65,14 +65,14 @@ static class LayoutDelegates
         LayoutMeasureMode widthMode,
         float height,
         LayoutMeasureMode heightMode,
-        ref IntPtr exception, 
+        ref IntPtr exception,
         out LayoutSize result)
     {
-        var measureFunction = node.Measure;
+        var measureFunction = node.Config.Measure;
 
         if (measureFunction == null)
         {
-            Debug.Assert(false, "Measure called on a null method");
+            Debug.Assert(false, "No measure function set in this node's config");
             result = default;
             return;
         }
@@ -104,9 +104,10 @@ static class LayoutDelegates
         float width,
         float height)
     {
-        var baselineFunction = node.Baseline;
+        var baselineFunction = node.Config.Baseline;
         if (baselineFunction == null)
         {
+            Debug.Assert(false, "No baselineFunction function set in this node's config");
             return 0f;
         }
 

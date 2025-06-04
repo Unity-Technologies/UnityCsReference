@@ -198,6 +198,7 @@ namespace Unity.UI.Builder
         protected override void EndDrag()
         {
             ResetDragPreviewElement();
+            m_ElementsToReparent.Clear();
         }
 
         protected override void FailAction(VisualElement target)

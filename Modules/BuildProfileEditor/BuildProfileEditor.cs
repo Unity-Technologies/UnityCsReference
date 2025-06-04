@@ -6,6 +6,7 @@ using System;
 using UnityEditor.Modules;
 using UnityEditor.Build.Profile.Elements;
 using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Build.Profile
@@ -393,7 +394,21 @@ namespace UnityEditor.Build.Profile
 
             var property = serializedObject.FindProperty("m_ScriptingDefines");
             m_PlayerScriptingDefinesFoldout.text = TrText.scriptingDefines;
-            m_PlayerScriptingDefinesFoldout.tooltip = TrText.scriptingDefinesTooltip;
+
+            // Add tooltip to the foldout label
+            var playerScriptingDefinesLabel = m_PlayerScriptingDefinesFoldout.Q<Label>();
+            Vector2 tooltipPosition = new Vector2();
+            playerScriptingDefinesLabel.RegisterCallback<MouseOverEvent>(evt =>
+            {
+                tooltipPosition = evt.mousePosition;
+            });
+            playerScriptingDefinesLabel.RegisterCallback<TooltipEvent>(evt =>
+            {
+                evt.tooltip = TrText.scriptingDefinesTooltip;
+                evt.rect = new Rect(tooltipPosition.x, tooltipPosition.y, evt.rect.width, evt.rect.height);
+                evt.StopPropagation();
+            });
+
             var listView = m_PlayerScriptingDefinesFoldout.Q<ListView>("scripting-defines-listview");
             var warningHelpbox = m_PlayerScriptingDefinesFoldout.Q<HelpBox>("scripting-defines-warning-help-box");
             warningHelpbox.text = TrText.scriptingDefinesWarningHelpbox;

@@ -80,6 +80,8 @@ namespace UnityEngine.UIElements
             PropertyBag.Register(new Translate.PropertyBag());
             PropertyBag.Register(new StyleValuePropertyBag<StyleTextShadow, TextShadow>());
             PropertyBag.Register(new TextShadow.PropertyBag());
+            PropertyBag.Register(new StyleValuePropertyBag<StyleTextAutoSize, TextAutoSize>());
+            PropertyBag.Register(new TextAutoSize.PropertyBag());
         }
     }
 }

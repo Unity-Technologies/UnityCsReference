@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private StyleSheet m_Sheet;
         private StyleProperty[] m_Properties;
         private StylePropertyId[] m_PropertyIds;
-        private int m_CurrentValueIndex;
+        private int m_CurrentValueIndex { get; set; }
         private int m_CurrentPropertyIndex;
 
         public StyleProperty property { get; private set; }
@@ -425,6 +425,14 @@ namespace UnityEngine.UIElements.StyleSheets
             var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
             var val4 = valueCount > 3 ? m_Values[m_CurrentValueIndex + index + 3] : default;
             return ReadTextShadow(valueCount, val1, val2, val3, val4);
+        }
+
+        public TextAutoSize ReadTextAutoSize(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            return ReadTextAutoSize(valueCount, val1, val2, val3);
         }
 
         public BackgroundPosition ReadBackgroundPositionX(int index)

@@ -862,6 +862,49 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="TextAutoSize "/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetTextAutoSize(StyleSheet styleSheet, TextAutoSize value)
+        {
+            if (value.mode == TextAutoSizeMode.None)
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteEnum(ref m_Values[0], value.mode);
+                return;
+            }
+
+            SetSize(ref m_Values, 3);
+            styleSheet.WriteEnum(ref m_Values[0], value.mode);
+            styleSheet.WriteDimension(ref values[1], new Dimension { value = value.minSize.value, unit = Dimension.Unit.Pixel });
+            styleSheet.WriteDimension(ref values[2], new Dimension { value = value.maxSize.value, unit = Dimension.Unit.Pixel });
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="TextAutoSize"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetTextAutoSize(StyleSheet styleSheet, out TextAutoSize value)
+        {
+            if (handleCount is <= 0 or > 3)
+            {
+                value = TextAutoSize.None();
+                return false;
+            }
+
+            var valCount = handleCount;
+            var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
+            var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
+            var val3 = valCount > 2 ? new StylePropertyValue { handle = values[2], sheet = styleSheet } : default;
+
+            value = StylePropertyReader.ReadTextAutoSize(valCount, val1, val2, val3);
+            return true;
+        }
+
+        /// <summary>
         /// Sets a <see cref="TransformOrigin"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>

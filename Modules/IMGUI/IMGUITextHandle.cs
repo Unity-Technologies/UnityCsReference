@@ -19,7 +19,7 @@ namespace UnityEngine
         const int sNewHandlesBetweenCleanupRuns = 500;
 
         internal static Func<Object> GetEditorTextSettings;
-        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
 
         private static TextSettings s_EditorTextSettings;
 
@@ -236,10 +236,10 @@ namespace UnityEngine
             if (settings.fontAsset == null)
                 return;
 
-            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
-                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset);
+                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
             }
 
             // If the raster mode is bitmap, we need to have a clean rect for the alignment to work properly.

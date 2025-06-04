@@ -118,6 +118,10 @@ namespace UnityEngine.UIElements
         {
         }
 
+        abstract class InlineStyleTextAutoSizeProperty: InlineStyleProperty<StyleTextAutoSize, TextAutoSize>
+        {
+        }
+
         abstract class InlineStyleTransformOriginProperty : InlineStyleProperty<StyleTransformOrigin, TransformOrigin>
         {
         }

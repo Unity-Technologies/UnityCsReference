@@ -298,7 +298,7 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
-                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(m_CurrentFontAsset.IsRaster(), m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, ligature);
                     }
 
                     if (character == null)
@@ -613,7 +613,7 @@ namespace UnityEngine.TextCore.Text
             if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
                 return null;
             // Search for the character in the list of fallback assigned in the settings (General Fallbacks).
-            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.GetFallbackFontAssets(m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
+            character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(unicode, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? (generationSettings.fontSize ) : -1), textSettings.fallbackOSFontAssets, true, fontStyle, fontWeight, out isUsingAlternativeTypeface, populateLigatures);
 
             if (character != null)
             {
@@ -1085,10 +1085,10 @@ namespace UnityEngine.TextCore.Text
 
                     if (character == null)
                     {
-                        if (textSettings.GetFallbackFontAssets(m_ShouldRenderBitmap ? (generationSettings.fontSize) : -1) == null && !canWriteOnAsset)
+                        if (textSettings.GetFallbackFontAssets(m_CurrentFontAsset.IsRaster(), m_ShouldRenderBitmap ? (generationSettings.fontSize) : -1) == null && !canWriteOnAsset)
                             return false;
                         // Search for the missing glyph character in the Settings Fallback list.
-                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(m_ShouldRenderBitmap ? (int)(generationSettings.fontSize) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
+                        character = FontAssetUtilities.GetCharacterFromFontAssetsInternal((uint)unicode, m_CurrentFontAsset, textSettings.GetFallbackFontAssets(m_CurrentFontAsset.IsRaster(), m_ShouldRenderBitmap ? (int)(generationSettings.fontSize) : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out _, ligature);
                     }
 
                     if (character == null)
@@ -1365,7 +1365,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (textSettings.GetStaticFallbackOSFontAsset() == null && !canWriteOnAsset)
                     return false;
-                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.GetFallbackFontAssets(m_ShouldRenderBitmap ? generationSettings.fontSize : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
+                character = FontAssetUtilities.GetCharacterFromFontAssetsInternal(k_HorizontalEllipsis, fontAsset, textSettings.GetFallbackFontAssets(fontAsset.IsRaster(), m_ShouldRenderBitmap ? generationSettings.fontSize : -1), textSettings.fallbackOSFontAssets, true, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
             }
 
             // Search the setting's default font asset

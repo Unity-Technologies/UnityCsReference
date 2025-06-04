@@ -72,8 +72,11 @@ namespace Unity.UI.Builder
             BuilderAssetUtilities.AddStyleClassToElementInAsset(
                 paneWindow.document, destination, className);
 
-            selection.NotifyOfHierarchyChange(null);
-            selection.NotifyOfStylingChange(null);
+            // We do not want to refresh the stylesheet pane as it rebinds the stylesheets explorer elements
+            // resulting in the mouse up on the class pill not being handled properly by other draggers (UUM-104962)
+            var stylesheets = ((Builder)paneWindow).styleSheets;
+            selection.NotifyOfHierarchyChange(stylesheets);
+            selection.NotifyOfStylingChange(stylesheets);
         }
 
         protected override bool IsPickedElementValid(VisualElement element)

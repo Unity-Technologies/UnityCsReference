@@ -25,6 +25,10 @@ struct LayoutNodeData
         // Cleared when the node is dirty, set when the node is first processed in the layout algorithm.
         DependsOnParentSize = 1 << 6,
 
+        UsesMeasure = 1 << 7,
+
+        UsesBaseline = 1 << 8,
+
         // Internal State
         // The Next 3 bits represent the status of the node for the flex algorithm.
         Fixed = 1 << 3,
@@ -34,8 +38,6 @@ struct LayoutNodeData
 
     public FixedBuffer2<LayoutValue> ResolvedDimensions;
     float TargetSize;
-    public int ManagedMeasureFunctionIndex;
-    public int ManagedBaselineFunctionIndex;
     public int ManagedOwnerIndex;
     public int LineIndex;
 
@@ -58,7 +60,19 @@ struct LayoutNodeData
         set => Status = value ? Status | FlexStatus.IsDirty : Status & ~FlexStatus.IsDirty;
     }
 
-    // FlexInternal states are just valid during the flex algorithm, has no meaning outside of it so it is not exposed.  
+    public bool UsesMeasure
+    {
+        get => (Status & FlexStatus.UsesMeasure) == FlexStatus.UsesMeasure;
+        set => Status = value ? Status | FlexStatus.UsesMeasure : Status & ~FlexStatus.UsesMeasure;
+    }
+
+    public bool UsesBaseline
+    {
+        get => (Status & FlexStatus.UsesBaseline) == FlexStatus.UsesBaseline;
+        set => Status = value ? Status | FlexStatus.UsesBaseline : Status & ~FlexStatus.UsesBaseline;
+    }
+
+    // FlexInternal states are just valid during the flex algorithm, has no meaning outside of it so it is not exposed.
 }
 
 

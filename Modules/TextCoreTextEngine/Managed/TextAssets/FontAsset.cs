@@ -436,6 +436,9 @@ namespace UnityEngine.TextCore.Text
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal bool IsBitmap() => ((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_BITMAP) && !((GlyphRasterModes)m_AtlasRenderMode).HasFlag(GlyphRasterModes.RASTER_MODE_COLOR);
 
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal bool IsRaster() => m_AtlasRenderMode == FontAssetFactory.k_RasterEditorBitmapGlyphRenderMode;
+
         /// <summary>
         /// List of spaces occupied by glyphs in a given texture.
         /// </summary>

@@ -12,10 +12,15 @@ struct LayoutConfigData
     public static LayoutConfigData Default => new()
     {
         PointScaleFactor = 1f,
-        ShouldLog = false
+        ShouldLog = false,
+        ManagedMeasureFunctionIndex = 0,
+        ManagedBaselineFunctionIndex = 0,
     };
 
     public float PointScaleFactor;
+
+    public int ManagedMeasureFunctionIndex;
+    public int ManagedBaselineFunctionIndex;
 
     [MarshalAs(UnmanagedType.U1)]
     public bool ShouldLog;

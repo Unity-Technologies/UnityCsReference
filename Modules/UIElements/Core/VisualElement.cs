@@ -760,7 +760,7 @@ namespace UnityEngine.UIElements
         /// For example, you can set translate and position as percentages through the [[VisualElement.style]] API.
         /// </remarks>
         /// <example nocheck="true">
-        /// The following example reads the current position, rotation, and scale from the resolvedStyle of a 
+        /// The following example reads the current position, rotation, and scale from the resolvedStyle of a
         /// VisualElement, then updates the style properties with these values.
         /// <code lang="cs">
         /// <![CDATA[
@@ -771,7 +771,7 @@ namespace UnityEngine.UIElements
         ///         visualElement.style.rotate = new Rotate(rotation);
         ///         Vector3 scale = visualElement.resolvedStyle.scale.value;
         ///         visualElement.style.scale = new Scale((Vector2) scale);
-        /// 
+        ///
         /// ]]>
         /// </code>
         /// </example>
@@ -2124,7 +2124,7 @@ namespace UnityEngine.UIElements
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
         ///\\
-        ///\\ 
+        ///\\
         /// A disabled visual element does not receive most input events, such as mouse and keyboard events. However, it can still respond to Attach or Detach events, and geometry change events.
         ///\\
         ///\\
@@ -2155,7 +2155,7 @@ namespace UnityEngine.UIElements
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
         /// <remarks>
-        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get 
+        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
         /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
         /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
         /// </remarks>
@@ -2468,11 +2468,11 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Flags = value ? m_Flags | VisualElementFlags.RequireMeasureFunction : m_Flags & ~VisualElementFlags.RequireMeasureFunction;
-                if (value && !layoutNode.IsMeasureDefined)
+                if (value && !layoutNode.UsesMeasure)
                 {
                     AssignMeasureFunction();
                 }
-                else if (!value && layoutNode.IsMeasureDefined)
+                else if (!value && layoutNode.UsesMeasure)
                 {
                     RemoveMeasureFunction();
                 }
@@ -2482,12 +2482,12 @@ namespace UnityEngine.UIElements
         private void AssignMeasureFunction()
         {
             layoutNode.SetOwner(this);
-            layoutNode.Measure = Measure;
+            layoutNode.UsesMeasure = true;
         }
 
         private void RemoveMeasureFunction()
         {
-            layoutNode.Measure = null;
+            layoutNode.UsesMeasure = false;
             layoutNode.SetOwner(null);
         }
 

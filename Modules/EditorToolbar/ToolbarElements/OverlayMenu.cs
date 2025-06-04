@@ -21,7 +21,24 @@ namespace UnityEditor.Overlays
             m_TargetWindow = targetWindow;
             createMenuCallback = DropdownUtility.CreateDropdown;
             SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
-            
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            m_TargetWindow.overlayCanvas.afterOverlaysInitialized += RefreshPresetDisplayValue;
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (m_TargetWindow is not null && m_TargetWindow.overlayCanvas is not null)
+                m_TargetWindow.overlayCanvas.afterOverlaysInitialized -= RefreshPresetDisplayValue;
+        }
+
+        void RefreshPresetDisplayValue()
+        {
+            SetValueWithoutNotify(GetValueToDisplay());
         }
 
         internal override void AddMenuItems(IGenericMenu menu)
@@ -220,6 +237,7 @@ namespace UnityEditor.Overlays
         {
             VisualElement content = new VisualElement();
             content.style.minWidth = 160;
+            content.style.maxWidth = 300;
             m_Toolbar = null;
 
             if (isPopup)

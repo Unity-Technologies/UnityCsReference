@@ -2646,6 +2646,9 @@
     <Compile Include="..\..\Modules\UIElements\Core\StyleSheets\Validation\StyleValidator.cs">
       <Link>Modules\UIElements\Core\StyleSheets\Validation\StyleValidator.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\StyleTextAutoSize.cs">
+      <Link>Modules\UIElements\Core\StyleTextAutoSize.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Style\Angle.PropertyBag.cs">
       <Link>Modules\UIElements\Core\Style\Angle.PropertyBag.cs</Link>
     </Compile>
@@ -2867,6 +2870,12 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TemplateContainer.cs">
       <Link>Modules\UIElements\Core\TemplateContainer.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextAutoSize.PropertyBag.cs">
+      <Link>Modules\UIElements\Core\TextAutoSize.PropertyBag.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\TextAutoSize.cs">
+      <Link>Modules\UIElements\Core\TextAutoSize.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\TextElement.cs">
       <Link>Modules\UIElements\Core\TextElement.cs</Link>

@@ -42,6 +42,7 @@ namespace UnityEditor
         // For testing only
         internal TreeView treeView => m_TreeView;
         internal Button dismissAllButton => m_DismissAllBtn;
+        internal bool ready { get; private set; }
 
         [MenuItem("Window/General/Progress", priority = 50)]
         public static void ShowDetails()
@@ -96,6 +97,11 @@ namespace UnityEditor
         void OnEnable()
         {
             s_Window = this;
+            ready = false;
+        }
+
+        void CreateGUI()
+        {
             titleContent = EditorGUIUtility.TrTextContent("Background Tasks");
 
             rootVisualElement.AddStyleSheetPath(ussPath);
@@ -130,7 +136,7 @@ namespace UnityEditor
             m_TreeView.unbindItem = UnbindTreeViewItem;
             m_TreeView.destroyItem = DestroyTreeViewItem;
             m_TreeView.fixedItemHeight = 50;
-            m_TreeView.SetRootItems(new TreeViewItemData<Progress.Item>[] {});
+            m_TreeView.SetRootItems(new TreeViewItemData<Progress.Item>[] { });
 
             var scrollView = m_TreeView.Q<ScrollView>();
             if (scrollView != null)
@@ -150,10 +156,13 @@ namespace UnityEditor
             Progress.removed += OperationsRemoved;
             Progress.updated += OperationsUpdated;
             UpdateDismissAllButton();
+
+            ready = true;
         }
 
         void OnDisable()
         {
+            ready = false;
             Progress.added -= OperationsAdded;
             Progress.removed -= OperationsRemoved;
             Progress.updated -= OperationsUpdated;

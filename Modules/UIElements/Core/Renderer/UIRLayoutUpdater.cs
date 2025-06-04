@@ -9,6 +9,7 @@ using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Layout;
 
 namespace UnityEngine.UIElements
 {
@@ -88,7 +89,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var layoutNode = ve.layoutNode;
-            if (layoutNode != null && layoutNode.IsMeasureDefined)
+            if (layoutNode != LayoutNode.Undefined && layoutNode.UsesMeasure)
             {
                 layoutNode.MarkDirty();
             }

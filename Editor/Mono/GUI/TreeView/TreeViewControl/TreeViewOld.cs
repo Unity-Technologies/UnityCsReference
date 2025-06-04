@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls;
 
-// [Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
+[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
 public abstract partial class TreeView : TreeViewInternal
 {
     protected TreeView(TreeViewState state)
@@ -176,7 +176,7 @@ public abstract partial class TreeView : TreeViewInternal
     protected static bool IsChildListForACollapsedParent(IList<TreeViewItem> childList) => TreeView<int>.IsChildListForACollapsedParent(childList.ToGenericIList());
 }
 
-// [Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
+[Obsolete("TreeView is now deprecated. You can likely now use TreeView<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeView<InstanceID> to get the proper typing.")]
 public abstract class TreeViewInternal : TreeView<int>
 {
     protected TreeViewInternal(TreeViewState state)
@@ -190,7 +190,7 @@ public abstract class TreeViewInternal : TreeView<int>
     internal abstract TreeViewItem BuildRootInternal();
 }
 
-// [Obsolete]
+[Obsolete]
 static class TreeViewItemConvertUtility {
     public static List<TreeViewItem> ToNonGenericList(this List<TreeViewItem<int>> items) => (GenericTreeViewItemToNonGenericTreeViewItemList)items;
     public static List<TreeViewItem<int>> ToGenericList(this List<TreeViewItem> items) => (GenericTreeViewItemToNonGenericTreeViewItemList)items;
@@ -199,7 +199,7 @@ static class TreeViewItemConvertUtility {
 }
 
 [StructLayout(LayoutKind.Explicit)]
-// [Obsolete]
+[Obsolete]
 struct GenericTreeViewItemToNonGenericTreeViewItemList
 {
     [FieldOffset(0)] public List<TreeViewItem> nonGeneric;
@@ -212,7 +212,7 @@ struct GenericTreeViewItemToNonGenericTreeViewItemList
 }
 
 [StructLayout(LayoutKind.Explicit)]
-// [Obsolete]
+[Obsolete]
 struct GenericTreeViewItemToNonGenericTreeViewItemIList
 {
     [FieldOffset(0)] public IList<TreeViewItem> nonGeneric;
@@ -231,7 +231,7 @@ struct GenericTreeViewItemToNonGenericTreeViewItemIList
     }
 }
 
-// [Obsolete("TreeViewItem is now deprecated. You can likely now use TreeViewItem<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewItem<InstanceID> to get the proper typing.")]
+[Obsolete("TreeViewItem is now deprecated. You can likely now use TreeViewItem<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewItem<InstanceID> to get the proper typing.")]
 public class TreeViewItem : TreeViewItem<int>
 {
     public new virtual List<TreeViewItem> children
@@ -269,10 +269,10 @@ public class TreeViewItem : TreeViewItem<int>
     internal TreeViewItem(int id, int depth, TreeViewItem parent, string displayName) : base(id, depth, parent, displayName) { }
 }
 
-// [Obsolete("TreeViewState is now deprecated. You can likely now use TreeViewState<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewState<InstanceID> to get the proper typing.")]
+[Obsolete("TreeViewState is now deprecated. You can likely now use TreeViewState<int> instead and not think more about it. But if you were using that identifier to store InstanceID data, you should instead opt to upgrade your TreeViews to use TreeViewState<InstanceID> to get the proper typing.")]
 public class TreeViewState : TreeViewState<int> {}
 
-// [Obsolete]
+[Obsolete]
 internal class TreeViewController : TreeViewController<int>
 {
     public TreeViewController(EditorWindow editorWindow, TreeViewState treeViewState) : base(editorWindow, treeViewState)
@@ -285,7 +285,7 @@ internal class TreeViewController : TreeViewController<int>
     public new TreeViewState state { get =>base.state as TreeViewState; set => base.state = value; }
 }
 
-// [Obsolete]
+[Obsolete]
 internal abstract class TreeViewDataSource : TreeViewDataSource<int>, ITreeViewDataSource
 {
     protected TreeViewDataSource(TreeViewController treeView)
@@ -304,7 +304,7 @@ internal abstract class TreeViewDataSource : TreeViewDataSource<int>, ITreeViewD
     public override bool CanBeParentInternal(TreeViewItem<int> item) => CanBeParent(item as TreeViewItem);
 }
 
-// [Obsolete]
+[Obsolete]
 internal abstract class TreeViewDragging : TreeViewDragging<int>
 {
     public TreeViewDragging(TreeViewController<int> treeView) : base(treeView)
@@ -321,7 +321,7 @@ internal abstract class TreeViewDragging : TreeViewDragging<int>
     public override bool DragElementInternal(TreeViewItem<int> targetItem, Rect targetItemRect, int row) => DragElement(targetItem as TreeViewItem, targetItemRect, row);
 }
 
-// [Obsolete]
+[Obsolete]
 internal interface ITreeViewGUI
 {
     void OnInitialize();
@@ -345,7 +345,7 @@ internal interface ITreeViewGUI
     float bottomRowMargin { get; }
 }
 
-// [Obsolete]
+[Obsolete]
 internal class TreeViewGUIAbstract : ITreeViewGUI<int>
 {
     ITreeViewGUI treeViewGUI;
@@ -375,7 +375,7 @@ internal class TreeViewGUIAbstract : ITreeViewGUI<int>
     public float bottomRowMargin => treeViewGUI.bottomRowMargin;
 }
 
-// [Obsolete]
+[Obsolete]
 internal abstract class TreeViewGUI : TreeViewGUI<int>
 {
     protected TreeViewGUI(TreeViewController<int> treeView)
@@ -394,7 +394,7 @@ internal abstract class TreeViewGUI : TreeViewGUI<int>
     protected override Texture GetIconForItemInternal(TreeViewItem<int>  item) => GetIconForItem(item as TreeViewItem);
 }
 
-// [Obsolete]
+[Obsolete]
 internal interface ITreeViewDataSource : ITreeViewDataSource<int>
 {
     new TreeViewItem root { get; }

@@ -93,7 +93,7 @@ namespace UnityEditor.UIElements
                     target.MarkDirty();
                 }
             }
-            else if( target.m_ICUDataAsset != null)
+            else if (target.m_ICUDataAsset != null)
             {
                 target.m_ICUDataAsset = null;
                 target.MarkDirty();

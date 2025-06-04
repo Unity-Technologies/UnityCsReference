@@ -13,6 +13,8 @@ namespace UnityEngine.TextCore.Text
     {
         [VisibleToOtherModules("UnityEngine.IMGUIModule",  "UnityEngine.UIElementsModule")]
         internal static Func<bool> IsEditorTextRenderingModeBitmap;
+        [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+        internal static Func<bool> IsEditorTextRenderingModeRaster;
 
         private RenderedText m_RenderedText;
         private string m_CachedRenderedText;

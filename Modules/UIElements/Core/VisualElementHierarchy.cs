@@ -567,7 +567,7 @@ namespace UnityEngine.UIElements
                     m_Owner.m_Children = VisualElementListPool.Get();
                 }
 
-                if (m_Owner.layoutNode.IsMeasureDefined)
+                if (m_Owner.layoutNode.UsesMeasure)
                 {
                     m_Owner.RemoveMeasureFunction();
                 }

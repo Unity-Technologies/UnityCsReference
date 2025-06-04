@@ -381,6 +381,9 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern string[] GetOSFallbacks();
 
+        [ThreadSafe][VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern bool IsFontSmoothingEnabled();
+
         private static extern void Internal_CreateFont([Writable] Font self, string name);
         private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);
         private static extern void Internal_CreateDynamicFont([Writable] Font self, [Unmarshalled]string[] _names, int size);

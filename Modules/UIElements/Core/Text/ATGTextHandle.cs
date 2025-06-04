@@ -21,7 +21,7 @@ namespace UnityEngine.UIElements
         private List<(int, TagType, string)> Links => m_Links ??= new();
         internal Color atgHyperlinkColor = Color.blue;
 
-        public void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
+        void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
         {
             if (!ConvertUssToNativeTextGenerationSettings())
                 return;
@@ -142,7 +142,12 @@ namespace UnityEngine.UIElements
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
+
             nativeSettings.fontSize = (int)(style.fontSize.value * 64.0f *scale);
+            nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
+            nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
+            nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);
+
             nativeSettings.wordWrap = style.whiteSpace.toTextCore(m_TextElement.isInputField);
             nativeSettings.overflow = style.textOverflow.toTextCore(style.overflow);
             nativeSettings.horizontalAlignment = TextGeneratorUtilities.GetHorizontalAlignment(style.unityTextAlign);
