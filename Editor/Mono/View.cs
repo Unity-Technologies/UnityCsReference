@@ -26,29 +26,29 @@ namespace UnityEditor
             foreach (View c in children)
                 c.Reflow();
         }
-
         internal string DebugHierarchy(int level)
         {
-            string prefix = "", s = "";
+            StringBuilder prefix = new StringBuilder();
+            StringBuilder s = new StringBuilder();
             for (int i = 0; i < level; i++)
             {
-                prefix = prefix + "  ";
+                prefix.Append("  ");
             }
-            s = s + prefix + this + " p:" + position;
+            s.Append($"{s}{prefix}{this} p:{position}");
             if (children.Length > 0)
             {
-                s += " {\n";
+                s.Append(" {\n");
                 foreach (View child in children)
                 {
-                    s += child.DebugHierarchy(level + 2);
+                    s.Append(child.DebugHierarchy(level + 2));
                 }
-                s += prefix + " }\n";
+                s.Append(prefix);
+                s.Append(" }\n");
             }
             else
-                s += "\n";
-            return s;
+                s.Append("\n");
+            return s.ToString();
         }
-
         // Can be used by concrete subclasses to store C++ objects
         [SerializeField]
         MonoReloadableIntPtr   m_ViewPtr;
