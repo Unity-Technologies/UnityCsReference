@@ -114,6 +114,8 @@ namespace UnityEngine.TextCore.LowLevel
     [UsedByNativeCode]
     public enum GlyphRenderMode
     {
+        DEFAULT         = 0x0, // Selects either SDFAA or COLOR based on the font face.
+
         SMOOTH_HINTED   = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
         SMOOTH          = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_BITMAP | GlyphRasterModes.RASTER_MODE_1X,
 
@@ -130,6 +132,23 @@ namespace UnityEngine.TextCore.LowLevel
 
         SDFAA_HINTED    = GlyphRasterModes.RASTER_MODE_HINTED     | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_SDFAA  | GlyphRasterModes.RASTER_MODE_1X,
         SDFAA           = GlyphRasterModes.RASTER_MODE_NO_HINTING | GlyphRasterModes.RASTER_MODE_8BIT  | GlyphRasterModes.RASTER_MODE_SDFAA  | GlyphRasterModes.RASTER_MODE_1X,
+    }
+
+    // This enum needs to match GlyphRenderMode, except for DEFAULT being removed.
+    internal enum GlyphRenderModeUI
+    {
+        SMOOTH_HINTED = GlyphRenderMode.SMOOTH_HINTED,
+        SMOOTH = GlyphRenderMode.SMOOTH,
+        COLOR_HINTED = GlyphRenderMode.COLOR_HINTED,
+        COLOR = GlyphRenderMode.COLOR,
+        RASTER_HINTED = GlyphRenderMode.RASTER_HINTED,
+        RASTER = GlyphRenderMode.RASTER,
+        SDF = GlyphRenderMode.SDF,
+        SDF8 = GlyphRenderMode.SDF8,
+        SDF16 = GlyphRenderMode.SDF16,
+        SDF32 = GlyphRenderMode.SDF32,
+        SDFAA_HINTED = GlyphRenderMode.SDFAA_HINTED,
+        SDFAA = GlyphRenderMode.SDFAA
     }
 
     /// <summary>
@@ -487,6 +506,9 @@ namespace UnityEngine.TextCore.LowLevel
         /// <returns>An array of font references for all system fonts.</returns>
         [NativeMethod(Name = "TextCore::FontEngine::GetSystemFontReferences", IsThreadSafe = true, IsFreeFunction = true)]
         internal static extern FontReference[] GetSystemFontReferences();
+
+        [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
+        internal static extern bool IsColorFontFace();
 
 
         /// <summary>
