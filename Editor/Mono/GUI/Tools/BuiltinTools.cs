@@ -721,16 +721,27 @@ namespace UnityEditor
 
                             Vector3 sizeBefore = inverseRotation * (origPos - scalePivot);
                             Vector3 sizeAfter = inverseRotation * (newPos - scalePivot);
+                            
+                            // Fix for UUM-102690. If difference is zero, we don't want to scale on that axis
+                            if (scaleFromPivot)
+                            {
+                                Vector3 diff = origPos - scalePivot;
+                                if (Mathf.Approximately(diff.x, 0f))
+                                {
+                                    sizeBefore.x = 1f;
+                                    sizeAfter.x = 1f;
+                                }
+                                if (Mathf.Approximately(diff.y, 0f))
+                                {
+                                    sizeBefore.y = 1f;
+                                    sizeAfter.y = 1f;
+                                }
+                            }
+                            
                             if (xHandle != 1)
                                 scale.x = sizeAfter.x / sizeBefore.x;
                             if (yHandle != 1)
                                 scale.y = sizeAfter.y / sizeBefore.y;
-
-                            if (uniformScaling)
-                            {
-                                float refScale = (xHandle == 1 ? scale.y : scale.x);
-                                scale = Vector3.one * refScale;
-                            }
 
                             if (uniformScaling)
                             {

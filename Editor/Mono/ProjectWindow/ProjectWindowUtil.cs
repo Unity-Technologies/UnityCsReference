@@ -1015,7 +1015,13 @@ namespace UnityEditor
                 infotext.AppendLine("");
                 infotext.AppendLine(L10n.Tr("You cannot undo the delete assets action."));
 
-                containsMaterial &= AnyTargetMaterialHasChildren(paths);
+                if (containsMaterial)
+                {
+                    // If the assets to be deleted contain a material, check for its children.
+                    // Warning: AnyTargetMaterialHasChildren will load assets so it can be costly.
+                    containsMaterial = AnyTargetMaterialHasChildren(paths);
+                }
+
                 if (containsMaterial)
                 {
                     infotext.AppendLine();
