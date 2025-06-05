@@ -327,10 +327,13 @@ internal class DefaultSerializedObjectBindingImplementation : ISerializedObjectB
                     context.Bind(element);
                     break;
                 case RequestType.DelayBind:
-                    if (context.IsValid() && parentProperty != null && parentProperty.isValid)  // Sometimes our serializedObject or serializedProperty might have become invalid/null, after a domain reload
+                    if (context.IsValid())  // Sometimes our serializedObject or serializedProperty might have become invalid/null, after a domain reload
                     {
-                        parentProperty.Verify();
-                        context.ContinueBinding(element, parentProperty);
+                        if (parentProperty == null || parentProperty.isValid)
+                        {
+                            parentProperty?.Verify();
+                            context.ContinueBinding(element, parentProperty);
+                        }
                     }
                     break;
                 case RequestType.TrackProperty:
