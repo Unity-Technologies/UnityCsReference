@@ -104,7 +104,8 @@ internal class FontAssetFactory
             return null;
 
         FontAsset? fontAsset = null;
-        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+
+        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
             SetupFontAssetSettings(fontAsset);
