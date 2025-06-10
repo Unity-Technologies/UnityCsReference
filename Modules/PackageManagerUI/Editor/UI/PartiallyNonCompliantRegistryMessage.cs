@@ -55,7 +55,7 @@ internal class PartiallyNonCompliantRegistryMessage : VisualElement
             return;
 
         var violation = page.scopedRegistry.compliance.violations[0];
-        m_PartiallyNonCompliantHelpBox.text = string.Format(L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Certain restricted packages may not be visible in the registry. Contact the provider for further assistance. {0}"), violation?.message ?? string.Empty);
+        m_PartiallyNonCompliantHelpBox.text = string.Format(L10n.Tr("Certain restricted packages may not be visible in the registry. {0}"), violation?.message ?? string.Empty);
         m_PartiallyNonCompliantHelpBox.readMoreUrl = violation?.readMoreLink;
         UIUtils.SetElementDisplay(this, true);
     }

@@ -732,7 +732,27 @@ namespace UnityEngine.Rendering
             {
                 JobHandle.ScheduleBatchedJobs();
 
-                //@TODO: Check that the no jobs using the buffers have been scheduled that are not returned here...
+                var valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(cullingPlanes.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "provided NativeArray<Plane> of culling planes. This is not safe and may result in crashes or undefined behavior.");
+                }
+
+                valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(cullingSplits.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "provided NativeArray<CullingSplit> of culling splits. This is not safe and may result in crashes or undefined behavior.");
+                }
+
+                valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(drawCommands.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "output NativeArray<BatchCullingOutputDrawCommands> of draw commands. This is not safe and may result in crashes or undefined behavior.");
+                }
+
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingSplits));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(drawCommands));

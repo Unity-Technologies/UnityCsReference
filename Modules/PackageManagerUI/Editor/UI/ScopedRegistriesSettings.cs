@@ -212,7 +212,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                        var violation = registryInfo.compliance.violations[0];
                        if (m_ApplicationProxy.DisplayDialog("nonCompliantRegistry",
                            L10n.Tr("Restricted registry"),
-                           string.Format(L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"), violation.message),
+                           violation.message,
                            L10n.Tr("Read More"), L10n.Tr("Close")))
                            m_ApplicationProxy.OpenURL(violation.readMoreLink);
 
@@ -478,9 +478,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var violation = draft.original.compliance.violations[0];
-            scopedRegistryNonCompliantErrorBox.text = string.Format(
-                L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"),
-                violation.message);
+            scopedRegistryNonCompliantErrorBox.text = violation.message;
             scopedRegistryNonCompliantErrorBox.readMoreUrl = violation.readMoreLink;
         }
 

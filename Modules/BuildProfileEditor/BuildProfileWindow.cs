@@ -428,15 +428,24 @@ namespace UnityEditor.Build.Profile
 
             // Additional actions are always directly applied to the parent window state.
             if (parent.additionalActions == child.additionalActions)
+            {
+                if (NeedToHideAdditionalActionsDropdown())
+                    m_AdditionalActionsDropdown.Hide();
                 return;
+            }
 
             parent.additionalActions = child.additionalActions;
-            RepaintAdditionActionsDropdown();
+            RepaintAdditionalActionsDropdown();
         }
 
-        void RepaintAdditionActionsDropdown()
+        bool NeedToHideAdditionalActionsDropdown()
         {
-            if (m_WindowState.buildAction == ActionState.Hidden || m_WindowState.additionalActions.Count == 0)
+            return m_WindowState.buildAction == ActionState.Hidden || m_WindowState.additionalActions.Count == 0;
+        }
+
+        void RepaintAdditionalActionsDropdown()
+        {
+            if (NeedToHideAdditionalActionsDropdown())
             {
                 m_AdditionalActionsDropdown.Hide();
                 return;
@@ -605,11 +614,12 @@ namespace UnityEditor.Build.Profile
 
             m_BuildProfileInspectorElement.Clear();
             m_BuildProfileInspectorHeaderElement.Clear();
-            m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateInspectorGUI());
 
             // Builds can only be made for an active BuildProfile,
             // otherwise allow activating the selected profile.
             UpdateFormButtonState(profile);
+
+            m_BuildProfileInspectorElement.Add(buildProfileEditor.CreateInspectorGUI());
 
             // Editor User Build Settings track 'selected' build target group.
             // This was used by different UX to update default build target group tabs

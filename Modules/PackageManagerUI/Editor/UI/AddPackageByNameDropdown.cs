@@ -12,7 +12,6 @@ namespace UnityEditor.PackageManager.UI.Internal
     internal class AddPackageByNameDropdown : DropdownContent
     {
         internal static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted package");
-        internal static readonly string k_NonCompliantMessage = L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance.");
         internal static readonly string k_NonCompliantReadMore = L10n.Tr("Read More");
         internal static readonly string k_NonCompliantClose = L10n.Tr("Close");
 
@@ -181,7 +180,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var shouldOpenReadMoreLink = m_ApplicationProxy.DisplayDialog(
                 "addByNameNonCompliantPackage",
                 k_NonCompliantDialogTitle,
-                k_NonCompliantMessage + " " + compliance.violation.message,
+                compliance.violation.message,
                 k_NonCompliantReadMore,
                 k_NonCompliantClose);
 

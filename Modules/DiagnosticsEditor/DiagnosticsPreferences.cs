@@ -41,7 +41,7 @@ namespace UnityEditor
         private bool m_HasAcceptedWarning;
 
         public DiagnosticSwitchPreferences()
-            : base("Preferences/Diagnostics", SettingsScope.User, GetKeywords())
+            : base("Preferences/Editor Diagnostics", SettingsScope.User, GetKeywords())
         {
         }
 

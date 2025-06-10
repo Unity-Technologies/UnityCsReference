@@ -443,7 +443,7 @@ namespace UnityEditor
 
         public static Texture2D[] GetIcons(NamedBuildTarget buildTarget, IconKind kind)
         {
-            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
             {
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?
@@ -493,7 +493,7 @@ namespace UnityEditor
 
         public static int[] GetIconSizes(NamedBuildTarget buildTarget, IconKind kind)
         {
-            if (BuildTargetDiscovery.TryGetBuildTarget(BuildPipeline.GetBuildTargetByName(buildTarget.TargetName), out var iBuildTarget))
+            if (BuildTargetDiscovery.TryGetBuildTarget(buildTarget, out var iBuildTarget))
             {
                 var platformIconKind = iBuildTarget.IconPlatformProperties?.GetPlatformIconKindFromEnumValue(kind);
                 return platformIconKind == null ?

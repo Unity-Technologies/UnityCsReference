@@ -3264,10 +3264,15 @@ namespace UnityEditor
 
                             var listView = element?.GetFirstAncestorOfType<ListView>();
 
+                            // If we have a ReorderableList associated with this property and it uses onDeleteArrayElementCallback
+                            if (list != null && list.onDeleteArrayElementCallback != null)
+                            {
+                                list.onDeleteArrayElementCallback(list, parentArrayIndex);
+                            }
                             // If we have a ReorderableList associated with this property lets use list selection array
                             // and apply this action to all selected elements thus having better integration with
                             // ReorderableLists multi-selection features
-                            if (list != null && list.selectedIndices.Count > 0)
+                            else if (list != null && list.selectedIndices.Count > 0)
                             {
                                 foreach (var selected in list.selectedIndices.Reverse<int>())
                                 {
