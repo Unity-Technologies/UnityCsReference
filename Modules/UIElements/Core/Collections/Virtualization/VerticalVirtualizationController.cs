@@ -20,6 +20,8 @@ namespace UnityEngine.UIElements
         int? m_DeferredScrollToItemIndex;
         readonly Action m_PerformDeferredScrollToItem;
         private IVisualElementScheduledItem m_ScheduleDeferredScrollToItem;
+        IVisualElementScheduledItem m_ScrollScheduledItem;
+        Action m_ScrollCallback;
 
         public override IEnumerable<ReusableCollectionItem> activeItems => m_ActiveItems;
 
@@ -93,10 +95,13 @@ namespace UnityEngine.UIElements
             m_ActiveItems = new List<T>();
             m_VisibleItemPredicateDelegate = VisibleItemPredicate;
             m_PerformDeferredScrollToItem = PerformDeferredScrollToItem;
+            m_ScrollCallback = OnScrollUpdate;
 
             // ScrollView sets this to true to support Absolute position. It causes issues with the scrollbars with animated reordering.
             // In the case of a collection view, we know our ReusableCollectionItems need to be in Relative anyway, so no need for it.
             m_ScrollView.contentContainer.disableClipping = false;
+
+            collectionView.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanelEvent);
         }
 
         public override void Refresh(bool rebuild)
@@ -278,6 +283,15 @@ namespace UnityEngine.UIElements
                 var index = m_DeferredScrollToItemIndex.Value;
                 m_DeferredScrollToItemIndex = null;
                 ScrollToItem(index);
+            }
+        }
+
+        void OnDetachFromPanelEvent(DetachFromPanelEvent evt)
+        {
+            if (m_ScrollScheduledItem?.isActive == true)
+            {
+                m_ScrollScheduledItem.Pause();
+                m_ScrollScheduledItem = null;
             }
         }
 
@@ -491,12 +505,26 @@ namespace UnityEngine.UIElements
             item.onDestroy -= OnDestroyItem;
         }
 
+        protected virtual void OnScrollUpdate() { }
+
         protected int GetDraggedIndex()
         {
             if (m_CollectionView.dragger is ListViewDraggerAnimated { isDragging: true } dragger)
                 return dragger.draggedItem.index;
 
             return ReusableCollectionItem.UndefinedIndex;
+        }
+
+        protected void ScheduleScroll()
+        {
+            if (m_ScrollScheduledItem == null)
+            {
+                m_ScrollScheduledItem = m_CollectionView.schedule.Execute(m_ScrollCallback);
+                return;
+            }
+
+            m_ScrollScheduledItem.Pause();
+            m_ScrollScheduledItem.Resume();
         }
     }
 }

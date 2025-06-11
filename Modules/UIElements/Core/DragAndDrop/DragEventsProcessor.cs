@@ -18,6 +18,8 @@ namespace UnityEngine.UIElements
         bool m_IsRegistered;
         DragState m_DragState;
         Vector3 m_Start;
+        bool m_PendingPerformDrag;
+
         protected readonly VisualElement m_Target;
 
         // Used in tests
@@ -66,7 +68,7 @@ namespace UnityEngine.UIElements
             m_Target.RegisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.RegisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
             m_Target.RegisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
-
+            m_Target.RegisterCallback<PointerOutEvent>(OnPointerOutEvent);
             m_Target.RegisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.RegisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.RegisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -91,6 +93,7 @@ namespace UnityEngine.UIElements
             m_Target.UnregisterCallback<PointerMoveEvent>(OnPointerMoveEvent);
             m_Target.UnregisterCallback<PointerCancelEvent>(OnPointerCancelEvent);
             m_Target.UnregisterCallback<PointerCaptureOutEvent>(OnPointerCapturedOut);
+            m_Target.UnregisterCallback<PointerOutEvent>(OnPointerOutEvent);
             m_Target.UnregisterCallback<DragUpdatedEvent>(OnDragUpdate);
             m_Target.UnregisterCallback<DragPerformEvent>(OnDragPerformEvent);
             m_Target.UnregisterCallback<DragExitedEvent>(OnDragExitedEvent);
@@ -126,6 +129,22 @@ namespace UnityEngine.UIElements
             }
         }
 
+        private void OnPointerOutEvent(PointerOutEvent evt)
+        {
+            // The sqrMagnitude will sometimes be less than 100 when dragging an item near the end of the target (ListView/TreeView).
+            // For this special occasion, we want to set a flag that will allow the next move to bypass the threshold.
+            // Note that on mobile devices, this event would only happen when dragging an item, which at that stage, the
+            // dragging has already happened.
+            if (m_DragState == DragState.CanStartDrag)
+            {
+                if ((m_Start - evt.position).sqrMagnitude <= 0)
+                    return;
+
+                m_PendingPerformDrag = true;
+                evt.StopPropagation();
+            }
+        }
+
         internal void OnPointerUpEvent(PointerUpEvent evt)
         {
             if (!useDragEvents && m_DragState == DragState.Dragging)
@@ -141,6 +160,7 @@ namespace UnityEngine.UIElements
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
             dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
+            m_PendingPerformDrag = false;
         }
 
         private void OnPointerLeaveEvent(PointerLeaveEvent evt)
@@ -157,6 +177,7 @@ namespace UnityEngine.UIElements
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
             dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
+            m_PendingPerformDrag = false;
         }
 
         private void OnPointerCapturedOut(PointerCaptureOutEvent evt)
@@ -168,6 +189,7 @@ namespace UnityEngine.UIElements
             ClearDragAndDropUI(m_DragState == DragState.Dragging);
             dragAndDrop.DragCleanup();
             m_DragState = DragState.None;
+            m_PendingPerformDrag = false;
         }
 
         private void OnDragExitedEvent(DragExitedEvent evt)
@@ -198,6 +220,7 @@ namespace UnityEngine.UIElements
             target?.ClearDragAndDropUI(false);
 
             m_Target.ReleasePointer(PointerId.mousePointerId);
+            m_PendingPerformDrag = false;
             evt.StopPropagation();
         }
 
@@ -226,6 +249,7 @@ namespace UnityEngine.UIElements
             {
                 var target = GetDropTarget(evt.position) ?? this;
                 target.UpdateDrag(evt.position);
+                m_PendingPerformDrag = false;
                 return;
             }
 
@@ -234,7 +258,7 @@ namespace UnityEngine.UIElements
                 return;
 
             var delta = m_Start - evt.position;
-            if (delta.sqrMagnitude >= ScrollView.ScrollThresholdSquared)
+            if (delta.sqrMagnitude >= ScrollView.ScrollThresholdSquared || m_PendingPerformDrag)
             {
                 var startDragArgs = StartDrag(m_Start);
 
@@ -262,8 +286,10 @@ namespace UnityEngine.UIElements
                 }
 
                 m_DragState = DragState.Dragging;
+
                 m_Target.CapturePointer(evt.pointerId);
                 evt.isHandledByDraggable = true;
+                m_PendingPerformDrag = false;
                 evt.StopPropagation();
             }
         }

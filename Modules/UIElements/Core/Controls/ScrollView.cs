@@ -431,19 +431,26 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField, DontCreateProperty]
+        private Vector2 m_ScrollOffset;
+
         /// <summary>
         /// The current scrolling position.
         /// </summary>
         [CreateProperty]
         public Vector2 scrollOffset
         {
-            get { return new Vector2(horizontalScroller.value, verticalScroller.value); }
+            get { return m_ScrollOffset; }
             set
             {
-                if (value != scrollOffset)
+                if (value != m_ScrollOffset)
                 {
                     horizontalScroller.value = value.x;
                     verticalScroller.value = value.y;
+
+                    // Can't directly use the value's x and y as they might be clamped by the slider.
+                    m_ScrollOffset = new Vector2(horizontalScroller.value, verticalScroller.value);
+                    SaveViewData();
 
                     if (panel != null)
                     {
@@ -996,6 +1003,7 @@ namespace UnityEngine.UIElements
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
             { viewDataKey = "HorizontalScroller" };
+
             horizontalScroller.AddToClassList(hScrollerUssClassName);
             horizontalScroller.style.display = DisplayStyle.None;
             hierarchy.Add(horizontalScroller);
@@ -1007,6 +1015,12 @@ namespace UnityEngine.UIElements
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
             { viewDataKey = "VerticalScroller" };
+
+            verticalScroller.slider.viewDataRestored += OnVerticalSliderViewDataRestored;
+            horizontalScroller.slider.viewDataRestored += OnHorizontalSliderViewDataRestored;
+
+            horizontalScroller.slider.onSetValueWithoutNotify += OnHorizontalScrollerSetValueWithoutNotify;
+            verticalScroller.slider.onSetValueWithoutNotify += OnVerticalScrollerSetValueWithoutNotify;
 
             horizontalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
             verticalScroller.slider.clampedDragger.draggingEnded += UpdateElasticBehaviour;
@@ -1215,6 +1229,30 @@ namespace UnityEngine.UIElements
             UpdateScrollers(needsHorizontalCached, needsVerticalCached);
             UpdateContentViewTransform();
             ScheduleResetLayoutPass();
+        }
+
+        void OnVerticalSliderViewDataRestored()
+        {
+            verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
+            UpdateContentViewTransform();
+        }
+
+        void OnHorizontalSliderViewDataRestored()
+        {
+            horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
+            UpdateContentViewTransform();
+        }
+
+        void OnVerticalScrollerSetValueWithoutNotify(float value)
+        {
+            m_ScrollOffset = new Vector2(scrollOffset.x, value);
+            SaveViewData();
+        }
+
+        void OnHorizontalScrollerSetValueWithoutNotify(float value)
+        {
+            m_ScrollOffset = new Vector2(value, scrollOffset.y);
+            SaveViewData();
         }
 
         private IVisualElementScheduledItem m_ScheduledLayoutPassResetItem;
@@ -1751,9 +1789,9 @@ namespace UnityEngine.UIElements
 
             // Need to set always, for touch scrolling.
             verticalScroller.lowValue = 0f;
-            verticalScroller.highValue = scrollableHeight;
+            verticalScroller.highValue = float.IsNaN(scrollableHeight) ? verticalScroller.highValue : scrollableHeight;
             horizontalScroller.lowValue = 0f;
-            horizontalScroller.highValue = scrollableWidth;
+            horizontalScroller.highValue = float.IsNaN(scrollableWidth) ? horizontalScroller.highValue : scrollableWidth;
         }
 
         private void OnScrollersGeometryChanged(GeometryChangedEvent evt)
@@ -1875,6 +1913,35 @@ namespace UnityEngine.UIElements
 
                 ExecuteElasticSpringAnimation();
             }
+        }
+
+        internal void SetScrollOffsetWithoutNotify(Vector2 value)
+        {
+            horizontalScroller.slider.SetValueWithoutNotify(value.x);
+            verticalScroller.slider.SetValueWithoutNotify(value.y);
+            // Can't directly use the value's x and y as they might be clamped by the slider.
+            m_ScrollOffset = new Vector2(horizontalScroller.value, verticalScroller.value);
+            SaveViewData();
+        }
+
+        internal override void OnViewDataReady()
+        {
+            base.OnViewDataReady();
+
+            // There is a viewDataKey set in the inspector's scrollview. For PropertyEditor, we disable the scrollbar's
+            // persistance by removing the viewDataKey. To comply with this use case, we want to skip the restore as not
+            // every inspector will be used as a PropertyEditor.
+            if (string.IsNullOrEmpty(verticalScroller.viewDataKey) &&
+                string.IsNullOrEmpty(verticalScroller.slider.viewDataKey) &&
+                string.IsNullOrEmpty(horizontalScroller.viewDataKey) &&
+                string.IsNullOrEmpty(horizontalScroller.slider.viewDataKey))
+            {
+                return;
+            }
+
+            var key = GetFullHierarchicalViewDataKey();
+            OverwriteFromViewData(this, key);
+            UpdateContentViewTransform();
         }
     }
 }

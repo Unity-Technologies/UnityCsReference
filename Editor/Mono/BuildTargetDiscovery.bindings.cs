@@ -120,6 +120,27 @@ namespace UnityEditor
             return buildTarget != null;
         }
 
+        internal static bool TryGetBuildTarget(NamedBuildTarget named, out IBuildTarget outTarget)
+        {
+            var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
+            // name.BuildTarget => enum.IBuildTarget
+            if (TryGetBuildTarget(direct, out outTarget))
+                return true;
+
+            // look through every known platform
+            foreach (var info in BuildTargetDiscovery.GetBuildTargetInfoList())
+            {
+                if (Array.IndexOf(info.nameList, named.TargetName) < 0)
+                    continue;
+
+                if (TryGetBuildTarget(info.buildTargetPlatformVal, out outTarget))
+                    return true;
+            }
+
+            outTarget = null;
+            return false;
+        }
+
         public static bool TryGetProperties<T>(BuildTarget platform, out T properties) where T : IPlatformProperties
         {
             if (TryGetBuildTarget(platform, out var buildTarget))

@@ -2031,7 +2031,6 @@ namespace UnityEngine.UIElements
         internal override void OnViewDataReady()
         {
             base.OnViewDataReady();
-
             var key = GetFullHierarchicalViewDataKey();
             OverwriteFromViewData(this, key);
             m_ScrollView.UpdateContentViewTransform();

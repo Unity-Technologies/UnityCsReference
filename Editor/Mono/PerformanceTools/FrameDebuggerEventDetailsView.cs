@@ -361,7 +361,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
             EditorGUILayout.MinMaxSlider(ref blackLevel, ref whiteLevel, m_RTBlackMinLevel, m_RTWhiteMaxLevel, GUILayout.MaxWidth(200.0f));
             float whiteMaxLevel = EditorGUILayout.DelayedFloatField(m_RTWhiteMaxLevel, GUILayout.MaxWidth(40.0f));
 
-            if (blackMinLevel < whiteMaxLevel && whiteMaxLevel > blackMinLevel)
+            if (blackMinLevel < whiteMaxLevel)
             {
                 m_RTBlackMinLevel = blackMinLevel;
                 m_RTWhiteMaxLevel = whiteMaxLevel;

@@ -22,8 +22,7 @@ internal class NonCompliantPackageHelpBox : PackageBaseHelpBox
         if (!isVisible)
             return;
 
-        var message = compliance.violation.message;
-        text = string.Format(L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"), message);
+        text = compliance.violation.message;
         readMoreUrl = compliance.violation.readMoreLink;
     }
 }

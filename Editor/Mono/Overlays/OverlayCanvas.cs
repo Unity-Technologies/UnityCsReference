@@ -282,8 +282,9 @@ namespace UnityEditor.Overlays
         List<Overlay> m_Overlays = new List<Overlay>();
         List<Overlay> m_TransientOverlays = new();
 
+        internal static string k_DefaultPresetName = "Default";
         [SerializeField]
-        string m_LastAppliedPresetName = "Default";
+        string m_LastAppliedPresetName = k_DefaultPresetName;
 
         [SerializeField]
         List<SaveData> m_SaveData = new List<SaveData>();
@@ -713,6 +714,11 @@ namespace UnityEditor.Overlays
                 saveData[i] = new SaveData(saveData[i]);
         }
 
+        internal void SetLastAppliedPresetName(string name)
+        {
+            m_LastAppliedPresetName = name;
+        }
+
         internal void ApplyPreset(IOverlayPreset preset)
         {
             if (!preset.CanApplyToWindow(containerWindow.GetType()))
@@ -722,7 +728,7 @@ namespace UnityEditor.Overlays
                 return;
             }
 
-            m_LastAppliedPresetName = preset.name;
+            SetLastAppliedPresetName(preset.name);
             ApplySaveData(preset.saveData);
             preset.ApplyCustomData(this);
             presetChanged?.Invoke();

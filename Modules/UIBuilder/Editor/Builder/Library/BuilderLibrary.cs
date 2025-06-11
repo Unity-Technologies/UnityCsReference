@@ -360,9 +360,18 @@ namespace Unity.UI.Builder
             RefreshView();
         }
         public void SelectionChanged() { }
-        public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType) { }
+
+        public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
+        {
+            UpdateEditorExtensionMode();
+        }
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
+        {
+            UpdateEditorExtensionMode();
+        }
+
+        void UpdateEditorExtensionMode()
         {
             if (m_EditorExtensionMode != m_PaneWindow.document.fileSettings.editorExtensionMode)
             {

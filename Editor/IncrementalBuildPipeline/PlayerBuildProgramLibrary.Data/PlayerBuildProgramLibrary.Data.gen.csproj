@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
   <PropertyGroup>
@@ -7,7 +7,7 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <EnableDefaultItems>false</EnableDefaultItems>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>10.0</LangVersion>
     <NoWarn>1701</NoWarn>
     <AssemblyName>PlayerBuildProgramLibrary.Data</AssemblyName>
   </PropertyGroup>
