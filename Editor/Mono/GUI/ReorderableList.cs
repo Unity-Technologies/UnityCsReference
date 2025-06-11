@@ -32,6 +32,7 @@ namespace UnityEditorInternal
         public delegate void AddCallbackDelegate(ReorderableList list);
         public delegate void AddDropdownCallbackDelegate(Rect buttonRect, ReorderableList list);
         public delegate void RemoveCallbackDelegate(ReorderableList list);
+        public delegate void DeleteArrayElementCallbackDelegate(ReorderableList list, int index);
         public delegate void ChangedCallbackDelegate(ReorderableList list);
         public delegate bool CanRemoveCallbackDelegate(ReorderableList list);
         public delegate bool CanAddCallbackDelegate(ReorderableList list);
@@ -60,6 +61,9 @@ namespace UnityEditorInternal
         public CanRemoveCallbackDelegate onCanRemoveCallback;
         public CanAddCallbackDelegate onCanAddCallback;
         public ChangedCallbackDelegate onChangedCallback;
+
+        // Called from the "Delete Array Element" SerializedProperty context menu
+        public DeleteArrayElementCallbackDelegate onDeleteArrayElementCallback;
 
         internal List<int> m_Selection = new List<int>();
         private float m_DragOffset = 0;

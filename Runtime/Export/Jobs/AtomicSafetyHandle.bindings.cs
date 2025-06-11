@@ -150,6 +150,10 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         public static extern EnforceJobResult EnforceAllBufferJobsHaveCompletedAndDisableReadWrite(AtomicSafetyHandle handle);
 
+        // Make sure that a jobhandle covers all jobs scheduled against a buffer,
+        [ThreadSafe]
+        internal static extern bool CheckAllBufferJobsAreDependencyOrHaveCompleted(AtomicSafetyHandle handle, JobHandle job);
+
         // Same as CheckReadAndThrow but the early out has already been performed in the call site for performance reasons.
         [ThreadSafe(ThrowsException = true)]
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
