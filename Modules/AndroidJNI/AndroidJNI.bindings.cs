@@ -578,9 +578,14 @@ namespace UnityEngine
 
         //---------------------------------------
 
-        // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToBooleanArray(Boolean[] array);
+        static extern IntPtr ConvertToBooleanArray(Boolean[] array);
+        // Convert a managed array of System.Boolean to a Java array of <tt>boolean</tt>.
+        public static IntPtr ToBooleanArray(Boolean[] array)
+        {
+            return array == null ? IntPtr.Zero : ConvertToBooleanArray(array);
+        }
+
         [ThreadSafe]
         [Obsolete("AndroidJNI.ToByteArray is obsolete. Use AndroidJNI.ToSByteArray method instead")]
         public static extern IntPtr ToByteArray(Byte[] array);
@@ -608,7 +613,20 @@ namespace UnityEngine
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
         [ThreadSafe]
-        public static extern IntPtr ToObjectArray(IntPtr[] array, IntPtr arrayClass);
+        private static extern unsafe IntPtr ToObjectArray(IntPtr* array, int length, IntPtr arrayClass);
+
+        public static IntPtr ToObjectArray(IntPtr[] array, IntPtr arrayClass)
+        {
+            unsafe
+            {
+                if (array == null)
+                    return IntPtr.Zero;
+                fixed (IntPtr* ptr = array)
+                {
+                    return ToObjectArray(ptr, array.Length, arrayClass);
+                }
+            }
+        }
 
         // Convert a managed array of System.IntPtr, representing Java objects, to a Java array of <tt>java.lang.Object</tt>.
         public static IntPtr ToObjectArray(IntPtr[] array)
