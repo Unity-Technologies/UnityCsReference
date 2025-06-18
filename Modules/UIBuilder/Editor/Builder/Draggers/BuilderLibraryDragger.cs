@@ -152,7 +152,7 @@ namespace Unity.UI.Builder
                     paneWindow.document, m_DragPreviewElement, item.makeElementAssetCallback, index);
 
             selection.NotifyOfHierarchyChange(null);
-            selection.NotifyOfStylingChange(null);
+            selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
             selection.Select(null, m_DragPreviewElement);
 
             // Commit to the preview element as the final element.

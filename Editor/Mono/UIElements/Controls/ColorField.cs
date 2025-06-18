@@ -153,6 +153,9 @@ namespace UnityEditor.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool setAlphaIfTransparentWhenPicked;
+
         bool m_ShowAlpha;
         bool m_ShowEyeDropper;
         bool m_HDR;
@@ -331,7 +334,7 @@ namespace UnityEditor.UIElements
                     showMixedValue = false;
                     value = c;
                 },
-                value, m_ShowAlpha, m_HDR);
+                value, m_ShowAlpha, m_HDR, setAlphaIfTransparentWhenPicked);
         }
 
         void OnColorFieldKeyDown(KeyDownEvent evt)
@@ -366,9 +369,18 @@ namespace UnityEditor.UIElements
             }
             else
             {
-                Color pickedColor = EyeDropper.GetPickedColor();
+                var pickedColor = EyeDropper.GetPickedColor();
+
+                if (setAlphaIfTransparentWhenPicked && value.a == 0)
+                {
+                    pickedColor.a = 1.0f;
+                }
                 // Eyedropper color picking should not impact the previous color alpha.
-                pickedColor.a = value.a;
+                else
+                {
+                    pickedColor.a = value.a;
+                }
+
                 value = pickedColor;
             }
 
@@ -439,7 +451,16 @@ namespace UnityEditor.UIElements
             var pickerColor = EyeDropper.GetPickedColor();
             if (pickerColor != value)
             {
-                pickerColor.a = rawValue.a;
+                if (setAlphaIfTransparentWhenPicked && value.a == 0)
+                {
+                    pickerColor.a = 1.0f;
+                }
+                // Eyedropper color picking should not impact the previous color alpha.
+                else
+                {
+                    pickerColor.a = rawValue.a;
+                }
+
                 UpdateColorProperties(pickerColor);
             }
         }

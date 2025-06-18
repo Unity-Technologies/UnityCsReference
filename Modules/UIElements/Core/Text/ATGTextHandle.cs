@@ -21,9 +21,9 @@ namespace UnityEngine.UIElements
         private List<(int, TagType, string)> Links => m_Links ??= new();
         internal Color atgHyperlinkColor = Color.blue;
 
-        void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height)
+        void ComputeNativeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
         {
-            if (!ConvertUssToNativeTextGenerationSettings())
+            if (!ConvertUssToNativeTextGenerationSettings(fontsize))
                 return;
 
             // Insert zero width space to avoid TextField from collapsing when empty. UUM-90538
@@ -62,6 +62,7 @@ namespace UnityEngine.UIElements
                 m_ATGTextEventHandler ??= new ATGTextEventHandler(m_TextElement);
             }
             var textInfo = textLib.GenerateText(nativeSettings, textGenerationInfo);
+            m_IsElided = textInfo.isElided;
             return (textInfo, true);
         }
 
@@ -100,7 +101,7 @@ namespace UnityEngine.UIElements
                 return(TagType.Unknown, null);
             }
 
-            int id = TextLib.FindIntersectingLink(point, textGenerationInfo);
+            int id = TextLib.FindIntersectingLink(point * GetPixelsPerPoint(), textGenerationInfo);
 
             if (id == -1)
                 return (TagType.Unknown, null);
@@ -126,7 +127,7 @@ namespace UnityEngine.UIElements
                 m_ATGTextEventHandler.UnRegisterHyperlinkCallbacks();
         }
 
-        internal bool ConvertUssToNativeTextGenerationSettings()
+        internal bool ConvertUssToNativeTextGenerationSettings(float? fontsize = null)
         {
             var fa = TextUtilities.GetFontAsset(m_TextElement);
             if (fa.atlasPopulationMode == AtlasPopulationMode.Static)
@@ -142,8 +143,8 @@ namespace UnityEngine.UIElements
             var renderedText = m_TextElement.isElided && !TextLibraryCanElide() ?
                 new RenderedText(m_TextElement.elidedText) : m_TextElement.renderedText;
             nativeSettings.text = renderedText.CreateString();
-
-            nativeSettings.fontSize = (int)(style.fontSize.value * 64.0f *scale);
+            var effectiveFontsize = fontsize ?? style.fontSize.value;
+            nativeSettings.fontSize = (int)(effectiveFontsize * 64.0f *scale);
             nativeSettings.bestFit = style.unityTextAutoSize.mode == TextAutoSizeMode.BestFit;
             nativeSettings.maxFontSize = (int)(style.unityTextAutoSize.maxSize.value * 64.0f * scale);
             nativeSettings.minFontSize = (int)(style.unityTextAutoSize.minSize.value * 64.0f * scale);

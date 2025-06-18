@@ -35,9 +35,9 @@ namespace UnityEditor.Overlays
             }
 
             #pragma warning disable 649
+            [SerializeField] string supportedOverlayLayout;
             [SerializeField] bool horizontal;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontal_UxmlAttributeFlags;
-            [SerializeField] string supportedOverlayLayout;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags supportedOverlayLayout_UxmlAttributeFlags;
             #pragma warning restore 649
 

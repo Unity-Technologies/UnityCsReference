@@ -45,10 +45,10 @@ namespace UnityEditor.UIElements
             }
 
             #pragma warning disable 649
-            [SerializeField] bool allowSceneObjects;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
             [SerializeField] string objectType;
+            [SerializeField] bool allowSceneObjects;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
             #pragma warning restore 649
 

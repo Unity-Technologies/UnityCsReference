@@ -21,7 +21,7 @@ internal class PartiallyNonCompliantRegistryMessage : VisualElement
     public PartiallyNonCompliantRegistryMessage()
     {
         ResolveDependencies();
-        m_PartiallyNonCompliantHelpBox = new HelpBoxWithOptionalReadMore { messageType = HelpBoxMessageType.Error };
+        m_PartiallyNonCompliantHelpBox = new HelpBoxWithOptionalReadMore { messageType = HelpBoxMessageType.Error, analyticsId = "partially-non-compliant-registry-help-box" };
         Add(m_PartiallyNonCompliantHelpBox);
     }
 

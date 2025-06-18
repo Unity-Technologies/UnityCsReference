@@ -83,7 +83,6 @@ namespace Unity.UI.Builder
 
             BuilderSharedStyles.MatchSelectorElementOrderInAsset(newStyleSheetElement, undo);
 
-            selection.NotifyOfHierarchyChange();
             selection.NotifyOfStylingChange(null);
             selection.ForceReselection();
         }
@@ -111,6 +110,10 @@ namespace Unity.UI.Builder
                     return false;
 
             if (!element.IsStyleSheet()) // Can only parent selectors under a StyleSheet.
+                return false;
+
+            // Cannot reparent stylesheets
+            if (element.IsStyleSheet() && m_TargetElementToReparent.IsStyleSheet())
                 return false;
 
             // Check if USS is part of active document.

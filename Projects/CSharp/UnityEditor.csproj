@@ -5103,6 +5103,12 @@
     <Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs">
       <Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\DisablementPopup.cs">
+      <Link>Modules\InsightsEditor\DisablementPopup.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\InsightsEditor\TrText.cs">
+      <Link>Modules\InsightsEditor\TrText.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs">
       <Link>Modules\JSONSerializeEditor\EditorJsonUtility.bindings.cs</Link>
     </Compile>
@@ -5375,6 +5381,9 @@
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerOperationErrorAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerOperationErrorAnalytics.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerReadMoreClickedAnalytics.cs">
+      <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerReadMoreClickedAnalytics.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs">
       <Link>Modules\PackageManagerUI\Editor\Services\Analytics\PackageManagerWindowAnalytics.cs</Link>
@@ -8048,6 +8057,9 @@
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\PromptWindow.cs">
       <Link>Modules\ShortcutManagerEditor\PromptWindow.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\ShortcutManagerEditor\PromptWindowBase.cs">
+      <Link>Modules\ShortcutManagerEditor\PromptWindowBase.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs">
       <Link>Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs</Link>

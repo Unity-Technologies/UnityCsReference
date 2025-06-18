@@ -16,5 +16,6 @@ namespace UnityEngine.TextCore.Text
         public ATGMeshInfo[] meshInfos;
         public int totalWidth;
         public int totalHeight;
+        public bool isElided;
     }
 }

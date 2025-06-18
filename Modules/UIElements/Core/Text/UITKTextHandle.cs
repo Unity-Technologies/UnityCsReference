@@ -61,7 +61,7 @@ namespace UnityEngine.UIElements
 
         protected TextElement m_TextElement;
 
-        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
+        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
         {
             var scale = GetPixelsPerPoint();
             width = Mathf.Round(width * scale);
@@ -69,11 +69,11 @@ namespace UnityEngine.UIElements
 
             if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
-                ComputeNativeTextSize(textToMeasure, width, height);
+                ComputeNativeTextSize(textToMeasure, width, height, fontsize);
             }
             else
             {
-                ConvertUssToTextGenerationSettings(populateScreenRect:false);
+                ConvertUssToTextGenerationSettings(populateScreenRect:false, fontsize);
                 settings.renderedText = textToMeasure;
                 settings.screenRect = new Rect(0, 0, width, height);
                 UpdatePreferredValues(settings);
@@ -154,7 +154,7 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect)
+        internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect, float? fontsize = null)
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
@@ -179,7 +179,8 @@ namespace UnityEngine.UIElements
 
             var uiScale = GetPixelsPerPoint();
             //this rounding should be moved to the resolved style so user could get the result...
-            tgs.fontSize = (int)Math.Round(((style.fontSize.value * uiScale)), MidpointRounding.AwayFromZero);
+            var effectiveFontSize = fontsize ?? style.fontSize.value;
+            tgs.fontSize = (int)Math.Round(((effectiveFontSize * uiScale)), MidpointRounding.AwayFromZero);
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
 
@@ -217,7 +218,7 @@ namespace UnityEngine.UIElements
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
-
+            settings.pixelsPerPoint = uiScale;
             if (populateScreenRect)
             {
                 var size = m_TextElement.contentRect.size;
@@ -326,7 +327,7 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(m_TextElement.text)) // impossible to differentiate between an empty string and a fully truncated string.
                 return true;
 
-            return m_IsEllided;
+            return m_IsElided;
         }
     }
 }

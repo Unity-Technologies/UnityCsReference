@@ -843,6 +843,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
+                uiField.colorField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
                 return true;
             }
 
@@ -1121,6 +1122,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
+                uiField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
                 return true;
             }
 
@@ -1517,6 +1519,7 @@ namespace Unity.UI.Builder
         void RefreshStyleFoldoutColorField(FoldoutColorField foldoutElement)
         {
             var isDirty = false;
+            var anyStylePropertySet = false;
             foreach (var path in foldoutElement.bindingPathArray)
             {
                 var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(path);
@@ -1535,6 +1538,7 @@ namespace Unity.UI.Builder
                     if (styleProperty != null && !styleProperty.IsVariable())
                     {
                         isDirty = true;
+                        anyStylePropertySet = true;
                         value = styleSheet.ReadColor(styleProperty.values[0]);
                     }
 
@@ -1543,6 +1547,7 @@ namespace Unity.UI.Builder
             }
 
             foldoutElement.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, isDirty);
+            foldoutElement.headerInputField.setAlphaIfTransparentWhenPicked = !anyStylePropertySet;
         }
 
         void SetVariableEditor(BindableElement element, int displayIndex)

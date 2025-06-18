@@ -248,45 +248,43 @@ namespace UnityEngine.UIElements
                 );
             }
 
-#pragma warning disable 649
-            [SerializeField, HideInInspector] string name;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
-            [UxmlAttribute("enabled")]
-            [SerializeField, Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")] bool enabledSelf;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
-            [SerializeField] string viewDataKey;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
-            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
-            [SerializeField] PickingMode pickingMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
-            [SerializeField] string tooltip;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
-            [SerializeField] UsageHints usageHints;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
-            [UxmlAttribute("tabindex")]
-            [SerializeField] int tabIndex;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
-            [SerializeField] bool focusable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
-            [SerializeField] LanguageDirection languageDirection;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
+            #pragma warning disable 649
 
-            [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
+            [SerializeField, HideInInspector] string name;
+            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
+            [SerializeField] string tooltip;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
             [Tooltip(DataBinding.k_DataSourcePathTooltip)]
             [SerializeField, HideInInspector] string dataSourcePathString;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
-
             [UxmlAttribute("data-source-type")]
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, UxmlTypeReferenceAttribute(typeof(object))] string dataSourceTypeString;
+            [SerializeField, HideInInspector, UxmlTypeReference(typeof(object))] string dataSourceTypeString;
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
+            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
+            [SerializeField] string viewDataKey;
+            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
+            [SerializeField] PickingMode pickingMode;
+            [SerializeField] UsageHints usageHints;
+            [SerializeField] LanguageDirection languageDirection;
+            [UxmlAttribute("tabindex")]
+            [SerializeField] int tabIndex;
+            [SerializeField] bool focusable;
+            [UxmlAttribute("enabled"), Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")]
+            [SerializeField] bool enabledSelf;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
-
-            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
 

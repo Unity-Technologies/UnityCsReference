@@ -23,8 +23,9 @@ namespace Unity.UI.Builder
         FieldStatusIndicator m_StatusIndicator;
         Label m_Pill;
         TextField m_TextField;
-        internal BuilderDataSourceAndPathView m_DataSourceAndPathView;
+        BuilderDataSourceAndPathView m_DataSourceAndPathView;
         private VisualElement m_DataSourceViewContainer;
+        Action m_RefreshDataSourceAndPathViewAction;
 
         UnityEngine.UIElements.HelpBox m_EditorWarningHelpBox;
         VisualElement m_ErrorIcon;
@@ -33,6 +34,7 @@ namespace Unity.UI.Builder
 
         StyleSheet styleSheet => m_Inspector.styleSheet;
         public VisualElement header => m_Header;
+        public BuilderDataSourceAndPathView dataSourceAndPathView => m_DataSourceAndPathView;
 
         // Store callbacks to reduce delegate allocations
         EventCallback<ChangeEvent<string>> m_ElementNameChangeCallback;
@@ -85,14 +87,14 @@ namespace Unity.UI.Builder
             m_RightClickManipulator = new ContextualMenuManipulator(BuildNameFieldContextualMenu);
 
             m_DataSourceViewContainer = new VisualElement();
-            m_DataSourceViewContainer.style.minHeight = 90;
-
             m_Header.Add(m_DataSourceViewContainer);
             m_DataSourceAndPathView = new BuilderDataSourceAndPathView(m_Inspector)
             {
                 attributesContainer = m_DataSourceViewContainer,
                 onNotifyAttributesChanged = () => m_Inspector.selection.NotifyOfHierarchyChange(m_Inspector)
             };
+
+            m_RefreshDataSourceAndPathViewAction = RefreshDataSourceAndPathView;
         }
 
         public void Dispose()
@@ -167,7 +169,7 @@ namespace Unity.UI.Builder
                 BuilderSelectionType.Element)
             {
                 m_DataSourceViewContainer.style.display = DisplayStyle.Flex;
-                m_DataSourceAndPathView.SetAttributesOwner(m_Inspector.visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
+                m_DataSourceAndPathView.SetAttributesOwner(m_Inspector.visualTreeAsset, currentVisualElement);
 
                 if (m_DataSourceAndPathView.refreshScheduledItem != null)
                 {
@@ -177,13 +179,18 @@ namespace Unity.UI.Builder
                 }
                 else
                 {
-                    m_DataSourceAndPathView.refreshScheduledItem = m_DataSourceAndPathView.attributesContainer.schedule.Execute(() => m_DataSourceAndPathView.Refresh());
+                    m_DataSourceAndPathView.refreshScheduledItem = m_DataSourceAndPathView.attributesContainer.schedule.Execute(m_RefreshDataSourceAndPathViewAction);
                 }
             }
             else
             {
                 m_DataSourceViewContainer.style.display = DisplayStyle.None;
             }
+        }
+
+        void RefreshDataSourceAndPathView()
+        {
+            m_DataSourceAndPathView.Refresh();
         }
 
         private void SetTypeAndIcon()
@@ -230,7 +237,7 @@ namespace Unity.UI.Builder
 
         internal void UnsetName()
         {
-            // Link the attribute description 
+            // Link the attribute description
             var attributeDesc = m_Inspector.attributesSection.m_SerializedDataDescription.FindAttributeWithPropertyName("name");
             m_TextField.SetLinkedAttributeDescription(attributeDesc);
             m_Inspector.attributesSection.UnsetAttributeProperty(m_TextField, true);
@@ -322,7 +329,6 @@ namespace Unity.UI.Builder
                 return false;
             }
 
-            m_Selection.NotifyOfHierarchyChange(m_Inspector);
             m_Selection.NotifyOfStylingChange(m_Inspector);
             return true;
         }

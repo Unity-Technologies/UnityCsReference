@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
-    class PromptWindow : EditorWindow
+    class PromptWindow : PromptWindowBase
     {
         Func<string, string> m_Validator;
         Action<string> m_Action;
@@ -26,9 +26,7 @@ namespace UnityEditor.ShortcutManagement
         public static void Show(string title, string headerText, string messageText, string valueLabel, string initialValue,
             string acceptButtonText, Func<string, string> validator, Action<string> action, float windowWidth = 380f, float windowHeight = 160f)
         {
-            var promptWindow = GetWindowDontShow<PromptWindow>();
-
-            promptWindow.titleContent = new GUIContent(title);
+            var promptWindow = GetWindow<PromptWindow>(true, title, true);
 
             // TODO: Ideally the window size should be fixed according to its contents
             promptWindow.minSize = promptWindow.maxSize = new Vector2(windowWidth, windowHeight);
@@ -46,7 +44,7 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.m_TextField.Focus();
             promptWindow.UpdateValidation();
 
-            promptWindow.ShowAuxWindow();
+            promptWindow.ShowWindow();
         }
 
         void OnEnable()

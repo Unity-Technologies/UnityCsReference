@@ -143,7 +143,7 @@ namespace UnityEngine.TextCore.Text
         private Rect m_ScreenRect; //real pixel
         private float m_LineHeightDefault; //real pixel
         private bool m_IsPlaceholder;
-        protected bool m_IsEllided;
+        protected bool m_IsElided;
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal IntPtr textGenerationInfo = IntPtr.Zero;
 
@@ -295,7 +295,7 @@ namespace UnityEngine.TextCore.Text
             generator.GenerateText(settings, textInfo);
             m_PreviousGenerationSettingsHash = hashCode;
             isDirty = false;
-            m_IsEllided = generator.isTextTruncated;
+            m_IsElided = generator.isTextTruncated;
 
             return textInfo;
         }

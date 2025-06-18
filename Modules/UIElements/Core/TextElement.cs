@@ -390,6 +390,9 @@ namespace UnityEngine.UIElements
                 DrawNativeHighlighting(mgc);
             else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
+
+            if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
+                isElided = uitkTextHandle.IsElided();
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
@@ -534,6 +537,21 @@ namespace UnityEngine.UIElements
             MeasureMode heightMode)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
+        }
+
+        /// <summary>
+        /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
+        /// </summary>
+        /// <param name="textToMeasure">The text to measure.</param>
+        /// <param name="width">Suggested width. Can be zero.</param>
+        /// <param name="widthMode">Width restrictions.</param>
+        /// <param name="height">Suggested height.</param>
+        /// <param name="heightMode">Height restrictions.</param>
+        /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
+        /// <returns>The horizontal and vertical size needed to display the text string.</returns>
+        internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
+        {
+            return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode, fontsize);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

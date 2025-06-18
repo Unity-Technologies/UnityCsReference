@@ -83,6 +83,9 @@ namespace UnityEngine.TextCore.Text
 
         public const float charWidthMaxAdj = default;
 
+        //only used to parse the font size in rich text tags
+        public float pixelsPerPoint = 1;
+
         public TextGenerationSettings() { }
 
         // Used by automated tests

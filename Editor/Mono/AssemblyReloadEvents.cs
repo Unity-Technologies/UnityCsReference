@@ -29,10 +29,9 @@ namespace UnityEditor
         {
             if (!m_BeforeAssemblyReloadEvent.hasSubscribers)
                 return;
-            using var scope = new ProgressScope("OnBeforeAssemblyReload Callback", "", forceUpdate: true);
+            using var scope = new ProgressScope("Running managed callbacks", "Executing OnBeforeAssemblyReload Callbacks", forceUpdate: true);
             foreach (var evt in m_BeforeAssemblyReloadEvent)
             {
-                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt();
             }
         }
@@ -42,10 +41,9 @@ namespace UnityEditor
         {
             if (!m_AfterAssemblyReloadEvent.hasSubscribers)
                 return;
-            using var scope = new ProgressScope("OnAfterAssemblyReload Callback", "", forceUpdate: true);
+            using var scope = new ProgressScope("Running managed callbacks", "Executing OnAfterAssemblyReload Callbacks", forceUpdate: true);
             foreach (var evt in m_AfterAssemblyReloadEvent)
             {
-                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt();
             }
         }

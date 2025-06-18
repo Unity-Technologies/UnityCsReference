@@ -24,12 +24,15 @@ namespace UnityEditor.PackageManager.UI.Internal
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(readMoreUrl), "read-more-url"),
+					new (nameof(analyticsId), "analytics-id")
                 });
             }
 
 #pragma warning disable 649
             [SerializeField, MultilineTextField] string readMoreUrl;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags readMoreUrl_UxmlAttributeFlags;
+			[SerializeField] string analyticsId;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags analyticsId_UxmlAttributeFlags;
 #pragma warning restore 649
 
             public override object CreateInstance() => new HelpBoxWithOptionalReadMore();
@@ -41,6 +44,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                 var e = (HelpBoxWithOptionalReadMore)obj;
                 if (ShouldWriteAttributeValue(readMoreUrl_UxmlAttributeFlags))
                     e.readMoreUrl = readMoreUrl;
+                if (ShouldWriteAttributeValue(analyticsId_UxmlAttributeFlags))
+                    e.analyticsId = analyticsId;
             }
         }
 
@@ -55,6 +60,19 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return;
                 m_ReadMoreUrl = newValue;
                 OnReadMoreUrlChanged();
+            }
+        }
+
+        private string m_AnalyticsId;
+        public string analyticsId
+        {
+            get => m_AnalyticsId;
+            set
+            {
+                var newValue = value ?? string.Empty;
+                if ((m_AnalyticsId ?? string.Empty) == newValue)
+                    return;
+                m_AnalyticsId = newValue;
             }
         }
 
@@ -85,7 +103,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             if (string.IsNullOrEmpty(readMoreUrl))
                 return;
+
             ServicesContainer.instance.Resolve<IApplicationProxy>().OpenURL(readMoreUrl);
+            PackageManagerReadMoreClickedAnalytics.SendEvent(analyticsId, readMoreUrl, new[] { messageType.ToString() });
         }
     }
 }

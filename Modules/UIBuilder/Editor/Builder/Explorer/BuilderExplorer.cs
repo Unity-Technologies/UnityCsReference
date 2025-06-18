@@ -28,7 +28,7 @@ namespace Unity.UI.Builder
 
         VisualElement m_DocumentElementRoot;
         bool m_IncludeDocumentElementRoot;
-        VisualElement m_DocumentElement;
+        protected VisualElement m_DocumentElement;
         protected BuilderPaneWindow m_PaneWindow;
         protected BuilderViewport m_Viewport;
         protected ElementHierarchyView m_ElementHierarchyView;
@@ -158,7 +158,11 @@ namespace Unity.UI.Builder
         void UpdateHierarchy(bool hasUnsavedChanges)
         {
             m_ElementHierarchyView.hierarchyHasChanged = true;
-            m_ElementHierarchyView.hasUnsavedChanges = hasUnsavedChanges;
+
+            // reset unsaved changes on save
+            if (!hasUnsavedChanges)
+                m_ElementHierarchyView.hasUnsavedChanges = false;
+
             m_ElementHierarchyView.RebuildTree(m_DocumentElementRoot, m_IncludeDocumentElementRoot);
         }
 
@@ -227,7 +231,6 @@ namespace Unity.UI.Builder
         {
             if (m_ShouldRebuildHierarchyOnStyleChange && changeType == BuilderStylingChangeType.Default)
             {
-                m_ElementHierarchyView.hasUssChanges = ((m_Selection.selectionType == BuilderSelectionType.StyleSheet) || (m_Selection.selectionType == BuilderSelectionType.StyleSelector) || (m_Selection.selectionType == BuilderSelectionType.ParentStyleSelector));
                 UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
             }
             m_ShouldRebuildHierarchyOnStyleChange = !m_Selection.hasUnsavedChanges;

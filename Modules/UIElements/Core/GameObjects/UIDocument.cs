@@ -1364,8 +1364,7 @@ namespace UnityEngine.UIElements
                 // Relative mode gizmos are drawn relative to the next ancestor that's
                 // controlled by a GameObject transform
                 var bbox = m_RootVisualElement.boundingBoxWithoutNested;
-                bbox.position += m_RootVisualElement.layout.position;
-                m_RootVisualElement.ChangeCoordinatesTo(gameObjectDoc.rootVisualElement, bbox);
+                bbox = m_RootVisualElement.ChangeCoordinatesTo(gameObjectDoc.rootVisualElement, bbox);
                 bb = new Bounds(bbox.center, bbox.size);
             }
 

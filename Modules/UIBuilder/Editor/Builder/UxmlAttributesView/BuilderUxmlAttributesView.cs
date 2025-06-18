@@ -2573,8 +2573,6 @@ namespace Unity.UI.Builder
 
                 prop.stringValue = evt.newValue;
                 m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
-
-                inspector.batchedChangesController.TrackPropertyValue(field, prop, this, uxmlDocument);
             }
             else
             {

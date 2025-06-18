@@ -293,19 +293,9 @@ namespace UnityEngine.TextCore
                         TagValue? value = null;
                         if (tagType == TagType.Color)
                         {
-                            if (atributeSection.Length >= 2 && atributeSection[0] == '=')
-                                atributeSection = atributeSection.Slice(1); // we should probably have a better way to do this
-
-                            if (atributeSection.Length >= 4 && atributeSection[0] == '"' && atributeSection[atributeSection.Length - 1] == '"')
-                            {
-                                ColorUtility.TryParseHtmlString(atributeSection.Slice(1, atributeSection.Length - 2).ToString(), out Color color);
-                                value = new TagValue(color);
-                            }
-                            else
-                            {
-                                ColorUtility.TryParseHtmlString(atributeSection.ToString(), out Color color);
-                                value = new TagValue(color);
-                            }
+                            atributeSection = GetAttributeSpan(atributeSection);
+                            ColorUtility.TryParseHtmlString(atributeSection.ToString(), out Color color);
+                            value = new TagValue(color);
 
                             if (value is null)
                             {
@@ -320,21 +310,31 @@ namespace UnityEngine.TextCore
                             if (tagType == TagType.Hyperlink && atributeSection.StartsWith(" href="))
                                 atributeSection = atributeSection.Slice(" href=".Length);
 
-                            // strip the = for <link=xxxx>. The lenght need to be checked so that it is greater than 0
-                            if (atributeSection.Length >= 1 && atributeSection[0] == '=')
-                                atributeSection = atributeSection.Slice(1); // we should probably have a better way to do this
-
                             // strip the quotes for both  <link="xxxx"> and <a href="...">
                             // The length need to be checked so that it is greater than 0
                             // Quotes are not mandatory for link tag and for url it isn't problematic if they aren't there unless there is a <> in the url.
                             // We would need to stop parsing from the beginning of the quote until the second one (a bit like for the noparse tags) for supporting <> character in url
-                            if (atributeSection.Length >= 2 && atributeSection[0] == '"' && atributeSection[atributeSection.Length - 1] == '"')
+                            atributeSection = GetAttributeSpan(atributeSection);
+                            var str = atributeSection.ToString();
+
+                            value = new TagValue(str);
+                        }
+
+                        if (tagType == TagType.Align)
+                        {
+                            atributeSection = GetAttributeSpan(atributeSection);
+                            var str = atributeSection.ToString();
+
+                            if (Enum.TryParse<HorizontalAlignment>(str, true, out _))
                             {
-                                value = new TagValue(atributeSection.Slice(1, atributeSection.Length - 2).ToString());
+                                value = new TagValue(str);
                             }
-                            else
+
+                            if (value is null)
                             {
-                                value = new TagValue(atributeSection.ToString());
+                                errors?.Add(new($"Invalid {tagType} value", start));
+                                pos = start + 1; //malformed tag, skip the '<' character
+                                continue;
                             }
                         }
 
@@ -380,6 +380,25 @@ namespace UnityEngine.TextCore
             }
 
             return result;
+        }
+
+        private static ReadOnlySpan<char> GetAttributeSpan(ReadOnlySpan<char> atributeSection)
+        {
+            if (atributeSection.Length >= 2 && atributeSection[0] == '=')
+                atributeSection = atributeSection.Slice(1);
+
+            // Handle quoted values
+            if (atributeSection.Length >= 2 &&
+                ((atributeSection[0] == '"' && atributeSection[^1] == '"') ||
+                 (atributeSection[0] == '\'' && atributeSection[^1] == '\'')))
+            {
+                return atributeSection.Slice(1, atributeSection.Length - 2);
+            }
+            else
+            {
+                // Unquoted value
+                return atributeSection;
+            }
         }
 
 
@@ -629,7 +648,7 @@ namespace UnityEngine.TextCore
                         //TODO : Add support for nobr
                         break;
                     case TagType.Align:
-                        //TODO : Add support for align
+                        Enum.TryParse<HorizontalAlignment>(segment.tags[i].value!.StringValue, true, out textSpan.alignment);
                         break;
                     case TagType.LineHeight:
                         //TODO : Add support for lineheight

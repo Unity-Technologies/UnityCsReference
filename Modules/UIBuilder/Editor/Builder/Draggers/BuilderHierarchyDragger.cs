@@ -86,7 +86,7 @@ namespace Unity.UI.Builder
             BuilderAssetUtilities.SortElementsByTheirVisualElementInAsset(newParent);
 
             selection.NotifyOfHierarchyChange(null);
-            selection.NotifyOfStylingChange(null);
+            selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
             selection.ForceReselection(null);
         }
 

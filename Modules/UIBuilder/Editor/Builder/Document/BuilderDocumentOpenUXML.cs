@@ -1225,9 +1225,24 @@ namespace Unity.UI.Builder
             }
 
             // Reset file settings
-            m_FileSettings.SetRootElementAsset(m_VisualTreeAsset);
+            fileSettings.SetRootElementAsset(m_VisualTreeAsset);
 
             return needsFullRefresh;
+        }
+
+        public BuilderDocumentOpenUSS GetUssFileFromSheet(StyleSheet styleSheet)
+        {
+            if (styleSheet == null)
+                return null;
+
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                if (openUSSFile?.styleSheet == styleSheet)
+                    return openUSSFile;
+            }
+
+            // If this is a subdocument, check the parent document for the style sheet.
+            return openSubDocumentParent?.GetUssFileFromSheet(styleSheet);
         }
     }
 }

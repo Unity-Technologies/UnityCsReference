@@ -177,7 +177,10 @@ namespace Unity.UI.Builder
                     document.settings.MatchGameView = value;
                     document.SaveSettingsToDisk();
                 }
-                m_Selection?.NotifyOfStylingChange();
+
+                // We claim the change is coming from the Document because we don't
+                // want the document hasUnsavedChanges flag to be set from changing canvas size.
+                m_Selection?.NotifyOfStylingChange(document);
 
                 if (m_MatchGameView)
                 {

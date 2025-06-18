@@ -13,6 +13,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             text = L10n.Tr("This package is hosted on a Scoped Registry.");
             messageType = HelpBoxMessageType.Info;
             readMoreUrl = $"https://docs.unity3d.com/{application.shortUnityVersion}/Documentation/Manual/upm-scoped.html";
+            analyticsId = "scoped-registry-package-help-box";
         }
 
         public override void Refresh(IPackageVersion version)

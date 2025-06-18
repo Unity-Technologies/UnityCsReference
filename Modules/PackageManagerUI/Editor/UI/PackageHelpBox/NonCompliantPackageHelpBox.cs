@@ -11,6 +11,7 @@ internal class NonCompliantPackageHelpBox : PackageBaseHelpBox
     public NonCompliantPackageHelpBox()
     {
         messageType = HelpBoxMessageType.Error;
+		analyticsId = "non-compliant-package-help-box";
     }
 
     public override void Refresh(IPackageVersion version)

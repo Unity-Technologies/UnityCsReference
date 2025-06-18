@@ -59,6 +59,7 @@ namespace UnityEngine.TextCore
                 color = this.color,
                 fontStyle = this.fontStyle,
                 fontWeight = this.fontWeight,
+                alignment = this.horizontalAlignment,
                 linkID = -1
             };
         }
@@ -176,6 +177,7 @@ namespace UnityEngine.TextCore
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
         public int linkID;
+        public HorizontalAlignment alignment;
 
         public override string ToString()
         {

@@ -84,7 +84,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (desc.Length > k_maxDescriptionCharacters)
                 desc = desc.Substring(0, k_maxDescriptionCharacters);
             detailDescription.EnableInClassList(k_EmptyDescriptionClass, !hasProductDescription);
-            detailDescription.style.maxHeight = int.MaxValue;
             detailDescription.SetValueWithoutNotify(desc);
         }
 

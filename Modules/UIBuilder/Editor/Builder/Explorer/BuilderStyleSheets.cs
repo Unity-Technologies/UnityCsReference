@@ -209,7 +209,6 @@ namespace Unity.UI.Builder
 
             var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
 
-            m_Selection.NotifyOfHierarchyChange();
             m_Selection.NotifyOfStylingChange();
 
             // Try to select newly created selector.
@@ -299,8 +298,13 @@ namespace Unity.UI.Builder
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             base.HierarchyChanged(element, changeType);
-            m_ElementHierarchyView.hasUssChanges = true;
             UpdateNewSelectorFieldEnabledStateFromDocument();
+        }
+
+        public override void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
+        {
+            base.StylingChanged(styles, changeType);
+
             UpdateSubtitleFromActiveUSS();
 
             // Show empty state if no stylesheet loaded
@@ -312,16 +316,22 @@ namespace Unity.UI.Builder
                 m_ElementHierarchyView.container.Add(m_EmptyStyleSheetsPaneLabel);
                 m_EmptyStyleSheetsPaneLabel.SendToBack();
             }
-            else
+            else if (m_EmptyStyleSheetsPaneLabel.parent == m_ElementHierarchyView.container)
             {
-                if (m_EmptyStyleSheetsPaneLabel.parent != m_ElementHierarchyView.container)
-                    return;
-
                 // Revert inline style changes to default
                 m_ElementHierarchyView.container.style.justifyContent = Justify.FlexStart;
                 elementHierarchyView.treeView.style.flexGrow = 1;
                 m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
                 m_EmptyStyleSheetsPaneLabel.RemoveFromHierarchy();
+            }
+
+            var selectionIsStyles = m_Selection.selectionType is BuilderSelectionType.StyleSheet
+                or BuilderSelectionType.StyleSelector or BuilderSelectionType.ParentStyleSelector or BuilderSelectionType.Nothing; // Nothing has to be included for delete operations
+            var inlineStyleChange = styles != null && !selectionIsStyles;
+            if (changeType == BuilderStylingChangeType.Default && !inlineStyleChange)
+            {
+                elementHierarchyView.hasUnsavedChanges = m_Selection.hasUnsavedChanges;
+                UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
             }
         }
 

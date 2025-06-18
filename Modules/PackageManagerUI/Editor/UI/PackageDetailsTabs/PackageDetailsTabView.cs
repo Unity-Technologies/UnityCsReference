@@ -60,11 +60,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             UIUtils.SetElementDisplay(m_BodyContainer, !version.hasEntitlementsError);
             UIUtils.SetElementDisplay(m_EntitlementsErrorLabel, version.hasEntitlementsError);
 
-            if (!version.hasEntitlementsError)
-            {
-                ClearDropdown();
-                CalculateTabHeaderDropdown(rect.width - 13f); // account for scroll bar width
-            }
+            CalculateTabHeaderDropdown();
         }
 
         public void RefreshTabs(IEnumerable<string> tabIds, IPackageVersion version)

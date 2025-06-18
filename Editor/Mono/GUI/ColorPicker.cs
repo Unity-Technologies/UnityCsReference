@@ -72,6 +72,9 @@ namespace UnityEditor
         [NonSerialized]
         bool m_ColorSpaceBoxDirty;
 
+        [NonSerialized]
+        bool m_SetAlphaIfTransparentOnNextPick;
+
         enum ColorBoxMode { HSV, EyeDropper }
 
         [SerializeField]
@@ -108,6 +111,7 @@ namespace UnityEditor
             get { return instance.m_Color.exposureAdjustedColor; }
             set
             {
+
                 instance.SetColor(value);
                 instance.Repaint();
             }
@@ -1171,6 +1175,11 @@ namespace UnityEditor
 
         void OnColorChanged(bool exitGUI = true)
         {
+            if (m_SetAlphaIfTransparentOnNextPick && m_Color.GetColorChannel(RgbaChannel.A) == 0)
+            {
+                m_Color.SetColorChannel(RgbaChannel.A, 1.0f);
+                m_SetAlphaIfTransparentOnNextPick = false;
+            }
             m_OldAlpha = -1f;
             m_ColorSpaceBoxDirty = true;
             m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_Color.exposureValue);
@@ -1188,12 +1197,21 @@ namespace UnityEditor
             }
         }
 
+        // Used in tests
+        internal void SetColorAndClose(Color c)
+        {
+            SetColor(c);
+            Close();
+        }
+
         private void SetColor(Color c)
         {
+
             m_Color.SetColorChannelHdr(RgbaChannel.R, c.r);
             m_Color.SetColorChannelHdr(RgbaChannel.G, c.g);
             m_Color.SetColorChannelHdr(RgbaChannel.B, c.b);
-            m_Color.SetColorChannelHdr(RgbaChannel.A, c.a);
+            m_Color.SetColorChannelHdr(RgbaChannel.B, c.a);
+
             OnColorChanged();
             Repaint();
         }
@@ -1203,12 +1221,12 @@ namespace UnityEditor
             Show(viewToUpdate, null, col, showAlpha, hdr);
         }
 
-        public static void Show(Action<Color> colorChangedCallback, Color col, bool showAlpha = true, bool hdr = false)
+        public static void Show(Action<Color> colorChangedCallback, Color col, bool showAlpha = true, bool hdr = false, bool setAlphaIfTransparentOnNextPick = false)
         {
-            Show(null, colorChangedCallback, col, showAlpha, hdr);
+            Show(null, colorChangedCallback, col, showAlpha, hdr, setAlphaIfTransparentOnNextPick);
         }
 
-        static void Show(GUIView viewToUpdate, Action<Color> colorChangedCallback, Color col, bool showAlpha, bool hdr)
+        static void Show(GUIView viewToUpdate, Action<Color> colorChangedCallback, Color col, bool showAlpha, bool hdr, bool setAlphaIfTransparent = false)
         {
             var cp = instance;
             cp.m_HDR = hdr;
@@ -1219,6 +1237,7 @@ namespace UnityEditor
             cp.m_ModalUndoGroup = Undo.GetCurrentGroup();
             cp.m_ExposureSliderMax = Mathf.Max(cp.m_ExposureSliderMax, cp.m_Color.exposureValue);
             originalKeyboardControl = GUIUtility.keyboardControl;
+            cp.m_SetAlphaIfTransparentOnNextPick = setAlphaIfTransparent;
 
             if (cp.m_HDR)
             {

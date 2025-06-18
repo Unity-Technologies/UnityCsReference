@@ -15,6 +15,7 @@ namespace Unity.UI.Builder
         public static readonly string classListContainerName = "class-list-container";
         public static readonly string addClassButtonName = "add-class-button";
         public static readonly string addClassFieldName = "add-class-field";
+        public static readonly string createClassButtonName = "create-class-button";
         public static readonly string inspectorInheritedStylesFoldoutName = "inspector-inherited-styles-foldout";
 
         // Used in tests
@@ -55,7 +56,7 @@ namespace Unity.UI.Builder
             m_AddClassField.RegisterCallback<KeyUpEvent>(OnAddClassFieldChange);
 
             m_AddClassButton = m_Inspector.Q<Button>(addClassButtonName);
-            m_CreateClassButton = m_Inspector.Q<Button>("create-class-button");
+            m_CreateClassButton = m_Inspector.Q<Button>(createClassButtonName);
 
             m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
@@ -156,7 +157,7 @@ namespace Unity.UI.Builder
 
             // We actually want to get the notification back and refresh ourselves.
             m_Selection.NotifyOfHierarchyChange(null, currentVisualElement, BuilderHierarchyChangeType.ClassList);
-            m_Selection.NotifyOfStylingChange(null);
+            m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
         }
 
         StyleSheet GetOrCreateOrAddMainStyleSheet()
@@ -240,7 +241,7 @@ namespace Unity.UI.Builder
 
             // We actually want to get the notification back and refresh ourselves.
             m_Selection.NotifyOfHierarchyChange(null);
-            m_Selection.NotifyOfStylingChange(null);
+            m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
 
             evt.StopPropagation();
         }

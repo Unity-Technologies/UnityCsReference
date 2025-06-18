@@ -50,8 +50,8 @@ namespace UnityEngine.UIElements
 
             #pragma warning disable 649
             [SerializeField] float lowLimit;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;
             [SerializeField] float highLimit;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowLimit_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highLimit_UxmlAttributeFlags;
             #pragma warning restore 649
 

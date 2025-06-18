@@ -540,11 +540,21 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Adds default inspector property fields under a container VisualElement
+        /// Adds default inspector property fields under a container VisualElement.
         /// </summary>
         /// <param name="container">The parent VisualElement</param>
         /// <param name="serializedObject">The SerializedObject to inspect</param>
         /// <param name="editor">The editor currently used</param>
+        /// <example>
+        /// The following example shows how to fill a container with default inspector fields. 
+        /// For a complete example, refer to [[wiki:ui-systems/create-default-inspector|Create a default Inspector]].
+        /// <code lang="cs">
+        /// <![CDATA[
+        /// var container = new VisualElement();
+        /// InspectorElement.FillDefaultInspector(container, serializedObject, editor);
+        /// ]]>
+        /// </code>
+        /// </example>
         public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, Editor editor)
         {
             if (serializedObject == null)
