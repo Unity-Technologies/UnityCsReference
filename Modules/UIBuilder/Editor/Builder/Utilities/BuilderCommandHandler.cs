@@ -145,12 +145,8 @@ namespace Unity.UI.Builder
             var selectionCopy = m_Selection.selection.ToList();
             m_Selection.ClearSelection(null, true);
 
-            bool somethingWasDeleted = false;
             foreach (var element in selectionCopy)
-                somethingWasDeleted |= DeleteElement(element);
-
-            if (somethingWasDeleted)
-                JustNotify();
+                DeleteElement(element);
         }
 
         public bool CopySelection()
@@ -354,6 +350,9 @@ namespace Unity.UI.Builder
                 var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
                 styleSheet.RemoveSelector(complexSelector);
 
+                // Selection changes on delete, we need to update preview here
+                UpdateStyleSheetUssPreview(styleSheet);
+
                 // If we are deleting multiple items then its possible that a previous
                 // delete recreated the explorer panel and this element is no longer valid.
                 // In that case, we force an update with OnEnableAfterAllSerialization.
@@ -365,8 +364,8 @@ namespace Unity.UI.Builder
                 {
                     element.RemoveFromHierarchy();
                 }
-                m_Selection.NotifyOfHierarchyChange();
 
+                m_Selection.NotifyOfStylingChange();
                 return true;
             }
             else if (BuilderSharedStyles.IsStyleSheetElement(element))
@@ -614,8 +613,8 @@ namespace Unity.UI.Builder
 
         public void UpdateStyleSheetUssPreview(StyleSheet styleSheet)
         {
-            var ussFile = m_PaneWindow.document.activeOpenUXMLFile.openUSSFiles.Find(x => x.styleSheet == styleSheet);
-            ussFile.GeneratePreview();
+            var ussFile = m_PaneWindow.document.activeOpenUXMLFile.GetUssFileFromSheet(styleSheet);
+            ussFile?.GeneratePreview();
         }
     }
 }

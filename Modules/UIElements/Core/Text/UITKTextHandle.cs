@@ -213,7 +213,7 @@ namespace UnityEngine.UIElements
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
-
+            settings.pixelsPerPoint = uiScale;
             if (populateScreenRect)
             {
                 var size = m_TextElement.contentRect.size;

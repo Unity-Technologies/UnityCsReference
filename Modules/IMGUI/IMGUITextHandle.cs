@@ -308,6 +308,7 @@ namespace UnityEngine
 
             settings.emojiFallbackSupport = true;
             settings.extraPadding = 6.0f;
+            settings.pixelsPerPoint = pixelsPerPoint;
         }
 
         static TextOverflowMode LegacyClippingToNewOverflow(TextClipping clipping)

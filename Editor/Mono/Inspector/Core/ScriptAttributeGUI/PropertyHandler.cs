@@ -82,18 +82,16 @@ namespace UnityEditor
 
         public void HandleAttribute(SerializedProperty property, PropertyAttribute attribute, FieldInfo field, Type propertyType)
         {
-            if (attribute is TooltipAttribute)
+            switch (attribute)
             {
-                tooltip = (attribute as TooltipAttribute).tooltip;
-                return;
-            }
+                case TooltipAttribute tooltipAttribute:
+                    tooltip = tooltipAttribute.tooltip;
+                    return;
 
-            if (attribute is ContextMenuItemAttribute)
-            {
-                if (contextMenuItems == null)
-                    contextMenuItems = new List<ContextMenuItemAttribute>();
-                contextMenuItems.Add(attribute as ContextMenuItemAttribute);
-                return;
+                case ContextMenuItemAttribute contextMenuItemAttribute:
+                    contextMenuItems ??= new List<ContextMenuItemAttribute>();
+                    contextMenuItems.Add(contextMenuItemAttribute);
+                    return;
             }
 
             // Case 1: If property is a collection, applyToCollection == false, early return to avoid custom drawer;
@@ -102,13 +100,14 @@ namespace UnityEditor
             // Case 3: If property is not a collection nor within a collection, applyToCollection value should
             //         NOT have any effects on it. Custom drawer should be used.
             // Case 4: Rest of the cases, custom drawer should be used.
-            var isArrayOrList = propertyType != null && propertyType.IsArrayOrList();
+            var isCollection = propertyType != null && propertyType.IsArrayOrList();
+            var isCollectionItem = property.propertyPath.EndsWith("]");
             switch (attribute.applyToCollection)
             {
                 // Case 1.
-                case false when isArrayOrList:
+                case false when isCollection:
                 // Case 2.
-                case true when !isArrayOrList && property.propertyPath.Contains("["):
+                case true when !isCollection && isCollectionItem:
                     return;
                 // Case 3 & 4.
                 default:

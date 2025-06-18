@@ -203,12 +203,15 @@ namespace UnityEditor.UIElements
     /// __Note:__ The following types have native support and you can use them without declaring a UxmlAttributeConverter:
     ///
     ///* bool
+    ///* byte
+    ///* sbyte
     ///* char
     ///* string
     ///* short
+    ///* ushort
     ///* int
-    ///* long
     ///* uint
+    ///* long
     ///* ulong
     ///* Enum
     ///* float
@@ -296,13 +299,24 @@ namespace UnityEditor.UIElements
         }
     }
 
+    internal class ByteAttributeConverter : UxmlAttributeConverter<byte>
+    {
+        public override byte FromString(string value) => UxmlUtility.ParseByte(value);
+    }
+
+    internal class SByteAttributeConverter : UxmlAttributeConverter<sbyte>
+    {
+        public override sbyte FromString(string value) => UxmlUtility.ParseSByte(value);
+    }
+
     internal class ShortAttributeConverter : UxmlAttributeConverter<short>
     {
-        public override short FromString(string value)
-        {
-            short.TryParse(value, out var result);
-            return result;
-        }
+        public override short FromString(string value) => UxmlUtility.ParseShort(value);
+    }
+
+    internal class UShortAttributeConverter : UxmlAttributeConverter<ushort>
+    {
+        public override ushort FromString(string value) => UxmlUtility.ParseUShort(value);
     }
 
     internal class IntAttributeConverter : UxmlAttributeConverter<int>

@@ -328,7 +328,7 @@ namespace Unity.UI.Builder
         {
             base.OnEnable();
 
-            minSize = new Vector2(200, 200);
+            minSize = new Vector2(972, 400);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
 
             if (rootVisualElement.panel != null)

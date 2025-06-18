@@ -6950,7 +6950,15 @@ namespace UnityEditor
             // In inspector debug mode & when holding down alt. Show the property path of the property.
             if (Event.current.alt && property.serializedObject.inspectorMode != InspectorMode.Normal)
             {
-                s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                if (string.IsNullOrEmpty(label.text))
+                {
+                    s_PropertyFieldTempContent.tooltip = property.propertyPath;
+                }
+                else
+                {
+                    s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                }
+
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();

@@ -149,34 +149,34 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
+            [SerializeField] long elasticAnimationIntervalMs;
             [SerializeField] ScrollViewMode mode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
             [SerializeField] NestedInteractionKind nestedInteractionKind;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
-            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
-            [SerializeField] bool showHorizontal;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
-            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
-            [SerializeField] bool showVertical;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
             [SerializeField] ScrollerVisibility horizontalScrollerVisibility;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
             [SerializeField] ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
             [SerializeField] float horizontalPageSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
             [SerializeField] float verticalPageSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
             [SerializeField] float mouseWheelScrollSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
             [UxmlAttribute("touch-scroll-type")]
             [SerializeField] TouchScrollBehavior touchScrollBehavior;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
             [SerializeField] float scrollDecelerationRate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
             [SerializeField] float elasticity;
+            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
+            [SerializeField] bool showHorizontal;
+            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
+            [SerializeField] bool showVertical;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticity_UxmlAttributeFlags;
-            [SerializeField] long elasticAnimationIntervalMs;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticAnimationIntervalMs_UxmlAttributeFlags;
             #pragma warning restore 649
 

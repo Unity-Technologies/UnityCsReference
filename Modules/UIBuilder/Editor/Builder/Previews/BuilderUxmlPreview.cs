@@ -37,6 +37,7 @@ namespace Unity.UI.Builder
                     BuilderHierarchyChangeType.ElementName |
                     BuilderHierarchyChangeType.ClassList)) != 0)
             {
+                hasUnsavedChanges = document.hasUnsavedChanges;
                 document.activeOpenUXMLFile.GenerateUxmlPreview();
                 RefreshPreviewIfVisible();
             }

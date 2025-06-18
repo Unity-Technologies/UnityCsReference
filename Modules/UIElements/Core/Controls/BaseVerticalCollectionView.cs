@@ -127,19 +127,19 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "itemHeight", "item-height" })]
             [SerializeField, FixedItemHeightDecorator] float fixedItemHeight;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
             [SerializeField] CollectionVirtualizationMethod virtualizationMethod;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
-            [SerializeField] bool showBorder;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
             [SerializeField] SelectionType selectionType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
             [SerializeField] AlternatingRowBackground showAlternatingRowBackgrounds;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
+            [SerializeField] bool showBorder;
             [SerializeField] bool reorderable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             [UxmlAttribute("horizontal-scrolling")]
             [SerializeField] bool horizontalScrollingEnabled;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollingEnabled_UxmlAttributeFlags;
             #pragma warning restore 649
 
