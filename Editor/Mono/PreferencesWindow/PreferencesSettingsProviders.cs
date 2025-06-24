@@ -15,6 +15,7 @@ using Unity.CodeEditor;
 using UnityEngine.UIElements;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
+using UnityEditor.Toolbars;
 using UnityEditor.UIElements;
 
 namespace UnityEditor
@@ -89,6 +90,7 @@ namespace UnityEditor
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
+            public static readonly GUIContent hideAIMenu = EditorGUIUtility.TrTextContent("Hide AI Menu", "Hide AI Menu in the main menu bar. This will not disable AI features if you have enabled them, it will only hide the menu item.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
 By default, Windows will combine these under a single taskbar item.");
@@ -184,6 +186,7 @@ By default, Windows will combine these under a single taskbar item.");
         private bool m_EnableExtendedLogging;
         private readonly string kContentScalePrefKey = "CustomEditorUIScale";
         private readonly string kWindowsTaskbarPrefKey = "WindowsTaskbarBehavior";
+        internal static event Action<bool> hideMenuChanged;
 
         private struct GICacheSettings
         {
@@ -632,6 +635,7 @@ By default, Windows will combine these under a single taskbar item.");
 
             DrawEnableHelperBar();
             DrawEnableTooltipsInPlayMode();
+            DrawHideAIMenu();
             EditorGUILayout.Space();
 
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
@@ -794,6 +798,20 @@ By default, Windows will combine these under a single taskbar item.");
 
                 // Transfer native
                 EditorApplication.UpdateTooltipsInPlayModeSettings();
+            }
+        }
+
+        void DrawHideAIMenu()
+        {
+            const string key = "HideAIMenu";
+            var value = EditorPrefs.GetBool(key, false);
+
+            EditorGUI.BeginChangeCheck();
+            value = EditorGUILayout.Toggle(GeneralProperties.hideAIMenu, value);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetBool(key, value);
+                hideMenuChanged?.Invoke(value);
             }
         }
 

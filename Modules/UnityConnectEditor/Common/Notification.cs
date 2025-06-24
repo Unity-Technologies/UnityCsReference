@@ -58,6 +58,7 @@ namespace UnityEditor.Connect
             CrashService,
             PurchasingService,
             UDPService
+            ,InsightsService
         }
     }
 }

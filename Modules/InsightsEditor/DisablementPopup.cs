@@ -53,6 +53,12 @@ internal class DisablementPopup : EditorWindow
 
     private static void ShowWindow(DisablementPopupData configData, Vector2 windowSize, Vector2? windowPosition = null)
     {
+        var existingWindow = GetWindow<DisablementPopup>();
+        if (existingWindow)
+        {
+            existingWindow.Close();
+        }
+
         var window = CreateInstance<DisablementPopup>();
 
         window.titleContent = new GUIContent(configData.titleText);

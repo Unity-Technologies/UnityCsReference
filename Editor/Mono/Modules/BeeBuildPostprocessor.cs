@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
+using UnityEditor.InsightsEditor;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
@@ -431,6 +432,7 @@ namespace UnityEditor.Modules
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
+                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.enabled,
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },

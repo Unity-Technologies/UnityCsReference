@@ -86,6 +86,7 @@ namespace UnityEditor.Connect
             Notification.Topic.ProjectBind,
             Notification.Topic.PurchasingService,
             Notification.Topic.UDPService,
+            Notification.Topic.InsightsService,
         };
 
         protected override SingleService serviceInstance => null;

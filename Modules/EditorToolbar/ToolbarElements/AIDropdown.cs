@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars;
 
@@ -17,6 +18,9 @@ class AIDropdown : EditorToolbarDropdown
 
     public AIDropdown()
     {
+        SetVisibility(EditorPrefs.GetBool("HideAIMenu", false));
+        PreferencesProvider.hideMenuChanged += SetVisibility;
+
         name = "AIDropdown";
         text = L10n.Tr("AI");
         icon = EditorGUIUtility.FindTexture("AISparkle Icon");
@@ -25,6 +29,11 @@ class AIDropdown : EditorToolbarDropdown
 
         instance = this;
         RefreshContent();
+    }
+
+    void SetVisibility(bool hide)
+    {
+        style.display = hide ? DisplayStyle.None : DisplayStyle.Flex;
     }
 
     internal void RefreshContent()

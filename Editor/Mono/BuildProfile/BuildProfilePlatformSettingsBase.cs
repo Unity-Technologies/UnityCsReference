@@ -6,6 +6,7 @@ using System;
 using UnityEditor.Modules;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
 {
@@ -43,6 +44,8 @@ namespace UnityEditor.Build.Profile
         [SerializeField] bool m_ExplicitArrayBoundsChecks = false;
         [SerializeField] Compression m_CompressionType = (Compression)k_InvalidCompressionIdx;
         [SerializeField] bool m_InstallInBuildFolder = false;
+        [SerializeField] BuildProfileInsightsSettingsContainer m_InsightsSettingsContainer = new()
+            { buildProfileEngineDiagnosticsState = BuildProfileEngineDiagnosticsState.ProjectSettings };
 
         internal protected virtual bool development
         {
@@ -117,6 +120,11 @@ namespace UnityEditor.Build.Profile
             set => m_InstallInBuildFolder = value;
         }
 
+        internal protected virtual BuildProfileInsightsSettingsContainer insightsSettingsContainer
+        {
+            get => m_InsightsSettingsContainer;
+            set => m_InsightsSettingsContainer = value;
+        }
 
         /// <summary>
         /// Set platform setting based on strings for name and value. Native
