@@ -374,18 +374,24 @@ namespace Unity.UI.Builder
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
-            if (elementWidth == 0 || elementHeight == 0)
-                return;
 
-            float aspectRatio = elementWidth / elementHeight;
+            float targetZoom = 1;
+            Vector2 targetOffset = Vector2.zero;
 
-            float targetZoom;
-            if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
-                targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+            if (elementWidth == 0 && elementHeight == 0)
+            {
+                elementHeight = 1;
+                elementWidth = 1;
+            }
             else
-                targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
-
-            var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            {
+                float aspectRatio = elementWidth / elementHeight;
+                if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
+                    targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+                else
+                    targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
+                targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            }
 
             // Adjust the offset in case the canvas is not at the origin.
             targetOffset -= m_Canvas.localBound.position;

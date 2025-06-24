@@ -10,7 +10,7 @@ namespace UnityEngine.UIElements
     {
         Toggle m_Toggle;
         VisualElement m_Container;
-        VisualElement m_IndentElement;
+        internal VisualElement m_IndentElement;
         VisualElement m_BindableContainer;
         VisualElement m_Checkmark;
 
@@ -18,11 +18,12 @@ namespace UnityEngine.UIElements
         public event Action<PointerUpEvent> onPointerUp;
         public event Action<ChangeEvent<bool>> onToggleValueChanged;
 
-        int m_Depth;
+        internal int m_Depth;
         float m_IndentWidth;
+        internal float? customIndentWidth;
 
         // Internal for tests.
-        internal float indentWidth => m_IndentWidth;
+        internal float indentWidth => customIndentWidth ?? m_IndentWidth;
 
         EventCallback<PointerUpEvent> m_PointerUpCallback;
         EventCallback<ChangeEvent<bool>> m_ToggleValueChangedCallback;
@@ -130,7 +131,7 @@ namespace UnityEngine.UIElements
 
         void UpdateIndentLayout()
         {
-            m_IndentElement.style.width = m_IndentWidth * m_Depth;
+            m_IndentElement.style.width = indentWidth * m_Depth;
             m_IndentElement.EnableInClassList(BaseTreeView.itemIndentUssClassName, m_Depth > 0);
         }
 
