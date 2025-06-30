@@ -41,7 +41,7 @@ namespace UnityEditor.Build
 
     public interface IPreprocessBuildWithReportAsync : IOrderedCallback
     {
-        Awaitable OnPreprocessBuild(BuildReport report);
+        Awaitable OnPreprocessBuildAsync(BuildReport report);
     }
 
     public interface IFilterBuildAssemblies : IOrderedCallback
@@ -62,7 +62,7 @@ namespace UnityEditor.Build
 
     public interface IPostprocessBuildWithReportAsync : IOrderedCallback
     {
-        Awaitable OnPostprocessBuild(BuildReport report);
+        Awaitable OnPostprocessBuildAsync(BuildReport report);
     }
 
     public interface IPostBuildPlayerScriptDLLs : IOrderedCallback
