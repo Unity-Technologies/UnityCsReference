@@ -26,7 +26,6 @@ namespace UnityEngine.UIElements
         public string callbackName { get; }
         public bool propagationHasStopped { get; }
         public bool immediatePropagationHasStopped { get; }
-        public bool defaultHasBeenPrevented { get; }
 
         public EventDebuggerCallTrace(IPanel panel, EventBase evt, int cbHashCode, string cbName,
                                       bool propagationHasStopped,
@@ -40,7 +39,6 @@ namespace UnityEngine.UIElements
             this.callbackName = cbName;
             this.propagationHasStopped = propagationHasStopped;
             this.immediatePropagationHasStopped = immediatePropagationHasStopped;
-            this.defaultHasBeenPrevented = defaultHasBeenPrevented;
         }
     }
 

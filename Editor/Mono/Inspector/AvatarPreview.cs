@@ -718,7 +718,7 @@ namespace UnityEditor
             // SRP might initialize the light settings during the first frame of rendering
             // (e.g HDRP is overriding the intensity value during 'InitDefaultHDAdditionalLightData').
             // So this call is necessary to avoid a flickering when selecting an animation clip.
-            if (previewUtility.lights[0].intensity != kDefaultIntensity || previewUtility.lights[0].intensity != kDefaultIntensity)
+            if (previewUtility.lights[0].intensity != kDefaultIntensity || previewUtility.lights[1].intensity != kDefaultIntensity)
             {
                 SetupPreviewLightingAndFx(probe);
             }

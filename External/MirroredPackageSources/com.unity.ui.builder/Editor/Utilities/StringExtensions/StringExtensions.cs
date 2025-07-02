@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEditor.UIElements;
 
 namespace Unity.UI.Builder

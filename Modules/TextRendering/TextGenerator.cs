@@ -136,8 +136,12 @@ namespace UnityEngine
                 foreach (var kvp in s_Instances)
                 {
                     WeakReference wr = kvp.Value;
-                    if (wr.IsAlive)
-                        (wr.Target as TextGenerator).Invalidate();
+
+                    // Explicitly resolve the weak reference to a strong reference
+                    var target = wr.Target;
+
+                    if (target != null)
+                        ((TextGenerator)wr.Target).Invalidate();
                 }
             }
         }

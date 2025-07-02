@@ -99,7 +99,7 @@ namespace UnityEditor.PackageManager.UI
 
         internal static IEnumerable<Sample> FindByPackage(PackageInfo package, UpmCache upmCache, IOProxy ioProxy, AssetDatabaseProxy assetDatabaseProxy)
         {
-            if (string.IsNullOrEmpty(package?.upmReserved) && string.IsNullOrEmpty(package.resolvedPath))
+            if (package == null || (string.IsNullOrEmpty(package.upmReserved) && string.IsNullOrEmpty(package.resolvedPath)))
                 return Enumerable.Empty<Sample>();
 
             try

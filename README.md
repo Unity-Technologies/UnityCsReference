@@ -1,4 +1,4 @@
-## Unity 2022.3.63f1 C# reference source code
+## Unity 2022.3.64f1 C# reference source code
 
 The C# part of the Unity engine and editor source code.
 May be used for reference purposes only.
@@ -16,8 +16,8 @@ code license: https://store.unity.com/contact?type=source-code
 
 We do not take pull requests at this time (sorry). But if you find
 something that looks like a bug, we'd appreciate it if you'd file it
-using the Unity Bug Reporter. For more information, see our blog post:
-https://blogs.unity3d.com/2018/03/26/releasing-the-unity-c-source-code/
+using the Unity Bug Reporter. For more information, see:
+https://support.unity.com/hc/en-us/articles/206336985-How-do-I-submit-a-bug-report
 
 Unless expressly provided otherwise, the software under this
 license is made available strictly on an "AS IS" BASIS WITHOUT

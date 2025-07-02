@@ -97,20 +97,6 @@ namespace UnityEditor
             Repaint();
         }
 
-        private bool ShowTreeGUI(ImportPackageItem[] items)
-        {
-            if (items.Length == 0)
-                return false;
-
-            for (int i = 0; i < items.Length; i++)
-            {
-                if (!items[i].isFolder && items[i].assetChanged)
-                    return true;
-            }
-
-            return false;
-        }
-
         internal override void OnResized()
         {
             m_Tree?.OnWindowResized();
@@ -128,7 +114,7 @@ namespace UnityEditor
             if (m_Tree == null)
                 m_Tree = new PackageImportTreeView(this, m_TreeViewState, new Rect());
 
-            if (m_ImportPackageItems != null && ShowTreeGUI(m_ImportPackageItems))
+            if (PackageImportWizard.AnyChangedAssets(m_ImportPackageItems))
             {
                 TopArea();
                 TopButtonsArea();
@@ -442,13 +428,17 @@ namespace UnityEditor
                     m_AssetContentItems.Add(item);
             }
 
-            m_IsMultiStepWizard = m_AssetContentItems.Any() && m_ProjectSettingItems.Any();
-            if (m_AssetContentItems.Any())
-                ShowImportWindow(m_AssetContentItems.ToArray());
-            else if (m_ProjectSettingItems.Any())
+            var anyChangedAssets = AnyChangedAssets(m_AssetContentItems);
+            var anyChangedProjectSettings = AnyChangedAssets(m_ProjectSettingItems);
+            m_IsMultiStepWizard = anyChangedAssets && anyChangedProjectSettings;
+            if (!anyChangedAssets && m_ProjectSettingItems.Count > 0)
             {
                 m_IsProjectSettingStep = true;
                 ShowImportWindow(m_ProjectSettingItems.ToArray());
+            }
+            else
+            {
+                ShowImportWindow(m_AssetContentItems.ToArray());
             }
         }
 
@@ -519,6 +509,16 @@ namespace UnityEditor
 
             m_IsMultiStepWizard = false;
             m_IsProjectSettingStep = false;
+        }
+
+        public static bool AnyChangedAssets(IReadOnlyCollection<ImportPackageItem> items)
+        {
+            if (items == null || items.Count == 0)
+                return false;
+            foreach (var item in items)
+                if (!item.isFolder && item.assetChanged)
+                    return true;
+            return false;
         }
     }
 }

@@ -1092,8 +1092,6 @@ namespace UnityEditor.UIElements.Debugger
                         handler.text += " Immediately Stopped Propagation";
                     else if (callback.propagationHasStopped)
                         handler.text += " Stopped Propagation";
-                    if (callback.defaultHasBeenPrevented)
-                        handler.text += " (Default Prevented)";
 
                     phase.text = callback.eventBase.propagationPhase.ToString();
                     duration.text = callback.duration / 1000f + "ms";

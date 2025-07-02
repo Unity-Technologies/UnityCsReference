@@ -668,6 +668,11 @@ namespace UnityEditor.UIElements
                 foldout.RegisterValueChangedCallback(RefreshOnlyWhenExpanded);
             }
 
+            if (serializedProperty.serializedObject.inspectorMode is InspectorMode.Debug or InspectorMode.DebugInternal)
+            {
+                ConfigureFoldoutDebugHelpers(foldout);
+            }
+
             return foldout;
         }
 
@@ -706,6 +711,11 @@ namespace UnityEditor.UIElements
             field.SetProperty(BaseField<TValue>.serializedPropertyCopyName, property.Copy());
             field.name = "unity-input-" + property.propertyPath;
             field.label = fieldLabel;
+
+            if (property.serializedObject.inspectorMode is InspectorMode.Debug or InspectorMode.DebugInternal)
+            {
+                ConfigureDebugHelpers<TField, TValue>(field);
+            }
 
             ConfigureFieldStyles<TField, TValue>(field);
             ConfigureTooltip(property, field);
@@ -746,6 +756,62 @@ namespace UnityEditor.UIElements
             return wrapper;
         }
 
+        private static readonly Action<BaseListView, string> SetListViewHeaderTitle = (view, s) => view.headerTitle = s;
+        private static readonly Action<Foldout, string> SetFoldoutText = (f, s) => f.text = s;
+
+        private void ConfigureDebugHelpers<TField, TValue>(TField field) where TField : BaseField<TValue>
+        {
+            field.RegisterCallback<AttachToPanelEvent, Action<TField, string>>(AttachDebugCallbackOnPanel, (f, s) => f.label = s);
+            field.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<TField>);
+        }
+
+        private void ConfigureFoldoutDebugHelpers(Foldout view)
+        {
+            view.RegisterCallback<AttachToPanelEvent, Action<Foldout, string>>(AttachDebugCallbackOnPanel, SetFoldoutText);
+            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<Foldout>);
+        }
+
+        private void ConfigureListViewDebugHelpers(BaseListView view)
+        {
+            view.RegisterCallback<AttachToPanelEvent, Action<BaseListView, string>>(AttachDebugCallbackOnPanel, SetListViewHeaderTitle);
+            view.RegisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<BaseListView>);
+        }
+
+        private void AttachDebugCallbackOnPanel<T>(AttachToPanelEvent evt, Action<T, string> setLabelAction)
+            where T:VisualElement
+        {
+            if (evt.destinationPanel == null)
+                return;
+            var p = evt.destinationPanel;
+            var field = evt.target as T;
+            var propertyPath = serializedProperty.propertyPath;
+            var regularLabel = label ?? serializedProperty.localizedDisplayName;
+            p.visualTree.RegisterCallback<KeyDownEvent, T>((e, f) =>
+            {
+                if (e.altKey)
+                {
+                    setLabelAction.Invoke(f, propertyPath);
+                }
+            }, field, TrickleDown.TrickleDown);
+            p.visualTree.RegisterCallback<KeyUpEvent, T>((e, f) =>
+            {
+                if (!e.altKey)
+                {
+                    setLabelAction.Invoke(f, regularLabel);
+                }
+            }, field, TrickleDown.TrickleDown);
+        }
+
+        private void DetachDebugCallbackFromPanel<T>(DetachFromPanelEvent evt)
+            where T:VisualElement
+        {
+            if (evt.originPanel != null)
+            {
+                evt.originPanel.visualTree.UnregisterCallback<AttachToPanelEvent, Action<T, string>>(AttachDebugCallbackOnPanel);
+                evt.originPanel.visualTree.UnregisterCallback<DetachFromPanelEvent>(DetachDebugCallbackFromPanel<T>);
+            }
+        }
+
         internal static void ConfigureFieldStyles<TField, TValue>(TField field) where TField : BaseField<TValue>
         {
             field.labelElement.AddToClassList(labelUssClassName);
@@ -784,6 +850,11 @@ namespace UnityEditor.UIElements
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
             listView.SetProperty(listViewBoundFieldProperty, this);
+
+            if (property.serializedObject.inspectorMode is InspectorMode.Debug or InspectorMode.DebugInternal)
+            {
+                ConfigureListViewDebugHelpers(listView);
+            }
 
             // Make list view foldout react even when disabled, like EditorGUILayout.Foldout.
             var toggle = listView.Q<Toggle>(className: Foldout.toggleUssClassName);
