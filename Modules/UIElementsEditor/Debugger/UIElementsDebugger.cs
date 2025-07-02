@@ -947,8 +947,10 @@ namespace UnityEditor.UIElements.Debugger
 
                 if (evtType == MouseMoveEvent.TypeId())
                 {
-                    if (SelectTopElementFromRuntimePanel(evtBase.imguiEvent.mousePosition,
-                        evtBase.imguiEvent.delta, playModeView.viewPadding, playModeView.viewMouseScale))
+                    var mousePosition = (evtBase.imguiEvent.mousePosition - playModeView.viewPadding) * playModeView.viewMouseScale;
+                    var mouseDelta = evtBase.imguiEvent.delta * playModeView.viewMouseScale;
+
+                    if (SelectTopElementFromRuntimePanel(mousePosition, mouseDelta, playModeView.targetSize, playModeView.targetDisplay))
                         return true;
 
                     // If no RuntimePanel catches it, select GameView editor panel and let interception fall through.
@@ -1085,26 +1087,86 @@ namespace UnityEditor.UIElements.Debugger
             }
         }
 
-        private bool SelectTopElementFromRuntimePanel(Vector2 editorMousePosition, Vector2 editorMouseDelta, Vector2 gameViewPadding, float gameMouseScale)
+        private Camera[] m_AllCameras = Array.Empty<Camera>();
+        private bool SelectTopElementFromRuntimePanel(Vector2 mousePosition, Vector2 mouseDelta, Vector2 targetSize, int targetDisplay)
         {
-            // Try picking element in runtime panels from closest to deepest
+            // Try picking element in screen-space runtime panels, from closest to deepest
             var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
             {
                 var runtimePanel = panels[i];
 
-                if (!runtimePanel.ScreenToPanel(editorMousePosition - gameViewPadding, editorMouseDelta, out var panelPosition))
+                if (runtimePanel.targetDisplay != targetDisplay ||
+                    !runtimePanel.ScreenToPanel(mousePosition, mouseDelta, out var panelPosition))
                     continue;
 
-                var mousePosition = panelPosition * gameMouseScale;
-
-                var pickedElement = runtimePanel.Pick(mousePosition);
+                var pickedElement = runtimePanel.Pick(panelPosition, PointerId.mousePointerId);
                 if (pickedElement == null)
                     continue;
 
                 if (m_Context.selectedElement != pickedElement)
                     OnPickMouseOver(pickedElement, runtimePanel);
                 return true;
+            }
+
+            // Try world-space picking. Since Physics.Raycast doesn't work outside of Play mode, we can't use the same
+            // algorithms as the DefaultEventSystem for finding the closest element in world-space. The following code
+            // picks the closest element but, contrary to gameplay logic, it will pick through any non-UI 3D obstacle.
+
+            Array.Resize(ref m_AllCameras, Camera.allCamerasCount);
+            Camera.GetAllCameras(m_AllCameras);
+            Array.Sort(m_AllCameras, (a, b) => a.depth.CompareTo(b.depth));
+
+            var screenPositionInCameraCoordinates = new Vector2(mousePosition.x, targetSize.y - mousePosition.y);
+
+            // Try picking from cameras, from closest to deepest
+            for (var iCamera = m_AllCameras.Length-1; iCamera >= 0; iCamera--)
+            {
+                var camera = m_AllCameras[iCamera];
+                if (camera.targetDisplay != targetDisplay)
+                    continue;
+
+                // Temporarily make the camera behave like it would in a normal Update method
+                // Take the camera viewport into account by recomputing the pixelRect from the rect and targetSize.
+                var oldPixelRect = camera.pixelRect;
+                var oldCameraRect = camera.rect;
+                var newPixelRect = new Rect(oldCameraRect.position * targetSize, oldCameraRect.size * targetSize);
+                if (!newPixelRect.Contains(screenPositionInCameraCoordinates))
+                    continue;
+
+                camera.pixelRect = newPixelRect;
+                Ray worldRay = camera.ScreenPointToRay(screenPositionInCameraCoordinates);
+                camera.pixelRect = oldPixelRect;
+
+                VisualElement pickedElement = null;
+                float bestDistanceSoFar = Mathf.Infinity;
+
+                foreach (var baseRuntimePanel in UIElementsRuntimeUtility.GetWorldSpacePlayerPanels())
+                {
+                    if (baseRuntimePanel is not RuntimePanel runtimePanel || runtimePanel.targetDisplay != targetDisplay)
+                        continue;
+
+                    foreach (var document in runtimePanel.documents)
+                    {
+                        // We don't account for PanelInputConfiguration settings, but we do only want visible content.
+                        if ((camera.cullingMask & (1 << document.gameObject.layer)) == 0)
+                            continue;
+
+                        var candidate = WorldSpaceInput.Pick3D(document, worldRay, out float distance);
+                        if (candidate != null && (pickedElement == null || distance < bestDistanceSoFar))
+                        {
+                            pickedElement = candidate;
+                            bestDistanceSoFar = distance;
+                        }
+                    }
+
+                    if (pickedElement == null)
+                        continue;
+
+                    if (m_Context.selectedElement != pickedElement)
+                        OnPickMouseOver(pickedElement, runtimePanel);
+                    return true;
+                }
             }
 
             return false;

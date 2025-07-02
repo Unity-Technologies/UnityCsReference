@@ -210,8 +210,11 @@ namespace UnityEditor.Search
 
         protected virtual void UpdateItemSize()
         {
-            m_ListView.fixedItemHeight = GetItemHeight();
-            m_ListView.Rebuild();
+            if (m_ListView.fixedItemHeight != GetItemHeight())
+            {
+                m_ListView.fixedItemHeight = GetItemHeight();
+                m_ListView.Rebuild();
+            }
         }
 
         protected virtual float GetItemHeight()

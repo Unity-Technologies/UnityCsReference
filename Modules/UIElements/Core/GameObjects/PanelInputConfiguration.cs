@@ -255,8 +255,11 @@ namespace UnityEngine.UIElements
 
             if (current != null)
             {
-                Debug.LogWarning("Multiple Input Configuration components active. Only the first one will be considered.\nEnabled: " + current + ". Disabled: " + this + ".");
-                enabled = false;
+                if (Application.isPlaying)
+                {
+                    Debug.LogWarning("Multiple Input Configuration components active. Only one will be considered, the rest will be disabled.\nEnabled: " + current + ". Disabled: " + this + ".");
+                    enabled = false;
+                }
                 return;
             }
 

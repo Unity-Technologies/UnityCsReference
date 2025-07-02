@@ -1268,15 +1268,6 @@ namespace UnityEditor.Search
             return text;
         }
 
-        public static ulong GetHashCode64(this string strText)
-        {
-            if (string.IsNullOrEmpty(strText))
-                return 0;
-            var s1 = (ulong)strText.Substring(0, strText.Length / 2).GetHashCode();
-            var s2 = (ulong)strText.Substring(strText.Length / 2).GetHashCode();
-            return s1 << 32 | s2;
-        }
-
         public static string RemoveInvalidCharsFromPath(string path, char repl = '/')
         {
             var invalidChars = Path.GetInvalidPathChars();

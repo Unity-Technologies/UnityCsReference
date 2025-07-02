@@ -183,10 +183,13 @@ namespace UnityEditor
                 return "";
 
             var attrs = obj.GetType().GetCustomAttributes(typeof(HelpURLAttribute), true);
-            if (attrs.Length > 0)
+            for (int i = 0; i < attrs.Length; i++)
             {
-                var attr = (HelpURLAttribute)attrs[0];
+                var attr = (HelpURLAttribute)attrs[i];
                 var url = attr.URL;
+                if (string.IsNullOrEmpty(url))
+                    continue;
+                
                 if (!string.IsNullOrEmpty(attr.m_DispatchingFieldName))
                 {
                     var field = obj.GetType().GetField(attr.m_DispatchingFieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);

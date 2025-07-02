@@ -658,7 +658,7 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
         }
 
-        internal void SetTopElementUnderPointer(VisualElement element, int pointerId, Vector2 position)
+        internal void SetTopElementUnderPointer(int pointerId, VisualElement element, Vector2 position)
         {
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, position);
         }

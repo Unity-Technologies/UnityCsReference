@@ -1338,7 +1338,7 @@ namespace UnityEditor
 
         public static bool textFieldHasSelection
         {
-            get { return EditorGUI.s_RecycledEditor.hasSelection; }
+            get { return EditorGUI.s_RecycledEditor.hasSelection || EditorGUI.s_DelayedTextEditor.hasSelection; }
         }
 
         // hierarchyMode changes how foldouts are drawn so the foldout triangle is drawn to the left,

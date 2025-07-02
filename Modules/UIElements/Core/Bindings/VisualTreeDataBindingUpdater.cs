@@ -439,8 +439,12 @@ namespace UnityEngine.UIElements
                         resolvedSourcePath,
                         source
                     );
-                    result = m_Updater.UpdateUI(in context, binding);
-                    CacheAndLogBindingResult(true, bindingData, result);
+
+                    using (bindingManager.IgnoreChangesScope(element, context.bindingId, binding))
+                    {
+                        result = m_Updater.UpdateUI(in context, binding);
+                        CacheAndLogBindingResult(true, bindingData, result);
+                    }
 
                     if (result.status == BindingStatus.Pending)
                     {

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor.PackageManager;
 using UnityEditor.PackageManager.Requests;
+using UnityEditor.PackageManager.UI.Internal;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Experimental;
@@ -252,6 +253,14 @@ class AIDropdownContent : PopupWindowContent
     void CheckIsPackageInstalling()
     {
         if (m_Request != null && m_Request.Status != StatusCode.InProgress)
+        {
+            if (m_Request.Status == StatusCode.Success)
+            {
+                var installedPackages = m_Request.Result;
+                foreach (var package in installedPackages)
+                    PackageManagerWindowAnalytics.SendEvent("addByNameAndVersion", package.packageId);
+            }
             m_Request = null;
+        }
     }
 }

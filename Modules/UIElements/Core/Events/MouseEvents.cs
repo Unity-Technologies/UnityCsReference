@@ -296,7 +296,7 @@ namespace UnityEngine.UIElements
                 {
                     var position = BaseVisualElementPanel.s_OutsidePanelCoordinates;
                     PointerDeviceState.SavePointerPosition(PointerId.mousePointerId, position, null, panel.contextType);
-                    ((BaseVisualElementPanel)panel).SetTopElementUnderPointer(null, PointerId.mousePointerId, position);
+                    ((BaseVisualElementPanel)panel).SetTopElementUnderPointer(PointerId.mousePointerId, null, position);
                 }
             }
         }

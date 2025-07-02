@@ -289,13 +289,13 @@ namespace UnityEditorInternal
 
                     Styles.content = new GUIContent(nodePrefix + node.displayName + warningText, GetIconForItem(node), tooltipText);
 
-                    textColor = EditorGUIUtility.isProSkin ? Color.gray * 1.35f : Color.black;
+                    textColor = EditorStyles.label.normal.textColor;
                 }
                 else
                 {
                     Styles.content = new GUIContent(node.displayName + warningText, GetIconForItem(node), tooltipText);
 
-                    textColor = EditorGUIUtility.isProSkin ? Color.gray : m_LightSkinPropertyTextColor;
+                    textColor = EditorStyles.label.normal.textColor;
 
                     var phantomColor = selected ? m_PhantomCurveColor * k_SelectedPhantomCurveColorMultiplier : m_PhantomCurveColor;
                     textColor = isPhantom ? phantomColor : textColor;

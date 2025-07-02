@@ -211,4 +211,4 @@ using UnityEngine;
 // Test Assemblies
 [assembly: InternalsVisibleTo("Unity.Core.UnityEvent.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
-
+[assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]

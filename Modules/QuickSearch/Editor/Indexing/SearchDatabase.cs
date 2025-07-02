@@ -377,8 +377,10 @@ namespace UnityEditor.Search
             {
                 SetupDefaultIndexFirstUse(defaultSearchDatabasePath);
             }
-            if (File.Exists(defaultSearchDatabasePath))
+            if (File.Exists(defaultSearchDatabasePath) && dbs.FirstOrDefault(db => db.path == defaultSearchDatabasePath) == null)
+            {
                 dbs.Add(Create(defaultSearchDatabasePath));
+            }
         }
 
         internal static bool HasProjectDB(List<SearchDatabase> dbs)

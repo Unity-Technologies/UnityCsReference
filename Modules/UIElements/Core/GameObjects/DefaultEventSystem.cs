@@ -63,11 +63,13 @@ namespace UnityEngine.UIElements
             IgnoreIfAppNotFocused
         }
 
+        private int m_UpdateFrameCount = 0;
         public void Update(UpdateMode updateMode = UpdateMode.Always)
         {
             if (!isAppFocused && ShouldIgnoreEventsOnAppNotFocused() && updateMode == UpdateMode.IgnoreIfAppNotFocused)
                 return;
 
+            m_UpdateFrameCount++; // Invalidate previous frame counts at start of Update, so 0 is never a valid count.
             m_Raycaster?.Update();
 
             if (m_IsInputForUIActive)
@@ -78,6 +80,8 @@ namespace UnityEngine.UIElements
             {
                 legacyInputProcessor.ProcessLegacyInputEvents();
             }
+
+            UpdateWorldSpacePointers();
         }
 
         private LegacyInputProcessor m_LegacyInputProcessor;
@@ -391,6 +395,12 @@ namespace UnityEngine.UIElements
             out VisualElement target, out RuntimePanel targetPanel, out Vector3 targetPanelPosition,
             out VisualElement elementUnderPointer, out Camera camera)
         {
+            var screenPointerState = PointerDeviceState.GetScreenPointerState(pointerId, true);
+            screenPointerState.Reset();
+            screenPointerState.mousePosition = mousePosition;
+            screenPointerState.targetDisplay = targetDisplay;
+            screenPointerState.updateFrameCount = m_UpdateFrameCount;
+
             // Try panels from closest to deepest.
             var panels = UIElementsRuntimeUtility.GetSortedScreenOverlayPlayerPanels();
             for (var i = panels.Count - 1; i >= 0; i--)
@@ -410,8 +420,17 @@ namespace UnityEngine.UIElements
             {
                 var layerMask = worldRay.camera.cullingMask & worldSpaceLayers;
                 if (m_WorldSpacePicker.TryPickWithCapture(pointerId, worldRay.ray, worldSpaceMaxDistance, layerMask,
-                        out _, out var document, out elementUnderPointer, out _, out _))
+                        out var collider, out var document, out elementUnderPointer, out var distance,
+                        out var captured) && (worldRay.isInsideCameraRect || captured))
                 {
+                    screenPointerState.hit = new PointerDeviceState.RuntimePointerState.RaycastHit
+                    {
+                        collider = collider,
+                        document = document,
+                        distance = distance,
+                        element = elementUnderPointer,
+                    };
+
                     // We hit a non-UI GameObject
                     if (document == null)
                         break;
@@ -438,8 +457,10 @@ namespace UnityEngine.UIElements
                 out var collider, out var document, out elementUnderPointer, out var distance, out _);
 
             var trackedState = PointerDeviceState.GetTrackedState(pointerId, true);
-            trackedState.worldPosition = worldRay.origin + worldRay.direction * distance;
+            trackedState.Reset();
+            trackedState.worldPosition = worldRay.origin;
             trackedState.worldOrientation = Quaternion.FromToRotation(Vector3.forward, worldRay.direction);
+            trackedState.maxDistance = maxDistance;
             trackedState.hit = new PointerDeviceState.TrackedPointerState.RaycastHit
             {
                 collider = collider,
@@ -447,6 +468,7 @@ namespace UnityEngine.UIElements
                 distance = distance,
                 element = elementUnderPointer,
             };
+            trackedState.updateFrameCount = m_UpdateFrameCount;
 
             if (picked && document != null)
             {
@@ -479,6 +501,74 @@ namespace UnityEngine.UIElements
             else if (focusedPanel == runtimePanel)
             {
                 focusedPanel = null;
+            }
+        }
+
+        private void UpdateWorldSpacePointers()
+        {
+            if (UIElementsRuntimeUtility.GetWorldSpacePlayerPanels().Count == 0)
+                return;
+
+            foreach (var pointerId in PointerId.screenHoveringPointers)
+            {
+                var lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
+
+                // We don't need to reprocess pointers that are over screen-space content, because that's handled
+                // by Panel.UpdateElementUnderPointers() already.
+                // Note that we still want to update elementUnderPointer if there's an element with pointer capture.
+                if (lastActivePanel != null && lastActivePanel.isFlat)
+                    continue;
+
+                // Don't update panels if we don't have any pointer data for them or if the data we have is already
+                // fresh from this frame.
+                var screenDeviceState = PointerDeviceState.GetScreenPointerState(pointerId, false);
+                if (screenDeviceState == null || screenDeviceState.updateFrameCount == m_UpdateFrameCount)
+                    continue;
+
+                FindTargetAtPosition(screenDeviceState.mousePosition, Vector2.zero, pointerId,
+                    screenDeviceState.targetDisplay, out _, out var targetPanel, out var targetPanelPosition,
+                    out var elementUnderPointer, out _);
+
+                if (lastActivePanel != targetPanel)
+                {
+                    // Allow last panel the pointer was in to dispatch [Mouse|Pointer][Out|Leave] events if needed.
+                    lastActivePanel?.PointerLeavesPanel(pointerId);
+                    targetPanel?.PointerEntersPanel(pointerId, targetPanelPosition);
+                }
+
+                // If isFlat, this is handled by Panel.UpdateElementUnderPointers().
+                if (targetPanel != null && !targetPanel.isFlat)
+                {
+                    targetPanel.SetTopElementUnderPointer(pointerId, elementUnderPointer, targetPanelPosition);
+                    targetPanel.CommitElementUnderPointers();
+                }
+            }
+
+            for (var trackedPointerIndex = 0;
+                 trackedPointerIndex < PointerId.trackedPointerCount;
+                 trackedPointerIndex++)
+            {
+                var pointerId = PointerId.trackedPointerIdBase + trackedPointerIndex;
+                var trackedDeviceState = PointerDeviceState.GetTrackedState(pointerId, false);
+                if (trackedDeviceState == null || trackedDeviceState.updateFrameCount == m_UpdateFrameCount)
+                    continue;
+
+                FindTargetAtRay(trackedDeviceState.worldRay, trackedDeviceState.maxDistance, pointerId, out _,
+                    out var targetPanel, out var targetPanelPosition, out var elementUnderPointer);
+
+                var lastActivePanel = PointerDeviceState.GetPanel(pointerId, ContextType.Player) as RuntimePanel;
+                if (lastActivePanel != targetPanel)
+                {
+                    // Allow last panel the pointer was in to dispatch [Mouse|Pointer][Out|Leave] events if needed.
+                    lastActivePanel?.PointerLeavesPanel(pointerId);
+                    targetPanel?.PointerEntersPanel(pointerId, targetPanelPosition);
+                }
+
+                if (targetPanel != null)
+                {
+                    targetPanel.SetTopElementUnderPointer(pointerId, elementUnderPointer, targetPanelPosition);
+                    targetPanel.CommitElementUnderPointers();
+                }
             }
         }
 

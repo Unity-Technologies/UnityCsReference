@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Internal;
@@ -30,7 +31,7 @@ namespace UnityEditor.Search
             private set
             {
                 viewState.tableConfig = value;
-                Refresh(RefreshFlags.DisplayModeChanged);
+                UpdateColumns();
             }
         }
 
@@ -57,6 +58,16 @@ namespace UnityEditor.Search
                 SetupColumns();
 
             SetupColumnSorting();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                // This will ensure all Cells are unbound.
+                m_ListView.itemsSource = null;
+            }
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
@@ -162,13 +173,18 @@ namespace UnityEditor.Search
             {
                 Refresh();
             }
-            else if (flags.HasAny(RefreshFlags.DisplayModeChanged))
-            {
-                if (m_ListView != null)
-                    BuildColumns(viewColumns, tableConfig, clear: true);
 
-                ExportTableConfig();
+            if (flags.HasAny(RefreshFlags.DisplayModeChanged))
+            {
+                UpdateColumns();
             }
+        }
+
+        private void UpdateColumns()
+        {
+            if (m_ListView != null)
+                BuildColumns(viewColumns, tableConfig, clear: true);
+            ExportTableConfig();
         }
 
         protected override float GetItemHeight() => m_ListView.fixedItemHeight;
@@ -204,6 +220,11 @@ namespace UnityEditor.Search
         {
             if (tableConfig?.columns == null)
                 return;
+
+            using var pp = new EditorPerformanceMarker("Search.Table.SortColumns").Auto();
+
+            // A lot of the Selectors and Table getters rely on propertyDatabase for fats access. Get a MonitorView before sorting all items.
+            using var view = SearchMonitor.GetView();
 
             var sorter = new SearchTableViewColumnSorter();
 

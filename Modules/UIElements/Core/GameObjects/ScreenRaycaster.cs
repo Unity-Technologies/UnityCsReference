@@ -12,7 +12,7 @@ namespace UnityEngine.UIElements;
 internal interface IScreenRaycaster
 {
     void Update();
-    IEnumerable<(Ray ray, Camera camera)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay);
+    IEnumerable<(Ray ray, Camera camera, bool isInsideCameraRect)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay);
 }
 
 internal class CameraScreenRaycaster : IScreenRaycaster
@@ -26,7 +26,7 @@ internal class CameraScreenRaycaster : IScreenRaycaster
         Array.Sort(cameras, (a, b) => -a.depth.CompareTo(b.depth));
     }
 
-    public IEnumerable<(Ray, Camera)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay)
+    public IEnumerable<(Ray, Camera, bool)> MakeRay(Vector2 mousePosition, int pointerId, int? targetDisplay)
     {
         var capturingCamera = singleCamera[0] = PointerDeviceState.GetCameraWithSoftPointerCapture(pointerId);
         return CameraRayEnumerator.GetPooled(capturingCamera != null ? singleCamera : cameras, layerMask, mousePosition, targetDisplay);
@@ -38,33 +38,43 @@ internal class CameraScreenRaycaster : IScreenRaycaster
                (targetDisplay == null || camera.targetDisplay == targetDisplay);
     }
 
-    private static Ray MakeRay(Camera camera, Vector2 mousePosition)
+    private static bool MakeRay(Camera camera, Vector2 mousePosition, out Ray ray)
     {
         var screenPosition =
             UIElementsRuntimeUtility.PanelToScreenBottomLeftPosition(mousePosition, camera.targetDisplay);
-        return camera.ScreenPointToRay(screenPosition);
+        ray = camera.ScreenPointToRay(screenPosition);
+        return camera.pixelRect.Contains(screenPosition);
     }
 
-    public class CameraRayEnumerator : IEnumerator<(Ray, Camera)>, IEnumerable<(Ray, Camera)>
+    public class CameraRayEnumerator : IEnumerator<(Ray, Camera, bool)>, IEnumerable<(Ray, Camera, bool)>
     {
         private Camera[] m_Cameras;
         private int m_LayerMask;
         private Vector2 m_MousePosition;
         private int? m_TargetDisplay;
         private int m_Index = -1;
+        private Camera m_CurrentCamera;
+        private Ray m_CurrentRay;
+        private bool m_IsInsideCameraRect;
 
         public bool MoveNext()
         {
             while (++m_Index < m_Cameras.Length)
-                if (IsValid(m_Cameras[m_Index], m_LayerMask, m_TargetDisplay))
-                    return true;
+            {
+                m_CurrentCamera = m_Cameras[m_Index];
+
+                if (!IsValid(m_CurrentCamera, m_LayerMask, m_TargetDisplay))
+                    continue;
+                m_IsInsideCameraRect = MakeRay(m_CurrentCamera, m_MousePosition, out m_CurrentRay);
+                return true;
+            }
             return false;
         }
 
         public void Reset() => m_Index = -1;
-        public (Ray, Camera) Current => (MakeRay(m_Cameras[m_Index], m_MousePosition), m_Cameras[m_Index]);
+        public (Ray, Camera, bool) Current => (m_CurrentRay, m_CurrentCamera, m_IsInsideCameraRect);
         object IEnumerator.Current => Current;
-        public IEnumerator<(Ray, Camera)> GetEnumerator() => this;
+        public IEnumerator<(Ray, Camera, bool)> GetEnumerator() => this;
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public static CameraRayEnumerator GetPooled(Camera[] cameras, int layerMask, Vector2 mousePosition, int? targetDisplay)

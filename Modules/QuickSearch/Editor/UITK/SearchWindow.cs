@@ -69,6 +69,7 @@ namespace UnityEditor.Search
         [SerializeField] protected SearchViewState m_ViewState = null;
         [SerializeField] protected EditorWindow m_LastFocusedWindow;
 
+        internal SearchView searchView => m_SearchView;
         internal IResultView resultView => m_SearchView.resultView;
         internal QueryBuilder queryBuilder => m_SearchToolbar.queryBuilder;
 
@@ -229,7 +230,7 @@ namespace UnityEditor.Search
                     string previousGroupId = null;
                     foreach (var group in EnumerateGroups())
                     {
-                        if (previousGroupId != null && group.id == m_SearchView.currentGroup)
+                        if (previousGroupId != null && group.id == currentGroup)
                         {
                             SelectGroup(previousGroupId);
                             break;
@@ -351,7 +352,7 @@ namespace UnityEditor.Search
             m_SearchView?.Refresh(flags);
         }
 
-        private void SetContext(SearchContext newContext, bool onEnabled = false)
+        private void SetContext(SearchContext newContext, bool notifyContextChanged = true)
         {
             if (context == null || context != newContext)
             {
@@ -359,9 +360,7 @@ namespace UnityEditor.Search
                 context?.Dispose();
                 m_ViewState.context = newContext ?? SearchService.CreateContext(searchText, SearchFlags.None);
 
-                // Don't emit event when initializing the window, as all the views will initialize
-                // with the correct context anyway. Emitting when the window is initializing causes issues with tests.
-                if (!onEnabled)
+                if (notifyContextChanged)
                     Dispatcher.Emit(SearchEvent.SearchContextChanged, new SearchEventPayload(this));
             }
 
@@ -405,19 +404,31 @@ namespace UnityEditor.Search
             var preservedViewFlags = viewState.flags & SearchViewFlags.ContextSwitchPreservedMask;
             var queryBuilderEnabled = viewState.queryBuilderEnabled;
 
+            // Assigned to our viewState from the query ViewState
             var queryContext = CreateQueryContext(query);
-            SetContext(queryContext);
             var possibleTextQuery = query as SearchQuery;
+            var queryViewState = query.GetViewState();
             if (possibleTextQuery == null || !possibleTextQuery.isTextOnlyQuery)
             {
-                viewState.Assign(query.GetViewState(), queryContext);
+                // TODO Optim: this might rebuild the table + RefreshViewContent
+                viewState.Assign(queryViewState);
             }
             viewState.flags &= ~SearchViewFlags.ContextSwitchPreservedMask;
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;
+
+            // TODO Optim: this might rebuild the table + RefreshViewContent
             itemIconSize = viewState.itemSize;
-            if (!viewState.hideTabs && !string.IsNullOrEmpty(viewState.group))
-                SelectGroup(viewState.group);
+
+            // TODO Optim: Set the context. This will trigger a synchronous: SearchView.Refresh which in turn can do *multiple*
+            //      SearchView.fetchItems, SearchView.RefreshContent, SearchView.DisplayModeChhange, other SearchView.Refresh, BuildColumns
+            // TODO Optim: This will also trigger an async ContextChanged which will trigger: multiple SearchView.Refresh, ColumnRebuild....
+            SetContext(queryContext, true);
+            if (!viewState.hideTabs)
+            {
+                // TODO Optim: This will perform a RefreshContent.
+                SelectGroup(SearchUtils.GetValidGroupForState(viewState, viewState.group));
+            }
 
             if (!query.IsTemporaryQuery())
                 activeQuery = query;
@@ -492,7 +503,9 @@ namespace UnityEditor.Search
                 m_LastFocusedWindow = m_LastFocusedWindow ?? focusedWindow;
                 m_ViewState = s_GlobalViewState ?? m_ViewState ?? SearchViewState.LoadDefaults();
 
-                SetContext(m_ViewState.context, true);
+                // Don't emit event when initializing the window, as all the views will initialize
+                // with the correct context anyway. Emitting when the window is initializing causes issues with tests.
+                SetContext(m_ViewState.context, notifyContextChanged: false);
                 LoadSessionSettings();
 
                 SearchSettings.SortActionsPriority();
@@ -933,6 +946,7 @@ namespace UnityEditor.Search
             SearchAnalytics.SendEvent(evt);
 
             m_SearchView.currentGroup = groupId;
+            viewState.group = m_SearchView.currentGroup;
         }
 
         protected void ClearSearch()
@@ -1074,16 +1088,13 @@ namespace UnityEditor.Search
 
         protected void UpdateViewState(SearchViewState args)
         {
-            if (args.hideAllGroup && (args.group == null || string.Equals(GroupedSearchList.allGroupId, args.group, StringComparison.Ordinal)))
-                args.group = args.context?.GetProviders().FirstOrDefault()?.id;
-
+            args.group = SearchUtils.GetValidGroupForState(args, args.group);
             if (context?.options.HasAny(SearchFlags.Expression) ?? false)
                 args.itemSize = (int)DisplayMode.Table;
         }
 
         protected virtual void LoadSessionSettings()
         {
-            string loadGroup = null;
             if (!Utils.IsRunningTests())
             {
                 RestoreSearchText();
@@ -1098,22 +1109,17 @@ namespace UnityEditor.Search
                 }
 
                 if (HasSessionSettings())
-                    loadGroup = SearchSettings.GetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, m_ViewState.group);
+                {
+                    m_ViewState.group = SearchSettings.GetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, currentGroup);
+                }
             }
             else if (!string.IsNullOrEmpty(m_ViewState.searchText))
             {
                 m_ViewState.flags |= SearchViewFlags.DisableQueryHelpers;
             }
 
-            if (loadGroup == null && context.providers.Count() == 1)
-            {
-                loadGroup = context.providers.First().id;
-            }
-
             // Apply Package and WantsMore visbility global flags.
             SearchSettings.ApplyContextOptions(m_ViewState.context);
-
-            m_ViewState.group = m_ViewState.hideTabs ? null : (loadGroup ?? m_ViewState.group);
             UpdateViewState(m_ViewState);
         }
 
@@ -1142,7 +1148,7 @@ namespace UnityEditor.Search
             SearchSettings.SetScopeValue(nameof(SearchViewFlags.OpenInspectorPreview), m_ContextHash, m_ViewState.flags.HasAny(SearchViewFlags.OpenInspectorPreview) ? 1 : 0);
 
             if (m_SearchView != null)
-                SearchSettings.SetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, viewState.group);
+                SearchSettings.SetScopeValue(nameof(m_SearchView.currentGroup), m_ContextHash, currentGroup);
 
             SearchSettings.itemIconSize = viewState.itemSize;
 

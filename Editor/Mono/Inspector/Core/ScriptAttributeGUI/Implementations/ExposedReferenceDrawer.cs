@@ -164,6 +164,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         {
             m_Item.UpdateValue();
             obj.SetValueWithoutNotify(m_Item.currentReferenceValue);
+            UpdateObjectField(obj);
         };
 
         // Track the property for external changed including Undo/Redo
@@ -171,8 +172,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         obj.RegisterCallback<AttachToPanelEvent>(evt => Undo.undoRedoPerformed += undoRedoCallback);
         obj.RegisterCallback<DetachFromPanelEvent>(evt => Undo.undoRedoPerformed -= undoRedoCallback);
 
-        // Set the serialized property so we can support drag and drop
-        obj.SetProperty(ObjectField.serializedPropertyKey, m_Item.exposedPropertyDefault);
+        UpdateObjectField(obj);
 
         return obj;
     }
@@ -200,6 +200,20 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
             //save the modified SerializedObject since we are bypassing the binding system
             m_Item.exposedPropertyName.serializedObject.ApplyModifiedProperties();
+            UpdateObjectField(evt.elementTarget as ObjectField);
+        }
+    }
+
+    void UpdateObjectField(ObjectField objectField)
+    {
+        if (m_Item.propertyMode == ExposedPropertyMode.DefaultValue)
+        {
+            // Set the serialized property so we can support drag and drop for the default value.
+            objectField?.SetProperty(ObjectField.serializedPropertyKey, m_Item.exposedPropertyDefault);
+        }
+        else
+        {
+            objectField?.ClearProperty(ObjectField.serializedPropertyKey);
         }
     }
 

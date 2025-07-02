@@ -1702,6 +1702,55 @@ namespace UnityEditor.Search
                 eventType: SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, eventContext: sourceContext);
         }
 
+        internal static bool IsGroupValid(SearchViewState viewState, string groupId)
+        {
+            var isGroupInvalid = groupId == null ||
+                                 (groupId == GroupedSearchList.allGroupId && viewState.hideAllGroup) ||
+                                 (groupId == GroupedSearchList.allGroupId && viewState.context.providers.Count() == 1) ||
+                                 (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null);
+            return !isGroupInvalid;
+        }
+
+        internal static string GetValidGroupForState(SearchViewState viewState, string groupId)
+        {
+            if (viewState.isPicker)
+            {
+                groupId = viewState.group;
+                if (!viewState.hideTabs && groupId == null && viewState.selectedIds.Length > 0)
+                {
+                    var id = viewState.selectedIds[0];
+                    groupId = SearchUtils.GetGroupFromId(id);
+                }
+                else if (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null)
+                {
+                    // If we have an invalid group, default to all if we can.
+                    if (viewState.hideAllGroup)
+                    {
+                        groupId = viewState.context.providers.First().id;
+                    }
+                    else
+                    {
+                        groupId = GroupedSearchList.allGroupId;
+                    }
+                }
+                
+                return groupId;
+            }
+            else if (!IsGroupValid(viewState, groupId))
+            {
+                var providers = viewState.context.providers;
+                if (viewState.hideAllGroup || providers.Count() == 1)
+                {
+                    groupId = viewState.context.providers.First().id;
+                }
+                else
+                {
+                    groupId = GroupedSearchList.allGroupId;
+                }
+            }
+
+            return groupId;
+        }
 
         internal static string GetGroupFromId(int instanceID)
         {

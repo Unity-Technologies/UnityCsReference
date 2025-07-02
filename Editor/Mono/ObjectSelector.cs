@@ -977,7 +977,8 @@ namespace UnityEditor
             GUI.changed = false;
 
             // Handle preview size
-            m_PreviewSize = m_PreviewResizer.ResizeHandle(m_Position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, kMinTopSize + kResizerHeight, kResizerHeight) + kResizerHeight;
+            float minRemainingSize = kMinTopSize + kResizerHeight - m_Toolbar.rect.height - m_SearchField.parent.rect.height;
+            m_PreviewSize = m_PreviewResizer.ResizeHandle(m_Position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, minRemainingSize, kResizerHeight) + kResizerHeight;
             m_TopSize = m_Position.height - m_PreviewSize;
 
             bool open = PreviewIsOpen();

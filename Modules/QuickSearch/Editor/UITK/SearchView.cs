@@ -85,8 +85,9 @@ namespace UnityEditor.Search
                     tempSelectedItems.Add(m_FilteredItems[m_Selection[i]]);
                 }
 
-                viewState.group = value;
                 m_FilteredItems.currentGroup = value;
+                viewState.group = m_FilteredItems.currentGroup;
+
                 resultView?.OnGroupChanged(prevGroup, value);
 
                 if (m_SyncSearch && value != null)
@@ -240,6 +241,7 @@ namespace UnityEditor.Search
             {
                 AssetPreview.DeletePreviewTextureManagerByID(m_ViewId);
                 m_ViewState.context?.Dispose();
+                m_ResultView?.Dispose();
             }
 
             m_Disposed = true;

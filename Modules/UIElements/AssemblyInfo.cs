@@ -16,7 +16,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Runtime.InternalAccessTests")] // for UI Test Framework tests that need internal access
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Base")]
-[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")] 
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Bindings")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.StyleSheets")]
 [assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
@@ -37,7 +37,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.UXMLReferenceGenerator.Bridge")]
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor")] // for UI Test Framework
 [assembly: InternalsVisibleTo("Unity.UI.TestFramework.Editor.InternalAccessTests")] // for UI Test Framework tests that need internal access
-
+[assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
 
 // TOLERATED: modules or core packages evolving in lockstep with this module
 // Reducing this list means to improve the API design of this module.

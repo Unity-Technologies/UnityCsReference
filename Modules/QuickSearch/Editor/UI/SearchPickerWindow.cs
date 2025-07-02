@@ -37,15 +37,6 @@ namespace UnityEditor.Search
                 m_ViewState.flags |= SearchViewFlags.OpenInspectorPreview;
             }
             RestoreSearchText();
-
-            var group = m_ViewState.group ?? GroupedSearchList.allGroupId;
-            if (!m_ViewState.hideTabs && m_ViewState.group == null && m_ViewState.selectedIds.Length > 0)
-            {
-                var id = m_ViewState.selectedIds[0];
-                group = SearchUtils.GetGroupFromId(id);
-            }
-
-            m_ViewState.group = group;
             UpdateViewState(m_ViewState);
         }
 
