@@ -1587,40 +1587,46 @@ namespace UnityEditor
         private void ComputeFromSpeed(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.apparentSpeed, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.apparentSpeed, prop, "speed");
         }
 
         private void ComputeFromVelocityX(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.x * mirrorMultiplier, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.x * mirrorMultiplier, prop, "velocity along the X axis");
         }
 
         private void ComputeFromVelocityY(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.y, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.y, prop, "velocity along the Y axis");
         }
 
         private void ComputeFromVelocityZ(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.z, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.z, prop, "velocity along the Z axis");
         }
 
         private void ComputeFromAngularSpeedDegrees(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageAngularSpeed * 180.0f / Mathf.PI * mirrorMultiplier, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageAngularSpeed * 180.0f / Mathf.PI * mirrorMultiplier, prop, "angular speed in degrees");
         }
 
         private void ComputeFromAngularSpeedRadians(object obj)
         {
             ChildPropertyToCompute prop = (ChildPropertyToCompute)obj;
-            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageAngularSpeed * mirrorMultiplier, prop);
+            ComputeProperty((Motion m, float mirrorMultiplier) => m.averageAngularSpeed * mirrorMultiplier, prop, "angular speed in radians");
         }
 
-        private void ComputeProperty(GetFloatFromMotion func, ChildPropertyToCompute prop)
+        private void ComputeProperty(GetFloatFromMotion func, ChildPropertyToCompute prop, string comparePropertyName)
+        {
+            if(!DoComputeProperty(func, prop))
+                Debug.LogWarning($"Could not properly compute {prop.ToString()} for the blend tree '{m_BlendTree.name}' based on {comparePropertyName} because all source motions have the same {comparePropertyName}.");
+        }
+
+        private bool DoComputeProperty(GetFloatFromMotion func, ChildPropertyToCompute prop)
         {
             float mean = 0.0f;
             float[] values = new float[m_Childs.arraySize];
@@ -1664,8 +1670,8 @@ namespace UnityEditor
 
             if (variance < Mathf.Epsilon)
             {
-                Debug.LogWarning($"Can't distribute the motions of '{m_BlendTree.name}', they all have the same threshold value.");
                 m_SerializedObject.Update();
+                return false;
             }
             else
             {
@@ -1676,12 +1682,29 @@ namespace UnityEditor
                     SetMinMaxThreshold();
                 }
             }
+            return true;
         }
 
         private void ComputePositionsFromVelocity()
         {
-            ComputeFromVelocityX(ChildPropertyToCompute.PositionX);
-            ComputeFromVelocityZ(ChildPropertyToCompute.PositionY);
+            (bool, bool) results = new
+            (
+                DoComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.x * mirrorMultiplier, ChildPropertyToCompute.PositionX),
+                DoComputeProperty((Motion m, float mirrorMultiplier) => m.averageSpeed.z * mirrorMultiplier, ChildPropertyToCompute.PositionY)
+            );
+
+            string invalidAxes = results switch
+            {
+                (false, false) => "X and Z",
+                (true, false) => "Z",
+                (false, true) => "X",
+                _ => null
+            };
+
+
+            if (invalidAxes !=  null)
+                Debug.LogWarning($"Could not properly compute the positions for the blend tree '{m_BlendTree.name}' because all source motions have the same velocity along the {invalidAxes} axis.");
+
         }
 
         private void ComputePositionsFromSpeedAndAngularSpeed()
@@ -1703,7 +1726,8 @@ namespace UnityEditor
                     {
                         if (clip.apparentSpeed < Mathf.Epsilon)
                         {
-                            Debug.LogWarning("Could not adjust time scale for " + clip.name + " because it has no speed");
+                            Debug.LogWarning("Could not automatically adjust time scale for " + clip.name + " based on speed because its average velocity is zero or too small.\n" +
+                                "Either add translation curves to the root joint or replace this clip with one that has root joint translation curves.");
                         }
                         else
                         {

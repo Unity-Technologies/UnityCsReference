@@ -19,21 +19,8 @@ namespace Unity.UI.Builder
 
         protected override void RefreshPreview()
         {
-            var targetStylesheet = GetTargetStylesheet();
-            if (targetStylesheet == null || document.activeOpenUXMLFile == null)
-            {
-                SetText(string.Empty);
-                return;
-            }
-
-            foreach (var openUssFile in document.activeOpenUXMLFile.openUSSFiles)
-            {
-                if (openUssFile.styleSheet != targetStylesheet)
-                    continue;
-
-                SetText(openUssFile.ussPreview);
-                break;
-            }
+            var openUSS = GetTargetUss();
+            SetText(openUSS != null ? openUSS.ussPreview : string.Empty);
         }
 
         protected override void RefreshHeader()
@@ -51,7 +38,7 @@ namespace Unity.UI.Builder
 
         StyleSheet GetTargetStylesheet()
         {
-            if (hasDocument && document.firstStyleSheet != null)
+            if (hasDocument)
             {
                 var styleSheet = document.activeStyleSheet;
 
@@ -78,14 +65,7 @@ namespace Unity.UI.Builder
                 return null;
             }
 
-            foreach (var openUssFile in document.activeOpenUXMLFile.openUSSFiles)
-            {
-                if (openUssFile.styleSheet != targetStylesheet)
-                    continue;
-                return openUssFile;
-            }
-
-            return null;
+            return document.activeOpenUXMLFile.GetUssFileFromSheet(targetStylesheet);
         }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
@@ -101,8 +81,14 @@ namespace Unity.UI.Builder
 
         public void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
         {
+            var selectionIsStyles = m_Selection.selectionType is BuilderSelectionType.StyleSheet
+                or BuilderSelectionType.StyleSelector or BuilderSelectionType.ParentStyleSelector or BuilderSelectionType.Nothing; // Nothing has to be included for delete operations
+            var inlineStyleChange = styles != null && !selectionIsStyles;
+
             if (changeType == BuilderStylingChangeType.Default)
             {
+                if (!inlineStyleChange)
+                    hasUnsavedChanges = document.hasUnsavedChanges;
                 GetTargetUss()?.GeneratePreview();
                 RefreshPreviewIfVisible();
             }

@@ -39,6 +39,8 @@ namespace Unity.UI.Builder
         ScriptableObject m_TargetAsset;
         BuilderPaneWindow m_PaneWindow;
 
+        public bool hasUnsavedChanges { get; set; }
+
         public BuilderCodePreview(BuilderPaneWindow paneWindow)
         {
             m_PaneWindow = paneWindow;
@@ -182,7 +184,12 @@ namespace Unity.UI.Builder
                 return;
 
             m_TargetAsset = targetAsset;
-            pane.subTitle = BuilderAssetUtilities.GetAssetName(targetAsset, previewAssetExtension, hasUnsavedChanges);
+
+            // Reset hasUnsavedChanges on save
+            if (!hasUnsavedChanges)
+                this.hasUnsavedChanges = false;
+
+            pane.subTitle = BuilderAssetUtilities.GetAssetName(targetAsset, previewAssetExtension, this.hasUnsavedChanges);
             m_OpenTargetAssetSourceButton.style.display = isTargetAssetAvailableOnDisk ? DisplayStyle.Flex : DisplayStyle.None;
         }
 

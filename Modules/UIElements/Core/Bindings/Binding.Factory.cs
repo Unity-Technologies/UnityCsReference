@@ -34,9 +34,9 @@ namespace UnityEngine.UIElements
             #pragma warning disable 649
             [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             [SerializeField, HideInInspector] internal string property;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags property_UxmlAttributeFlags;
             [Tooltip(k_UpdateTriggerTooltip)]
             [SerializeField, HideInInspector] BindingUpdateTrigger updateTrigger;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags property_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags updateTrigger_UxmlAttributeFlags;
             #pragma warning restore 649
 

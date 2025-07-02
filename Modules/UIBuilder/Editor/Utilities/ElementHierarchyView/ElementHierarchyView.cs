@@ -32,7 +32,6 @@ namespace Unity.UI.Builder
 
         public bool hierarchyHasChanged { get; set; }
         public bool hasUnsavedChanges { get; set; }
-        public bool hasUssChanges { get; set;  }
         public BuilderExplorer.BuilderElementInfoVisibilityState elementInfoVisibilityState { get; set; }
 
         VisualTreeAsset m_ClassPillTemplate;
@@ -112,7 +111,6 @@ namespace Unity.UI.Builder
             m_SelectElementCallback = selectElementCallback;
             hierarchyHasChanged = true;
             hasUnsavedChanges = true;
-            hasUssChanges = false;
 
             m_SearchResultsHightlights = new List<VisualElement>();
 
@@ -317,7 +315,7 @@ namespace Unity.UI.Builder
                 var isPartOfParentDocument = !string.IsNullOrEmpty(owningUxmlPath);
 
                 var styleSheetAsset = documentElement.GetStyleSheet();
-                var styleSheetAssetName = BuilderAssetUtilities.GetStyleSheetAssetName(styleSheetAsset, hasUnsavedChanges && !isPartOfParentDocument && hasUssChanges);
+                var styleSheetAssetName = BuilderAssetUtilities.GetStyleSheetAssetName(styleSheetAsset, hasUnsavedChanges && !isPartOfParentDocument);
                 var ssLabel = new Label(styleSheetAssetName);
                 ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
                 ssLabel.AddToClassList("unity-debugger-tree-item-type");
@@ -467,7 +465,7 @@ namespace Unity.UI.Builder
             if (BuilderSharedStyles.IsDocumentElement(documentElement))
             {
                 var uxmlAsset = documentElement.GetVisualTreeAsset();
-                var ssLabel = new Label(BuilderAssetUtilities.GetVisualTreeAssetAssetName(uxmlAsset, hasUnsavedChanges && !hasUssChanges));
+                var ssLabel = new Label(BuilderAssetUtilities.GetVisualTreeAssetAssetName(uxmlAsset, hasUnsavedChanges));
                 ssLabel.AddToClassList(BuilderConstants.ExplorerItemLabelClassName);
                 ssLabel.AddToClassList("unity-debugger-tree-item-type");
                 row.AddToClassList(BuilderConstants.ExplorerHeaderRowClassName);

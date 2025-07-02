@@ -39,6 +39,9 @@ namespace Unity.UI.Builder
 
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
+            var newUnsavedChanges = elementHierarchyView.hasUnsavedChanges != m_Selection.hasUnsavedChanges;
+            elementHierarchyView.hasUnsavedChanges = m_Selection.hasUnsavedChanges;
+
             base.HierarchyChanged(element, changeType);
 
             if ((changeType & (BuilderHierarchyChangeType.ElementName | BuilderHierarchyChangeType.ClassList)) != 0)
@@ -46,6 +49,19 @@ namespace Unity.UI.Builder
                 // Look for the item associated with the element renamed. Note that the edited element may not be selected
                 // yet.
                 var item = m_ElementHierarchyView.FindElement(m_ElementHierarchyView.treeRootItems, element);
+                var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(item.id);
+                if (index == -1)
+                {
+                    return;
+                }
+
+                m_ElementHierarchyView.treeView.RefreshItem(index);
+            }
+
+            if (newUnsavedChanges)
+            {
+               // Update header
+                var item = m_ElementHierarchyView.FindElement(m_ElementHierarchyView.treeRootItems, m_DocumentElement);
                 var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(item.id);
                 if (index == -1)
                 {

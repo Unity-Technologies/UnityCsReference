@@ -42,6 +42,8 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId autoExpandProperty = nameof(autoExpand);
 
+        internal static CustomStyleProperty<float> s_TreeViewIndentProperty = new CustomStyleProperty<float>("--unity-tree-view-indent");
+
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static readonly int invalidId = -1;
 
@@ -275,6 +277,8 @@ namespace UnityEngine.UIElements
             set => m_ExpandedItemIds = value;
         }
 
+        internal float? customIdent { get; private set; }
+
         /// <summary>
         /// Creates a <see cref="TreeView"/> with all default properties.
         /// </summary>
@@ -294,6 +298,8 @@ namespace UnityEngine.UIElements
         {
             m_ExpandedItemIds = new List<int>();
             AddToClassList(ussClassName);
+
+            RegisterCallback<CustomStyleResolvedEvent>(OnCustomStyleResolved);
         }
 
         /// <summary>
@@ -398,6 +404,19 @@ namespace UnityEngine.UIElements
             }
 
             return false;
+        }
+
+        void OnCustomStyleResolved(CustomStyleResolvedEvent evt)
+        {
+            if (evt.customStyle.TryGetValue(s_TreeViewIndentProperty, out var indent))
+            {
+                customIdent = indent;
+                virtualizationController?.Refresh(false);
+            }
+            else
+            {
+                customIdent = null;
+            }
         }
 
         internal override void OnViewDataReady()

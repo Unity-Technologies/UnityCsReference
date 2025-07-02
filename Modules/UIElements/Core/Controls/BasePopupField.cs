@@ -156,12 +156,6 @@ namespace UnityEngine.UIElements
         {
             if (evt.button == (int)MouseButton.LeftMouse && ContainsPointer(evt.pointerId))
             {
-                // if the menu is not showing due to inputs on the same frame, force show it (UUM-91306)
-                if (m_ScheduledShowMenuItem != null && m_ScheduledShowMenuItem.isActive)
-                {
-                    m_ScheduledShowMenuItem.Pause();
-                    ShowMenu();
-                }
                 // Prevent propagation to other elements (UUM-85620)
                 evt.StopPropagation();
             }

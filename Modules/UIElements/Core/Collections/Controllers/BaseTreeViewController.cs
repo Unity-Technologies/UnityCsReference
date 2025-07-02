@@ -305,6 +305,7 @@ namespace UnityEngine.UIElements
         {
             if (reusableItem is ReusableTreeViewItem treeItem)
             {
+                treeItem.customIndentWidth = baseTreeView.customIdent;
                 treeItem.Indent(GetIndentationDepthByIndex(index));
                 treeItem.SetExpandedWithoutNotify(IsExpandedByIndex(index));
                 treeItem.SetToggleVisibility(HasChildrenByIndex(index));

@@ -1445,7 +1445,7 @@ namespace UnityEngine.Rendering
         PlayStation5 = 26,
         PlayStation5NGGC = 27,
         WebGPU = 28,
-        ReservedCFE = 29,
+        Switch2 = 29,
     }
 
     public enum GraphicsTier

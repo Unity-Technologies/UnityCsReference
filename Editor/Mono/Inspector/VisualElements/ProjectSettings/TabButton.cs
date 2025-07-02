@@ -27,8 +27,8 @@ namespace UnityEditor.UIElements.ProjectSettings
 
             #pragma warning disable 649
             [SerializeField] string text;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
             [SerializeField] string target;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags text_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags target_UxmlAttributeFlags;
             #pragma warning restore 649
 

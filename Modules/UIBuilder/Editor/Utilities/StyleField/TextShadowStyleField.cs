@@ -74,6 +74,8 @@ namespace Unity.UI.Builder
         DimensionStyleField m_BlurRadiusField;
         ColorField m_ColorField;
 
+        public ColorField colorField => m_ColorField;
+
         public TextShadowStyleField() : this(null) {}
 
         public TextShadowStyleField(string label) : base(label)

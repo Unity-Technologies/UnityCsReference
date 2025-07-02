@@ -81,6 +81,9 @@ namespace Unity.UI.Builder
         BuilderInspectorHeader m_HeaderSection;
         internal BuilderInspectorHeader headerSection => m_HeaderSection;
 
+        // Actions
+        Action m_RefreshAttributesAction;
+
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
         BuilderInspectorAttributes m_AttributesSection;
@@ -359,6 +362,8 @@ namespace Unity.UI.Builder
                 HelpBoxMessageType.Warning);
             helpBox.style.marginLeft = 0.0f;
             scaleModeWarningPlaceHolder.Add(helpBox);
+
+            m_RefreshAttributesAction = RefreshAttributesSection;
         }
 
         public void Dispose()
@@ -1285,6 +1290,7 @@ namespace Unity.UI.Builder
 
             if (refreshAttributes)
             {
+                m_HeaderSection.Refresh();
                 RefreshAttributes();
             }
 
@@ -1308,9 +1314,6 @@ namespace Unity.UI.Builder
 
         void RefreshAttributes()
         {
-            // Reselect Icon, Type & Name in Header
-            m_HeaderSection.Refresh();
-
             if (m_AttributesSection.refreshScheduledItem != null)
             {
                 // Pause to stop it in case it's already running; and then restart it to execute it.
@@ -1319,8 +1322,13 @@ namespace Unity.UI.Builder
             }
             else
             {
-                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(m_RefreshAttributesAction);
             }
+        }
+
+        void RefreshAttributesSection()
+        {
+            m_AttributesSection.Refresh();
         }
 
         public void OnAfterBuilderDeserialize()
@@ -1336,16 +1344,7 @@ namespace Unity.UI.Builder
 
             if ((changeType & BuilderHierarchyChangeType.Attributes) == BuilderHierarchyChangeType.Attributes)
             {
-                if (m_AttributesSection.refreshScheduledItem != null)
-                {
-                    // Pause to stop it in case it's already running; and then restart it to execute it.
-                    m_AttributesSection.refreshScheduledItem.Pause();
-                    m_AttributesSection.refreshScheduledItem.Resume();
-                }
-                else
-                {
-                    m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
-                }
+                RefreshAttributes();
             }
         }
 
@@ -1435,6 +1434,7 @@ namespace Unity.UI.Builder
 
             if (IsElementSelected())
             {
+                m_HeaderSection.dataSourceAndPathView.SetAttributesOwner(visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
                 m_AttributesSection.SetAttributesOwner(visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
             }
             else
@@ -1447,6 +1447,7 @@ namespace Unity.UI.Builder
                 StyleSheetUtilities.AddFakeSelector(m_CurrentVisualElement);
                 // Need to delay the refresh of the inspector for selectors to ensure the variables are resolved
                 m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
+                m_HeaderSection.Refresh();
                 RefreshAttributes();
             }
             else
@@ -1582,7 +1583,7 @@ namespace Unity.UI.Builder
 
             VisualElement field;
             if (propName is "data-source" or "data-source-type" or "data-source-path")
-                field = m_HeaderSection.m_DataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
+                field = m_HeaderSection.dataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
             else
                 field = attributeSection.root.Query().Where(IsFieldElement);
 

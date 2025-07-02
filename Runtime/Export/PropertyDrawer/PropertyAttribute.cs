@@ -49,7 +49,7 @@ namespace UnityEngine
     {
         public readonly string displayName;
 
-        public InspectorNameAttribute(string displayName)
+        public InspectorNameAttribute(string displayName) : base(applyToCollection: true)
         {
             this.displayName = displayName;
         }
@@ -71,7 +71,7 @@ namespace UnityEngine
     {
         public readonly float height;
 
-        public SpaceAttribute()
+        public SpaceAttribute() : base(applyToCollection: true)
         {
             // By default uses 8 pixels which corresponds to EditorGUILayout.Space()
             // which reserves 6 pixels, plus the usual 2 pixels caused by the neighboring margin.
@@ -80,7 +80,7 @@ namespace UnityEngine
             this.height = 8;
         }
 
-        public SpaceAttribute(float height)
+        public SpaceAttribute(float height) : base(applyToCollection: true)
         {
             this.height = height;
         }
@@ -91,7 +91,7 @@ namespace UnityEngine
     {
         public readonly string header;
 
-        public HeaderAttribute(string header)
+        public HeaderAttribute(string header) : base(applyToCollection: true)
         {
             this.header = header;
         }

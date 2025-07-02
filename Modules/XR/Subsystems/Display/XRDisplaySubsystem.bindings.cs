@@ -191,6 +191,8 @@ namespace UnityEngine.XR
 
             public bool shouldFillOutDepth;
 
+            public bool spaceWarpRightHandedNDC;
+
             public int cullingPassIndex;
 
             public IntPtr foveatedRenderingInfo;

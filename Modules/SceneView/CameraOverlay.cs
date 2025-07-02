@@ -215,6 +215,8 @@ namespace UnityEditor
 
             m_Overlay.onViewpointSelected += ViewpointChanged;
             dropdownClicked += OnDropdownClicked;
+
+            UpdateEnableState();
         }
 
         void OnDetachFromPanel(DetachFromPanelEvent evt)

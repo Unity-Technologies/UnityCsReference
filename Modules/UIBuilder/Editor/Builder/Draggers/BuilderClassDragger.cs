@@ -75,8 +75,8 @@ namespace Unity.UI.Builder
             // We do not want to refresh the stylesheet pane as it rebinds the stylesheets explorer elements
             // resulting in the mouse up on the class pill not being handled properly by other draggers (UUM-104962)
             var stylesheets = ((Builder)paneWindow).styleSheets;
-            selection.NotifyOfHierarchyChange(stylesheets);
-            selection.NotifyOfStylingChange(stylesheets);
+            selection.NotifyOfHierarchyChange(stylesheets, null, BuilderHierarchyChangeType.ClassList);
+            selection.NotifyOfStylingChange(stylesheets, null, BuilderStylingChangeType.RefreshOnly);
         }
 
         protected override bool IsPickedElementValid(VisualElement element)

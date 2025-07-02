@@ -70,43 +70,43 @@ namespace UnityEngine.UIElements
             }
 
             #pragma warning disable 649
+            [SerializeField] string placeholderText;
             [UxmlAttribute(obsoleteNames = new[] { "maxLength" }), Delayed]
             [SerializeField] int maxLength;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
+            [SerializeField] TouchScreenKeyboardType keyboardType;
+            [SerializeField] private protected ScrollerVisibility verticalScrollerVisibility;
             [UxmlAttribute("password")]
             [SerializeField] bool isPasswordField;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isPasswordField_UxmlAttributeFlags;
             [UxmlAttribute("mask-character", obsoleteNames = new[] { "maskCharacter" })]
             [SerializeField] char maskChar;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maskChar_UxmlAttributeFlags;
-            [SerializeField] string placeholderText;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
             [SerializeField] bool hidePlaceholderOnFocus;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hidePlaceholderOnFocus_UxmlAttributeFlags;
             [UxmlAttribute("readonly")]
             [SerializeField] bool isReadOnly;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isReadOnly_UxmlAttributeFlags;
             [SerializeField] bool isDelayed;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
-            [SerializeField] private protected ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField, UxmlIgnore, HideInInspector] private protected UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
             [SerializeField] bool selectAllOnMouseUp;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnMouseUp_UxmlAttributeFlags;
             [SerializeField] bool selectAllOnFocus;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnFocus_UxmlAttributeFlags;
             [UxmlAttribute("select-word-by-double-click")]
             [SerializeField] bool doubleClickSelectsWord;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
             [UxmlAttribute("select-line-by-triple-click")]
             [SerializeField] bool tripleClickSelectsLine;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
             [SerializeField] bool emojiFallbackSupport;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
             [SerializeField] bool hideMobileInput;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
-            [SerializeField] TouchScreenKeyboardType keyboardType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
             [SerializeField] bool autoCorrection;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxLength_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isPasswordField_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maskChar_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags placeholderText_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hidePlaceholderOnFocus_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isReadOnly_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags isDelayed_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] private protected UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnMouseUp_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectAllOnFocus_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags doubleClickSelectsWord_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tripleClickSelectsLine_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags hideMobileInput_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags keyboardType_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags autoCorrection_UxmlAttributeFlags;
             #pragma warning restore 649
 

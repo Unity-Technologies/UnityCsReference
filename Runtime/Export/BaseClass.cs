@@ -153,7 +153,7 @@ namespace UnityEngine
         QNXX64 = 48,
         QNXX86 = 49,
         VisionOS = 50,
-        ReservedCFE = 51,
+        Switch2 = 51,
 
         // Kepler
         KeplerArm64 = 52,

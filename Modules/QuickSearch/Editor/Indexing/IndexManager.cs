@@ -390,17 +390,20 @@ namespace UnityEditor.Search
             m_IndexDetailsElementScrollView.Add(m_SavedIndexData);
 
             m_DependenciesListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DependenciesListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_DependenciesListView);
             m_DependenciesListView.selectionChanged += PingAsset;
             m_DependenciesListView.AddToClassList("PreviewListView");
 
             m_SavedIndexData.Add(m_DependenciesListView);
 
             m_DocumentsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DocumentsListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_DocumentsListView);
             m_DocumentsListView.selectionChanged += PingAsset;
             m_DocumentsListView.AddToClassList("PreviewListView");
             m_SavedIndexData.Add(m_DocumentsListView);
 
             m_KeywordsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_KeywordsListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_KeywordsListView);
             m_KeywordsListView.AddToClassList("PreviewListView");
             m_SavedIndexData.Add(m_KeywordsListView);
 
@@ -419,6 +422,12 @@ namespace UnityEditor.Search
             SelectTab(0);
 
             UpdateDetailsForNewOrExistingSettings();
+        }
+
+        private void EnableListViewHorizontalScroll(ListView listView)
+        {
+            var listViewInnerScrollView = listView.Q<ScrollView>();
+            listViewInnerScrollView.mode = ScrollViewMode.VerticalAndHorizontal;
         }
 
         private void OnIndexLoaded(SearchDatabase sb)

@@ -194,7 +194,7 @@ namespace Unity.UI.Builder
                 {
                     Builder.ShowWarning(string.Format(BuilderConstants.AttributeValidationSpacialCharacters, "Name"));
                 }
-                selection.NotifyOfHierarchyChange();
+                selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);
                 return;
             }
 
@@ -278,10 +278,11 @@ namespace Unity.UI.Builder
                     attribute.SetSerializedValue(vea.serializedData, value);
                     attribute.SetSerializedValueAttributeFlags(vea.serializedData, UxmlSerializedData.UxmlAttributeFlags.OverriddenInUxml);
                 }
+
+                selection.NotifyOfHierarchyChange(null, null, BuilderHierarchyChangeType.ElementName);
             }
 
             m_RenameTextField.AddToClassList(BuilderConstants.HiddenStyleClassName);
-            selection.NotifyOfHierarchyChange();
         }
 
         public VisualElement row()

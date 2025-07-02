@@ -527,7 +527,8 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
+                bool hasFocus = GUIView.current != null ? GUIView.current.hasFocus : false;
+                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && hasFocus;
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
@@ -6949,7 +6950,15 @@ namespace UnityEditor
             // In inspector debug mode & when holding down alt. Show the property path of the property.
             if (Event.current.alt && property.serializedObject.inspectorMode != InspectorMode.Normal)
             {
-                s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                if (string.IsNullOrEmpty(label.text))
+                {
+                    s_PropertyFieldTempContent.tooltip = property.propertyPath;
+                }
+                else
+                {
+                    s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                }
+
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();

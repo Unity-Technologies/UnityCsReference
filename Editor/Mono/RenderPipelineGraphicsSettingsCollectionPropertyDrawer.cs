@@ -86,21 +86,21 @@ namespace UnityEditor.Rendering.GraphicsSettingsInspectors
             }
         }
 
-        void ShowContextualMenu(Rect rect, List<LeafElement<SettingsInfo>> siblings, SerializedProperty property)
+        void ShowContextualMenu(Rect rect, List<LeafElement<SettingsInfo>> siblings)
         {
-            List<IRenderPipelineGraphicsSettings> targets = new(siblings.Count);
+            List<(IRenderPipelineGraphicsSettings target, SerializedProperty property)> targets = new(siblings.Count);
             foreach (SettingsInfo sibling in siblings)
-                targets.Add(sibling.target);
+                targets.Add((sibling.target, sibling.property));
 
             var contextualMenu = new GenericMenu(); //use ImGUI for now, need to be updated later
-            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(targets, property, ref contextualMenu);
+            RenderPipelineGraphicsSettingsContextMenuManager.PopulateContextMenu(targets, ref contextualMenu);
             contextualMenu.DropDown(new Rect(rect.position + Vector2.up * rect.size.y, Vector2.zero), shouldDiscardMenuOnSecondClick: true);
         }
 
         void DrawContextualMenuButton(VisualElement root, LeafElement<SettingsInfo> settingsInfo)
         {
             var button = new Button(Background.FromTexture2D(EditorGUIUtility.LoadIcon("pane options")));
-            button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent.content, settingsInfo.data.property);
+            button.clicked += () => ShowContextualMenu(button.worldBound, settingsInfo.parent.content);
             root.Add(button);
         }
 

@@ -374,18 +374,24 @@ namespace Unity.UI.Builder
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
-            if (elementWidth == 0 || elementHeight == 0)
-                return;
 
-            float aspectRatio = elementWidth / elementHeight;
+            float targetZoom = 1;
+            Vector2 targetOffset = Vector2.zero;
 
-            float targetZoom;
-            if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
-                targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+            if (elementWidth == 0 && elementHeight == 0)
+            {
+                elementHeight = 1;
+                elementWidth = 1;
+            }
             else
-                targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
-
-            var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            {
+                float aspectRatio = elementWidth / elementHeight;
+                if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
+                    targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+                else
+                    targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
+                targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            }
 
             // Adjust the offset in case the canvas is not at the origin.
             targetOffset -= m_Canvas.localBound.position;
@@ -629,9 +635,32 @@ namespace Unity.UI.Builder
             }
         }
 
+        /// <summary>
+        /// Returns the display style of the specified visual element compounded with the display style of its parents up
+        /// to the root element of the document.
+        /// Returns DisplayStyle.Flex if the visual element and all its parent have a resolved display style equal
+        /// to DisplayStyle.Flex but returns DisplayStyle.None if one of them has a display style equal to DisplayStyle.None.
+        /// </summary>
+        /// <param name="element">The visual element to evaluate</param>
+        /// <returns>The compounded resolved display style</returns>
+        static DisplayStyle GetCompoundedDisplayStyle(VisualElement documentRootElement, VisualElement element)
+        {
+            var currentElement = element;
+
+            while (currentElement != null && currentElement != documentRootElement)
+            {
+                if (currentElement.resolvedStyle.display == DisplayStyle.None)
+                    return DisplayStyle.None;
+                currentElement = currentElement.parent;
+            }
+            return DisplayStyle.Flex;
+        }
+
         void SetInnerSelection(VisualElement selectedElement)
         {
-            if (selectedElement.resolvedStyle.display == DisplayStyle.None)
+            var builder = m_PaneWindow as Builder;
+
+            if (builder != null && GetCompoundedDisplayStyle(builder.documentRootElement, selectedElement) == DisplayStyle.None)
             {
                 ClearInnerSelection();
                 return;

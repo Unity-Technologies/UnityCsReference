@@ -47,6 +47,26 @@ namespace UnityEngine.UIElements
             return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : defaultValue;
         }
 
+        public static byte ParseByte(string value, byte defaultValue = default)
+        {
+            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static sbyte ParseSByte(string value, sbyte defaultValue = default)
+        {
+            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static short ParseShort(string value, short defaultValue = default)
+        {
+            return short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static ushort ParseUShort(string value, ushort defaultValue = default)
+        {
+            return ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
         public static int ParseInt(string value, int defaultValue = default)
         {
             return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;

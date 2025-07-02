@@ -27,8 +27,8 @@ namespace UnityEngine.UIElements
 
             #pragma warning disable 649
             [SerializeField] long delay;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags delay_UxmlAttributeFlags;
             [SerializeField] long interval;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags delay_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags interval_UxmlAttributeFlags;
             #pragma warning restore 649
 
