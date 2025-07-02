@@ -527,7 +527,8 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
+                bool hasFocus = GUIView.current != null ? GUIView.current.hasFocus : false;
+                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && hasFocus;
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)

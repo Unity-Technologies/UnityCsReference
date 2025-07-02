@@ -476,7 +476,7 @@ internal class SerializedObjectBindingContext
         ScriptAttributeUtility.GetFieldInfoFromProperty(prop, out var fieldType);
 
         // Handle Object type
-        if (fieldType == typeof(Object) || element is BaseField<Object> || fieldType == null)
+        if (fieldType == typeof(Object) || element is INotifyValueChanged<Object> || fieldType == null)
         {
             CreateUnityObjectBinding<Object>(this, element, prop);
             return;
