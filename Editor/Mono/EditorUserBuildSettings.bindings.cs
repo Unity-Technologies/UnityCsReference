@@ -343,7 +343,6 @@ namespace UnityEditor
     {
         internal int glslcDebugLevel;
         internal string debugInfoOutputPath;
-        internal bool triggerGraphicsDebuggersConfigUpdate;
     }
 
     // *undocumented*

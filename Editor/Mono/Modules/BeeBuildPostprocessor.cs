@@ -450,7 +450,7 @@ namespace UnityEditor.Modules
                 : absoluteInstallationPath.ToString();
         }
 
-        protected string GetDataFolderFor(BuildPostProcessArgs args) => $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
+        protected string GetDataFolderFor(BuildPostProcessArgs args) => $"{BuildPipeline.GetDataCacheForBuildTarget(args.target, args.subtarget)}/Data";
 
         protected ScriptingBackend GetScriptingBackend(BuildPostProcessArgs args)
         {

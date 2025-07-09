@@ -1560,6 +1560,35 @@ namespace UnityEditor.Search
             }
             return shortcutBinding;
         }
+
+        public static void EnumerateIndexedTypesAndInterfaces(Type objType, bool isPrefabDocument, Action<string, bool> onEnumeration)
+        {
+            if (objType != null)
+            {
+                var interfaceTypes = objType.GetInterfaces();
+                foreach (var interfaceType in interfaceTypes)
+                {
+                    var shortName = interfaceType.Name;
+                    onEnumeration(shortName, false);
+                    if (!string.IsNullOrEmpty(interfaceType.FullName) && interfaceType.FullName != shortName)
+                        onEnumeration(interfaceType.FullName, true);
+                }
+            }
+
+            while (objType != null && objType != typeof(UnityEngine.Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            {
+                if (isPrefabDocument && objType == typeof(GameObject))
+                    onEnumeration("prefab", true);
+                else if (objType == typeof(MonoScript))
+                    onEnumeration("script", true);
+
+                var shortName = objType.Name;
+                onEnumeration(shortName, false);
+                if (!string.IsNullOrEmpty(objType.FullName) && objType.FullName != shortName)
+                    onEnumeration(objType.FullName, true);
+                objType = objType.BaseType;
+            }
+        }
     }
 
     static class SerializedPropertyExtension

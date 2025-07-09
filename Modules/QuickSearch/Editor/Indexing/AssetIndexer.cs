@@ -75,23 +75,10 @@ namespace UnityEditor.Search
 
         public void IndexTypes(Type objType, int documentIndex, bool isPrefabDocument, string name = "t", bool exact = false)
         {
-            while (objType != null && objType != typeof(Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            Utils.EnumerateIndexedTypesAndInterfaces(objType, isPrefabDocument, (typeName, isFullName) =>
             {
-                if (isPrefabDocument && objType == typeof(GameObject))
-                    IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
-                else if (objType == typeof(MonoScript))
-                    IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
-
-                IndexType(objType, documentIndex);
-                objType = objType.BaseType;
-            }
-        }
-
-        private void IndexType(Type objType, int documentIndex)
-        {
-            IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
-            if (objType.Name != objType.FullName)
-                IndexProperty(documentIndex, "t", objType.FullName, exact: true, saveKeyword: true);
+                IndexProperty(documentIndex, name, typeName, saveKeyword: true, exact: isFullName);
+            });
         }
 
         private void IndexSubAsset(Object subObj, string containerPath, string containerGlobalObjectId, bool checkIfDocumentExists, bool hasCustomIndexers)

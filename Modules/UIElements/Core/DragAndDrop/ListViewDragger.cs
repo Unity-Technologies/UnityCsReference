@@ -121,12 +121,19 @@ namespace UnityEngine.UIElements
             IEnumerable<int> ids;
             if (recycledItem != null)
             {
-                if (!targetView.selectedIndices.Contains(recycledItem.index))
+                if (targetView.selectionType == SelectionType.None)
                 {
-                    targetView.SetSelection(recycledItem.index);
+                    ids = new[] { recycledItem.index };
                 }
+                else
+                {
+                    if (!targetView.selectedIndices.Contains(recycledItem.index))
+                    {
+                        targetView.SetSelection(recycledItem.index);
+                    }
 
-                ids = targetView.selectedIds;
+                    ids = targetView.selectedIds;
+                }
             }
             else
             {

@@ -16,7 +16,6 @@ using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
-using UnityEditor.Profiling;
 
 namespace UnityEditor
 {
