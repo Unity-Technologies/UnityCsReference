@@ -7,6 +7,28 @@ using System;
 namespace UnityEngine.UIElements
 {
     /// <summary>
+    /// Controls the visibility of the <seealso cref="UxmlElementAttribute">UxmlElement</seealso> in the UI Builder Library projects tab.
+    /// </summary>
+    public enum LibraryVisibility
+    {
+        /// <summary>
+        /// The element's visibility is not specified and is determined by the UI Builder.
+        /// Unity hides elements with namespaces that start with "Unity", "UnityEngine", and "UnityEditor".
+        /// </summary>
+        Default,
+
+        /// <summary>
+        /// The element is visible in the UI Builder Library.
+        /// </summary>
+        Visible,
+
+        /// <summary>
+        /// The element is not visible in the UI Builder Library.
+        /// </summary>
+        Hidden
+    }
+
+    /// <summary>
     /// Declares a custom control.
     /// </summary>
     /// <remarks>
@@ -20,7 +42,7 @@ namespace UnityEngine.UIElements
     /// This serialized data allows for the element to be serialized from UXML and supports editing in the Attributes field of the
     /// Inspector window in  the UI Builder.
     /// By default, the custom control appears in the Library tab in UI Builder.
-    /// To hide it from the Library tab, provide the <see cref="HideInInspector"/> attribute.
+    /// The @@visibility@@ field can be used to control the visibility of the custom control in the Library tab.
     ///
     /// For an example of migrating a custom control from `UxmlFactory` and `UxmlTraits` to the `UxmlElement` and `UxmlAttributes` system,
     /// refer to [[wiki:UpgradeGuideUnity6#enhanced-custom-controls-creation-with-uxml|Enhanced custom controls creation with UXML]].
@@ -48,6 +70,12 @@ namespace UnityEngine.UIElements
     /// You can then reference the custom button in UXML with the custom name or its type:
     /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_CustomButtonElement.uxml"/>
     /// </example>
+    /// <example>
+    /// Certain namespaces in Unity, specifically those starting with Unity, UnityEngine, and UnityEditor, are reserved.
+    /// As a result, the elements within these namespaces are hidden from the UI Builder library by default.
+    /// However, you can override this behavior by explicitly configuring the visibility of these elements:
+    /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/UxmlElement_LibraryVisibility.cs"/>
+    /// </example>
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class UxmlElementAttribute : Attribute
     {
@@ -55,6 +83,18 @@ namespace UnityEngine.UIElements
         /// Provides a custom name for an element.
         /// </summary>
         public readonly string name;
+
+        /// <summary>
+        /// Controls the visibility of the element in the UI Builder Library.
+        /// </summary>
+        public LibraryVisibility visibility = LibraryVisibility.Default;
+
+        /// <summary>
+        /// Custom path to use when displaying the element in the UI Builder Library.
+        /// Sub-paths can be created by using a forward slash (/).
+        /// If no value is provided, the element namespace will be used.
+        /// </summary>
+        public string libraryPath;
 
         /// <summary>
         /// Exposes a type of VisualElement to UXML and UI Builder

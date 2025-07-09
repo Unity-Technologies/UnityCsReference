@@ -325,6 +325,17 @@ namespace UnityEditor.Search.Providers
             return null;
         }
 
+        static void IndexTypes(Type objType, HashSet<string> types, bool isPrefabDocument)
+        {
+            Utils.EnumerateIndexedTypesAndInterfaces(objType, isPrefabDocument, (typeName, _) =>
+            {
+                types.Add(typeName.ToLowerInvariant());
+            });
+
+            if (typeof(MonoBehaviour).IsAssignableFrom(objType) || typeof(Behaviour).IsAssignableFrom(objType))
+                types.Add("script");
+        }
+
         bool OnTypeFilter(T obj, QueryFilterOperator op, string value)
         {
             if (!obj)
@@ -333,11 +344,12 @@ namespace UnityEditor.Search.Providers
 
             if (god.types == null)
             {
-                var types = new HashSet<string>(new[] { obj.GetType().Name.ToLowerInvariant() });
+                bool isPrefab = false;
+                var types = new HashSet<string>();
                 if (obj is GameObject go)
                 {
                     if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
-                        types.Add("prefab");
+                        isPrefab = true;
 
                     var gocs = go.GetComponents<Component>();
                     for (int componentIndex = 0; componentIndex < gocs.Length; ++componentIndex)
@@ -347,13 +359,11 @@ namespace UnityEditor.Search.Providers
                             continue;
 
                         var componentType = c.GetType();
-                        var shortName = componentType.Name;
-                        types.Add(shortName.ToLowerInvariant());
-                        if (componentType.FullName != shortName)
-                            types.Add(componentType.FullName.ToLowerInvariant());
+                        IndexTypes(componentType, types, false);
                     }
                 }
 
+                IndexTypes(obj.GetType(), types, isPrefab);
                 god.types = types.ToArray();
             }
 

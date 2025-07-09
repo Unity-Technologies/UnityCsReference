@@ -117,25 +117,34 @@ namespace Unity.UI.Builder
                 try
                 {
                     var elementType = type.DeclaringType;
+                    var elementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
                     var hasNamespace = !string.IsNullOrEmpty(elementType.Namespace);
 
-                    // Avoid adding our own internal factories (like Package Manager templates).
-                    if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
+                    if (elementAttribute == null || elementAttribute.visibility == LibraryVisibility.Default)
                     {
-                        if (!AllowPackageType(type))
+                        // Avoid adding our own internal factories (like Package Manager templates).
+                        if (!Unsupported.IsDeveloperMode() && hasNamespace && s_NameSpacesToAvoid.Any(n => elementType.Namespace.StartsWith(n)))
+                        {
+                            if (!AllowPackageType(type))
+                                continue;
+                        }
+
+                        // Avoid adding UI Builder's own types, even in internal mode.
+                        if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
+                            continue;
+
+                        // Ignore elements with HideInInspector
+                        if (elementType.GetCustomAttribute<HideInInspector>() != null)
+                            continue;
+                    }
+                    else
+                    {
+                        if (elementAttribute.visibility == LibraryVisibility.Hidden && !Unsupported.IsDeveloperMode())
                             continue;
                     }
 
-                    // Avoid adding UI Builder's own types, even in internal mode.
-                    if (hasNamespace && type.Namespace.StartsWith("Unity.UI.Builder"))
-                        continue;
-
                     // Ignore UxmlObjects
                     if (!typeof(VisualElement).IsAssignableFrom(elementType))
-                        continue;
-
-                    // Ignore elements with HideInInspector
-                    if (elementType.GetCustomAttribute<HideInInspector>() != null)
                         continue;
 
                     // Ignore elements with generic parameters and abstract elements
@@ -149,7 +158,6 @@ namespace Unity.UI.Builder
                     shownTypes.Add(type);
 
                     string name;
-                    var elementAttribute = elementType.GetCustomAttribute<UxmlElementAttribute>();
                     if (elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.name))
                         name = elementAttribute.name;
                     else
@@ -179,13 +187,15 @@ namespace Unity.UI.Builder
 
                     CheckForUxmlElementInClassHierarchy(elementType);
 
-                    if (!hasNamespace)
+                    bool hasCustomPath = elementAttribute != null && !string.IsNullOrEmpty(elementAttribute.libraryPath);
+                    if (!hasNamespace && !hasCustomPath)
                     {
                         emptyNamespaceControls.Add(newItem);
                     }
                     else
                     {
-                        AddCategoriesToStack(sourceCategory, categoryStack, elementType.Namespace.Split('.'), "csharp-uxml-serialized-data-");
+                        var category = hasCustomPath ? elementAttribute.libraryPath.Split("/", StringSplitOptions.RemoveEmptyEntries) : elementType.Namespace.Split('.');
+                        AddCategoriesToStack(sourceCategory, categoryStack, category, "csharp-uxml-serialized-data-");
                         if (categoryStack.Count == 0)
                             sourceCategory.AddChild(newItem);
                         else

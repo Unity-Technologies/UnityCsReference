@@ -548,17 +548,10 @@ namespace UnityEditor.Search
 
             if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
             {
-                var ignoredAssemblies = new[]
-                {
-                    typeof(EditorApplication).Assembly,
-                    typeof(UnityEditorInternal.InternalEditorUtility).Assembly
-                };
                 types = TypeCache.GetTypesDerivedFrom<T>()
-                .Where(t => !t.IsGenericType)
-                .Where(t => !ignoredAssemblies.Contains(t.Assembly))
-                .Where(t => !typeof(Editor).IsAssignableFrom(t))
-                .Where(t => !typeof(EditorWindow).IsAssignableFrom(t))
-                .Where(t => t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1).ToList();
+                .Where(TypePredicate)
+                .SelectMany(t => t.GetInterfaces().Where(TypePredicate).Append(t))
+                .Distinct().ToList();
                 s_BaseTypes[typeof(T)] = types;
             }
             foreach (var t in types)
@@ -574,6 +567,20 @@ namespace UnityEditor.Search
                     icon: GetTypeIcon(t),
                     color: QueryColors.type);
             }
+        }
+
+        static Assembly[] s_IgnoredAssemblies = new[]
+        {
+            typeof(EditorApplication).Assembly,
+            typeof(UnityEditorInternal.InternalEditorUtility).Assembly
+        };
+        static bool TypePredicate(Type t)
+        {
+            return !t.IsGenericType &&
+                     !s_IgnoredAssemblies.Contains(t.Assembly) &&
+                     !typeof(Editor).IsAssignableFrom(t) &&
+                     !typeof(EditorWindow).IsAssignableFrom(t) &&
+                     t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
         }
 
         internal static SearchProposition CreateKeywordProposition(in string keyword)

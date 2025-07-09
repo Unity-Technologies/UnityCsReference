@@ -17,6 +17,9 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Encapsulates a method that has an <see cref="EventBase"/> parameter and does not return a value.
         /// </remarks>
+        /// <example>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/ButtonDoubleClickedExample.cs" />
+        /// </example>
         public event System.Action<EventBase> clickedWithEventInfo;
 
         /// <summary>
@@ -26,19 +29,7 @@ namespace UnityEngine.UIElements
         /// Encapsulates a method that has no parameters and does not return a value.
         /// </remarks>
         /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// public VisualElement CreateButton()
-        /// {
-        ///     var button = new Button { text = "Press Me" };
-        ///     button.clicked += () =>
-        ///     {
-        ///         Debug.Log("Button was pressed!");
-        ///     };
-        ///     return button;
-        /// }
-        /// ]]>
-        /// </code>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Button_clicked.cs" />
         /// </example>
         public event System.Action clicked;
 
@@ -88,6 +79,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay is greater than @@0@@.</param>
         /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval is greater than @@0@@.</param>
+        /// <example>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/ClickableEditorWindow.cs" />
+        /// </example>
         public Clickable(System.Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;
