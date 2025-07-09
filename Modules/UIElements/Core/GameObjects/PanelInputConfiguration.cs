@@ -249,12 +249,18 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal static Func<GameObject, bool> IsPartOfPrefabAsset;
         private void OnEnable()
         {
             s_ActiveInstances++;
 
+            // UUM-108797: components should be left alone during prefab editing.
+            if (IsPartOfPrefabAsset?.Invoke(gameObject) == true)
+                return;
+
             if (current != null)
             {
+                // UUM-108599: avoid disabling the component outside of play mode to not interfere with scene editing.
                 if (Application.isPlaying)
                 {
                     Debug.LogWarning("Multiple Input Configuration components active. Only one will be considered, the rest will be disabled.\nEnabled: " + current + ". Disabled: " + this + ".");
@@ -280,7 +286,8 @@ namespace UnityEngine.UIElements
 
         private void OnValidate()
         {
-            Apply(this);
+            if (current == this)
+                Apply(this);
         }
 
         static void Apply(PanelInputConfiguration input)

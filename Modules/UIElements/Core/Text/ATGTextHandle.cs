@@ -66,6 +66,19 @@ namespace UnityEngine.UIElements
             return (textInfo, true);
         }
 
+        public void CacheTextGenerationInfo()
+        {
+            if (!useAdvancedText)
+            {
+                Debug.LogError("CacheTextGenerationInfo should only be called for ATG.");
+                return;
+
+            }
+
+            if (textGenerationInfo == IntPtr.Zero)
+                textGenerationInfo = TextGenerationInfo.Create();
+        }
+
         public void ProcessMeshInfos(NativeTextInfo textInfo)
         {
             textLib.ProcessMeshInfos(textInfo, nativeSettings);

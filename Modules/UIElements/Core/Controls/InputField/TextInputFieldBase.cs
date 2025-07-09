@@ -1028,7 +1028,7 @@ namespace UnityEngine.UIElements
                    UpdateScrollOffset();
                 }
                 if (textElement.hasFocus)
-                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                    textElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
             }
 
             internal void SetMultiline()
@@ -1078,7 +1078,7 @@ namespace UnityEngine.UIElements
                     textElement.AddToClassList(innerTextElementUssClassName);
                 }
                 if (textElement.hasFocus)
-                    textElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                    textElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
             }
 
             void ScrollViewOnGeometryChangedEvent(GeometryChangedEvent e)

@@ -31,14 +31,14 @@ namespace UnityEditor
             TexDimAny = 6,
         }
 
-        [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyType", false)]
+        [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType instead.", false)]
         public enum ShaderPropertyType
         {
             Color,
             Vector,
             Float,
             Range,
-            [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType.Texture instead. (UnityUpgradable) -> UnityEngine.Rendering.ShaderPropertyType.Texture", false)]
+            [Obsolete("Use UnityEngine.Rendering.ShaderPropertyType.Texture instead.", false)]
             TexEnv,
             Int,
         }

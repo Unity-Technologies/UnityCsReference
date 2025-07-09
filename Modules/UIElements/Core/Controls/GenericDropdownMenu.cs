@@ -677,15 +677,14 @@ namespace UnityEngine.UIElements
 
                 // Ensure height is visible
                 var targetElement = m_MenuContainer.WorldToLocal(m_TargetElement.worldBound);
-                var itemHeight = m_Items[0].element.layout.height + k_MenuItemPadding;
+                var itemHeight = m_Items.Count == 0 ? k_MenuItemPadding : m_Items[0].element.layout.height + k_MenuItemPadding;
 
                 var dropdownHeight = m_OuterContainer.layout.height;
                 var targetElementTop = targetElement.y;
 
+                var topLeft = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
 
-                var TL = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
-
-                var actualTop = TL.y;
+                var actualTop = topLeft.y;
                 var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.layout.height - actualTop;
                 var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.layout.height - actualTop : targetElementTop;
 

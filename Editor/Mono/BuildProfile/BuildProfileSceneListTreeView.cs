@@ -85,7 +85,7 @@ namespace UnityEditor.Build.Profile
             // Classic platforms scene list can only be changed through this component
             // and write data directly to EditorBuildSettings.
             EditorBuildSettings.SetEditorBuildSettingsSceneIgnoreProfile(scenes);
-            if (BuildProfileContext.activeProfile is null)
+            if (BuildProfileContext.activeProfile is null || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 EditorBuildSettings.SceneListChanged();
         }
     }

@@ -18,7 +18,8 @@ namespace UnityEngine.TextCore.Text
         public int fontAssetId;
         public int textElementCount;
 
-        [Ignore] // This field must be populated on the managed side
+        // These field must be populated on the managed side
+        [Ignore]
         public FontAsset fontAsset;
 
         [Ignore]

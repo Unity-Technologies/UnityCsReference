@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.SceneManagement;
 using UnityEditor.TextCore.Text;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
@@ -55,6 +56,9 @@ namespace UnityEditor.UIElements
                 if (stateChange == PlayModeStateChange.ExitingPlayMode)
                     UIElementsRuntimeUtility.OnExitingPlayMode();
             };
+
+            PanelInputConfiguration.IsPartOfPrefabAsset = gameObject =>
+                PrefabStageUtility.GetCurrentPrefabStage() != null;
         }
 
         private static GenericOSMenu CreateGenericOSMenu()

@@ -59,7 +59,7 @@ namespace UnityEditor.UIElements.Text
                 {
                     wasInPermanentCache = m_TargetTextElement.uitkTextHandle.IsCachedPermanent;
                     if(!wasInPermanentCache)
-                        m_TargetTextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                        m_TargetTextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
                 }
 
                 DrawTextInfo();

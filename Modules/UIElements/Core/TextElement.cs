@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Collections;
 using Unity.Properties;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
@@ -182,8 +183,14 @@ namespace UnityEngine.UIElements
         }
         string GetDefaultValueType() { return string.Empty; }
 
+        /// <summary>
+        /// Callback fired after UI Toolkit has generated the vertex data for a
+        /// <see cref="TextElement"/> and before the geometry is sent to the renderer.
+        /// Use it to inspect or modify each glyph’s quad (position, tint, UVs, etc.) to
+        /// implement custom per‑glyph effects.
+        /// </summary>
+        public Action<GlyphsEnumerable> PostProcessTextVertices { get; set; }
         internal UITKTextHandle uitkTextHandle { get; set; }
-
 
         // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
         [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),

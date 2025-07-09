@@ -166,7 +166,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        public virtual void AddTextInfoToPermanentCache()
+        public virtual void AddToPermanentCacheAndGenerateMesh()
         {
             if (useAdvancedText)
             {
@@ -218,7 +218,6 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
             get
             {
-
                 if (TextInfoNode == null)
                     return textInfoCommon;
                 else
@@ -366,14 +365,14 @@ namespace UnityEngine.TextCore.Text
 
         public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             var unscaled = useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
             return PixelsToPoints(unscaled);
         }
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             var unscaled =  useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
             return PixelsToPoints(unscaled);
         }

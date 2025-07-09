@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
             }
             else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || isClicking)
             {
-                m_TextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
             }
 
             switch (evt)

@@ -77,9 +77,12 @@ internal class ATGTextJobSystem
             k_GenerateTextMarker.Begin();
             var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
             ManagedJobData managedJobData = managedJobDatas[index];
-            var ve = managedJobData.textElement;
-            var shouldGenerateNativeTextSettings = ve.computedStyle.unityFontDefinition.fontAsset != null;
-            (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
+            var te = managedJobData.textElement;
+            var shouldGenerateNativeTextSettings = te.computedStyle.unityFontDefinition.fontAsset != null;
+            if (te.PostProcessTextVertices != null)
+                te.uitkTextHandle.CacheTextGenerationInfo();
+
+            (managedJobData.textInfo, managedJobData.success) = te.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
             k_GenerateTextMarker.End();
         }
     }
@@ -139,8 +142,9 @@ internal class ATGTextJobSystem
             if (managedJobData.success)
             {
                 var textInfo = managedJobData.textInfo;
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(textInfo);
-                managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
+                var te = managedJobData.textElement;
+                te.uitkTextHandle.ProcessMeshInfos(textInfo);
+                te.uitkTextHandle.UpdateATGTextEventHandler();
 
                 // Call Texture.Apply for all texture still dirty
                 // There are no other place where we are calling this to export the texture to the gpu
@@ -155,12 +159,14 @@ internal class ATGTextJobSystem
                 FontAsset.UpdateFontAssetsInUpdateQueue();
 
                 mgc.GetTempMeshAllocator(out var alloc);
-                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, managedJobData.textElement, ref atlases, ref verticesArray, ref indicesArray, ref renderModes, ref sdfScalesArray);
+                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, te, atlases, verticesArray, indicesArray, renderModes, sdfScalesArray);
 
-                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
+                te.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(te, verticesArray, textInfo.meshInfos));
+
+                mgc.Begin(managedJobData.node.GetParentEntry(), te, te.renderData);
 
                 mgc.meshGenerator.DrawText(verticesArray, indicesArray, atlases, renderModes, sdfScalesArray);
-                managedJobData.textElement.OnGenerateTextOverNative(mgc);
+                te.OnGenerateTextOverNative(mgc);
 
                 atlases.Clear();
                 verticesArray.Clear();
@@ -179,7 +185,7 @@ internal class ATGTextJobSystem
         textJobDatasHandle.Free();
     }
 
-    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
+    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, List<Texture2D> atlases, List<NativeSlice<Vertex>> verticesArray, List<NativeSlice<ushort>> indicesArray, List<GlyphRenderMode> renderModes, List<float> sdfScales)
     {
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 

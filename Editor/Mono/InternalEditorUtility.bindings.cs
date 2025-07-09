@@ -481,7 +481,7 @@ namespace UnityEditorInternal
         [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
         extern internal static void CalculateAmbientProbeFromSkybox();
 
-        [Obsolete("SetupShaderMenu is obsolete. You can get list of available shaders with ShaderUtil.GetAllShaderInfos", true)]
+        [Obsolete("SetupShaderMenu is obsolete. You can get list of available shaders with ShaderUtil.GetAllShaderInfo", true)]
         public static void SetupShaderMenu(Material material) {}
 
         [FreeFunction("UnityConfig::GetUnityBuildFullVersion")]

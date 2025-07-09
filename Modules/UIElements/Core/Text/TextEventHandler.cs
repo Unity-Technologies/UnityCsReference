@@ -303,7 +303,7 @@ namespace UnityEngine.UIElements
                 if (linkInfo.hashCode != (int)MarkupTag.HREF)
                 {
                     hasLinkTag = true;
-                    m_TextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                    m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
                     return;
                 }
             }
@@ -326,7 +326,7 @@ namespace UnityEngine.UIElements
                 if (linkInfo.hashCode == (int)MarkupTag.HREF)
                 {
                     hasATag = true;
-                    m_TextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                    m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
                     return;
                 }
             }

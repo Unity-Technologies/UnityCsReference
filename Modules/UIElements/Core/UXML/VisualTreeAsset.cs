@@ -15,6 +15,11 @@ namespace UnityEngine.UIElements
     ///
     /// **Note**: You can't generate a `VisualTreeAsset` from raw UXML at runtime.
     /// </summary>
+    /// <example>
+    /// The following example loads a VisualTreeAsset from a UXML file in a custom Editor script.
+    /// <code source="../../Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualTreeAssetExample.cs" />
+    /// </example>
+
     [HelpURL("UIE-VisualTree-landing")]
     [Serializable]
     public class VisualTreeAsset : ScriptableObject

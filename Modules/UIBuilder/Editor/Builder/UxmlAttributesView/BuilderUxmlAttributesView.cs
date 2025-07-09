@@ -514,8 +514,8 @@ namespace Unity.UI.Builder
         public void ResetAttributesOwner()
         {
             SetAttributesOwner(null, null);
-
-            // For tests, update loops run in inversed order. Clear propertyFields to avoid tracking.
+            
+            // For tests, created attribute views are not always cleared.
             inspector.attributesSection.attributesContainer.Clear();
         }
 
@@ -2573,6 +2573,9 @@ namespace Unity.UI.Builder
 
                 prop.stringValue = evt.newValue;
                 m_CurrentElementSerializedObject.ApplyModifiedPropertiesWithoutUndo();
+                
+                // Change is added manually because input validation takes priority over tracking update.
+                inspector.batchedChangesController.AddBatchedChange(field, prop, this, uxmlDocument);
             }
             else
             {

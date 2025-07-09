@@ -1028,6 +1028,10 @@ namespace UnityEditor.Build.Profile
             container.Add(new Button(() =>
             {
                 EditorPrefs.SetInt(platformId.ToString(), 1);
+                
+                // Store the platformId to reselect this platform after recompilation
+                EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
+
                 RequestScriptCompilation(BuildProfileContext.activeProfile);
             })
             {

@@ -121,13 +121,16 @@ namespace Unity.UI.Builder
 
                 m_FieldFocusStep = value == BuilderConstants.UssSelectorClassNameSymbol ? FieldFocusStep.NeedsSelectionOverride : FieldFocusStep.Idle;
 
-                // We don't want the '.' we just inserted in the FocusEvent to be highlighted,
-                // which is the default behavior. Same goes for when we add pseudo states with options menu.
-                m_TextField.textSelection.SelectRange(value.Length, value.Length);
+                if (m_FieldFocusStep == FieldFocusStep.NeedsSelectionOverride)
+                {
+                    // We don't want the '.' we just inserted in the FocusEvent to be highlighted,
+                    // which is the default behavior. Same goes for when we add pseudo states with options menu.
+                    m_TextField.textSelection.SelectRange(value.Length, value.Length);
 
-                var pooled = ChangeEvent<string>.GetPooled(evt.previousValue, evt.newValue);
-                pooled.target = this;
-                SendEvent(pooled);
+                    var pooled = ChangeEvent<string>.GetPooled(evt.previousValue, evt.newValue);
+                    pooled.target = this;
+                    SendEvent(pooled);
+                }
             });
 
             m_TextField.RegisterCallback<KeyDownEvent>(OnEnter, TrickleDown.TrickleDown);
@@ -186,6 +189,7 @@ namespace Unity.UI.Builder
                 m_OptionsPopup.menu.AppendAction(state, a =>
                 {
                     value += a.name;
+                    m_TextField.SelectRange(value.Length, value.Length);
                 });
         }
 

@@ -37,7 +37,10 @@ namespace UnityEngine.UIElements
                 return new StartDragArgs(string.Empty, DragVisualMode.Rejected);
             }
 
-            targetView.SetSelection(recycledItem.index);
+            if (targetView.selectionType != SelectionType.None)
+            {
+                targetView.SetSelection(recycledItem.index);
+            }
 
             isDragging = true;
             m_Item = recycledItem;

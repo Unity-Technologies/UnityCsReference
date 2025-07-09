@@ -1473,6 +1473,9 @@
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextLib.bindings.cs</Link>
     </Compile>
+    <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs">
+      <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextRenderingIndices.bindings.cs</Link>
+    </Compile>
     <Compile Include="..\..\Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs">
       <Link>Modules\TextCoreTextEngine\Managed\TextGenerator\TextSelectionService.bindings.cs</Link>
     </Compile>
@@ -2909,6 +2912,9 @@
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEditingManipulator.cs">
       <Link>Modules\UIElements\Core\Text\TextEditingManipulator.cs</Link>
+    </Compile>
+    <Compile Include="..\..\Modules\UIElements\Core\Text\TextElementEnumerators.cs">
+      <Link>Modules\UIElements\Core\Text\TextElementEnumerators.cs</Link>
     </Compile>
     <Compile Include="..\..\Modules\UIElements\Core\Text\TextEventHandler.cs">
       <Link>Modules\UIElements\Core\Text\TextEventHandler.cs</Link>

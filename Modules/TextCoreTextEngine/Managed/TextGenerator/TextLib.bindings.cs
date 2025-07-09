@@ -140,5 +140,11 @@ namespace UnityEngine.TextCore.Text
         public static extern IntPtr Create();
 
         public static extern void Destroy(IntPtr ptr);
+
+        [ThreadSafe]
+        public static extern TextRenderingIndices GetTextRenderingIndices(IntPtr ptr, int glyphIndex);
+
+        [ThreadSafe]
+        public static extern int GetGlyphCount(IntPtr ptr);
     }
 }

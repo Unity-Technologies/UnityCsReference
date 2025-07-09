@@ -44,6 +44,7 @@ namespace UnityEditor
             public static GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
             public static GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
             public static GUIContent renderingLayers = EditorGUIUtility.TrTextContent("Rendering Layers");
+            public static GUIContent existingTagMessage = EditorGUIUtility.TrTextContent("Tag with \"{0}\" name already exists.");
 
             public static float elementHeight = EditorGUIUtility.singleLineHeight + 2;
             public const float headerListHeight = 3;
@@ -483,24 +484,27 @@ namespace UnityEditor
             readonly EnterDelegate m_EnterCallback;
             string m_NewTagName = "New tag";
             bool m_NeedsFocus = true;
+            readonly List<string> m_ExistingTagNames = new ();
+            private bool m_IsExistingTag;
 
             public EnterTagNamePopup(SerializedProperty tags, EnterDelegate callback)
             {
                 m_EnterCallback = callback;
 
-                var existingTagNames = new List<string>();
+                m_ExistingTagNames.Clear();
                 for (var i = 0; i < tags.arraySize; i++)
                 {
                     var tagName = tags.GetArrayElementAtIndex(i).stringValue;
                     if (!string.IsNullOrEmpty(tagName))
-                        existingTagNames.Add(tagName);
+                        m_ExistingTagNames.Add(tagName);
                 }
 
-                m_NewTagName = ObjectNames.GetUniqueName(existingTagNames.ToArray(), m_NewTagName);
+                m_NewTagName = ObjectNames.GetUniqueName(m_ExistingTagNames.ToArray(), m_NewTagName);
             }
 
+            // One line for text field, one for the button, and two for HelpBox
             public override Vector2 GetWindowSize() =>
-                new(400, EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + 14);
+                new(400, EditorGUI.kSingleLineHeight * (m_IsExistingTag? 4 : 2) + EditorGUI.kControlVerticalSpacing + 14);
 
             public override void OnGUI(Rect windowRect)
             {
@@ -508,7 +512,19 @@ namespace UnityEditor
                 var evt = Event.current;
                 var hitEnter = evt.type == EventType.KeyDown && evt.keyCode is KeyCode.Return or KeyCode.KeypadEnter;
                 GUI.SetNextControlName("TagName");
+
+                // If on previous OnGUI there was attempt saving existing name, show error until name is changed
+                EditorGUI.BeginChangeCheck();
                 m_NewTagName = EditorGUILayout.TextField("New Tag Name", m_NewTagName);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_IsExistingTag = false;
+                }
+
+                if (m_IsExistingTag)
+                {
+                    EditorGUILayout.HelpBox(string.Format(Styles.existingTagMessage.text, m_NewTagName), MessageType.Error);
+                }
 
                 if (m_NeedsFocus)
                 {
@@ -520,6 +536,13 @@ namespace UnityEditor
                 var savePressed = GUILayout.Button("Save");
                 if (string.IsNullOrWhiteSpace(m_NewTagName) || (!savePressed && !hitEnter))
                     return;
+
+                if (m_ExistingTagNames.Contains(m_NewTagName))
+                {
+                    m_IsExistingTag = true;
+                    return;
+                }
+
                 m_EnterCallback(m_NewTagName);
                 editorWindow.Close();
             }

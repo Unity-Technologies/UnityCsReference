@@ -83,11 +83,19 @@ namespace UnityEngine.UIElements
 
         public void ComputeSettingsAndUpdate()
         {
-            UpdateMesh();
+            if (useAdvancedText)
+            {
+                UpdateNative();
+                UpdateATGTextEventHandler();
+            }
+            else
+            {
+                UpdateMesh();
 
-            HandleATag();
-            HandleLinkTag();
-            HandleLinkAndATagCallbacks();
+                HandleATag();
+                HandleLinkTag();
+                HandleLinkAndATagCallbacks();
+            }
         }
 
         public void HandleATag()
@@ -120,19 +128,18 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public override void AddTextInfoToPermanentCache()
+        public override void AddToPermanentCacheAndGenerateMesh()
         {
             if (useAdvancedText)
             {
-                if (textGenerationInfo == IntPtr.Zero)
-                    textGenerationInfo = TextGenerationInfo.Create();
+                CacheTextGenerationInfo();
                 UpdateNative();
                 UpdateATGTextEventHandler();
                 return;
             }
 
             if (ConvertUssToTextGenerationSettings(populateScreenRect: true))
-                base.AddTextInfoToPermanentCache();
+                base.AddToPermanentCacheAndGenerateMesh();
         }
 
         TextOverflowMode GetTextOverflowMode()

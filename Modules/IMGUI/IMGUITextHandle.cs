@@ -152,7 +152,7 @@ namespace UnityEngine
         //Width is in saled pixels
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
@@ -173,7 +173,7 @@ namespace UnityEngine
 
         public Rect[] GetHyperlinkRects(Rect content)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
 
             List<Rect> rects = new List<Rect>();
             var scaleinv = 1/ GetPixelsPerPoint();

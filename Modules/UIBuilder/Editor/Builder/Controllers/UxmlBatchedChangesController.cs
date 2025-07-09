@@ -91,13 +91,14 @@ internal class UxmlBatchedChangesController: IDisposable
     }
 
     /// <summary>
-    /// Used to add the uxml change to a batched list after transformation. To call this method, instead use <see cref="TrackPropertyValue"/>.
+    /// Used to add the uxml change to a batched list after transformation. To call this method, instead use <see cref="TrackPropertyValue"/>,
+    /// unless input validation is invoked on a callback.
     /// </summary>
     /// <param name="obj">Typically a field element.</param>
     /// <param name="property">The targeted property on the listener's current element</param>
     /// <param name="listener">Typically a <see cref="BuilderUxmlAttributesView"/> that is responsible for creating the field</param>
     /// <param name="uxmlDocument">The uxml document currently being edited by the listener</param>
-    private void AddBatchedChange(object obj, SerializedProperty property, IBatchedUxmlChangesListener listener, VisualTreeAsset uxmlDocument = null)
+    public void AddBatchedChange(object obj, SerializedProperty property, IBatchedUxmlChangesListener listener, VisualTreeAsset uxmlDocument = null)
     {
         if (obj is not VisualElement target)
             return;
