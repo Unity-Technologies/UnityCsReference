@@ -1210,9 +1210,6 @@
     <Compile Include="..\..\Editor\Mono\GUI\EditorStyles.cs">
       <Link>Editor\Mono\GUI\EditorStyles.cs</Link>
     </Compile>
-    <Compile Include="..\..\Editor\Mono\GUI\EditorUpdateWindow.cs">
-      <Link>Editor\Mono\GUI\EditorUpdateWindow.cs</Link>
-    </Compile>
     <Compile Include="..\..\Editor\Mono\GUI\ExposablePopupMenu.cs">
       <Link>Editor\Mono\GUI\ExposablePopupMenu.cs</Link>
     </Compile>
