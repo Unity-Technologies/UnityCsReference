@@ -341,6 +341,17 @@ namespace UnityEditor
             return (T)LoadAssetAtPath(assetPath, typeof(T));
         }
 
+        [NativeThrows]
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
+        extern public static Object LoadAssetByGUID(GUID assetGUID, Type type);
+
+        public static T LoadAssetByGUID<T>(GUID assetGUID) where T : Object
+        {
+            return (T)LoadAssetByGUID(assetGUID, typeof(T));
+        }
+        
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object LoadMainAssetAtPath(string assetPath);
 

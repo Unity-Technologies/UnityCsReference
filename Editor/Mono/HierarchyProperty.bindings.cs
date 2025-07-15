@@ -46,6 +46,7 @@ namespace UnityEditor
         int row { get; }
         int colorCode { get; }
         string guid { get; }
+        GUID assetGUID { get; }
         Texture2D icon { get; }
         bool isValid { get; }
         bool isMainRepresentation { get; }
@@ -156,6 +157,7 @@ namespace UnityEditor
         public bool IsExpanded(int[] expanded) => IsExpanded_internal(expanded, expanded != null && expanded.Length == 0);
 
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
+        public extern GUID assetGUID { [FreeFunction("HierarchyPropertyBindings::GetAssetGUID", HasExplicitThis = true)] get; }
         public extern bool alphaSorted { [NativeName("IsAlphaSorted")] get; set; }
         public extern bool showSceneHeaders { [NativeName("IsShowingSceneHeaders")] get; [NativeName("SetShowingSceneHeaders")] set; }
         public extern bool isSceneHeader { [NativeName("IsSceneHeader")] get; }

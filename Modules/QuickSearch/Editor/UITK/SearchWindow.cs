@@ -415,7 +415,8 @@ namespace UnityEditor.Search
             viewState.flags &= ~SearchViewFlags.ContextSwitchPreservedMask;
             viewState.flags |= preservedViewFlags;
             viewState.queryBuilderEnabled = queryBuilderEnabled;
-            itemIconSize = viewState.itemSize;
+            m_SearchView.UpdateViewAndEmitDisplayModeChange();
+
             if (!viewState.hideTabs && !string.IsNullOrEmpty(viewState.group))
                 SelectGroup(viewState.group);
 

@@ -44,6 +44,8 @@ namespace UnityEngine
         }
         [NativeName("ResetWorldAABB")] extern public void ResetBounds();
         [NativeName("ResetLocalAABB")] extern public void ResetLocalBounds();
+        [NativeName("HasCustomWorldAABB")] extern internal bool Internal_HasCustomBounds();
+        [NativeName("HasCustomLocalAABB")] extern internal bool Internal_HasCustomLocalBounds();
 
         [FreeFunction(Name = "RendererScripting::SetStaticLightmapST", HasExplicitThis = true)] extern private void SetStaticLightmapST(Vector4 st);
 

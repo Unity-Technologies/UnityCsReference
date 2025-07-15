@@ -2602,6 +2602,7 @@ namespace UnityEditor
             sceneViewGrids.UpdateGridColor();
 
             Color origColor = GUI.color;
+            var origLabelWidth = EditorGUIUtility.labelWidth;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraViewport;
 
@@ -2781,6 +2782,9 @@ namespace UnityEditor
 
             GUI.EndGroup();
             GUI.color = origColor;
+
+            // Reset label width (UUM-110450)
+            EditorGUIUtility.labelWidth = origLabelWidth;
 
             EndWindows();
 
