@@ -1009,7 +1009,12 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             if (visibleAndSelectedItem != null && data.IsRenamingItemAllowed(visibleAndSelectedItem))
+            {
+                if (m_GUIView != null && !m_GUIView.hasFocus)
+                    m_GUIView.Focus();
+
                 return gui.BeginRename(visibleAndSelectedItem, delay);
+            }
 
             return false;
         }

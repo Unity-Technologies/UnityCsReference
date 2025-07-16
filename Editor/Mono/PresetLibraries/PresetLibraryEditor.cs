@@ -21,6 +21,7 @@ namespace UnityEditor
         public Vector2 m_ScrollPosition;
         public string m_CurrrentLibrary = PresetLibraryLocations.defaultPresetLibraryPath;
         public int m_HoverIndex = -1;
+        [SerializeField]
         public RenameOverlay m_RenameOverlay = new RenameOverlay();
         public string m_Prefix;
 

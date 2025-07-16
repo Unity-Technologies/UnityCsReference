@@ -540,6 +540,11 @@ namespace UnityEditor
                 if (m_ExistingTagNames.Contains(m_NewTagName))
                 {
                     m_IsExistingTag = true;
+
+                    // Hitting enter won't repaint the window, we need to do it manually
+                    if(hitEnter)
+                        editorWindow.RepaintImmediately();
+
                     return;
                 }
 

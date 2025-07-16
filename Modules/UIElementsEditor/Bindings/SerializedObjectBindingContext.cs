@@ -114,7 +114,9 @@ internal class SerializedObjectBindingContext
             {
                 return;
             }
-            element.SetProperty(FindContextPropertyKey, null);
+
+            element.ClearProperty(FindContextPropertyKey);
+            element.ClearProperty(BaseField<string>.serializedPropertyCopyName);
         }
 
         var serializedObjectBinding = element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase;

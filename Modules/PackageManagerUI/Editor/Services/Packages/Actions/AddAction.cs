@@ -41,7 +41,7 @@ internal class AddAction : PackageAction
         IPackage[] packagesToUninstall = null;
         if (version.HasTag(PackageTag.Feature))
         {
-            var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version, true);
+            var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(version);
             if (customizedDependencies.Any())
             {
                 var packageNameAndVersions = string.Join("\n\u2022 ",

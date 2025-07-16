@@ -257,17 +257,22 @@ namespace UnityEditor.Search
             UpdatePreviewManagerCacheSize();
         }
 
+        internal void UpdateViewAndEmitDisplayModeChange()
+        {
+            if (!UpdateView())
+            {
+                // Still report item size changes even if the view didn't change
+                EmitDisplayModeChanged();
+            }
+        }
+
         private void SetItemSize(float value)
         {
             if (viewState.itemSize == value)
                 return;
 
             viewState.itemSize = value;
-            if (!UpdateView())
-            {
-                // Still report item size changes even if the view didn't change
-                EmitDisplayModeChanged();
-            }
+            UpdateViewAndEmitDisplayModeChange();
         }
 
         private void EmitDisplayModeChanged()

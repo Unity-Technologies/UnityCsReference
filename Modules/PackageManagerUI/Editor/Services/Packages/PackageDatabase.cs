@@ -25,7 +25,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         void GetPackageAndVersion(DependencyInfo info, out IPackage package, out IPackageVersion version);
         IEnumerable<IPackageVersion> GetDirectReverseDependencies(IPackageVersion version);
         IEnumerable<IPackageVersion> GetFeaturesThatUseThisPackage(IPackageVersion version);
-        IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null);
+        IPackage[] GetCustomizedDependencies(IPackageVersion version);
         IEnumerable<Sample> GetSamples(IPackageVersion version);
         void OnPackagesModified(IList<IPackage> modified, bool isProgressUpdated = false);
         void UpdatePackages(IList<IPackage> toAddOrUpdate = null, IList<string> toRemove = null);
@@ -183,14 +183,10 @@ namespace UnityEditor.PackageManager.UI.Internal
             return installedFeatures.Where(f => f.dependencies?.Any(r => r.name == version.name) ?? false);
         }
 
-        public IPackage[] GetCustomizedDependencies(IPackageVersion version, bool? rootDependenciesOnly = null)
+        public IPackage[] GetCustomizedDependencies(IPackageVersion version)
         {
             return version?.dependencies?.Select(d => GetPackage(d.name)).Where(p =>
-            {
-                var installed = p?.versions.installed;
-                return installed != null && p.versions.recommended?.isInstalled == false
-                       && (rootDependenciesOnly == null || installed.isDirectDependency == rootDependenciesOnly);
-            }).ToArray() ?? new IPackage[0];
+                p?.versions.installed is { isDirectDependency: true } && p.versions.recommended?.isInstalled == false).ToArray() ?? Array.Empty<IPackage>();
         }
 
         public IEnumerable<Sample> GetSamples(IPackageVersion version)

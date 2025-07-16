@@ -1206,11 +1206,10 @@ namespace UnityEditor
 
         private void SetColor(Color c)
         {
-
             m_Color.SetColorChannelHdr(RgbaChannel.R, c.r);
             m_Color.SetColorChannelHdr(RgbaChannel.G, c.g);
             m_Color.SetColorChannelHdr(RgbaChannel.B, c.b);
-            m_Color.SetColorChannelHdr(RgbaChannel.B, c.a);
+            m_Color.SetColorChannelHdr(RgbaChannel.A, c.a);
 
             OnColorChanged();
             Repaint();

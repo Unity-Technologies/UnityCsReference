@@ -187,7 +187,7 @@ namespace UnityEditor
         {
             if (isLocked)
                 return;
-        
+
             RebuildContentsContainers();
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
@@ -392,28 +392,15 @@ namespace UnityEditor
             if (previewWindow == null)
                 return;
 
-            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-            var previewContainer = m_SplitView.Q(s_PreviewContainer);
-
             previewWindow.ClearEllipsisMenu();
             previewWindow.AppendActionToEllipsisMenu(
                 "Convert to Floating Window",
                 (e) =>
                 {
                     if (m_PreviewWindow == null)
-                    {
                         PopupPreviewWindow();
-
-                        previewContainer.style.display = DisplayStyle.None;
-                        draglineAnchor.style.display = DisplayStyle.None;
-                    }
                     else
-                    {
                         DockPreviewWindow();
-
-                        previewContainer.style.display = DisplayStyle.Flex;
-                        draglineAnchor.style.display = DisplayStyle.Flex;
-                    }
                 },
                 a => DropdownMenuAction.Status.Normal);
 
@@ -426,7 +413,7 @@ namespace UnityEditor
                 a => !showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
             );
 
-            draglineAnchor.RegisterCallback<PointerUpEvent>(OnDraglineChange);
+            m_SplitView.Q(s_draglineAnchor).RegisterCallback<PointerUpEvent>(OnDraglineChange);
         }
 
         void OnDraglineChange(PointerUpEvent evt)
@@ -441,11 +428,27 @@ namespace UnityEditor
         {
             DetachPreview(exitGUI);
             previewWindow.parent?.Remove(previewWindow);
+
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView.Q(s_PreviewContainer);
+
+            if (previewContainer != null)
+                previewContainer.style.display = DisplayStyle.None;
+            if (draglineAnchor != null)
+                draglineAnchor.style.display = DisplayStyle.None;
         }
 
         void DockPreviewWindow()
         {
             m_PreviewWindow?.Close();
+
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView.Q(s_PreviewContainer);
+
+            if (previewContainer != null)
+                previewContainer.style.display = DisplayStyle.Flex;
+            if (draglineAnchor != null)
+                draglineAnchor.style.display = DisplayStyle.Flex;
         }
 
         private void DetachPreview(bool exitGUI = true)

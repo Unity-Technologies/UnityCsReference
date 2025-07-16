@@ -28,7 +28,7 @@ internal class ResetAction : PackageAction
 
     protected override bool TriggerActionImplementation(IPackageVersion version)
     {
-        var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version, true);
+        var packagesToUninstall = m_PackageDatabase.GetCustomizedDependencies(version);
         if (!packagesToUninstall.Any())
             return false;
 
@@ -56,11 +56,8 @@ internal class ResetAction : PackageAction
 
     public override bool IsVisible(IPackageVersion version)
     {
-        var installed = version?.package.versions.installed;
-        return installed != null
-               && installed == version
+        return version.isInstalled
                && version.HasTag(PackageTag.Feature)
-               && !version.HasTag(PackageTag.Custom)
                && m_PackageDatabase.GetCustomizedDependencies(version).Any();
     }
 

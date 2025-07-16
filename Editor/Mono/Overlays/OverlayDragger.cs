@@ -212,18 +212,17 @@ namespace UnityEditor.Overlays
 
             m_Overlay.BringToFront();
 
+            UpdateLayout(e.mousePosition);
+
             m_Active = true;
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.CaptureMouse();
             e.StopPropagation();
         }
 
-        void OnMouseMove(MouseMoveEvent e)
+        bool UpdateLayout(Vector2 mousePosition)
         {
-            if (!m_Active)
-                return;
-
-            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
+            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(mousePosition, canvas.rootVisualElement.worldBound);
 
             var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(constrainedMousePosition);
             var targetContainer = dropZone != null ? dropZone.targetContainer : null;
@@ -237,6 +236,19 @@ namespace UnityEditor.Overlays
                 if (m_Overlay.activeLayout != prevLayout)
                     delayPositionUpdate = true;
             }
+
+            return delayPositionUpdate;
+        }
+
+        void OnMouseMove(MouseMoveEvent e)
+        {
+            if (!m_Active)
+                return;
+
+            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
+            var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(constrainedMousePosition);
+
+            bool delayPositionUpdate = UpdateLayout(e.mousePosition);
 
             var diff = (constrainedMousePosition - (!m_WasCollapsed && m_Overlay.collapsed ? m_StartLeftCornerPosition : m_StartMousePosition));
             var targetPosition = m_InitialLayoutPosition + diff;

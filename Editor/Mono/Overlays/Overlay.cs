@@ -627,14 +627,14 @@ namespace UnityEditor.Overlays
 
         void UpdateHeaderFoldout()
         {
-            // Folded styling should only be applied if the overlay is not collapsed.
-            bool isFolded = folded && !collapsed;
+            // Folded styling should only be applied if the overlay is neither collapsed, nor being docked.
+            bool needsFoldedStyling = folded && !collapsed && m_ActiveLayout == Layout.Panel;
             m_ToggleElement.SetValueWithoutNotify(!folded);
             var foldoutContent = m_RootVisualElement.Q("overlay-content");
             if (foldoutContent == null)
                 return;
-            foldoutContent.EnableInClassList(k_UnfoldedContent, !isFolded);
-            foldoutContent.EnableInClassList(k_FoldedContent, isFolded);
+            foldoutContent.EnableInClassList(k_UnfoldedContent, !needsFoldedStyling);
+            foldoutContent.EnableInClassList(k_FoldedContent, needsFoldedStyling);
             UpdateSize();
         }
 

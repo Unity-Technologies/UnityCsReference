@@ -228,7 +228,6 @@ namespace UnityEditor.Overlays
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
-        internal const int k_OverlayMinVisibleArea = 24;
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarArea = "overlay-toolbar-area";
@@ -264,7 +263,7 @@ namespace UnityEditor.Overlays
                     return (DockZone)i;
             return DockZone.Floating;
         }
-        
+
         // used by tests
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal OverlayContainer GetDockZoneContainer(DockZone zone)
@@ -294,7 +293,7 @@ namespace UnityEditor.Overlays
 
         [SerializeField]
         bool m_OverlaysVisible = true;
-        
+
         bool m_OverlaysSupportEnabled = true;
 
         VisualElement m_RootVisualElement;
@@ -519,7 +518,7 @@ namespace UnityEditor.Overlays
                     overlayCanvasesData.AddAndSaveCanvasData(containerWindow, m_SaveData);
                 }
             }
-            
+
             foreach (var overlay in m_Overlays)
                 overlay.OnWillBeDestroyed();
         }
@@ -540,26 +539,16 @@ namespace UnityEditor.Overlays
             m_MouseInCurrentCanvas = false;
         }
 
-        Rect GetBoundaryRect()
-        {
-            var rect = rootVisualElement.localBound;
-            rect.xMin += k_OverlayMinVisibleArea;
-            rect.yMin += k_OverlayMinVisibleArea;
-            rect.xMax -= k_OverlayMinVisibleArea;
-            rect.yMax -= k_OverlayMinVisibleArea;
-            return rect;
-        }
-
         // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
         internal Rect EnsureOverlapsWindow(Rect rect)
         {
-            return OverlayUtilities.EnsureRectOverlapsRect(rect, GetBoundaryRect());
+            return OverlayUtilities.EnsureRectOverlapsRect(rect, rootVisualElement.localBound);
         }
 
         // This ensure the given rect is fully within the window (unless the window is smaller then the rect)
         internal Rect ClampToWindow(Rect rect)
         {
-            return OverlayUtilities.ClampRectToRect(rect, GetBoundaryRect());
+            return OverlayUtilities.ClampRectToRect(rect, rootVisualElement.localBound);
         }
 
         // clamp all overlays to  root visual element's new bounds
@@ -623,13 +612,13 @@ namespace UnityEditor.Overlays
             // init all overlays
             foreach (var overlayType in overlayTypes)
                 AddOverlay(OverlayUtilities.CreateOverlay(overlayType));
-            
+
             // No save data deserialized from layout or this is a new instance
             if (m_SaveData == null || m_SaveData.Count < 1)
             {
                 var containerTypeWindows = Resources.FindObjectsOfTypeAll(containerWindow.GetType());
                 var overlayCanvasesData = OverlayCanvasesData.instance;
-                
+
                 // If our container is not the first instance of its type (i.e. container window is duplicate),
                 // we want to "inherit" overlay save data from the last focused overlay canvas.
                 if (containerTypeWindows.Length > 1 && overlayCanvasesData.TryGetLastActiveCanvasForWindowType(containerWindow, out var lastActiveCanvas))

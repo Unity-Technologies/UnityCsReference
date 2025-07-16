@@ -774,6 +774,9 @@ namespace UnityEngine.UIElements
                     UpdateMixedValueContent();
 
                 UpdatePlaceholderClassList();
+
+                // Scroll to the beginning when focus is lost (UUM-73005)
+                textInputBase.UpdateScrollOffset();
             }
         }
 
@@ -1162,6 +1165,10 @@ namespace UnityEngine.UIElements
             Vector2 lastCursorPos = Vector2.zero;
             Vector2 GetScrollOffset(float xOffset, float yOffset, float contentViewportWidth, bool isBackspace, bool widthChanged)
             {
+                // Scroll to the beginning when focus is lost (UUM-73005)
+                if (!textElement.hasFocus)
+                    return Vector2.zero;
+
                 var cursorPos = textSelection.cursorPosition;
                 var cursorWidth = textSelection.cursorWidth;
 

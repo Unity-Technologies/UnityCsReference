@@ -418,7 +418,7 @@ namespace UnityEditor.Search
             viewState.queryBuilderEnabled = queryBuilderEnabled;
 
             // TODO Optim: this might rebuild the table + RefreshViewContent
-            itemIconSize = viewState.itemSize;
+            m_SearchView.UpdateViewAndEmitDisplayModeChange();
 
             // TODO Optim: Set the context. This will trigger a synchronous: SearchView.Refresh which in turn can do *multiple*
             //      SearchView.fetchItems, SearchView.RefreshContent, SearchView.DisplayModeChhange, other SearchView.Refresh, BuildColumns

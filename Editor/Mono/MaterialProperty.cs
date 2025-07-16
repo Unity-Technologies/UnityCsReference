@@ -485,6 +485,7 @@ namespace UnityEditor
                             target.RevertPropertyOverride(prop.name);
                         foreach (var prop in capturedSerializedProperties)
                             target.RevertPropertyOverride(prop);
+                        ShaderGUIUtility.ValidateMaterial(target);
                     }
                 });
             }
@@ -520,7 +521,10 @@ namespace UnityEditor
                                 Undo.RecordObjects(targets, "Revert all overrides of " + targetName);
 
                                 foreach (Material target in targets)
-                                target.RevertAllPropertyOverrides();
+                                {
+                                    target.RevertAllPropertyOverrides();
+                                    ShaderGUIUtility.ValidateMaterial(target);
+                                }
                                 });
                         break;
                     }
