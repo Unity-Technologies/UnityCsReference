@@ -67,9 +67,24 @@ namespace UnityEditor
             if (!HasChildren(gameObjects))
                 return ShouldIncludeChildren.HasNoChildren;
 
-            return
-                (ShouldIncludeChildren)
-                EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Yes, change children"), L10n.Tr("No, this object only"), L10n.Tr("Cancel"));
+            var result = EditorDialog.DisplayComplexDecisionDialog(
+                title,
+                message,
+                L10n.Tr("Yes, change children"),
+                L10n.Tr("No, this object only"),
+                L10n.Tr("Cancel"));
+
+            switch (result)
+            {
+                case DialogResult.DefaultAction:
+                    return ShouldIncludeChildren.IncludeChildren;
+                case DialogResult.AlternateAction:
+                    return ShouldIncludeChildren.DontIncludeChildren;
+                default:
+                    break;
+            }
+
+            return ShouldIncludeChildren.Cancel;
         }
 
         public static void SetParentAndAlign(GameObject child, GameObject parent)

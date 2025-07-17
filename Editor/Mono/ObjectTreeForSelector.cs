@@ -8,6 +8,10 @@ using System.Text;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Events;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<UnityEngine.EntityId>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<UnityEngine.EntityId>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<UnityEngine.EntityId>;
+
 
 namespace UnityEditor
 {
@@ -31,7 +35,7 @@ namespace UnityEditor
         TreeViewController m_TreeView;
         TreeViewState m_TreeViewState;
         int m_ErrorCounter;
-        int m_OriginalSelectedID;
+        EntityId m_OriginalSelectedID;
         int m_UserData;
         int m_LastSelectedID = -1;
         string m_SelectedPath = "";
@@ -120,12 +124,12 @@ namespace UnityEditor
             m_Debounce = null;
         }
 
-        public int[] GetSelection()
+        public EntityId[] GetSelection()
         {
             if (m_TreeView != null)
                 return m_TreeView.GetSelection();
 
-            return new int[0];
+            return new EntityId[0];
         }
 
         public void SetSearchFilter(string searchString)
@@ -134,7 +138,7 @@ namespace UnityEditor
             m_Debounce.Execute();
         }
 
-        public void SetSelection(int[] selectedIDs)
+        public void SetSelection(EntityId[] selectedIDs)
         {
             m_TreeView.SetSelection(selectedIDs, false);
         }
@@ -245,13 +249,13 @@ namespace UnityEditor
                 GUI.Label(bottomRect, GUIContent.Temp(m_SelectedPath), EditorStyles.miniLabel);
         }
 
-        private void OnItemDoubleClicked(int id)
+        private void OnItemDoubleClicked(EntityId id)
         {
             if (m_DoubleClickedEvent != null)
                 m_DoubleClickedEvent.Invoke();
         }
 
-        private void OnItemSelectionChanged(int[] selection)
+        private void OnItemSelectionChanged(EntityId[] selection)
         {
             if (m_SelectionEvent != null)
             {

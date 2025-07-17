@@ -11,7 +11,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     using GenericInstanceTypeMap = System.Collections.Generic.Dictionary<TypeReference, TypeReference>;
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/Public/TypeDB.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct FieldInfoManaged
@@ -23,7 +23,7 @@ namespace UnityEditor
         public string fixedBufferTypename;
     }
 
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/Public/TypeDB.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct TypeInformationManaged
@@ -32,7 +32,7 @@ namespace UnityEditor
         public FieldInfoManaged[] fieldInfos;
     }
 
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
+    [NativeHeader("Modules/ContentBuild/Editor/Public/TypeDB.h")]
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     internal struct AssemblyInfoManaged

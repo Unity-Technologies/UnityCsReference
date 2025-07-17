@@ -13,6 +13,10 @@ namespace UnityEditor
         private static Texture2D iconKey;
         private static Texture2D iconCurve;
 
+        static readonly PrefColor kEulerXColor = new PrefColor("Animation/EulerX", 1.0f, 0.0f, 1.0f, 1.0f);
+        static readonly PrefColor kEulerYColor = new PrefColor("Animation/EulerY", 1.0f, 1.0f, 0.0f, 1.0f);
+        static readonly PrefColor kEulerZColor = new PrefColor("Animation/EulerZ", 0.0f, 1.0f, 1.0f, 1.0f);
+
         public static Texture2D GetIconCurve()
         {
             if (iconCurve == null)
@@ -118,14 +122,14 @@ namespace UnityEditor
             curve.MoveKey(keyIndex, key);
         }
 
-        static public string GetClipName(AnimationClip clip)
+        static public string GetClipName(IAnimationWindowClip clip)
         {
-            if (clip == null)
+            if (!clip?.isValid ?? true)
                 return "[No Clip]";
 
             string name = clip.name;
 
-            if ((clip.hideFlags & HideFlags.NotEditable) != 0)
+            if (clip.isReadOnly)
                 name += " (Read-Only)";
 
             return name;
@@ -157,9 +161,9 @@ namespace UnityEditor
             }
             else if (type == 2)
             {
-                if (name.EndsWith(".x")) col = AnimEditor.kEulerXColor;
-                else if (name.EndsWith(".y")) col = AnimEditor.kEulerYColor;
-                else if (name.EndsWith(".z")) col = AnimEditor.kEulerZColor;
+                if (name.EndsWith(".x")) col = kEulerXColor;
+                else if (name.EndsWith(".y")) col = kEulerYColor;
+                else if (name.EndsWith(".z")) col = kEulerZColor;
             }
             else if (type == 3)
             {

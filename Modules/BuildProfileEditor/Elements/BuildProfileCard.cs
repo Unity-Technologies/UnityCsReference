@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Modules;
+using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 
 namespace UnityEditor.Build.Profile.Elements
 {
@@ -21,9 +22,15 @@ namespace UnityEditor.Build.Profile.Elements
 
         public string description { get; set; }
 
-        public string[] recommendedPackages { get; set; }
+        /// <summary>
+        /// List of Unity-maintained required and recommended packages for a platform.
+        /// </summary>
+        public PlatformPackageList internalPackages { get; set; }
 
-        public string[] requiredPackages { get; set; }
+        /// <summary>
+        /// List of Partner-maintained required and recommended packages for a platform.
+        /// </summary>
+        public PlatformPackageList partnerPackages { get; set; }
 
         public PreconfiguredSettingsVariant[] preconfiguredSettingsVariants { get; set; }
 
@@ -31,8 +38,8 @@ namespace UnityEditor.Build.Profile.Elements
         {
             displayName = string.Empty;
             platformId = new GUID(string.Empty);
-            recommendedPackages = Array.Empty<string>();
-            requiredPackages = Array.Empty<string>();
+            internalPackages = new PlatformPackageList();
+            partnerPackages = new PlatformPackageList();
             preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
             description = string.Empty;
         }

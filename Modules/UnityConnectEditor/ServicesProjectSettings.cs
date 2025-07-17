@@ -1077,8 +1077,6 @@ namespace UnityEditor.Connect
             const string k_LatestVersionInfo = "LatestVersionInfo";
             const string k_InstallLatestVersion = "InstallLatestVersion";
             const string k_SameVersionInfo = "SameVersionInfo";
-            const string k_ChoiceYes = "Yes";
-            const string k_ChoiceNo = "No";
             const string k_NotApplicable = "N/A";
 
             // UIElements For the related package messages
@@ -1309,8 +1307,11 @@ namespace UnityEditor.Connect
             {
                 if (!m_InstallingNewPackage)
                 {
-                    if (EditorUtility.DisplayDialog(L10n.Tr(packageInstallationDialogTitle), messageForDialog,
-                        L10n.Tr(k_ChoiceYes), L10n.Tr(k_ChoiceNo)))
+                    if (EditorDialog.DisplayDecisionDialog(
+                        titleText: L10n.Tr(packageInstallationDialogTitle),
+                        messageText: messageForDialog,
+                        yesButtonText: default,
+                        noButtonText: default))
                     {
                         m_InstallingNewPackage = true;
                         m_AddRequest = Client.Add(provider.serviceInstance.packageName + "@" + installPackageVersion);

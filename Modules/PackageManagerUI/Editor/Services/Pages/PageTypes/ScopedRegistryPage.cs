@@ -24,6 +24,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         public override string id => GetIdFromRegistry(m_RegistryInfo);
         public override string displayName => m_RegistryInfo.name;
 
+        public override Icon icon => m_RegistryInfo.compliance.status switch
+        {
+            RegistryComplianceStatus.NonCompliant => Icon.Error,
+            _ => Icon.MyRegistriesPage
+        };
+
         [NonSerialized]
         private IUpmCache m_UpmCache;
         public void ResolveDependencies(IPackageDatabase packageDatabase, IUpmCache upmCache)

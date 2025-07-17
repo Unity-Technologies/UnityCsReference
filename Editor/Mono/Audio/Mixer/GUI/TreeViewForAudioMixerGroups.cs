@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Audio;
 
+
 namespace UnityEditor
 {
     internal static class TreeViewForAudioMixerGroup
@@ -18,7 +19,7 @@ namespace UnityEditor
             var ignoreController = InternalEditorUtility.GetObjectFromInstanceID(data.userData) as AudioMixerController;
 
             // Create treeview
-            var treeView = new TreeViewController(data.editorWindow, data.state);
+            var treeView = new TreeViewController<EntityId>(data.editorWindow, data.state);
             var treeGui = new GroupTreeViewGUI(treeView);
             var dataSource = new TreeViewDataSourceForMixers(treeView, ignoreController);
             dataSource.onVisibleRowsChanged += treeGui.CalculateRowRects;
@@ -29,12 +30,12 @@ namespace UnityEditor
             data.objectTreeForSelector.SetTreeView(treeView);
         }
 
-        static readonly int kNoneItemID = 0;
+        static readonly EntityId kNoneItemID = EntityId.None;
         static string s_NoneText = "None";
 
         // GUI
 
-        class GroupTreeViewGUI : TreeViewGUI
+        class GroupTreeViewGUI : TreeViewGUI<EntityId>
         {
             private readonly Texture2D k_AudioGroupIcon = EditorGUIUtility.FindTexture(typeof(AudioMixerGroup));
             private readonly Texture2D k_AudioListenerIcon = EditorGUIUtility.FindTexture(typeof(AudioListener));
@@ -44,7 +45,7 @@ namespace UnityEditor
 
             private List<Rect> m_RowRects = new List<Rect>();
 
-            public GroupTreeViewGUI(TreeViewController treeView) : base(treeView)
+            public GroupTreeViewGUI(TreeViewController<EntityId> treeView) : base(treeView)
             {
             }
 
@@ -61,7 +62,7 @@ namespace UnityEditor
                 return m_RowRects[row];
             }
 
-            public override void OnRowGUI(Rect rowRect, TreeViewItem item, int row, bool selected, bool focused)
+            public override void OnRowGUI(Rect rowRect, TreeViewItem<EntityId> item, int row, bool selected, bool focused)
             {
                 // Use normal line height when searching (its just a list)
                 if (m_TreeView.isSearching)
@@ -80,7 +81,7 @@ namespace UnityEditor
                 }
             }
 
-            protected override Texture GetIconForItem(TreeViewItem item)
+            protected override Texture GetIconForItem(TreeViewItem<EntityId> item)
             {
                 if (item != null)
                 {
@@ -105,7 +106,7 @@ namespace UnityEditor
             // ------------------
             // Size section
 
-            private bool IsController(TreeViewItem item)
+            private bool IsController(TreeViewItem<EntityId> item)
             {
                 return (item.parent == m_TreeView.data.root) && (item.id != kNoneItemID);
             }
@@ -147,7 +148,7 @@ namespace UnityEditor
                 return new Vector2(1, m_RowRects[m_RowRects.Count - 1].yMax);
             }
 
-            public override int GetNumRowsOnPageUpDown(TreeViewItem fromItem, bool pageUp, float heightOfTreeView)
+            public override int GetNumRowsOnPageUpDown(TreeViewItem<EntityId> fromItem, bool pageUp, float heightOfTreeView)
             {
                 if (m_TreeView.isSearching)
                     return base.GetNumRowsOnPageUpDown(fromItem, pageUp, heightOfTreeView);
@@ -197,9 +198,9 @@ namespace UnityEditor
             }
         }
 
-        class MixerTreeViewItem : TreeViewItem
+        class MixerTreeViewItem : TreeViewItem<EntityId>
         {
-            public MixerTreeViewItem(int id, int depth, TreeViewItem parent, string displayName, AudioMixerGroupController groupController)
+            public MixerTreeViewItem(EntityId id, int depth, TreeViewItem<EntityId> parent, string displayName, AudioMixerGroupController groupController)
                 : base(id, depth, parent, displayName)
             {
                 group = groupController;
@@ -210,11 +211,11 @@ namespace UnityEditor
 
         // Datasource
 
-        class TreeViewDataSourceForMixers : TreeViewDataSource
+        class TreeViewDataSourceForMixers : TreeViewDataSource<EntityId>
         {
             public AudioMixerController ignoreThisController { get; private set; }
 
-            public TreeViewDataSourceForMixers(TreeViewController treeView, AudioMixerController ignoreController)
+            public TreeViewDataSourceForMixers(TreeViewController<EntityId> treeView, AudioMixerController ignoreController)
                 : base(treeView)
             {
                 showRootItem = false;
@@ -237,7 +238,7 @@ namespace UnityEditor
             public override void FetchData()
             {
                 int depth = -1;
-                m_RootItem = new TreeViewItem(1010101010, depth, null, "InvisibleRoot");
+                m_RootItem = new TreeViewItem<EntityId>(EntityId.From(1010101010), depth, null, "InvisibleRoot");
                 SetExpanded(m_RootItem.id, true);
 
                 List<int> allowedInstanceIDs = ObjectSelector.get.allowedInstanceIDs;
@@ -250,10 +251,10 @@ namespace UnityEditor
                         controllers.Add(controller);
                 }
 
-                var roots = new List<TreeViewItem>();
+                var roots = new List<TreeViewItem<EntityId>>();
 
                 // First add the 'None' item, then add all groups
-                roots.Add(new TreeViewItem(kNoneItemID, 0, m_RootItem, s_NoneText));
+                roots.Add(new TreeViewItem<EntityId>(kNoneItemID, 0, m_RootItem, s_NoneText));
 
                 foreach (var controller in controllers)
                     roots.Add(BuildSubTree(controller));
@@ -267,7 +268,7 @@ namespace UnityEditor
                 m_NeedRefreshRows = true;
             }
 
-            private TreeViewItem BuildSubTree(AudioMixerController controller)
+            private TreeViewItem<EntityId> BuildSubTree(AudioMixerController controller)
             {
                 AudioMixerGroupController masterGroup = controller.masterGroup;
                 var masterItem = new MixerTreeViewItem(masterGroup.GetInstanceID(), 0, m_RootItem, masterGroup.name, masterGroup);
@@ -275,9 +276,9 @@ namespace UnityEditor
                 return masterItem;
             }
 
-            private void AddChildrenRecursive(AudioMixerGroupController group, TreeViewItem item)
+            private void AddChildrenRecursive(AudioMixerGroupController group, TreeViewItem<EntityId> item)
             {
-                item.children = new List<TreeViewItem>(group.children.Length);
+                item.children = new List<TreeViewItem<EntityId>>(group.children.Length);
                 for (int i = 0; i < group.children.Length; ++i)
                 {
                     item.children.Add(new MixerTreeViewItem(group.children[i].GetInstanceID(), item.depth + 1, item, group.children[i].name, group.children[i]));
@@ -285,12 +286,12 @@ namespace UnityEditor
                 }
             }
 
-            public override bool CanBeMultiSelected(TreeViewItem item)
+            public override bool CanBeMultiSelected(TreeViewItem<EntityId> item)
             {
                 return false;
             }
 
-            public override bool IsRenamingItemAllowed(TreeViewItem item)
+            public override bool IsRenamingItemAllowed(TreeViewItem<EntityId> item)
             {
                 return false;
             }

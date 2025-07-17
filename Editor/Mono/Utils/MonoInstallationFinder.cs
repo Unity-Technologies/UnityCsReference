@@ -14,13 +14,10 @@ namespace UnityEditor.Utils
 
         public static string GetFrameWorksFolder()
         {
-            var editorAppPath = FileUtil.NiceWinPath(EditorApplication.applicationPath);
-            if (Application.platform == RuntimePlatform.WindowsEditor)
-                return Path.Combine(Path.GetDirectoryName(editorAppPath), "Data");
-            else if (Application.platform == RuntimePlatform.OSXEditor)
-                return Path.Combine(editorAppPath, "Contents");
-            else // Linux...?
-                return Path.Combine(Path.GetDirectoryName(editorAppPath), "Data");
+            if (Application.platform == RuntimePlatform.OSXEditor)
+                return FileUtil.NiceWinPath(EditorApplication.applicationScriptingPath);
+
+            return FileUtil.NiceWinPath(EditorApplication.applicationContentsPath);
         }
 
         public static string GetProfileDirectory(string profile)

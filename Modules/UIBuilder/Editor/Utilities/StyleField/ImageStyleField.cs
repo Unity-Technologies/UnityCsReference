@@ -5,8 +5,10 @@
 using JetBrains.Annotations;
 using Object = UnityEngine.Object;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEditor.PackageManager;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -86,6 +88,14 @@ namespace Unity.UI.Builder
 
             AddType(typeof(Sprite), "Sprite");
             AddType(typeof(VectorImage), "Vector");
+
+            objectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>()
+            {
+                typeof(Texture2D),
+                typeof(RenderTexture),
+                typeof(Sprite),
+                typeof(VectorImage)
+            });
         }
 
         private void OnEnterEditButton(PointerEnterEvent evt)

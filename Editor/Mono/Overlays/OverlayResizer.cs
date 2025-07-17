@@ -84,10 +84,10 @@ namespace UnityEditor.Overlays
                     overlayPosition = m_Overlay.rootVisualElement.parent.ChangeCoordinatesTo(container, overlayPosition);
 
                 m_OriginalRect = new Rect(
-                    m_Overlay.floating ?  m_Overlay.floatingPosition : overlayPosition,
+                    m_Overlay.floating ? m_Overlay.floatingPosition : overlayPosition,
                     m_Overlay.size);
 
-                m_ContainerRect = container?.rect ?? new Rect(float.NegativeInfinity,float.NegativeInfinity,float.PositiveInfinity,float.PositiveInfinity);
+                m_ContainerRect = container?.rect ?? new Rect(float.NegativeInfinity, float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity);
                 m_OriginalMousePosition = evt.mousePosition;
                 m_MaxSize = m_Overlay.maxSize;
                 m_MinSize = m_Overlay.minSize;
@@ -200,7 +200,7 @@ namespace UnityEditor.Overlays
             this.StretchToParentSize();
             pickingMode = PickingMode.Ignore;
 
-            m_Resizers = new []
+            m_Resizers = new[]
             {
                 new OverlayResizer(overlay, Direction.Top) { name = "ResizerTop" },
                 new OverlayResizer(overlay, Direction.Bottom) { name = "ResizerBottom" },
@@ -224,7 +224,7 @@ namespace UnityEditor.Overlays
             overlay.rootVisualElement.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             overlay.rootVisualElement.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
             overlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayGeometryChanged);
-            
+
             UpdateResizerVisibility();
         }
 
@@ -257,7 +257,7 @@ namespace UnityEditor.Overlays
         {
             TryConstrainResizableOverlaySize();
         }
-        
+
         void OnAttachedToPanel(AttachToPanelEvent evt)
         {
             m_Overlay.canvas.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnOverlayCanvasGeometryChanged);
@@ -267,24 +267,24 @@ namespace UnityEditor.Overlays
         {
             m_Overlay.canvas.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(OnOverlayCanvasGeometryChanged);
         }
-        
+
         void OnOverlayCanvasGeometryChanged(GeometryChangedEvent evt)
         {
             TryConstrainResizableOverlaySize();
         }
-        
+
         void TryConstrainResizableOverlaySize()
         {
-            if (!m_Overlay.IsResizable() || !m_Overlay.sizeOverridden)
+            if (!m_Overlay.IsResizeCompatible() || !m_Overlay.sizeOverridden)
                 return;
-            
+
             var container = m_Overlay.rootVisualElement.GetFirstAncestorOfType<OverlayContainer>() ?? m_Overlay.container;
             if (container == null || m_Overlay.rootVisualElement.parent == null)
                 return;
 
             var cornerDocked = container is not FloatingOverlayContainer && container is not ToolbarOverlayContainer;
             var largerThanContainer = (m_Overlay.size.x > container.rect.width || m_Overlay.size.y > container.rect.height);
-            
+
             if (cornerDocked && largerThanContainer)
                 m_Overlay.size = new Vector2(Mathf.Min(m_Overlay.size.x, container.rect.width), Mathf.Min(m_Overlay.size.y, container.rect.height));
         }
@@ -295,11 +295,11 @@ namespace UnityEditor.Overlays
             if (container == null)
                 return false;
 
-            if (container is FloatingOverlayContainer)
-                return true;
-
-            if (container is ToolbarOverlayContainer)
+            if (!container.resizingAllowed)
                 return false;
+
+            if (container is DynamicPanelOverlayContainer)
+                return !resizer.HasDirection(Direction.Left) && !resizer.HasDirection(Direction.Right);
 
             var alignment = container.resolvedStyle.alignItems;
             bool hide = false;
@@ -321,7 +321,7 @@ namespace UnityEditor.Overlays
 
         void UpdateResizerVisibility()
         {
-            bool globalHide = !m_Overlay.IsResizable();
+            bool globalHide = !m_Overlay.IsResizeCompatible();
             foreach (var resizer in m_Resizers)
             {
                 bool hide = globalHide || !ContainerCanShowResizer(resizer);

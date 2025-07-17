@@ -180,9 +180,13 @@ namespace UnityEditor.Search.Providers
         private static void InstallPackage(SearchItem item)
         {
             var packageInfo = (PackageManager.PackageInfo)item.data;
-            if (EditorUtility.DisplayDialog("About to install package " + item.id,
-                "Are you sure you want to install the following package?\r\n\r\n" +
-                FormatName(packageInfo), "Install...", "Cancel"))
+
+            if (EditorDialog.DisplayDecisionDialog(
+                titleText: "About to install package " + item.id,
+                messageText: "Are you sure you want to install the following package?\r\n\r\n" +
+                             FormatName(packageInfo),
+                yesButtonText: "Install...",
+                noButtonText: "Cancel"))
             {
                 WaitForRequest(PackageManager.Client.Add(item.id), $"Installing {item.id}...", 25);
             }

@@ -14,7 +14,7 @@ namespace UnityEditor.SceneManagement
     {
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static bool IsGameObjectRenderedInSameStageAsSceneInternal(GameObject gameObject, int sceneHandle);
+        extern private static bool IsGameObjectRenderedInSameStageAsSceneInternal(GameObject gameObject, SceneHandle sceneHandle);
 
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
@@ -26,11 +26,11 @@ namespace UnityEditor.SceneManagement
 
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static void SetSceneToRenderInSameStageAsOtherSceneInternal(int sceneHandle, int otherSceneHandle);
+        extern private static void SetSceneToRenderInSameStageAsOtherSceneInternal(SceneHandle sceneHandle, SceneHandle otherSceneHandle);
 
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static void SetSceneToRenderInMainStageInternal(int sceneHandle);
+        extern private static void SetSceneToRenderInMainStageInternal(SceneHandle sceneHandle);
 
 
         [NativeThrows]
@@ -39,7 +39,7 @@ namespace UnityEditor.SceneManagement
 
         [NativeThrows]
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static bool IsGameObjectInSameStageAsSceneInternal(GameObject gameObject, int sceneHandle);
+        extern private static bool IsGameObjectInSameStageAsSceneInternal(GameObject gameObject, SceneHandle sceneHandle);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static void SetPrefabInstanceHiddenForInContextEditingInternal([NotNull] GameObject gameObject, bool hide);
@@ -51,7 +51,7 @@ namespace UnityEditor.SceneManagement
         extern private static void EnableHidingForInContextEditingInSceneViewInternal(bool enable);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
-        extern private static void SetFocusedSceneInternal(int sceneHandle);
+        extern private static void SetFocusedSceneInternal(SceneHandle sceneHandle);
 
         [StaticAccessor("StageUtilityBindings", StaticAccessorType.DoubleColon)]
         extern private static Scene GetFocusedSceneInternal();

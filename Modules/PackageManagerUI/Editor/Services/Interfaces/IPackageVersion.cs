@@ -99,6 +99,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         string deprecationMessage { get; }
 
+        SignatureInfo signatureInfo { get; }
+
         string GetDescriptor(bool isFirstLetterCapitalized = false);
 
         bool MatchesSearchText(string searchText);

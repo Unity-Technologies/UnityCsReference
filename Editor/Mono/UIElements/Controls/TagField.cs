@@ -27,7 +27,7 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(overrideValue), "value")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

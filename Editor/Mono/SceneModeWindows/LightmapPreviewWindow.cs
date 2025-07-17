@@ -181,7 +181,7 @@ namespace UnityEditor
 
                 if (isIndexBased) return $"{prefix}Lightmap Index {m_LightmapIndex}";
 
-                var obj = EditorUtility.InstanceIDToObject(m_InstanceID);
+                var obj = EditorUtility.EntityIdToObject(m_InstanceID);
 
                 if (obj)
                     return $"{prefix}Lightmap for '{obj.name}'";

@@ -10,7 +10,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
     internal struct EnumData
     {
         public Enum[] values;
@@ -24,7 +24,7 @@ namespace UnityEngine
         public bool serializable;
     }
 
-    [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.UIBuilderModule")]
     internal static class EnumDataUtility
     {
         public enum CachedType

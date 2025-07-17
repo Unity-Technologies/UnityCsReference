@@ -1430,18 +1430,18 @@ namespace UnityEditor
             if ((object)assetObject == null)
                 return false;
 
-            var instanceID = assetObject.GetInstanceID();
-            if (instanceID == 0)
+            var entityId = assetObject.GetEntityId();
+            if (entityId == EntityId.None)
                 return false;
 
             StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
-            if (AssetDatabase.IsNativeAsset(instanceID))
+            if (AssetDatabase.IsNativeAsset(entityId))
             {
-                var assetPath = AssetDatabase.GetAssetPath(instanceID);
+                var assetPath = AssetDatabase.GetAssetPath(entityId);
                 if (!AssetDatabase.IsOpenForEdit(assetPath, opts))
                     return false;
             }
-            else if (AssetDatabase.IsForeignAsset(instanceID))
+            else if (AssetDatabase.IsForeignAsset(entityId))
             {
                 if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, opts))
                     return false;

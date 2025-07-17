@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Text.RegularExpressions;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -33,6 +36,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents an angle value.
     /// </summary>
+    [Serializable]
     public partial struct Angle : IEquatable<Angle>
     {
         // Extension of the AngleUnit to include keywords that can be used with StyleAngle
@@ -44,6 +48,14 @@ namespace UnityEngine.UIElements
             Turn = AngleUnit.Turn,
             None
         }
+
+        readonly static Dictionary<string, AngleUnit> s_AngleUnitLookup = new(StringComparer.OrdinalIgnoreCase)
+        {
+            {"deg", AngleUnit.Degree },
+            {"rad", AngleUnit.Radian },
+            {"grad", AngleUnit.Gradian },
+            {"turn", AngleUnit.Turn }
+        };
 
         /// <summary>
         /// Creates an <see cref="Angle"/> from degrees.
@@ -133,7 +145,9 @@ namespace UnityEngine.UIElements
             m_Unit = unit;
         }
 
+        [SerializeField]
         private float m_Value;
+        [SerializeField]
         private Unit m_Unit;
 
         /// <summary>
@@ -293,9 +307,74 @@ namespace UnityEngine.UIElements
                     break;
                 case Unit.None:
                     valueStr = "";
+                    unitStr = "none";
                     break;
             }
             return $"{valueStr}{unitStr}";
+        }
+
+        internal static bool TryParseString(string str, out Angle angle)
+        {
+            angle = default;
+
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            var s = str.AsSpan().Trim();
+
+            if (s.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                angle = None();
+                return true;
+            }
+
+            // Find unit index
+            int digitEndIndex = 0;
+            int unitIndex = -1;
+            for (int i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (char.IsNumber(c) || c == '.' || c == '-')
+                {
+                    ++digitEndIndex;
+                }
+                else if (char.IsLetter(c))
+                {
+                    unitIndex = i;
+                    break;
+                }
+                else
+                {
+                    // Invalid format
+                    return false;
+                }
+            }
+
+            var floatStr = s.Slice(0, digitEndIndex);
+            var unitStr = unitIndex > 0 ? s.Slice(unitIndex, s.Length - unitIndex).ToString() : "deg";
+
+            // Note: ideally we would not specify NumberStyle settings, but there is no API that allows
+            // it while also defining which culture to use. The value used here is the right default for float
+            // (looking at source code from Mono & CoreCLR)
+            if (StylePropertyUtil.TryParseFloat(floatStr, out var v))
+                angle.value = v;
+
+            if (s_AngleUnitLookup.TryGetValue(unitStr, out var angleUnit))
+            {
+                angle.unit = angleUnit;
+            }
+            else if (unitStr.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                angle.unit = AngleUnit.Degree;
+                angle.value = 0;
+            }
+            else
+            {
+                // Incorrect unit
+                return false;
+            }
+
+            return true;
         }
     }
 }

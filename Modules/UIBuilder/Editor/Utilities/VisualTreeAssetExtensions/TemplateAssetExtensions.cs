@@ -10,57 +10,7 @@ namespace Unity.UI.Builder
 {
     internal static class TemplateAssetExtensions
     {
-        public static void SetAttributeOverride(
-            this TemplateAsset ta, VisualElement element, string attributeName, string value, string[] pathToTemplateAsset = null)
-        {
-            var isTraitsElement = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName) == null;
-
-            if (isTraitsElement)
-            {
-                pathToTemplateAsset = new[] { element.name };
-            }
-            else
-            {
-                pathToTemplateAsset ??= GetPathToTemplateAsset(element, ta);
-            }
-
-            var overrideName = isTraitsElement ? element.name : string.Join(" ", pathToTemplateAsset);
-
-            // See if the override already exists.
-            for (int i = 0; i < ta.attributeOverrides.Count; ++i)
-            {
-                var over = ta.attributeOverrides[i];
-
-                if (over.NamesPathMatchesElementNamesPath(pathToTemplateAsset) && over.m_AttributeName == attributeName)
-                {
-                    // If we have a more complex path, add a new override.
-                    if (over.m_ElementName != overrideName)
-                    {
-                        continue;
-                    }
-
-                    over.m_ElementName = overrideName;
-                    over.m_AttributeName = attributeName;
-                    over.m_Value = value;
-
-                    ta.attributeOverrides[i] = over;
-
-                    return;
-                }
-            }
-
-            // If the override does not exist, add it.
-            var attributeOverride = new TemplateAsset.AttributeOverride
-            {
-                m_ElementName = overrideName,
-                m_NamesPath = pathToTemplateAsset,
-                m_AttributeName = attributeName,
-                m_Value = value
-            };
-            ta.attributeOverrides.Add(attributeOverride);
-        }
-
-        public static string[] GetPathToTemplateAsset(VisualElement element, TemplateAsset ta)
+        public static string[] GetPathToTemplateAsset(this TemplateAsset ta, VisualElement element)
         {
             var path = new List<string> { element.name };
             var parent = element.parent;
@@ -78,25 +28,6 @@ namespace Unity.UI.Builder
             }
 
             return parentAsset != ta ? null : path.ToArray();
-        }
-
-        public static void RemoveAttributeOverride(
-            this TemplateAsset ta, VisualElement element, string attributeName)
-        {
-            var pathToTemplateAsset = GetPathToTemplateAsset(element, ta);
-            var overrideName = string.Join(" ", pathToTemplateAsset);
-
-            // See if the override already exists.
-            for (int i = 0; i < ta.attributeOverrides.Count; ++i)
-            {
-                var over = ta.attributeOverrides[i];
-                if (over.NamesPathMatchesElementNamesPath(pathToTemplateAsset) && over.m_AttributeName == attributeName)
-                {
-                    ta.attributeOverrides.RemoveAt(i);
-
-                    return;
-                }
-            }
         }
     }
 }

@@ -14,6 +14,8 @@ namespace Unity.Profiling.Editor
 
         int MaximumFrameCount { get; }
 
+        int BottleneckDetailsViewSelectedSummaryType { get; set; }
+
         event Action TargetFrameDurationChanged;
 
         event Action MaximumFrameCountChanged;

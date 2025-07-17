@@ -8,7 +8,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Assertions;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.UIElements.Layout;
 
@@ -16,6 +18,8 @@ namespace UnityEngine.UIElements.Layout;
 unsafe struct LayoutList<T> : IDisposable
     where T : unmanaged
 {
+    static readonly UnsafeAllocLabel s_Label = new(nameof(UIElements), "LayoutList");
+
     [StructLayout(LayoutKind.Sequential)]
     struct Data
     {
@@ -24,7 +28,6 @@ unsafe struct LayoutList<T> : IDisposable
         public T* Values;
     }
 
-    readonly Allocator m_Allocator;
     Data* m_Data;
 
     public int Count => m_Data->Count;
@@ -45,13 +48,11 @@ unsafe struct LayoutList<T> : IDisposable
     public LayoutList()
     {
         m_Data = null;
-        m_Allocator = Allocator.Invalid;
     }
 
-    public LayoutList(int initialCapacity, Allocator allocator)
+    public LayoutList(int initialCapacity)
     {
-        m_Allocator = allocator;
-        m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), 16, allocator);
+        m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), 16, s_Label);
         Assert.IsTrue(m_Data != null);
         UnsafeUtility.MemClear(m_Data, UnsafeUtility.SizeOf<Data>());
         ResizeCapacity(initialCapacity);
@@ -63,9 +64,9 @@ unsafe struct LayoutList<T> : IDisposable
             return;
 
         if (m_Data->Values != null)
-            UnsafeUtility.Free(m_Data->Values, m_Allocator);
+            UnsafeUtility.Free(m_Data->Values, s_Label);
 
-        UnsafeUtility.Free(m_Data, m_Allocator);
+        UnsafeUtility.Free(m_Data, s_Label);
         m_Data = null;
     }
 
@@ -136,15 +137,15 @@ unsafe struct LayoutList<T> : IDisposable
     void ResizeCapacity(int capacity)
     {
         Assert.IsTrue(capacity > 0);
-        m_Data->Values = (T*)ResizeArray(m_Data->Values, m_Data->Capacity, capacity, UnsafeUtility.SizeOf<T>(), 16, m_Allocator);
+        m_Data->Values = (T*)ResizeArray(m_Data->Values, m_Data->Capacity, capacity, UnsafeUtility.SizeOf<T>(), 16);
         m_Data->Capacity = capacity;
     }
 
-    static void* ResizeArray(void* fromPtr, long fromCount, long toCount, long size, int align, Allocator allocator)
+    static void* ResizeArray(void* fromPtr, long fromCount, long toCount, long size, int align)
     {
         Assert.IsTrue(toCount > 0);
 
-        var toPtr = UnsafeUtility.Malloc(size * toCount, align, allocator);
+        var toPtr = UnsafeUtility.Malloc(size * toCount, align, s_Label);
         Assert.IsTrue(toPtr != null);
 
         if (fromCount <= 0)
@@ -154,7 +155,7 @@ unsafe struct LayoutList<T> : IDisposable
         var bytesToCopy = countToCopy * size;
 
         UnsafeUtility.MemCpy(toPtr, fromPtr, bytesToCopy);
-        UnsafeUtility.Free(fromPtr, allocator);
+        UnsafeUtility.Free(fromPtr, s_Label);
 
         return toPtr;
     }

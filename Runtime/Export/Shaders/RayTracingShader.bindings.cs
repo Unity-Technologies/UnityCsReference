@@ -70,7 +70,7 @@ namespace UnityEngine.Rendering
 
         [NativeMethod(Name = "RayTracingShaderScripting::DispatchIndirect", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void DispatchIndirect(string rayGenFunctionName, [NotNull] GraphicsBuffer argsBuffer, uint argsOffset = 0, Camera camera = null);
-      
+
         public void SetBuffer(int nameID, GraphicsBuffer buffer)
         {
             SetGraphicsBuffer(nameID, buffer);
@@ -80,5 +80,41 @@ namespace UnityEngine.Rendering
         {
             SetGraphicsBufferHandle(nameID, bufferHandle);
         }
+
+        extern public LocalKeywordSpace keywordSpace { get; }
+
+        [FreeFunction("RayTracingShaderScripting::EnableKeyword", HasExplicitThis = true)]
+        extern public void EnableKeyword(string keyword);
+
+        [FreeFunction("RayTracingShaderScripting::DisableKeyword", HasExplicitThis = true)]
+        extern public void DisableKeyword(string keyword);
+
+        [FreeFunction("RayTracingShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
+        extern public bool IsKeywordEnabled(string keyword);
+
+        [FreeFunction("RayTracingShaderScripting::EnableKeyword", HasExplicitThis = true)]
+        extern private void EnableLocalKeyword(LocalKeyword keyword);
+
+        [FreeFunction("RayTracingShaderScripting::DisableKeyword", HasExplicitThis = true)]
+        extern private void DisableLocalKeyword(LocalKeyword keyword);
+
+        [FreeFunction("RayTracingShaderScripting::SetKeyword", HasExplicitThis = true)]
+        extern private void SetLocalKeyword(LocalKeyword keyword, bool value);
+
+        [FreeFunction("RayTracingShaderScripting::IsKeywordEnabled", HasExplicitThis = true)]
+        extern private bool IsLocalKeywordEnabled(LocalKeyword keyword);
+
+        public void EnableKeyword(in LocalKeyword keyword) { EnableLocalKeyword(keyword); }
+        public void DisableKeyword(in LocalKeyword keyword) { DisableLocalKeyword(keyword); }
+        public void SetKeyword(in LocalKeyword keyword, bool value) { SetLocalKeyword(keyword, value); }
+        public bool IsKeywordEnabled(in LocalKeyword keyword) { return IsLocalKeywordEnabled(keyword); }
+
+        [FreeFunction("RayTracingShaderScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
+        [FreeFunction("RayTracingShaderScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
+        public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
+
+        [FreeFunction("RayTracingShaderScripting::GetEnabledKeywords", HasExplicitThis = true)] extern private LocalKeyword[] GetEnabledKeywords();
+        [FreeFunction("RayTracingShaderScripting::SetEnabledKeywords", HasExplicitThis = true)] extern private void SetEnabledKeywords(LocalKeyword[] keywords);
+        public LocalKeyword[] enabledKeywords { get { return GetEnabledKeywords(); } set { SetEnabledKeywords(value); } }
     }
 }

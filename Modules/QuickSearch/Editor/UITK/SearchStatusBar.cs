@@ -73,27 +73,27 @@ namespace UnityEditor.Search
             {
                 case DisplayMode.Compact:
                 case DisplayMode.List:
-                    m_ListButton.pseudoStates |= PseudoStates.Checked;
-                    m_GridButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_TableButton.pseudoStates &= ~PseudoStates.Checked;
+                    m_ListButton.SetCheckedPseudoState(true);
+                    m_GridButton.SetCheckedPseudoState(false);
+                    m_TableButton.SetCheckedPseudoState(false);
                     break;
 
                 case DisplayMode.Grid:
-                    m_ListButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_GridButton.pseudoStates |= PseudoStates.Checked;
-                    m_TableButton.pseudoStates &= ~PseudoStates.Checked;
+                    m_ListButton.SetCheckedPseudoState(false);
+                    m_GridButton.SetCheckedPseudoState(true);
+                    m_TableButton.SetCheckedPseudoState(false);
                     break;
 
                 case DisplayMode.Table:
-                    m_ListButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_GridButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_TableButton.pseudoStates |= PseudoStates.Checked;
+                    m_ListButton.SetCheckedPseudoState(false);
+                    m_GridButton.SetCheckedPseudoState(false);
+                    m_TableButton.SetCheckedPseudoState(true);
                     break;
 
                 default:
-                    m_ListButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_GridButton.pseudoStates &= ~PseudoStates.Checked;
-                    m_TableButton.pseudoStates &= ~PseudoStates.Checked;
+                    m_ListButton.SetCheckedPseudoState(false);
+                    m_GridButton.SetCheckedPseudoState(false);
+                    m_TableButton.SetCheckedPseudoState(false);
                     break;
             }
         }

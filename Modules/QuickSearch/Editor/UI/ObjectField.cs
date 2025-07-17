@@ -42,7 +42,7 @@ namespace UnityEditor.Search
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(type), "type", typeof(Object)),
-                });
+                }, true);
             }
 
             #pragma warning disable 649
@@ -529,7 +529,7 @@ namespace UnityEditor.Search
             }
 
             var reference = references[0];
-            Object obj = EditorUtility.InstanceIDToObject(reference.GetInstanceID());
+            Object obj = EditorUtility.EntityIdToObject(reference.GetEntityId());
             if (obj is MonoBehaviour || obj is ScriptableObject)
             {
                 if (!HasValidScript(obj))
@@ -604,7 +604,7 @@ namespace UnityEditor.Search
                         if (!ValidDroppedObject(DragAndDrop.objectReferences, objType, out errorString))
                         {
                             Object reference = DragAndDrop.objectReferences[0];
-                            EditorUtility.DisplayDialog("Can't assign script", errorString, "OK");
+                            EditorDialog.DisplayAlertDialog("Can't assign script", errorString, default, DialogIconType.Error);
                             break;
                         }
                     }

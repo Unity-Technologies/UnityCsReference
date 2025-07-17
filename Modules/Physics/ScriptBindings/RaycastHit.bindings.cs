@@ -7,7 +7,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Interfaces/IRaycast.h")]
+    [NativeHeader("Runtime/Interfaces/IPhysics.h")]
     [NativeHeader("PhysicsScriptingClasses.h")]
     [NativeHeader("Modules/Physics/RaycastHit.h")]
     [UsedByNativeCode]

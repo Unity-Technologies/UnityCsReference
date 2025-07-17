@@ -2,6 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.Serialization;
 
 
@@ -94,5 +97,27 @@ namespace UnityEngine.TextCore.Text
         internal Material m_Material;
 
         internal int m_MaterialHashCode;
+
+        private static Dictionary<int, WeakReference<TextAsset>> kTextAssetByInstanceId = new Dictionary<int, WeakReference<TextAsset>>();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static TextAsset GetTextAssetByID(int id)
+        {
+            if (kTextAssetByInstanceId.TryGetValue(id, out var weakRef) && weakRef.TryGetTarget(out var asset))
+                return asset;
+
+            return null;
+        }
+
+        internal virtual void OnDestroy()
+        {
+            kTextAssetByInstanceId.Remove(instanceID);
+            
+        }
+
+        internal virtual void OnEnable()
+        {
+            kTextAssetByInstanceId.TryAdd(instanceID, new WeakReference<TextAsset>(this));
+        }
     }
 }

@@ -85,16 +85,13 @@ namespace UnityEngine.UIElements
 
         void OnPointerDownEventOSX(IPointerEvent evt)
         {
-            if (target.elementPanel?.contextualMenuManager != null)
-                target.elementPanel.contextualMenuManager.displayMenuHandledOSX = false;
-
             ProcessPointerEvent(evt);
         }
 
         void OnPointerUpEventOSX(IPointerEvent evt)
         {
-            if (target.elementPanel?.contextualMenuManager != null &&
-                target.elementPanel.contextualMenuManager.displayMenuHandledOSX)
+            var cmm = target.elementPanel?.contextualMenuManager;
+            if (cmm != null && cmm.displayMenuHandledOSX)
                 return;
 
             ProcessPointerEvent(evt);

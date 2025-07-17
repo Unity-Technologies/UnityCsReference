@@ -433,7 +433,7 @@ namespace UnityEditor.Presets
             }
         }
 
-        void UpdateSearchResult(int currentSelection)
+        void UpdateSearchResult(EntityId currentSelection)
         {
             var searchResult = m_Presets
                 .Where(p => p.name.ToLower().Contains(m_SearchField.ToLower()))
@@ -505,7 +505,7 @@ namespace UnityEditor.Presets
                             // Since a selection change instantly applies a preset, we clear it so the previous values gets
                             // used to create the new preset.
                             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
-                            m_ListArea.InitSelection(Array.Empty<int>());
+                            m_ListArea.InitSelection(Array.Empty<EntityId>());
                             CreatePreset(m_MainTarget);
                         }
                     }
@@ -585,7 +585,7 @@ namespace UnityEditor.Presets
             {
                 var id = m_ListArea.GetSelection();
                 if (id != null && id.Length > 0)
-                    selection = EditorUtility.InstanceIDToObject(id[0]) as Preset;
+                    selection = EditorUtility.EntityIdToObject(id[0]) as Preset;
             }
             return selection;
         }
@@ -595,7 +595,7 @@ namespace UnityEditor.Presets
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
-            m_ListArea.InitSelection(new int[0]);
+            m_ListArea.InitSelection(new EntityId[0]);
 
             Close();
             GUI.changed = true;
@@ -613,7 +613,7 @@ namespace UnityEditor.Presets
                     var editor = e as AssetImporterEditor;
                     if (editor != null && editor.target == target && editor.HasModified())
                     {
-                        if (EditorUtility.DisplayDialog("Unapplied import settings", "Apply settings before creating a new preset", "Apply", "Cancel"))
+                        if (EditorDialog.DisplayDecisionDialog(titleText: "Unapplied import settings", messageText: "Apply settings before creating a new preset", yesButtonText: "Apply", noButtonText: "Cancel"))
                         {
                             editor.SaveChanges();
                             // after reimporting, the target object has changed, so update the preset with the newly imported values.

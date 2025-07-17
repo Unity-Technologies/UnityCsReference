@@ -2,15 +2,18 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
+using System;
 
 namespace UnityEditor
 {
-    interface IAnimationWindowController
+    /// <summary>
+    /// Use this interface to override the Animation window controls and to customize how animation is evaluated.
+    /// </summary>
+    interface IAnimationWindowController : IDisposable
     {
-        void OnCreate(AnimationWindow animationWindow, UnityEngine.Component component);
-        void OnDestroy();
         void OnSelectionChanged();
+
+        void OnPlayModeStateChanged(PlayModeStateChange state);
 
         float time { get; set; }
         int frame { get; set; }
@@ -31,12 +34,8 @@ namespace UnityEditor
         void ProcessCandidates();
         void ClearCandidates();
 
-        EditorCurveBinding[] GetAnimatableBindings(GameObject gameObject);
-        EditorCurveBinding[] GetAnimatableBindings();
-        System.Type GetValueType(EditorCurveBinding binding);
         float GetFloatValue(EditorCurveBinding binding);
         int GetIntValue(EditorCurveBinding binding);
         UnityEngine.Object GetObjectReferenceValue(EditorCurveBinding binding);
-
     }
 }

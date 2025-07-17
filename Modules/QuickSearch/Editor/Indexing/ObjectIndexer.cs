@@ -86,9 +86,14 @@ namespace UnityEditor.Search
         }
 
         internal ObjectIndexer(string name, SearchDatabase.Settings settings)
-            : base(name)
+            : this(name, settings, new SearchIndexEntryStorage())
+        {}
+
+        internal ObjectIndexer(string name, SearchDatabase.Settings settings, ISearchIndexerStorage storage)
+            : base(name, storage)
         {
             this.settings = settings;
+            this.storage.ExtraSearchWordHandler = ExtraSearchWord;
         }
 
         /// <summary>
@@ -107,13 +112,18 @@ namespace UnityEditor.Search
             return base.Search(searchQuery, context, provider, maxScore, patternMatchLimit);
         }
 
-        internal override IEnumerable<SearchResult> SearchWord(string word, SearchIndexOperator op, SearchResultCollection subset)
+        internal override IEnumerable<SearchResult> SearchTerm(string name, in object value, SearchIndexOperator op, bool exclude, SearchResultCollection subset = null)
+        {
+            var lowerCaseName = name?.ToLowerInvariant();
+            if (value is string s)
+                return base.SearchTerm(lowerCaseName, s.ToLowerInvariant(), op, exclude, subset);
+            return base.SearchTerm(lowerCaseName, in value, op, exclude, subset);
+        }
+
+        IEnumerable<SearchResult> ExtraSearchWord(string word, SearchIndexOperator op, SearchResultCollection subset)
         {
             //using (new DebugTimer($"Search word {word}, {op}, {subset?.Count}"))
             {
-                foreach (var r in base.SearchWord(word, op, subset))
-                    yield return r;
-
                 if (SearchSettings.findProviderIndexHelper)
                 {
                     var baseScore = settings.baseScore;
@@ -124,7 +134,8 @@ namespace UnityEditor.Search
                     var documents = subset != null ? subset.Select(r => GetDocument(r.index)) : GetDocuments(ignoreNulls: true);
                     foreach (var r in FindProvider.SearchWord(false, word, options, documents))
                     {
-                        if (m_IndexByDocuments.TryGetValue(r.id, out var documentIndex))
+                        var documentIndex = FindDocumentIndex(r.id);
+                        if (documentIndex != invalidDocumentIndex)
                             yield return new SearchResult(r.id, documentIndex, baseScore + r.score + 5);
                     }
                 }
@@ -599,7 +610,7 @@ namespace UnityEditor.Search
                     IndexProperty(documentIndex, fieldName, f, saveKeyword: true, exact: true);
                 }
             }
-            
+
             // Add the complete Flag list:
             var flagValue = m_FlagsPool.Count == 1 ? m_FlagsPool[0] : string.Join(",", m_FlagsPool);
             IndexProperty(documentIndex, fieldName, flagValue, saveKeyword: true, exact: true);
@@ -668,7 +679,7 @@ namespace UnityEditor.Search
 
             if (AssetDatabase.IsSubAsset(objRef))
             {
-                var mainInstanceId = AssetDatabase.GetMainAssetInstanceID(assetPath);
+                var mainInstanceId = AssetDatabase.GetMainAssetEntityId(assetPath);
                 var mainGid = GlobalObjectId.GetGlobalObjectIdSlow(mainInstanceId);
                 if (mainGid.identifierType != 0)
                 {

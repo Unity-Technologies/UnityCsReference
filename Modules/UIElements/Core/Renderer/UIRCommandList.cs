@@ -34,41 +34,49 @@ namespace UnityEngine.UIElements.UIR
 
     class CommandList : IDisposable
     {
-        public VisualElement m_Owner;
+        public VisualElement m_Owner; // Might be null if non-initialized or for the default command list.
         readonly IntPtr m_VertexDecl;
         readonly IntPtr m_StencilState;
         public MaterialPropertyBlock constantProps = new();
         public MaterialPropertyBlock batchProps = new();
         public GCHandle handle; // GCHandle for native-side interactions
         public Material m_Material;
+        public CommandFlags flags;
 
         List<SerializedCommand> m_Commands = new();
-        Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_SlotCount];
+        Vector4[] m_GpuTextureData = new Vector4[TextureSlotManager.k_SlotSize * TextureSlotManager.k_MaxSlotCount];
         NativeList<DrawBufferRange> m_DrawRanges;
 
-        public CommandList(VisualElement owner, IntPtr vertexDecl, IntPtr stencilState, Material material)
+        public CommandList(IntPtr vertexDecl, IntPtr stencilState)
         {
-            m_Owner = owner;
             m_VertexDecl = vertexDecl;
             m_StencilState = stencilState;
             m_DrawRanges = new(1024);
             handle = GCHandle.Alloc(this);
-            m_Material = material;
         }
 
         public int Count => m_Commands.Count;
 
-        public void Reset(VisualElement newOwner, Material material)
+        public void Reset()
         {
-            m_Owner = newOwner;
+            m_Owner = null;
+            m_Material = null;
             m_Commands.Clear();
             m_DrawRanges.Clear();
+
+            constantProps.Clear();
+            batchProps.Clear();
+        }
+
+        public void Init(VisualElement owner, Material material, CommandFlags commandFlags)
+        {
+            Debug.Assert(m_Owner == null);
+            m_Owner = owner;
             m_Material = material;
+            flags = commandFlags;
 
             for (int i = 0; i < m_GpuTextureData.Length; ++i)
                 m_GpuTextureData[i] = Vector4.zero;
-
-            batchProps.Clear();
         }
 
         public unsafe void Execute()

@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -59,6 +60,26 @@ namespace UnityEngine.UIElements
             return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? f : defaultValue;
         }
 
+        public static byte ParseByte(string value, byte defaultValue = default)
+        {
+            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static sbyte ParseSByte(string value, sbyte defaultValue = default)
+        {
+            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static short ParseShort(string value, short defaultValue = default)
+        {
+            return short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static ushort ParseUShort(string value, ushort defaultValue = default)
+        {
+            return ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
         public static int ParseInt(string value, int defaultValue = default)
         {
             return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
@@ -67,6 +88,11 @@ namespace UnityEngine.UIElements
         public static uint ParseUint(string value, uint defaultValue = default)
         {
             return uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i) ? i : defaultValue;
+        }
+
+        public static Angle ParseAngle(string value, Angle defaultValue = default)
+        {
+            return Angle.TryParseString(value, out var angle) ? angle : defaultValue;
         }
 
         public static float TryParseFloatAttribute(string attributeName, IUxmlAttributes bag, ref int foundAttributeCounter)
@@ -169,6 +195,32 @@ namespace UnityEngine.UIElements
                 return UxmlSerializedDataUtility.CopySerialized(value);
             }
             return value;
+        }
+
+        public static int SplitValues(ReadOnlySpan<char> spanStr, Span<float> values, char separator)
+        {
+            var valueCount = 0;
+            var lastIndex = 0;
+
+            for (var i = 0; i <= spanStr.Length; i++)
+            {
+                // Check for space or end of string to parse a float
+                if (i == spanStr.Length || spanStr[i] == separator)
+                {
+                    if (lastIndex < i && valueCount < values.Length) // Avoid empty segments
+                    {
+                        // Try parsing the float directly from the slice
+                        if (float.TryParse(spanStr.Slice(lastIndex, i - lastIndex), NumberStyles.Any, CultureInfo.InvariantCulture.NumberFormat, out var result))
+                        {
+                            values[valueCount++] = result; // Store the parsed float
+                        }
+                    }
+
+                    lastIndex = i + 1; // Move to the next part
+                }
+            }
+
+            return valueCount;
         }
     }
 }

@@ -8,7 +8,7 @@ using Unity.Profiling;
 
 namespace UnityEngine.UIElements.UIR
 {
-    internal enum VertexFlags
+    enum VertexFlags
     {
         // Vertex Type
         // These values are like enum values, they are mutually exclusive. Only one may be specified on a vertex.
@@ -19,17 +19,7 @@ namespace UnityEngine.UIElements.UIR
         IsSvgGradients = 4, // Gradient/Texture-less SVG do NOT use this flag
     }
 
-    internal struct State
-    {
-        public Material material;
-        public TextureId texture;
-        public int stencilRef;
-        public float sdfScale;
-        public float sharpness;
-        public bool isPremultiplied;
-    }
-
-    internal enum CommandType
+    enum CommandType
     {
         Draw,
         ImmediateCull, Immediate,
@@ -40,7 +30,25 @@ namespace UnityEngine.UIElements.UIR
         CutRenderChain
     }
 
-    internal class DrawParams
+    [Flags]
+    enum CommandFlags
+    {
+        None = 0,
+
+        IsPremultiplied = 1 << 0, // Used for textures that are premultiplied (e.g. filter output)
+
+        // 3 bits store mutually exclusive render types. When any bit is set, the other render types are excluded from the shader.
+        ForceRenderTypeBitOffset = 1,
+        ForceRenderTypeSolid = 1 << ForceRenderTypeBitOffset,
+        ForceRenderTypeTextured = 2 << ForceRenderTypeBitOffset,
+        ForceRenderTypeText = 3 << ForceRenderTypeBitOffset,
+        ForceRenderTypeSvgGradient = 4 << ForceRenderTypeBitOffset,
+        ForceRenderTypeBits = 7 << ForceRenderTypeBitOffset,
+
+        ForceSingleTextureSlot = 1 << 4
+    }
+
+    class DrawParams
     {
         internal static readonly Rect k_UnlimitedRect = new Rect(-100000, -100000, 200000, 200000);
         internal static readonly Rect k_FullNormalizedRect = new Rect(-1, -1, 2, 2);
@@ -60,36 +68,46 @@ namespace UnityEngine.UIElements.UIR
         internal readonly List<Material> defaultMaterial = new List<Material>(8);
     }
 
-    internal class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
+    class RenderChainCommand : LinkedPoolItem<RenderChainCommand>
     {
-        internal RenderData owner;
-        internal RenderChainCommand prev, next;
-        internal bool isTail; // Is this a tail command
-
-        internal CommandType type;
-
-        internal State state;
-        internal MeshHandle mesh;
-        internal int indexOffset; // Offset within the mesh (remember: there might be multiple commands per mesh e.g. one sub-range for background, another for border, etc)
-        internal int indexCount;
-        internal Action callback; // Immediate render command only
-        private static readonly int k_ID_MainTex = Shader.PropertyToID("_MainTex");
+        public RenderData owner;
+        public RenderChainCommand prev, next;
+        public CommandType type;
+        public CommandFlags flags;
+        public Material material;
+        public TextureId texture;
+        public int stencilRef;
+        public float sdfScale;
+        public float sharpness;
+        public MeshHandle mesh;
+        public int indexOffset; // Offset within the mesh (remember: there might be multiple commands per mesh e.g. one sub-range for background, another for border, etc)
+        public int indexCount;
+        public Action callback; // Immediate render command only
 
         static ProfilerMarker s_ImmediateOverheadMarker = new ProfilerMarker("UIR.ImmediateOverhead");
 
-        internal void Reset()
+        public RenderChainCommand()
+        {
+            Reset();
+        }
+
+        public void Reset()
         {
             owner = null;
             prev = next = null;
-            isTail = false;
             type = CommandType.Draw;
-            state = new State();
+            flags = 0;
+            material = null;
+            texture = TextureId.invalid;
+            stencilRef = 0;
+            sdfScale = 0;
+            sharpness = 0;
             mesh = null;
             indexOffset = indexCount = 0;
             callback = null;
         }
 
-        internal void ExecuteNonDrawMesh(DrawParams drawParams, float pixelsPerPoint, ref Exception immediateException)
+        public void ExecuteNonDrawMesh(DrawParams drawParams, float pixelsPerPoint, ref Exception immediateException)
         {
             switch (type)
             {
@@ -187,7 +205,7 @@ namespace UnityEngine.UIElements.UIR
             }
         }
 
-        internal static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
+        public static void PushScissor(DrawParams drawParams, Rect scissor, float pixelsPerPoint)
         {
             // TODO: Offset the clipping rect by the offset within the RT and the post-effect margin
             Rect elemRect = CombineScissorRects(scissor, drawParams.scissor.Peek());
@@ -195,7 +213,7 @@ namespace UnityEngine.UIElements.UIR
             Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(elemRect, pixelsPerPoint));
         }
 
-        internal static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
+        public static void PopScissor(DrawParams drawParams, float pixelsPerPoint)
         {
             drawParams.scissor.Pop();
             Rect prevRect = drawParams.scissor.Peek();
@@ -203,36 +221,6 @@ namespace UnityEngine.UIElements.UIR
                 Utility.DisableScissor();
             else
                 Utility.SetScissorRect(RectPointsToPixelsAndFlipYAxis(prevRect, pixelsPerPoint));
-        }
-
-        void Blit(Texture source, RenderTexture destination, float depth)
-        {
-            GL.PushMatrix();
-            GL.LoadOrtho();
-            RenderTexture.active = destination;
-            state.material.SetTexture(k_ID_MainTex, source);
-            state.material.SetPass(0);
-
-            // Clockwise winding: we don't support blit under a mask
-            GL.Begin(GL.QUADS);
-            GL.TexCoord2(0f, 0f); GL.Vertex3(0f, 0f, depth);
-            GL.TexCoord2(0f, 1f); GL.Vertex3(0f, 1f, depth);
-            GL.TexCoord2(1f, 1f); GL.Vertex3(1f, 1f, depth);
-            GL.TexCoord2(1f, 0f); GL.Vertex3(1f, 0f, depth);
-            GL.End();
-            GL.PopMatrix();
-        }
-
-        static Vector4 RectToClipSpace(Rect rc)
-        {
-            // Since the shader compares positions multiplied by the MVP matrix, then we must ensure to use
-            // the same MVP matrices the shader uses.. namely, the GPU projection matrix
-            Matrix4x4 projection = Utility.GetDeviceProjectionMatrix();
-            var minClipSpace = projection.MultiplyPoint(new Vector3(rc.xMin, rc.yMin, UIRUtility.k_MeshPosZ));
-            var maxClipSpace = projection.MultiplyPoint(new Vector3(rc.xMax, rc.yMax, UIRUtility.k_MeshPosZ));
-            return new Vector4(
-                Mathf.Min(minClipSpace.x, maxClipSpace.x), Mathf.Min(minClipSpace.y, maxClipSpace.y),
-                Mathf.Max(minClipSpace.x, maxClipSpace.x), Mathf.Max(minClipSpace.y, maxClipSpace.y));
         }
 
         static Rect CombineScissorRects(Rect r0, Rect r1)

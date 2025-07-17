@@ -115,8 +115,6 @@ namespace UnityEditor.Search
             }
         }
 
-        TextSelectingUtilities selectingUtilities => textElement?.selectingManipulator?.m_SelectingUtilities;
-
         public bool supportsMultiline => !viewState.queryBuilderEnabled;
 
         public static readonly string searchFieldClassName = "search-field";
@@ -197,10 +195,10 @@ namespace UnityEditor.Search
             searchField.RegisterCallback<DetachFromPanelEvent>(OnSearchFieldDetachFromPanel);
             searchFieldContainer.Add(searchField);
 
-            if (selectingUtilities != null)
+            if (textElement != null && textElement.isSelectable)
             {
-                selectingUtilities.OnCursorIndexChange += OnCursorChanged;
-                selectingUtilities.OnSelectIndexChange += OnCursorChanged;
+                textElement.selection.OnCursorIndexChange += OnCursorChanged;
+                textElement.selection.OnSelectIndexChange += OnCursorChanged;
             }
         }
 
@@ -377,8 +375,7 @@ namespace UnityEditor.Search
             {
                 var currentCursor = textField.cursorIndex;
                 searchField.value = searchField.value.Insert(currentCursor, "\n");
-                UpdateInternalTextData();
-                selectingUtilities.MoveRight();
+                textElement.selection.MoveForward();
                 evt.StopPropagation();
             }
         }
@@ -470,32 +467,27 @@ namespace UnityEditor.Search
                 if (textField.textSelection is not TextElement te)
                     return;
 
-                if (selectingUtilities == null)
-                    return;
-
-                UpdateInternalTextData();
-
                 switch (moveCursor)
                 {
-                    case TextCursorPlacement.MoveLineEnd: selectingUtilities.MoveLineEnd(); break;
-                    case TextCursorPlacement.MoveLineStart: selectingUtilities.MoveLineStart(); break;
-                    case TextCursorPlacement.MoveToEndOfPreviousWord: selectingUtilities.MoveToEndOfPreviousWord(); break;
-                    case TextCursorPlacement.MoveToStartOfNextWord: selectingUtilities.MoveToStartOfNextWord(); break;
-                    case TextCursorPlacement.MoveWordLeft: selectingUtilities.MoveWordLeft(); break;
-                    case TextCursorPlacement.MoveWordRight: selectingUtilities.MoveWordRight(); break;
-                    case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(textField, selectingUtilities); break;
+                    case TextCursorPlacement.MoveLineEnd: textElement.selection.MoveToParagraphEnd(); break;
+                    case TextCursorPlacement.MoveLineStart: textElement.selection.MoveToParagraphStart(); break;
+                    case TextCursorPlacement.MoveToEndOfPreviousWord: textElement.selection.MoveToEndOfPreviousWord(); break;
+                    case TextCursorPlacement.MoveToStartOfNextWord: textElement.selection.MoveToStartOfNextWord(); break;
+                    case TextCursorPlacement.MoveWordLeft: textElement.selection.MoveWordBackward(); break;
+                    case TextCursorPlacement.MoveWordRight: textElement.selection.MoveWordForward(); break;
+                    case TextCursorPlacement.MoveAutoComplete: MoveAutoComplete(textField, textElement.selection); break;
                 }
             }
         }
 
-        static void MoveAutoComplete(TextField te, TextSelectingUtilities selectingUtilities)
+        static void MoveAutoComplete(TextField te, ITextSelection selection)
         {
             while (te.cursorIndex < te.text.Length && !char.IsWhiteSpace(te.text[te.cursorIndex]))
-                selectingUtilities.MoveRight();
+                selection.MoveForward();
 
             // If there is a space at the end of the text, move through it.
             if (te.cursorIndex == te.text.Length - 1 && char.IsWhiteSpace(te.text[te.cursorIndex]))
-                selectingUtilities.MoveRight();
+                selection.MoveForward();
         }
 
         void UpdateQueryErrors()
@@ -608,8 +600,8 @@ namespace UnityEditor.Search
         Rect GetVisualMessagePosition(int startIndex, int endIndex)
         {
             var diff = textElement.worldBound.position - textField.worldBound.position;
-            var start = textElement.uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(startIndex);
-            var end = textElement.uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(endIndex);
+            var start = textElement.selection.GetCursorPositionFromStringIndex(startIndex);
+            var end = textElement.selection.GetCursorPositionFromStringIndex(endIndex);
 
             start += diff;
             end += diff;
@@ -633,10 +625,10 @@ namespace UnityEditor.Search
 
         void ClearOnCursorChangedHandlers()
         {
-            if (selectingUtilities != null)
+            if (textElement != null && textElement.isSelectable)
             {
-                selectingUtilities.OnCursorIndexChange -= OnCursorChanged;
-                selectingUtilities.OnSelectIndexChange -= OnCursorChanged;
+                textElement.selection.OnCursorIndexChange -= OnCursorChanged;
+                textElement.selection.OnSelectIndexChange -= OnCursorChanged;
             }
         }
 

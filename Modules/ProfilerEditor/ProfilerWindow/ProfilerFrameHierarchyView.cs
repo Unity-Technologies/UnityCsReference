@@ -11,6 +11,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.MPE;
 using UnityEditor.Profiling;
 using Unity.Profiling;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -899,7 +900,7 @@ namespace UnityEditorInternal.Profiling
 
             foreach (int t in instanceIds)
             {
-                var obj = EditorUtility.InstanceIDToObject(t);
+                var obj = EditorUtility.EntityIdToObject(t);
                 var com = obj as Component;
                 if (com != null)
                     selection.Add(com.gameObject);

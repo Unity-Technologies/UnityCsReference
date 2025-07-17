@@ -137,7 +137,7 @@ namespace Unity.UI.Builder
             { "white-space", "Text White Space" },
             { "text-overflow", "Text Overflow" },
             { "-unity-background-scale-mode", "Background" },
-            { "-unity-slice-type", "Slice Type" },
+            { "-unity-slice-type", "Background" },
             { FlexDirection.Column.ToString(), "Flex Column" },
             { FlexDirection.ColumnReverse.ToString(), "Flex Column" },
             { FlexDirection.Row.ToString(), "Flex Row" },
@@ -338,7 +338,7 @@ namespace Unity.UI.Builder
                                 popupField.value + BuilderConstants.FieldTooltipDictionarySeparator, out var styleValueTooltip))
                             return;
                         popupField.tooltip = e.tooltip = styleValueTooltip;
-                        e.rect = popupField.visualInput.GetTooltipRect();
+                        e.rect = popupField.visualInput.worldBound;
                     });
                 }
             }
@@ -354,6 +354,15 @@ namespace Unity.UI.Builder
                     && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
                         string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "color"), out var colorTooltip))
                     textShadowStyleField.UpdateSubFieldVisualInputTooltips(offsetXTooltip, offsetYTooltip, blurRadiusTooltip, colorTooltip);
+            }
+            else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
+            {
+                textAutoSizeStyleField.RegisterValueChangedCallback(e => OnFieldValueChangeTextAutoSize(e, styleName));
+                if (BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "min"), out var minSizeTooltip)
+                    && BuilderConstants.InspectorStylePropertiesValuesTooltipsDictionary.TryGetValue(
+                        string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, "max"), out var maxSizeTooltip))
+                    textAutoSizeStyleField.UpdateSubFieldVisualInputTooltips(minSizeTooltip, maxSizeTooltip);
             }
             else if (IsComputedStyleTransformOrigin(val) && fieldElement is TransformOriginStyleField transformOriginStyleField)
             {
@@ -384,7 +393,7 @@ namespace Unity.UI.Builder
                     {
 
                         rotateStyleField.tooltip = e.tooltip = styleValueTooltip;
-                        e.rect = rotateStyleField.visualInput.GetTooltipRect();
+                        e.rect = rotateStyleField.visualInput.worldBound;
                     });
                 }
             }
@@ -425,7 +434,7 @@ namespace Unity.UI.Builder
                     imageStyleField.RegisterCallback<TooltipEvent>(e =>
                     {
                         popupField.tooltip = e.tooltip = popupValueTooltip;
-                        e.rect = popupField.visualInput.GetTooltipRect();
+                        e.rect = popupField.visualInput.worldBound;
                     });
                 }
             }
@@ -456,7 +465,7 @@ namespace Unity.UI.Builder
                                     string.Format(BuilderConstants.InputFieldStyleValueTooltipDictionaryKeyFormat, styleName, StyleSheetUtility.ConvertCamelToDash(uiField.value.ToString())), out styleValueTooltip))
                                 return;
                             uiField.tooltip = e.tooltip = string.Format(BuilderConstants.InputFieldStyleValueTooltipWithDescription, uiField.valueAsString, styleValueTooltip);
-                            e.rect = uiField.visualInput.GetTooltipRect();
+                            e.rect = uiField.visualInput.worldBound;
                         });
                     }
 
@@ -498,25 +507,18 @@ namespace Unity.UI.Builder
                                 enumAsDash, styleValueTooltip)
                             : enumAsDash;
 
-                        if (styleName == "-unity-slice-type")
+                        if (typeName == "Auto")
                         {
-                            uiField.Add(new Button() { name = typeName.ToLowerInvariant(), text = typeName, tooltip = tooltip });
+                            uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = tooltip });
                         }
                         else
                         {
-                            if (typeName == "Auto")
+                            uiField.Add(new Button()
                             {
-                                uiField.Add(new Button() { name = "auto", text = "AUTO", tooltip = tooltip });
-                            }
-                            else
-                            {
-                                uiField.Add(new Button()
-                                {
-                                    name = enumAsDash,
-                                    iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
-                                    tooltip = tooltip
-                                });
-                            }
+                                name = enumAsDash,
+                                iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertCamelToHuman(typeName), $"{iconsFolderName[styleName]}/"),
+                                tooltip = tooltip
+                            });
                         }
                     }
 
@@ -745,19 +747,12 @@ namespace Unity.UI.Builder
             foldoutColorField.header.AddToClassList(BuilderConstants.InspectorLocalStyleOverrideClassName);
             foldoutColorField.headerInputField.value = newValue;
 
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             for (int i = 0; i < foldoutColorField.bindingPathArray.Length; i++)
             {
                 var styleName = foldoutColorField.bindingPathArray[i];
                 var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
-
-                // If the property was bound to a variable then clear it
-                if (styleProperty.values.Length != 0 && styleProperty.IsVariable())
-                    styleProperty.values = new StyleValueHandle[0];
-
-                if (styleProperty.values.Length == 0)
-                    styleSheet.AddValue(styleProperty, newValue);
-                else // TODO: Assume only one value.
-                    styleSheet.SetValue(styleProperty.values[0], newValue);
+                styleProperty.SetColor(styleSheet, newValue);
             }
 
             NotifyStyleChanges();
@@ -798,7 +793,7 @@ namespace Unity.UI.Builder
             var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             var styleProperty = GetLastStyleProperty(currentRule, cSharpStyleName);
             var hasBinding = BuilderInspectorUtilities.HasBinding(m_Inspector, fieldElement);
-            var useStyleProperty = styleProperty != null && !styleProperty.IsVariable() && (!hasBinding || forceInlineValue);
+            var useStyleProperty = styleProperty != null && !styleProperty.ContainsVariable() && (!hasBinding || forceInlineValue);
 
             if (IsComputedStyleFloat(val) && fieldElement is FloatField)
             {
@@ -838,6 +833,18 @@ namespace Unity.UI.Builder
                 var uiField = fieldElement as TextShadowStyleField;
                 var value = GetComputedStyleTextShadowValue(val);
                 if (useStyleProperty && styleProperty.TryGetTextShadow(styleSheet, out var propertyValue))
+                    value = propertyValue;
+
+                uiField.SetValueWithoutNotify(value);
+                uiField.colorField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
+                return true;
+            }
+
+            if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField)
+            {
+                var uiField = fieldElement as TextAutoSizeStyleField;
+                var value = GetComputedStyleTextAutoSizeValue(val);
+                if (useStyleProperty && styleProperty.TryGetTextAutoSize(styleSheet, out var propertyValue))
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
@@ -1108,6 +1115,7 @@ namespace Unity.UI.Builder
                     value = propertyValue;
 
                 uiField.SetValueWithoutNotify(value);
+                uiField.setAlphaIfTransparentWhenPicked = !useStyleProperty;
                 return true;
             }
 
@@ -1172,6 +1180,12 @@ namespace Unity.UI.Builder
                 }
 
                 return true;
+            }
+
+            if (IsComputedStyleFilter(val) && fieldElement is FilterStyleField filterStyleField)
+            {
+                RefreshStyleField(filterStyleField);
+                return false; // To skip UpdateFieldStatus, not applicable here
             }
 
             if (IsComputedStyleCursor(val) && fieldElement is CursorStyleField)
@@ -1432,6 +1446,10 @@ namespace Unity.UI.Builder
             {
                 DispatchChangeEvent(textShadowStyleField);
             }
+            else if (IsComputedStyleTextAutoSize(val) && fieldElement is TextAutoSizeStyleField textAutoSizeStyleField)
+            {
+                DispatchChangeEvent(textAutoSizeStyleField);
+            }
             else if (IsComputedStyleBackground(val) && fieldElement is ImageStyleField imageStyleField)
             {
                 DispatchChangeEvent(imageStyleField);
@@ -1500,6 +1518,7 @@ namespace Unity.UI.Builder
         void RefreshStyleFoldoutColorField(FoldoutColorField foldoutElement)
         {
             var isDirty = false;
+            var anyStylePropertySet = false;
             foreach (var path in foldoutElement.bindingPathArray)
             {
                 var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(path);
@@ -1515,9 +1534,10 @@ namespace Unity.UI.Builder
                     var style = (StyleColor)val;
                     var value = style.value;
 
-                    if (styleProperty != null && !styleProperty.IsVariable())
+                    if (styleProperty != null && !styleProperty.ContainsVariable())
                     {
                         isDirty = true;
+                        anyStylePropertySet = true;
                         value = styleSheet.ReadColor(styleProperty.values[0]);
                     }
 
@@ -1526,6 +1546,7 @@ namespace Unity.UI.Builder
             }
 
             foldoutElement.header.EnableInClassList(BuilderConstants.InspectorLocalStyleOverrideClassName, isDirty);
+            foldoutElement.headerInputField.setAlphaIfTransparentWhenPicked = !anyStylePropertySet;
         }
 
         void SetVariableEditor(BindableElement element, int displayIndex)
@@ -1595,7 +1616,7 @@ namespace Unity.UI.Builder
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
                                 (a) =>
                                 {
-                                    BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName);
+                                    BuilderBindingUtility.DeleteBinding(fieldElement, csPropertyName, m_Inspector.paneWindow as Builder);
                                 },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
@@ -1655,7 +1676,7 @@ namespace Unity.UI.Builder
 
                     foreach (var matchingSelector in matchingSelectors)
                     {
-                        var selectorStr = StyleSheetToUss.ToUssSelector(matchingSelector.complexSelector);
+                        var selectorStr = BuilderStyleSheetExporter.GetSelectorString(matchingSelector.complexSelector);
                         // replace space with Unicode character before # to avoid the shortcut handling in the menu system
                         selectorStr = selectorStr.Replace(" #", "\u00A0#");
 
@@ -1805,10 +1826,18 @@ namespace Unity.UI.Builder
                 if (styleName != "transition-property" && null != GetLastStyleProperty(currentRule, "transition-property"))
                 {
                     var transitionData = currentVisualElement.computedStyle.transitionData.Read();
-                    var maxCount = Mathf.Max(transitionData.MaxCount(), manipulator.GetValuesCount());
                     using var propertyManipulator = GetStylePropertyManipulator("transition-property");
                     if (null == manipulator.styleProperty)
-                        TransferTransitionComputedData(manipulator, transitionData.transitionProperty, StyleValueType.Enum);
+                    {
+                        manipulator.ClearValues();
+                        foreach (var value in transitionData.transitionProperty)
+                        {
+                            if (value.id != StylePropertyId.Unknown)
+                                manipulator.AddStylePropertyName(value);
+                            else
+                                manipulator.AddEnumAsString("ignored");
+                        }
+                    }
                 }
 
                 return isNewValue;
@@ -2170,7 +2199,7 @@ namespace Unity.UI.Builder
 
         void ExtractLocalStylesToNewClass(StyleProperty styleProperty, StyleComplexSelector className)
         {
-            var classNameStr = StyleSheetToUss.ToUssSelector(className);
+            var classNameStr = BuilderStyleSheetExporter.GetSelectorString(className);
             classNameStr = classNameStr.TrimStart(BuilderConstants.UssSelectorClassNameSymbol[0]);
             // Add the new selector to the current element
             currentVisualElement.AddToClassList(classNameStr);
@@ -2325,8 +2354,9 @@ namespace Unity.UI.Builder
             if (vea == null || vea.ruleIndex < 0)
                 return;
 
-            var rule = vta.inlineSheet.GetRule(vea.ruleIndex);
-            currentVisualElement.UpdateInlineRule(vta.inlineSheet, rule);
+            var inlineStyleSheet = vta.GetOrCreateInlineStyleSheet();
+            var rule = inlineStyleSheet.GetRule(vea.ruleIndex);
+            currentVisualElement.UpdateInlineRule(inlineStyleSheet, rule);
         }
 
         void OnFieldKeywordChange(StyleValueKeyword keyword, VisualElement target, string styleName, NotifyType notifyType = NotifyType.Default)
@@ -2705,6 +2735,16 @@ namespace Unity.UI.Builder
             PostStyleFieldSteps(e.elementTarget, styleProperty, styleName, isNewValue);
         }
 
+        void OnFieldValueChangeTextAutoSize(ChangeEvent<TextAutoSize> e, string styleName)
+        {
+            var field = e.target as TextAutoSizeStyleField;
+            var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
+            var isNewValue = !styleProperty.HasValue();
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+            styleProperty.SetTextAutoSize(styleSheet, e.newValue);
+            PostStyleFieldSteps(field, styleProperty, styleName, isNewValue);
+        }
+
         void OnFieldValueChangeTransformOrigin(ChangeEvent<TransformOrigin> e, string styleName)
         {
             var styleProperty = GetOrCreateStylePropertyByStyleName(styleName);
@@ -2889,6 +2929,11 @@ namespace Unity.UI.Builder
             return val is StyleTextShadow || val is TextShadow;
         }
 
+        static public bool IsComputedStyleTextAutoSize(object val)
+        {
+            return val is StyleTextAutoSize || val is TextAutoSize;
+        }
+
         static public bool IsComputedStyleTransformOrigin(object val)
         {
             return val is StyleTransformOrigin || val is TransformOrigin;
@@ -2929,6 +2974,10 @@ namespace Unity.UI.Builder
             return val is StyleBackground || val is Background;
         }
 
+        static public bool IsComputedStyleFilter(object val)
+        {
+            return val is List<FilterFunction>;
+        }
         static public bool IsComputedStyleCursor(object val)
         {
             return val is StyleCursor || val is UnityEngine.UIElements.Cursor;
@@ -2959,6 +3008,15 @@ namespace Unity.UI.Builder
                 return textShadow;
 
             var style = (StyleTextShadow)val;
+            return style.value;
+        }
+
+        static public TextAutoSize GetComputedStyleTextAutoSizeValue(object val)
+        {
+            if (val is TextAutoSize textAutoSize)
+                return textAutoSize;
+
+            var style = (StyleTextAutoSize)val;
             return style.value;
         }
 

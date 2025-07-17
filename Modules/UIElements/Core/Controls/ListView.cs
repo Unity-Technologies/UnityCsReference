@@ -86,7 +86,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new ("itemTemplate", "item-template")
-                });
+                }, false);
             }
 
             #pragma warning disable 649

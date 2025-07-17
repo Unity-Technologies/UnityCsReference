@@ -70,6 +70,7 @@ namespace UnityEngine
         public Transform parent;
         public Scene scene;
         public bool worldSpace;
+        public bool originalImmutable;
     }
 
     [StructLayout(LayoutKind.Sequential, Size = 4)]
@@ -124,6 +125,7 @@ namespace UnityEngine
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
     }
+
 #pragma warning disable 612, 618
     [StructLayout(LayoutKind.Sequential, Size = 4)]
     [UsedByNativeCode]
@@ -177,6 +179,8 @@ namespace UnityEngine
 
         public override string ToString() => m_Data.ToString();
         public string ToString(string format) => m_Data.ToString(format);
+
+        internal static EntityId From(int input) => new EntityId {m_Data = input};
     }
 
     internal static class EntityIdExtensions
@@ -191,22 +195,14 @@ namespace UnityEngine
         public static List<int> ToIntList(this List<EntityId> entityIds) => entityIds.ConvertAll(input => (int)input);
         public static List<EntityId> ToEntityIdList(this List<int> entityIdInts) =>  entityIdInts.ConvertAll(input => (EntityId)input);
 
-/*
         [StructLayout(LayoutKind.Explicit)]
         struct UnsafeTypeCastInstanceIDArray // .GetType() won't be cast, so `is` and `as` won't work.
         {
-            [FieldOffset(0)] public InstanceID[] instance_ids;
-            [FieldOffset(0)] public ulong[] ulongs;
-            [FieldOffset(0)] public long[] longs;
-
-            public static implicit operator UnsafeTypeCastInstanceIDArray(InstanceID[] ids) => new() {instance_ids = ids};
-            public static implicit operator UnsafeTypeCastInstanceIDArray(ulong[] ulongs) => new() {ulongs = ulongs};
-            public static implicit operator UnsafeTypeCastInstanceIDArray(long[] longs) => new() {longs = longs};
-            public static implicit operator InstanceID[](UnsafeTypeCastInstanceIDArray value) => value.instance_ids;
-            public static implicit operator ulong[](UnsafeTypeCastInstanceIDArray value) => value.ulongs;
-            public static implicit operator long[](UnsafeTypeCastInstanceIDArray value) => value.longs;
+            [FieldOffset(0)] public EntityId[] instance_ids;
+            [FieldOffset(0)] public int[] ulongs;
         }
-        */
+        internal static EntityId[] AsEntityIdArray(this int[] instanceIds) => new UnsafeTypeCastInstanceIDArray { ulongs = instanceIds }.instance_ids;
+        internal static int[] AsIntArray(this EntityId[] instanceIds) => new UnsafeTypeCastInstanceIDArray { instance_ids = instanceIds }.ulongs;
     }
     #pragma warning restore 612, 618
 

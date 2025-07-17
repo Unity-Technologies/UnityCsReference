@@ -16,23 +16,29 @@ namespace UnityEngine.UIElements
         private static FilterFunctionDefinition s_InvertDef;
         private static FilterFunctionDefinition s_GrayscaleDef;
         private static FilterFunctionDefinition s_SepiaDef;
+        private static FilterFunctionDefinition s_ContrastDef;
+        private static FilterFunctionDefinition s_HueRotateDef;
 
         public static string GetBuiltinFilterName(FilterFunctionType type)
         {
             switch (type)
             {
                 case FilterFunctionType.Blur:
-                    return "blur";
+                    return StyleValueFunctionExtension.k_FilterBlur;
                 case FilterFunctionType.Tint:
-                    return "tint";
+                    return StyleValueFunctionExtension.k_FilterTint;
                 case FilterFunctionType.Opacity:
-                    return "opacity";
+                    return StyleValueFunctionExtension.k_FilterOpacity;
                 case FilterFunctionType.Invert:
-                    return "invert";
+                    return StyleValueFunctionExtension.k_FilterInvert;
                 case FilterFunctionType.Grayscale:
-                    return "grayscale";
+                    return StyleValueFunctionExtension.k_FilterGrayscale;
                 case FilterFunctionType.Sepia:
-                    return "sepia";
+                    return StyleValueFunctionExtension.k_FilterSepia;
+                case FilterFunctionType.Contrast:
+                    return StyleValueFunctionExtension.k_FilterContrast;
+                case FilterFunctionType.HueRotate:
+                    return StyleValueFunctionExtension.k_FilterHueRotate;
             }
 
             return null;
@@ -77,6 +83,18 @@ namespace UnityEngine.UIElements
                     if (s_SepiaDef == null)
                         s_SepiaDef = CreateColorEffectFilterFunctionDefinition(FilterFunctionType.Sepia);
                     return s_SepiaDef;
+                }
+                case FilterFunctionType.Contrast:
+                {
+                    if (s_ContrastDef == null)
+                        s_ContrastDef = CreateColorEffectFilterFunctionDefinition(FilterFunctionType.Contrast);
+                    return s_ContrastDef;
+                }
+                case FilterFunctionType.HueRotate:
+                {
+                    if (s_HueRotateDef == null)
+                        s_HueRotateDef = CreateColorEffectFilterFunctionDefinition(FilterFunctionType.HueRotate);
+                    return s_HueRotateDef;
                 }
             }
 
@@ -161,7 +179,12 @@ namespace UnityEngine.UIElements
                 case FilterFunctionType.Invert:
                 case FilterFunctionType.Grayscale:
                 case FilterFunctionType.Sepia:
+                case FilterFunctionType.Contrast:
                     defaultVal = new FilterParameter { type = FilterParameterType.Float, floatValue = 1.0f };
+                    break;
+                case FilterFunctionType.HueRotate:
+                    break;
+                default:
                     break;
             }
 
@@ -195,21 +218,22 @@ namespace UnityEngine.UIElements
         static PostProcessingMargins ComputeHorizontalBlurMargins(FilterFunction func)
         {
             float sigma = Math.Max(0.0f, func.parameters[0].floatValue);
-            float radius = sigma * 3.0f; // This is the kernel-size as defined in shader
-            return new PostProcessingMargins() { left = radius, top = 0, right = radius, bottom = 0 };
+            int kernelSize = Mathf.CeilToInt(sigma * 3.0f + 1.0f); // This is the kernel-size as defined in shader
+            return new PostProcessingMargins() { left = kernelSize, top = 0, right = kernelSize, bottom = 0 };
         }
 
         static PostProcessingMargins ComputeVerticalBlurMargins(FilterFunction func)
         {
-            float sigma = Math.Max(0.0f, func.parameters[0].floatValue);
-            float radius = sigma * 3.0f; // This is the kernel-size as defined in shader
-            return new PostProcessingMargins() { left = 0, top = radius, right = 0, bottom = radius };
+            float sigma = Math.Max(1.0f, func.parameters[0].floatValue);
+            int kernelSize = Mathf.CeilToInt(sigma * 3.0f + 1.0f); // This is the kernel-size as defined in shader
+            return new PostProcessingMargins() { left = 0, top = kernelSize, right = 0, bottom = kernelSize };
         }
 
         static void PrepareBuiltinColorEffectMaterialPropertyBlock(MaterialPropertyBlock mpb, FilterFunction func)
         {
             var colorMatrix = Matrix4x4.identity;
             var colorTint = Color.white;
+            float colorOffset = 0.0f;
             float colorInvert = 0.0f;
 
             switch (func.type)
@@ -239,10 +263,50 @@ namespace UnityEngine.UIElements
                         new Vector4(0.189f - 0.189f * (1 - sepia), 0.168f - 0.168f * (1 - sepia), 0.131f + 0.869f * (1 - sepia), 0),
                         new Vector4(0, 0, 0, 1));
                     break;
+                case FilterFunctionType.Contrast:
+                    float contrast = Mathf.Max(0.0f, func.parameters[0].floatValue);
+                    colorOffset = (1.0f - contrast) * 0.5f;
+                    colorMatrix = new Matrix4x4(
+                        new Vector4(contrast, 0, 0, 0),
+                        new Vector4(0, contrast, 0, 0),
+                        new Vector4(0, 0, contrast, 0),
+                        new Vector4(0, 0, 0, 1));
+                    break;
+                case FilterFunctionType.HueRotate:
+                    float angle = func.parameters[0].floatValue;
+                    float cosA = Mathf.Cos(angle);
+                    float sinA = Mathf.Sin(angle);
+
+                    float lumR = 0.213f;
+                    float lumG = 0.715f;
+                    float lumB = 0.072f;
+
+                    colorMatrix = new Matrix4x4(
+                        new Vector4(
+                            lumR + cosA * (1 - lumR) + sinA * (-lumR),
+                            lumR + cosA * (-lumR) + sinA * 0.143f,
+                            lumR + cosA * (-lumR) + sinA * (-(1 - lumR)),
+                            0
+                        ),
+                        new Vector4(
+                            lumG + cosA * (-lumG) + sinA * (-lumG),
+                            lumG + cosA * (1 - lumG) + sinA * 0.140f,
+                            lumG + cosA * (-lumG) + sinA * lumG,
+                            0
+                        ),
+                        new Vector4(
+                            lumB + cosA * (-lumB) + sinA * (1 - lumB),
+                            lumB + cosA * (-lumB) + sinA * -0.283f,
+                            lumB + cosA * (1 - lumB) + sinA * lumB,
+                            0
+                        ),
+                        new Vector4(0, 0, 0, 1));
+                    break;
             }
 
             mpb.SetMatrix("_ColorMatrix", colorMatrix);
             mpb.SetColor("_ColorTint", colorTint);
+            mpb.SetFloat("_ColorOffset", colorOffset);
             mpb.SetFloat("_ColorInvert", colorInvert);
         }
     }

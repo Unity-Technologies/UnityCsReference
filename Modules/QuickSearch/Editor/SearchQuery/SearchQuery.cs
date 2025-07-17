@@ -253,12 +253,16 @@ namespace UnityEditor.Search
 
         public static void SaveSearchQuery(SearchQuery query)
         {
+            var isNew = !File.Exists(query.filePath);
+
             var folder = Path.GetDirectoryName(query.filePath);
             if (!Directory.Exists(folder))
                 Directory.CreateDirectory(folder);
+
             var queryJson = EditorJsonUtility.ToJson(query, true);
             Utils.WriteTextFileToDisk(query.filePath, queryJson);
-            Dispatcher.Emit(SearchEvent.SearchQueryChanged, new SearchEventPayload(query.viewState, query));
+
+            Dispatcher.Emit(isNew ? SearchEvent.UserQueryAdded : SearchEvent.UserQueryChanged, new SearchEventPayload(query.viewState, query));
         }
 
         public static void RemoveSearchQuery(SearchQuery query)
@@ -269,7 +273,7 @@ namespace UnityEditor.Search
                 searchQueries.RemoveAt(index);
                 if (File.Exists(query.filePath))
                     File.Delete(query.filePath);
-                Dispatcher.Emit(SearchEvent.UserQueryRemoved, new SearchEventPayload(query.viewState));
+                Dispatcher.Emit(SearchEvent.UserQueryRemoved, new SearchEventPayload(query.viewState, query));
             }
         }
 

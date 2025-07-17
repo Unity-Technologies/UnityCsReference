@@ -658,13 +658,13 @@ namespace UnityEngine.Rendering
         public void SetBatchBuffer(BatchID batchID, GraphicsBufferHandle buffer) { SetDrawCommandBatchBuffer(batchID, buffer); }
 
         public extern BatchMaterialID RegisterMaterial(Material material);
-        internal extern void RegisterMaterials(ReadOnlySpan<int> materialID, Span<BatchMaterialID> batchMaterialID);
+        internal extern void RegisterMaterials(ReadOnlySpan<EntityId> materialID, Span<BatchMaterialID> batchMaterialID);
 
         public extern void UnregisterMaterial(BatchMaterialID material);
         public extern Material GetRegisteredMaterial(BatchMaterialID material);
 
         public extern BatchMeshID RegisterMesh(Mesh mesh);
-        internal extern void RegisterMeshes(ReadOnlySpan<int> meshID, Span<BatchMeshID> batchMeshID);
+        internal extern void RegisterMeshes(ReadOnlySpan<EntityId> meshID, Span<BatchMeshID> batchMeshID);
 
         public extern void UnregisterMesh(BatchMeshID mesh);
         public extern Mesh GetRegisteredMesh(BatchMeshID mesh);
@@ -732,7 +732,27 @@ namespace UnityEngine.Rendering
             {
                 JobHandle.ScheduleBatchedJobs();
 
-                //@TODO: Check that the no jobs using the buffers have been scheduled that are not returned here...
+                var valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(cullingPlanes.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "provided NativeArray<Plane> of culling planes. This is not safe and may result in crashes or undefined behavior.");
+                }
+
+                valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(cullingSplits.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "provided NativeArray<CullingSplit> of culling splits. This is not safe and may result in crashes or undefined behavior.");
+                }
+
+                valid = AtomicSafetyHandle.CheckAllBufferJobsAreDependencyOrHaveCompleted(drawCommands.m_Safety, context.cullingJobsFence);
+                if (!valid)
+                {
+                    Debug.LogError("Error: The JobHandle returned from OnPerformCulling does not depend on all outstanding jobs scheduled against the " +
+                        "output NativeArray<BatchCullingOutputDrawCommands> of draw commands. This is not safe and may result in crashes or undefined behavior.");
+                }
+
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingPlanes));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(cullingSplits));
                 AtomicSafetyHandle.Release(NativeArrayUnsafeUtility.GetAtomicSafetyHandle(drawCommands));

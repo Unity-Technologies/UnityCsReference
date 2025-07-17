@@ -195,7 +195,7 @@ namespace UnityEngine.UIElements
             if (itemId != m_DropData.lastItemId || !hoveringOverIndentedContent || deltaPosition.sqrMagnitude >= k_DropDeltaPosition)
             {
                 m_DropData.lastItemId = itemId;
-                m_DropData.expandItemBeginTimerMs = Panel.TimeSinceStartupMs();
+                m_DropData.expandItemBeginTimerMs = item.bindableElement.TimeSinceStartupMs();
                 m_DropData.expandItemBeginPosition = pointerPosition;
                 DelayExpandDropItem();
             }
@@ -219,7 +219,7 @@ namespace UnityEngine.UIElements
 
         void ExpandDropItem()
         {
-            var expandTimerExpired = Panel.TimeSinceStartupMs() - m_DropData.expandItemBeginTimerMs > k_DropExpandTimeoutMs;
+            var expandTimerExpired = m_TreeView.TimeSinceStartupMs() - m_DropData.expandItemBeginTimerMs > k_DropExpandTimeoutMs;
             var mayExpand = expandTimerExpired;
             var itemId = m_DropData.lastItemId;
 
@@ -237,7 +237,7 @@ namespace UnityEngine.UIElements
 
                 // Store the expanded array prior to drag so we can revert it with a delay later
                 m_DropData.expandedIdsBeforeDrag ??= list.ToArray();
-                m_DropData.expandItemBeginTimerMs = Panel.TimeSinceStartupMs();
+                m_DropData.expandItemBeginTimerMs = m_TreeView.TimeSinceStartupMs();
                 m_DropData.lastItemId = 0;
 
                 m_TreeView.ExpandItem(itemId);

@@ -39,6 +39,7 @@ namespace UnityEngine.UIElements
         Layout,
         TransformClip,
         Repaint,
+        Authoring,
         Count
     }
 
@@ -186,6 +187,7 @@ namespace UnityEngine.UIElements
             SetUpdater<UIRLayoutUpdater>(VisualTreeUpdatePhase.Layout);
             SetUpdater<VisualTreeHierarchyFlagsUpdater>(VisualTreeUpdatePhase.TransformClip);
             SetUpdater<UIRRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
+            SetUpdater<VisualTreeAuthoringUpdater>(VisualTreeUpdatePhase.Authoring);
         }
     }
 

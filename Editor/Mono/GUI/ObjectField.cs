@@ -140,7 +140,7 @@ namespace UnityEditor
             }
 
             var reference = references[0];
-            Object obj = EditorUtility.InstanceIDToObject(reference.GetInstanceID());
+            Object obj = EditorUtility.EntityIdToObject(reference.GetInstanceID());
             if (obj is MonoBehaviour || obj is ScriptableObject)
             {
                 if (!HasValidScript(obj))

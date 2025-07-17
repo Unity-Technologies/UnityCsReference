@@ -14,6 +14,8 @@ namespace UnityEditor.Profiling
         {
             public static readonly GUIContent k_FrameCountText = EditorGUIUtility.TrTextContent("Frame Count", "Maximum of visible frames in the Profiler Window.");
             public static readonly GUIContent k_FrameCountWarningText = EditorGUIUtility.TrTextContent("Profiler overhead and memory usage can increase significantly the more frames are kept visible in the Profiler Window through the 'Frame Count' setting.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public static readonly GUIContent k_DropFramesOnMemoryPressureText = EditorGUIUtility.TrTextContent("Automatic memory management", "Automatically drop frame data when system memory usage is at critical level and Unity Profiler uses more than 75% of the Editor memory.");
+            public static readonly GUIContent k_DropFramesOnMemoryPressureWarningText = EditorGUIUtility.TrTextContent("Disabled automatic memory management may lead to Unity Editor crashes, system performance degradation and instabilities.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent k_DefaultRecordState = EditorGUIUtility.TrTextContent("Default recording state", "Recording state in which the profiler should start the first time, or when not remembering state.");
             public static readonly GUIContent k_DefaultTargetMode = EditorGUIUtility.TrTextContent("Default editor target mode on start", "Default profiler recording target mode, which is set on editor start.");
             public static readonly GUIContent k_TargetFps = EditorGUIUtility.TrTextContent("Target Frames Per Second (Highlights Module)", "The target frames per second used by the Highlights module.");
@@ -47,8 +49,12 @@ namespace UnityEditor.Profiling
 
             EditorGUIUtility.labelWidth = 300;
             ProfilerUserSettings.frameCount = EditorGUILayout.IntSlider(Content.k_FrameCountText, ProfilerUserSettings.frameCount, ProfilerUserSettings.kMinFrameCount, ProfilerUserSettings.kMaxFrameCount);
-            if (ProfilerUserSettings.frameCount > 600)
+            if (ProfilerUserSettings.frameCount > ProfilerUserSettings.kDefaultFrameCount)
                 EditorGUILayout.HelpBox(Content.k_FrameCountWarningText);
+
+            ProfilerUserSettings.dropFramesOnMemoryPressure = EditorGUILayout.Toggle(Content.k_DropFramesOnMemoryPressureText, ProfilerUserSettings.dropFramesOnMemoryPressure);
+            if (!ProfilerUserSettings.dropFramesOnMemoryPressure)
+                EditorGUILayout.HelpBox(Content.k_DropFramesOnMemoryPressureWarningText);
 
             ProfilerUserSettings.showStatsLabelsOnCurrentFrame = EditorGUILayout.Toggle(ProfilerWindow.Styles.showStatsLabelsOnCurrentFrameLabel, ProfilerUserSettings.showStatsLabelsOnCurrentFrame);
 

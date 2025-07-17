@@ -50,6 +50,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"color", StylePropertyId.Color},
             {"cursor", StylePropertyId.Cursor},
             {"display", StylePropertyId.Display},
+            {"filter", StylePropertyId.Filter},
             {"flex", StylePropertyId.Flex},
             {"flex-basis", StylePropertyId.FlexBasis},
             {"flex-direction", StylePropertyId.FlexDirection},
@@ -106,6 +107,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-top", StylePropertyId.UnitySliceTop},
             {"-unity-slice-type", StylePropertyId.UnitySliceType},
             {"-unity-text-align", StylePropertyId.UnityTextAlign},
+            {"-unity-text-auto-size", StylePropertyId.UnityTextAutoSize},
             {"-unity-text-generator", StylePropertyId.UnityTextGenerator},
             {"-unity-text-outline", StylePropertyId.UnityTextOutline},
             {"-unity-text-outline-color", StylePropertyId.UnityTextOutlineColor},
@@ -149,6 +151,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.Color, "color"},
             {StylePropertyId.Cursor, "cursor"},
             {StylePropertyId.Display, "display"},
+            {StylePropertyId.Filter, "filter"},
             {StylePropertyId.Flex, "flex"},
             {StylePropertyId.FlexBasis, "flex-basis"},
             {StylePropertyId.FlexDirection, "flex-direction"},
@@ -205,6 +208,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {StylePropertyId.UnitySliceTop, "-unity-slice-top"},
             {StylePropertyId.UnitySliceType, "-unity-slice-type"},
             {StylePropertyId.UnityTextAlign, "-unity-text-align"},
+            {StylePropertyId.UnityTextAutoSize, "-unity-text-auto-size"},
             {StylePropertyId.UnityTextGenerator, "-unity-text-generator"},
             {StylePropertyId.UnityTextOutline, "-unity-text-outline"},
             {StylePropertyId.UnityTextOutlineColor, "-unity-text-outline-color"},
@@ -248,6 +252,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"color", "color"},
             {"cursor", "cursor"},
             {"display", "display"},
+            {"filter", "filter"},
             {"flex", "flex"},
             {"flex-basis", "flexBasis"},
             {"flex-direction", "flexDirection"},
@@ -304,6 +309,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"-unity-slice-top", "unitySliceTop"},
             {"-unity-slice-type", "unitySliceType"},
             {"-unity-text-align", "unityTextAlign"},
+            {"-unity-text-auto-size", "unityTextAutoSize"},
             {"-unity-text-generator", "unityTextGenerator"},
             {"-unity-text-outline", "unityTextOutline"},
             {"-unity-text-outline-color", "unityTextOutlineColor"},
@@ -347,6 +353,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"color", "color"},
             {"cursor", "cursor"},
             {"display", "display"},
+            {"filter", "filter"},
             {"flex", "flex"},
             {"flexBasis", "flex-basis"},
             {"flexDirection", "flex-direction"},
@@ -403,6 +410,7 @@ namespace UnityEngine.UIElements.StyleSheets
             {"unitySliceTop", "-unity-slice-top"},
             {"unitySliceType", "-unity-slice-type"},
             {"unityTextAlign", "-unity-text-align"},
+            {"unityTextAutoSize", "-unity-text-auto-size"},
             {"unityTextGenerator", "-unity-text-generator"},
             {"unityTextOutline", "-unity-text-outline"},
             {"unityTextOutlineColor", "-unity-text-outline-color"},
@@ -415,7 +423,7 @@ namespace UnityEngine.UIElements.StyleSheets
         };
 
         internal static readonly HashSet<StylePropertyId> s_AnimatableProperties = new HashSet<StylePropertyId>()
-        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Display, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
+        {StylePropertyId.AlignContent, StylePropertyId.AlignItems, StylePropertyId.AlignSelf, StylePropertyId.All, StylePropertyId.BackgroundColor, StylePropertyId.BackgroundImage, StylePropertyId.BackgroundPosition, StylePropertyId.BackgroundPositionX, StylePropertyId.BackgroundPositionY, StylePropertyId.BackgroundRepeat, StylePropertyId.BackgroundSize, StylePropertyId.BorderBottomColor, StylePropertyId.BorderBottomLeftRadius, StylePropertyId.BorderBottomRightRadius, StylePropertyId.BorderBottomWidth, StylePropertyId.BorderColor, StylePropertyId.BorderLeftColor, StylePropertyId.BorderLeftWidth, StylePropertyId.BorderRadius, StylePropertyId.BorderRightColor, StylePropertyId.BorderRightWidth, StylePropertyId.BorderTopColor, StylePropertyId.BorderTopLeftRadius, StylePropertyId.BorderTopRightRadius, StylePropertyId.BorderTopWidth, StylePropertyId.BorderWidth, StylePropertyId.Bottom, StylePropertyId.Color, StylePropertyId.Filter, StylePropertyId.Flex, StylePropertyId.FlexBasis, StylePropertyId.FlexDirection, StylePropertyId.FlexGrow, StylePropertyId.FlexShrink, StylePropertyId.FlexWrap, StylePropertyId.FontSize, StylePropertyId.Height, StylePropertyId.JustifyContent, StylePropertyId.Left, StylePropertyId.LetterSpacing, StylePropertyId.Margin, StylePropertyId.MarginBottom, StylePropertyId.MarginLeft, StylePropertyId.MarginRight, StylePropertyId.MarginTop, StylePropertyId.MaxHeight, StylePropertyId.MaxWidth, StylePropertyId.MinHeight, StylePropertyId.MinWidth, StylePropertyId.Opacity, StylePropertyId.Overflow, StylePropertyId.Padding, StylePropertyId.PaddingBottom, StylePropertyId.PaddingLeft, StylePropertyId.PaddingRight, StylePropertyId.PaddingTop, StylePropertyId.Position, StylePropertyId.Right, StylePropertyId.Rotate, StylePropertyId.Scale, StylePropertyId.TextOverflow, StylePropertyId.TextShadow, StylePropertyId.Top, StylePropertyId.TransformOrigin, StylePropertyId.Translate, StylePropertyId.UnityBackgroundImageTintColor, StylePropertyId.UnityBackgroundScaleMode, StylePropertyId.UnityFont, StylePropertyId.UnityFontDefinition, StylePropertyId.UnityFontStyleAndWeight, StylePropertyId.UnityOverflowClipBox, StylePropertyId.UnityParagraphSpacing, StylePropertyId.UnitySliceBottom, StylePropertyId.UnitySliceLeft, StylePropertyId.UnitySliceRight, StylePropertyId.UnitySliceScale, StylePropertyId.UnitySliceTop, StylePropertyId.UnitySliceType, StylePropertyId.UnityTextAlign, StylePropertyId.UnityTextOutline, StylePropertyId.UnityTextOutlineColor, StylePropertyId.UnityTextOutlineWidth, StylePropertyId.UnityTextOverflowPosition, StylePropertyId.Visibility, StylePropertyId.WhiteSpace, StylePropertyId.Width, StylePropertyId.WordSpacing};
 
         internal static readonly Dictionary<StylePropertyId, UsageHints> s_AnimatableWithUsageHintProperties = new Dictionary<StylePropertyId, UsageHints>()
         {
@@ -982,6 +990,20 @@ namespace UnityEngine.UIElements.StyleSheets
                     if (string.Equals(value, "lower-right", StringComparison.OrdinalIgnoreCase))
                     {
                         intValue = (int)TextAnchor.LowerRight;
+                        return true;
+                    }
+
+                    break;
+                case StyleEnumType.TextAutoSizeMode:
+                    if (string.Equals(value, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAutoSizeMode.None;
+                        return true;
+                    }
+
+                    if (string.Equals(value, "best-fit", StringComparison.OrdinalIgnoreCase))
+                    {
+                        intValue = (int)TextAutoSizeMode.BestFit;
                         return true;
                     }
 

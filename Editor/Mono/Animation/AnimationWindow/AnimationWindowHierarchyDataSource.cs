@@ -6,7 +6,11 @@ using UnityEditor;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
+
 
 namespace UnityEditorInternal
 {
@@ -141,7 +145,7 @@ namespace UnityEditorInternal
 
         private AnimationWindowHierarchyPropertyNode AddPropertyToHierarchy(AnimationWindowCurve curve, AnimationWindowHierarchyNode parentNode, SerializedObject so)
         {
-            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, 0, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve, AnimationWindowUtility.GetNicePropertyDisplayName(curve.binding, so));
+            AnimationWindowHierarchyPropertyNode node = new AnimationWindowHierarchyPropertyNode(curve.type, 0, curve.propertyName, curve.path, parentNode, curve.binding, curve.isPPtrCurve, curve.isPhantom, curve.inheritanceState, AnimationWindowUtility.GetNicePropertyDisplayName(curve.binding, so));
 
             if (parentNode.icon != null)
                 node.icon = parentNode.icon;
@@ -183,7 +187,6 @@ namespace UnityEditorInternal
                     }
                 }
             }
-
         }
 
         public void UpdateData()

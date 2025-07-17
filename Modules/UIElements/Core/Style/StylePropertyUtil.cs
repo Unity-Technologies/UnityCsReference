@@ -4,6 +4,7 @@
 
 
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.StyleSheets
@@ -43,6 +44,43 @@ namespace UnityEngine.UIElements.StyleSheets
         public static IEnumerable<StylePropertyId> AllPropertyIds()
         {
             return s_IdToName.Keys;
+        }
+
+        public static string ToDisplayString(this LengthUnit unit)
+        {
+            return unit switch
+            {
+                LengthUnit.Percent => "%",
+                LengthUnit.Pixel => "px",
+                _ => "-"
+            };
+        }
+
+        public static string ToDisplayString(this TimeUnit unit)
+        {
+            return unit switch
+            {
+                TimeUnit.Second => "s",
+                TimeUnit.Millisecond => "ms",
+                _ => "-"
+            };
+        }
+
+        public static string ToDisplayString(this AngleUnit unit)
+        {
+            return unit switch
+            {
+                AngleUnit.Degree => "deg",
+                AngleUnit.Radian => "rad",
+                AngleUnit.Turn => "turn",
+                AngleUnit.Gradian => "grad",
+                _ => "-"
+            };
+        }
+
+        public static bool TryParseFloat(System.ReadOnlySpan<char> floatStr, out float value)
+        {
+            return float.TryParse(floatStr, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture.NumberFormat, out value);
         }
     }
 }

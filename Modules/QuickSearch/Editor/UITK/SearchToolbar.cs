@@ -138,9 +138,12 @@ namespace UnityEditor.Search
         private void OnSaveQuery(ISearchQueryView window)
         {
             var saveQueryMenu = new GenericMenu();
-            if (m_ViewModel.state.activeQuery != null)
+
+            var activeQuery = m_ViewModel.state.activeQuery;
+
+            if (activeQuery != null && (activeQuery is not SearchQueryAsset searchQueryAsset || !searchQueryAsset.IsReadOnlyQuery))
             {
-                saveQueryMenu.AddItem(new GUIContent($"Save {m_ViewModel.state.activeQuery.displayName}"), false, window.SaveActiveSearchQuery);
+                saveQueryMenu.AddItem(new GUIContent($"Save {activeQuery.displayName}"), false, window.SaveActiveSearchQuery);
                 saveQueryMenu.AddSeparator("");
             }
 

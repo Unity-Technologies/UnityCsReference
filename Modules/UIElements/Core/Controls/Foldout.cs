@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
                     new (nameof(text), "text"),
                     new (nameof(toggleOnLabelClick), "toggle-on-label-click"),
                     new (nameof(value), "value"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
@@ -204,14 +204,7 @@ namespace UnityEngine.UIElements
             m_Value = newValue;
             m_Toggle.SetValueWithoutNotify(m_Value);
             contentContainer.style.display = newValue ? DisplayStyle.Flex : DisplayStyle.None;
-            if (m_Value)
-            {
-                pseudoStates |= PseudoStates.Checked;
-            }
-            else
-            {
-                pseudoStates &= ~PseudoStates.Checked;
-            }
+            SetCheckedPseudoState(m_Value);
         }
 
         /// <summary>

@@ -8,7 +8,7 @@ using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
-    internal class GameObjectTreeViewItem : TreeViewItem
+    internal class GameObjectTreeViewItem : TreeViewItem<EntityId>
     {
         int m_ColorCode;
         Object m_ObjectPPTR;
@@ -20,7 +20,7 @@ namespace UnityEditor
         Texture2D m_OverlayIcon;
         Texture2D m_SelectedIcon;
 
-        public GameObjectTreeViewItem(int id, int depth, TreeViewItem parent, string displayName)
+        public GameObjectTreeViewItem(int id, int depth, TreeViewItem<EntityId> parent, string displayName)
             : base(id, depth, parent, displayName)
         {
         }

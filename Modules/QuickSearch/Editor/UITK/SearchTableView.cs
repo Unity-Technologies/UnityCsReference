@@ -6,6 +6,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.Internal;
@@ -30,7 +31,7 @@ namespace UnityEditor.Search
             private set
             {
                 viewState.tableConfig = value;
-                Refresh(RefreshFlags.DisplayModeChanged);
+                UpdateColumns();
             }
         }
 
@@ -39,12 +40,15 @@ namespace UnityEditor.Search
 
         Columns viewColumns => m_ListView.columns;
 
+        const float k_DefaultItemHeight = 22f;
+
         public SearchTableView(ISearchView viewModel)
             : base("SearchTableView", viewModel, ussClassName)
         {
+            var fixItemHeight = tableConfig != null ? MathF.Max(k_DefaultItemHeight, tableConfig.itemHeight) : k_DefaultItemHeight;
             m_ListView = new MultiColumnListView(BuildColumns(tableConfig))
             {
-                fixedItemHeight = 22f,
+                fixedItemHeight = fixItemHeight,
                 showAlternatingRowBackgrounds = AlternatingRowBackground.All,
                 selectionType = m_ViewModel.multiselect ? SelectionType.Multiple : SelectionType.Single,
                 itemsSource = (IList)m_ViewModel.results,
@@ -57,6 +61,16 @@ namespace UnityEditor.Search
                 SetupColumns();
 
             SetupColumnSorting();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                // This will ensure all Cells are unbound.
+                m_ListView.itemsSource = null;
+            }
         }
 
         protected override void OnAttachToPanel(AttachToPanelEvent evt)
@@ -162,13 +176,19 @@ namespace UnityEditor.Search
             {
                 Refresh();
             }
-            else if (flags.HasAny(RefreshFlags.DisplayModeChanged))
-            {
-                if (m_ListView != null)
-                    BuildColumns(viewColumns, tableConfig, clear: true);
 
-                ExportTableConfig();
+            if (flags.HasAny(RefreshFlags.DisplayModeChanged))
+            {
+                UpdateColumns();
             }
+        }
+
+        private void UpdateColumns()
+        {
+            if (m_ListView != null)
+                BuildColumns(viewColumns, tableConfig, clear: true);
+            UpdateItemHeight();
+            ExportTableConfig();
         }
 
         protected override float GetItemHeight() => m_ListView.fixedItemHeight;
@@ -204,6 +224,11 @@ namespace UnityEditor.Search
         {
             if (tableConfig?.columns == null)
                 return;
+
+            using var pp = new EditorPerformanceMarker("Search.Table.SortColumns").Auto();
+
+            // A lot of the Selectors and Table getters rely on propertyDatabase for fats access. Get a MonitorView before sorting all items.
+            using var view = SearchMonitor.GetView();
 
             var sorter = new SearchTableViewColumnSorter();
 
@@ -372,6 +397,7 @@ namespace UnityEditor.Search
             if (m_ViewModel != null)
             {
                 var providers = m_ViewModel.context.GetProviders();
+                // TODO: the currentGroup might be an invalid value and we might try to get the DefaultTableConfig from the wrong provider.
                 var provider = providers.Count == 1 ? providers.FirstOrDefault() : SearchService.GetProvider(m_ViewModel.currentGroup);
                 if (provider?.tableConfig != null)
                     return provider.tableConfig(context);
@@ -444,6 +470,8 @@ namespace UnityEditor.Search
             foreach (var sc in tableConfig.columns)
                 columns.Add(new SearchTableViewColumn(sc, m_ViewModel, this));
 
+            UpdateItemHeight();
+
             return columns;
         }
 
@@ -462,6 +490,18 @@ namespace UnityEditor.Search
 
                 // FIXME: Each call to Add here does a Rebuild of the table view
                 columns.Add(new SearchTableViewColumn(sc, m_ViewModel, this));
+            }
+
+            UpdateItemHeight();
+        }
+
+        void UpdateItemHeight()
+        {
+            var fixItemHeight = tableConfig != null ? MathF.Max(k_DefaultItemHeight, tableConfig.itemHeight) : k_DefaultItemHeight;
+            if (m_ListView != null && m_ListView.fixedItemHeight != fixItemHeight)
+            {
+                m_ListView.fixedItemHeight = fixItemHeight;
+                m_ListView.Rebuild();
             }
         }
 
@@ -490,6 +530,7 @@ namespace UnityEditor.Search
                 currentTableConfig.columns = fields.Select(f => ItemSelectors.CreateColumn(f.label, f.name, options: options)).ToArray();
 
             tableConfig = currentTableConfig;
+            UpdateItemHeight();
         }
 
         internal void SetupColumns(IList<SearchField> fields)

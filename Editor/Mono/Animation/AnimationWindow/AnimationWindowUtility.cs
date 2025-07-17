@@ -5,10 +5,8 @@
 using System;
 using System.Globalization;
 using System.Linq;
-using System.IO;
 using System.Collections.Generic;
 using UnityEditor;
-using UnityEditor.Animations;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -16,119 +14,43 @@ using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 
 namespace UnityEditorInternal
 {
-    static class AnimationWindowUtility
+    static partial class AnimationWindowUtility
     {
-        public static void SaveCurve(AnimationClip clip, AnimationWindowCurve curve)
+        public static void CreateDefaultCurves(AnimationWindowState state, ReadOnlySpan<EditorCurveBinding> properties)
         {
-            if (!curve.animationIsEditable)
-                throw new ArgumentException("Curve is not editable and shouldn't be saved.");
+            CreateDefaultCurves(state, state.selection.clip, properties);
+        }
 
-            if (curve.isPPtrCurve)
+        public static void CreateDefaultCurves(AnimationWindowState state, IAnimationWindowClip clip, ReadOnlySpan<EditorCurveBinding> properties)
+        {
+            var curves = new List<AnimationWindowCurve>();
+            clip.CreateCurves(properties, curves);
+
+            foreach (var curve in curves)
             {
-                ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
+                SetDefaultValues(state, clip, curve);
+            }
 
-                if (objectCurve.Length == 0)
-                    objectCurve = null;
+            state.SaveCurves(clip, curves);
+        }
 
-                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
+        static void SetDefaultValues(AnimationWindowState state, IAnimationWindowClip clip, AnimationWindowCurve curve)
+        {
+            Type type = state.selection.GetValueType(curve.binding);
+
+            object currentValue = CurveBindingUtility.GetCurrentValue(state, curve.binding);
+            if (curve.length == 0.0F)
+            {
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, clip.frameRate));
             }
             else
             {
-                AnimationCurve animationCurve = curve.ToAnimationCurve();
-
-                if (animationCurve.keys.Length == 0)
-                    animationCurve = null;
-                else
-                    AnimationUtility.UpdateTangentsFromMode(animationCurve);
-
-                AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, clip.frameRate));
+                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(clip.length, clip.frameRate));
             }
         }
 
-        public static void SaveCurves(AnimationClip clip, IEnumerable<AnimationWindowCurve> curves)
-        {
-            foreach (AnimationWindowCurve curve in curves)
-            {
-                if (!curve.animationIsEditable)
-                    throw new ArgumentException("Curve is not editable and shouldn't be saved.");
-
-                if (curve.isPPtrCurve)
-                {
-                    ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
-
-                    if (objectCurve.Length == 0)
-                        objectCurve = null;
-
-                    AnimationUtility.SetObjectReferenceCurveNoSync(clip, curve.binding, objectCurve);
-                }
-                else
-                {
-                    AnimationCurve animationCurve = curve.ToAnimationCurve();
-
-                    if (animationCurve.keys.Length == 0)
-                        animationCurve = null;
-                    else
-                        AnimationUtility.UpdateTangentsFromMode(animationCurve);
-
-                    AnimationUtility.SetEditorCurveNoSync(clip, curve.binding, animationCurve);
-                }
-            }
-
-            AnimationUtility.SyncEditorCurves(clip);
-        }
-
-        public static void SaveCurves(AnimationClip clip, IList<EditorCurveBinding> bindings, IList<AnimationCurve> curves)
-        {
-            if (bindings.Count != curves.Count)
-                throw new ArgumentException("bindings and curves array sizes do not match");
-
-            for (int i = 0; i < bindings.Count; ++i)
-            {
-                AnimationUtility.SetEditorCurveNoSync(clip, bindings[i], curves[i]);
-            }
-
-            AnimationUtility.SyncEditorCurves(clip);
-        }
-
-        public static void CreateDefaultCurves(AnimationWindowState state, EditorCurveBinding[] properties)
-        {
-            CreateDefaultCurves(state, state.activeAnimationClip, properties);
-        }
-
-        public static void CreateDefaultCurves(AnimationWindowState state, AnimationClip animationClip, EditorCurveBinding[] properties)
-        {
-            properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(animationClip, properties);
-
-            if (properties.Length == 0)
-                return;
-
-            var curves = new List<AnimationWindowCurve>(properties.Length);
-            foreach (EditorCurveBinding prop in properties)
-                curves.Add(CreateDefaultCurve(state, animationClip, prop));
-
-            state.SaveCurves(animationClip, curves);
-        }
-
-        public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, AnimationClip animationClip, EditorCurveBinding binding)
-        {
-            Type type = state.controlInterface.GetValueType(binding);
-
-            AnimationWindowCurve curve = new AnimationWindowCurve(animationClip, binding, type);
-
-            object currentValue = CurveBindingUtility.GetCurrentValue(state, binding);
-            if (animationClip.length == 0.0F)
-            {
-                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, animationClip.frameRate));
-            }
-            else
-            {
-                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(0.0F, animationClip.frameRate));
-                AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Time(animationClip.length, animationClip.frameRate));
-            }
-
-            return curve;
-        }
-
+        // Motion Remove me!
         public static bool ShouldShowAnimationWindowCurve(EditorCurveBinding curveBinding)
         {
             // We don't want to convert the w component of rotation curves to be shown in animation window
@@ -142,16 +64,13 @@ namespace UnityEditorInternal
         {
             if (node.binding != null)
             {
-                if (node.curves.Length > 0)
+                var selectionBinding = state.selection;
+                if (selectionBinding != null)
                 {
-                    AnimationWindowSelectionItem selectionBinding = node.curves[0].selectionBinding;
-                    if (selectionBinding != null)
-                    {
-                        if (selectionBinding.rootGameObject == null && selectionBinding.scriptableObject == null)
-                            return false;
+                    if (selectionBinding.rootGameObject == null)
+                        return false;
 
-                        return state.controlInterface.GetValueType((EditorCurveBinding)node.binding) == null;
-                    }
+                    return state.selection.GetValueType((EditorCurveBinding)node.binding) == null;
                 }
             }
 
@@ -165,18 +84,15 @@ namespace UnityEditorInternal
             return false;
         }
 
-        public static bool IsNodeAmbiguous(AnimationWindowHierarchyNode node)
+        public static bool IsNodeAmbiguous(AnimationWindowState state, AnimationWindowHierarchyNode node)
         {
             if (node.binding != null)
             {
-                if (node.curves.Length > 0)
+                var selectionBinding = state.selection;
+                if (selectionBinding != null)
                 {
-                    AnimationWindowSelectionItem selectionBinding = node.curves[0].selectionBinding;
-                    if (selectionBinding != null)
-                    {
-                        if (selectionBinding.rootGameObject != null)
-                            return AnimationUtility.AmbiguousBinding(node.binding.Value.path, node.binding.Value.m_ClassID, selectionBinding.rootGameObject.transform);
-                    }
+                    if (selectionBinding.rootGameObject != null)
+                        return AnimationUtility.AmbiguousBinding(node.binding.Value.path, node.binding.Value.m_ClassID, selectionBinding.rootGameObject.transform);
                 }
             }
 
@@ -184,7 +100,7 @@ namespace UnityEditorInternal
             if (node.hasChildren)
             {
                 foreach (var child in node.children)
-                    return IsNodeAmbiguous(child as AnimationWindowHierarchyNode);
+                    return IsNodeAmbiguous(state, child as AnimationWindowHierarchyNode);
             }
 
             return false;
@@ -192,8 +108,20 @@ namespace UnityEditorInternal
 
         public static bool IsNodePhantom(AnimationWindowHierarchyNode node)
         {
-            if (node.binding != null)
-                return node.binding.Value.isPhantom;
+            if (node is AnimationWindowHierarchyPropertyNode propertyNode)
+                return propertyNode.isPhantomNode;
+
+            return false;
+        }
+
+        public static bool IsNodeOverriden(AnimationWindowHierarchyNode node)
+        {
+            if (node is AnimationWindowHierarchyPropertyNode propertyNode)
+                return propertyNode.inheritanceState == InheritanceState.Overridden;
+
+            // Go through all child nodes recursively
+            if (node.hasChildren)
+                return node.children.All(child => IsNodeOverriden(child as AnimationWindowHierarchyNode));
 
             return false;
         }
@@ -206,16 +134,15 @@ namespace UnityEditorInternal
 
         public static void AddKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
+            if (state.selection.isReadOnly)
+                return;
+
             string undoLabel = L10n.Tr("Add Key");
             state.SaveKeySelection(undoLabel);
-
             state.ClearKeySelections();
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                if (!curve.animationIsEditable)
-                    continue;
-
                 AnimationKeyTime shiftedMouseKeyTime = AnimationKeyTime.Time(time.time, time.frameRate);
 
                 object value = CurveBindingUtility.GetCurrentValue(state, curve);
@@ -225,23 +152,23 @@ namespace UnityEditorInternal
                     state.SelectKey(keyframe);
             }
 
-            state.SaveCurves(state.activeAnimationClip, curves, undoLabel);
+            state.SaveCurves(state.selection.clip, curves, undoLabel);
         }
 
         public static void RemoveKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
+            if (state.selection.isReadOnly)
+                return;
+
             string undoLabel = L10n.Tr("Remove Key");
             state.SaveKeySelection(undoLabel);
 
             foreach (AnimationWindowCurve curve in curves)
             {
-                if (!curve.animationIsEditable)
-                    continue;
-
                 curve.RemoveKeyframe(time);
             }
 
-            state.SaveCurves(state.activeAnimationClip, curves, undoLabel);
+            state.SaveCurves(state.selection.clip, curves, undoLabel);
         }
 
         public static AnimationWindowKeyframe AddKeyframeToCurve(AnimationWindowCurve curve, object value, Type type, AnimationKeyTime time)
@@ -268,19 +195,19 @@ namespace UnityEditorInternal
             }
             else if (curve.isDiscreteCurve)
             {
-                Keyframe tempKey = new Keyframe(time.time, 0f);
-                AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
-                AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
-                AnimationUtility.SetKeyBroken(ref tempKey, true);
-
-                keyframe = new AnimationWindowKeyframe(curve, tempKey);
+                keyframe = new AnimationWindowKeyframe();
+                keyframe.time = time.time;
+                keyframe.leftTangentMode = TangentMode.Constant;
+                keyframe.rightTangentMode = TangentMode.Constant;
+                keyframe.brokenTangent = true;
+                keyframe.curve = curve;
                 keyframe.value = Convert.ToInt32(value);
 
                 curve.AddKeyframe(keyframe, time);
             }
             else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
-                Keyframe tempKey = new Keyframe(time.time, Convert.ToSingle(value));
+                Keyframe tempKey = new Keyframe(time.time, (float)value);
                 if (type == typeof(bool))
                 {
                     AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
@@ -330,7 +257,9 @@ namespace UnityEditorInternal
                     }
                 }
 
-                keyframe = new AnimationWindowKeyframe(curve, tempKey);
+                keyframe = new AnimationWindowKeyframe();
+                keyframe.FromKeyframe(curve, tempKey);
+
                 curve.AddKeyframe(keyframe, time);
             }
 
@@ -363,60 +292,6 @@ namespace UnityEditorInternal
             }
 
             return results;
-        }
-
-        public static bool IsCurveCreated(AnimationClip clip, EditorCurveBinding binding)
-        {
-            if (binding.isPPtrCurve)
-            {
-                return AnimationUtility.GetObjectReferenceCurve(clip, binding) != null;
-            }
-            else
-            {
-                // For RectTransform.position we only want .z
-                if (IsRectTransformPosition(binding))
-                    binding.propertyName = binding.propertyName.Replace(".x", ".z").Replace(".y", ".z");
-                if (IsRotationCurve(binding))
-                {
-                    return AnimationUtility.GetEditorCurve(clip, binding) != null || HasOtherRotationCurve(clip, binding);
-                }
-
-                return AnimationUtility.GetEditorCurve(clip, binding) != null;
-            }
-        }
-
-        internal static bool HasOtherRotationCurve(AnimationClip clip, EditorCurveBinding rotationBinding)
-        {
-            if (rotationBinding.propertyName.StartsWith("m_LocalRotation"))
-            {
-                EditorCurveBinding x = rotationBinding;
-                EditorCurveBinding y = rotationBinding;
-                EditorCurveBinding z = rotationBinding;
-                x.propertyName = "localEulerAnglesRaw.x";
-                y.propertyName = "localEulerAnglesRaw.y";
-                z.propertyName = "localEulerAnglesRaw.z";
-
-                return AnimationUtility.GetEditorCurve(clip, x) != null ||
-                    AnimationUtility.GetEditorCurve(clip, y) != null ||
-                    AnimationUtility.GetEditorCurve(clip, z) != null;
-            }
-            else
-            {
-                EditorCurveBinding x = rotationBinding;
-                EditorCurveBinding y = rotationBinding;
-                EditorCurveBinding z = rotationBinding;
-                EditorCurveBinding w = rotationBinding;
-
-                x.propertyName = "m_LocalRotation.x";
-                y.propertyName = "m_LocalRotation.y";
-                z.propertyName = "m_LocalRotation.z";
-                w.propertyName = "m_LocalRotation.w";
-
-                return AnimationUtility.GetEditorCurve(clip, x) != null ||
-                    AnimationUtility.GetEditorCurve(clip, y) != null ||
-                    AnimationUtility.GetEditorCurve(clip, z) != null ||
-                    AnimationUtility.GetEditorCurve(clip, w) != null;
-            }
         }
 
         internal static bool IsRotationCurve(EditorCurveBinding curveBinding)
@@ -634,7 +509,7 @@ namespace UnityEditorInternal
                         else if (isInt)
                             value = propertyIter.intValue.ToString();
                         else if (isEnum)
-                                value = propertyIter.enumValueIndex.ToString();
+                            value = propertyIter.enumValueIndex.ToString();
                         else // if (isBool)
                             value = propertyIter.boolValue ? "1" : "0";
 
@@ -655,42 +530,6 @@ namespace UnityEditorInternal
             return modifications.ToArray();
         }
 
-        public static EditorCurveBinding[] PropertyModificationsToEditorCurveBindings(PropertyModification[] modifications, GameObject rootGameObject, AnimationClip animationClip)
-        {
-            if (modifications == null)
-                return new EditorCurveBinding[] {};
-
-            var bindings = new HashSet<EditorCurveBinding>();
-
-            for (int i = 0; i < modifications.Length; ++i)
-            {
-                var binding = new EditorCurveBinding();
-                if (AnimationUtility.PropertyModificationToEditorCurveBinding(modifications[i], rootGameObject, out binding) != null)
-                {
-                    EditorCurveBinding[] additionalBindings = RotationCurveInterpolation.RemapAnimationBindingForAddKey(binding, animationClip);
-                    if (additionalBindings != null)
-                    {
-                        for (int j = 0; j < additionalBindings.Length; ++j)
-                        {
-                            bindings.Add(additionalBindings[j]);
-                        }
-                    }
-                    else
-                    {
-                        bindings.Add(binding);
-                    }
-                }
-            }
-
-            return bindings.ToArray();
-        }
-
-        public static EditorCurveBinding[] SerializedPropertyToEditorCurveBindings(SerializedProperty property, GameObject rootGameObject, AnimationClip animationClip)
-        {
-            PropertyModification[] modifications = AnimationWindowUtility.SerializedPropertyToPropertyModifications(property);
-            return PropertyModificationsToEditorCurveBindings(modifications, rootGameObject, animationClip);
-        }
-
         public static bool CurveExists(EditorCurveBinding binding, AnimationWindowCurve[] curves)
         {
             foreach (var animationWindowCurve in curves)
@@ -701,35 +540,6 @@ namespace UnityEditorInternal
                     return true;
             }
             return false;
-        }
-
-        public static EditorCurveBinding GetRenamedBinding(EditorCurveBinding binding, string newPath)
-        {
-            EditorCurveBinding newBinding = new EditorCurveBinding();
-            newBinding.path = newPath;
-            newBinding.propertyName = binding.propertyName;
-            newBinding.type = binding.type;
-            return newBinding;
-        }
-
-        public static void RenameCurvePath(AnimationWindowCurve curve, EditorCurveBinding newBinding, AnimationClip clip)
-        {
-            if (curve.isPPtrCurve)
-            {
-                // Delete old curve
-                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, null);
-
-                // Add new curve
-                AnimationUtility.SetObjectReferenceCurve(clip, newBinding, curve.ToObjectCurve());
-            }
-            else
-            {
-                // Delete old curve
-                AnimationUtility.SetEditorCurve(clip, curve.binding, null);
-
-                // Add new curve
-                AnimationUtility.SetEditorCurve(clip, newBinding, curve.ToAnimationCurve());
-            }
         }
 
         private static readonly string k_PositionDisplayName = L10n.Tr("Position");
@@ -748,7 +558,7 @@ namespace UnityEditorInternal
             propertyName = propertyName.Replace("localEulerAngles", k_RotationDisplayName);
             propertyName = propertyName.Replace("m_Materials.Array.data", k_MaterialReferenceDisplayName);
             if (propertyName.StartsWith("managedReferences["))
-                propertyName = propertyName.Remove(0, propertyName.IndexOf('.')+1);
+                propertyName = propertyName.Remove(0, propertyName.IndexOf('.') + 1);
 
             propertyName = ObjectNames.NicifyVariableName(propertyName);
             propertyName = propertyName.Replace("m_", "");
@@ -785,7 +595,6 @@ namespace UnityEditorInternal
                 {
                     return ObjectNames.NicifyVariableName(curveBinding.type.Name) + "." + curveBinding.propertyName;
                 }
-
             }
 
             return AnimationWindowUtility.GetNicePropertyDisplayName(curveBinding.type, AnimationWindowUtility.GetPropertyGroupName(curveBinding.propertyName));
@@ -801,7 +610,7 @@ namespace UnityEditorInternal
 
         public static string GetNicePropertyGroupDisplayName(EditorCurveBinding curveBinding, SerializedObject so)
         {
-            if (curveBinding.isSerializeReferenceCurve )
+            if (curveBinding.isSerializeReferenceCurve)
             {
                 if (so != null)
                 {
@@ -879,7 +688,7 @@ namespace UnityEditorInternal
             return propertyName;
         }
 
-        public static float GetNextKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
+        public static float GetNextKeyframeTime(IEnumerable<AnimationWindowCurve> curves, float currentTime, float frameRate)
         {
             AnimationKeyTime candidateKeyTime = AnimationKeyTime.Frame(int.MaxValue, frameRate);
             AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
@@ -904,7 +713,7 @@ namespace UnityEditorInternal
             return found ? candidateKeyTime.time : time.time;
         }
 
-        public static float GetPreviousKeyframeTime(AnimationWindowCurve[] curves, float currentTime, float frameRate)
+        public static float GetPreviousKeyframeTime(IEnumerable<AnimationWindowCurve> curves, float currentTime, float frameRate)
         {
             AnimationKeyTime candidateKeyTime = AnimationKeyTime.Time(float.MinValue, frameRate);
             AnimationKeyTime time = AnimationKeyTime.Time(currentTime, frameRate);
@@ -931,248 +740,9 @@ namespace UnityEditorInternal
             return found ? candidateKeyTime.time : time.time;
         }
 
-        // Add animator, controller and clip to gameobject if they are missing to make this gameobject animatable
-        public static bool InitializeGameobjectForAnimation(GameObject animatedObject)
-        {
-            Component animationPlayer = GetClosestAnimationPlayerComponentInParents(animatedObject.transform);
-            if (animationPlayer == null)
-            {
-                var newClip = CreateNewClip(animatedObject.name);
-
-                if (newClip == null)
-                    return false;
-
-                animationPlayer = EnsureActiveAnimationPlayer(animatedObject);
-                Undo.RecordObject(animationPlayer, "Add animation clip");
-                bool success = AddClipToAnimationPlayerComponent(animationPlayer, newClip);
-
-                if (!success)
-                    Object.DestroyImmediate(animationPlayer);
-
-                return success;
-            }
-
-            return EnsureAnimationPlayerHasClip(animationPlayer);
-        }
-
-        // Ensures that the gameobject or it's parents have an animation player component. If not try to create one.
-        public static Component EnsureActiveAnimationPlayer(GameObject animatedObject)
-        {
-            Component closestAnimator = GetClosestAnimationPlayerComponentInParents(animatedObject.transform);
-            if (closestAnimator == null)
-            {
-                return Undo.AddComponent<Animator>(animatedObject);
-            }
-            return closestAnimator;
-        }
-
-        // Ensures that animator has atleast one clip and controller to go with it
-        private static bool EnsureAnimationPlayerHasClip(Component animationPlayer)
-        {
-            if (animationPlayer == null)
-                return false;
-
-            if (AnimationUtility.GetAnimationClips(animationPlayer.gameObject).Length > 0)
-                return true;
-
-            // At this point we know that we can create a clip
-            var newClip = CreateNewClip(animationPlayer.gameObject.name);
-
-            if (newClip == null)
-                return false;
-
-            // End animation mode before adding or changing animation component to object
-            AnimationMode.StopAnimationMode();
-
-            // By default add it the animation to the Animator component.
-            return AddClipToAnimationPlayerComponent(animationPlayer, newClip);
-        }
-
-        public static bool AddClipToAnimationPlayerComponent(Component animationPlayer, AnimationClip newClip)
-        {
-            if (animationPlayer is Animator)
-                return AddClipToAnimatorComponent(animationPlayer as Animator, newClip);
-            else if (animationPlayer is Animation)
-                return AddClipToAnimationComponent(animationPlayer as Animation, newClip);
-            return false;
-        }
-
-        public static bool AddClipToAnimatorComponent(Animator animator, AnimationClip newClip)
-        {
-            UnityEditor.Animations.AnimatorController controller = UnityEditor.Animations.AnimatorController.GetEffectiveAnimatorController(animator);
-            if (controller == null)
-            {
-                controller = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerForClip(newClip, animator.gameObject);
-
-                Undo.RecordObject(animator, "Set Controller");
-                UnityEditor.Animations.AnimatorController.SetAnimatorController(animator, controller);
-
-                if (controller != null)
-                    return true;
-            }
-            else
-            {
-                // Do we already have a state with the clips name?
-                ChildAnimatorState childAnimatorState = controller.layers[0].stateMachine.FindState(newClip.name);
-
-                if (childAnimatorState.Equals(default(ChildAnimatorState)))
-                    controller.AddMotion(newClip);
-
-                // Assign clip if state already present, but without a motion
-                else if (childAnimatorState.state && childAnimatorState.state.motion == null)
-                    childAnimatorState.state.motion = newClip;
-
-                // State present, but with some other clip
-                else if (childAnimatorState.state && childAnimatorState.state.motion != newClip)
-                    controller.AddMotion(newClip);
-
-                return true;
-            }
-            return false;
-        }
-
-        public static bool AddClipToAnimationComponent(Animation animation, AnimationClip newClip)
-        {
-            SetClipAsLegacy(newClip);
-            animation.AddClip(newClip, newClip.name);
-            return true;
-        }
-
-        internal static string s_LastPathUsedForNewClip;
-        internal static AnimationClip CreateNewClip(string gameObjectName)
-        {
-            // Go forward with presenting user a save clip dialog
-            string message = string.Format(L10n.Tr("Create a new animation for the game object '{0}':"), gameObjectName);
-            string newClipDirectory = ProjectWindowUtil.GetActiveFolderPath();
-            if (s_LastPathUsedForNewClip != null)
-            {
-                string directoryPath = Path.GetDirectoryName(s_LastPathUsedForNewClip);
-                if (directoryPath != null && Directory.Exists(directoryPath))
-                {
-                    newClipDirectory = directoryPath;
-                }
-            }
-            string newClipPath = EditorUtility.SaveFilePanelInProject(L10n.Tr("Create New Animation"), "New Animation", "anim", message, newClipDirectory);
-
-            // If user canceled or save path is invalid, we can't create a clip
-            if (newClipPath == "")
-                return null;
-
-            return CreateNewClipAtPath(newClipPath);
-        }
-
-        // Create a new animation clip asset for gameObject at a certain asset path.
-        // The clipPath parameter must be a full asset path ending with '.anim'. e.g. "Assets/Animations/New Clip.anim"
-        // This function will overwrite existing .anim files.
-        internal static AnimationClip CreateNewClipAtPath(string clipPath)
-        {
-            s_LastPathUsedForNewClip = clipPath;
-
-            var newClip = new AnimationClip();
-
-            var info = AnimationUtility.GetAnimationClipSettings(newClip);
-            info.loopTime = true;
-            AnimationUtility.SetAnimationClipSettingsNoDirty(newClip, info);
-
-            AnimationClip asset = AssetDatabase.LoadMainAssetAtPath(clipPath) as AnimationClip;
-
-            if (asset)
-            {
-                newClip.name = asset.name;
-                EditorUtility.CopySerialized(newClip, asset);
-                AssetDatabase.SaveAssets();
-                Object.DestroyImmediate(newClip);
-                return asset;
-            }
-
-            AssetDatabase.CreateAsset(newClip, clipPath);
-            return newClip;
-        }
-
-        private static void SetClipAsLegacy(AnimationClip clip)
-        {
-            SerializedObject s = new SerializedObject(clip);
-            s.FindProperty("m_Legacy").boolValue = true;
-            s.ApplyModifiedProperties();
-        }
-
-        internal static AnimationClip AllocateAndSetupClip(bool useAnimator)
-        {
-            // At this point we know that we can create a clip
-            AnimationClip newClip = new AnimationClip();
-            if (useAnimator)
-            {
-                AnimationClipSettings info = AnimationUtility.GetAnimationClipSettings(newClip);
-                info.loopTime = true;
-                AnimationUtility.SetAnimationClipSettingsNoDirty(newClip, info);
-            }
-            return newClip;
-        }
-
         public static int GetPropertyNodeID(int setId, string path, System.Type type, string propertyName)
         {
             return (setId + path + type.Name + propertyName).GetHashCode();
-        }
-
-        // What is the first animation player component (Animator or Animation) when recursing parent tree toward root
-        public static Component GetClosestAnimationPlayerComponentInParents(Transform tr)
-        {
-            while (true)
-            {
-                if (tr.TryGetComponent(out Animator animator))
-                {
-                    return animator;
-                }
-
-                if (tr.TryGetComponent(out Animation animation))
-                {
-                    return animation;
-                }
-
-                if (tr.TryGetComponent(out IAnimationClipSource clipPlayer))
-                {
-                    if (clipPlayer is Component clipPlayerComponent)
-                    {
-                        return clipPlayerComponent;
-                    }
-                }
-
-                if (tr == tr.root)
-                    break;
-
-                tr = tr.parent;
-            }
-            return null;
-        }
-
-        // What is the first animator component when recursing parent tree toward root
-        public static Animator GetClosestAnimatorInParents(Transform tr)
-        {
-            while (true)
-            {
-                if (tr.TryGetComponent(out Animator animator))
-                {
-                    return animator;
-                }
-                if (tr == tr.root) break;
-                tr = tr.parent;
-            }
-            return null;
-        }
-
-        // What is the first animation component when recursing parent tree toward root
-        public static Animation GetClosestAnimationInParents(Transform tr)
-        {
-            while (true)
-            {
-                if (tr.TryGetComponent(out Animation animation))
-                {
-                    return animation;
-                }
-                if (tr == tr.root) break;
-                tr = tr.parent;
-            }
-            return null;
         }
 
         public static void SyncTimeArea(TimeArea from, TimeArea to)
@@ -1277,18 +847,24 @@ namespace UnityEditorInternal
             return method;
         }
 
-        public static CurveWrapper GetCurveWrapper(AnimationWindowCurve curve, AnimationClip clip)
+        public static CurveWrapper GetCurveWrapper(AnimationWindowState state, AnimationWindowCurve curve)
         {
+            //Discrete and PPtr curves are not allowed to create curve wrappers.
+            if (curve.isDiscreteCurve || curve.isPPtrCurve)
+                return null;
+
+			var clip = state.selection.clip;
+
             CurveWrapper curveWrapper = new CurveWrapper();
             curveWrapper.renderer = CreateRendererForCurve(curve);
             curveWrapper.preProcessKeyMovementDelegate = CreateKeyPreprocessorForCurve(curve);
             curveWrapper.renderer.SetWrap(WrapMode.Clamp, clip.isLooping ? WrapMode.Loop : WrapMode.Clamp);
-            curveWrapper.renderer.SetCustomRange(clip.startTime, clip.stopTime);
+            curveWrapper.renderer.SetCustomRange(0f, clip.length);
             curveWrapper.binding = curve.binding;
             curveWrapper.id = curve.GetHashCode();
             curveWrapper.color = CurveUtility.GetPropertyColor(curve.propertyName);
             curveWrapper.hidden = false;
-            curveWrapper.selectionBindingInterface = curve.selectionBinding;
+            curveWrapper.selectionBindingInterface = state.selection;
             return curveWrapper;
         }
 

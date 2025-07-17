@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Overlays
@@ -54,7 +53,7 @@ namespace UnityEditor.Overlays
         public override void BeginHover()
         {
             base.BeginHover();
-           
+
             if (m_TargetContainer is not ToolbarOverlayContainer)
                 m_DraggedOverlay.rootVisualElement.RegisterCallback<GeometryChangedEvent>(OnDraggedOverlayGeometryChanged);
 
@@ -67,10 +66,16 @@ namespace UnityEditor.Overlays
 
             parent.Insert(index, insertIndicator);
 
-            //Horizontal container has vertical insert indicators
-            insertIndicator.Setup(m_TargetOverlay.container.isHorizontal, targetContainer is ToolbarOverlayContainer,
-                (dockAfter && m_TargetOverlay.container.GetLastVisible(m_TargetSection) == m_TargetOverlay)
-                || (!dockAfter && m_TargetOverlay.container.GetFirstVisible(m_TargetSection) == m_TargetOverlay));
+            var section = m_TargetOverlay.container.GetContainerSection(m_TargetSection);
+
+            var insertIndicatorStyle = targetContainer is ToolbarOverlayContainer || targetContainer is DynamicPanelOverlayContainer
+                ? OverlayInsertIndicator.InsertIndicatorStyle.Toolbar
+                : OverlayInsertIndicator.InsertIndicatorStyle.Normal;
+
+            // Horizontal container has vertical insert indicators
+            insertIndicator.Setup(m_TargetOverlay.container.isHorizontal, insertIndicatorStyle,
+                (dockAfter && section.GetLastVisible() == m_TargetOverlay)
+                || (!dockAfter && section.GetFirstVisible() == m_TargetOverlay));
 
             MatchIndicatorToDraggedOverlay();
         }
@@ -79,11 +84,11 @@ namespace UnityEditor.Overlays
         {
             base.EndHover();
             insertIndicator.RemoveFromHierarchy();
-            
+
             if (m_TargetContainer is not ToolbarOverlayContainer)
                 m_DraggedOverlay.rootVisualElement.UnregisterCallback<GeometryChangedEvent>(OnDraggedOverlayGeometryChanged);
         }
-        
+
         void OnDraggedOverlayGeometryChanged(GeometryChangedEvent evt)
         {
             MatchIndicatorToDraggedOverlay();
@@ -91,15 +96,35 @@ namespace UnityEditor.Overlays
 
         void MatchIndicatorToDraggedOverlay()
         {
-            // When adding an overlay in one of the 2 columns we use the current width of the overlay as preview
             if (m_TargetContainer is not ToolbarOverlayContainer)
-                insertIndicator.style.width = m_DraggedOverlay.rootVisualElement.layout.width;
+            {
+                if (m_TargetContainer is DynamicPanelOverlayContainer dynamicPanelOverlayContainer)
+                {
+                    // When adding an overlay in one of the 2 dynamic panels, we use the current width of the overlay as preview,
+                    // only if it's bigger than the container's width.
+                    if (dynamicPanelOverlayContainer.layout.width < m_DraggedOverlay.rootVisualElement.layout.width)
+                    {
+                        insertIndicator.style.width = m_DraggedOverlay.rootVisualElement.layout.width;
+                        insertIndicator.style.alignSelf = StyleKeyword.Null;
+                    }
+                    else
+                    {
+                        insertIndicator.style.width = StyleKeyword.Null;
+                        insertIndicator.style.alignSelf = Align.Stretch;
+                    }
+                }
+                else
+                {
+                    // When adding an overlay in one of the 2 columns we use the current width of the overlay as preview
+                    insertIndicator.style.width = m_DraggedOverlay.rootVisualElement.layout.width;
+                }
+            }
         }
 
         public override void DropOverlay(Overlay overlay)
         {
+            m_TargetOverlay.container.GetOverlayIndex(m_TargetOverlay, out OverlayContainerSection section, out _);
 
-            m_TargetOverlay.container.GetOverlayIndex(m_TargetOverlay, out var section, out _);
             if (ShouldDockAfter(section))
             {
                 overlay.DockAfter(m_TargetOverlay);

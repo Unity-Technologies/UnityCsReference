@@ -10,8 +10,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> background.
     /// </summary>
+    [Serializable]
     public partial struct Background : IEquatable<Background>
     {
+        [SerializeField]
         Texture2D m_Texture;
         /// <summary>
         /// The texture to display as a background.
@@ -30,6 +32,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         private Sprite m_Sprite;
         /// <summary>
         /// The sprite to display as a background.
@@ -48,6 +51,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         RenderTexture m_RenderTexture;
         /// <summary>
         /// The <see cref="RenderTexture"/> to display as a background.
@@ -66,6 +70,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         VectorImage m_VectorImage;
         /// <summary>
         /// The <see cref="VectorImage"/> to display as a background.

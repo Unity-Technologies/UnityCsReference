@@ -133,6 +133,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         StyleEnum<DisplayStyle> display { get; set; }
         /// <summary>
+        /// Filter effects to apply to the element.
+        /// </summary>
+        StyleList<FilterFunction> filter { get; set; }
+        /// <summary>
         /// Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
         /// </summary>
         StyleLength flexBasis { get; set; }
@@ -357,6 +361,10 @@ namespace UnityEngine.UIElements
         /// This property is inherited by default.
         /// </remarks>
         StyleEnum<TextAnchor> unityTextAlign { get; set; }
+        /// <summary>
+        /// Automatically adjusts the text size to best fit its container using specified minimum and maximum values.
+        /// </summary>
+        StyleTextAutoSize unityTextAutoSize { get; set; }
         /// <summary>
         /// Switches between Unity's standard and advanced text generator
         /// </summary>

@@ -77,11 +77,6 @@ namespace Unity.UI.Builder
         VisualTreeAsset m_VisualTreeAssetCopy;
 
         /// <summary>
-        /// The selection of the UI Builder.
-        /// </summary>
-        public BuilderSelection selection { get; set; }
-
-        /// <summary>
         /// The parent view.
         /// </summary>
         public BuilderBindingView parentView { get; }
@@ -105,24 +100,14 @@ namespace Unity.UI.Builder
 
             // Create a copy of the VisualElement as well.
             VisualElementAsset vea = null;
-            foreach (var v in m_VisualTreeAssetCopy.visualElementAssets)
+            foreach (var a in m_VisualTreeAssetCopy.DepthFirstTraversal())
             {
+                if (a is not VisualElementAsset v)
+                    continue;
                 if (v.id == visualElement.GetVisualElementAsset().id)
                 {
                     vea = v;
                     break;
-                }
-            }
-
-            if (vea == null)
-            {
-                foreach (var t in m_VisualTreeAssetCopy.templateAssets)
-                {
-                    if (t.id == visualElement.GetVisualElementAsset().id)
-                    {
-                        vea = t;
-                        break;
-                    }
                 }
             }
 
@@ -188,14 +173,7 @@ namespace Unity.UI.Builder
 
                         if (currentAttributesUxmlOwner != null)
                         {
-                            var entry = uxmlDocument.GetUxmlObjectEntry(currentAttributesUxmlOwner.id);
-                            if (entry.uxmlObjectAssets?.Count > 0)
-                            {
-                                for (var i = entry.uxmlObjectAssets.Count - 1 ; i >= 0; i--)
-                                {
-                                    uxmlDocument.RemoveUxmlObject(entry.uxmlObjectAssets[i].id);
-                                }
-                            }
+                            currentAttributesUxmlOwner.RemoveUxmlObjectAssetChildren();
                         }
                     }
 
@@ -405,12 +383,13 @@ namespace Unity.UI.Builder
                 return;
 
             // Copy asset over to the target view's asset.
-            var propertiesToCopy = origin.GetProperties();
+            var propertiesToCopy = origin.properties;
             if (propertiesToCopy != null)
             {
-                for (var i = 0; i < propertiesToCopy.Count; i += 2)
+                for (var i = 0; i < propertiesToCopy.Count; ++i)
                 {
-                    destination.SetAttribute(propertiesToCopy[i], propertiesToCopy[i + 1]);
+                    var property = propertiesToCopy[i];
+                    destination.SetAttribute(property.name, property.value);
                 }
             }
 
@@ -459,9 +438,7 @@ namespace Unity.UI.Builder
 
         internal static string GetSerializedDataBindingRoot(string path)
         {
-            // Extract the root path, it will look like:
-            // "m_VisualElementAssets.Array.data[x].m_SerializedData.bindings.Array.data[x]"
-            var searchIndex = path.IndexOf("bindings.Array.data");
+            var searchIndex = path.IndexOf("bindings.Array.data", StringComparison.Ordinal);
             var endIndex = path.IndexOf(']', searchIndex);
             return path.Substring(0, endIndex + 1);
         }

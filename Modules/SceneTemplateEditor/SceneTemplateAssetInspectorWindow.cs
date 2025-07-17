@@ -233,7 +233,7 @@ namespace UnityEditor.SceneTemplate
 
         void OnCreateSceneTemplatePipeline()
         {
-            var assetPath = AssetDatabase.GetAssetPath(serializedObject.targetObject.GetInstanceID());
+            var assetPath = AssetDatabase.GetAssetPath(serializedObject.targetObject.GetEntityId());
             var fileInfo = new FileInfo(assetPath);
             var folder = fileInfo.DirectoryName;
             var scriptAsset = SceneTemplateService.CreateNewSceneTemplatePipeline(folder) as MonoScript;

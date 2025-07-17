@@ -359,6 +359,33 @@ namespace Unity.UI.Builder
         {
             RefreshView();
         }
+
+        /// <summary>
+        /// Finds the library tree view item matching the specified data. This method should be called
+        /// only in TreeView mode, otherwise an error is logged.
+        /// </summary>
+        /// <param name="data">The data to match</param>
+        /// <returns>The tree item found</returns>
+        public TreeViewItemData<BuilderLibraryTreeItem> FindLibraryTreeItemWithData(string data)
+        {
+            if (m_ViewMode != LibraryViewMode.TreeView)
+            {
+                Debug.LogError($"{nameof(FindLibraryTreeItemWithData)} can be only called in TreeView mode");
+                return default;
+            }
+
+            var libraryTreeView = this.Q<TreeView>();
+            var viewController = (DefaultTreeViewController<BuilderLibraryTreeItem>)libraryTreeView.viewController;
+
+            foreach (var id in viewController.GetAllItemIds())
+            {
+                var libraryTreeItem = viewController.GetTreeViewItemDataForId(id);
+                if (libraryTreeItem.data.name.Equals(data))
+                    return libraryTreeItem;
+            }
+            return default;
+        }
+
         public void SelectionChanged() { }
 
         public void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)

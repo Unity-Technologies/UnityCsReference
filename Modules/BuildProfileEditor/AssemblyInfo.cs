@@ -6,3 +6,6 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEditor.BuildProfileModule.Tests")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.BuildProfile.Tests.Common")]
+[assembly: InternalsVisibleTo("Unity.Modules.BuildProfile.Tests.Editor")]

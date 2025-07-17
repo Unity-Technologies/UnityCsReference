@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="Scale"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleScale : IStyleValue<Scale>, IEquatable<StyleScale>
     {
         /// <summary>
@@ -79,7 +80,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private Scale m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

@@ -111,6 +111,8 @@ namespace UnityEditorInternal
             get { return UserAccessiblitySettings.colorBlindCondition == ColorBlindCondition.Default ? s_DefaultColorsLuminanceValues : s_ColorBlindSafeColorsLuminanceValues; }
         }
 
+        public static Color[] colorBlindSafeColors => s_ColorBlindSafeColors;
+
         static readonly Color[] s_DefaultColors;
         static readonly float[] s_DefaultColorsLuminanceValues;
         static readonly Color[] s_ColorBlindSafeColors;

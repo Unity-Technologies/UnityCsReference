@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 using UnityEngine.Serialization;
 
@@ -41,6 +42,7 @@ namespace UnityEngine.TextCore.Text
                 height = m_SpriteAtlasTexture.height;
             }
         }
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         [FormerlySerializedAs("spriteSheet")][SerializeField]
         internal Texture m_SpriteAtlasTexture;
 

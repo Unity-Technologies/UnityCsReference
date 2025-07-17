@@ -91,5 +91,6 @@ namespace UnityEditor
         public static extern void DeleteAll();
 
         internal static extern void Sync();
+        internal static extern string[] GetKeys();
     }
 }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEngine.Internal;
 using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.UIElements
@@ -64,17 +65,70 @@ namespace UnityEngine.UIElements
     public abstract class TextValueField<TValueType> : TextInputBaseField<TValueType>, IValueField<TValueType>
     {
         internal static readonly BindingId formatStringProperty = nameof(formatString);
+        internal static readonly BindingId supportExpressionsProperty = nameof(supportExpressions);
+
+        [ExcludeFromDocs, Serializable]
+        public new abstract class UxmlSerializedData : TextInputBaseField<TValueType>.UxmlSerializedData
+        {
+            public new static void Register()
+            {
+                TextInputBaseField<TValueType>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
+                {
+                    new (nameof(supportExpressions), "support-expressions", null),
+                }, false);
+            }
+
+            #pragma warning disable 649
+            [Tooltip("Indicates whether the field supports expressions that can be evaluated into a value.")]
+            [SerializeField] bool supportExpressions;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags supportExpressions_UxmlAttributeFlags;
+            #pragma warning restore 649
+
+            public override void Deserialize(object obj)
+            {
+                base.Deserialize(obj);
+
+                var e = (TextValueField<TValueType>)obj;
+                if (ShouldWriteAttributeValue(supportExpressions_UxmlAttributeFlags))
+                    e.supportExpressions = supportExpressions;
+            }
+        }
 
         // This property to alleviate the fact we have to cast all the time
         TextValueInput textValueInput => (TextValueInput)textInputBase;
 
         private BaseFieldMouseDragger m_Dragger;
         private bool m_ForceUpdateDisplay;
+        private bool m_SupportExpressions = true;
         internal const int kMaxValueFieldLength = 1000;
 
         internal bool forceUpdateDisplay
         {
             set => m_ForceUpdateDisplay = value;
+        }
+
+        /// <summary>
+        /// Indicates whether the field supports expressions that can be evaluated into a value.
+        /// </summary>
+        /// <remarks>
+        /// Expressions are mathematical or logical constructs, such as "1+1" or "5*2", which can be processed 
+        /// to produce a result. When this property is enabled, the field accepts additional characters 
+        /// required for expressions (e.g., '+', '-', '*', '/', etc.), expanding its functionality beyond the typical restrictions 
+        /// of a text field that might otherwise only allow digits.
+        /// </remarks>
+        [CreateProperty]
+        public bool supportExpressions
+        {
+            get => m_SupportExpressions;
+            set
+            {
+                if (m_SupportExpressions != value)
+                {
+                    m_SupportExpressions = value;
+                    NotifyPropertyChanged(supportExpressionsProperty);
+                }
+            }
         }
 
         /// <summary>

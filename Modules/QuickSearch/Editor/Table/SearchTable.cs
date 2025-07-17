@@ -16,6 +16,7 @@ namespace UnityEditor.Search
         [SerializeField] public string id;
         [SerializeField] public string name;
         [SerializeField] public SearchColumn[] columns;
+        [SerializeField] public float itemHeight = 22f;
 
         public SearchTable(string id, string name, IEnumerable<SearchColumn> columnModels)
         {
@@ -35,11 +36,18 @@ namespace UnityEditor.Search
         {
         }
 
+        public void Assign(SearchTable table)
+        {
+            itemHeight = table.itemHeight;
+            if (table.columns != null)
+                columns = table.columns.ToArray();
+        }
+
         public SearchTable Clone(string newName = null)
         {
             if (columns == null || columns.Length == 0)
                 return null;
-            return new SearchTable(this, newName);
+            return new SearchTable(this, newName) { itemHeight = itemHeight };
         }
 
         public void InitFunctors()

@@ -157,7 +157,7 @@ namespace Unity.UI.Builder
                 .OfType<ScaleMode>().Select((v) => StyleSheetUtility.ConvertCamelToDash(v.ToString())).ToList();
             foreach (var value in backgroundScaleModeValues)
             {
-                m_ImageScaleModeField.Add(new Button() { iconImage = BuilderInspectorUtilities.LoadIcon(BuilderNameUtilities.ConvertDashToHuman(value), "Background/"), tooltip = value });
+                m_ImageScaleModeField.Add(new Button() { iconImage = BuilderInspectorUtilities.LoadIcon(StyleSheetUtility.ConvertDashToHuman(value), "Background/"), tooltip = value });
             }
             m_ImageScaleModeField.RegisterValueChangedCallback(OnBackgroundImageScaleModeChange);
             m_FitCanvasToImageButton = root.Q<Button>("background-image-fit-canvas-button");

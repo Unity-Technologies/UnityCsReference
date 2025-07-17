@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -28,17 +27,16 @@ namespace Unity.UI.Builder
 
         static readonly string k_UssPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uss";
         static readonly string k_UxmlPath = BuilderConstants.UtilitiesPath + "/MultiTypeField/MultiTypeField.uxml";
-        static readonly string acceptDropVariantUssClassName = "unity-object-field-display--accept-drop";
-        static readonly PropertyName serializedPropertyKey = new PropertyName("--unity-object-field-serialized-property");
 
         const string k_OptionsPopupContainerName = "unity-multi-type-options-popup-container";
 
         readonly ObjectField m_ObjectField;
-        readonly VisualElement m_ObjectFieldInput;
         readonly Dictionary<string, Type> m_TypeOptions;
         readonly PopupField<string> m_TypePopup;
 
         internal PopupField<string> typePopup => m_TypePopup;
+
+        public ObjectField objectField => m_ObjectField;
 
         protected MultiTypeField() : this(null) {}
 
@@ -53,65 +51,9 @@ namespace Unity.UI.Builder
             m_ObjectField = this.Q<ObjectField>();
             m_ObjectField.RegisterValueChangedCallback(OnObjectValueChange);
 
-            // To be able to support drag and dropping assets of all the supported types, we need to override the default behaviour of the ObjectField.
-            // to do this, we register a trickle down callback on the (private) element that handles that on the `ObjectField`.
-            m_ObjectFieldInput = m_ObjectField.Q(className:"unity-object-field-display");
-            m_ObjectFieldInput.RegisterCallback<DragPerformEvent>(OnDragPerformed, TrickleDown.TrickleDown);
-            m_ObjectFieldInput.RegisterCallback<DragUpdatedEvent>(OnDragUpdated, TrickleDown.TrickleDown);
-
             var popupContainer = this.Q(k_OptionsPopupContainerName);
             m_TypePopup = new PopupField<string> { formatSelectedValueCallback = OnFormatSelectedValue };
             popupContainer.Add(m_TypePopup);
-        }
-
-        private void OnDragUpdated(DragUpdatedEvent evt)
-        {
-            Object validatedObject = DNDValidateObject();
-            if (validatedObject != null)
-            {
-                DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                m_ObjectFieldInput.EnableInClassList(acceptDropVariantUssClassName, true);
-
-                evt.StopImmediatePropagation();
-            }
-        }
-
-        private void OnDragPerformed(DragPerformEvent evt)
-        {
-            Object validatedObject = DNDValidateObject();
-            if (validatedObject != null)
-            {
-                DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                m_ObjectField.value = validatedObject;
-
-                DragAndDrop.AcceptDrag();
-                m_ObjectFieldInput.RemoveFromClassList(acceptDropVariantUssClassName);
-
-                evt.StopImmediatePropagation();
-            }
-        }
-
-        private Object DNDValidateObject()
-        {
-            var references = DragAndDrop.objectReferences;
-            var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
-
-            foreach (var type in m_TypeOptions.Values)
-            {
-                var validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, type, property, EditorGUI.ObjectFieldValidatorOptions.None);
-
-                if (validatedObject != null)
-                {
-                    // If scene objects are not allowed and object is a scene object then clear
-                    if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
-                        validatedObject = null;
-                }
-
-                if (validatedObject)
-                    return validatedObject;
-            }
-
-            return null;
         }
 
         void OnObjectValueChange(ChangeEvent<Object> evt)

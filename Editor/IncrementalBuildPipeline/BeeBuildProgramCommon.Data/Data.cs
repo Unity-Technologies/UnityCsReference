@@ -30,6 +30,9 @@ namespace BeeBuildProgramCommon.Data
         public string NetCoreRunPath;
         public string DotNetExe;
         public string EditorContentsPath;
+        public string EditorToolsPath;
+        public string EditorScriptingPath;
+        public string EditorBuildPipelinePath;
         public PackageInfo[] Packages;
         public string UnityVersion;
         public Version UnityVersionNumeric;

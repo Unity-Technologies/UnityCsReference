@@ -77,6 +77,11 @@ namespace UnityEditor
         SerializedProperty m_LightmapSizeFixed;
         SerializedProperty m_UseMipmapLimits;
         SerializedProperty m_BakeBackend;
+        SerializedProperty m_LightmapPackingMode;
+        SerializedProperty m_LightmapPackingMethod;
+        SerializedProperty m_XAtlasPackingAttempts;
+        SerializedProperty m_XAtlasBlockAlign;
+        SerializedProperty m_XAtlasRepackUnderutilizedLightmaps;
         // pvr
         SerializedProperty m_PVRSampleCount;
         SerializedProperty m_PVRDirectSampleCount;
@@ -184,8 +189,21 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("High")
             };
 
+            public static readonly int[] lightmapPackingModeValues = { (int)LightingSettings.LightmapPackingMode.Auto, (int)LightingSettings.LightmapPackingMode.Custom };
+            public static readonly GUIContent[] lightmapPackingModeStrings =
+            {
+                EditorGUIUtility.TrTextContent("Auto"),
+                EditorGUIUtility.TrTextContent("Custom")
+            };
+
+            public static readonly int[] lightmapPackingMethodValues = { (int)LightingSettings.LightmapPackingMethod.Unity, (int)LightingSettings.LightmapPackingMethod.XAtlas };
+            public static readonly GUIContent[] lightmapPackingMethodStrings =
+            {
+                EditorGUIUtility.TrTextContent("Unity"),
+                EditorGUIUtility.TrTextContent("XAtlas")
+            };
+
             public static readonly GUIContent lightmapperNotSupportedWarning = EditorGUIUtility.TrTextContent("This lightmapper is not supported by the current Render Pipeline. The Editor will use ");
-            public static readonly GUIContent appleSiliconCPULightmapperWarning = EditorGUIUtility.TrTextContent("Progressive CPU Lightmapper is not available on Apple Silicon. Use Progressive GPU Lightmapper instead.");
             public static readonly GUIContent mixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current Render Pipeline. Fallback mode is ");
             public static readonly GUIContent directionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
             public static readonly GUIContent denoiserNotSupportedWarning = EditorGUIUtility.TrTextContent("The current hardware or system configuration does not support the selected denoiser. Select a different denoiser.");
@@ -252,6 +270,11 @@ namespace UnityEditor
             public static readonly GUIContent texelsPerUnit = EditorGUIUtility.TrTextContent(" texels per unit");
             public static readonly GUIContent texels = EditorGUIUtility.TrTextContent(" texels");
             public static readonly GUIContent sigma = EditorGUIUtility.TrTextContent(" sigma");
+            public static readonly GUIContent lightmapPackingMode = EditorGUIUtility.TrTextContent("Lightmap Packing", "The approach used to pack UVs into lightmap atlases. Auto uses generalized settings that produce reasonable results in most cases.");
+            public static readonly GUIContent lightmapPackingMethod = EditorGUIUtility.TrTextContent("Packing Method", "The algorithm used to pack lightmap charts into Scene atlases. XAtlas method provides additional controls to ensure efficient packing. Unity method enables compatibility with older Unity versions.");
+            public static readonly GUIContent xAtlasPackingAttempts = EditorGUIUtility.TrTextContent("Packing Iterations", "The number of packing attempts before determining the most efficient layout. Higher values may produce more efficient layouts but take longer to calculate.");
+            public static readonly GUIContent xAtlasBlockAlign = EditorGUIUtility.TrTextContent("Block Aligned Packing", "Aligns UV charts in the lightmap to 4x4 texel boundaries. Mitigates artifacts caused by block texture compression but may reduce the efficiency of packing.");
+            public static readonly GUIContent xAtlasRepackUnderutilizedLightmaps = EditorGUIUtility.TrTextContent("Repack Underused Lightmaps", "Repack low occupancy lightmaps into smaller sizes. Reduces memory usage but may increase baking time and the number of textures.");
 
             public static readonly GUIStyle labelStyle = EditorStyles.wordWrappedMiniLabel;
         }
@@ -259,6 +282,7 @@ namespace UnityEditor
         private int maxDirectSamples = 1024;
         private int maxIndirectSamples = 8192;
         private int maxEnvironmentSamples = 2048;
+        private int maxXAtlasPackingAttempts = 131072;
         private SerializedObject currentLSO;
 
         public void OnEnable()
@@ -311,6 +335,11 @@ namespace UnityEditor
             m_CompAOExponent = lightingSettingsObject.FindProperty("m_CompAOExponent");
             m_CompAOExponentDirect = lightingSettingsObject.FindProperty("m_CompAOExponentDirect");
             m_LightmapCompression = lightingSettingsObject.FindProperty("m_LightmapCompression");
+            m_LightmapPackingMode = lightingSettingsObject.FindProperty("m_LightmapPackingMode");
+            m_LightmapPackingMethod = lightingSettingsObject.FindProperty("m_LightmapPackingMethod");
+            m_XAtlasPackingAttempts = lightingSettingsObject.FindProperty("m_XAtlasPackingAttempts");
+            m_XAtlasBlockAlign = lightingSettingsObject.FindProperty("m_XAtlasBlockAlign");
+            m_XAtlasRepackUnderutilizedLightmaps = lightingSettingsObject.FindProperty("m_XAtlasRepackUnderutilizedLightmaps");
 
             // pvr
             m_PVRSampleCount = lightingSettingsObject.FindProperty("m_PVRSampleCount");
@@ -613,18 +642,44 @@ namespace UnityEditor
                             }
                         }
                     }
-
+                                                                                   
                     if (bakedGISupported)
                     {
                         using (new EditorGUI.DisabledScope(!enableBakedGI))
                         {
+                            EditorGUILayout.IntPopup(m_LightmapPackingMode, Styles.lightmapPackingModeStrings, Styles.lightmapPackingModeValues, Styles.lightmapPackingMode);
+
+                            if (m_LightmapPackingMode.intValue == (int)LightingSettings.LightmapPackingMode.Custom)
+                            {
+                                EditorGUI.indentLevel++;
+
+                                EditorGUILayout.IntPopup(m_LightmapPackingMethod, Styles.lightmapPackingMethodStrings, Styles.lightmapPackingMethodValues, Styles.lightmapPackingMethod);
+
+                                if (m_LightmapPackingMethod.intValue == (int)LightingSettings.LightmapPackingMethod.XAtlas)
+                                {
+                                    MultiEditableLogarithmicIntSlider(m_XAtlasPackingAttempts, Styles.xAtlasPackingAttempts, 32, maxXAtlasPackingAttempts, 32, int.MaxValue, 1);
+                                    maxXAtlasPackingAttempts = Math.Max(maxXAtlasPackingAttempts, m_XAtlasPackingAttempts.intValue);
+                                }
+
+                                DrawPropertyFieldWithPostfixLabel(m_Padding, Styles.padding, Styles.texels);
+                                EditorGUILayout.PropertyField(m_LightmapSizeFixed, Styles.lightmapSizeFixed);
+
+                                if (m_LightmapPackingMethod.intValue == (int)LightingSettings.LightmapPackingMethod.XAtlas)
+                                {
+                                    EditorGUILayout.PropertyField(m_XAtlasBlockAlign, Styles.xAtlasBlockAlign);
+
+                                    using (new EditorGUI.DisabledScope(m_LightmapSizeFixed.boolValue))
+                                    {
+                                        EditorGUILayout.PropertyField(m_XAtlasRepackUnderutilizedLightmaps, Styles.xAtlasRepackUnderutilizedLightmaps);
+                                    }
+                                }
+
+                                EditorGUI.indentLevel--;
+                            }
+
                             DrawPropertyFieldWithPostfixLabel(m_BakeResolution, Styles.lightmapResolution, Styles.texelsPerUnit);
 
-                            DrawPropertyFieldWithPostfixLabel(m_Padding, Styles.padding, Styles.texels);
-
                             EditorGUILayout.IntPopup(m_LightmapMaxSize, Styles.lightmapMaxSizeStrings, Styles.lightmapMaxSizeValues, Styles.lightmapMaxSize);
-
-                            EditorGUILayout.PropertyField(m_LightmapSizeFixed, Styles.lightmapSizeFixed);
 
                             EditorGUILayout.PropertyField(m_UseMipmapLimits, Styles.useMipmapLimits);
 
@@ -835,7 +890,7 @@ namespace UnityEditor
                 base.Action(instanceId, pathName, resourceFile);
 
                 // Only assign the new parameters asset once it is fully imported.
-                if (EditorUtility.InstanceIDToObject(instanceId) is LightmapParameters lmp)
+                if (EditorUtility.EntityIdToObject(instanceId) is LightmapParameters lmp)
                     lmp.AssignToLightingSettings(Lightmapping.lightingSettingsInternal);
             }
         }
@@ -902,7 +957,6 @@ namespace UnityEditor
 
         void BakeBackendGUI()
         {
-            bool isOpenRLFunctionalForArchitecture = RuntimeInformation.ProcessArchitecture == Architecture.X64;
             var rect = EditorGUILayout.GetControlRect();
             EditorGUI.BeginProperty(rect, Styles.bakeBackend, m_BakeBackend);
             EditorGUI.BeginChangeCheck();
@@ -918,15 +972,7 @@ namespace UnityEditor
                 {
                     int value = Styles.bakeBackendValues[i];
                     bool selected = (value == m_BakeBackend.intValue);
-
-                    if (!SupportedRenderingFeatures.IsLightmapperSupported(value) || (!isOpenRLFunctionalForArchitecture && value == (int)LightingSettings.Lightmapper.ProgressiveCPU))
-                    {
-                        menu.AddDisabledItem(Styles.bakeBackendStrings[i], selected);
-                    }
-                    else
-                    {
-                        menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
-                    }
+                    menu.AddItem(Styles.bakeBackendStrings[i], selected, OnBakeBackedSelected, value);
                 }
                 menu.DropDown(rect);
             }
@@ -936,11 +982,7 @@ namespace UnityEditor
 
             EditorGUI.EndProperty();
 
-            if (!isOpenRLFunctionalForArchitecture && m_BakeBackend.intValue == (int)LightingSettings.Lightmapper.ProgressiveCPU)
-            {
-                EditorGUILayout.HelpBox(Styles.appleSiliconCPULightmapperWarning.text, MessageType.Warning);
-            }
-            else if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
+            if (!SupportedRenderingFeatures.IsLightmapperSupported(m_BakeBackend.intValue))
             {
                 string fallbackLightmapper = Styles.bakeBackendStrings[SupportedRenderingFeatures.FallbackLightmapper()].text;
                 EditorGUILayout.HelpBox(Styles.lightmapperNotSupportedWarning.text + fallbackLightmapper + " Lightmapper instead.", MessageType.Warning);
@@ -1000,21 +1042,21 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        int MultiEditableLogarithmicIntSlider(SerializedProperty property, GUIContent style, int min, int max, int textFieldMin, int textFieldMax)
+        int MultiEditableLogarithmicIntSlider(SerializedProperty property, GUIContent style, int min, int max, int textFieldMin, int textFieldMax, int logbase = 2)
         {
             if (property.hasMultipleDifferentValues)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = true;
 
-                int newValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
+                int newValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, logbase, textFieldMin, textFieldMax);
                 if (EditorGUI.EndChangeCheck())
                     property.intValue = newValue;
 
                 EditorGUI.showMixedValue = false;
             }
             else
-                property.intValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, 2, textFieldMin, textFieldMax);
+                property.intValue = EditorGUILayout.LogarithmicIntSlider(style, property.intValue, min, max, logbase, textFieldMin, textFieldMax);
 
             return property.intValue;
         }
@@ -1024,6 +1066,7 @@ namespace UnityEditor
             maxDirectSamples = Mathf.Max(m_PVRDirectSampleCount.intValue, 1024);
             maxIndirectSamples = Mathf.Max(m_PVRSampleCount.intValue, 8192);
             maxEnvironmentSamples = Mathf.Max(m_PVREnvironmentSampleCount.intValue, 2048);
+            maxXAtlasPackingAttempts = Mathf.Max(m_XAtlasPackingAttempts.intValue, 131072);
         }
     }
 }

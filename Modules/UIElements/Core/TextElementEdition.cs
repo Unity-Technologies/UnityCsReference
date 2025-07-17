@@ -317,16 +317,8 @@ namespace UnityEngine.UIElements
                 : DropdownMenuAction.Status.Hidden;
         }
 
-        // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
-        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),
-            typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
-            typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
-            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
-            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent))]
-        protected override void HandleEventBubbleUp(EventBase evt)
+        void EditionHandleEvent(EventBase evt)
         {
-            base.HandleEventBubbleUp(evt);
-
             if (selection.isSelectable)
             {
                 var useTouchScreenKeyboard = editingManipulator?.editingUtilities.TouchScreenKeyboardShouldBeUsed() ?? false;
@@ -556,7 +548,7 @@ namespace UnityEngine.UIElements
                     return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0) : new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
                 }
 
-                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && !isReadOnly) // TextField
+                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && (!isReadOnly || ((pseudoStates & PseudoStates.Disabled) != 0 && isSelectable))) // TextField
                 {
                     return new RenderedText(m_RenderedText, ZeroWidthSpace);
                 }

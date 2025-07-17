@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
-using UnityEngine;
 using System;
 using UnityEditor.UIElements.GameObjects;
+using UnityEngine.Pool;
+using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor.UIElements.Inspector
@@ -13,10 +13,14 @@ namespace UnityEditor.UIElements.Inspector
     [CustomEditor(typeof(UIDocument))]
     internal class UIDocumentInspector : Editor
     {
+        // Limit the number of editor elements in the inspector element message.
+        const int k_MaxElementsInEditorElementsErrorMessage = 5;
         const string k_DefaultStyleSheetPath = "UIPackageResources/StyleSheets/Inspector/UIDocumentInspector.uss";
         const string k_InspectorVisualTreeAssetPath = "UIPackageResources/UXML/Inspector/UIDocumentInspector.uxml";
         private const string k_StyleClassWithParentHidden = "unity-ui-document-inspector--with-parent--hidden";
         private const string k_StyleClassPanelMissing = "unity-ui-document-inspector--panel-missing--hidden";
+
+        internal const string k_EditorElementsError = "The VisualTreeAsset contains editor-only elements that cannot be used at runtime.\nPlease remove the following elements:";
 
         private static StyleSheet s_DefaultStyleSheet;
         private static VisualTreeAsset s_InspectorUxml;
@@ -27,6 +31,8 @@ namespace UnityEditor.UIElements.Inspector
         private ObjectField m_ParentField;
         private ObjectField m_SourceAssetField;
 
+        private EnumField m_PositionEnumField;
+
         private Foldout m_WorldSpaceDimensionsFoldout;
         private EnumField m_WorldSpaceSizeField;
         private VisualElement m_WorldSpaceWidthField;
@@ -34,6 +40,7 @@ namespace UnityEditor.UIElements.Inspector
 
         private HelpBox m_DrivenByParentWarning;
         private HelpBox m_MissingPanelSettings;
+        private HelpBox m_EditorElementsWarning;
         private VisualElement m_InputConfiguration;
 
         private void ConfigureFields()
@@ -42,6 +49,7 @@ namespace UnityEditor.UIElements.Inspector
             // necessary elements disappear unintentionally.
             m_DrivenByParentWarning = m_RootVisualElement.MandatoryQ<HelpBox>("driven-by-parent-warning");
             m_MissingPanelSettings = m_RootVisualElement.MandatoryQ<HelpBox>("missing-panel-warning");
+            m_EditorElementsWarning = m_RootVisualElement.MandatoryQ<HelpBox>("editor-elements-warning");
 
             m_PanelSettingsField = m_RootVisualElement.MandatoryQ<ObjectField>("panel-settings-field");
             m_PanelSettingsField.objectType = typeof(PanelSettings);
@@ -52,6 +60,8 @@ namespace UnityEditor.UIElements.Inspector
 
             m_SourceAssetField = m_RootVisualElement.MandatoryQ<ObjectField>("source-asset-field");
             m_SourceAssetField.objectType = typeof(VisualTreeAsset);
+
+            m_PositionEnumField = m_RootVisualElement.MandatoryQ<EnumField>("position-field");
 
             m_WorldSpaceDimensionsFoldout = m_RootVisualElement.MandatoryQ<Foldout>("world-space-dimensions");
             m_WorldSpaceSizeField = m_RootVisualElement.MandatoryQ<EnumField>("size-mode");
@@ -72,6 +82,8 @@ namespace UnityEditor.UIElements.Inspector
         {
             m_ParentField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
             m_PanelSettingsField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
+            m_SourceAssetField.RegisterCallback<ChangeEvent<Object>>(evt => UpdateValues());
+            m_PositionEnumField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
             m_WorldSpaceSizeField.RegisterCallback<ChangeEvent<Enum>>(evt => UpdateValues());
         }
 
@@ -88,13 +100,59 @@ namespace UnityEditor.UIElements.Inspector
 
             m_PanelSettingsField.SetEnabled(isNotDrivenByParent);
 
-            bool worldSpaceVisible = (uiDocument.panelSettings?.renderMode == PanelRenderMode.WorldSpace);
-            m_WorldSpaceDimensionsFoldout.style.display = worldSpaceVisible ? DisplayStyle.Flex : DisplayStyle.None;
+            if (uiDocument.visualTreeAsset?.hasEditorElements == true)
+            {
+                m_EditorElementsWarning.text = GenerateEditorElementsErrorMessage(k_MaxElementsInEditorElementsErrorMessage);
+                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissing, false);
+            }
+            else
+            {
+                m_EditorElementsWarning.EnableInClassList(k_StyleClassPanelMissing, true);
+            }
+
+            bool isRootDocument = uiDocument.parentUI == null;
+            m_PositionEnumField.style.display = isRootDocument ? DisplayStyle.None : DisplayStyle.Flex;
+
+            m_WorldSpaceDimensionsFoldout.style.display = uiDocument.isTransformControlledByGameObject ? DisplayStyle.Flex : DisplayStyle.None;
 
             bool isFixedSize = (uiDocument.worldSpaceSizeMode == UIDocument.WorldSpaceSizeMode.Fixed);
             var display = isFixedSize ? DisplayStyle.Flex : DisplayStyle.None;
             m_WorldSpaceWidthField.style.display = display;
             m_WorldSpaceHeightField.style.display = display;
+        }
+
+        string GenerateEditorElementsErrorMessage(int maxElements)
+        {
+            var uiDocument = (UIDocument)target;
+
+            using (var pool = StringBuilderPool.Get(out var sb))
+            {
+                sb.AppendLine(k_EditorElementsError);
+
+                int found = 0;
+                using (var hashsetPool = HashSetPool<string>.Get(out var hashSet))
+                {
+                    foreach (var vta in uiDocument.visualTreeAsset.DepthFirstTraversal())
+                    {
+                        var desc = UxmlSerializedDataRegistry.GetDescription(vta.fullTypeName);
+                        if (desc?.isEditorOnly == true && !hashSet.Contains(vta.fullTypeName))
+                        {
+                            if (++found > maxElements)
+                            {
+                                sb.AppendLine("...");
+                                break;
+                            }
+
+                            // Add the type name to the hash set to avoid duplicates.
+                            hashSet.Add(vta.fullTypeName);
+
+                            sb.Append("- ");
+                            sb.AppendLine(vta.fullTypeName);
+                        }
+                    }
+                }
+                return sb.ToString();
+            }
         }
 
         private void UpdateInputConfigurationOptions()

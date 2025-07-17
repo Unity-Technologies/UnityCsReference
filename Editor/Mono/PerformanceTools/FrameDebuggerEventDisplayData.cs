@@ -982,7 +982,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 for (int i = 0; i < curEventData.m_MeshInstanceIDs.Length; i++)
                 {
                     int id = curEventData.m_MeshInstanceIDs[i];
-                    Mesh mesh = EditorUtility.InstanceIDToObject(id) as Mesh;
+                    Mesh mesh = EditorUtility.EntityIdToObject(id) as Mesh;
                     if (mesh != null)
                         meshIDs.Add(id);
                 }
@@ -990,7 +990,7 @@ namespace UnityEditorInternal.FrameDebuggerInternal
                 List<Mesh> meshes = new List<Mesh>();
                 foreach (int id in meshIDs)
                 {
-                    Mesh mesh = EditorUtility.InstanceIDToObject(id) as Mesh;
+                    Mesh mesh = EditorUtility.EntityIdToObject(id) as Mesh;
                     meshes.Add(mesh);
                 }
 

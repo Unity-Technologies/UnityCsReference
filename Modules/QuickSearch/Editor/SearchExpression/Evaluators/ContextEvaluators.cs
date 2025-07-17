@@ -55,7 +55,7 @@ namespace UnityEditor.Search
         {
             var item = args.current;
             var obj = item?.value as Object;
-            var instanceId = obj?.GetInstanceID();
+            var instanceId = obj?.GetEntityId();
             if (!instanceId.HasValue)
                 return null;
             return AssetDatabase.GetAssetPath(instanceId.Value);

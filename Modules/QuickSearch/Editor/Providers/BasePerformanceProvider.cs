@@ -316,37 +316,12 @@ namespace UnityEditor.Search.Providers
 
         protected static string GetTimeLabel(double time, double warningLimit, double errorLimit)
         {
-            return GetPerformanceLimitLabel(time, warningLimit, errorLimit, v => $"{ToEngineeringNotation(v)}s");
+            return GetPerformanceLimitLabel(time, warningLimit, errorLimit, v => $"{SearchUtils.ToEngineeringNotation(v)}s");
         }
 
         protected static string GetTimeLabel(double time, in PerformanceLimit performanceLimit)
         {
-            return GetPerformanceLimitLabel(time, performanceLimit, v => $"{ToEngineeringNotation(v)}s");
-        }
-
-        protected static string ToEngineeringNotation(double d, bool printSign = false)
-        {
-            var sign = !printSign || d < 0 ? "" : "+";
-            if (Math.Abs(d) >= 1)
-                return $"{sign}{d.ToString("###.0", System.Globalization.CultureInfo.InvariantCulture)}";
-
-            if (Math.Abs(d) > 0)
-            {
-                double exponent = Math.Log10(Math.Abs(d));
-                switch ((int)Math.Floor(exponent))
-                {
-                    case -1: case -2: case -3: return $"{sign}{(d * 1e3):###.0} m";
-                    case -4: case -5: case -6: return $"{sign}{(d * 1e6):###.0} µ";
-                    case -7: case -8: case -9: return $"{sign}{(d * 1e9):###.0} n";
-                    case -10: case -11: case -12: return $"{sign}{(d * 1e12):###.0} p";
-                    case -13: case -14: case -15: return $"{sign}{(d * 1e15):###.0} f";
-                    case -16: case -17: case -18: return $"{sign}{(d * 1e15):###.0} a";
-                    case -19: case -20: case -21: return $"{sign}{(d * 1e15):###.0} z";
-                    default: return $"{sign}{(d * 1e15):###.0} y";
-                }
-            }
-
-            return "0";
+            return GetPerformanceLimitLabel(time, performanceLimit, v => $"{SearchUtils.ToEngineeringNotation(v)}s");
         }
 
         protected static bool StartProfilerRecording(string markerFilter, bool editorProfile, bool deepProfile)
@@ -721,8 +696,7 @@ namespace UnityEditor.Search.Providers
             var providers = SearchService.GetProviders(providerIds).ToArray();
             var context = SearchService.CreateContext(providers, "", SearchFlags.OpenContextual);
             context.useExplicitProvidersAsNormalProviders = true;
-            var columns = new[] { new SearchColumn("Name", "label") }.Concat(providers[1].fetchColumns(context, null));
-            var tableConfig = new SearchTable("perf", columns);
+            var tableConfig = providers[1].tableConfig(context);
             var viewState = new SearchViewState(context, tableConfig);
             viewState.itemSize = (float)DisplayMode.Table;
             SearchService.ShowWindow(viewState);

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using UnityEngine.LowLevelPhysics;
 
 namespace UnityEngine
 {
@@ -21,11 +22,11 @@ namespace UnityEngine
         extern public int layerOverridePriority { get; set; }
         extern public LayerMask excludeLayers { get; set; }
         extern public LayerMask includeLayers { get; set; }
-        extern public LowLevelPhysics.GeometryHolder GeometryHolder { get; }
+        public GeometryHolder GeometryHolder { get => this.GetGeometryHolder(); }
 
-        public T GetGeometry<T>() where T : struct, LowLevelPhysics.IGeometry
+        public T GetGeometry<T>() where T : struct, IGeometry
         {
-            return GeometryHolder.As<T>();
+            return this.GetGeometryHolder().As<T>();
         }
 
         [NativeMethod("Material")]

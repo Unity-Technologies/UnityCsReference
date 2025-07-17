@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements.StyleSheets
         private StyleSheet m_Sheet;
         private StyleProperty[] m_Properties;
         private StylePropertyId[] m_PropertyIds;
-        private int m_CurrentValueIndex;
+        private int m_CurrentValueIndex { get; set; }
         private int m_CurrentPropertyIndex;
 
         public StyleProperty property { get; private set; }
@@ -427,6 +427,14 @@ namespace UnityEngine.UIElements.StyleSheets
             return ReadTextShadow(valueCount, val1, val2, val3, val4);
         }
 
+        public TextAutoSize ReadTextAutoSize(int index)
+        {
+            var val1 = m_Values[m_CurrentValueIndex + index];
+            var val2 = valueCount > 1 ? m_Values[m_CurrentValueIndex + index + 1] : default;
+            var val3 = valueCount > 2 ? m_Values[m_CurrentValueIndex + index + 2] : default;
+            return ReadTextAutoSize(valueCount, val1, val2, val3);
+        }
+
         public BackgroundPosition ReadBackgroundPositionX(int index)
         {
             return ReadBackgroundPosition(index, BackgroundPositionKeyword.Left);
@@ -504,21 +512,6 @@ namespace UnityEngine.UIElements.StyleSheets
             while (index < valueCount);
         }
 
-        private FilterFunctionType ToFilterFunctionType(StyleValueFunction function)
-        {
-            switch (function)
-            {
-                case StyleValueFunction.CustomFilter:    return FilterFunctionType.Custom;
-                case StyleValueFunction.FilterTint:      return FilterFunctionType.Tint;
-                case StyleValueFunction.FilterOpacity:   return FilterFunctionType.Opacity;
-                case StyleValueFunction.FilterInvert:    return FilterFunctionType.Invert;
-                case StyleValueFunction.FilterGrayscale: return FilterFunctionType.Grayscale;
-                case StyleValueFunction.FilterSepia:     return FilterFunctionType.Sepia;
-                case StyleValueFunction.FilterBlur:      return FilterFunctionType.Blur;
-                default: return FilterFunctionType.None;
-            }
-        }
-
         public void ReadListFilterFunction(List<FilterFunction> list, int index)
         {
             list.Clear();
@@ -556,7 +549,7 @@ namespace UnityEngine.UIElements.StyleSheets
                         args[i] = new FilterParameter()
                         {
                             type = FilterParameterType.Float,
-                            floatValue = ConvertDimensionToFilterFloat(dim)
+                            floatValue = StyleProperty.ConvertDimensionToFilterFloat(dim)
                         };
                     }
                     else if (valueType == StyleValueType.CommaSeparator)
@@ -573,31 +566,9 @@ namespace UnityEngine.UIElements.StyleSheets
                 if (isCustom)
                     list.Add(new FilterFunction(filterDef, args, argCount));
                 else
-                    list.Add(new FilterFunction(ToFilterFunctionType(filterType), args, argCount));
+                    list.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(filterType), args, argCount));
             }
             while (index < valueCount);
-        }
-
-        float ConvertDimensionToFilterFloat(Dimension dim)
-        {
-            // Convert percentages to 0-1 range.
-            // Convert angles to radians.
-            // Convert time to seconds.
-            switch (dim.unit)
-            {
-                case Dimension.Unit.Percent:
-                    return dim.value * 0.01f;
-                case Dimension.Unit.Degree:
-                    return dim.value * Mathf.Deg2Rad;
-                case Dimension.Unit.Turn:
-                    return dim.value * Mathf.PI * 2.0f;
-                case Dimension.Unit.Gradian:
-                    return dim.value * Mathf.PI / 200.0f;
-                case Dimension.Unit.Millisecond:
-                    return dim.value * 0.001f;
-                default:
-                    return dim.value;
-            }
         }
 
         public void ReadListStylePropertyName(List<StylePropertyName> list, int index)

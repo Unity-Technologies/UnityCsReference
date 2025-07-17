@@ -5,11 +5,9 @@
 using UnityEngine;
 using UnityEditor;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-using Object = UnityEngine.Object;
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 using RectangleToolFlags = UnityEditor.CurveEditorSettings.RectangleToolFlags;
 
@@ -18,13 +16,7 @@ namespace UnityEditor
     // External selection interface
     internal interface ISelectionBinding
     {
-        GameObject rootGameObject { get; }
-        AnimationClip animationClip { get; }
-
-        bool clipIsEditable { get; }
-        bool animationIsEditable { get; }
-
-        int id { get; }
+        bool isReadOnly { get; }
     }
 
     // External state interface
@@ -67,12 +59,7 @@ namespace UnityEditor
 
         public CurveRenderer renderer { get { return m_Renderer; } set { m_Renderer = value; } }
         public AnimationCurve curve { get { return renderer.GetCurve(); } }
-
-        public GameObject rootGameObjet { get { return m_SelectionBinding != null ? m_SelectionBinding.rootGameObject : null; } }
-        public AnimationClip animationClip { get { return m_SelectionBinding != null ? m_SelectionBinding.animationClip : null; } }
-        public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
-        public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
-        public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }
+        public bool animationIsEditable { get { return m_SelectionBinding != null ? !m_SelectionBinding.isReadOnly : true; } }
 
         public ISelectionBinding selectionBindingInterface { get { return m_SelectionBinding; } set { m_SelectionBinding = value; } }
 

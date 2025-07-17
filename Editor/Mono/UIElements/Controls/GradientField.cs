@@ -32,6 +32,7 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 BaseField<Gradient>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
 
             public override object CreateInstance() => new GradientField();
@@ -50,6 +51,10 @@ namespace UnityEditor.UIElements
         public new class UxmlTraits : BaseField<Gradient>.UxmlTraits {}
 
         private bool m_ValueNull;
+        // The GradientPicker will change the values in the arrays directly and will send commands to keep everything
+        // in sync. Here, we're using this flag to force the value to be set when it is technically the same.
+        private bool m_ForceSendEvent = false;
+
         /// <summary>
         /// The <see cref="Gradient"/> currently being exposed by the field.
         /// </summary>
@@ -58,23 +63,12 @@ namespace UnityEditor.UIElements
         /// </remarks>
         public override Gradient value
         {
-            get
-            {
-                if (m_ValueNull) return null;
-
-                return GradientCopy(rawValue);
-            }
+            get => m_ValueNull ? null : GradientCopy(rawValue);
             set
             {
                 if (value != null || !m_ValueNull)  // let's not reinitialize an initialized gradient
                 {
-                    using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(rawValue, value))
-                    {
-                        evt.elementTarget = this;
-                        SetValueWithoutNotify(value);
-                        SendEvent(evt);
-                        NotifyPropertyChanged(valueProperty);
-                    }
+                    base.value = value;
                 }
             }
         }
@@ -278,7 +272,15 @@ namespace UnityEditor.UIElements
 
         void OnGradientChanged(Gradient newValue)
         {
-            value = newValue;
+            m_ForceSendEvent = true;
+            try
+            {
+                value = newValue;
+            }
+            finally
+            {
+                m_ForceSendEvent = false;
+            }
 
             GradientPreviewCache.ClearCache(); // needed because GradientEditor itself uses the cache and will no invalidate it on changes.
             IncrementVersion(VersionChangeType.Repaint);
@@ -320,6 +322,41 @@ namespace UnityEditor.UIElements
                 UpdateGradientTexture();
                 mixedValueLabel.RemoveFromHierarchy();
             }
+        }
+
+        internal override bool EqualsCurrentValue(Gradient v)
+        {
+            if (m_ForceSendEvent)
+                return false;
+
+            if (v == null && m_ValueNull)
+                return true;
+
+            if (v == null ^ m_ValueNull)
+                return false;
+
+            if (rawValue.colorKeys.Length != v.colorKeys.Length ||
+                rawValue.alphaKeys.Length != v.alphaKeys.Length ||
+                rawValue.mode != v.mode)
+                return false;
+
+            for (var i = 0; i < rawValue.colorKeys.Length; ++i)
+            {
+                var current = rawValue.colorKeys[i];
+                var next = v.colorKeys[i];
+                if (current.color != next.color || !Mathf.Approximately(next.time, next.time))
+                    return false;
+            }
+
+            for (var i = 0; i < rawValue.alphaKeys.Length; ++i)
+            {
+                var current = rawValue.alphaKeys[i];
+                var next = v.alphaKeys[i];
+                if (!Mathf.Approximately(current.alpha, next.alpha) || !Mathf.Approximately(next.time, next.time))
+                    return false;
+            }
+
+            return true;
         }
     }
 }

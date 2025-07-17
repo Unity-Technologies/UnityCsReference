@@ -8,6 +8,11 @@ using UnityEditor;
 using System.Globalization;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditorInternal.FrameDebuggerInternal
 {

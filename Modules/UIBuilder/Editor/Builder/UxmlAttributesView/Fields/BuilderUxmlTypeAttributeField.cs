@@ -49,7 +49,7 @@ namespace Unity.UI.Builder
         {
             var attributeType = attribute.GetType();
             var desiredType = attributeType.GetGenericArguments()[0];
-            var fieldLabel = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
+            var fieldLabel = StyleSheetUtility.ConvertDashToHuman(attribute.name);
             return CreateField(desiredType, fieldLabel, attributeOwner, attributeUxmlOwner, attribute, onValueChange);
         }
 

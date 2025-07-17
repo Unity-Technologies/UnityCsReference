@@ -22,7 +22,7 @@ namespace UnityEditor.Accessibility
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(text), "text")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

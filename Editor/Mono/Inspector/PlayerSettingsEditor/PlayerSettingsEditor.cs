@@ -165,6 +165,7 @@ namespace UnityEditor
             public static readonly GUIContent graphicsJobsNonExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs");
             public static readonly GUIContent graphicsJobsExperimental = EditorGUIUtility.TrTextContent("Graphics Jobs (Experimental)");
             public static readonly GUIContent graphicsJobsMode = EditorGUIUtility.TrTextContent("Graphics Jobs Mode");
+            public static readonly GUIContent graphicsJobsSyncAfterKick = EditorGUIUtility.TrTextContent("Sync after kick (fallback)", "This prevents graphics jobs from running in parallel to the render thread. Enable this if you see artifacts with graphics jobs.");
             public static readonly GUIContent applicationIdentifierWarning = EditorGUIUtility.TrTextContent("Invalid characters have been removed from the Application Identifier.");
             public static readonly GUIContent applicationIdentifierError = EditorGUIUtility.TrTextContent("The Application Identifier must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and hyphen characters.");
             public static readonly GUIContent packageNameError = EditorGUIUtility.TrTextContent("The Package Name must follow the convention 'com.YourCompanyName.YourProductName' and must contain only alphanumeric and underscore characters. Each segment must start with an alphabetical character.");
@@ -210,7 +211,7 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent il2cppCodeGeneration = EditorGUIUtility.TrTextContent("IL2CPP Code Generation", "Determines whether IL2CPP should generate code optimized for runtime performance or build size/iteration.");
-            public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Faster runtime"), EditorGUIUtility.TrTextContent("Faster (smaller) builds") };
+            public static readonly GUIContent[] il2cppCodeGenerationNames =  new GUIContent[] { EditorGUIUtility.TrTextContent("Optimize for runtime speed"), EditorGUIUtility.TrTextContent("Optimize for code size and build time") };
             public static readonly GUIContent il2cppStacktraceInformation = EditorGUIUtility.TrTextContent("IL2CPP Stacktrace Information", "Which information to include in stack traces. Including the file name and line number may increase build size.");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
@@ -262,7 +263,7 @@ namespace UnityEditor
             public static readonly GUIContent hdrOutputRequireHDRRenderingWarning = EditorGUIUtility.TrTextContent("The active Render Pipeline does not have HDR enabled. Enable HDR in the Render Pipeline Asset to see the changes.");
             public static readonly GUIContent graphicsAPIDeprecationMessage = EditorGUIUtility.TrTextContent("There are select Graphics API included that are deprecated and will be removed in a future version. For more information, refer to the Graphics API documentation.");
 
-            public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing (e.g., by com.unity.logging");
+            public static readonly GUIContent captureStartupLogs = EditorGUIUtility.TrTextContent("Capture Startup Logs", "Capture startup logs for later processing.");
             public static readonly string undoChangedBatchingString                 = L10n.Tr("Changed Batching Settings");
             public static readonly string undoChangedGraphicsAPIString              = L10n.Tr("Changed Graphics API Settings");
             public static readonly string undoChangedScriptingDefineString          = L10n.Tr("Changed Scripting Define Settings");
@@ -1028,7 +1029,7 @@ namespace UnityEditor
 
         private bool SupportsRunInBackground(NamedBuildTarget buildTarget)
         {
-            return buildTarget == NamedBuildTarget.Standalone;
+            return buildTarget == NamedBuildTarget.Standalone || buildTarget == NamedBuildTarget.VisionOS;
         }
 
         private void OnPresetSelectorClosed()
@@ -2121,10 +2122,12 @@ namespace UnityEditor
                     SettingsContent.shaderPrecisionModelOptions);
                 if (EditorGUI.EndChangeCheck() && currShaderPrecisionModel != newShaderPrecisionModel)
                 {
-                    m_ShaderPrecisionModel.intValue = (int) newShaderPrecisionModel;
+                    m_ShaderPrecisionModel.intValue = (int)newShaderPrecisionModel;
                     serializedObject.ApplyModifiedProperties();
                     if (IsActivePlayerSettingsEditor())
-                        PlayerSettings.SyncShaderPrecisionModel();
+                    {
+                        EditorApplication.delayCall += () => PlayerSettings.SyncShaderPrecisionModel();
+                    }
                 }
             }
 
@@ -2333,12 +2336,16 @@ namespace UnityEditor
             if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone)
             {
                 GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
-                gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
+                gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Direct3D12) || (gfxAPIs[0] == GraphicsDeviceType.Metal) || (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
             }
             else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Android)
             {
                 GraphicsDeviceType[] gfxAPIs = m_CurrentTarget.GetGraphicsAPIs_Internal(platform.defaultTarget);
                 gfxJobModesSupported = (gfxAPIs[0] == GraphicsDeviceType.Vulkan);
+            }
+            else if (platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.iOS)
+            {
+                gfxJobModesSupported = true;
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
@@ -2408,6 +2415,9 @@ namespace UnityEditor
                 platform.namedBuildTarget.ToBuildTargetGroup() == BuildTargetGroup.Standalone ? EditorUserBuildSettings.selectedStandaloneTarget : platform.defaultTarget);
             bool newGraphicsJobs = graphicsJobs;
 
+            bool graphicsJobsSyncAfterKick = PlayerSettings.GetSwitchGraphicsJobsSyncAfterKick();
+            bool newGraphicsJobsSyncAfterKick = graphicsJobsSyncAfterKick;
+
             if (platform.namedBuildTarget == NamedBuildTarget.XboxOne)
             {
                 // on XBoxOne, we only have kGfxJobModeNative active for DX12 API and kGfxJobModeLegacy for the DX11 API
@@ -2464,6 +2474,23 @@ namespace UnityEditor
                     {
                         EditorGUILayout.Toggle(graphicsJobsGUI, graphicsJobs);
                     }
+                    // Optional fallback to previous graphics jobs implementation on Switch.
+                    if (platform.namedBuildTarget == NamedBuildTarget.NintendoSwitch && newGraphicsJobs)
+                    {
+                        using (new EditorGUI.IndentLevelScope())
+                        {
+                            /* (kaychang) Currently disabled.
+                            if (GUI.enabled)
+                            {
+                                newGraphicsJobsSyncAfterKick = EditorGUILayout.Toggle(SettingsContent.graphicsJobsSyncAfterKick, graphicsJobsSyncAfterKick);
+                            }
+                            else
+                            {
+                                EditorGUILayout.Toggle(SettingsContent.graphicsJobsSyncAfterKick, graphicsJobsSyncAfterKick);
+                            }
+                            */
+                        }
+                    }
                 }
                 if (EditorGUI.EndChangeCheck() && (newGraphicsJobs != graphicsJobs))
                 {
@@ -2478,6 +2505,11 @@ namespace UnityEditor
                         EditorApplication.RequestCloseAndRelaunchWithCurrentArguments();
                         GUIUtility.ExitGUI();
                     }
+                }
+                if (EditorGUI.EndChangeCheck() && (newGraphicsJobsSyncAfterKick != graphicsJobsSyncAfterKick))
+                {
+                    Undo.RecordObject(target, SettingsContent.undoChangedGraphicsJobsString);
+                    PlayerSettings.SetSwitchGraphicsJobsSyncAfterKick(newGraphicsJobsSyncAfterKick);
                 }
             }
             if (gfxJobModesSupported && newGraphicsJobs)

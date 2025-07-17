@@ -247,7 +247,7 @@ namespace UnityEditor
 
             if (evt.clickCount == 2 && memoryElement.memoryInfo != null && memoryElement.memoryInfo.instanceId != 0)
             {
-                Selection.activeInstanceID = memoryElement.memoryInfo.instanceId;
+                Selection.activeEntityId = memoryElement.memoryInfo.instanceId;
             }
             evt.Use();
             if (memoryElement.memoryInfo != null)
@@ -310,7 +310,7 @@ namespace UnityEditor
                 case KeyCode.Return:
                     if (m_MemorySelection.Selected.memoryInfo != null)
                     {
-                        Selection.activeInstanceID = m_MemorySelection.Selected.memoryInfo.instanceId;
+                        Selection.activeEntityId = m_MemorySelection.Selected.memoryInfo.instanceId;
                     }
                     break;
                 default:

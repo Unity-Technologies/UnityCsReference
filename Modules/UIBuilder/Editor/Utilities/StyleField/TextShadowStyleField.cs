@@ -16,12 +16,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TextShadowStyleField : BaseField<TextShadow>
     {
-        public class TextShadowStyleFieldConverter : UxmlAttributeConverter<TextShadow>
-        {
-            public override TextShadow FromString(string value) => throw new NotImplementedException();
-            public override string ToString(TextShadow value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<TextShadow>.UxmlSerializedData
         {
@@ -48,6 +42,8 @@ namespace Unity.UI.Builder
         DimensionStyleField m_OffsetYField;
         DimensionStyleField m_BlurRadiusField;
         ColorField m_ColorField;
+
+        public ColorField colorField => m_ColorField;
 
         public TextShadowStyleField() : this(null) {}
 

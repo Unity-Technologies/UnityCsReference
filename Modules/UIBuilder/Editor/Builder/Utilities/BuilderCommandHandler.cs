@@ -9,6 +9,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using UnityEditor.UIElements;
+using UnityEngine.Assertions;
 using UnityEngine.Pool;
 
 namespace Unity.UI.Builder
@@ -145,12 +146,8 @@ namespace Unity.UI.Builder
             var selectionCopy = m_Selection.selection.ToList();
             m_Selection.ClearSelection(null, true);
 
-            bool somethingWasDeleted = false;
             foreach (var element in selectionCopy)
-                somethingWasDeleted |= DeleteElement(element);
-
-            if (somethingWasDeleted)
-                JustNotify();
+                DeleteElement(element);
         }
 
         public bool CopySelection()
@@ -161,7 +158,7 @@ namespace Unity.UI.Builder
                 return false;
 
             // UXML
-            var veas = new List<VisualElementAsset>();
+            var veas = new List<UxmlAsset>();
             foreach (var element in m_Selection.selection)
             {
                 var vea = element.GetVisualElementAsset();
@@ -180,7 +177,19 @@ namespace Unity.UI.Builder
             if (veas.Count > 0)
             {
                 BuilderEditorUtility.systemCopyBuffer =
-                    VisualTreeAssetToUXML.GenerateUXML(m_PaneWindow.document.visualTreeAsset, null, veas);
+                    new VisualTreeAssetExporter().ToUxmlString(
+                        m_PaneWindow.document.visualTreeAsset,
+                        veas,
+                        new VisualTreeAssetExporter.ExportOptions
+                        {
+                            ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
+                            styleExporterOptions = new StyleSheetExporter.UssExportOptions
+                            {
+                                ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
+                            }
+                        }
+                    );
+
                 return true;
             }
 
@@ -200,7 +209,7 @@ namespace Unity.UI.Builder
                     continue;
 
                 var styleSheet = element.GetClosestStyleSheet();
-                StyleSheetToUss.ToUssString(styleSheet, selector, ussSnippetBuilder);
+                ussSnippetBuilder.AppendLine(BuilderStyleSheetExporter.ExportSelectorAsRule(styleSheet, selector));
             }
             if (ussSnippetBuilder.Length > 0)
             {
@@ -264,10 +273,7 @@ namespace Unity.UI.Builder
             }
 
             // Select all pasted elements.
-            foreach (var templateAsset in pasteVta.templateAssets)
-                if (pasteVta.IsRootElement(templateAsset))
-                    templateAsset.Select();
-            foreach (var vea in pasteVta.visualElementAssets)
+            foreach (var vea in pasteVta.DepthFirstTraversalOfType<VisualElementAsset>())
                 if (pasteVta.IsRootElement(vea))
                     vea.Select();
 
@@ -284,7 +290,7 @@ namespace Unity.UI.Builder
             if (mainStyleSheet == null)
                 return;
 
-            var pasteStyleSheet = StyleSheetUtilities.CreateInstance();
+            var pasteStyleSheet = StyleSheetUtility.CreateInstanceWithHideFlags();
             var importer = new BuilderStyleSheetImporter(); // Cannot be cached because the StyleBuilder never gets reset.
             importer.Import(pasteStyleSheet, copyBuffer);
 
@@ -354,6 +360,9 @@ namespace Unity.UI.Builder
                 var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
                 styleSheet.RemoveSelector(complexSelector);
 
+                // Selection changes on delete, we need to update preview here
+                UpdateStyleSheetUssPreview(styleSheet);
+
                 // If we are deleting multiple items then its possible that a previous
                 // delete recreated the explorer panel and this element is no longer valid.
                 // In that case, we force an update with OnEnableAfterAllSerialization.
@@ -365,8 +374,8 @@ namespace Unity.UI.Builder
                 {
                     element.RemoveFromHierarchy();
                 }
-                m_Selection.NotifyOfHierarchyChange();
 
+                m_Selection.NotifyOfStylingChange();
                 return true;
             }
             else if (BuilderSharedStyles.IsStyleSheetElement(element))
@@ -384,7 +393,7 @@ namespace Unity.UI.Builder
             if (vea == null)
                 return false;
 
-            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, element);
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document.visualTreeAsset, element);
             element.RemoveFromHierarchy();
             m_Selection.NotifyOfHierarchyChange();
 
@@ -393,14 +402,6 @@ namespace Unity.UI.Builder
 
         public void CreateTemplateFromHierarchy(VisualElement ve, VisualTreeAsset vta, string path = "")
         {
-            var veas = new List<VisualElementAsset>();
-            var vea = ve.GetVisualElementAsset();
-
-            using var _ = ListPool<UxmlNamespaceDefinition>.Get(out var nsDefinitions);
-            vta.GatherUxmlNamespaceDefinitions(vta.GetParentAsset(vea), nsDefinitions);
-
-            veas.Add(vea);
-
             if (string.IsNullOrEmpty(path))
             {
                 path = BuilderDialogsUtility.DisplaySaveFileDialog("Save UXML", null, ve.name, "uxml");
@@ -423,7 +424,50 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var uxml = VisualTreeAssetToUXML.GenerateUXML(vta, null, veas);
+            var vea = ve.GetVisualElementAsset();
+
+            using var _ = ListPool<UxmlNamespaceDefinition>.Get(out var nsDefinitions);
+            vta.GatherUxmlNamespaceDefinitions(vea.parentAsset, nsDefinitions);
+
+            var newVta = ScriptableObject.CreateInstance<VisualTreeAsset>();
+            var newRootVea = newVta.visualTree;
+
+            foreach (var property in vta.visualTree.properties)
+            {
+                newRootVea.SetAttribute(property.name, property.value);
+            }
+            newRootVea.xmlNamespace = vta.visualTree.xmlNamespace;
+            foreach (var ns in vta.visualTree.namespaceDefinitions)
+            {
+                newRootVea.namespaceDefinitions.Add(ns);
+            }
+
+            using var setHandle = HashSetPool<UxmlNamespaceDefinition>.Get(out var previousSet);
+            foreach (var def in newVta.visualTree.namespaceDefinitions)
+                previousSet.Add(def);
+
+            foreach (var def in nsDefinitions)
+            {
+                if (!previousSet.Add(def))
+                    continue;
+                newRootVea.namespaceDefinitions.Add(def);
+            }
+
+            Undo.RegisterCompleteObjectUndo(vta, BuilderConstants.DeleteUIElementUndoMessage);
+
+            newRootVea.Add(vea);
+
+            var uxml = new VisualTreeAssetExporter().ToUxmlString(
+                newVta,
+                new VisualTreeAssetExporter.ExportOptions
+                {
+                    ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
+                    styleExporterOptions = new StyleSheetExporter.UssExportOptions
+                    {
+                        ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
+                    }
+                }
+            );
 
             if (!m_PaneWindow.document.SaveNewTemplateFileFromHierarchy(path, uxml))
             {
@@ -436,34 +480,23 @@ namespace Unity.UI.Builder
             var index = parent.IndexOf(ve);
 
             // Delete old element
-            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, ve);
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document.visualTreeAsset, ve);
             ve.RemoveFromHierarchy();
 
             // Replace with new template
-            var newTemplateVTA = EditorGUIUtility.Load(path) as VisualTreeAsset;
-            var rootVea = newTemplateVTA.GetRootUxmlElement();
-            using var setHandle = HashSetPool<UxmlNamespaceDefinition>.Get(out var definitionsSet);
-            foreach (var def in rootVea.namespaceDefinitions)
-                definitionsSet.Add(def);
+            newVta = EditorGUIUtility.Load(path) as VisualTreeAsset;
 
-            foreach (var def in nsDefinitions)
-            {
-                if (!definitionsSet.Add(def))
-                    continue;
-                rootVea.namespaceDefinitions.Add(def);
-            }
-
-            var newTemplateContainer = newTemplateVTA.CloneTree();
+            var newTemplateContainer = newVta.CloneTree();
             newTemplateContainer.SetProperty(BuilderConstants.LibraryItemLinkedTemplateContainerPathVEPropertyName, path);
-            newTemplateContainer.name = newTemplateVTA.name;
+            newTemplateContainer.name = newVta.name;
 
             parent.Insert(index, newTemplateContainer);
 
-            BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, newTemplateContainer, (inVta, inParent, ve) =>
+            BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document.visualTreeAsset, newTemplateContainer, (inVta, inParent, ve) =>
             {
                 var vea = inVta.AddTemplateInstance(inParent, path) as VisualElementAsset;
-                vea.SetAttribute("name", newTemplateVTA.name);
-                ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, newTemplateVTA);
+                vea.SetAttribute("name", newVta.name);
+                ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, newVta);
                 return vea;
             }, index);
 
@@ -498,7 +531,7 @@ namespace Unity.UI.Builder
 
                 // Create new unpacked element and add it in the hierarchy
                 templateContainerParent.Add(unpackedVE);
-                BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, unpackedVE, templateContainerIndex + 1);
+                BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document.visualTreeAsset, unpackedVE, templateContainerIndex + 1);
 
                 var linkedInstancedVTA = elementToUnpack.GetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName) as VisualTreeAsset;
                 var linkedTA = elementToUnpack.GetVisualElementAsset() as TemplateAsset;
@@ -511,7 +544,7 @@ namespace Unity.UI.Builder
                 foreach (var def in definitions)
                     definitionsSet.Add(def);
 
-                var definitionsToTransfer = linkedVTACopy.GetRootUxmlElement().namespaceDefinitions;
+                var definitionsToTransfer = linkedVTACopy.visualTree.namespaceDefinitions;
                 for (var i = 0; i < definitionsToTransfer.Count; ++i)
                 {
                     var definitionToTransfer = definitionsToTransfer[i];
@@ -541,8 +574,8 @@ namespace Unity.UI.Builder
                 BuilderAssetUtilities.CopyAttributeOverridesToChildTemplateAssets(elementToUnpack as TemplateContainer, attributeOverrides, linkedVTACopy);
 
                 // Apply stylesheets to new element + inline rules
-                BuilderAssetUtilities.AddStyleSheetsFromTreeAsset(unpackedVEA, linkedInstancedVTA);
-                unpackedVEA.ruleIndex = templateContainerVEA.ruleIndex;
+                unpackedVEA.AddStyleSheets(linkedInstancedVTA.stylesheets);
+                unpackedVEA.ruleIndex = linkedTA.ruleIndex;
 
                 BuilderAssetUtilities.TransferAssetToAsset(m_PaneWindow.document, unpackedVEA, linkedVTACopy, false);
 
@@ -553,7 +586,7 @@ namespace Unity.UI.Builder
 
                 if (elementToUnpack != templateContainer)
                 {
-                    BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, elementToUnpack, false);
+                    BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document.visualTreeAsset, elementToUnpack, false);
                     elementToUnpack.RemoveFromHierarchy();
                 }
 
@@ -568,6 +601,9 @@ namespace Unity.UI.Builder
                 }
             }
 
+            // Sync serialized data because attribute overrides have been updated
+            UxmlSerializer.SyncVisualTreeAssetSerializedData(new CreationContext(m_PaneWindow.document.visualTreeAsset), false);
+
             m_Selection.NotifyOfHierarchyChange();
             m_PaneWindow.OnEnableAfterAllSerialization();
 
@@ -576,7 +612,7 @@ namespace Unity.UI.Builder
             hierarchy.elementHierarchyView.CopyTreeViewItemStates(rootVea, rootUnpackedVEA);
 
             // Delete old template element
-            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document, templateContainer, false);
+            BuilderAssetUtilities.DeleteElementFromAsset(m_PaneWindow.document.visualTreeAsset, templateContainer, false);
             templateContainer.RemoveFromHierarchy();
 
             m_Selection.ClearSelection(null);
@@ -610,6 +646,12 @@ namespace Unity.UI.Builder
             var newSelectorField = m_PaneWindow.rootVisualElement.Q<BuilderStyleSheets>().newSelectorField;
             newSelectorField.value = BuilderStyleUtilities.GenerateElementTargetedSelector(ve);
             newSelectorField.Focus();
+        }
+
+        public void UpdateStyleSheetUssPreview(StyleSheet styleSheet)
+        {
+            var ussFile = m_PaneWindow.document.activeOpenUXMLFile.GetUssFileFromSheet(styleSheet);
+            ussFile?.GeneratePreview();
         }
     }
 }

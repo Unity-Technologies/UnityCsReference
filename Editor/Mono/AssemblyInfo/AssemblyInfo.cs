@@ -35,6 +35,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.BuildPipeline")]
@@ -109,6 +110,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
+[assembly: InternalsVisibleTo("Unity.Module.AssetDatabase.DanglingComponents.Tests.Editor")]
 [assembly: InternalsVisibleTo("DynamicProxyGenAssembly2")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.Networking")]
@@ -182,6 +184,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Multiplayer.Playmode.Editor.Bridge")]
 [assembly: InternalsVisibleTo("Unity.DedicatedServer.Editor.Bridge")]
 
+[assembly: InternalsVisibleTo("Unity.Video.Tests")]
+[assembly: InternalsVisibleTo("Unity.Video.PlayModeTests")]
+[assembly: InternalsVisibleTo("Unity.Video.EditModeTests")]
+
 [assembly: InternalsVisibleTo("Unity.Scenes")]
 
 
@@ -199,9 +205,27 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.GraphToolsAuthoringFramework.InternalEditorBridge")]
 
 // Module test assemblies
+[assembly: InternalsVisibleTo("Unity.Modules.iOSExtensions.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Licensing.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PlatformIcons.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.BuildProfileEditor.Tests.Editor")]
 // This should move with the AnimationWindow to a module at some point
 [assembly: InternalsVisibleTo("Unity.Modules.Animation.AnimationWindow.Tests.Editor")]
 [assembly: InternalsVisibleTo("Unity.Modules.Physics.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.Physics2D.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.U2D.NineSlice.Tests.Editor")]
+
 [assembly: InternalsVisibleTo("Unity.Tests.Shared")]
+
+// Test Assemblies
+[assembly: InternalsVisibleTo("Unity.Core.UnityEvent.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
+
+// Tests\CrossModulePackages\ScriptableRenderPipeline
+[assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
+
+[assembly: InternalsVisibleTo("Unity.Core.EditorWindowManagement.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Core.VersionControl.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.ProjectAuditor.EditorTests")]
 

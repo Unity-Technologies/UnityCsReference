@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style value that can be either a <see cref="BackgroundSize"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleBackgroundSize : IStyleValue<BackgroundSize>, IEquatable<StyleBackgroundSize>
     {
         /// <summary>
@@ -53,7 +54,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private BackgroundSize m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

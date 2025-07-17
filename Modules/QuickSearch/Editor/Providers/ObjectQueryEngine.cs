@@ -320,20 +320,12 @@ namespace UnityEditor.Search.Providers
 
         static void IndexTypes(Type objType, HashSet<string> types, bool isPrefabDocument)
         {
-            while (objType != null && objType != typeof(UnityEngine.Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            Utils.EnumerateIndexedTypesAndInterfaces(objType, isPrefabDocument, (typeName, _) =>
             {
-                if (isPrefabDocument && objType == typeof(GameObject))
-                    types.Add("prefab");
-                else if (objType == typeof(MonoScript))
-                    types.Add("script");
+                types.Add(typeName.ToLowerInvariant());
+            });
 
-                var shortName = objType.Name;
-                types.Add(shortName.ToLowerInvariant());
-                if (objType.FullName != null && objType.FullName != shortName)
-                    types.Add(objType.FullName.ToLowerInvariant());
-                objType = objType.BaseType;
-            }
-            if (objType == typeof(MonoBehaviour) || objType == typeof(Behaviour))
+            if (typeof(MonoBehaviour).IsAssignableFrom(objType) || typeof(Behaviour).IsAssignableFrom(objType))
                 types.Add("script");
         }
 
@@ -473,7 +465,7 @@ namespace UnityEditor.Search.Providers
             var isTransformPath = refValue.StartsWith("/");
             if (!isTransformPath && AssetDatabase.AssetPathExists(refValue))
             {
-                var mainInstanceId = AssetDatabase.GetMainAssetInstanceID(refValue);
+                var mainInstanceId = AssetDatabase.GetMainAssetEntityId(refValue);
                 refs.Add(mainInstanceId);
             }
 
@@ -576,7 +568,7 @@ namespace UnityEditor.Search.Providers
         {
             if (!filterValue.StartsWith("/") && AssetDatabase.AssetPathExists(filterValue))
             {
-                var instanceId = AssetDatabase.GetMainAssetInstanceID(filterValue);
+                var instanceId = AssetDatabase.GetMainAssetEntityId(filterValue);
                 return new ParseResult<int>(true, instanceId);
             }
             return ParseResult<int>.none;

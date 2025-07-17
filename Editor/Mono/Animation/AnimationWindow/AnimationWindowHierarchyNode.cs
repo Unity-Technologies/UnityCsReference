@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor;
-using UnityEngine;
-using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+
 
 namespace UnityEditorInternal
 {
@@ -40,13 +40,17 @@ namespace UnityEditorInternal
 
     internal class AnimationWindowHierarchyPropertyNode : AnimationWindowHierarchyNode
     {
-        public bool isPptrNode;
+        public bool isPPtrNode;
+        public bool isPhantomNode;
+        public InheritanceState inheritanceState;
 
-        public AnimationWindowHierarchyPropertyNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent, EditorCurveBinding binding, bool isPptrNode, string displayName)
+        public AnimationWindowHierarchyPropertyNode(System.Type animatableObjectType, int setId, string propertyName, string path, TreeViewItem parent, EditorCurveBinding binding, bool isPPtrNode, bool isPhantom, InheritanceState inheritanceState, string displayName)
             : base(AnimationWindowUtility.GetPropertyNodeID(setId, path, animatableObjectType, propertyName), parent != null ? parent.depth + 1 : -1, parent, animatableObjectType, propertyName, path, displayName)
         {
             this.binding = binding;
-            this.isPptrNode = isPptrNode;
+            this.isPPtrNode = isPPtrNode;
+            this.isPhantomNode = isPhantom;
+            this.inheritanceState = inheritanceState;
         }
     }
 

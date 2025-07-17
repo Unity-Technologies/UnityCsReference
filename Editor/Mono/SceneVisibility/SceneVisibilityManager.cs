@@ -16,21 +16,12 @@ namespace UnityEditor
     {
         internal class ShortcutContext : IShortcutContext
         {
-            public bool active
-            {
-                get
-                {
-                    var focusedWindow = EditorWindow.focusedWindow;
-                    if (focusedWindow != null)
-                    {
-                        return (focusedWindow.GetType() == typeof(SceneView) ||
-                            focusedWindow.GetType() == typeof(SceneHierarchyWindow));
-                    }
+            public bool active => EditorWindow.focusedWindow is IHierarchyWindow
+                                    || EditorWindow.focusedWindow is SceneView
+                                    || EditorWindow.focusedWindow is SceneHierarchyWindow;
 
-                    return false;
-                }
-            }
         }
+        
 
         private static ShortcutContext s_ShortcutContext;
 

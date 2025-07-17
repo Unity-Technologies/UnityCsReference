@@ -73,25 +73,25 @@ namespace UnityEngine.UIElements
                     new (nameof(reorderMode), "reorder-mode"),
                     new (nameof(showBoundCollectionSize), "show-bound-collection-size"),
                     new (nameof(bindingSourceSelectionMode), "binding-source-selection-mode"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
-            [SerializeField] bool showFoldoutHeader;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showFoldoutHeader_UxmlAttributeFlags;
             [SerializeField] string headerTitle;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTitle_UxmlAttributeFlags;
-            [SerializeField] bool showAddRemoveFooter;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAddRemoveFooter_UxmlAttributeFlags;
-            [SerializeField] bool allowAdd;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowAdd_UxmlAttributeFlags;
-            [SerializeField] bool allowRemove;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowRemove_UxmlAttributeFlags;
             [SerializeField] ListViewReorderMode reorderMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderMode_UxmlAttributeFlags;
-            [SerializeField] bool showBoundCollectionSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBoundCollectionSize_UxmlAttributeFlags;
             [SerializeField] BindingSourceSelectionMode bindingSourceSelectionMode;
+            [SerializeField] bool showFoldoutHeader;
+            [SerializeField] bool showAddRemoveFooter;
+            [SerializeField] bool allowAdd;
+            [SerializeField] bool allowRemove;
+            [SerializeField] bool showBoundCollectionSize;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showFoldoutHeader_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTitle_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAddRemoveFooter_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowAdd_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowRemove_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderMode_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBoundCollectionSize_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingSourceSelectionMode_UxmlAttributeFlags;
             #pragma warning restore 649
 

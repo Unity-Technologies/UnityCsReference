@@ -14,6 +14,16 @@ namespace UnityEditor.Overlays
 {
     public interface ISupportsOverlays {}
 
+    interface ISupportsOverlaysCustomMode : ISupportsOverlays
+    {
+        OverlayCanvasMode overlayCanvasMode { get; }
+    }
+
+    public interface ISupportsOverlaysWithFilter : ISupportsOverlays
+    {
+        bool IsOverlaySupported(string overlayId);
+    }
+
     static class OverlayUtilities
     {
         internal class OverlayEditorWindowAssociation
@@ -64,7 +74,24 @@ namespace UnityEditor.Overlays
             }
         }
 
-        // Rect is in world space
+        // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
+        public static Rect EnsureRectOverlapsRect(Rect rect, Rect boundary)
+        {
+            if (rect.x > boundary.xMax)
+                rect.x = boundary.xMax;
+
+            if (rect.xMax < boundary.xMin)
+                rect.x = (boundary.xMin) - rect.width;
+
+            if (rect.y > boundary.yMax)
+                rect.y = boundary.yMax;
+
+            if (rect.y < boundary.yMin)
+                rect.y = boundary.yMin;
+
+            return rect;
+        }
+
         public static Rect ClampRectToRect(Rect rect, Rect clampingRect)
         {
             rect.position -= rect.max - ClampPositionToRect(rect.max, clampingRect);
@@ -72,7 +99,6 @@ namespace UnityEditor.Overlays
             return rect;
         }
 
-        // position is in world space
         public static Vector2 ClampPositionToRect(Vector2 position, Rect clampingRect)
         {
             //keep mouse position within bounds for picking, mathf.epsilon is too small
@@ -83,12 +109,20 @@ namespace UnityEditor.Overlays
             return position;
         }
 
+        public static bool IsResizable(Overlay overlay)
+        {
+            bool canUserResize = overlay.IsResizeCompatible() && overlay.container.resizingAllowed;
+            canUserResize &= !Mathf.Approximately(overlay.minSize.x, overlay.maxSize.x);
+            canUserResize &= !Mathf.Approximately(overlay.minSize.y, overlay.maxSize.y);
+            return canUserResize;
+        }
+
         static bool OverlayWindowTypeEquatesTo(Type windowType, Type overlayWindowType)
         {
             return overlayWindowType != null && overlayWindowType.IsAssignableFrom(windowType);
         }
 
-        internal static List<Type> GetOverlaysForType(Type windowType, Func<OverlayEditorWindowAssociation, bool> filter = null)
+        internal static List<Type> GetOverlaysForType(Type windowType, Func<string, bool> filter = null)
         {
             List<Type> res;
 
@@ -101,7 +135,7 @@ namespace UnityEditor.Overlays
             {
                 var shouldAddOverlayType = filter == null ?
                     OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) :
-                    OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) && filter(overlays[i]);
+                    OverlayWindowTypeEquatesTo(windowType, overlays[i].editorWindowType) && filter(overlays[i].overlayId);
                 if (shouldAddOverlayType)
                     res.Add(overlays[i].overlay);
             }
@@ -232,6 +266,28 @@ namespace UnityEditor.Overlays
             }
 
             return null;
+        }
+
+        internal static OverlayDropZoneBase FindNearestValidDockZoneHorizontally(IEnumerable<OverlayDropZoneBase> dropZones, Overlay targetOverlay, Vector2 mousePosition)
+        {
+            float mx = mousePosition.x;
+            float closestDist = float.MaxValue;
+            OverlayDropZoneBase nearestDropZone = null;
+            foreach (var dz in dropZones)
+            {
+                if (!dz.CanAcceptTarget(targetOverlay))
+                    continue;
+
+                float l = dz.worldBoundingBox.xMin;
+                float r = dz.worldBoundingBox.xMax;
+                float dist = Mathf.Min(Mathf.Abs(l - mx), Mathf.Abs(r - mx));
+                if (dist < closestDist)
+                {
+                    closestDist = dist;
+                    nearestDropZone = dz;
+                }
+            }
+            return nearestDropZone;
         }
     }
 }

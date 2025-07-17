@@ -148,10 +148,10 @@ namespace UnityEditor
             var importer = (TrueTypeFontImporter)command.context;
             if (importer.fontTextureCase == FontTextureCase.Dynamic)
             {
-                EditorUtility.DisplayDialog(
-                    "Cannot generate editable font asset for dynamic fonts",
-                    "Please reimport the font in a different mode.",
-                    "OK");
+                EditorDialog.DisplayAlertDialog(
+                    titleText: "Cannot generate editable font asset for dynamic fonts",
+                    messageText: "Please reimport the font in a different mode.",
+                    buttonText: default);
                 return;
             }
             string basePath = Path.Combine(Path.GetDirectoryName(importer.assetPath), Path.GetFileNameWithoutExtension(importer.assetPath));

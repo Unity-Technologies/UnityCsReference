@@ -2,13 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
 using UnityEditor;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEditorInternal;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
@@ -73,13 +68,13 @@ namespace UnityEditorInternal
         {
             state.playing = false;
 
-            state.controlInterface.time = MousePositionToTime(evt);
+            state.controller.time = MousePositionToTime(evt);
             return true;
         }
 
         private bool OnDragPlayHead(Event evt)
         {
-            state.controlInterface.time = MousePositionToTime(evt);
+            state.controller.time = MousePositionToTime(evt);
             return true;
         }
 

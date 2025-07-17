@@ -13,7 +13,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private const string k_SelectedClassName = "selected";
 
         private string m_CurrentStateClass;
-        private string m_CurrentFeatureState;
 
         public IPackage package { get; private set; }
         public VisualState visualState { get; private set; }
@@ -167,7 +166,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private bool RefreshSpinner()
         {
             var progress = package?.progress ?? PackageProgress.None;
-            var isInProgress = progress != PackageProgress.None && package?.state == PackageState.InProgress;
+            var isInProgress = progress != PackageProgress.None;
             if (isInProgress)
                 StartSpinner();
             else
@@ -217,44 +216,18 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             m_StateIcon.tooltip = GetTooltipByState(state);
 
-            if (state == PackageState.Installed && package.versions.primary.HasTag(PackageTag.Feature))
-                RefreshFeatureState();
+            RefreshFeatureCustomizedIcon();
         }
 
-        private void RefreshFeatureState()
+        private void RefreshFeatureCustomizedIcon()
         {
-            if (GetFeatureState(targetVersion) == FeatureState.Customized)
-            {
-                m_CurrentFeatureState = FeatureState.Customized.ToString().ToLower();
-                m_InfoStateIcon.AddToClassList(m_CurrentFeatureState);
-                m_InfoStateIcon.tooltip = L10n.Tr("This feature has been manually customized");
-            }
-            else
-            {
-                m_InfoStateIcon.RemoveFromClassList(m_CurrentFeatureState);
-                m_CurrentFeatureState = null;
-            }
-        }
+            var primaryVersion = package?.versions.primary;
+            if (primaryVersion is not { isInstalled: true } || !primaryVersion.HasTag(PackageTag.Feature))
+                return;
 
-        private FeatureState GetFeatureState(IPackageVersion featureVersion)
-        {
-            if (featureVersion?.isInstalled != true)
-                return FeatureState.None;
-
-            foreach (var dependency in featureVersion.dependencies)
-            {
-                var dependencyPackage = m_PackageDatabase.GetPackage(dependency.name);
-                var installedVersion = dependencyPackage?.versions.installed;
-                if (installedVersion == null)
-                    continue;
-
-                if (installedVersion.HasTag(PackageTag.InDevelopment))
-                    return FeatureState.Customized;
-
-                if (installedVersion.isDirectDependency && dependencyPackage.versions.recommended?.isInstalled == false)
-                    return FeatureState.Customized;
-            }
-            return FeatureState.None;
+            var featureCustomized = m_PackageDatabase.GetCustomizedDependencies(targetVersion)?.Length > 0;
+            m_InfoStateIcon.EnableInClassList("customized", featureCustomized);
+            m_InfoStateIcon.tooltip = featureCustomized ? L10n.Tr("This feature has been manually customized") : string.Empty;
         }
 
         public void RefreshSelection()

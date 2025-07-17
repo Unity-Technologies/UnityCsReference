@@ -741,6 +741,25 @@ namespace UnityEngine.Events
     [UsedByNativeCode]
     public abstract class UnityEventBase : ISerializationCallbackReceiver
     {
+        static readonly List<WeakReference<UnityEventBase>> s_UnityEvents = new();
+
+        // ISerializationCallbackReceiver.OnAfterDeserialize executes before entering playmode
+        // thus persistent calls can be cached incorrectly if initially called very early.
+        // This callback invalidates caches after actual entering of playmode.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void OnPlayModeStateChange()
+        {
+            foreach (var unityEventReference in s_UnityEvents)
+            {
+                if (!unityEventReference.TryGetTarget(out var unityEvent))
+                    continue;
+
+                unityEvent.DirtyPersistentCalls();
+            }
+
+            s_UnityEvents.Clear();
+        }
+
         private InvokableCallList m_Calls;
 
         [FormerlySerializedAs("m_PersistentListeners")]
@@ -759,11 +778,13 @@ namespace UnityEngine.Events
         void ISerializationCallbackReceiver.OnBeforeSerialize()
         {
             DirtyPersistentCalls();
+            s_UnityEvents.Add(new WeakReference<UnityEventBase>(this));
         }
 
         void ISerializationCallbackReceiver.OnAfterDeserialize()
         {
             DirtyPersistentCalls();
+            s_UnityEvents.Add(new WeakReference<UnityEventBase>(this));
         }
 
         protected MethodInfo FindMethod_Impl(string name, object targetObj)

@@ -241,6 +241,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<DisplayStyle> value) => ((IStyle)container).display = value;
         }
 
+        class FilterProperty : InlineStyleListProperty<FilterFunction>
+        {
+            public override string Name => nameof(IStyle.filter);
+            public override string ussName => "filter";
+            public override bool IsReadOnly => false;
+            public override StyleList<FilterFunction> GetValue(ref InlineStyleAccess container) => ((IStyle)container).filter;
+            public override void SetValue(ref InlineStyleAccess container, StyleList<FilterFunction> value) => ((IStyle)container).filter = value;
+        }
+
         class FlexBasisProperty : InlineStyleLengthProperty
         {
             public override string Name => nameof(IStyle.flexBasis);
@@ -700,6 +709,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref InlineStyleAccess container, StyleEnum<TextAnchor> value) => ((IStyle)container).unityTextAlign = value;
         }
 
+        class UnityTextAutoSizeProperty : InlineStyleTextAutoSizeProperty
+        {
+            public override string Name => nameof(IStyle.unityTextAutoSize);
+            public override string ussName => "-unity-text-auto-size";
+            public override bool IsReadOnly => false;
+            public override StyleTextAutoSize GetValue(ref InlineStyleAccess container) => ((IStyle)container).unityTextAutoSize;
+            public override void SetValue(ref InlineStyleAccess container, StyleTextAutoSize value) => ((IStyle)container).unityTextAutoSize = value;
+        }
+
         class UnityTextGeneratorProperty : InlineStyleEnumProperty<TextGeneratorType>
         {
             public override string Name => nameof(IStyle.unityTextGenerator);
@@ -774,8 +792,8 @@ namespace UnityEngine.UIElements
 
         public InlineStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(84);
-            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(252);
+            m_PropertiesList = new List<IProperty<InlineStyleAccess>>(85);
+            m_PropertiesHash = new Dictionary<string, IProperty<InlineStyleAccess>>(255);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -801,6 +819,7 @@ namespace UnityEngine.UIElements
             AddProperty(new ColorProperty());
             AddProperty(new CursorProperty());
             AddProperty(new DisplayProperty());
+            AddProperty(new FilterProperty());
             AddProperty(new FlexBasisProperty());
             AddProperty(new FlexDirectionProperty());
             AddProperty(new FlexGrowProperty());
@@ -852,6 +871,7 @@ namespace UnityEngine.UIElements
             AddProperty(new UnitySliceTopProperty());
             AddProperty(new UnitySliceTypeProperty());
             AddProperty(new UnityTextAlignProperty());
+            AddProperty(new UnityTextAutoSizeProperty());
             AddProperty(new UnityTextGeneratorProperty());
             AddProperty(new UnityTextOutlineColorProperty());
             AddProperty(new UnityTextOutlineWidthProperty());

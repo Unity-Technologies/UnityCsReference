@@ -55,6 +55,7 @@ namespace UnityEngine.UIElements
         public Color color => inheritedData.Read().color;
         public Cursor cursor => rareData.Read().cursor;
         public DisplayStyle display => layoutData.Read().display;
+        public List<FilterFunction> filter => visualData.Read().filter;
         public Length flexBasis => layoutData.Read().flexBasis;
         public FlexDirection flexDirection => layoutData.Read().flexDirection;
         public float flexGrow => layoutData.Read().flexGrow;
@@ -106,6 +107,7 @@ namespace UnityEngine.UIElements
         public int unitySliceTop => rareData.Read().unitySliceTop;
         public SliceType unitySliceType => rareData.Read().unitySliceType;
         public TextAnchor unityTextAlign => inheritedData.Read().unityTextAlign;
+        public TextAutoSize unityTextAutoSize => rareData.Read().unityTextAutoSize;
         public TextGeneratorType unityTextGenerator => inheritedData.Read().unityTextGenerator;
         public Color unityTextOutlineColor => inheritedData.Read().unityTextOutlineColor;
         public float unityTextOutlineWidth => inheritedData.Read().unityTextOutlineWidth;
@@ -272,6 +274,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.Display:
                         layoutData.Write().display = (DisplayStyle)reader.ReadEnum(StyleEnumType.DisplayStyle, 0);
+                        break;
+                    case StylePropertyId.Filter:
+                        reader.ReadListFilterFunction(visualData.Write().filter, 0);
                         break;
                     case StylePropertyId.Flex:
                         ShorthandApplicator.ApplyFlex(reader, ref this);
@@ -444,6 +449,9 @@ namespace UnityEngine.UIElements
                         break;
                     case StylePropertyId.UnityTextAlign:
                         inheritedData.Write().unityTextAlign = (TextAnchor)reader.ReadEnum(StyleEnumType.TextAnchor, 0);
+                        break;
+                    case StylePropertyId.UnityTextAutoSize:
+                        rareData.Write().unityTextAutoSize = reader.ReadTextAutoSize(0);
                         break;
                     case StylePropertyId.UnityTextGenerator:
                         inheritedData.Write().unityTextGenerator = (TextGeneratorType)reader.ReadEnum(StyleEnumType.TextGeneratorType, 0);
@@ -729,6 +737,12 @@ namespace UnityEngine.UIElements
                 return;
             switch (sv.id)
             {
+                case StylePropertyId.Filter:
+                    if (sv.value == null)
+                        visualData.Write().filter.CopyFrom(InitialStyle.filter);
+                    else
+                        visualData.Write().filter = sv.value as List<FilterFunction>;
+                    break;
                 case StylePropertyId.TransitionDelay:
                     if (sv.value == null)
                         transitionData.Write().transitionDelay.CopyFrom(InitialStyle.transitionDelay);
@@ -771,6 +785,11 @@ namespace UnityEngine.UIElements
         public void ApplyStyleTextShadow(TextShadow st)
         {
             inheritedData.Write().textShadow = st;
+        }
+
+        public void ApplyStyleTextAutoSize(TextAutoSize st)
+        {
+            rareData.Write().unityTextAutoSize = st;
         }
 
         public void ApplyFromComputedStyle(StylePropertyId id, ref ComputedStyle other)
@@ -851,6 +870,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Display:
                     layoutData.Write().display = other.layoutData.Read().display;
+                    break;
+                case StylePropertyId.Filter:
+                    visualData.Write().filter.CopyFrom(other.visualData.Read().filter);
                     break;
                 case StylePropertyId.FlexBasis:
                     layoutData.Write().flexBasis = other.layoutData.Read().flexBasis;
@@ -1008,6 +1030,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = other.inheritedData.Read().unityTextAlign;
+                    break;
+                case StylePropertyId.UnityTextAutoSize:
+                    rareData.Write().unityTextAutoSize = other.rareData.Read().unityTextAutoSize;
                     break;
                 case StylePropertyId.UnityTextGenerator:
                     inheritedData.Write().unityTextGenerator = other.inheritedData.Read().unityTextGenerator;
@@ -1257,15 +1282,6 @@ namespace UnityEngine.UIElements
                     }
 
                     break;
-                case StylePropertyId.Display:
-                    if (layoutData.Read().display != (DisplayStyle)newValue)
-                    {
-                        layoutData.Write().display = (DisplayStyle)newValue;
-                        ve.layoutNode.Display = (LayoutDisplay)newValue;
-                        ve.IncrementVersion(VersionChangeType.Layout);
-                    }
-
-                    break;
                 case StylePropertyId.FlexDirection:
                     if (layoutData.Read().flexDirection != (FlexDirection)newValue)
                     {
@@ -1387,7 +1403,7 @@ namespace UnityEngine.UIElements
                     if (inheritedData.Read().whiteSpace != (WhiteSpace)newValue)
                     {
                         inheritedData.Write().whiteSpace = (WhiteSpace)newValue;
-                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.StyleSheet);
+                        ve.IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint | VersionChangeType.StyleSheet);
                     }
 
                     break;
@@ -1506,6 +1522,19 @@ namespace UnityEngine.UIElements
                     break;
                 default:
                     throw new ArgumentException("Invalid animation property id. Can't apply value of type 'Background' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
+            }
+        }
+
+        public void ApplyPropertyAnimation(VisualElement ve, StylePropertyId id, List<FilterFunction> newValue)
+        {
+            switch (id)
+            {
+                case StylePropertyId.Filter:
+                    visualData.Write().filter = newValue;
+                    ve.IncrementVersion(VersionChangeType.Repaint);
+                    break;
+                default:
+                    throw new ArgumentException("Invalid animation property id. Can't apply value of type 'List<FilterFunction>' to property '" + id + "'. Please make sure that this property is animatable.", nameof(id));
             }
         }
 
@@ -1764,8 +1793,8 @@ namespace UnityEngine.UIElements
                     return result;
                 }
 
-                case StylePropertyId.Display:
-                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldStyle.layoutData.Read().display, (int)newStyle.layoutData.Read().display, durationMs, delayMs, easingCurve);
+                case StylePropertyId.Filter:
+                    return element.styleAnimation.Start(StylePropertyId.Filter, oldStyle.visualData.Read().filter, newStyle.visualData.Read().filter, durationMs, delayMs, easingCurve);
                 case StylePropertyId.Flex:
                 {
                     bool result = false;
@@ -2127,12 +2156,6 @@ namespace UnityEngine.UIElements
                     oldData.bottom != newData.bottom)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Bottom, oldData.bottom, newData.bottom, durationMs, delayMs, easingCurve);
-                }
-
-                if (hasRunningAnimation ||
-                    oldData.display != newData.display)
-                {
-                    result |= element.styleAnimation.StartEnum(StylePropertyId.Display, (int)oldData.display, (int)newData.display, durationMs, delayMs, easingCurve);
                 }
 
                 if (hasRunningAnimation ||
@@ -2526,6 +2549,12 @@ namespace UnityEngine.UIElements
                 }
 
                 if (hasRunningAnimation ||
+                    oldData.filter != newData.filter)
+                {
+                    result |= element.styleAnimation.Start(StylePropertyId.Filter, oldData.filter, newData.filter, durationMs, delayMs, easingCurve);
+                }
+
+                if (hasRunningAnimation ||
                     oldData.opacity != newData.opacity)
                 {
                     result |= element.styleAnimation.Start(StylePropertyId.Opacity, oldData.opacity, newData.opacity, durationMs, delayMs, easingCurve);
@@ -2722,14 +2751,6 @@ namespace UnityEngine.UIElements
                     }
 
                     return result;
-                }
-
-                case StylePropertyId.Display:
-                {
-                    var to = sv.keyword == StyleKeyword.Initial ? InitialStyle.display : (DisplayStyle)sv.number;
-                    if (sv.keyword == StyleKeyword.None)
-                        to = DisplayStyle.None;
-                    return element.styleAnimation.StartEnum(StylePropertyId.Display, (int)computedStyle.layoutData.Read().display, (int)to, durationMs, delayMs, easingCurve);
                 }
 
                 case StylePropertyId.FlexBasis:
@@ -3056,6 +3077,11 @@ namespace UnityEngine.UIElements
             visualData.Write().backgroundSize = backgroundSizeValue;
         }
 
+        public void ApplyStyleFilter(List<FilterFunction> st)
+        {
+            visualData.Write().filter = st;
+        }
+
         public void ApplyInitialValue(StylePropertyReader reader)
         {
             switch (reader.propertyId)
@@ -3174,6 +3200,9 @@ namespace UnityEngine.UIElements
                     break;
                 case StylePropertyId.Display:
                     layoutData.Write().display = InitialStyle.display;
+                    break;
+                case StylePropertyId.Filter:
+                    visualData.Write().filter.CopyFrom(InitialStyle.filter);
                     break;
                 case StylePropertyId.Flex:
                     layoutData.Write().flexGrow = InitialStyle.flexGrow;
@@ -3362,6 +3391,9 @@ namespace UnityEngine.UIElements
                 case StylePropertyId.UnityTextAlign:
                     inheritedData.Write().unityTextAlign = InitialStyle.unityTextAlign;
                     break;
+                case StylePropertyId.UnityTextAutoSize:
+                    rareData.Write().unityTextAutoSize = InitialStyle.unityTextAutoSize;
+                    break;
                 case StylePropertyId.UnityTextGenerator:
                     inheritedData.Write().unityTextGenerator = InitialStyle.unityTextGenerator;
                     break;
@@ -3531,6 +3563,7 @@ namespace UnityEngine.UIElements
                     x.unityTextGenerator != y.unityTextGenerator ||
                     x.fontSize != y.fontSize ||
                     x.unityFontDefinition != y.unityFontDefinition ||
+                    x.whiteSpace != y.whiteSpace ||
                     x.unityFontStyleAndWeight != y.unityFontStyleAndWeight ||
                     x.unityTextOutlineWidth != y.unityTextOutlineWidth ||
                     x.letterSpacing != y.letterSpacing ||
@@ -3551,11 +3584,6 @@ namespace UnityEngine.UIElements
                 if (x.visibility != y.visibility)
                 {
                     changes |= VersionChangeType.Picking | VersionChangeType.Repaint;
-                }
-
-                if (x.whiteSpace != y.whiteSpace)
-                {
-                    changes |= VersionChangeType.Layout;
                 }
             }
 
@@ -3593,7 +3621,8 @@ namespace UnityEngine.UIElements
                     x.backgroundPositionX != y.backgroundPositionX ||
                     x.backgroundPositionY != y.backgroundPositionY ||
                     x.backgroundRepeat != y.backgroundRepeat ||
-                    x.backgroundSize != y.backgroundSize))
+                    x.backgroundSize != y.backgroundSize ||
+                    !AreListPropertiesEqual(x.filter, y.filter)))
                 {
                     changes |= VersionChangeType.Repaint;
                 }
@@ -3621,7 +3650,8 @@ namespace UnityEngine.UIElements
             {
                 if ((changes & (VersionChangeType.Layout | VersionChangeType.Repaint)) == 0 && (x.unitySliceType != y.unitySliceType ||
                     x.textOverflow != y.textOverflow ||
-                    x.unitySliceScale != y.unitySliceScale))
+                    x.unitySliceScale != y.unitySliceScale ||
+                    x.unityTextAutoSize != y.unityTextAutoSize))
                 {
                     changes |= VersionChangeType.Layout | VersionChangeType.Repaint;
                 }

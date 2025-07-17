@@ -19,7 +19,8 @@ namespace UnityEngine
         const int sNewHandlesBetweenCleanupRuns = 500;
 
         internal static Func<Object> GetEditorTextSettings;
-        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<TextGeneratorType> GetEditorTextGeneratorType;
 
         private static TextSettings s_EditorTextSettings;
 
@@ -89,7 +90,7 @@ namespace UnityEngine
                     GUIStyle.Internal_DestroyTextGenerator(tuple.hashCode);
                     if (textHandles.TryGetValue(tuple.hashCode, out IMGUITextHandle textHandleCached))
                     {
-                        textHandleCached.RemoveTextInfoFromPermanentCache();
+                        textHandleCached.RemoveFromPermanentCache();
                     }
                     textHandles.Remove(tuple.hashCode);
                     textHandlesTuple.RemoveFirst();
@@ -152,7 +153,7 @@ namespace UnityEngine
         //Width is in saled pixels
         internal int GetNumCharactersThatFitWithinWidth(float width)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             int characterCount = textInfo.lineInfo[0].characterCount;
             int charCount;
             float currentSize = 0;
@@ -173,7 +174,7 @@ namespace UnityEngine
 
         public Rect[] GetHyperlinkRects(Rect content)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
 
             List<Rect> rects = new List<Rect>();
             var scaleinv = 1/ GetPixelsPerPoint();
@@ -236,10 +237,10 @@ namespace UnityEngine
             if (settings.fontAsset == null)
                 return;
 
-            var shouldRenderBitmap = settings.fontAsset.IsEditorFont && UnityEngine.TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
+            var shouldRenderBitmap = !style.isGizmo && settings.fontAsset.IsEditorFont && TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap();
             if (shouldRenderBitmap)
             {
-                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset);
+                settings.fontAsset = GetBlurryFontAssetMapping(settings.fontSize, settings.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
             }
 
             // If the raster mode is bitmap, we need to have a clean rect for the alignment to work properly.
@@ -262,7 +263,6 @@ namespace UnityEngine
 
             }
 
-            settings.material = settings.fontAsset.material;
             settings.text = text;
 
             var tempAlignment = style.alignment;
@@ -287,7 +287,6 @@ namespace UnityEngine
 
             settings.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(tempAlignment);
             settings.overflowMode = LegacyClippingToNewOverflow(style.clipping);
-            settings.wordWrappingRatio = 0.4f;
             if (rect.width > 0 && style.wordWrap)
             {
                 settings.textWrappingMode = TextWrappingMode.PreserveWhitespace;
@@ -305,13 +304,12 @@ namespace UnityEngine
             settings.paragraphSpacing = 0;
             settings.color = textColor;
 
-            settings.inverseYAxis = true;
             settings.isIMGUI = true;
             settings.shouldConvertToLinearSpace = false;
-            settings.fontFeatures = m_ActiveFontFeatures;
 
             settings.emojiFallbackSupport = true;
             settings.extraPadding = 6.0f;
+            settings.pixelsPerPoint = pixelsPerPoint;
         }
 
         static TextOverflowMode LegacyClippingToNewOverflow(TextClipping clipping)
@@ -326,6 +324,12 @@ namespace UnityEngine
                 default:
                     return TextOverflowMode.Overflow;
             }
+        }
+
+        internal override bool IsAdvancedTextEnabledForElement()
+        {
+            return false;
+            //return GetEditorTextGeneratorType() == TextGeneratorType.Advanced;
         }
     }
 }

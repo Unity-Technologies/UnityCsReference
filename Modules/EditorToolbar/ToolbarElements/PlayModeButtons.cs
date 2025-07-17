@@ -3,103 +3,115 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using Unity.Scripting.LifecycleManagement;
+using UnityEditor.Overlays;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Editor Utility/Play Mode")]
-    sealed class PlayModeButtons : VisualElement
+    sealed partial class PlayModeButtons : ScriptableSingleton<PlayModeButtons>
     {
+        const string k_ElementId = "Editor Utility/Play Mode";
         const float k_ImguiOverrideWidth = 240f;
 
-        readonly EditorToolbarToggle m_PlayButton;
-        readonly EditorToolbarToggle m_PauseButton;
-        readonly EditorToolbarButton m_StepButton;
-        readonly VisualElement m_UIElementsRoot;
-        readonly IMGUIContainer m_ImguiOverride;
+        bool m_IsAvailable = true;
+        bool m_HasImguiOverride = false;
 
-        static readonly GUIContent s_PlayButtonContextMenuItem = EditorGUIUtility.TrTextContent("Open Game View On Play");
+        [AutoStaticsCleanupOnCodeReload] internal static event Action<VisualElement> onPlayModeButtonsCreated;
 
-        internal static event Action<VisualElement> onPlayModeButtonsCreated;
-
-        public PlayModeButtons()
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement(k_ElementId, true, ussName = "PlayMode", defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Middle)]
+        static IEnumerable<MainToolbarElement> Create()
         {
-            name = "PlayMode";
+            return instance.Build();
+        }
 
-            Add(m_UIElementsRoot = new VisualElement());
-            m_UIElementsRoot.style.flexDirection = FlexDirection.Row;
-
-            m_UIElementsRoot.Add(m_PlayButton = new EditorToolbarToggle
-            {
-                name = "Play",
-                tooltip = "Play",
-                onIcon = EditorGUIUtility.LoadIcon("StopButton"),
-                offIcon = EditorGUIUtility.LoadIcon("PlayButton"),
-            });
-            m_PlayButton.RegisterCallback<MouseDownEvent>(evt => OnPlayButtonRMBClick(evt));
-            m_PlayButton.RegisterValueChangedCallback(OnPlayButtonValueChanged);
-
-            m_UIElementsRoot.Add(m_PauseButton = new EditorToolbarToggle
-            {
-                name = "Pause",
-                tooltip = "Pause",
-                onIcon = EditorGUIUtility.LoadIcon("PauseButton On"),
-                offIcon = EditorGUIUtility.LoadIcon("PauseButton"),
-            });
-            m_PauseButton.RegisterValueChangedCallback(OnPauseButtonValueChanged);
-
-            m_UIElementsRoot.Add(m_StepButton = new EditorToolbarButton
-            {
-                name = "Step",
-                tooltip = "Step"
-            });
-            m_StepButton.clickable.activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
-            m_StepButton.clicked += OnStepButtonClicked;
-            m_StepButton.icon = EditorGUIUtility.LoadIcon("StepButton");
-
-            EditorToolbarUtility.SetupChildrenAsButtonStrip(m_UIElementsRoot);
-
-            Add(m_ImguiOverride = new IMGUIContainer());
-            m_ImguiOverride.style.display = DisplayStyle.None;
-            m_ImguiOverride.style.width = k_ImguiOverrideWidth;
-
-            UpdatePlayState();
-            UpdatePauseState();
-            UpdateStepState();
+        void OnEnable()
+        {
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            EditorApplication.pauseStateChanged += OnPauseStateChanged;
+            ModeService.modeChanged += OnModeChanged;
 
             //Immediately after a domain reload, Modes might be initialized after the toolbar so we wait a frame to check it
             EditorApplication.delayCall += () =>
             {
                 CheckAvailability();
                 CheckImguiOverride();
+                if (MainToolbar.TryGetOverlay(k_ElementId, out var overlay) && overlay is MainToolbarOverlay mtOverlay)
+                {
+                    mtOverlay.afterContentRebuilt += OnElementRebuilt;
+                }
             };
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-
-            try
-            {
-                onPlayModeButtonsCreated?.Invoke(this);
-            }
-            catch(Exception e)
-            {
-                Debug.LogException(e);
-            }
         }
 
-        void OnAttachedToPanel(AttachToPanelEvent evt)
-        {
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
-            EditorApplication.pauseStateChanged += OnPauseStateChanged;
-            ModeService.modeChanged += OnModeChanged;
-        }
-
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        void OnDisable()
         {
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
             ModeService.modeChanged -= OnModeChanged;
+
+            if (MainToolbar.TryGetOverlay(k_ElementId, out var overlay) && overlay is MainToolbarOverlay mtOverlay)
+            {
+                mtOverlay.afterContentRebuilt -= OnElementRebuilt;
+            }
+        }
+
+        IEnumerable<MainToolbarElement> Build()
+        {
+            List<MainToolbarElement> elements = new List<MainToolbarElement>(3);
+
+            if (m_IsAvailable)
+            {
+                if (!m_HasImguiOverride)
+                {
+                    elements.Add(new MainToolbarToggle(
+                        EditorApplication.isPlayingOrWillChangePlaymode
+                            ? new MainToolbarContent(EditorGUIUtility.LoadIcon("StopButton"), "Play")
+                            : new MainToolbarContent(EditorGUIUtility.LoadIcon("PlayButton"), "Play"),
+                        EditorApplication.isPlayingOrWillChangePlaymode,
+                        OnPlayButtonValueChanged)
+                    {
+                        populateContextMenu = PopulatePlayContextMenu,
+                    });
+
+                    elements.Add(new MainToolbarToggle(
+                        EditorApplication.isPaused
+                            ? new MainToolbarContent(EditorGUIUtility.LoadIcon("PauseButton On"), "Pause")
+                            : new MainToolbarContent(EditorGUIUtility.LoadIcon("PauseButton"), "Pause"),
+                        EditorApplication.isPaused,
+                        OnPauseButtonValueChanged));
+
+                    elements.Add(new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("StepButton"), "Step"), OnStepButtonClicked)
+                    {
+                        enabled = EditorApplication.isPlaying,
+                    });
+                }
+                else
+                {
+                    elements.Add(new MainToolbarCustom(() =>
+                    {
+                        var imgui = new IMGUIContainer(OverrideGUIHandler);
+                        imgui.style.width = k_ImguiOverrideWidth;
+                        return imgui;
+                    }));
+                }
+            }
+
+            return elements;
+        }
+
+        void OnElementRebuilt(VisualElement root)
+        {
+            try
+            {
+                onPlayModeButtonsCreated?.Invoke(root);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         void OnModeChanged(ModeService.ModeChangedArgs args)
@@ -110,20 +122,23 @@ namespace UnityEditor.Toolbars
 
         void CheckAvailability()
         {
-            style.display = ModeService.HasCapability(ModeCapability.Playbar, true) ? DisplayStyle.Flex : DisplayStyle.None;
+            bool wasAvailable = m_IsAvailable;
+            m_IsAvailable = ModeService.HasCapability(ModeCapability.Playbar, true);
+
+            if (m_IsAvailable != wasAvailable)
+                MainToolbar.Refresh(k_ElementId);
         }
 
         void CheckImguiOverride()
         {
-            var hasOverride = ModeService.HasExecuteHandler("gui_playbar");
-            m_ImguiOverride.style.display = hasOverride ? DisplayStyle.Flex : DisplayStyle.None;
-            m_ImguiOverride.onGUIHandler = hasOverride ? (Action)OverrideGUIHandler : null;
-            m_UIElementsRoot.style.display = hasOverride ? DisplayStyle.None : DisplayStyle.Flex;
+            var wasOverriden = ModeService.HasExecuteHandler("gui_playbar");
+            if (wasOverriden != m_HasImguiOverride)
+                MainToolbar.Refresh(k_ElementId);
         }
 
-        void OnPlayButtonValueChanged(ChangeEvent<bool> evt)
+        void OnPlayButtonValueChanged(bool value)
         {
-            if (evt.newValue)
+            if (value)
             {
                 EditorApplication.EnterPlaymode();
             }
@@ -133,25 +148,22 @@ namespace UnityEditor.Toolbars
             }
         }
 
-        void OnPlayButtonRMBClick(MouseDownEvent evt)
+        void PopulatePlayContextMenu(DropdownMenu menu)
         {
-            if (evt.button == 1)
-            {
-                GenericMenu menu = new GenericMenu();
-                bool enabled = GameView.openWindowOnEnteringPlayMode;
-                menu.AddItem(s_PlayButtonContextMenuItem, enabled, ChangeOpenGameViewOnPlayModeBehavior);
-                menu.ShowAsContext();
-            }
+            menu.AppendAction(
+                L10n.Tr("Open Game View On Play"),
+                ChangeOpenGameViewOnPlayModeBehavior,
+                GameView.openWindowOnEnteringPlayMode ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal);
         }
 
-        void ChangeOpenGameViewOnPlayModeBehavior()
+        void ChangeOpenGameViewOnPlayModeBehavior(DropdownMenuAction action)
         {
             PlayModeView.openWindowOnEnteringPlayMode = !PlayModeView.openWindowOnEnteringPlayMode;
         }
 
-        void OnPauseButtonValueChanged(ChangeEvent<bool> evt)
+        void OnPauseButtonValueChanged(bool value)
         {
-            EditorApplication.isPaused = evt.newValue;
+            EditorApplication.isPaused = value;
         }
 
         void OnStepButtonClicked()
@@ -175,20 +187,20 @@ namespace UnityEditor.Toolbars
 
         void UpdatePlayState()
         {
-            m_PlayButton.SetValueWithoutNotify(EditorApplication.isPlayingOrWillChangePlaymode);
+            MainToolbar.Refresh(k_ElementId);
         }
 
         void UpdatePauseState()
         {
-            m_PauseButton.SetValueWithoutNotify(EditorApplication.isPaused);
+            MainToolbar.Refresh(k_ElementId);
         }
 
         void UpdateStepState()
         {
-            m_StepButton.SetEnabled(EditorApplication.isPlaying);
+            MainToolbar.Refresh(k_ElementId);
         }
 
-        static void OverrideGUIHandler()
+        void OverrideGUIHandler()
         {
             ModeService.Execute("gui_playbar", EditorApplication.isPlayingOrWillChangePlaymode);
         }

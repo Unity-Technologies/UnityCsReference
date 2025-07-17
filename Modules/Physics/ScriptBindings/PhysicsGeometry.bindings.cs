@@ -3,8 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.LowLevelPhysics
 {
@@ -13,39 +15,44 @@ namespace UnityEngine.LowLevelPhysics
         GeometryType GeometryType { get; }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct BoxGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private Vector3 m_HalfExtents;
 
         public Vector3 HalfExtents { get { return m_HalfExtents; } set { m_HalfExtents = value; } }
 
         public BoxGeometry(Vector3 halfExtents)
         {
+            m_UnusedReserved = -1;
             m_HalfExtents = halfExtents;
         }
 
         public GeometryType GeometryType => GeometryType.Box;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct SphereGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private float m_Radius;
 
         public float Radius { get { return m_Radius; } set { m_Radius = value; } }
 
         public SphereGeometry(float radius)
         {
+            m_UnusedReserved = -1;
             m_Radius = radius;
         }
 
         public GeometryType GeometryType => GeometryType.Sphere;
     }
 
-    [StructLayout(LayoutKind.Sequential)]
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
     public struct CapsuleGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private float m_Radius;
         private float m_HalfLength;
 
@@ -54,6 +61,7 @@ namespace UnityEngine.LowLevelPhysics
 
         public CapsuleGeometry(float radius, float halfLength)
         {
+            m_UnusedReserved = -1;
             m_Radius = radius;
             m_HalfLength = halfLength;
         }
@@ -63,15 +71,14 @@ namespace UnityEngine.LowLevelPhysics
 
     // From PxConvexMeshGeometry.h
     [StructLayout(LayoutKind.Sequential)]
-    public struct ConvexMeshGeometry : IGeometry
+    public unsafe struct ConvexMeshGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private Vector3 m_Scale;
         private Quaternion m_Rotation;
         private IntPtr m_ConvexMesh;
         private byte m_MeshFlags;
-        private byte pad1;
-        private short pad2;
-        private uint pad3;
+        private fixed byte m_MeshFlagsPadding[3];
 
         public Vector3 Scale { get { return m_Scale; } set { m_Scale = value; } }
         public Quaternion ScaleAxisRotation { get { return m_Rotation; } set { m_Rotation = value; } }
@@ -81,15 +88,14 @@ namespace UnityEngine.LowLevelPhysics
 
     // From PxTriangleMeshGeometry.h
     [StructLayout(LayoutKind.Sequential)]
-    public struct TriangleMeshGeometry : IGeometry
+    public unsafe struct TriangleMeshGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private Vector3 m_Scale;
         private Quaternion m_Rotation;
         private byte m_MeshFlags;
-        private byte pad1;
-        private short pad2;
+        private fixed byte m_MeshFlagsPadding[3];
         private IntPtr m_TriangleMesh;
-        private uint pad3;
 
         public Vector3 Scale { get { return m_Scale; } set { m_Scale = value; } }
         public Quaternion ScaleAxisRotation { get { return m_Rotation; } set { m_Rotation = value; } }
@@ -98,16 +104,15 @@ namespace UnityEngine.LowLevelPhysics
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    public struct TerrainGeometry : IGeometry
+    public unsafe struct TerrainGeometry : IGeometry
     {
+        private int m_UnusedReserved;
         private IntPtr m_TerrainData;
         private float m_HeightScale;
         private float m_RowScale;
         private float m_ColumnScale;
         private byte m_TerrainFlags;
-        private byte pad1;
-        private short pad2;
-        private uint pad3;
+        private fixed byte m_TerrainFlagsPadding[3];
 
         public GeometryType GeometryType => GeometryType.Terrain;
     }
@@ -126,44 +131,48 @@ namespace UnityEngine.LowLevelPhysics
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct GeometryHolder
     {
-                                                //   32  |   64
-        private int m_Type;                     //  0-4  |  0-4
-        private UInt32 m_DataStart;             //  4-8  |  4-8
-        private IntPtr m_FakePointer0;          //  8-12 |  8-16
-        private IntPtr m_FakePointer1;          // 12-16 | 16-24
-        private fixed UInt32 m_Blob[6];         // 16-40 | 24-48
-
-        private void SetGeometry<T>(T geometry) where T : struct, IGeometry
-        {
-            m_Type = (int)geometry.GeometryType;
-            UnsafeUtility.CopyStructureToPtr(ref geometry, UnsafeUtility.AddressOf(ref m_DataStart));
-        }
+        // !!!Keep in sync with PhysicsCollisionGeometry.h!!!
+        //
+        // physx::PxGeometryHolder blob data, the blob data members are provided in such as way so that the geometry type of the holder is the only non-opaque piece of data inside
+        // the memory layout matches PxConvexMeshGeometry, ensuring we can fit all smaller types inside the holder blob
+        //
+        // PxTriangleMeshLayout (64bit):
+        // [00...03] -- PxGeometryType
+        // [04...31] -- PxMeshScale
+        // [32...39] -- PxConvexMesh ptr
+        // [40...43] -- PxConvexMeshGeometryFlag + 3 byte padding
+        // [44...47] -- 4 byte padding
+        internal fixed int m_Data[12];
 
         public T As<T>() where T : struct, IGeometry
         {
-            T geometry = default(T);
+            T geometry = default;
 
-            if ((int)geometry.GeometryType != m_Type)
-                throw new InvalidOperationException($"Unable to get geometry of type {geometry.GeometryType} from a geometry holder that stores {m_Type}.");
+            if (geometry.GeometryType != Type)
+                throw new InvalidOperationException($"Unable to get geometry of type {geometry.GeometryType} from a geometry holder that stores {Type}.");
 
-            UnsafeUtility.CopyPtrToStructure(UnsafeUtility.AddressOf(ref m_DataStart), out geometry);
+            UnsafeUtility.CopyPtrToStructure(UnsafeUtility.AddressOf(ref this), out geometry);
 
             return geometry;
         }
 
         public static GeometryHolder Create<T>(T geometry) where T : struct, IGeometry
         {
-            GeometryHolder holder = new GeometryHolder()
-            {
-                m_DataStart = 0,
-                m_Type = (int)GeometryType.Invalid,
-                m_FakePointer0 = new IntPtr(0xDEADBEEF),
-                m_FakePointer1 = new IntPtr(0xDEADBEEF)
-            };
-            holder.SetGeometry<T>(geometry);
+            GeometryHolder holder = default;
+            UnsafeUtility.CopyStructureToPtr(ref geometry, UnsafeUtility.AddressOf(ref holder));
+            //we need to ensure we properly patch in the geometry type as we can't ensure that the correct one is being provided to the struct due to the invalid value being -1 rather than 0
+            holder.m_Data[0] = (int)geometry.GeometryType;
+
             return holder;
         }
 
-        public GeometryType Type { get { return (GeometryType)m_Type; } }
+        public GeometryType Type => (GeometryType)m_Data[0];
+    }
+
+    [NativeHeader("Modules/Physics/PhysicsCollisionGeometry.h")]
+    internal static class PhysXGeometryHolderExtension
+    {
+        [FreeFunction("Physics::PhysXGeometryExtension::GetGeometryHolderFromCollider")]
+        public static extern GeometryHolder GetGeometryHolder(this Collider col);
     }
 }

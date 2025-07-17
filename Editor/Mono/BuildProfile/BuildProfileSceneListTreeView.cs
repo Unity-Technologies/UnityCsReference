@@ -8,6 +8,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor.Build.Profile
 {
@@ -84,7 +85,7 @@ namespace UnityEditor.Build.Profile
             // Classic platforms scene list can only be changed through this component
             // and write data directly to EditorBuildSettings.
             EditorBuildSettings.SetEditorBuildSettingsSceneIgnoreProfile(scenes);
-            if (BuildProfileContext.activeProfile is null)
+            if (BuildProfileContext.activeProfile is null || !BuildProfileContext.activeProfile.overrideGlobalScenes)
                 EditorBuildSettings.SceneListChanged();
         }
     }

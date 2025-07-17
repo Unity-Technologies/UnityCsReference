@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.StyleSheets;
 using UnityEngine.Bindings;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -171,13 +172,8 @@ namespace UnityEditor
             SettingsService.repaintAllSettingsWindow += OnRepaintAllWindows;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
             Undo.undoRedoEvent += OnUndoRedoPerformed;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
-            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
 
             InitProviders();
-
-            // TODO : testing purposes to remove
-            // EditorApplication.delayCall += SetupGUI;
         }
 
         internal void OnDisable()
@@ -192,12 +188,10 @@ namespace UnityEditor
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.repaintAllSettingsWindow -= OnRepaintAllWindows;
             Undo.undoRedoEvent -= OnUndoRedoPerformed;
-            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         void CreateGUI()
         {
-            // TODO : testing purposes to reenable
             SetupGUI();
         }
 
@@ -278,21 +272,6 @@ namespace UnityEditor
         private void OnRepaintAllWindows()
         {
             Repaint();
-        }
-
-        private void OnPlayModeStateChanged(PlayModeStateChange state)
-        {
-            if (m_TreeView.currentProvider != null)
-            {
-                if (state == PlayModeStateChange.ExitingEditMode)
-                {
-                    ProviderChanged(m_TreeView.currentProvider, null);
-                }
-                else if (state == PlayModeStateChange.EnteredEditMode)
-                {
-                    RestoreSelection();
-                }
-            }
         }
 
         private void PrintProviderKeywords()

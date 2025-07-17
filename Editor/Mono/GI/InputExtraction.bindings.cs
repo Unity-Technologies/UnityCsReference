@@ -83,7 +83,7 @@ namespace UnityEditor.LightBaking
             int instanceID = map.GetInstanceInstanceID(instanceIndex);
             if (instanceID == 0)
                 return "";
-            Object obj = EditorUtility.InstanceIDToObject(instanceID);
+            Object obj = EditorUtility.EntityIdToObject(instanceID);
             if (obj == null)
                 return "";
             else if (obj is UnityEngine.GameObject go)

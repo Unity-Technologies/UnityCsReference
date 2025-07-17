@@ -3,54 +3,45 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Editor Utility/Layout", typeof(DefaultMainToolbar))]
-    sealed class LayoutDropdown : EditorToolbarDropdown
+    static class LayoutDropdown
     {
-        public LayoutDropdown()
+        const string k_Path = "Editor Utility/Layout";
+
+        static LayoutDropdown()
         {
-            name = "LayoutDropdown";
-
-            text = Toolbar.lastLoadedLayoutName; //Only assigned once, UI is recreated when changing layout
-            clicked += () => OpenLayoutWindow(worldBound);
-            tooltip = L10n.Tr("Select editor layout");
-
-            this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            EditorApplication.delayCall += CheckAvailability; //Immediately after a domain reload, calling check availability sometimes returns the wrong value
+            EditorApplication.delayCall += RebuildContent; //Immediately after a domain reload, calling check availability sometimes returns the wrong value
+            ModeService.modeChanged += (args) => RebuildContent();
+            WindowLayout.lastLoadedLayoutChanged += RebuildContent;
         }
 
-        void OnAttachedToPanel(AttachToPanelEvent evt)
+        static void RebuildContent()
         {
-            ModeService.modeChanged += OnModeChanged;
+            MainToolbar.Refresh(k_Path);
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 0, defaultDockPosition = MainToolbarDockPosition.Right)]
+        static MainToolbarElement CreateButton()
         {
-            ModeService.modeChanged -= OnModeChanged;
+            return new MainToolbarDropdown(new MainToolbarContent(
+                WindowLayout.lastLoadedLayoutName,
+                EditorGUIUtility.LoadIcon("StyleSheets/Northstar/Images/layout.png"),
+                L10n.Tr("Select editor layout")),
+                (buttonRect) => OpenLayoutWindow(buttonRect))
+            {
+                displayed = ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true)
+            };
         }
 
-        void OpenLayoutWindow(Rect buttonRect)
+        static void OpenLayoutWindow(Rect buttonRect)
         {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(buttonRect.x, buttonRect.y));
             buttonRect.x = temp.x;
             buttonRect.y = temp.y;
-            EditorUtility.Internal_DisplayPopupMenu(buttonRect, "Window/Layouts", Toolbar.get, 0, true);
-        }
-
-        void OnModeChanged(ModeService.ModeChangedArgs args)
-        {
-            CheckAvailability();
-        }
-
-        void CheckAvailability()
-        {
-            style.display = ModeService.HasCapability(ModeCapability.LayoutWindowMenu, true) ? DisplayStyle.Flex : DisplayStyle.None;
+            EditorUtility.Internal_DisplayPopupMenu(buttonRect, "Window/Layouts", null, 0, true);
         }
     }
 }

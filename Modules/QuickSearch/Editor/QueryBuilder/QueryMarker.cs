@@ -111,7 +111,7 @@ namespace UnityEditor.Search
             {
                 foreach (var arg in args)
                 {
-                    var parserArgs = new SearchExpressionParserArgs(arg, SearchExpressionParserFlags.ImplicitLiterals);
+                    var parserArgs = new SearchExpressionParserArgs(arg, SearchExpressionParserFlags.ImplicitLiterals | SearchExpressionParserFlags.KeepStringQuotes);
                     SearchExpression expression = null;
                     try
                     {

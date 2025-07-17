@@ -246,6 +246,7 @@ namespace Unity.UI.Builder
                     handler.m_Inspector.document.fileSettings.editorExtensionMode))
                 {
                     var displayIndex = handler.index;
+                    displayIndex = AdjustDisplayIndexForFilter(displayIndex, manipulator);
                     displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
                     if (displayIndex >= 0 && manipulator.IsVariableAtIndex(displayIndex))
                         varName = manipulator.GetVariableNameAtIndex(displayIndex);
@@ -267,6 +268,7 @@ namespace Unity.UI.Builder
                             handler.m_Inspector.document.fileSettings.editorExtensionMode))
                         {
                             var displayIndex = handler.index;
+                            displayIndex = AdjustDisplayIndexForFilter(displayIndex, manipulator);
                             displayIndex = AdjustDisplayIndexForTransitions(displayIndex, manipulator);
 
                             if (displayIndex >= 0 && manipulator.IsVariableAtIndex(displayIndex))
@@ -350,6 +352,14 @@ namespace Unity.UI.Builder
             targetField.schedule.Execute(() => m_EditingTemporarilyDisabled = false).ExecuteLater(s_InteractionDisableDelay);
         }
 
+        static int AdjustDisplayIndexForFilter(int index, StylePropertyManipulator manipulator)
+        {
+            if (StylePropertyUtil.propertyNameToStylePropertyId.TryGetValue(manipulator.propertyName, out var id) &&
+                id == StylePropertyId.Filter)
+                return -1;
+
+            return index;
+        }
         static int AdjustDisplayIndexForTransitions(int index, StylePropertyManipulator manipulator)
         {
             var valueCount = manipulator.GetValuesCount();
@@ -364,13 +374,13 @@ namespace Unity.UI.Builder
                     index = -1;
                     break;
                 case StylePropertyId.TransitionDuration:
-                    index %= manipulator.GetValuesCount();
+                    index %= valueCount;
                     break;
                 case StylePropertyId.TransitionTimingFunction:
-                    index %= manipulator.GetValuesCount();
+                    index %= valueCount;
                     break;
                 case StylePropertyId.TransitionDelay:
-                    index %= manipulator.GetValuesCount();
+                    index %= valueCount;
                     break;
             }
 

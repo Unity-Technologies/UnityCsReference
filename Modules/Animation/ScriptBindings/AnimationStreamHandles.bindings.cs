@@ -334,7 +334,12 @@ namespace UnityEngine.Animations
         public int GetInt(AnimationStream stream)
         {
             CheckIsValidAndResolve(ref stream);
-            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt && bindType != (int)BindType.ObjectReference)
+            if (bindType == (int)BindType.ObjectReference)
+            {
+                Debug.LogWarning("Please Use GetEntityId directly to get the value of an ObjectReference PropertyStreamHandle.");
+                return GetEntityId(stream);
+            }
+            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
                 throw new InvalidOperationException("GetValue type doesn't match PropertyStreamHandle bound type.");
             return GetIntInternal(ref stream);
         }
@@ -342,9 +347,32 @@ namespace UnityEngine.Animations
         public void SetInt(AnimationStream stream, int value)
         {
             CheckIsValidAndResolve(ref stream);
-            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt && bindType != (int)BindType.ObjectReference)
+            if (bindType == (int)BindType.ObjectReference)
+            {
+                Debug.LogWarning("Please Use SetEntityId directly to set the value of an ObjectReference PropertyStreamHandle.");
+                SetEntityId(stream, value);
+                return;
+            }
+
+            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
                 throw new InvalidOperationException("SetValue type doesn't match PropertyStreamHandle bound type.");
             SetIntInternal(ref stream, value);
+        }
+
+        public EntityId GetEntityId(AnimationStream stream)
+        {
+            CheckIsValidAndResolve(ref stream);
+            if (bindType != (int)BindType.ObjectReference)
+                throw new InvalidOperationException("GetValue type doesn't match PropertyStreamHandle bound type.");
+            return GetEntityIdInternal(ref stream);
+        }
+
+        public void SetEntityId(AnimationStream stream, EntityId value)
+        {
+            CheckIsValidAndResolve(ref stream);
+            if (bindType != (int)BindType.ObjectReference)
+                throw new InvalidOperationException("SetValue type doesn't match PropertyStreamHandle bound type.");
+            SetEntityIdInternal(ref stream, value);
         }
 
         public bool GetBool(AnimationStream stream)
@@ -383,6 +411,12 @@ namespace UnityEngine.Animations
 
         [NativeMethod(Name = "SetInt", IsThreadSafe = true)]
         private extern void SetIntInternal(ref AnimationStream stream, int value);
+
+        [NativeMethod(Name = "GetEntityId", IsThreadSafe = true)]
+        private extern EntityId GetEntityIdInternal(ref AnimationStream stream);
+
+        [NativeMethod(Name = "SetEntityId", IsThreadSafe = true)]
+        private extern void SetEntityIdInternal(ref AnimationStream stream, EntityId value);
 
         [NativeMethod(Name = "GetBool", IsThreadSafe = true)]
         private extern bool GetBoolInternal(ref AnimationStream stream);
@@ -608,6 +642,12 @@ namespace UnityEngine.Animations
             return GetIntInternal(ref stream);
         }
 
+        public EntityId GetEntityId(AnimationStream stream)
+        {
+            CheckIsValid(ref stream);
+            return GetEntityIdInternal(ref stream);
+        }
+
         [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
         public void SetInt(AnimationStream stream, int value) {}
 
@@ -635,6 +675,9 @@ namespace UnityEngine.Animations
         [NativeMethod(Name = "GetInt", IsThreadSafe = true)]
         private extern int GetIntInternal(ref AnimationStream stream);
 
+        [NativeMethod(Name = "GetEntityId", IsThreadSafe = true)]
+        private extern EntityId GetEntityIdInternal(ref AnimationStream stream);
+
         [NativeMethod(Name = "GetBool", IsThreadSafe = true)]
         private extern bool GetBoolInternal(ref AnimationStream stream);
     }
@@ -661,6 +704,15 @@ namespace UnityEngine.Animations
             ReadSceneFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
         }
 
+        public static void ReadEntityIds(AnimationStream stream, NativeArray<PropertySceneHandle> handles, NativeArray<EntityId> buffer)
+        {
+            int count = ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadSceneEntityIdsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
         internal static int ValidateAndGetArrayCount<T0, T1>(ref AnimationStream stream, NativeArray<T0> handles, NativeArray<T1> buffer)
             where T0 : struct
             where T1 : struct
@@ -683,6 +735,9 @@ namespace UnityEngine.Animations
 
         [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadSceneFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
         static private extern void ReadSceneFloatsInternal(ref AnimationStream stream, void* propertySceneHandles, void* floatBuffer, int count);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadSceneEntityIdsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadSceneEntityIdsInternal(ref AnimationStream stream, void* propertySceneHandles, void* instanceIDBuffer, int count);
     }
 
     [MovedFrom("UnityEngine.Experimental.Animations")]
@@ -709,6 +764,16 @@ namespace UnityEngine.Animations
             WriteStreamFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count, useMask);
         }
 
+        public static void WriteEntityIds(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<EntityId> buffer, bool useMask)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            WriteStreamEntityIdsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count, useMask);
+        }
+
         public static void ReadInts(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<int> buffer)
         {
             stream.CheckIsValid();
@@ -729,6 +794,16 @@ namespace UnityEngine.Animations
             ReadStreamFloatsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
         }
 
+        public static void ReadEntityIds(AnimationStream stream, NativeArray<PropertyStreamHandle> handles, NativeArray<EntityId> buffer)
+        {
+            stream.CheckIsValid();
+            int count = AnimationSceneHandleUtility.ValidateAndGetArrayCount(ref stream, handles, buffer);
+            if (count == 0)
+                return;
+
+            ReadStreamEntityIdsInternal(ref stream, handles.GetUnsafePtr(), buffer.GetUnsafePtr(), count);
+        }
+
         // PropertyStreamHandle
         [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadStreamIntsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
         static private extern void ReadStreamIntsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* intBuffer, int count);
@@ -736,11 +811,17 @@ namespace UnityEngine.Animations
         [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadStreamFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
         static private extern void ReadStreamFloatsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* floatBuffer, int count);
 
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::ReadStreamEntityIdsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void ReadStreamEntityIdsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* instanceIDBuffer, int count);
+
         [NativeMethod(Name = "AnimationHandleUtilityBindings::WriteStreamIntsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
         static private extern void WriteStreamIntsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* intBuffer, int count, bool useMask);
 
         [NativeMethod(Name = "AnimationHandleUtilityBindings::WriteStreamFloatsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
         static private extern void WriteStreamFloatsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* floatBuffer, int count, bool useMask);
+
+        [NativeMethod(Name = "AnimationHandleUtilityBindings::WriteStreamEntityIdsInternal", IsFreeFunction = true, HasExplicitThis = false, IsThreadSafe = true)]
+        static private extern void WriteStreamEntityIdsInternal(ref AnimationStream stream, void* propertyStreamHandles, void* instanceIDBuffer, int count, bool useMask);
     }
 }
 

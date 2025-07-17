@@ -34,7 +34,7 @@ namespace UnityEditor
     }
 
     [InitializeOnLoad]
-    internal static class WindowLayout
+    internal static partial class WindowLayout
     {
         struct LayoutViewInfo
         {
@@ -88,6 +88,22 @@ namespace UnityEditor
         internal static string layoutsProjectPath => FileUtil.CombinePaths("UserSettings", "Layouts");
         internal static string ProjectLayoutPath => GetProjectLayoutPerMode(ModeService.currentId);
         internal static string currentLayoutName => GetLayoutFileName(ModeService.currentId, Application.unityVersionVer);
+
+        internal static event Action lastLoadedLayoutChanged;
+
+        static string m_LastLoadedLayoutName;
+        internal static string lastLoadedLayoutName
+        {
+            get => string.IsNullOrEmpty(m_LastLoadedLayoutName) ? "Layout" : m_LastLoadedLayoutName;
+            set
+            {
+                if (m_LastLoadedLayoutName == value)
+                    return;
+
+                m_LastLoadedLayoutName = value;
+                lastLoadedLayoutChanged?.Invoke();
+            }
+        }
 
         [UsedImplicitly, RequiredByNativeCode]
         public static void LoadDefaultWindowPreferences()
@@ -468,7 +484,7 @@ namespace UnityEditor
                 {
                     option = EditorUtility.DisplayDialogComplex("Missing Default Layout", "No valid user created or " +
                         "default window layout found. Please revert factory settings to restore the default layouts.",
-                        "Quit", "Revert Factory Settings", "");
+                        "Quit", "", "Revert Factory Settings");
                 }
                 else
                 {
@@ -480,7 +496,7 @@ namespace UnityEditor
                     case 0:
                         EditorApplication.Exit(0);
                         break;
-                    case 1:
+                    case 2:
                         ResetFactorySettings();
                         break;
                 }
@@ -659,7 +675,7 @@ namespace UnityEditor
                     if (!File.Exists(layoutPath))
                         continue;
                     var name = Path.GetFileNameWithoutExtension(layoutPath);
-                    Menu.AddMenuItem("Window/Layouts/" + name, "", Toolbar.lastLoadedLayoutName == name, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false), null);
+                    Menu.AddMenuItem("Window/Layouts/" + name, "", lastLoadedLayoutName == name, layoutMenuItemPriority++, () => TryLoadWindowLayout(layoutPath, false), null);
                 }
             }
 
@@ -1223,8 +1239,8 @@ namespace UnityEditor
 
         static void DeleteWindowLayoutImpl(string name, string path)
         {
-            if (Toolbar.lastLoadedLayoutName == name)
-                Toolbar.lastLoadedLayoutName = null;
+            if (lastLoadedLayoutName == name)
+                lastLoadedLayoutName = null;
 
             File.Delete(path);
             ReloadWindowLayoutMenu();
@@ -1430,6 +1446,14 @@ namespace UnityEditor
                     }
                 }
 
+                // TEMP: Replace SceneHierarchyWindow by HierarchyWindow (v2) if needed by preference
+                for (int i = 0; i < newWindows.Count; i++)
+                {
+                    var w = newWindows[i] as EditorWindow;
+                    if (w is SceneHierarchyWindow || (w?.GetType() == HierarchyPreferences.HierarchyV2WindowType))
+                        HierarchyPreferences.EnsureCorrectHierarchyIsInUse(w);
+                }
+
                 if (mainWindowToSetSize)
                 {
                     mainWindowToSetSize.SetFreeze(true);
@@ -1510,9 +1534,9 @@ namespace UnityEditor
                 ContainerWindow.SetFreezeDisplay(false);
 
                 if (flags.HasFlag(LoadWindowLayoutFlags.SetLastLoadedLayoutName) && Path.GetExtension(path) == ".wlt")
-                    Toolbar.lastLoadedLayoutName = Path.GetFileNameWithoutExtension(path);
+                    lastLoadedLayoutName = Path.GetFileNameWithoutExtension(path);
                 else
-                    Toolbar.lastLoadedLayoutName = null;
+                    lastLoadedLayoutName = null;
             }
 
             if (flags.HasFlag(LoadWindowLayoutFlags.SaveLayoutPreferences))
@@ -1741,7 +1765,7 @@ namespace UnityEditor
         static readonly string k_InvalidChars = EditorUtility.GetInvalidFilenameChars();
         static readonly string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
         string m_CurrentInvalidChars = "";
-        string m_LayoutName = Toolbar.lastLoadedLayoutName;
+        string m_LayoutName = WindowLayout.lastLoadedLayoutName;
 
         internal static SaveWindowLayout ShowWindow()
         {
@@ -1821,7 +1845,7 @@ namespace UnityEditor
                         GUIUtility.ExitGUI();
                 }
 
-                Toolbar.lastLoadedLayoutName = m_LayoutName;
+                WindowLayout.lastLoadedLayoutName = m_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 WindowLayout.ReloadWindowLayoutMenu();
                 EditorUtility.Internal_UpdateAllMenus();
@@ -1860,7 +1884,10 @@ namespace UnityEditor
         [MenuItem("Window/General/Hierarchy %4", false, 4)]
         static void ShowNewHierarchy()
         {
-            EditorWindow.GetWindow<SceneHierarchyWindow>();
+            if (HierarchyPreferences.UseNewHierarchy)
+                EditorWindow.GetWindow(HierarchyPreferences.HierarchyV2WindowType);
+            else
+                EditorWindow.GetWindow<SceneHierarchyWindow>();
         }
 
         [MenuItem("Window/General/Project %5", false, 5)]

@@ -59,7 +59,7 @@ namespace UnityEditor.PackageManager.UI
 
             titleContent = GetLocalizedTitleContent();
 
-            minSize = new Vector2(748, 250);
+            minSize = new Vector2(280, 250);
             BuildGUI();
 
             Events.registeredPackages += OnRegisteredPackages;
@@ -81,9 +81,11 @@ namespace UnityEditor.PackageManager.UI
             var pageRefreshHandler = container.Resolve<IPageRefreshHandler>();
             var operationDispatcher = container.Resolve<IPackageOperationDispatcher>();
             var delayedSelectionHandler = container.Resolve<IDelayedSelectionHandler>();
+            var displayDialogCustomProxy = container.Resolve<ICustomDisplayDialog>();
 
             // Adding the ScrollView object here because it really need to be the first child under rootVisualElement for it to work properly.
-            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler, operationDispatcher, delayedSelectionHandler);
+            m_Root = new PackageManagerWindowRoot(resourceLoader, extensionManager, selection, packageManagerPrefs, packageDatabase, pageManager, unityConnectProxy, applicationProxy, upmClient, assetStoreCachePathProxy, pageRefreshHandler,
+                operationDispatcher, delayedSelectionHandler, displayDialogCustomProxy);
             try
             {
                 m_Root.OnEnable();
@@ -307,7 +309,7 @@ namespace UnityEditor.PackageManager.UI
         private static void ShowWindow()
         {
             instance = GetWindow<PackageManagerWindow>();
-            instance.minSize = new Vector2(748, 250);
+            instance.minSize = new Vector2(280, 250);
             instance.Show();
         }
 

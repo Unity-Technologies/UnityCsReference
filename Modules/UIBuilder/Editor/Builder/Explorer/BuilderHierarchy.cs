@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.UIElements;
 
@@ -39,6 +40,9 @@ namespace Unity.UI.Builder
 
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
+            var newUnsavedChanges = elementHierarchyView.hasUnsavedChanges != m_Selection.hasUnsavedChanges;
+            elementHierarchyView.hasUnsavedChanges = m_Selection.hasUnsavedChanges;
+
             base.HierarchyChanged(element, changeType);
 
             if ((changeType & (BuilderHierarchyChangeType.ElementName | BuilderHierarchyChangeType.ClassList)) != 0)
@@ -46,6 +50,19 @@ namespace Unity.UI.Builder
                 // Look for the item associated with the element renamed. Note that the edited element may not be selected
                 // yet.
                 var item = m_ElementHierarchyView.FindElement(m_ElementHierarchyView.treeRootItems, element);
+                var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(item.id);
+                if (index == -1)
+                {
+                    return;
+                }
+
+                m_ElementHierarchyView.treeView.RefreshItem(index);
+            }
+
+            if (newUnsavedChanges)
+            {
+               // Update header
+                var item = m_ElementHierarchyView.FindElement(m_ElementHierarchyView.treeRootItems, m_DocumentElement);
                 var index = m_ElementHierarchyView.treeView.viewController.GetIndexForId(item.id);
                 if (index == -1)
                 {
@@ -91,6 +108,46 @@ namespace Unity.UI.Builder
                 .HasFlag(BuilderElementInfoVisibilityState.StyleSheets)
                 ? DropdownMenuAction.Status.Checked
                 : DropdownMenuAction.Status.Normal);
+        }
+
+        /// <summary>
+        /// Returns the first item in the hierarchy view.
+        /// </summary>
+        /// <returns>The first BuilderExplorerItem in the hierarchy view, or null if the document is empty</returns>
+        public BuilderExplorerItem GetFirstItem()
+        {
+            if (m_Viewport.documentRootElement.childCount == 0)
+                return null;
+
+            var firstDocumentElement = m_Viewport.documentRootElement[0];
+            return (BuilderExplorerItem)firstDocumentElement.GetProperty(BuilderConstants.ElementLinkedExplorerItemVEPropertyName);
+        }
+
+        /// <summary>
+        /// Retrieves the item in the hierarchy view that corresponds to the specified element name.
+        /// </summary>
+        /// <param name="elementName">The element name to seek</param>
+        /// <returns>The hierarchy item found or null otherwise</returns>
+        public BuilderExplorerItem GetItemByElementName(string elementName)
+        {
+            return this.Query<BuilderExplorerItem>()
+                .Where(item => GetLinkedDocumentElement(item).name == elementName).First();
+        }
+
+        /// <summary>
+        /// Retrieves the item in the hierarchy view that corresponds to the specified element type.
+        /// </summary>
+        /// <param name="elementType">The type associated to the item to seek</param>
+        /// <returns>The hierarchy item found</returns>
+        public BuilderExplorerItem GetItemByElementType(Type elementType)
+        {
+            return this.Query<BuilderExplorerItem>()
+                .Where(item => GetLinkedDocumentElement(item).GetType() == elementType).First();
+        }
+
+        static VisualElement GetLinkedDocumentElement(VisualElement hierarchyItem)
+        {
+            return (VisualElement)hierarchyItem.GetProperty(BuilderConstants.ElementLinkedDocumentVisualElementVEPropertyName);
         }
     }
 }

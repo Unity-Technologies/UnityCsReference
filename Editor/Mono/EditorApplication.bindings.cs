@@ -15,6 +15,7 @@ namespace UnityEditor
 {
     // Main Application class.
     [NativeHeader("Editor/Mono/EditorApplication.bindings.h")]
+    [NativeHeader("Editor/Platform/Interface/EditorUtility.h")]
     [NativeHeader("Editor/Src/ScriptCompilation/ScriptCompilationPipeline.h")]
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
@@ -257,6 +258,34 @@ namespace UnityEditor
         public static extern string applicationContentsPath
         {
             [FreeFunction("GetApplicationContentsPath", IsThreadSafe = true)]
+            get;
+        }
+
+        // Path to the directory containing tools used by the Unity editor (RO)
+        public static extern string applicationToolsPath
+        {
+            [FreeFunction("GetApplicationToolsPath", IsThreadSafe = true)]
+            get;
+        }
+
+        // Path to the directory containing Scripting support used by the Unity editor (RO)
+        internal static extern string applicationScriptingPath
+        {
+            [FreeFunction("GetApplicationScriptingPath", IsThreadSafe = true)]
+            get;
+        }
+
+        // Path to the directory containing BuildPipeline support used by the Unity editor (RO)
+        internal static extern string applicationBuildPipelinePath
+        {
+            [FreeFunction("GetApplicationBuildPipelinePath", IsThreadSafe = true)]
+            get;
+        }
+
+        // Path to the directory containing tools used by the Unity editor (RO)
+        public static extern string sevenZipPath
+        {
+            [FreeFunction("GetSevenZipPath", IsThreadSafe = true)]
             get;
         }
 

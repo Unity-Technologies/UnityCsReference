@@ -78,6 +78,10 @@ namespace UnityEngine.UIElements
         PointerCapture = 1 << 19,
         // Element is a root UIDocument
         IsWorldSpaceRootUIDocument = 1 << 20,
+        // Element wants a GeometryChangedEvent if any of its descendent receives one
+        ReceivesHierarchyGeometryChangedEvents = 1 << 21,
+        // Element or descendent received a GeometryChangedEvent since last Layout update
+        BoundingBoxDirtiedSinceLastLayoutPass = 1 << 22,
 
         // Element initial flags
         Init = WorldTransformDirty | WorldTransformInverseDirty | WorldClipDirty | BoundingBoxDirty | WorldBoundingBoxDirty | EventInterestParentCategoriesDirty | LocalBounds3DDirty | LocalBoundsWithoutNested3DDirty | DetachedDataSource
@@ -213,6 +217,11 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public partial class VisualElement : Focusable, ITransform
     {
+        internal static class Testing
+        {
+            public static void SetDefaultMaterial(VisualElement ve, Material material) => ve.defaultMaterial = material;
+        }
+
         /// <summary>
         /// This is used by the code generator when a custom control is using the <see cref="UxmlElementAttribute"/>.
         /// </summary>
@@ -241,48 +250,46 @@ namespace UnityEngine.UIElements
                         new(nameof(dataSourceTypeString), "data-source-type", typeof(object)),
                         new(nameof(bindings), "Bindings"),
                     }
-                );
+                , false);
             }
 
-#pragma warning disable 649
-            [SerializeField, HideInInspector] string name;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
-            [UxmlAttribute("enabled")]
-            [SerializeField, Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")] bool enabledSelf;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
-            [SerializeField] string viewDataKey;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
-            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
-            [SerializeField] PickingMode pickingMode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
-            [SerializeField] string tooltip;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
-            [SerializeField] UsageHints usageHints;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
-            [UxmlAttribute("tabindex")]
-            [SerializeField] int tabIndex;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
-            [SerializeField] bool focusable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
-            [SerializeField] LanguageDirection languageDirection;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
+            #pragma warning disable 649
 
-            [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
+            [SerializeField, HideInInspector] string name;
+            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
+            [SerializeField] string tooltip;
 
             // We use a string here because the PropertyPath struct is not serializable
             [UxmlAttribute("data-source-path")]
             [Tooltip(DataBinding.k_DataSourcePathTooltip)]
             [SerializeField, HideInInspector] string dataSourcePathString;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
-
             [UxmlAttribute("data-source-type")]
             [Tooltip(DataBinding.k_DataSourceTooltip)]
-            [SerializeField, HideInInspector, UxmlTypeReferenceAttribute(typeof(object))] string dataSourceTypeString;
+            [SerializeField, HideInInspector, UxmlTypeReference(typeof(object))] string dataSourceTypeString;
+            [Tooltip(DataBinding.k_DataSourceTooltip)]
+            [SerializeField, HideInInspector, DataSourceDrawer, UxmlAttribute("data-source")] Object dataSourceUnityObject;
+            [SerializeField] string viewDataKey;
+            [UxmlAttribute(obsoleteNames = new[] { "pickingMode" })]
+            [SerializeField] PickingMode pickingMode;
+            [SerializeField] UsageHints usageHints;
+            [SerializeField] LanguageDirection languageDirection;
+            [UxmlAttribute("tabindex")]
+            [SerializeField] int tabIndex;
+            [SerializeField] bool focusable;
+            [UxmlAttribute("enabled"), Tooltip("Sets the element to disabled which will not accept input. Utilizes the :disabled pseudo state.")]
+            [SerializeField] bool enabledSelf;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags enabledSelf_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags viewDataKey_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pickingMode_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tooltip_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags usageHints_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags tabIndex_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags focusable_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags languageDirection_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceUnityObject_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourcePathString_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags dataSourceTypeString_UxmlAttributeFlags;
-
-            [SerializeReference, HideInInspector, UxmlObjectReference("Bindings")] List<Binding.UxmlSerializedData> bindings;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindings_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -669,9 +676,9 @@ namespace UnityEngine.UIElements
                     ((renderHints & RenderHints.GroupTransform) != 0 ? UsageHints.GroupTransform : 0) |
                     ((renderHints & RenderHints.BoneTransform) != 0 ? UsageHints.DynamicTransform : 0) |
                     ((renderHints & RenderHints.MaskContainer) != 0 ? UsageHints.MaskContainer : 0) |
-                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0)
-                    ;
-
+                    ((renderHints & RenderHints.DynamicColor) != 0 ? UsageHints.DynamicColor : 0) |
+                    ((renderHints & RenderHints.DynamicPostProcessing) != 0 ? UsageHints.DynamicPostProcessing : 0) |
+                    ((renderHints & RenderHints.LargePixelCoverage) != 0 ? UsageHints.LargePixelCoverage : 0);
             }
             set
             {
@@ -692,6 +699,13 @@ namespace UnityEngine.UIElements
                     renderHints |= RenderHints.DynamicColor;
                 else renderHints &= ~RenderHints.DynamicColor;
 
+                if ((value & UsageHints.DynamicPostProcessing) != 0)
+                    renderHints |= RenderHints.DynamicPostProcessing;
+                else renderHints &= ~RenderHints.DynamicPostProcessing;
+
+                if ((value & UsageHints.LargePixelCoverage) != 0)
+                    renderHints |= RenderHints.LargePixelCoverage;
+                else renderHints &= ~RenderHints.LargePixelCoverage;
 
                 NotifyPropertyChanged(usageHintsProperty);
             }
@@ -741,7 +755,32 @@ namespace UnityEngine.UIElements
         internal bool useRenderTexture
         {
             get {
-                return false;
+                var r = layout;
+                if (r.width <= 0 || r.height <= 0 || float.IsNaN(r.width) || float.IsNaN(r.height))
+                    return false;
+
+                var filter = resolvedStyle.filter as List<FilterFunction>;
+                if (filter == null)
+                    throw new ArgumentException("resolvedStyle.filter is not a List<FilterFunction>");
+
+                bool hasValidFilterFunction = false;
+                foreach (var ff in filter)
+                {
+                    var def = ff.GetDefinition();
+                    if (def == null)
+                        continue;
+
+                    foreach (var pass in def.passes)
+                    {
+                        if (pass.material != null)
+                        {
+                            hasValidFilterFunction = true;
+                            break;
+                        }
+                    }
+                }
+
+                return hasValidFilterFunction || (renderHints & RenderHints.DynamicPostProcessing) != 0;
             }
         }
 
@@ -756,7 +795,7 @@ namespace UnityEngine.UIElements
         /// For example, you can set translate and position as percentages through the [[VisualElement.style]] API.
         /// </remarks>
         /// <example nocheck="true">
-        /// The following example reads the current position, rotation, and scale from the resolvedStyle of a 
+        /// The following example reads the current position, rotation, and scale from the resolvedStyle of a
         /// VisualElement, then updates the style properties with these values.
         /// <code lang="cs">
         /// <![CDATA[
@@ -767,7 +806,7 @@ namespace UnityEngine.UIElements
         ///         visualElement.style.rotate = new Rotate(rotation);
         ///         Vector3 scale = visualElement.resolvedStyle.scale.value;
         ///         visualElement.style.scale = new Scale((Vector2) scale);
-        /// 
+        ///
         /// ]]>
         /// </code>
         /// </example>
@@ -1449,6 +1488,18 @@ namespace UnityEngine.UIElements
                 Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
+        internal bool receivesHierarchyGeometryChangedEvents
+        {
+            get => (m_Flags & VisualElementFlags.ReceivesHierarchyGeometryChangedEvents) == VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.ReceivesHierarchyGeometryChangedEvents : m_Flags & ~VisualElementFlags.ReceivesHierarchyGeometryChangedEvents;
+        }
+
+        internal bool boundingBoxDirtiedSinceLastLayoutPass
+        {
+            get => (m_Flags & VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass) == VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+            set => m_Flags = value ? m_Flags | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass : m_Flags & ~VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
+        }
+
         // which pseudo states would change the current VE styles if added
         internal PseudoStates triggerPseudoMask;
         // which pseudo states would change the current VE styles if removed
@@ -1485,6 +1536,71 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Returns true if this element matches the @@:active@@ pseudo-class
+        /// </summary>
+        public bool hasActivePseudoState => (pseudoStates & PseudoStates.Active) != 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:inactive@@ pseudo-class
+        /// </summary>
+        public bool hasInactivePseudoState => (pseudoStates & PseudoStates.Active) == 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:hover@@ pseudo-class
+        /// </summary>
+        public bool hasHoverPseudoState => (pseudoStates & PseudoStates.Hover) != 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:checked@@ pseudo-class
+        /// </summary>
+        public bool hasCheckedPseudoState => (pseudoStates & PseudoStates.Checked) != 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:enabled@@ pseudo-class
+        /// </summary>
+        public bool hasEnabledPseudoState => (pseudoStates & PseudoStates.Disabled) == 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:disabled@@ pseudo-class
+        /// </summary>
+        public bool hasDisabledPseudoState => (pseudoStates & PseudoStates.Disabled) != 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:focus@@ pseudo-class
+        /// </summary>
+        public bool hasFocusPseudoState => (pseudoStates & PseudoStates.Focus) != 0;
+        /// <summary>
+        /// Returns true if this element matches the @@:root@@ pseudo-class
+        /// </summary>
+        public bool hasRootPseudoState => (pseudoStates & PseudoStates.Root) != 0;
+
+        /// <summary>
+        /// Sets whether or not this element is displayed as being active.
+        /// </summary>
+        /// <remarks>
+        /// If set to true, this element will match the @@:active@@ pseudo-class.
+        /// </remarks>
+        /// <remarks>
+        /// Some elements, like the <see cref="Button"/>, use this method internally
+        /// to reflect changes to their internal state. Calling this method on those elements
+        /// may have no effect or only result in a temporary change in their displayed styles.
+        /// </remarks>
+        public void SetActivePseudoState(bool value)
+        {
+            pseudoStates = value ? pseudoStates | PseudoStates.Active : pseudoStates & ~PseudoStates.Active;
+        }
+
+        /// <summary>
+        /// Sets whether or not this element is displayed as being checked.
+        /// </summary>
+        /// <remarks>
+        /// If set to true, this element will match the @@:checked@@ pseudo-class.
+        /// </remarks>
+        /// <remarks>
+        /// Some elements, like the <see cref="Toggle"/>, use this method internally
+        /// to reflect changes to their internal state. Calling this method on those elements
+        /// may have no effect or only result in a temporary change in their displayed styles.
+        /// </remarks>
+        public void SetCheckedPseudoState(bool value)
+        {
+            pseudoStates = value ? pseudoStates | PseudoStates.Checked : pseudoStates & ~PseudoStates.Checked;
         }
 
         internal int containedPointerIds { get; set; }
@@ -1766,17 +1882,22 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal virtual Rect GetTooltipRect()
-        {
-            return this.worldBound;
-        }
-
         internal void SetTooltip(TooltipEvent e)
         {
             if (e.currentTarget is VisualElement element && !string.IsNullOrEmpty(element.tooltip))
             {
-                e.rect = element.GetTooltipRect();
+                if (e.rect != Rect.zero)
+                {
+                    e.rect = e.rect;
+                }
+                else
+                {
+                    // Clamp to world clip (UUM-109120)
+                    var wb = element.worldBound;
+                    var clip = element.worldClip;
+                    e.rect = new Rect(wb.x, wb.y, Math.Clamp(wb.width, 0, clip.width), Mathf.Clamp(wb.height, 0, clip.height));
+                }
+
                 e.tooltip = element.tooltip;
                 e.StopImmediatePropagation();
             }
@@ -1792,6 +1913,16 @@ namespace UnityEngine.UIElements
             {
                 base.Focus();
             }
+        }
+
+        internal long TimeSinceStartupMs()
+        {
+            if (elementPanel != null)
+            {
+                return elementPanel.TimeSinceStartupMs();
+            }
+
+            return (long)(BaseVisualElementPanel.DefaultTimeSinceStartup() * 1000);
         }
 
         internal void SetPanel(BaseVisualElementPanel p)
@@ -1900,8 +2031,7 @@ namespace UnityEngine.UIElements
                     {
                         using (var e = DetachFromPanelEvent.GetPooled(elementPanel, destinationPanel))
                         {
-                            e.elementTarget = this;
-                            EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(e, elementPanel, this);
+                            EventDispatchUtilities.SendEventDirectlyToTarget(e, elementPanel, this);
                         }
                     }
                 }
@@ -1943,8 +2073,7 @@ namespace UnityEngine.UIElements
                     {
                         using (var e = AttachToPanelEvent.GetPooled(prevPanel, elementPanel))
                         {
-                            e.elementTarget = this;
-                            EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(e, elementPanel, this);
+                            EventDispatchUtilities.SendEventDirectlyToTarget(e, elementPanel, this);
                         }
                     }
                     m_Flags &= ~VisualElementFlags.NeedsAttachToPanelEvent;
@@ -1953,6 +2082,7 @@ namespace UnityEngine.UIElements
             else
             {
                 layoutNode.Config = LayoutManager.SharedManager.GetDefaultConfig();
+                layoutNode.Cache.ClearCachedMeasurements();
             }
 
             // styles are dependent on topology
@@ -2108,8 +2238,14 @@ namespace UnityEngine.UIElements
         /// The method disables the local flag of the VisualElement and implicitly disables its children.
         /// It does not affect the local enabled flag of each child.
         ///\\
+        ///\\
         /// A disabled visual element does not receive most input events, such as mouse and keyboard events. However, it can still respond to Attach or Detach events, and geometry change events.
-        /// <seealso cref="enabledSelf"/>
+        ///\\
+        ///\\
+        /// When an element is disabled, its style changes to visually indicate it's inactive.
+        /// </remarks>
+        /// <remarks>
+        /// SA: [[VisualElement.enabledSelf]]
         /// </remarks>
         public void SetEnabled(bool value)
         {
@@ -2133,7 +2269,7 @@ namespace UnityEngine.UIElements
         /// Indicates the directionality of the element's text. The value will propagate to the element's children.
         /// </summary>
         /// <remarks>
-        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get 
+        /// Setting `languageDirection` to `RTL` can only get the basic RTL support like text reversal. To get
         /// more comprehensive RTL support, such as line breaking, word wrapping, or text shaping, you must
         /// enable [[wiki:UIE-advanced-text-generator|Advance Text Generator]].
         /// </remarks>
@@ -2214,6 +2350,18 @@ namespace UnityEngine.UIElements
         public void MarkDirtyRepaint()
         {
             IncrementVersion(VersionChangeType.Repaint);
+        }
+
+        /// <summary>
+        /// Checks if the <see cref="VisualElement"/> is marked dirty for repaint.
+        /// </summary>
+        public bool IsMarkedForRepaint()
+        {
+            // This digs way too deep into the rendering stuff
+            if (renderData == null)
+                return true;
+
+            return (renderData.dirtiedValues & RenderDataDirtyTypes.Visuals) == RenderDataDirtyTypes.Visuals;
         }
 
         /// <summary>
@@ -2446,11 +2594,11 @@ namespace UnityEngine.UIElements
             set
             {
                 m_Flags = value ? m_Flags | VisualElementFlags.RequireMeasureFunction : m_Flags & ~VisualElementFlags.RequireMeasureFunction;
-                if (value && !layoutNode.IsMeasureDefined)
+                if (value && !layoutNode.UsesMeasure)
                 {
                     AssignMeasureFunction();
                 }
-                else if (!value && layoutNode.IsMeasureDefined)
+                else if (!value && layoutNode.UsesMeasure)
                 {
                     RemoveMeasureFunction();
                 }
@@ -2460,12 +2608,12 @@ namespace UnityEngine.UIElements
         private void AssignMeasureFunction()
         {
             layoutNode.SetOwner(this);
-            layoutNode.Measure = Measure;
+            layoutNode.UsesMeasure = true;
         }
 
         private void RemoveMeasureFunction()
         {
-            layoutNode.Measure = null;
+            layoutNode.UsesMeasure = false;
             layoutNode.SetOwner(null);
         }
 

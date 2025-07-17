@@ -166,8 +166,8 @@ namespace UnityEngine.UIElements.StyleSheets
             }
             else if (valCount == 2)
             {
-                if (((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float)) &&
-                    ((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float)))
+               if (((val1.handle.valueType == StyleValueType.Dimension) || (val1.handle.valueType == StyleValueType.Float)) &&
+                  ((val2.handle.valueType == StyleValueType.Dimension) || (val2.handle.valueType == StyleValueType.Float)))
                 {
                     backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Left, val1.sheet.ReadDimension(val1.handle).ToLength());
                     backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Top, val2.sheet.ReadDimension(val2.handle).ToLength());

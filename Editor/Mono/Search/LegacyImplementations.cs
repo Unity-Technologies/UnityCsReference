@@ -64,9 +64,9 @@ namespace UnityEditor.SearchService
 
     // Default scene search engine.
     [SceneSearchEngine]
-    class HierarchySearchEngine : DefaultFilterEngine<HierarchyProperty>, ISceneSearchEngine
+    class HierarchySearchEngine : DefaultFilterEngine<HierarchyIterator>, ISceneSearchEngineV2
     {
-        public override bool Filter(ISearchContext context, string query, HierarchyProperty objectToFilter)
+        public override bool Filter(ISearchContext context, string query, HierarchyIterator objectToFilter)
         {
             // Returning true here, since the properties have already been filtered. See BeginSearch().
             return true;
@@ -78,7 +78,7 @@ namespace UnityEditor.SearchService
             // at the beginning of a search. This will have the effect of filtering the properties
             // during a call to Next() or NextWithDepthCheck(), so Filter() should always return true.
             var hierarchySearchContext = context as SceneSearchContext;
-            hierarchySearchContext?.rootProperty.SetSearchFilter(hierarchySearchContext.searchFilter);
+            hierarchySearchContext?.rootIterator.SetSearchFilter(hierarchySearchContext.searchFilter);
         }
     }
 

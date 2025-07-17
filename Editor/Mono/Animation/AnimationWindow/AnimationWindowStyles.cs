@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -37,6 +35,9 @@ namespace UnityEditor
         public static GUIContent animatorOptimizedText = EditorGUIUtility.TrTextContent("Editing and playback of animations on optimized game object hierarchy is not supported.\nPlease select a game object that does not have 'Optimize Game Objects' applied.");
         public static GUIContent readOnlyPropertiesLabel = EditorGUIUtility.TrTextContent("Animation Clip is Read-Only");
         public static GUIContent readOnlyPropertiesButton = EditorGUIUtility.TrTextContent("Show Read-Only Properties");
+
+        public static GUIContent applyChanges = EditorGUIUtility.TrTextContent("Apply");
+        public static GUIContent discardChanges = EditorGUIUtility.TrTextContent("Discard");
 
         public static GUIContent optionsContent = EditorGUIUtility.IconContent("_Menu");
 

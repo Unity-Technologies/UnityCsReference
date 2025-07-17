@@ -32,7 +32,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         private static readonly string s_LocalizedInvalidPackageManifest = L10n.Tr("Invalid Package Manifest");
 
         private const float kMinHeightDescriptionScrollView = 96f;
-        private const int kMinimalUnityMajorVersionSupported = 2017;
         private const long kMaxVersion = 999999999L;
         private const long kRecommendedMaxVersion = 999999L;
 
@@ -45,10 +44,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     return s_MajorUnityVersions;
 
                 var version = InternalEditorUtility.GetUnityVersion();
-                s_MajorUnityVersions = new List<string>();
-                for (var majorVersion = kMinimalUnityMajorVersionSupported; majorVersion <= version.Major; majorVersion++)
+                s_MajorUnityVersions = new List<string>{ "2018", "2019", "2020", "2021", "2022" };
+                for (var majorVersion = 6000; majorVersion <= version.Major; majorVersion+= 1000)
                     s_MajorUnityVersions.Add(majorVersion.ToString());
-
                 return s_MajorUnityVersions;
             }
         }
@@ -709,9 +707,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         [OnOpenAsset(OnOpenAssetAttributeMode.Validate)]
-        private static bool OnOpenAsset(int instanceID, int line, int column)
+        private static bool OnOpenAsset(EntityId instanceID, int line, int column)
         {
-            var selected = EditorUtility.InstanceIDToObject(instanceID);
+            var selected = EditorUtility.EntityIdToObject(instanceID);
             var assetPath = AssetDatabase.GetAssetPath(selected);
 
             if (string.IsNullOrEmpty(assetPath))

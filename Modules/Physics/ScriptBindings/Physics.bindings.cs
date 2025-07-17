@@ -742,7 +742,6 @@ namespace UnityEngine
         extern internal static void ResetInterpolationPoses_Internal(PhysicsScene physicsScene);
 
         extern public static void SyncTransforms();
-        extern public static bool autoSyncTransforms { get; set; }
         extern public static bool reuseCollisionCallbacks { get; set; }
 
         [FreeFunction("Physics::ComputePenetration")]

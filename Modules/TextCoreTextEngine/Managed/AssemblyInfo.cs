@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 
 // Allow internal visibility to the following assemblies
 [assembly: InternalsVisibleTo("Unity.TextMeshPro")]
-[assembly: InternalsVisibleTo("Unity.FontEngine")]
-[assembly: InternalsVisibleTo("Unity.TextCore.FontEngine")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tools")]
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreModule")]
 [assembly: InternalsVisibleTo("UnityEngine.TextCoreTextModule")]
@@ -15,6 +13,7 @@ using System.Runtime.CompilerServices;
 // Used internally for testing and a few enterprise users.
 [assembly: InternalsVisibleTo("UnityEngine.TextCore.Tools")]
 
+[assembly: InternalsVisibleTo("UnityEditor.CoreModule")] // Needed for Editor Preferences
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextModule")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
@@ -27,11 +26,16 @@ using System.Runtime.CompilerServices;
 
 // Make internal visible to UIElements module.
 [assembly: InternalsVisibleTo("UnityEngine.UIElementsModule")]
-[assembly: InternalsVisibleTo("Unity.UIElements")]
-[assembly: InternalsVisibleTo("Unity.UIElements.Text")]
+[assembly: InternalsVisibleTo("UnityEngine.ImguiModule")]
+[assembly: InternalsVisibleTo("UnityEngine.UI.Tests")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Controls")]
+[assembly: InternalsVisibleTo("UnityEngine.UIElements.Tests.Utils")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 
+[assembly: InternalsVisibleTo("UnityEditor.UIElementsModule")]
 [assembly: InternalsVisibleTo("UnityEditor.TextCoreTextEngineModule")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor")]
 [assembly: InternalsVisibleTo("Unity.TextMeshPro.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.UIElements.EditorTests")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]

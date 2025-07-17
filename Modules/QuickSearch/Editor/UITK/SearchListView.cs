@@ -3,14 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections;
-using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
 {
     class SearchListViewItem : SearchViewItem
     {
-        private readonly bool m_CompactMode;
+        private bool m_CompactMode;
         private readonly Label m_Description;
         private readonly Button m_ActionDropdown;
 
@@ -28,13 +27,6 @@ namespace UnityEditor.Search
         {
             style.flexDirection = FlexDirection.Row;
 
-            m_CompactMode = viewModel.state.itemSize <= 1f;
-
-            if (m_CompactMode)
-                m_Thumbnail.AddToClassList(thumbnailClassName.WithUssModifier("compact"));
-            else
-                m_Thumbnail.AddToClassList(thumbnailClassName);
-
             m_Label.AddToClassList(labelClassName);
 
             m_Description = new Label() { name = "SearchListViewItemDescription" };
@@ -44,9 +36,7 @@ namespace UnityEditor.Search
 
             var labels = new VisualElement() { name = "SearchListViewItemContent" };
             labels.AddToClassList(labelsClassName);
-
-            if (!m_CompactMode)
-                labels.Add(m_Label);
+            labels.Add(m_Label);
             labels.Add(m_Description);
             Add(labels);
 
@@ -66,8 +56,13 @@ namespace UnityEditor.Search
 
         public override void Bind(in SearchItem item)
         {
+            m_CompactMode = m_ViewModel.state.itemSize <= 1f;
+            m_Thumbnail.AddToClassList(m_CompactMode ? thumbnailClassName.WithUssModifier("compact") : thumbnailClassName);
+
             if (m_CompactMode)
                 item.options |= SearchItemOptions.Compacted;
+
+            m_Label.style.display = m_CompactMode ? DisplayStyle.None : DisplayStyle.Flex;
 
             base.Bind(item);
 
@@ -78,6 +73,18 @@ namespace UnityEditor.Search
                 m_Description.tooltip = m_Label.text;
 
             m_BindedItem.options &= ~SearchItemOptions.Compacted;
+        }
+
+        public override void Unbind()
+        {
+            m_Thumbnail.RemoveFromClassList(thumbnailClassName);
+            m_Thumbnail.RemoveFromClassList(thumbnailClassName.WithUssModifier("compact"));
+
+            m_Label.style.display = DisplayStyle.Flex;
+            m_Description.text = string.Empty;
+            m_Description.tooltip = string.Empty;
+
+            base.Unbind();
         }
     }
 
@@ -116,9 +123,11 @@ namespace UnityEditor.Search
 
         private void BindItem(VisualElement element, int index)
         {
+            if (index < 0 || index >= m_ViewModel.results.Count)
+                return;
+
             var e = (SearchListViewItem)element;
-            if (index >= 0 && index < m_ViewModel.results.Count)
-                e.Bind(m_ViewModel.results[index]);
+            e.Bind(m_ViewModel.results[index]);
         }
 
         private void UnbindItem(VisualElement element, int index)

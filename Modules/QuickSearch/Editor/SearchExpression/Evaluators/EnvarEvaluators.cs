@@ -94,8 +94,8 @@ namespace UnityEditor.Search
         {
             var selection = TaskEvaluatorManager.EvaluateMainThread(() =>
             {
-                var instanceIds = UnityEditor.Selection.instanceIDs;
-                return instanceIds.Select(id =>
+                var entityIds = UnityEditor.Selection.entityIds;
+                return entityIds.Select(id =>
                 {
                     string assetPath = AssetDatabase.GetAssetPath(id);
                     return new SelectionResult(id, assetPath);

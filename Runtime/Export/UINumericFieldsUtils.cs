@@ -10,7 +10,10 @@ namespace UnityEngine
     internal static class UINumericFieldsUtils
     {
         public static readonly string k_AllowedCharactersForFloat = "inftynaeINFTYNAE0123456789.,-*/+%^()cosqrludxvRL=pP#";
+        public static readonly string k_AllowedCharactersForFloat_NoExpressions = "0123456789.-";
         public static readonly string k_AllowedCharactersForInt = "0123456789-*/+%^()cosintaqrtelfundxvRL,=pPI#";
+        public static readonly string k_AllowedCharactersForInt_NoExpressions = "0123456789-";
+        public static readonly string k_AllowedCharactersForUInt_NoExpressions = "0123456789";
         public static readonly string k_DoubleFieldFormatString = "R";
         public static readonly string k_FloatFieldFormatString = "g7";
         public static readonly string k_IntFieldFormatString = "#######0";

@@ -27,11 +27,14 @@ namespace UnityEditor.Overlays
         public static readonly string ussClassName = "unity-overlay";
         const string k_Highlight = "overlay-box-highlight";
         const string k_Floating = "overlay--floating";
-        internal const string headerTitle = "overlay-header__title";
+        internal const string k_HeaderTitle = "overlay-header__title";
+        internal const string k_HeaderIcon = "overlay-header__icon";
         const string k_Collapsed = "unity-overlay--collapsed";
         internal const string k_Header = "overlay-header";
         const string k_Expanded = "unity-overlay--expanded";
         internal const string k_CollapsedContent = "overlay-collapsed-content";
+        internal const string k_UnfoldedContent = "overlay-panel-foldout-content-expanded";
+        internal const string k_FoldedContent = "overlay-panel-foldout-content-collapsed";
         const string k_CollapsedIconButton = "unity-overlay-collapsed-dropdown__icon";
         internal const string k_ToolbarHorizontalLayout = "overlay-layout--toolbar-horizontal";
         internal const string k_ToolbarVerticalLayout = "overlay-layout--toolbar-vertical";
@@ -48,6 +51,8 @@ namespace UnityEditor.Overlays
         Layout m_Layout = Layout.Panel;
         [SerializeField]
         bool m_Collapsed;
+        [SerializeField]
+        bool m_Folded;
         [SerializeField]
         bool m_Floating;
         [SerializeField]
@@ -74,8 +79,25 @@ namespace UnityEditor.Overlays
 
         // Connections
         public EditorWindow containerWindow => canvas.containerWindow;
-        internal OverlayCanvas canvas { get; set; }
+        internal OverlayCanvas canvas
+        {
+            get => m_Canvas;
+            set
+            {
+                if (m_Canvas == value)
+                    return;
+
+                var oldCanvas = m_Canvas;
+                m_Canvas = value;
+                if (oldCanvas == null || m_Canvas == null || m_Canvas.mode != oldCanvas.mode)
+                    canvasModeChanged?.Invoke();
+            }
+        }
+        internal OverlayCanvasMode canvasMode => m_Canvas != null ? m_Canvas.mode : OverlayCanvasMode.Default;
+
         internal bool isPopup { get; set; }
+
+        OverlayCanvas m_Canvas;
         OverlayContainer m_Container;
         internal OverlayContainer tempTargetContainer { get; set; }
 
@@ -84,12 +106,13 @@ namespace UnityEditor.Overlays
         VisualElement m_CollapsedContent;
         OverlayPopup m_ModalPopup; // collapsed popup root
         VisualElement m_RootVisualElement;
+        Toggle m_ToggleElement;
         VisualElement m_ResizeTarget;
 
         internal VisualElement resizeTarget => m_ResizeTarget;
 
-        OverlayDropZone m_BeforeDropZone;
-        OverlayDropZone m_AfterDropZone;
+        internal OverlayDropZone m_BeforeDropZone;
+        internal OverlayDropZone m_AfterDropZone;
 
         internal OverlayDropZone insertBeforeDropZone => m_BeforeDropZone;
         internal OverlayDropZone insertAfterDropZone => m_AfterDropZone;
@@ -103,6 +126,7 @@ namespace UnityEditor.Overlays
         internal event Action maxSizeChanged;
         internal event Action defaultSizeChanged;
         internal event Action sizeOverridenChanged;
+        internal event Action canvasModeChanged;
 
         // Invoked in partial class OverlayPlacement.cs
 #pragma warning disable 67
@@ -115,6 +139,8 @@ namespace UnityEditor.Overlays
             get => m_Id;
             internal set { m_Id = value; }
         }
+
+        internal string ussName => m_RootVisualElementName;
 
         static VisualTreeAsset s_TreeAsset;
         event Action displayNameChanged;
@@ -136,19 +162,7 @@ namespace UnityEditor.Overlays
 
                 if (m_CollapsedContent == null)
                     return;
-
-                var iconElement = collapsedContent.Q<Label>(classes: k_CollapsedIconButton);
-                if(iconElement != null)
-                {
-                    var iconTexture = m_CollapsedIcon == null ?
-                                        EditorGUIUtility.LoadIcon(EditorGUIUtility.GetIconPathFromAttribute(GetType())) :
-                                        m_CollapsedIcon;
-
-                    var collapsedIcon = GetCollapsedIconContent();
-                    var image = collapsedIcon.image as Texture2D;
-                    iconElement.style.backgroundImage = image;
-                    iconElement.text = image != null ? null : OverlayUtilities.GetSignificantLettersForIcon(displayName);
-                }
+                UpdateOverlayIcons();
             }
         }
 
@@ -215,6 +229,17 @@ namespace UnityEditor.Overlays
             }
         }
 
+        internal bool folded
+        {
+            get => m_Folded;
+
+            set
+            {
+                m_Folded = value;
+                UpdateHeaderFoldout();
+            }
+        }
+
         public string displayName
         {
             get
@@ -250,7 +275,7 @@ namespace UnityEditor.Overlays
 
         internal DockZone dockZone => floating ? DockZone.Floating : OverlayCanvas.GetDockZone(container);
 
-        internal DockPosition dockPosition => container.GetSection(OverlayContainerSection.BeforeSpacer).Contains(this) ? DockPosition.Top : DockPosition.Bottom;
+        internal DockPosition dockPosition => container.GetContainerSection(OverlayContainerSection.BeforeSpacer).ContainsOverlay(this) ? DockPosition.Top : DockPosition.Bottom;
 
         internal static VisualTreeAsset treeAsset
         {
@@ -357,40 +382,58 @@ namespace UnityEditor.Overlays
                     return m_RootVisualElement;
 
                 m_RootVisualElement = new VisualElement();
-                treeAsset.CloneTree(m_RootVisualElement);
-
-                m_RootVisualElement.name = m_RootVisualElementName;
-                m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
-                m_RootVisualElement.AddToClassList(ussClassName);
-                m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays(this));
-
-                var dragger = new OverlayDragger(this);
-                var contextClick = new ContextualMenuManipulator(BuildContextMenu);
-
-                var header = m_RootVisualElement.Q(null, k_Header);
-                header.AddManipulator(contextClick);
-                header.AddManipulator(dragger);
-
-                var title = m_RootVisualElement.Q<Label>(headerTitle);
-                title.text = displayName;
-                displayNameChanged += () => title.text = displayName;
-
-                var dockArea = new VisualElement() { name = "OverlayDockArea" };
-                dockArea.pickingMode = PickingMode.Ignore;
-                dockArea.StretchToParentSize();
-                m_RootVisualElement.Add(dockArea);
-
-                dockArea.Add(m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
-                dockArea.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
-
-                m_RootVisualElement.tooltip = L10n.Tr(displayName);
-
-                m_ResizeTarget = m_RootVisualElement.Q("unity-overlay");
-                m_ResizeTarget.style.overflow = Overflow.Hidden;
-                m_ResizeTarget.Add(new OverlayResizerGroup(this));
-
+                m_ResizeTarget = null;
+                PopulateRoot(m_RootVisualElement);
                 return m_RootVisualElement;
             }
+        }
+
+        internal void CreateResizeTarget()
+        {
+            if (m_ResizeTarget != null)
+                return;
+
+            m_ResizeTarget = m_RootVisualElement.Q("unity-overlay");
+            m_ResizeTarget.style.overflow = Overflow.Hidden;
+            m_ResizeTarget.Add(new OverlayResizerGroup(this));
+        }
+
+        internal virtual void PopulateRoot(VisualElement root)
+        {
+            treeAsset.CloneTree(m_RootVisualElement);
+
+            m_RootVisualElement.name = m_RootVisualElementName;
+            m_RootVisualElement.usageHints = UsageHints.DynamicTransform;
+            m_RootVisualElement.AddToClassList(ussClassName);
+            m_RootVisualElement.AddManipulator(new GlobalMouseBehaviourForOverlays(this));
+
+            var dragger = new OverlayDragger(this);
+            var contextClick = new ContextualMenuManipulator(BuildContextMenu);
+
+            var header = m_RootVisualElement.Q(null, k_Header);
+            m_ToggleElement = m_RootVisualElement.Q<Toggle>("overlay-header__toggle");
+            m_ToggleElement.RegisterValueChangedCallback(evt => folded = !evt.newValue);
+            header.AddManipulator(contextClick);
+            header.AddManipulator(dragger);
+
+            var title = m_RootVisualElement.Q<Label>(k_HeaderTitle);
+            title.text = displayName;
+
+            UpdateOverlayIcons();
+
+            displayNameChanged += () => title.text = displayName;
+
+            var dockArea = new VisualElement() { name = "OverlayDockArea" };
+            dockArea.pickingMode = PickingMode.Ignore;
+            dockArea.StretchToParentSize();
+            m_RootVisualElement.Add(dockArea);
+
+            dockArea.Add(m_BeforeDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.Before));
+            dockArea.Add(m_AfterDropZone = new OverlayDropZone(this, OverlayDropZone.Placement.After));
+
+            m_RootVisualElement.tooltip = L10n.Tr(displayName);
+
+            CreateResizeTarget();
         }
 
         // used by tests
@@ -407,6 +450,8 @@ namespace UnityEditor.Overlays
         }
 
         public bool isInToolbar => container is ToolbarOverlayContainer;
+
+        bool isInDynamicPanel => container is DynamicPanelOverlayContainer;
 
         internal bool sizeOverridden
         {
@@ -528,7 +573,7 @@ namespace UnityEditor.Overlays
         {
             var header = new VisualElement();
             var title = new Label(displayName);
-            title.name = headerTitle;
+            title.name = k_HeaderTitle;
             header.Add(title);
 
             return header;
@@ -545,6 +590,7 @@ namespace UnityEditor.Overlays
 
             // We need to invoke a callback if the collapsed state changes (either from user request or invalid layout)
             bool wasCollapsed = collapsedContent.parent == contentRoot;
+
             var prevLayout = m_ActiveLayout;
             m_ActiveLayout = GetBestLayoutForState();
 
@@ -604,6 +650,7 @@ namespace UnityEditor.Overlays
             m_AfterDropZone.style.display = dropZonesDisplay;
 
             UpdateSize();
+            UpdateHeaderFoldout();
 
             // Invoke callbacks after content is created and styling has been applied
             if(wasCollapsed != isCollapsed)
@@ -611,6 +658,22 @@ namespace UnityEditor.Overlays
 
             if (prevLayout != m_ActiveLayout)
                 layoutChanged?.Invoke(m_ActiveLayout);
+        }
+
+        void UpdateHeaderFoldout()
+        {
+            if (m_ToggleElement is not null)
+            {
+                // Folded styling should only be applied if the overlay is neither collapsed, nor being docked.
+                bool needsFoldedStyling = folded && !collapsed && m_ActiveLayout == Layout.Panel;
+                m_ToggleElement.SetValueWithoutNotify(!folded);
+                var foldoutContent = m_RootVisualElement.Q("overlay-content");
+                if (foldoutContent == null)
+                    return;
+                foldoutContent.EnableInClassList(k_UnfoldedContent, !needsFoldedStyling);
+                foldoutContent.EnableInClassList(k_FoldedContent, needsFoldedStyling);
+                UpdateSize();
+            }
         }
 
         internal GUIContent GetCollapsedIconContent()
@@ -625,9 +688,34 @@ namespace UnityEditor.Overlays
             return new GUIContent(OverlayUtilities.GetSignificantLettersForIcon(displayName));
         }
 
-        internal bool IsResizable()
+        private void UpdateOverlayIcons()
         {
-            return activeLayout == Layout.Panel && !collapsed;
+            var collapsedIconElement = collapsedContent.Q<Label>(classes: k_CollapsedIconButton);
+            var headerIconElement = m_RootVisualElement.Q<VisualElement>(k_HeaderIcon);
+            var content = GetCollapsedIconContent();
+            var image = content.image as Texture2D;
+
+            if(collapsedIconElement != null)
+            {
+                collapsedIconElement.style.backgroundImage = image;
+                collapsedIconElement.text = image != null ? null : OverlayUtilities.GetSignificantLettersForIcon(displayName);
+            }
+
+            if (headerIconElement != null)
+            {
+                if (image == null)
+                    headerIconElement.style.display = DisplayStyle.None;
+                else
+                {
+                    headerIconElement.style.backgroundImage = image;
+                    headerIconElement.style.display = StyleKeyword.Null;
+                }
+            }
+        }
+
+        internal bool IsResizeCompatible()
+        {
+            return activeLayout == Layout.Panel && !collapsed && !folded && container is not DynamicPanelOverlayContainer;
         }
 
         bool IsSizeAuto(float size)
@@ -640,9 +728,9 @@ namespace UnityEditor.Overlays
             if (m_ResizeTarget == null)
                 return;
 
-            ApplySize(m_ResizeTarget, IsResizable(), sizeOverridden);
+            ApplySize(m_ResizeTarget, IsResizeCompatible(), sizeOverridden);
 
-            var position = canvas.ClampToOverlayWindow(new Rect(floatingPosition, m_Size)).position;
+            var position = canvas.EnsureOverlapsWindow(new Rect(floatingPosition, m_Size)).position;
             UpdateSnapping(position);
         }
 
@@ -792,6 +880,10 @@ namespace UnityEditor.Overlays
                 (action) => displayed = false,
                 userControlledVisibility ? DropdownMenuAction.Status.Normal : DropdownMenuAction.Status.Disabled);
 
+            // Only show the "Hide" menu item for overlays in a Dynamic Panel container.
+            if (isInDynamicPanel)
+                return;
+
             if (collapsed)
             {
                 if (container == null || container.IsOverlayLayoutSupported(supportedLayouts))
@@ -802,7 +894,8 @@ namespace UnityEditor.Overlays
 
             if (!isInToolbar)
             {
-                menu.AppendAction(L10n.Tr("Reset Size"), action => ResetSize());
+                if (OverlayUtilities.IsResizable(this))
+                    menu.AppendAction(L10n.Tr("Reset Size"), action => ResetSize());
 
                 menu.AppendSeparator();
                 var layouts = supportedLayouts;
@@ -873,6 +966,7 @@ namespace UnityEditor.Overlays
 
                 m_Floating = attrib.defaultDockZone == DockZone.Floating;
                 m_Collapsed = false;
+                m_Folded = false;
                 m_Layout = attrib.defaultLayout;
             }
         }

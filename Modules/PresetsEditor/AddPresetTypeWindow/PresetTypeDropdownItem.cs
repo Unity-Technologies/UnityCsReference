@@ -33,7 +33,7 @@ namespace UnityEditor.Presets
             if (command.StartsWith("SCRIPT"))
             {
                 var scriptId = int.Parse(command.Substring(6));
-                var obj = EditorUtility.InstanceIDToObject(scriptId) as MonoScript;
+                var obj = EditorUtility.EntityIdToObject(scriptId) as MonoScript;
                 presetType = new PresetType(obj.GetClass());
             }
             else

@@ -26,6 +26,8 @@ namespace Unity.Profiling.Editor
             Span<float> buffer,
             out float maxValue);
 
-        public event Action NewDataLoadedOrCleared;
+        public event Action DataCleared;
+        public event Action DataLoaded;
+        public event Action<int, int> NewFrameRecorded;
     }
 }

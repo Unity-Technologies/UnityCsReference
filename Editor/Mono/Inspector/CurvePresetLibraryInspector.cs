@@ -16,7 +16,7 @@ namespace UnityEditor
 
         public void OnEnable()
         {
-            string filePath = AssetDatabase.GetAssetPath(target.GetInstanceID());
+            string filePath = AssetDatabase.GetAssetPath(target.GetEntityId());
             m_CurveLibraryType = GetCurveLibraryTypeFromExtension(Path.GetExtension(filePath).TrimStart('.'));
             m_GenericPresetLibraryInspector = new GenericPresetLibraryInspector<CurvePresetLibrary>(target, GetHeader(), OnEditButtonClicked);
             m_GenericPresetLibraryInspector.presetSize = new Vector2(72, 20);

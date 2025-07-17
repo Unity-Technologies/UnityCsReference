@@ -6,30 +6,38 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using Object = UnityEngine.Object;
+using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationWindowCurve : IComparable<AnimationWindowCurve>, IEquatable<AnimationWindowCurve>
+    enum InheritanceState
+    {
+        None,                   // This curve does not inherit from a parent asset.
+        Inherited,              // Inherited curve can be edited, but cannot be removed.
+        Overridden              // This curve was inherited from a parent asset and modified.
+    }
+
+    class AnimationWindowCurve :
+        IComparable<AnimationWindowCurve>,
+        IEquatable<AnimationWindowCurve>
     {
         public const float timeEpsilon = 0.00001f;
 
-        private List<AnimationWindowKeyframe> m_Keyframes;
+        private List<AnimationWindowKeyframe> m_Keyframes = new();
 
         private EditorCurveBinding m_Binding;
         private int m_BindingHashCode;
 
-        private AnimationClip m_Clip;
-        private AnimationWindowSelectionItem m_SelectionBinding;
+        private IAnimationWindowClip m_Clip;
 
         private System.Type m_ValueType;
 
         public EditorCurveBinding binding { get { return m_Binding;  } }
         public bool isPPtrCurve { get { return m_Binding.isPPtrCurve; } }
         public bool isDiscreteCurve { get { return m_Binding.isDiscreteCurve; } }
-        public bool isSerializeReferenceCurve{ get {return m_Binding.isSerializeReferenceCurve;}}
+        public bool isSerializeReferenceCurve { get {return m_Binding.isSerializeReferenceCurve;}}
         public bool isPhantom { get { return m_Binding.isPhantom; } }
+        public InheritanceState inheritanceState { get; set; }
         public string propertyName { get { return m_Binding.propertyName; } }
         public string path { get { return m_Binding.path; } }
         public System.Type type { get { return m_Binding.type; } }
@@ -38,13 +46,7 @@ namespace UnityEditorInternal
 
         public int depth { get { return path.Length > 0 ? path.Split('/').Length : 0; } }
 
-        public AnimationClip clip { get { return m_Clip; } }
-
-        public GameObject rootGameObject { get { return m_SelectionBinding != null ? m_SelectionBinding.rootGameObject : null; } }
-        public ScriptableObject scriptableObject { get { return m_SelectionBinding != null ? m_SelectionBinding.scriptableObject : null; } }
-        public bool clipIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.clipIsEditable : true; } }
-        public bool animationIsEditable { get { return m_SelectionBinding != null ? m_SelectionBinding.animationIsEditable : true; } }
-        public int selectionID { get { return m_SelectionBinding != null ? m_SelectionBinding.id : 0; } }
+        public IAnimationWindowClip clip { get { return m_Clip; } }
 
         public IReadOnlyList<AnimationWindowKeyframe> keyframes => m_Keyframes;
 
@@ -60,53 +62,30 @@ namespace UnityEditorInternal
             }
         }
 
-        public AnimationWindowSelectionItem selectionBinding { get { return m_SelectionBinding; } set { m_SelectionBinding = value; } }
-
-        public AnimationWindowCurve(AnimationClip clip, EditorCurveBinding binding, System.Type valueType)
+        public AnimationWindowCurve(IAnimationWindowClip clip, EditorCurveBinding binding, System.Type valueType)
         {
-            binding = RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(binding, clip);
+            if(clip is AnimationWindowClip animationWindowClip)
+                binding = UnityEditor.AnimationWindowBuiltin.RotationCurveInterpolation.RemapAnimationBindingForRotationCurves(binding, animationWindowClip.animationClip);
 
             m_Binding = binding;
             m_BindingHashCode = binding.GetHashCode();
             m_ValueType = valueType;
             m_Clip = clip;
 
-            LoadKeyframes(clip);
+            m_Keyframes.Clear();
+            clip.LoadKeyframes(this, m_Keyframes);
         }
 
-        public void LoadKeyframes(AnimationCurve curve)
+        public void Reload()
         {
-            if (curve == null)
-                return;
-
-            for (int i = 0; i < curve.length; i++)
-                m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
-        }
-
-        public void LoadKeyframes(AnimationClip clip)
-        {
-            m_Keyframes = new List<AnimationWindowKeyframe>();
-
-            if (!m_Binding.isPPtrCurve)
-            {
-                AnimationCurve curve = AnimationUtility.GetEditorCurve(clip, binding);
-                LoadKeyframes(curve);
-            }
-            else
-            {
-                ObjectReferenceKeyframe[] curve = AnimationUtility.GetObjectReferenceCurve(clip, binding);
-                if (curve != null)
-                {
-                    for (int i = 0; i < curve.Length; i++)
-                        m_Keyframes.Add(new AnimationWindowKeyframe(this, curve[i]));
-                }
-            }
+            m_Keyframes.Clear();
+            m_Clip.LoadKeyframes(this, m_Keyframes);
         }
 
         public override int GetHashCode()
         {
-            int clipID = (clip == null ? 0 : clip.GetInstanceID());
-            return unchecked(selectionID * 92821 ^ clipID * 19603 ^ GetBindingHashCode());
+            int clipID = (clip == null ? 0 : clip.id);
+            return unchecked(clipID.GetHashCode() * 19603 ^ GetBindingHashCode());
         }
 
         public int GetBindingHashCode()
@@ -186,37 +165,6 @@ namespace UnityEditorInternal
             return 1;
         }
 
-        public AnimationCurve ToAnimationCurve()
-        {
-            int length = m_Keyframes.Count;
-            AnimationCurve animationCurve = new AnimationCurve();
-            List<Keyframe> keys = new List<Keyframe>();
-
-            for (int i = 0; i < length; i++)
-            {
-                Keyframe newKeyframe = m_Keyframes[i].ToKeyframe();
-                keys.Add(newKeyframe);
-            }
-
-            animationCurve.keys = keys.ToArray();
-            return animationCurve;
-        }
-
-        public ObjectReferenceKeyframe[] ToObjectCurve()
-        {
-            int length = m_Keyframes.Count;
-            List<ObjectReferenceKeyframe> keys = new List<ObjectReferenceKeyframe>();
-
-            for (int i = 0; i < length; i++)
-            {
-                ObjectReferenceKeyframe newKeyframe = m_Keyframes[i].ToObjectReferenceKeyframe();
-                keys.Add(newKeyframe);
-            }
-
-            keys.Sort((a, b) => a.time.CompareTo(b.time));
-            return keys.ToArray();
-        }
-
         public AnimationWindowKeyframe FindKeyAtTime(AnimationKeyTime keyTime)
         {
             int index = GetKeyframeIndex(keyTime);
@@ -278,6 +226,8 @@ namespace UnityEditorInternal
             m_Keyframes.Add(key);
             m_Keyframes.Sort((a, b) => a.time.CompareTo(b.time));
         }
+
+        public void AddKeyframeFast(AnimationWindowKeyframe key) => m_Keyframes.Add(key);
 
         public void RemoveKeyframe(AnimationKeyTime time)
         {

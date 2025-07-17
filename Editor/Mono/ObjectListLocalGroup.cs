@@ -39,7 +39,7 @@ namespace UnityEditor
 
             GUIContent m_Content = new GUIContent();
 
-            List<int> m_DragSelection = new List<int>();                // Temp instanceID state while dragging (not serialized)
+            List<EntityId> m_DragSelection = new List<EntityId>();                // Temp instanceID state while dragging (not serialized)
             int m_DropTargetControlID = 0;
 
             private List<Type> m_AssetPreviewIgnoreList = new List<Type>();
@@ -311,7 +311,7 @@ namespace UnityEditor
                             if (isFolderBrowsing && m_FilteredHierarchy.searchFilter.folders.Length == 1)
                             {
                                 string folder = m_FilteredHierarchy.searchFilter.folders[0];
-                                int instanceID = AssetDatabase.GetMainAssetInstanceID(folder);
+                                int instanceID = AssetDatabase.GetMainAssetEntityId(folder);
                                 bool perform = evt.type == EventType.DragPerform;
                                 mode = DoDrag(instanceID, perform);
                                 if (perform && mode != DragAndDropVisualMode.None)
@@ -378,7 +378,7 @@ namespace UnityEditor
                             if (assetReference.instanceID == 0)
                             {
                                 // For non selectable assets, don't show context menu. Selection is deselected
-                                m_Owner.SetSelection(new int[0], false);
+                                m_Owner.SetSelection(new EntityId[0], false);
                                 Event.current.Use();
                             }
                             else
@@ -448,14 +448,14 @@ namespace UnityEditor
                                     clickedOnText = rect.Contains(evt.mousePosition);
                                 }
 
-                                List<int> selected = m_Owner.m_State.m_SelectedInstanceIDs;
+                                var selected = m_Owner.m_State.m_SelectedInstanceIDs;
                                 if (clickedOnText && m_Owner.allowRenaming && m_Owner.m_AllowRenameOnMouseUp && selected.Count == 1 && selected[0] == assetReference.instanceID && !EditorGUIUtility.HasHolddownKeyModifiers(evt))
                                 {
                                     m_Owner.BeginRename(0.5f);
                                 }
                                 else
                                 {
-                                    List<int> newSelection = GetNewSelection(ref assetReference, false, false);
+                                    var newSelection = GetNewSelection(ref assetReference, false, false);
                                     m_Owner.SetSelection(newSelection.ToArray(), false);
                                 }
 
@@ -490,7 +490,7 @@ namespace UnityEditor
                             }
 
                             evt.Use();
-                            List<int> newSelection = GetNewSelection(ref assetReference, false, false);
+                            var newSelection = GetNewSelection(ref assetReference, false, false);
                             m_Owner.SetSelection(newSelection.ToArray(), evt.clickCount == 2);
                         }
                         break;
@@ -499,7 +499,7 @@ namespace UnityEditor
                         if (position.Contains(evt.mousePosition))
                         {
                             // Select it
-                            List<int> newSelection = GetNewSelection(ref assetReference, false, false);
+                            var newSelection = GetNewSelection(ref assetReference, false, false);
                             m_Owner.SetSelection(newSelection.ToArray(), false);
 
                             HandleContextClick(evt, position);
@@ -547,7 +547,7 @@ namespace UnityEditor
                 FilteredHierarchy.FilterResult[] results = m_FilteredHierarchy.results;
                 for (int i = 0; i < results.Length; ++i)
                 {
-                    if (results[i].instanceID == instanceID)
+                    if (results[i].entityId == instanceID)
                     {
                         if (results[i].isMainRepresentation)
                             parentInstanceID = 0;
@@ -555,19 +555,19 @@ namespace UnityEditor
                     }
 
                     if (results[i].isMainRepresentation)
-                        parentInstanceID = results[i].instanceID;
+                        parentInstanceID = results[i].entityId;
                 }
 
                 if (parentInstanceID != 0)
                 {
-                    m_Owner.SetSelection(new int[] {parentInstanceID}, false);
+                    m_Owner.SetSelection(new EntityId[] {parentInstanceID}, false);
                     m_Owner.Frame(parentInstanceID, true, false);
                 }
             }
 
-            bool IsRenaming(int instanceID)
+            bool IsRenaming(EntityId instanceID)
             {
-                RenameOverlay renameOverlay = m_Owner.GetRenameOverlay();
+                var renameOverlay = m_Owner.GetRenameOverlay();
                 return renameOverlay.IsRenaming() && renameOverlay.userData == instanceID && !renameOverlay.isWaitingForDelay;
             }
 
@@ -674,7 +674,7 @@ namespace UnityEditor
                 bool showFoldout = false;
                 if (filterItem != null)
                 {
-                    assetReference.instanceID = filterItem.instanceID;
+                    assetReference.instanceID = filterItem.entityId;
                     assetReference.guid = filterItem.guid;
                     showFoldout = filterItem.hasChildren && !filterItem.isFolder && isFolderBrowsing; // we do not want to be able to expand folders
                 }
@@ -821,7 +821,7 @@ namespace UnityEditor
                                 }
                                 else if (assetReference.instanceID != 0)
                                 {
-                                    icon = AssetPreview.GetMiniTypeThumbnail(EditorUtility.InstanceIDToObject(assetReference.instanceID));
+                                    icon = AssetPreview.GetMiniTypeThumbnail(EditorUtility.EntityIdToObject(assetReference.instanceID));
                                 }
                             }
                         }
@@ -884,7 +884,7 @@ namespace UnityEditor
                             // If the icon is still hasn't been found, fall back to the default one
                             if (m_Content.image == null && assetReference.instanceID != 0)
                             {
-                                m_Content.image = AssetPreview.GetMiniTypeThumbnail(EditorUtility.InstanceIDToObject(assetReference.instanceID));
+                                m_Content.image = AssetPreview.GetMiniTypeThumbnail(EditorUtility.EntityIdToObject(assetReference.instanceID));
                             }
                         }
 
@@ -898,7 +898,7 @@ namespace UnityEditor
 
                         if (filterItem != null)
                         {
-                            AddDirtyStateFor(filterItem.instanceID);
+                            AddDirtyStateFor(filterItem.entityId);
 
                             if (!filterItem.isMainRepresentation && isFolderBrowsing)
                             {
@@ -909,7 +909,7 @@ namespace UnityEditor
 
                                 actualImageDrawPosition = (m_Content.image == null) ? new Rect() : ActualImageDrawPosition(position, m_Content.image.width, m_Content.image.height);
 
-                                alpha = m_ItemFader.GetAlpha(filterItem.instanceID);
+                                alpha = m_ItemFader.GetAlpha(filterItem.entityId);
                                 if (alpha < 1f)
                                     m_Owner.Repaint();
                             }
@@ -959,8 +959,8 @@ namespace UnityEditor
                                 Texture2D typeIcon = null;
                                 if (filterItem != null && previewImage != null)
                                 {
-                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(filterItem.instanceID);
-                                    
+                                    Type type = InternalEditorUtility.GetTypeWithoutLoadingObject(filterItem.entityId);
+
                                     if (type != typeof(Texture2D))
                                     {
                                         typeIcon = filterItem.icon;
@@ -1000,13 +1000,13 @@ namespace UnityEditor
                                     if (filterItem != null)
                                     {
                                         //We use GetAssetPath to have the file extension as well
-                                        string path = AssetDatabase.GetAssetPath(filterItem.instanceID);
+                                        string path = AssetDatabase.GetAssetPath(filterItem.entityId);
                                         tooltip = path.Substring(path.LastIndexOf('/') + 1);
                                     }
                                     else if (builtinResource != null)
                                     {
                                         //We have a "None" item in the ObjectSelector that has a 0 instanceID
-                                        if (builtinResource.m_InstanceID != 0)     
+                                        if (builtinResource.m_InstanceID != 0)
                                             tooltip = builtinResource.m_Name + "\n" + "(Built-in Resource)";
                                     }
 
@@ -1069,7 +1069,7 @@ namespace UnityEditor
                         EditorApplication.projectWindowItemOnGUI(filterItem.guid, itemRect);
 
                     if (EditorApplication.projectWindowItemInstanceOnGUI != null)
-                        EditorApplication.projectWindowItemInstanceOnGUI(filterItem.instanceID, itemRect);
+                        EditorApplication.projectWindowItemInstanceOnGUI(filterItem.entityId, itemRect);
                 }
 
                 // Mouse handling (must be after rename overlay to ensure overlay get mouseevents)
@@ -1078,8 +1078,8 @@ namespace UnityEditor
                 else
                     HandleMouseWithoutDragging(ref assetReference, controlID, position);
 
-                if (filterItem != null && filterItem.instanceID == 0)
-                    filterItem.instanceID = assetReference.instanceID;
+                if (filterItem != null && filterItem.entityId == 0)
+                    filterItem.entityId = assetReference.instanceID;
             }
 
             private static Rect ActualImageDrawPosition(Rect position, float imageWidth, float imageHeight)
@@ -1110,7 +1110,7 @@ namespace UnityEditor
 
                 // 2. Project Assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
-                    result.Add(new KeyValuePair<string, int>(r.name, r.instanceID));
+                    result.Add(new KeyValuePair<string, int>(r.name, r.entityId));
 
                 // 3. Builtin
                 for (int i = 0; i < m_ActiveBuiltinList.Length; ++i)
@@ -1123,9 +1123,9 @@ namespace UnityEditor
             {
             }
 
-            public void GetAssetReferences(out List<int> instanceIDs, out List<string> guids)
+            public void GetAssetReferences(out List<EntityId> instanceIDs, out List<string> guids)
             {
-                instanceIDs = new List<int>();
+                instanceIDs = new List<EntityId>();
                 guids = new List<string>();
 
                 // 1. None item
@@ -1138,7 +1138,7 @@ namespace UnityEditor
                 // 2. Project Assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
                 {
-                    instanceIDs.Add(r.instanceID);
+                    instanceIDs.Add(r.entityId);
                     guids.Add(r.guid);
                 }
 
@@ -1157,13 +1157,13 @@ namespace UnityEditor
             }
 
             // Returns list of selected instanceIDs
-            public List<int> GetNewSelection(ref AssetReference clickedAssetReference, bool beginOfDrag, bool useShiftAsActionKey)
+            public List<EntityId> GetNewSelection(ref AssetReference clickedAssetReference, bool beginOfDrag, bool useShiftAsActionKey)
             {
                 // Flatten grid
-                List<int> instanceIDs;
+                List<EntityId> instanceIDs;
                 List<string> guids;
                 GetAssetReferences(out instanceIDs, out guids);
-                List<int> selectedInstanceIDs = m_Owner.m_State.m_SelectedInstanceIDs;
+                var selectedInstanceIDs = m_Owner.m_State.m_SelectedInstanceIDs;
                 int lastClickedInstanceID = m_Owner.m_State.m_LastClickedInstanceID;
                 bool allowMultiselection = m_Owner.allowMultiSelect;
 
@@ -1249,7 +1249,7 @@ namespace UnityEditor
             {
                 foreach (var r in m_FilteredHierarchy.results)
                 {
-                    if (r.instanceID == instanceID)
+                    if (r.entityId == instanceID)
                         return r.name;
                 }
                 return null;
@@ -1371,7 +1371,7 @@ namespace UnityEditor
                         break;
 
                     // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-                    string propertyPath = AssetDatabase.GetAssetPath(r.instanceID);
+                    string propertyPath = AssetDatabase.GetAssetPath(r.entityId);
                     if (EditorUtility.NaturalCompare(System.IO.Path.GetFileNameWithoutExtension(propertyPath), newText) > 0)
                     {
                         return idx;
@@ -1380,19 +1380,19 @@ namespace UnityEditor
                 return idx;
             }
 
-            public int IndexOf(int instanceID)
+            public int IndexOf(EntityId instanceID)
             {
                 int idx = 0;
 
                 // 1. 'none' first (has instanceID 0)
                 if (m_ShowNoneItem)
                 {
-                    if (instanceID == 0)
+                    if (instanceID == EntityId.None)
                         return 0;
                     else
                         idx++;
                 }
-                else if (instanceID == 0)
+                else if (instanceID == EntityId.None)
                     return -1;
 
                 // 2. Project assets
@@ -1402,7 +1402,7 @@ namespace UnityEditor
                     if (m_Owner.m_State.m_NewAssetIndexInList == idx)
                         idx++;
 
-                    if (r.instanceID == instanceID)
+                    if (r.entityId == instanceID)
                         return idx;
                     idx++;
                 }
@@ -1417,9 +1417,9 @@ namespace UnityEditor
                 return -1;
             }
 
-            public FilteredHierarchy.FilterResult LookupByInstanceID(int instanceID)
+            public FilteredHierarchy.FilterResult LookupByInstanceID(EntityId instanceID)
             {
-                if (instanceID == 0)
+                if (instanceID == EntityId.None)
                     return null;
 
                 int idx = 0;
@@ -1429,7 +1429,7 @@ namespace UnityEditor
                     if (m_Owner.m_State.m_NewAssetIndexInList == idx)
                         idx++;
 
-                    if (r.instanceID == instanceID)
+                    if (r.entityId == instanceID)
                         return r;
                     idx++;
                 }
@@ -1457,7 +1457,7 @@ namespace UnityEditor
                 // 2. Project assets
                 foreach (FilteredHierarchy.FilterResult r in m_FilteredHierarchy.results)
                 {
-                    assetReference.instanceID = r.instanceID;
+                    assetReference.instanceID = r.entityId;
                     assetReference.guid = r.guid;
                     if (idx == index)
                         return true;
@@ -1481,12 +1481,12 @@ namespace UnityEditor
                 return false;
             }
 
-            public virtual void StartDrag(int draggedInstanceID, List<int> selectedInstanceIDs)
+            public virtual void StartDrag(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
             {
                 ProjectWindowUtil.StartDrag(draggedInstanceID, selectedInstanceIDs);
             }
 
-            public DragAndDropVisualMode DoDrag(int dragToInstanceID, bool perform)
+            public DragAndDropVisualMode DoDrag(EntityId dragToInstanceID, bool perform)
             {
                 return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceID, AssetDatabase.GetAssetPath(dragToInstanceID), perform);
             }
@@ -1532,7 +1532,7 @@ namespace UnityEditor
 
                         if (list[index].Key.StartsWith(c, ignoreCase))
                         {
-                            Selection.activeInstanceID = list[index].Value;
+                            Selection.activeEntityId = list[index].Value;
                             m_Owner.Repaint();
                             return true;
                         }
@@ -1556,7 +1556,7 @@ namespace UnityEditor
 
             public void DrawIconAndLabel(Rect rect, FilteredHierarchy.FilterResult filterItem, string label, Texture2D icon, bool selected, bool focus)
             {
-                var color = filterItem == null ? GUI.color : ProjectBrowser.GetAssetItemColor(filterItem.instanceID);
+                var color = filterItem == null ? GUI.color : ProjectBrowser.GetAssetItemColor(filterItem.entityId);
 
                 float vcPadding = s_VCEnabled ? k_ListModeVersionControlOverlayPadding : 0f;
                 using (new GUI.ColorScope(color))
@@ -1565,7 +1565,7 @@ namespace UnityEditor
 
                     if (filterItem != null)
                     {
-                        var assetReference = new AssetReference() { instanceID = filterItem.instanceID };
+                        var assetReference = new AssetReference() { instanceID = filterItem.entityId };
                         assetReference.guid = filterItem.guid;
                         DynamicHintUtility.DrawHint(rect, Event.current.mousePosition, assetReference);
                     }

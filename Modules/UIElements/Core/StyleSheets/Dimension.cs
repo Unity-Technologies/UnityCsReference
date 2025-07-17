@@ -99,38 +99,7 @@ namespace UnityEngine.UIElements.StyleSheets
 
         public override string ToString()
         {
-            string unitStr = string.Empty;
-            switch (unit)
-            {
-                case Unit.Pixel:
-                    unitStr = "px";
-                    break;
-                case Unit.Percent:
-                    unitStr = "%";
-                    break;
-                case Unit.Second:
-                    unitStr = "s";
-                    break;
-                case Unit.Millisecond:
-                    unitStr = "ms";
-                    break;
-                case Unit.Degree:
-                    unitStr = "deg";
-                    break;
-                case Unit.Gradian:
-                    unitStr = "grad";
-                    break;
-                case Unit.Radian:
-                    unitStr = "rad";
-                    break;
-                case Unit.Turn:
-                    unitStr = "turn";
-                    break;
-                case Unit.Unitless:
-                    unitStr = string.Empty;
-                    break;
-            }
-            return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{unitStr}";
+            return $"{value.ToString(CultureInfo.InvariantCulture.NumberFormat)}{StyleSheetUtility.GetDimensionUnitExportString(unit)}";
         }
 
         public bool IsLength()

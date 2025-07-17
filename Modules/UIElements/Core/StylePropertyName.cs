@@ -13,7 +13,11 @@ namespace UnityEngine.UIElements
     /// </summary>
     public partial struct StylePropertyName : IEquatable<StylePropertyName>
     {
-        internal StylePropertyId id { get; }
+        internal StylePropertyId id
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get;
+        }
         private string name { get; }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

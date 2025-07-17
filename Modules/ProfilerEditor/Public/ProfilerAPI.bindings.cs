@@ -124,7 +124,7 @@ namespace UnityEditorInternal
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/ProfilerProperty.h")]
     [NativeHeader("Modules/ProfilerEditor/Public/EditorProfilerConnection.h")]
     [NativeHeader("Runtime/Profiler/Runtime/CollectProfilerStats.h")]
-    [NativeHeader("Runtime/Utilities/MemoryUtilities.h")]
+    [NativeHeader("NativeKernel/Utilities/MemoryUtilities.h")]
     public static partial class ProfilerDriver
     {
         // The following is a better solution for getting the constant rather than hard coding it
@@ -153,6 +153,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static internal extern void SetMaxFrameHistoryLength(int frameCount);
+
+        [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
+        static internal extern void SetAutomaticMemoryManagement(bool value);
 
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         static public extern string selectedPropertyPath

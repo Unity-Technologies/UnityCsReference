@@ -6,8 +6,11 @@ namespace UnityEditor.Overlays
 {
     sealed class OverlayContainerInsertDropZone : OverlayContainerDropZone
     {
-        public OverlayContainerInsertDropZone(OverlayContainer container, Placement placement) : base(container, placement)
+        OverlayContainerSection m_TargetSection;
+
+        public OverlayContainerInsertDropZone(OverlayContainer container, OverlayContainerSection section, Placement placement) : base(container, placement)
         {
+            m_TargetSection = section;
             style.flexGrow = 1;
         }
 
@@ -20,7 +23,7 @@ namespace UnityEditor.Overlays
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return targetContainer.GetLastVisible(GetSection()) != draggedOverlay;
+            return targetContainer.GetContainerSection(GetSection()).GetLastVisible() != draggedOverlay;
         }
 
         public override void UpdateHover(OverlayDropZoneBase hovered) {}
@@ -29,8 +32,16 @@ namespace UnityEditor.Overlays
         {
             base.BeginHover();
 
-            targetContainer.GetSectionElement(GetSection()).Add(insertIndicator);
-            insertIndicator.Setup(targetContainer.isHorizontal, targetContainer is ToolbarOverlayContainer, true); //Horizontal container has vertical insert indicators
+            if (placement == Placement.Start)
+                targetContainer.GetContainerSection(GetSection()).Insert(0, insertIndicator);
+            else
+                targetContainer.GetContainerSection(GetSection()).Add(insertIndicator);
+
+            var insertIndicatorStyle = targetContainer is ToolbarOverlayContainer || targetContainer is DynamicPanelOverlayContainer
+                ? OverlayInsertIndicator.InsertIndicatorStyle.Toolbar
+                : OverlayInsertIndicator.InsertIndicatorStyle.Normal;
+
+            insertIndicator.Setup(targetContainer.isHorizontal, insertIndicatorStyle, true); //Horizontal container has vertical insert indicators
         }
 
         public override void EndHover()
@@ -42,7 +53,15 @@ namespace UnityEditor.Overlays
 
         public override void DropOverlay(Overlay overlay)
         {
-            overlay.DockAt(targetContainer, GetSection());
+            if (placement == Placement.Start)
+                overlay.DockAt(targetContainer, GetSection(), 0);
+            else
+                overlay.DockAt(targetContainer, GetSection());
+        }
+
+        protected override OverlayContainerSection GetSection()
+        {
+            return m_TargetSection;
         }
     }
 }

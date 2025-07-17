@@ -509,7 +509,7 @@ namespace UnityEditor.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(choices), "choices"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

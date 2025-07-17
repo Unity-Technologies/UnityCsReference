@@ -137,7 +137,7 @@ namespace UnityEditor
                 {
                     if (pasteToSubScene)
                     {
-                        if (subScene.handle != 0)
+                        if (subScene.handle != SceneHandle.None)
                         {
                             CutBoard.PasteToScene(subScene, selected[0]);
                             pastedGameObjects?.Invoke(Selection.gameObjects);
@@ -153,7 +153,7 @@ namespace UnityEditor
                 else if (pasteToSubScene || !isSubScene)
                 {
                     Unsupported.PasteGameObjectsFromPasteboard(selected[0],
-                        pasteToSubScene ? subScene.handle : 0,
+                        pasteToSubScene ? subScene.handle : SceneHandle.None,
                         worldPositionStays);
                     pastedGameObjects?.Invoke(Selection.gameObjects);
                 }

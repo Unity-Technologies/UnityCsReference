@@ -11,8 +11,6 @@ namespace Unity.UI.Builder
 {
     internal class BuilderInspectorAttributes : BuilderUxmlAttributesView, IBuilderInspectorSection
     {
-        BuilderSelection m_Selection;
-
         public VisualElement root => attributesContainer;
 
         // ReSharper disable MemberCanBePrivate.Global
@@ -21,11 +19,15 @@ namespace Unity.UI.Builder
 
         static readonly ProfilerMarker k_RefreshMarker = new (inspectorAttributeRefreshMarkerName);
 
-        public BuilderInspectorAttributes(BuilderInspector inspector) : base(inspector)
+        /// <summary>
+        /// Constructs a new instance of the BuilderInspectorAttributes class.
+        /// Warning: We allow null inspector only because of BuilderDocumentModelEditor, which needs this class
+        /// to be able to add new UxmlObject using AddUxmlObjectToSerializedData.
+        /// </summary>
+        /// <param name="inspector"></param>
+        public BuilderInspectorAttributes(BuilderInspector inspector = null) : base(inspector)
         {
-            this.inspector = inspector;
-            m_Selection = inspector.selection;
-            attributesContainer = inspector.Q<PersistedFoldout>("inspector-attributes-foldout");
+            attributesContainer = inspector?.Q<PersistedFoldout>("inspector-attributes-foldout");
         }
 
         bool m_IgnoreChangeToInlineValue = false;
@@ -40,11 +42,14 @@ namespace Unity.UI.Builder
         {
             using var marker = k_RefreshMarker.Auto();
 
-            var currentVisualElement = inspector.currentVisualElement;
+            if (attributesContainer == null)
+                return;
+
+            var currentVisualElement = currentElement;
 
             base.Refresh();
 
-            if (currentVisualElement != null && m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance &&
+            if (currentVisualElement != null && inspector.selection.selectionType == BuilderSelectionType.ElementInTemplateInstance &&
                 string.IsNullOrEmpty(currentVisualElement.name))
             {
                 var helpBox = new HelpBox();
@@ -62,6 +67,9 @@ namespace Unity.UI.Builder
 
         internal override void UpdateAttributeOverrideStyle(VisualElement fieldElement)
         {
+            if (attributesContainer == null)
+                return;
+
             base.UpdateAttributeOverrideStyle(fieldElement);
 
             var hasAnyBoundField = attributesContainer.Q(className: BuilderConstants.InspectorLocalStyleBindingClassName) != null
@@ -75,17 +83,23 @@ namespace Unity.UI.Builder
 
         public void Enable()
         {
+            if (attributesContainer == null)
+                return;
+
             attributesContainer.contentContainer.SetEnabled(true);
         }
 
         public void Disable()
         {
+            if (attributesContainer == null)
+                return;
+
             attributesContainer.contentContainer.SetEnabled(false);
         }
 
         protected override void UpdateFieldStatus(VisualElement fieldElement)
         {
-            inspector.UpdateFieldStatus(fieldElement, null);
+            inspector?.UpdateFieldStatus(fieldElement, null);
 
             var hasOverriddenField = BuilderInspectorUtilities.HasOverriddenField(attributesContainer);
             attributesContainer.EnableInClassList(BuilderConstants.InspectorCategoryFoldoutOverrideClassName, hasOverriddenField);
@@ -93,18 +107,18 @@ namespace Unity.UI.Builder
 
         protected override void NotifyAttributesChanged(string attributeName = null)
         {
-            var changeType = attributeName == BuilderConstants.UxmlNameAttr ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
+            var changeType = attributeName == UXMLConstants.NameAttributeName ? BuilderHierarchyChangeType.ElementName : BuilderHierarchyChangeType.Attributes;
             // During inline editing, if the value used in the field changes from being bound to being inline,
             // no changes to the asset must be made.
             // Instead, we force a visual update of the asset to see the inline value in canvas.
             if (m_IgnoreChangeToInlineValue)
             {
                 m_IgnoreChangeToInlineValue = false;
-                m_Selection.ForceVisualAssetUpdateWithoutSave(inspector.currentVisualElement, changeType);
+                inspector.selection.ForceVisualAssetUpdateWithoutSave(currentElement, changeType);
             }
             else
             {
-                m_Selection.NotifyOfHierarchyChange(inspector, inspector.currentVisualElement, changeType);
+                inspector.selection.NotifyOfHierarchyChange(inspector, currentElement, changeType);
             }
         }
 
@@ -112,7 +126,7 @@ namespace Unity.UI.Builder
         {
             if (styleRow != null)
             {
-                if (m_Selection.selectionType != BuilderSelectionType.ElementInTemplateInstance)
+                if (inspector.selection.selectionType != BuilderSelectionType.ElementInTemplateInstance)
                 {
                     var fieldElement = styleRow.GetLinkedFieldElements()[0]; // Assume default case of only 1 field per row.
                     var csPropertyName = fieldElement.GetProperty(BuilderConstants.InspectorAttributeBindingPropertyNameVEPropertyName) as string;
@@ -129,7 +143,7 @@ namespace Unity.UI.Builder
                     if (isBindableElement && isBindableProperty)
                     {
                         var hasDataBinding = false;
-                        var vea = inspector.currentVisualElement.GetVisualElementAsset();
+                        var vea = currentElement.GetVisualElementAsset();
 
                         if (vea != null)
                         {
@@ -143,11 +157,11 @@ namespace Unity.UI.Builder
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
                             menu.AppendAction(BuilderConstants.ContextMenuRemoveBindingMessage,
-                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, bindingPath); },
+                                (a) => { BuilderBindingUtility.DeleteBinding(fieldElement, bindingPath, inspector.paneWindow as Builder); },
                                 (a) => DropdownMenuAction.Status.Normal,
                                 fieldElement);
 
-                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(bindingPath), inspector.currentVisualElement,
+                            DataBindingUtility.TryGetLastUIBindingResult(new BindingId(bindingPath), currentElement,
                                 out var bindingResult);
 
                             if (bindingResult.status == BindingStatus.Success)
@@ -212,7 +226,7 @@ namespace Unity.UI.Builder
             var targetVE = e.target as VisualElement;
             var attributeField = targetVE.GetFirstAncestorOfType<UxmlSerializedDataAttributeField>();
 
-            inspector.RegisterFieldToInlineEditingEvents(attributeField);
+            inspector?.RegisterFieldToInlineEditingEvents(attributeField);
             targetVE.UnregisterCallback<SerializedPropertyBindEvent>(OnSerializedPropertyBindCallback);
         }
     }

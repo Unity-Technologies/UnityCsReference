@@ -15,12 +15,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class ScaleStyleField : BaseField<Scale>
     {
-        public class BuilderScaleConverter : UxmlAttributeConverter<Scale>
-        {
-            public override Scale FromString(string value) => throw new NotImplementedException();
-            public override string ToString(Scale value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<Scale>.UxmlSerializedData
         {

@@ -12,7 +12,8 @@ namespace UnityEditor.PackageManager
         InvalidParameter,
         Conflict,
         AggregateError,
+        ConnectionError,
         Cancelled,
-        Success
+        Success,
     }
 }

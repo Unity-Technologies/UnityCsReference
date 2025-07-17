@@ -5,13 +5,14 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.UIElements.Layout;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class StyleProperty
+    internal partial class StyleProperty
     {
         [SerializeField]
         string m_Name;
@@ -26,6 +27,7 @@ namespace UnityEngine.UIElements
             internal set
             {
                 m_Name = value;
+                isCustomProperty = !string.IsNullOrEmpty(m_Name) && StringUtils.StartsWith(m_Name, "--");
             }
         }
 
@@ -102,6 +104,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteKeyword(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -128,6 +131,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteFloat(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -155,6 +159,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteDimension(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -181,6 +186,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteColor(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -207,6 +213,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteString(ref values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -233,6 +240,20 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteEnum(ref m_Values[0], value);
+            requireVariableResolve = false;
+        }
+
+        /// <summary>
+        /// Sets a <see cref="Enum"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="enumStr">The value to store.</param>
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetEnumAsString(StyleSheet styleSheet, string enumStr)
+        {
+            SetSize(ref m_Values, 1);
+            styleSheet.WriteEnumAsString(ref m_Values[0], enumStr);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -245,6 +266,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteEnum(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -289,6 +311,7 @@ namespace UnityEngine.UIElements
             styleSheet.WriteFunction(ref m_Values[0], StyleValueFunction.Var);
             styleSheet.WriteFloat(ref m_Values[1], 1);
             styleSheet.WriteVariable(ref m_Values[2], variableName);
+            requireVariableResolve = true;
         }
 
         /// <summary>
@@ -319,6 +342,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteResourcePath(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -345,6 +369,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteAssetReference(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -390,6 +415,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteMissingAssetReferenceUrl(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -416,6 +442,7 @@ namespace UnityEngine.UIElements
         {
             SetSize(ref m_Values, 1);
             styleSheet.WriteScalableImage(ref m_Values[0], value);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -441,6 +468,7 @@ namespace UnityEngine.UIElements
         public void SetKeyword(StyleSheet styleSheet, StyleKeyword value)
         {
             SetKeyword(styleSheet, value.ToStyleValueKeyword());
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -452,7 +480,7 @@ namespace UnityEngine.UIElements
         public bool TryGetKeyword(StyleSheet styleSheet, out StyleKeyword value)
         {
             if (handleCount == 1)
-                return TryReadSetKeyword(styleSheet, ref m_Values[0], out value);
+                return TryReadKeyword(styleSheet, ref m_Values[0], out value);
 
             value = default;
             return false;
@@ -468,6 +496,7 @@ namespace UnityEngine.UIElements
             SetSize(ref m_Values, 2);
             styleSheet.WriteEnum(ref values[0], value.x);
             styleSheet.WriteEnum(ref values[1], value.y);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -516,6 +545,7 @@ namespace UnityEngine.UIElements
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -550,12 +580,14 @@ namespace UnityEngine.UIElements
             {
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteEnum(ref values[0], value.keyword);
+                requireVariableResolve = false;
                 return;
             }
 
             SetSize(ref m_Values, 2);
             styleSheet.WriteEnum(ref values[0], value.keyword);
             styleSheet.WriteDimension(ref values[1], value.offset.ToDimension());
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -694,6 +726,7 @@ namespace UnityEngine.UIElements
             styleSheet.WriteDimension(ref m_Values[0], value.x.ToDimension());
             styleSheet.WriteDimension(ref m_Values[1], value.y.ToDimension());
             styleSheet.WriteDimension(ref m_Values[2], new Length(value.z).ToDimension());
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -730,6 +763,7 @@ namespace UnityEngine.UIElements
             {
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteKeyword(ref values[0], StyleValueKeyword.None);
+                requireVariableResolve = false;
                 return;
             }
 
@@ -737,6 +771,7 @@ namespace UnityEngine.UIElements
             {
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteAngle(ref values[0], value.angle);
+                requireVariableResolve = false;
                 return;
             }
 
@@ -746,6 +781,7 @@ namespace UnityEngine.UIElements
             styleSheet.WriteFloat(ref values[1], axis.y);
             styleSheet.WriteFloat(ref values[2], axis.z);
             styleSheet.WriteAngle(ref values[3], value.angle);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -783,6 +819,7 @@ namespace UnityEngine.UIElements
             {
                 SetSize(ref m_Values, 1);
                 styleSheet.WriteKeyword(ref values[0], StyleValueKeyword.None);
+                requireVariableResolve = false;
                 return;
             }
 
@@ -791,6 +828,7 @@ namespace UnityEngine.UIElements
                 SetSize(ref m_Values, 2);
                 styleSheet.WriteFloat(ref values[0], value.value.x);
                 styleSheet.WriteFloat(ref values[1], value.value.y);
+                requireVariableResolve = false;
                 return;
             }
 
@@ -798,6 +836,7 @@ namespace UnityEngine.UIElements
             styleSheet.WriteFloat(ref values[0], value.value.x);
             styleSheet.WriteFloat(ref values[1], value.value.y);
             styleSheet.WriteFloat(ref values[2], value.value.z);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -835,6 +874,7 @@ namespace UnityEngine.UIElements
             styleSheet.WriteDimension(ref values[1], new Dimension { value = value.offset.y, unit = Dimension.Unit.Pixel });
             styleSheet.WriteDimension(ref values[2], new Dimension { value = value.blurRadius, unit = Dimension.Unit.Pixel });
             styleSheet.WriteColor(ref values[3], value.color);
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -862,6 +902,49 @@ namespace UnityEngine.UIElements
         }
 
         /// <summary>
+        /// Sets a <see cref="TextAutoSize "/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        public void SetTextAutoSize(StyleSheet styleSheet, TextAutoSize value)
+        {
+            if (value.mode == TextAutoSizeMode.None)
+            {
+                SetSize(ref m_Values, 1);
+                styleSheet.WriteEnum(ref m_Values[0], value.mode);
+                return;
+            }
+
+            SetSize(ref m_Values, 3);
+            styleSheet.WriteEnum(ref m_Values[0], value.mode);
+            styleSheet.WriteDimension(ref values[1], new Dimension { value = value.minSize.value, unit = Dimension.Unit.Pixel });
+            styleSheet.WriteDimension(ref values[2], new Dimension { value = value.maxSize.value, unit = Dimension.Unit.Pixel });
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="TextAutoSize"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetTextAutoSize(StyleSheet styleSheet, out TextAutoSize value)
+        {
+            if (handleCount is <= 0 or > 3)
+            {
+                value = TextAutoSize.None();
+                return false;
+            }
+
+            var valCount = handleCount;
+            var val1 = new StylePropertyValue() { handle = values[0], sheet = styleSheet };
+            var val2 = valCount > 1 ? new StylePropertyValue { handle = values[1], sheet = styleSheet } : default;
+            var val3 = valCount > 2 ? new StylePropertyValue { handle = values[2], sheet = styleSheet } : default;
+
+            value = StylePropertyReader.ReadTextAutoSize(valCount, val1, val2, val3);
+            return true;
+        }
+
+        /// <summary>
         /// Sets a <see cref="TransformOrigin"/> as the current value.
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
@@ -882,6 +965,7 @@ namespace UnityEngine.UIElements
                         styleSheet.WriteEnum(ref m_Values[0], xOffset.Value);
                     else
                         styleSheet.WriteDimension(ref m_Values[0], value.x.ToDimension());
+                    requireVariableResolve = false;
                     return;
                 }
 
@@ -889,6 +973,7 @@ namespace UnityEngine.UIElements
                 {
                     SetSize(ref m_Values, 1);
                     styleSheet.WriteEnum(ref m_Values[0], yOffset.Value);
+                    requireVariableResolve = false;
                     return;
                 }
             }
@@ -906,6 +991,7 @@ namespace UnityEngine.UIElements
 
             if (writeZ)
                 styleSheet.WriteDimension(ref m_Values[2], new Dimension(value.z, Dimension.Unit.Pixel));
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -936,8 +1022,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        /// <remarks>
-        /// </remarks>
         public void SetTimeValue(StyleSheet styleSheet, List<TimeValue> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
@@ -948,6 +1032,7 @@ namespace UnityEngine.UIElements
                 if (i < value.Count - 1)
                     styleSheet.WriteCommaSeparator(ref values[handleIndex + 1]);
             }
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -1005,8 +1090,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        /// <remarks>
-        /// </remarks>
+
         public void SetStylePropertyName(StyleSheet styleSheet, List<StylePropertyName> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
@@ -1017,6 +1101,7 @@ namespace UnityEngine.UIElements
                 if (i < value.Count - 1)
                     styleSheet.WriteCommaSeparator(ref values[handleIndex + 1]);
             }
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -1075,8 +1160,6 @@ namespace UnityEngine.UIElements
         /// </summary>
         /// <param name="styleSheet">The data store.</param>
         /// <param name="value">The value to store.</param>
-        /// <remarks>
-        /// </remarks>
         public void SetEasingFunction(StyleSheet styleSheet, List<EasingFunction> value)
         {
             SetSize(ref m_Values, value.Count * 2 - 1);
@@ -1087,6 +1170,7 @@ namespace UnityEngine.UIElements
                 if (i < value.Count - 1)
                     styleSheet.WriteCommaSeparator(ref values[handleIndex + 1]);
             }
+            requireVariableResolve = false;
         }
 
         /// <summary>
@@ -1140,6 +1224,242 @@ namespace UnityEngine.UIElements
             return true;
         }
 
+        /// <summary>
+        /// Sets a <see cref="List{FilterFunction}"/> as the current value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The value to store.</param>
+        /// <remarks>
+        /// </remarks>
+        public void SetFilter(StyleSheet styleSheet, List<FilterFunction> filterFunctions)
+        {
+            // Count the required number of values.
+            int valueCount = 0;
+            foreach (var ff in filterFunctions)
+                valueCount += GetNumberOfValuesForFilterFunction(ff);
+
+            SetSize(ref m_Values, valueCount);
+
+            int index = 0;
+            foreach (var ff in filterFunctions)
+            {
+                styleSheet.WriteFunction(ref values[index++], ToStyleValueFunction(ff.type));
+
+                int argCount = ff.parameterCount;
+                if (ff.customDefinition != null)
+                    ++argCount;
+
+                styleSheet.WriteFloat(ref values[index++], argCount);
+
+                if (ff.customDefinition != null)
+                    styleSheet.WriteAssetReference(ref values[index++], ff.customDefinition);
+
+                for (int i = 0; i < ff.parameterCount; ++i)
+                {
+                    var p = ff.GetParameter(i);
+                    if (p.type == FilterParameterType.Float)
+                        styleSheet.WriteFloat(ref values[index++], p.floatValue);
+                    else if (p.type == FilterParameterType.Color)
+                        styleSheet.WriteColor(ref values[index++], p.colorValue);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="List{FilterFunction}"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetFilter(StyleSheet styleSheet, out List<FilterFunction> value)
+        {
+            if (ContainsVariable())
+            {
+                value = null;
+                return false;
+            }
+
+            value = new List<FilterFunction>();
+            return TryGetFilter(styleSheet, value);
+        }
+
+        /// <summary>
+        /// Tries to read a <see cref="List{FilterFunction}"/> from the <see cref="StyleProperty"/>'s value.
+        /// </summary>
+        /// <param name="styleSheet">The data store.</param>
+        /// <param name="value">The read value.</param>
+        /// <returns><see langword="true"/> if the value could be read; <see langword="false"/> otherwise.</returns>
+        public bool TryGetFilter(StyleSheet styleSheet, List<FilterFunction> value)
+        {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
+            value.Clear();
+
+            if (ContainsVariable())
+                return false;
+
+            for (var i = 0; i < m_Values.Length; )
+            {
+                if (!styleSheet.TryReadFunction(m_Values[i++], out StyleValueFunction func))
+                {
+                    value.Clear();
+                    return false;
+                }
+
+                if (!styleSheet.TryReadFloat(m_Values[i++], out float fCount))
+                {
+                    value.Clear();
+                    return false;
+                }
+
+                int argCount = (int)fCount;
+
+                FilterFunctionDefinition customDef = null;
+                if (func == StyleValueFunction.CustomFilter && argCount > 0)
+                {
+                    if (!styleSheet.TryReadAssetReference(m_Values[i++], out var customDefObj))
+                    {
+                        value.Clear();
+                        return false;
+                    }
+
+                    customDef = customDefObj as FilterFunctionDefinition;
+                    if (customDef == null)
+                    {
+                        value.Clear();
+                        return false;
+                    }
+
+                    --argCount;
+
+                    if (customDef.parameters.Length != argCount)
+                    {
+                        value.Clear();
+                        return false;
+                    }
+                }
+
+                var args = new FixedBuffer4<FilterParameter>();
+                for (int p = 0; p < argCount; ++p)
+                {
+                    var paramHandle = m_Values[i++];
+                    if (styleSheet.TryReadDimension(paramHandle, out Dimension dim))
+                    {
+                        args[p] = new FilterParameter(ConvertDimensionToFilterFloat(dim));
+                    }
+                    else if (styleSheet.TryReadFloat(paramHandle, out float f))
+                    {
+                        args[p] = new FilterParameter(f);
+                    }
+                    else if (styleSheet.TryReadColor(paramHandle, out Color color))
+                    {
+                        args[p] = new FilterParameter(color);
+                    }
+                    else
+                    {
+                        value.Clear();
+                        return false;
+                    }
+                }
+
+                if (func == StyleValueFunction.CustomFilter)
+                    value.Add(new FilterFunction(customDef, args, argCount));
+                else
+                    value.Add(new FilterFunction(StyleProperty.ToFilterFunctionType(func), args, argCount));
+            }
+
+            return true;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        static internal int GetNumberOfValuesForFilterFunction(FilterFunction ff)
+        {
+            int valueCount = 0;
+
+            var def = ff.GetDefinition();
+            int paramCount = def?.parameters.Length ?? 0;
+            if (ff.customDefinition != null)
+                ++valueCount; // Filter definition asset
+
+            valueCount += paramCount + 2; // Function type and parameters
+
+            return valueCount;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        static internal FilterFunctionType ToFilterFunctionType(StyleValueFunction function)
+        {
+            switch (function)
+            {
+                case StyleValueFunction.CustomFilter:    return FilterFunctionType.Custom;
+                case StyleValueFunction.FilterTint:      return FilterFunctionType.Tint;
+                case StyleValueFunction.FilterOpacity:   return FilterFunctionType.Opacity;
+                case StyleValueFunction.FilterInvert:    return FilterFunctionType.Invert;
+                case StyleValueFunction.FilterGrayscale: return FilterFunctionType.Grayscale;
+                case StyleValueFunction.FilterSepia:     return FilterFunctionType.Sepia;
+                case StyleValueFunction.FilterBlur:      return FilterFunctionType.Blur;
+                case StyleValueFunction.FilterContrast:  return FilterFunctionType.Contrast;
+                case StyleValueFunction.FilterHueRotate: return FilterFunctionType.HueRotate;
+                default:
+                    return FilterFunctionType.None;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        static internal StyleValueFunction ToStyleValueFunction(FilterFunctionType type)
+        {
+            switch (type)
+            {
+                case FilterFunctionType.None:      return StyleValueFunction.NoneFilter;
+                case FilterFunctionType.Tint:      return StyleValueFunction.FilterTint;
+                case FilterFunctionType.Opacity:   return StyleValueFunction.FilterOpacity;
+                case FilterFunctionType.Invert:    return StyleValueFunction.FilterInvert;
+                case FilterFunctionType.Grayscale: return StyleValueFunction.FilterGrayscale;
+                case FilterFunctionType.Sepia:     return StyleValueFunction.FilterSepia;
+                case FilterFunctionType.Blur:      return StyleValueFunction.FilterBlur;
+                case FilterFunctionType.Contrast:  return StyleValueFunction.FilterContrast;
+                case FilterFunctionType.HueRotate: return StyleValueFunction.FilterHueRotate;
+                default:
+                    return StyleValueFunction.CustomFilter;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        static internal float ConvertDimensionToFilterFloat(Dimension dim)
+        {
+            // Convert percentages to 0-1 range.
+            // Convert angles to radians.
+            // Convert time to seconds.
+            switch (dim.unit)
+            {
+                case Dimension.Unit.Percent:     return dim.value * 0.01f;
+                case Dimension.Unit.Degree:      return dim.value * Mathf.Deg2Rad;
+                case Dimension.Unit.Turn:        return dim.value * Mathf.PI * 2.0f;
+                case Dimension.Unit.Gradian:     return dim.value * Mathf.PI / 200.0f;
+                case Dimension.Unit.Millisecond: return dim.value * 0.001f;
+                default:
+                    return dim.value;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        static internal Dimension ConvertFilterFloatToDimension(float value, Dimension.Unit unit)
+        {
+            // Counterpart to ConvertDimensionToFilterFloat
+            switch (unit)
+            {
+                case Dimension.Unit.Percent:     value *= 100.0f; break;
+                case Dimension.Unit.Degree:      value *= Mathf.Rad2Deg; break;
+                case Dimension.Unit.Turn:        value /= (Mathf.PI * 2.0f); break;
+                case Dimension.Unit.Gradian:     value /= (Mathf.PI / 200.0f); break;
+                case Dimension.Unit.Millisecond: value *= 1000.0f; break;
+                default:
+                    break;
+            }
+            return new Dimension(value, unit);
+        }
+
         private static void SetSize(ref StyleValueHandle[] store, int size)
         {
             if (store?.Length == size)
@@ -1147,7 +1467,7 @@ namespace UnityEngine.UIElements
             store = new StyleValueHandle[size];
         }
 
-        internal static bool TryReadSetKeyword(StyleSheet styleSheet, ref StyleValueHandle handle, out StyleKeyword value)
+        internal static bool TryReadKeyword(StyleSheet styleSheet, ref StyleValueHandle handle, out StyleKeyword value)
         {
             if (handle.valueType == StyleValueType.Keyword)
             {

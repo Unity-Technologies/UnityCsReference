@@ -4,23 +4,27 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars;
 
-[EditorToolbarElement("Services/AI", typeof(DefaultMainToolbar))]
 class AIDropdown : EditorToolbarDropdown
 {
     internal static AIDropdown instance;
+
+    [UnityOnlyMainToolbarPreset]
+    [MainToolbarElement("Services/AI", true, defaultDockIndex = 12, defaultDockPosition = MainToolbarDockPosition.Left)]
+    static MainToolbarElement Create()
+    {
+        if (instance is null)
+            instance = new AIDropdown();
+        return new MainToolbarCustom(() => instance);
+    }
 
     PopupWindowContent m_Content;
     static PopupWindowContent defaultContent => new AIDropdownContent();
 
     public AIDropdown()
     {
-        // Only showing the button in developer mode until beta period where packages to install will be published.
-        style.display = Unsupported.IsDeveloperMode() ? DisplayStyle.Flex : DisplayStyle.None;
-
         name = "AIDropdown";
         text = L10n.Tr("AI");
         icon = EditorGUIUtility.FindTexture("AISparkle Icon");

@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using ObjectField = UnityEditor.UIElements.ObjectField;
@@ -156,15 +157,22 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
         obj.RegisterValueChangedCallback(SetReference);
         obj.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+        obj.AddToClassList(ObjectField.alignedFieldUssClassName);
 
+        // Track for Undo/Redo changes which can come from exposedPropertyTable
         Undo.UndoRedoCallback undoRedoCallback = () =>
         {
             m_Item.UpdateValue();
             obj.SetValueWithoutNotify(m_Item.currentReferenceValue);
+            UpdateObjectField(obj);
         };
 
+        // Track the property for external changed including Undo/Redo
+        obj.TrackPropertyValue(prop, _ => undoRedoCallback());
         obj.RegisterCallback<AttachToPanelEvent>(evt => Undo.undoRedoPerformed += undoRedoCallback);
         obj.RegisterCallback<DetachFromPanelEvent>(evt => Undo.undoRedoPerformed -= undoRedoCallback);
+
+        UpdateObjectField(obj);
 
         return obj;
     }
@@ -192,6 +200,20 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 
             //save the modified SerializedObject since we are bypassing the binding system
             m_Item.exposedPropertyName.serializedObject.ApplyModifiedProperties();
+            UpdateObjectField(evt.elementTarget as ObjectField);
+        }
+    }
+
+    void UpdateObjectField(ObjectField objectField)
+    {
+        if (m_Item.propertyMode == ExposedPropertyMode.DefaultValue)
+        {
+            // Set the serialized property so we can support drag and drop for the default value.
+            objectField?.SetProperty(ObjectField.serializedPropertyKey, m_Item.exposedPropertyDefault);
+        }
+        else
+        {
+            objectField?.ClearProperty(ObjectField.serializedPropertyKey);
         }
     }
 

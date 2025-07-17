@@ -4,6 +4,7 @@
 
 using System;
 using System.ComponentModel;
+using UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -11,13 +12,21 @@ namespace UnityEngine
     {
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Physics.autoSimulation has been replaced by Physics.simulationMode", false)]
+        [ExcludeFromDocs]
         public static bool autoSimulation
         {
             get { return simulationMode != SimulationMode.Script; }
             set { simulationMode = value ? SimulationMode.FixedUpdate : SimulationMode.Script; }
         }
 
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete("Physics.autoSyncTransforms has been deprecated please use Physics.SyncTransforms instead to manually sync physics transforms when required.", false)]
+        [ExcludeFromDocs]
+        extern public static bool autoSyncTransforms { get; set; }
+
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("Physics.RebuildBroadphaseRegions has been deprecated alongside Multi Box Pruning. Use Automatic Box Pruning instead.", false)]
+        [ExcludeFromDocs]
         public static void RebuildBroadphaseRegions(Bounds worldBounds, int subdivisions)
         {
             return;

@@ -57,7 +57,7 @@ namespace UnityEngine.UIElements
                     new(nameof(highValue), "high-value"),
                     new(nameof(value), "value"),
                     new(nameof(title), "title"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

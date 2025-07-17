@@ -5,6 +5,7 @@
 using System.IO;
 using UnityEngine;
 using UnityEditorInternal;
+using RenameOverlay = UnityEditor.RenameOverlay<int>;
 
 namespace UnityEditor
 {
@@ -20,7 +21,8 @@ namespace UnityEditor
         public Vector2 m_ScrollPosition;
         public string m_CurrrentLibrary = PresetLibraryLocations.defaultPresetLibraryPath;
         public int m_HoverIndex = -1;
-        public RenameOverlay m_RenameOverlay = new RenameOverlay();
+        [SerializeField]
+        public RenameOverlay<int> m_RenameOverlay = new RenameOverlay<int>();
         public string m_Prefix;
 
         static public ItemViewMode GetItemViewMode(string prefix)
@@ -321,8 +323,7 @@ namespace UnityEditor
                 const float optionsButtonWidth = 16f;
                 const float optionsButtonHeight = 16f;
                 Rect buttonRect = new Rect(rect.width - optionsButtonWidth - settingsMenuRightMargin, (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
-                if (Event.current.type == EventType.Repaint)
-                    s_Styles.optionsButton.Draw(buttonRect, false, false, false, false);
+                GUI.Label(buttonRect, GUIContent.none, s_Styles.optionsButton);
 
                 // We want larger click area than the button icon
                 buttonRect.y = 0f;
@@ -720,7 +721,7 @@ namespace UnityEditor
             return GetRenameOverlay().IsRenaming() && GetRenameOverlay().userData == itemID && !GetRenameOverlay().isWaitingForDelay;
         }
 
-        RenameOverlay GetRenameOverlay()
+        RenameOverlay<int> GetRenameOverlay()
         {
             return m_State.m_RenameOverlay;
         }
@@ -889,7 +890,7 @@ namespace UnityEditor
             if (m_PresetLibraryFileLocation == PresetFileLocation.PreferencesFolder)
                 EditorUtility.RevealInFinder(Path.GetFullPath(pathWithExtension));
             else
-                EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetInstanceID(pathWithExtension));
+                EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetEntityId(pathWithExtension));
         }
 
         internal class PresetContextMenu

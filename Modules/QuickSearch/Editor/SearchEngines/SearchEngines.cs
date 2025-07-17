@@ -264,7 +264,7 @@ namespace UnityEditor.Search
     }
 
     [SceneSearchEngine]
-    class SceneSearchEngine : QuickSearchEngine, ISceneSearchEngine
+    class SceneSearchEngine : QuickSearchEngine, ISceneSearchEngineV2
     {
         private readonly Dictionary<Guid, HashSet<int>> m_SearchItemsBySession = new Dictionary<Guid, HashSet<int>>();
 
@@ -318,11 +318,11 @@ namespace UnityEditor.Search
             base.EndSession(context);
         }
 
-        public virtual bool Filter(ISearchContext context, string query, HierarchyProperty objectToFilter)
+        public virtual bool Filter(ISearchContext context, string query, HierarchyIterator objectToFilter)
         {
             if (!m_SearchItemsBySession.ContainsKey(context.guid))
                 return false;
-            return m_SearchItemsBySession[context.guid].Contains(objectToFilter.instanceID);
+            return m_SearchItemsBySession[context.guid].Contains(objectToFilter.entityId);
         }
     }
 

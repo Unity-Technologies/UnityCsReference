@@ -107,7 +107,7 @@ namespace UnityEngine.UIElements
 
         public static StyleSelectorPart CreateWildCard()
         {
-            return new StyleSelectorPart() {m_Type = StyleSelectorType.Wildcard};
+            return new StyleSelectorPart() {m_Value = "*", m_Type = StyleSelectorType.Wildcard};
         }
     }
 }

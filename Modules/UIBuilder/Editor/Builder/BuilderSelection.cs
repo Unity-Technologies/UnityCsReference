@@ -437,8 +437,11 @@ namespace Unity.UI.Builder
         int GetSelectedItemOrder(VisualElement element)
         {
             var vea = element.GetVisualElementAsset();
-            if (vea != null)
-                return vea.orderInDocument;
+            var vta = element.visualTreeAssetSource;
+            if (vea != null && vta != null)
+            {
+                return vta.DepthFirstTraversalIndexOf(vea);
+            }
 
             var selector = element.GetStyleComplexSelector();
             if (selector != null)

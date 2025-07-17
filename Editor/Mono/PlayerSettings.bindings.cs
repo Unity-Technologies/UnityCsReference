@@ -348,6 +348,14 @@ namespace UnityEditor
         WindowsGamepadBackendHintWindowsGamingInput = 2
     }
 
+    internal struct ShaderCompilerEnvironmentVariable
+    {
+        [NativeName("variable")]
+        public string Variable;
+        [NativeName("value")]
+        public string Value;
+    }
+
     // Set of player settings that require an editor restart
     // Keep in sync with PlayerSettingsRequiringRestart in PlayerSettings.h
     internal enum PlayerSettingsRequiringRestart
@@ -1518,6 +1526,12 @@ namespace UnityEditor
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetGraphicsThreadingModeForPlatform(BuildTarget platform, GfxThreadingMode gfxJobMode);
 
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern bool GetSwitchGraphicsJobsSyncAfterKick();
+
+        [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
+        internal static extern void SetSwitchGraphicsJobsSyncAfterKick(bool syncAfterKick);
+
         [StaticAccessor("GetPlayerSettings()")]
         public static extern bool GetWsaHolographicRemotingEnabled();
 
@@ -1579,7 +1593,7 @@ namespace UnityEditor
         public static extern StrippingLevel strippingLevel { get; set; }
 
         [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
-        internal static extern void ReinitialiseShaderCompiler(string platformSDKEnvVar, string EnvVarValue);
+        internal static extern void ReinitialiseShaderCompiler(ShaderCompilerEnvironmentVariable[] envVars);
 
         // Strip Engine code
         public static extern bool stripEngineCode { get; set; }
@@ -1677,6 +1691,8 @@ namespace UnityEditor
 
         // Defines whether the application will request audio focus, muting all other audio sources.
         public static extern bool muteOtherAudioSources { get; set; }
+
+        public static extern AudioSpatialExperience audioSpatialExperience { get; set; }
 
         internal static extern bool playModeTestRunnerEnabled { get; set; }
 
@@ -1979,5 +1995,15 @@ namespace UnityEditor
 
         [StaticAccessor("PlayerSettingsBindings", StaticAccessorType.DoubleColon)]
         internal static extern void EnsureUnityConnectSettingsEqual(PlayerSettings target, PlayerSettings source);
+
+        [NativeMethod("SetTemplateCustomKeys")]
+        internal extern void SetTemplateCustomKeys_Internal(string[] templateCustomKeys);
+
+        [NativeMethod("SetTemplateCustomValue")]
+        internal extern void SetTemplateCustomValue_Internal(string name, string value);
+
+        [NativeMethod("GetTemplateCustomValue")]
+        internal extern string GetTemplateCustomValue_Internal(string name);
+
     }
 }

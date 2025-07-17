@@ -211,6 +211,9 @@ namespace UnityEngine.UIElements
                 var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
                 ManagedJobData managedJobData = managedJobDatas[index];
                 var visualElement = managedJobData.visualElement;
+                if (visualElement.PostProcessTextVertices != null)
+                    visualElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+
                 visualElement.uitkTextHandle.UpdateMesh();
 
                 var textInfo = visualElement.uitkTextHandle.textInfo;
@@ -312,7 +315,8 @@ namespace UnityEngine.UIElements
                 var ve = managedJobData.visualElement;
                 mgc.Begin(managedJobData.node.GetParentEntry(), ve, ve.nestedRenderData ?? ve.renderData);
 
-                managedJobData.visualElement.uitkTextHandle.HandleLinkAndATagCallbacks();
+                ve.uitkTextHandle.HandleLinkAndATagCallbacks();
+                ve.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(ve, managedJobData.vertices));
                 mgc.meshGenerator.DrawText(managedJobData.vertices, managedJobData.indices, managedJobData.materials, managedJobData.renderModes);
                 managedJobData.visualElement.OnGenerateTextOver(mgc);
 

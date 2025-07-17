@@ -374,18 +374,24 @@ namespace Unity.UI.Builder
         {
             float elementWidth = target == null ? m_Canvas.width : target.worldBound.width / zoomScale;
             float elementHeight = target == null ? m_Canvas.height : target.worldBound.height / zoomScale;
-            if (elementWidth == 0 || elementHeight == 0)
-                return;
 
-            float aspectRatio = elementWidth / elementHeight;
+            float targetZoom = 1;
+            Vector2 targetOffset = Vector2.zero;
 
-            float targetZoom;
-            if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
-                targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+            if (elementWidth == 0 && elementHeight == 0)
+            {
+                elementHeight = 1;
+                elementWidth = 1;
+            }
             else
-                targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
-
-            var targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            {
+                float aspectRatio = elementWidth / elementHeight;
+                if (m_Viewport.resolvedStyle.height * aspectRatio > m_Viewport.resolvedStyle.width)
+                    targetZoom = m_Viewport.resolvedStyle.width / elementWidth;
+                else
+                    targetZoom = m_Viewport.resolvedStyle.height / elementHeight;
+                targetOffset = target == null ? Vector2.zero : m_Canvas.worldBound.min - target.worldBound.min;
+            }
 
             // Adjust the offset in case the canvas is not at the origin.
             targetOffset -= m_Canvas.localBound.position;
@@ -433,6 +439,10 @@ namespace Unity.UI.Builder
         {
             // Do not prevent zoom and pan
             if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)) || evt.button == 0 && evt.ctrlKey)
+                return;
+
+            // UUM-107380 - Don't pick elements under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
                 return;
 
             m_PickedElements.Clear();
@@ -487,6 +497,10 @@ namespace Unity.UI.Builder
 
         void OnHover(MouseMoveEvent evt)
         {
+            // UUM-107380 - Don't pick elements under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
+                return;
+
             var pickedElement = PickElement(evt.mousePosition);
 
             if (pickedElement != null)
@@ -547,6 +561,10 @@ namespace Unity.UI.Builder
 
         void OnMissPick(MouseDownEvent evt)
         {
+            // UUM-107380 - Block picking under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
+                return;
+
             ClearInnerSelection();
             m_Selection.ClearSelection(this);
         }
@@ -616,7 +634,7 @@ namespace Unity.UI.Builder
                 m_Viewport.AddToClassList(s_PreviewModeClassName);
                 m_PickOverlay.AddToClassList(s_PreviewModeClassName);
                 if (panel is Panel p)
-                    p.styleAnimationSystem = new StylePropertyAnimationSystem();
+                    p.styleAnimationSystem = new StylePropertyAnimationSystem(p);
             }
             else
             {

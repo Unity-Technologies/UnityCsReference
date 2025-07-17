@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngineInternal;
 using UnityEngine.Rendering;
@@ -43,6 +42,7 @@ namespace UnityEditor
 
             public static readonly GUIContent invalidEnvironmentLabel = EditorGUIUtility.TrTextContentWithIcon("Baked environment lighting does not match the current Scene state. Generate Lighting to update this.", MessageType.Warning);
             public static readonly GUIContent unsupportedDenoisersLabel = EditorGUIUtility.TrTextContentWithIcon("Unsupported denoiser selected", MessageType.Error);
+            public static readonly GUIContent cannotBakeRosettaNotInstalledLabel = EditorGUIUtility.TrTextContentWithIcon("Unable to start the baking process as the required version of Apple Rosetta could not be found", MessageType.Error);
 
             public static readonly int[] progressiveGPUUnknownDeviceValues = { 0 };
             public static readonly GUIContent[] progressiveGPUUnknownDeviceStrings =
@@ -580,7 +580,7 @@ namespace UnityEditor
                             else
                             {
                                 GUIContent guiContent = anythingCompiling ? Styles.bakeLabelAnythingCompiling : Styles.bakeLabel;
-                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: !SelectedDenoisersSupported()))
+                                if (EditorGUI.LargeSplitButtonWithDropdownList(guiContent, Styles.BakeModeStrings, BakeDropDownCallback, disableMainButton: !IsPrecomputeBakingAndDenosingSupported()))
                                 {
                                     DoBake();
 
@@ -751,6 +751,16 @@ namespace UnityEditor
                     GUILayout.EndVertical();
                 }
             }
+
+            if (!Lightmapping.IsRealtimeGiPrecomputeSupported())
+            {
+                using (new EditorGUIUtility.IconSizeScope(Vector2.one * 14))
+                {
+                    GUILayout.BeginVertical();
+                    GUILayout.Label(Styles.cannotBakeRosettaNotInstalledLabel, EditorStyles.wordWrappedMiniLabel);
+                    GUILayout.EndVertical();
+                }
+            }
             bool outdatedEnvironment = RenderSettings.WasUsingAutoEnvironmentBakingWithNonDefaultSettings();
             if (outdatedEnvironment && !Lightmapping.isRunning)
             {
@@ -859,6 +869,9 @@ namespace UnityEditor
             }
             GUILayout.EndVertical();
         }
+
+        // Check if anything is causing baking not to be supported
+        private static bool IsPrecomputeBakingAndDenosingSupported() => Lightmapping.IsRealtimeGiPrecomputeSupported() && SelectedDenoisersSupported();
 
         static bool SelectedDenoisersSupported()
         {

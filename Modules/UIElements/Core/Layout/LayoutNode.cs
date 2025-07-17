@@ -44,6 +44,11 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     public ref LayoutStyleData Style => ref m_Access.GetStyleData(m_Handle);
 
     /// <summary>
+    /// Gets the style input struct for this node.
+    /// </summary>
+    internal ref LayoutCacheData Cache => ref m_Access.GetCacheData(m_Handle);
+
+    /// <summary>
     /// Gets or sets the dirty flag for this node. Used when calculating layout.
     /// </summary>
     public bool IsDirty
@@ -62,17 +67,21 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     }
 
     /// <summary>
-    /// Returns <see langword="true"/> if a custom measurement method is defined.
+    /// Gets or sets a flag to indicate this node needs to invoke the config's measure function
     /// </summary>
-    public bool IsMeasureDefined => m_Access.GetNodeData(m_Handle).ManagedMeasureFunctionIndex != 0;
+    public bool UsesMeasure
+    {
+        get => m_Access.GetNodeData(m_Handle).UsesMeasure;
+        set => m_Access.GetNodeData(m_Handle).UsesMeasure = value;
+    }
 
     /// <summary>
-    /// Gets or sets the custom measure function for this node.
+    /// Gets or sets a flag to indicate this node needs to invoke the config's baseline function
     /// </summary>
-    public LayoutMeasureFunction Measure
+    public bool UsesBaseline
     {
-        get => m_Access.GetMeasureFunction(m_Handle);
-        set => m_Access.SetMeasureFunction(m_Handle, value);
+        get => m_Access.GetNodeData(m_Handle).UsesBaseline;
+        set => m_Access.GetNodeData(m_Handle).UsesBaseline = value;
     }
 
     /// <summary>
@@ -86,20 +95,6 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     public VisualElement GetOwner()
     {
        return m_Access.GetOwner(m_Handle);
-    }
-
-    /// <summary>
-    /// Returns <see langword="true"/> if a custom baseline method is defined.
-    /// </summary>
-    public bool IsBaselineDefined => m_Access.GetNodeData(m_Handle).ManagedBaselineFunctionIndex != 0;
-
-    /// <summary>
-    /// Gets or sets the custom baseline function for this node.
-    /// </summary>
-    public LayoutBaselineFunction Baseline
-    {
-        get => m_Access.GetBaselineFunction(m_Handle);
-        set => m_Access.SetBaselineFunction(m_Handle, value);
     }
 
     /// <summary>
@@ -209,6 +204,14 @@ partial struct LayoutNode : IEquatable<LayoutNode>
     {
         ref var data = ref m_Access.GetNodeData(m_Handle);
         data.HasNewLayout = true;
+
+        unsafe {
+            ref var cache = ref Cache;
+            if (cache.CachedLayout.NextMeasurementCache != null)
+            {
+                cache.ClearCachedMeasurements();
+            }
+        }
     }
 
     /// <summary>
@@ -227,9 +230,9 @@ partial struct LayoutNode : IEquatable<LayoutNode>
             [0] = LayoutValue.Undefined(),
             [1] = LayoutValue.Undefined()
         };
+        data.UsesMeasure = false;
+        data.UsesBaseline = false;
 
-        Measure = null;
-        Baseline = null;
         SetOwner(null);
 
         Layout = LayoutComputedData.Default;

@@ -344,22 +344,18 @@ namespace UnityEditor
         private static bool AskToClose(List<EditorWindow> allUnsaved)
         {
             Debug.Assert(Application.isHumanControllingUs && allUnsaved.Count > 0);
-
-            const int kSave = 0;
-            const int kCancel = 1;
-            const int kDiscard = 2;
-
-            int option = 1; // Cancel
+            DialogResult option = DialogResult.Cancel;
 
             if (allUnsaved.Count == 1)
             {
                 var title = allUnsaved[0].titleContent.text;
 
-                option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
-                    allUnsaved[0].saveChangesMessage,
+                option = EditorDialog.DisplayComplexDecisionDialog(
+                    (string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
+                    allUnsaved[0].saveChangesMessage,                   
                     L10n.Tr("Save"),
-                    L10n.Tr("Cancel"),
-                    L10n.Tr("Discard"));
+                    L10n.Tr("Discard"),
+                    default);
             }
             else
             {
@@ -373,44 +369,43 @@ namespace UnityEditor
                 }
                 savedChangesBuilder.Append(allUnsaved[last]);
 
-                option = EditorUtility.DisplayDialogComplex(L10n.Tr("Unsaved Changes Detected"),
+                option = EditorDialog.DisplayComplexDecisionDialog(
+                    L10n.Tr("Unsaved Changes Detected"),
                     savedChangesBuilder.ToString(),
                     L10n.Tr("Save All"),
-                    L10n.Tr("Cancel"),
-                    L10n.Tr("Discard All"));
+                    L10n.Tr("Discard All"),
+                    default);
             }
 
             try
             {
                 switch (option)
                 {
-                    case kSave:
+                    case DialogResult.DefaultAction:
                         bool areAllSaved = true;
                         foreach (var w in allUnsaved)
                         {
                             w.SaveChanges();
-                            areAllSaved &= !w.hasUnsavedChanges;
+                            areAllSaved = areAllSaved && !w.hasUnsavedChanges;
                         }
                         return areAllSaved;
-                    case kDiscard:
+                    case DialogResult.AlternateAction:
                         foreach (var w in allUnsaved)
                             w.DiscardChanges();
                         break;
-                    case kCancel:
-                        break;
                     default:
-                        Debug.LogError("Unrecognized option.");
                         break;
                 }
 
-                return option != kCancel;
+                return option != DialogResult.Cancel;
             }
             catch (Exception ex)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Save Changes Failed"),
+                EditorDialog.DisplayAlertDialog(
+                    L10n.Tr("Save Changes Failed"),
                     ex.Message,
-                    L10n.Tr("OK"));
-
+                    default,
+                    DialogIconType.Error);
                 return false;
             }
         }

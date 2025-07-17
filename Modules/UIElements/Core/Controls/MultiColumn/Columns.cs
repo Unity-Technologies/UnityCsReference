@@ -81,7 +81,7 @@ namespace UnityEngine.UIElements
                     new (nameof(resizable), "resizable"),
                     new (nameof(resizePreview), "resize-preview"),
                     new (nameof(columns), "columns"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

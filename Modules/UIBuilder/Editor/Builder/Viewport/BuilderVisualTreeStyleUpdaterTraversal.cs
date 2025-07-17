@@ -19,6 +19,13 @@ namespace Unity.UI.Builder
 
         SavedContext m_SavedContext = SavedContext.none;
         WeakReference<VisualElement> m_DocumentElement;
+        WeakReference<VisualElement> m_PreviewDocumentElement;
+
+        public VisualElement previewDocument
+        {
+            get => m_PreviewDocumentElement.TryGetTarget(out var previewDocument) ? previewDocument : null;
+            set => m_PreviewDocumentElement = new WeakReference<VisualElement>(value);
+        }
 
         public BuilderVisualTreeStyleUpdaterTraversal(VisualElement document)
         {
@@ -52,6 +59,11 @@ namespace Unity.UI.Builder
             m_SavedContext = SavedContext.none;
         }
 
+        bool ShouldClearStyleContext(WeakReference<VisualElement> documentRef, VisualElement element)
+        {
+            return documentRef != null && documentRef.TryGetTarget(out var document) && document != null && element == document && document.styleSheets.count != 0;
+        }
+
         public override void TraverseRecursive(VisualElement element, int depth)
         {
             if (ShouldSkipElement(element))
@@ -61,7 +73,7 @@ namespace Unity.UI.Builder
 
             // In order to ensure that only the selected preview theme is applied to the document content in the viewport, 
             // we clear the current style context to prevent the document element from inheriting from the actual Unity Editor theme.
-            bool shouldClearStyleContext = m_DocumentElement.TryGetTarget(out var document) && document != null && element == document && document.styleSheets.count != 0;
+            bool shouldClearStyleContext = ShouldClearStyleContext(m_DocumentElement, element) || ShouldClearStyleContext(m_PreviewDocumentElement, element);
 
             if (shouldClearStyleContext)
             {

@@ -8,26 +8,42 @@ using UnityEngine;
 
 namespace UnityEditor.Overlays
 {
+    [Serializable]
+    class OverlayCanvasesDataContainer
+    {
+        public List<SaveData> m_SaveData = new List<SaveData>();
+
+        public List<DynamicPanelContainerData> m_DynamicPanelContainerData = new List<DynamicPanelContainerData>();
+
+        public OverlayCanvasesDataContainer() { }
+
+        public OverlayCanvasesDataContainer(List<SaveData> saveData, List<DynamicPanelContainerData> dynamicPanelContainerData)
+        {
+            m_SaveData = saveData;
+            m_DynamicPanelContainerData = dynamicPanelContainerData;
+        }
+    }
+
     [FilePath("Overlays/CanvasesSaveData.asset", FilePathAttribute.Location.PreferencesFolder)]
     class OverlayCanvasesData : ScriptableSingleton<OverlayCanvasesData>, ISerializationCallbackReceiver
     {
         [Serializable]
         struct WindowToCanvasDataPair
         {
-            public WindowToCanvasDataPair(string windowType, List<SaveData> canvasSaveData)
+            public WindowToCanvasDataPair(string windowType, OverlayCanvasesDataContainer canvasDataContainer)
             {
                 m_WindowType = windowType;
-                m_CanvasSaveData = canvasSaveData;
+                m_CanvasDataContainer = canvasDataContainer;
             }
 
             public string m_WindowType;
-            public List<SaveData> m_CanvasSaveData = new();
+            public OverlayCanvasesDataContainer m_CanvasDataContainer = new OverlayCanvasesDataContainer();
         }
-        
+
         [SerializeField]
-        List<WindowToCanvasDataPair> m_CanvasesSaveData = new();
-        Dictionary<string, List<SaveData>> m_WindowToCanvasSaveData = new();
-        
+        List<WindowToCanvasDataPair> m_CanvasesData = new();
+        Dictionary<string, OverlayCanvasesDataContainer> m_WindowToCanvasData = new();
+
         [Serializable]
         struct WindowToCanvasPair
         {
@@ -40,59 +56,59 @@ namespace UnityEditor.Overlays
             public string m_WindowType;
             public OverlayCanvas m_Canvas;
         }
-        
+
         // [SerializeField] for the list below is intentionally omitted.
         // Since List is serializable, it will survive domain reload as a ScriptableSingleton field but not serialize to asset.
         // This allows to track last active canvas throughout a session and NOT have this data restored on next session.
         List<WindowToCanvasPair> m_WindowToLastActiveCanvasList = new();
-        
+
         Dictionary<string, OverlayCanvas> m_WindowToLastActiveCanvasMap = new();
 
         public void OnBeforeSerialize()
         {
             // Output window to canvas SaveData map to a list
-            if (m_CanvasesSaveData == null)
-                m_CanvasesSaveData = new();
-            else 
-                m_CanvasesSaveData.Clear();
+            if (m_CanvasesData == null)
+                m_CanvasesData = new();
+            else
+                m_CanvasesData.Clear();
 
-            foreach (var dataPair in m_WindowToCanvasSaveData)
-                m_CanvasesSaveData.Add(new WindowToCanvasDataPair(dataPair.Key, dataPair.Value));
+            foreach (var dataPair in m_WindowToCanvasData)
+                m_CanvasesData.Add(new WindowToCanvasDataPair(dataPair.Key, dataPair.Value));
             
             // Output window to last active canvas map to a list
             if (m_WindowToLastActiveCanvasList == null)
                 m_WindowToLastActiveCanvasList = new();
-            else 
+            else
                 m_WindowToLastActiveCanvasList.Clear();
-            
+
             foreach (var dataPair in m_WindowToLastActiveCanvasMap)
                 m_WindowToLastActiveCanvasList.Add(new WindowToCanvasPair(dataPair.Key, dataPair.Value));
         }
-        
+
         public void OnAfterDeserialize()
         {
             // Restore window to canvas save datas map
-            if (m_WindowToCanvasSaveData == null)
-                m_WindowToCanvasSaveData = new();
-            else 
-                m_WindowToCanvasSaveData.Clear();
+            if (m_WindowToCanvasData == null)
+                m_WindowToCanvasData = new();
+            else
+                m_WindowToCanvasData.Clear();
 
-            if (m_CanvasesSaveData == null)
+            if (m_CanvasesData == null)
             {
-                m_CanvasesSaveData = new();
+                m_CanvasesData = new();
                 return;
             }
 
-            for (int i = 0; i < m_CanvasesSaveData.Count; ++i)
+            for (int i = 0; i < m_CanvasesData.Count; ++i)
             {
-                var dataPair = m_CanvasesSaveData[i];
-                m_WindowToCanvasSaveData.Add(dataPair.m_WindowType, dataPair.m_CanvasSaveData);
+                var dataPair = m_CanvasesData[i];
+                m_WindowToCanvasData.Add(dataPair.m_WindowType, dataPair.m_CanvasDataContainer);
             }
-            
+
             // Restore window to last active canvas map
             if (m_WindowToLastActiveCanvasMap == null)
                 m_WindowToLastActiveCanvasMap = new();
-            else 
+            else
                 m_WindowToLastActiveCanvasMap.Clear();
 
             if (m_WindowToLastActiveCanvasList == null)
@@ -100,37 +116,37 @@ namespace UnityEditor.Overlays
                 m_WindowToLastActiveCanvasList = new();
                 return;
             }
-            
+
             for (int i = 0; i < m_WindowToLastActiveCanvasList.Count; ++i)
             {
                 var dataPair = m_WindowToLastActiveCanvasList[i];
                 m_WindowToLastActiveCanvasMap.Add(dataPair.m_WindowType, dataPair.m_Canvas);
             }
         }
-        
+
         void OnDisable()
         {
             Save();
         }
 
-        public void AddAndSaveCanvasData(EditorWindow containerWindow, List<SaveData> canvasSaveData)
+        public void AddAndSaveCanvasData(EditorWindow containerWindow, OverlayCanvasesDataContainer canvasDataContainer)
         {
             var windowType = containerWindow.GetType().AssemblyQualifiedName;
-            if (!m_WindowToCanvasSaveData.TryAdd(windowType, canvasSaveData))
-                m_WindowToCanvasSaveData[windowType] = canvasSaveData;
+            if (!m_WindowToCanvasData.TryAdd(windowType, canvasDataContainer))
+                m_WindowToCanvasData[windowType] = canvasDataContainer;
 
             Save();
         }
 
-        public bool GetCanvasSaveData(EditorWindow containerWindow, out List<SaveData> canvasSaveData)
+        public bool GetCanvasData(EditorWindow containerWindow, out OverlayCanvasesDataContainer canvasData)
         {
-            if (m_WindowToCanvasSaveData.TryGetValue(containerWindow.GetType().AssemblyQualifiedName, out canvasSaveData) &&
-                canvasSaveData != null)
+            if (m_WindowToCanvasData.TryGetValue(containerWindow.GetType().AssemblyQualifiedName, out canvasData) &&
+                canvasData != null)
                 return true;
 
             return false;
         }
-        
+
         void Save()
         {
             Save(true);

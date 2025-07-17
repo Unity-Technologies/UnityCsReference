@@ -16,7 +16,6 @@ using UnityEngine.Networking.PlayerConnection;
 using UnityEditor.Networking.PlayerConnection;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Collections;
-using UnityEditor.Profiling;
 
 namespace UnityEditor
 {
@@ -746,6 +745,7 @@ namespace UnityEditor
                         {
                             SetActiveEntry(entry);
                             m_LastActiveEntryIndex = entry.globalLineIndex;
+                            m_TextScroll = Vector2.zero;
                             activeEntryChanged?.Invoke();
                         }
 

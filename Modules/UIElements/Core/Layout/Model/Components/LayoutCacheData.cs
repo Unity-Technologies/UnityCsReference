@@ -2,26 +2,65 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements.Layout;
 
+[NativeHeader("Modules/UIElements/Core/Layout/Native/LayoutNative.h")]
 [StructLayout(LayoutKind.Sequential)]
 struct LayoutCacheData
 {
     public static LayoutCacheData Default = new()
     {
-        NextCachedMeasurementsIndex = 0,
         CachedLayout = LayoutCachedMeasurement.Default
     };
 
-    public uint NextCachedMeasurementsIndex;
-    public FixedBuffer16<LayoutCachedMeasurement> cachedMeasurements;
     public LayoutCachedMeasurement CachedLayout;
+
+    public override readonly string ToString()
+    {
+        return $"CacheCount: {MeasurementCacheCount()}\n" +
+            $"CachedLayout: {CachedLayout}";
+    }
+
+
+    //The first is the layout cache, all subsequent are measurement caches
+    public readonly int MeasurementCacheCount()
+    {
+        unsafe
+        {
+            int count = 0;
+            LayoutCachedMeasurement* current = CachedLayout.NextMeasurementCache;
+            while (current != null)
+            {
+                count++;
+                current = current->NextMeasurementCache;
+            }
+            return count;
+        }
+
+    }
+
+    public unsafe void ClearCachedMeasurements()
+    {
+        if(CachedLayout.NextMeasurementCache == null)
+            return;
+
+        fixed (void* cachePtr = &(CachedLayout))
+        {
+            LayoutCacheData.ClearCachedMeasurements(cachePtr);
+        }
+    }
+
+
+    private static extern unsafe void ClearCachedMeasurements(void* LayoutCacheData);
+
 }
 
 [StructLayout(LayoutKind.Sequential)]
-struct LayoutCachedMeasurement
+unsafe struct LayoutCachedMeasurement
 {
     public static LayoutCachedMeasurement Default = new()
     {
@@ -32,7 +71,8 @@ struct LayoutCachedMeasurement
         WidthMeasureMode = (LayoutMeasureMode) (-1),
         HeightMeasureMode = (LayoutMeasureMode) (-1),
         ComputedWidth = -1f,
-        ComputedHeight = -1f
+        ComputedHeight = -1f,
+        m_NextMeasurementCachePtr = null,
     };
 
     public float AvailableWidth;
@@ -43,4 +83,12 @@ struct LayoutCachedMeasurement
     public LayoutMeasureMode HeightMeasureMode;
     public float ComputedWidth;
     public float ComputedHeight;
+    private void* m_NextMeasurementCachePtr;
+
+    public LayoutCachedMeasurement* NextMeasurementCache => (LayoutCachedMeasurement*)m_NextMeasurementCachePtr;
+
+    public override readonly string ToString()
+    {
+        return $"Available: {AvailableWidth}/{AvailableHeight}   Parent: {ParentWidth}/{ParentHeight}   MeasureMode: {WidthMeasureMode}/{HeightMeasureMode},   Computed: {ComputedWidth}/{ComputedHeight}";
+    }
 }

@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public class TrackedPointerState
+        public class RuntimePointerState
         {
             public struct RaycastHit
             {
@@ -51,21 +51,47 @@ namespace UnityEngine.UIElements
                 public VisualElement element;
             }
 
-            public Vector3 worldPosition = Vector3.zero;
-            public Quaternion worldOrientation = Quaternion.identity;
             public RaycastHit hit;
+            public int updateFrameCount = 0; // Frame 0 is never a valid frame. See DefaultEventSystem.Update().
 
-            public Ray worldRay => new Ray(worldPosition, worldOrientation * Vector3.forward);
-
-            public void Reset()
+            public virtual void Reset()
             {
-                worldPosition = Vector3.zero;
-                worldOrientation = Quaternion.identity;
                 hit = default;
+                updateFrameCount = 0;
             }
         }
 
-        private static TrackedPointerState[] s_TrackedPointerStates = new TrackedPointerState[PointerId.trackedPointerCount];
+        public class ScreenPointerState : RuntimePointerState
+        {
+            public Vector2 mousePosition;
+            public int? targetDisplay;
+
+            public override void Reset()
+            {
+                base.Reset();
+                mousePosition = Vector2.zero;
+                targetDisplay = default;
+            }
+        }
+
+        public class TrackedPointerState : RuntimePointerState
+        {
+            public Vector3 worldPosition = Vector3.zero;
+            public Quaternion worldOrientation = Quaternion.identity;
+            public float maxDistance = Mathf.Infinity;
+
+            public Ray worldRay => new Ray(worldPosition, worldOrientation * Vector3.forward);
+
+            public override void Reset()
+            {
+                base.Reset();
+                worldPosition = Vector3.zero;
+                worldOrientation = Quaternion.identity;
+                maxDistance = Mathf.Infinity;
+            }
+        }
+
+        private static RuntimePointerState[] s_RuntimePointerStates = new RuntimePointerState[PointerId.maxPointers];
 
         private static PointerLocation[] s_EditorPointerLocations = new PointerLocation[PointerId.maxPointers];
         private static PointerLocation[] s_PlayerPointerLocations = new PointerLocation[PointerId.maxPointers];
@@ -95,9 +121,9 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            for (var i = 0; i < PointerId.trackedPointerCount; i++)
+            for (var i = 0; i < PointerId.maxPointers; i++)
             {
-                s_TrackedPointerStates[i]?.Reset();
+                s_RuntimePointerStates[i]?.Reset();
             }
         }
 
@@ -280,8 +306,8 @@ namespace UnityEngine.UIElements
                 return null;
 
             if (createIfNull)
-                return s_TrackedPointerStates[trackedPointerIndex] ??= new TrackedPointerState();
-            return s_TrackedPointerStates[trackedPointerIndex];
+                s_RuntimePointerStates[pointerId] ??= new TrackedPointerState();
+            return (TrackedPointerState)s_RuntimePointerStates[pointerId];
         }
 
         internal static void RemoveTrackedState(int pointerId)
@@ -290,7 +316,18 @@ namespace UnityEngine.UIElements
             if (trackedPointerIndex < 0 || trackedPointerIndex >= PointerId.trackedPointerCount)
                 return;
 
-            s_TrackedPointerStates[trackedPointerIndex] = null;
+            s_RuntimePointerStates[pointerId] = null;
+        }
+
+        internal static ScreenPointerState GetScreenPointerState(int pointerId, bool createIfNull = false)
+        {
+            int trackedPointerIndex = pointerId - PointerId.trackedPointerIdBase;
+            if (trackedPointerIndex >= 0 && trackedPointerIndex < PointerId.trackedPointerCount)
+                return null;
+
+            if (createIfNull)
+                s_RuntimePointerStates[pointerId] ??= new ScreenPointerState();
+            return (ScreenPointerState)s_RuntimePointerStates[pointerId];
         }
     }
 }

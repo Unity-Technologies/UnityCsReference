@@ -67,5 +67,15 @@ namespace UnityEngine.UIElements
             // UUM-97875: we need to release all buttons, not just the one that showed the menu.
             PointerDeviceState.ReleaseAllButtons(pointerId);
         }
+
+        internal void BeforePointerDown()
+        {
+            displayMenuHandledOSX = false;
+        }
+
+        internal void AfterPointerUp()
+        {
+            displayMenuHandledOSX = false;
+        }
     }
 }

@@ -6,11 +6,23 @@ namespace UnityEditor.Overlays
 {
     sealed class ToolbarDropZone : OverlayContainerDropZone
     {
-        public ToolbarDropZone(OverlayContainer container) : base(container, Placement.Start) { }
+        public override OverlayContainer targetContainer => m_CurrentContainer;
+
+        OverlayContainer m_CurrentContainer;
+
+        bool m_ShouldAllowPanelOverlay;
+
+        public ToolbarDropZone(OverlayContainer toolbarContainer, bool shouldAllowPanelOverlay) : base(null, Placement.Start)
+        {
+            m_CurrentContainer = toolbarContainer;
+            m_ShouldAllowPanelOverlay = shouldAllowPanelOverlay;
+        }
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return !targetContainer.HasVisibleOverlays();
+            var draggedOverlayIsInPanelMode = draggedOverlay.activeLayout == Layout.Panel;
+
+            return !m_CurrentContainer.HasVisibleOverlays() && (!draggedOverlayIsInPanelMode || m_ShouldAllowPanelOverlay);
         }
 
         public override void Activate(Overlay draggedOverlay)

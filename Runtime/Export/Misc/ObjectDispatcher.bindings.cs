@@ -21,8 +21,8 @@ namespace UnityEngine
     internal struct TypeDispatchData : IDisposable
     {
         public Object[] changed;
-        public NativeArray<int> changedID;
-        public NativeArray<int> destroyedID;
+        public NativeArray<EntityId> changedID;
+        public NativeArray<EntityId> destroyedID;
 
         public void Dispose()
         {
@@ -34,8 +34,8 @@ namespace UnityEngine
 
     internal struct TransformDispatchData : IDisposable
     {
-        public NativeArray<int> transformedID;
-        public NativeArray<int> parentID;
+        public NativeArray<EntityId> transformedID;
+        public NativeArray<EntityId> parentID;
         public NativeArray<Matrix4x4> localToWorldMatrices;
         public NativeArray<Vector3> positions;
         public NativeArray<Quaternion> rotations;
@@ -62,13 +62,13 @@ namespace UnityEngine
             GlobalTRS,
             LocalTRS,
             Hierarchy
-        } 
+        }
 
         [Flags]
         public enum TypeTrackingFlags
         {
             // All the objects that are instantiated in the scene.
-            // For example: GameObjects, Components or dynamically created Meshes or Materials. 
+            // For example: GameObjects, Components or dynamically created Meshes or Materials.
             SceneObjects = 1,
             // All the persistent objects that are either assets or resources.
             // For example: Mesh or Material assets references by MeshRenderer or MeshFilter components.
@@ -162,8 +162,8 @@ namespace UnityEngine
         {
             unsafe
             {
-                NativeArray<int> changedIDArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(changedID.ToPointer(), changedCount, Allocator.Invalid);
-                NativeArray<int> destroyedIDArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(destroyedID.ToPointer(), destroyedCount, Allocator.Invalid);
+                NativeArray<EntityId> changedIDArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(changedID.ToPointer(), changedCount, Allocator.Invalid);
+                NativeArray<EntityId> destroyedIDArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(destroyedID.ToPointer(), destroyedCount, Allocator.Invalid);
 
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref changedIDArray, AtomicSafetyHandle.Create());
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref destroyedIDArray, AtomicSafetyHandle.Create());
@@ -193,8 +193,8 @@ namespace UnityEngine
         {
             unsafe
             {
-                NativeArray<int> transformedArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(transformed.ToPointer(), count, Allocator.Invalid);
-                NativeArray<int> parentArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(parents.ToPointer(), parents != IntPtr.Zero ? count : 0, Allocator.Invalid);
+                NativeArray<EntityId> transformedArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(transformed.ToPointer(), count, Allocator.Invalid);
+                NativeArray<EntityId> parentArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<EntityId>(parents.ToPointer(), parents != IntPtr.Zero ? count : 0, Allocator.Invalid);
                 NativeArray<Matrix4x4> localToWorldMatricesArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(localToWorldMatrices.ToPointer(), localToWorldMatrices != IntPtr.Zero ? count : 0, Allocator.Invalid);
                 NativeArray<Vector3> positionsArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(positions.ToPointer(), positions != IntPtr.Zero ? count : 0, Allocator.Invalid);
                 NativeArray<Quaternion> rotationsArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Quaternion>(rotations.ToPointer(), rotations != IntPtr.Zero ? count : 0, Allocator.Invalid);
@@ -231,15 +231,15 @@ namespace UnityEngine
         {
             m_TypeDispatchData = new TypeDispatchData();
             m_TypeDispatchData.changed = data.changed;
-            m_TypeDispatchData.changedID = new NativeArray<int>(data.changedID, m_DispatchAllocator);
-            m_TypeDispatchData.destroyedID = new NativeArray<int>(data.destroyedID, m_DispatchAllocator);
+            m_TypeDispatchData.changedID = new NativeArray<EntityId>(data.changedID, m_DispatchAllocator);
+            m_TypeDispatchData.destroyedID = new NativeArray<EntityId>(data.destroyedID, m_DispatchAllocator);
         }
 
         private void DispatchCallback(TransformDispatchData data)
         {
             m_TransformDispatchData = new TransformDispatchData();
-            m_TransformDispatchData.transformedID = new NativeArray<int>(data.transformedID, m_DispatchAllocator);
-            m_TransformDispatchData.parentID = new NativeArray<int>(data.parentID, m_DispatchAllocator);
+            m_TransformDispatchData.transformedID = new NativeArray<EntityId>(data.transformedID, m_DispatchAllocator);
+            m_TransformDispatchData.parentID = new NativeArray<EntityId>(data.parentID, m_DispatchAllocator);
             m_TransformDispatchData.localToWorldMatrices = new NativeArray<Matrix4x4>(data.localToWorldMatrices, m_DispatchAllocator);
             m_TransformDispatchData.positions = new NativeArray<Vector3>(data.positions, m_DispatchAllocator);
             m_TransformDispatchData.rotations = new NativeArray<Quaternion>(data.rotations, m_DispatchAllocator);
@@ -286,13 +286,13 @@ namespace UnityEngine
             return m_TypeDispatchData;
         }
 
-        public void GetTypeChangesAndClear(Type type, List<Object> changed, out NativeArray<int> changedID, out NativeArray<int> destroyedID, Allocator allocator, bool sortByInstanceID = false)
+        public void GetTypeChangesAndClear(Type type, List<Object> changed, out NativeArray<EntityId> changedID, out NativeArray<EntityId> destroyedID, Allocator allocator, bool sortByInstanceID = false)
         {
             m_DispatchAllocator = allocator;
             DispatchTypeChangesAndClear(type, m_TypeDataCallback, sortByInstanceID, true);
             changedID = m_TypeDispatchData.changedID;
             destroyedID = m_TypeDispatchData.destroyedID;
-            Resources.InstanceIDToObjectList(m_TypeDispatchData.changedID, changed);
+            Resources.EntityIdsToObjectList(m_TypeDispatchData.changedID, changed);
         }
 
         public Component[] GetTransformChangesAndClear(Type type, TransformTrackingType trackingType, bool sortByInstanceID = false)
@@ -388,7 +388,7 @@ namespace UnityEngine
             return GetTypeChangesAndClear(typeof(T), allocator, sortByInstanceID, noScriptingArray);
         }
 
-        public void GetTypeChangesAndClear<T>(List<Object> changed, out NativeArray<int> changedID, out NativeArray<int> destroyedID, Allocator allocator, bool sortByInstanceID = false) where T : Object
+        public void GetTypeChangesAndClear<T>(List<Object> changed, out NativeArray<EntityId> changedID, out NativeArray<EntityId> destroyedID, Allocator allocator, bool sortByInstanceID = false) where T : Object
         {
             GetTypeChangesAndClear(typeof(T), changed, out changedID, out destroyedID, allocator, sortByInstanceID);
         }

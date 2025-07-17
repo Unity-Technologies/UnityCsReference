@@ -3,10 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
 
 using RectangleToolFlags = UnityEditor.CurveEditorSettings.RectangleToolFlags;
 
@@ -768,7 +764,7 @@ namespace UnityEditor
             if (dragMode == DragMode.None)
                 return;
 
-            RectangleToolFlags flags = m_CurveEditor.settings.rectangleToolFlags;
+            var flags = m_CurveEditor.settings.rectangleToolFlags;
 
             bool canScaleX = !Mathf.Approximately(selectionBounds.size.x, 0f);
             bool canScaleY = !Mathf.Approximately(selectionBounds.size.y, 0f);

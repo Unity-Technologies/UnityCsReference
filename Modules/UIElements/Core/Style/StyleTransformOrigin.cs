@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style value that can be either a <see cref="TransformOrigin"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleTransformOrigin : IStyleValue<TransformOrigin>, IEquatable<StyleTransformOrigin>
     {
         /// <summary>
@@ -65,7 +66,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private TransformOrigin m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

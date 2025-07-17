@@ -63,7 +63,7 @@ namespace UnityEngine.UIElements
 
         // Read-only state
         /// <summary>
-        /// The time when the event was created, in milliseconds.
+        /// The time when the event was dispatched, in milliseconds.
         /// </summary>
         /// <remarks>
         /// This value is relative to the start time of the current application.
@@ -507,7 +507,7 @@ namespace UnityEngine.UIElements
 
         void LocalInit()
         {
-            timestamp = Panel.TimeSinceStartupMs();
+            timestamp = 0;
 
             triggerEventId = 0;
             eventId = s_NextEventId++;
@@ -574,6 +574,11 @@ namespace UnityEngine.UIElements
         /// Implementation of IDisposable.
         /// </summary>
         public abstract void Dispose();
+
+        internal void AssignTimeStamp(long time)
+        {
+            timestamp = time;
+        }
     }
 
     /// <summary>
@@ -585,7 +590,12 @@ namespace UnityEngine.UIElements
         static readonly long s_TypeId = RegisterEventType();
         static readonly ObjectPool<T> s_Pool = new ObjectPool<T>(() => new T());
 
-        internal static void SetCreateFunction(Func<T> createMethod)
+        /// <summary>
+        /// Allows to provide a function to create the event instance without relying
+        /// on Activator.CreateInstance.
+        /// </summary>
+        /// <param name="createMethod">The creation function.</param>
+        protected internal static void SetCreateFunction(Func<T> createMethod)
         {
             s_Pool.CreateFunc = createMethod;
         }

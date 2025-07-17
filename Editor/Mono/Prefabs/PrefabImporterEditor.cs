@@ -106,7 +106,7 @@ namespace UnityEditor
                 if (instanceId == 0)
                     continue;
 
-                var asset = EditorUtility.InstanceIDToObject(instanceId);
+                var asset = EditorUtility.EntityIdToObject(instanceId);
                 if (IsTargetAsset(asset))
                 {
                     if (CanSave())

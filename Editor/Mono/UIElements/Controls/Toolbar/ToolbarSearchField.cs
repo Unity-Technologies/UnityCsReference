@@ -58,6 +58,7 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 SearchFieldBase<TextField, string>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
 
             public override object CreateInstance() => new ToolbarSearchField();

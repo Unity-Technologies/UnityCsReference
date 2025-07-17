@@ -13,7 +13,7 @@ namespace UnityEditor
 {
     public sealed partial class Selection
     {
-        static readonly int[] k_SingleSelectionCache = new int[1];
+        static readonly EntityId[] k_SingleSelectionCache = new EntityId[1];
 
         public static System.Action selectionChanged;
         private static DelegateWithPerformanceTracker<System.Action> m_SelectionChangedEvent = new DelegateWithPerformanceTracker<System.Action>($"{nameof(Selection)}.{nameof(selectionChanged)}");
@@ -57,41 +57,41 @@ namespace UnityEditor
 
         internal static void SetSelection(Object newActiveObject, Object newActiveContext = null, DataMode newDataModeHint = default)
         {
-            var activeObjectID = newActiveObject != null ? newActiveObject.GetInstanceID() : 0;
-            var activeContextID = newActiveContext != null ? newActiveContext.GetInstanceID() : 0;
+            var activeObjectID = newActiveObject != null ? newActiveObject.GetEntityId() : EntityId.None;
+            var activeContextID = newActiveContext != null ? newActiveContext.GetEntityId() : EntityId.None;
             k_SingleSelectionCache[0] = activeObjectID;
             SetFullSelectionByID(k_SingleSelectionCache, activeObjectID, activeContextID, newDataModeHint);
         }
 
-        public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
+        public static bool Contains(Object obj) { return Contains(obj.GetEntityId()); }
 
-        internal static void Add(int instanceID)
+        internal static void Add(EntityId entityId)
         {
-            var ids = new List<int>(Selection.instanceIDs);
-            if (ids.IndexOf(instanceID) < 0)
+            var ids = new List<EntityId>(Selection.entityIds);
+            if (ids.IndexOf(entityId) < 0)
             {
-                ids.Add(instanceID);
-                Selection.instanceIDs = ids.ToArray();
+                ids.Add(entityId);
+                Selection.entityIds = ids.ToArray();
             }
         }
 
         internal static void Add(Object obj)
         {
             if (obj != null)
-                Add(obj.GetInstanceID());
+                Add(obj.GetEntityId());
         }
 
-        internal static void Remove(int instanceID)
+        internal static void Remove(EntityId entityId)
         {
-            var ids = new List<int>(Selection.instanceIDs);
-            ids.Remove(instanceID);
-            Selection.instanceIDs = ids.ToArray();
+            var ids = new List<EntityId>(Selection.entityIds);
+            ids.Remove(entityId);
+            Selection.entityIds = ids.ToArray();
         }
 
         internal static void Remove(Object obj)
         {
             if (obj != null)
-                Remove(obj.GetInstanceID());
+                Remove(obj.GetEntityId());
         }
 
         private static IEnumerable GetFilteredInternal(System.Type type, SelectionMode mode)

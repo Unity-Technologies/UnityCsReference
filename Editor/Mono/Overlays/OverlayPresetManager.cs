@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor.Toolbars;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -16,6 +17,7 @@ namespace UnityEditor.Overlays
     interface IOverlayPreset
     {
         SaveData[] saveData { get; }
+        DynamicPanelContainerData[] dynamicPanelContainerData { get; }
         Type targetWindowType { get; }
         bool CanApplyToWindow(Type windowType);
         void ApplyCustomData(OverlayCanvas canvas);
@@ -25,8 +27,10 @@ namespace UnityEditor.Overlays
     sealed class DefaultOverlayPreset : IOverlayPreset
     {
         readonly static SaveData[] m_EmptySave = new SaveData[0];
+        readonly static DynamicPanelContainerData[] m_EmptyDynamicPanelContainerData = new DynamicPanelContainerData[0];
 
         public SaveData[] saveData => m_EmptySave;
+        public DynamicPanelContainerData[] dynamicPanelContainerData => m_EmptyDynamicPanelContainerData;
         public Type targetWindowType => null;
 
         public bool CanApplyToWindow(Type windowType) => true;
@@ -52,6 +56,11 @@ namespace UnityEditor.Overlays
         [NonSerialized]
         Dictionary<Type, Dictionary<string, OverlayPreset>> m_Presets;
 
+        readonly static string[] k_ReservedNames =
+        {
+            UnityOnlyToolbarPreset.presetName
+        };
+
         const string k_FileExtension = "overlay";
         const string k_PresetAssetsName = "OverlayPresets.asset";
         internal const string defaultPresetName = "Default";
@@ -67,11 +76,14 @@ namespace UnityEditor.Overlays
 
         internal static void SaveOverlayStateToFile(string path, EditorWindow window)
         {
+            var name = Path.GetFileNameWithoutExtension(path);
+            if (!ValidatePresetName(name))
+                return;
+
             var preset = CreateInstance<OverlayPreset>();
-            preset.name = Path.GetFileNameWithoutExtension(path);
+            preset.name = name;
             preset.targetWindowType = window.GetType();
-            window.overlayCanvas.CopySaveData(out var saveData);
-            preset.saveData = saveData;
+            window.overlayCanvas.SavePreset(preset);
 
             try
             {
@@ -83,8 +95,31 @@ namespace UnityEditor.Overlays
             }
         }
 
+        static bool IsReservedName(string presetName)
+        {
+            foreach (var reserved in k_ReservedNames)
+                if (presetName.Equals(reserved, StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            return false;
+        }
+
+        static bool ValidatePresetName(string presetName)
+        {
+            if (IsReservedName(presetName))
+            {
+                EditorUtility.DisplayDialog("Invalid Preset Name", string.Format(L10n.Tr("Trying to create a preset with the reserved name [{0}]."), presetName), "Ok");
+                return false;
+            }
+
+            return true;
+        }
+
         internal static OverlayPreset CreatePresetFromOverlayState(string presetName, EditorWindow window)
         {
+            if (!ValidatePresetName(presetName))
+                return null;
+
             var windowType = window.GetType();
             if (!TryGetPreset(windowType, presetName, out var preset))
             {
@@ -95,8 +130,7 @@ namespace UnityEditor.Overlays
                 AddPreset(preset);
             }
 
-            window.overlayCanvas.CopySaveData(out var data);
-            preset.saveData = data;
+            window.overlayCanvas.SavePreset(preset);
             SaveAllPreferences();
 
             return preset;
@@ -179,7 +213,7 @@ namespace UnityEditor.Overlays
             return new DefaultOverlayPreset();
         }
 
-        internal static IEnumerable<IOverlayPreset> GetAllPresets(Type windowType)
+        internal static List<IOverlayPreset> GetAllPresets(Type windowType)
         {
             List<IOverlayPreset> presets = new List<IOverlayPreset>();
 
@@ -304,11 +338,27 @@ namespace UnityEditor.Overlays
             return null;
         }
 
-        public static void GenerateMenu(IGenericMenu menu, string pathPrefix, EditorWindow window)
+        public static void GenerateMenu(IGenericMenu menu, string pathPrefix, EditorWindow window, params IOverlayPreset[] customPresets)
         {
             var presets = GetAllPresets(window.GetType());
+
+            foreach (var customPreset in customPresets)
+            {
+                // Ensure we remove custom presets if a user defined one has the same name already
+                if (IsReservedName(customPreset.name) || presets.Find((preset) => preset.name == customPreset.name) == null)
+                {
+                    menu.AddItem(pathPrefix + customPreset.name, false, () =>
+                    {
+                        window.overlayCanvas.ApplyPreset(customPreset);
+                    });
+                }
+            }
+
             foreach (var preset in presets)
             {
+                if (IsReservedName(preset.name))
+                    continue;
+
                 menu.AddItem(pathPrefix + preset.name, false, () =>
                 {
                     window.overlayCanvas.ApplyPreset(preset);
@@ -322,8 +372,11 @@ namespace UnityEditor.Overlays
                 SaveOverlayPreset.ShowWindow(window, name =>
                 {
                     var preset = CreatePresetFromOverlayState(name, window);
-                    SaveAllPreferences();
-                    window.overlayCanvas.ApplyPreset(preset);
+                    if (preset != null)
+                    {
+                        SaveAllPreferences();
+                        window.overlayCanvas.ApplyPreset(preset);
+                    }
                 });
             });
 
@@ -361,7 +414,12 @@ namespace UnityEditor.Overlays
                         failed = true;
                     }
 
-                    if (Exists(preset.targetWindowType, preset.name))
+                    if (!failed && !ValidatePresetName(preset.name))
+                    {
+                        failed = true;
+                    }
+
+                    if (!failed && Exists(preset.targetWindowType, preset.name))
                     {
                         if (!EditorUtility.DisplayDialog(
                             L10n.Tr("Load Overlay Preset From Disk"),
@@ -391,7 +449,9 @@ namespace UnityEditor.Overlays
                 {
                     menu.AddItem(L10n.Tr($"{pathPrefix}Delete Preset/{preset.name}"), false, () =>
                     {
-                        DeletePreset(preset);
+	                    DeletePreset(preset);
+	                    window.overlayCanvas.SetLastAppliedPresetName(OverlayCanvas.k_DefaultPresetName);
+	                    window.overlayCanvas.afterOverlaysInitialized?.Invoke();
                     });
                 }
             }
@@ -405,6 +465,7 @@ namespace UnityEditor.Overlays
                 {
                     RevertPreferencesPresetsToDefault();
                     ReloadAllPresets();
+                    window.overlayCanvas.ApplyPreset(GetDefaultPreset(window.GetType()));
                 }
             });
         }

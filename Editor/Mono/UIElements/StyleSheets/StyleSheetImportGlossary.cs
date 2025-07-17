@@ -13,11 +13,12 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string error = L10n.Tr("error");
         public readonly string warning = L10n.Tr("warning");
         public readonly string line = L10n.Tr("line");
+        public readonly string column = L10n.Tr("column");
 
         // Errors
         public readonly string unsupportedUnit = L10n.Tr("Unsupported unit: '{0}'");
         public readonly string ussParsingError = L10n.Tr("USS parsing error: {0}");
-        public readonly string unsupportedTerm = L10n.Tr("Unsupported USS term: {0}");
+        public readonly string unsupportedTerm = L10n.Tr("Unsupported USS term: `{0}` ({1})");
         public readonly string missingFunctionArgument = L10n.Tr("Missing function argument: '{0}'");
         public readonly string missingVariableName = L10n.Tr("Missing variable name");
         public readonly string emptyVariableName = L10n.Tr("Empty variable name");
@@ -30,6 +31,7 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string invalidSelectorListDelimiter = L10n.Tr("Invalid selector list delimiter: '{0}'");
         public readonly string invalidComplexSelectorDelimiter = L10n.Tr("Invalid complex selector delimiter: '{0}'");
         public readonly string unsupportedSelectorFormat = L10n.Tr("Unsupported selector format: '{0}'");
+        public readonly string selectorStartsWithDigitFormat = L10n.Tr("Unsupported selector format. Selector names can not start with a digit. '{0}'");
 
         // Warnings
         public readonly string unknownFunction = L10n.Tr("Unknown function '{0}' in declaration '{1}: {0}'");
@@ -38,5 +40,6 @@ namespace UnityEditor.UIElements.StyleSheets
         public readonly string invalidUriScheme = L10n.Tr("Invalid URI scheme: '{0}'");
         public readonly string invalidAssetPath = L10n.Tr("Invalid asset path: '{0}'");
         public readonly string invalidAssetType = L10n.Tr("Unsupported type {0} for asset at path '{1}' ; only the following types are supported: {2}\nSuggestion: verify the import settings of this asset.");
+        public readonly string unknownPsuedoClass = L10n.Tr("Unknown psuedo class '{0}' in selector '{1}`");
     }
 }

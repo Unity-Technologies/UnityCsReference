@@ -3,12 +3,14 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
 using System;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using Object = UnityEngine.Object;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
 
 namespace UnityEditorInternal
 {
@@ -63,7 +65,7 @@ namespace UnityEditorInternal
             if (m_AccumulatedBindings.TryGetValue(key, out var bindings))
                 bindings.Add(binding);
             else
-                m_AccumulatedBindings[key] = new List<EditorCurveBinding>(new [] {binding});
+                m_AccumulatedBindings[key] = new List<EditorCurveBinding>(new[] {binding});
         }
 
         void RemoveUnnecessaryBindings(List<EditorCurveBinding> bindings)
@@ -71,7 +73,7 @@ namespace UnityEditorInternal
             for (int i = bindings.Count - 1; i >= 0; --i)
             {
                 // Let's not add those that already have a existing curve.
-                if (AnimationWindowUtility.IsCurveCreated(m_State.activeAnimationClip, bindings[i]))
+                if (m_State.selection.clip != null && m_State.selection.clip.IsCurveCreated(bindings[i]))
                     bindings.RemoveAt(i);
                 // Remove animator enabled property which shouldn't be animated.
                 else if (bindings[i].type == typeof(Animator) && bindings[i].propertyName == "m_Enabled")

@@ -269,7 +269,7 @@ namespace UnityEditor
 
         public static GameObject[] FindAllInstancesOfPrefab(GameObject prefabRoot)
         {
-            return FindAllInstancesOfPrefab_internal(prefabRoot, 0);
+            return FindAllInstancesOfPrefab_internal(prefabRoot, SceneHandle.None);
         }
 
         public static GameObject[] FindAllInstancesOfPrefab(GameObject prefabRoot, Scene scene)
@@ -390,6 +390,150 @@ namespace UnityEditor
             
             InstanceOverridesInfo[] instanceOverridesInfos = rootSet.Select(PrefabUtility.GetPrefabInstanceOverridesInfo_Internal).ToArray();
             PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, action);
+        }
+
+        internal static void RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem(object userData)
+        {
+            RemoveAllPrefabInstancesUnusedOverridesFromScene((Scene)userData);
+        }
+
+        static void RemoveAllPrefabInstancesUnusedOverridesFromScene(Scene scene)
+        {
+            if (!scene.IsValid())
+                return;
+
+            InstanceOverridesInfo[] instanceOverridesInfos = null;
+
+            List<GameObject> gos = GetScenePrefabInstancesWithNonDefaultOverrides(scene);
+            if (gos != null && gos.Count > 0)
+                instanceOverridesInfos = GetPrefabInstancesOverridesInfos(gos.ToArray());
+
+            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverridesInfos);
+        }
+
+        static List<GameObject> GetScenePrefabInstancesWithNonDefaultOverrides(Scene scene)
+        {
+            List<GameObject> gameObjects = new List<GameObject>();
+            TransformVisitor visitor = new TransformVisitor();
+
+            var roots = scene.GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                visitor.VisitAll(root.transform, (transform, list) => {
+                    GameObject go = transform.gameObject;
+                    if (IsOutermostPrefabInstanceRoot(go) && HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(go))
+                    {
+                        gameObjects.Add(go);
+                    }
+                }, null);
+            }
+
+            return gameObjects;
+        }
+
+        internal static void HandleAddedGameObjectOverridesMenuItems(GenericMenu menu, GameObject[] selectedGOs)
+        {
+            if (selectedGOs.Length > 0 && IsAllAddedGameObjectOverrides(selectedGOs))
+            {
+                var go = selectedGOs[0];
+                // Handle added GameObject or prefab.
+                Transform parentTransform = go.transform.parent;
+                HandleApplyRevertMenuItems(
+                    (selectedGOs.Length > 1) ? "Added GameObjects" : "Added GameObject",
+                    parentTransform.gameObject,
+                    (menuItemContent, sourceGo, _) =>
+                    {
+                        GameObject rootGo = GetRootGameObject(sourceGo);
+                        if (!IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform) || !HasSameParent(selectedGOs))
+                            menu.AddDisabledItem(menuItemContent);
+                        else
+                        {
+                            string assetPath = AssetDatabase.GetAssetPath(sourceGo);
+                            TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[] childInfos = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[selectedGOs.Length];
+                            for (int i = 0; i < selectedGOs.Length; i++)
+                            {
+                                GameObject go = selectedGOs[i];
+                                TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
+                                info.instanceObject = go;
+                                info.assetPath = assetPath;
+                                childInfos[i] = info;
+                            }
+                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObjects, childInfos);
+                        }
+                    },
+                    (menuItemContent) =>
+                    {
+                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObjects, selectedGOs);
+                    }
+                );
+            }
+        }
+
+        internal static GameObject GetSourceRootWhereGameObjectIsAddedAsOverride(GameObject go)
+        {
+            if (go == null)
+                return null;
+
+            var source = GetCorrespondingObjectFromSource(go);
+
+            while (source != null)
+            {
+                if (IsAddedGameObjectOverride(source))
+                    return GetPrefabAssetRootGameObject(source);
+
+                source = GetCorrespondingObjectFromSource(source);
+            }
+
+            return null;
+        }
+
+        internal static void RemoveSelectedPrefabInstanceUnusedOverrides(GameObject[] gameObjects)
+        {
+            InstanceOverridesInfo[] instanceOverrideInfos = GetPrefabInstancesOverridesInfos(gameObjects);
+
+            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverrideInfos);
+        }
+
+        internal static bool AnyOutermostPrefabRoots(GameObject[] gameObjects)
+        {
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && IsPartOfNonAssetPrefabInstance(go) && IsOutermostPrefabInstanceRoot(go))
+                    return true;
+            }
+            return false;
+        }
+
+        internal static void UnpackPrefab(GameObject[] gameObjects)
+        {
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && IsPartOfNonAssetPrefabInstance(go) && IsOutermostPrefabInstanceRoot(go))
+                    UnpackPrefabInstance(go, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
+            }
+        }
+
+        internal static void UnpackPrefabCompletely(GameObject[] gameObjects)
+        {
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && IsPartOfNonAssetPrefabInstance(go) && IsOutermostPrefabInstanceRoot(go))
+                    UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
+            }
+        }
+
+        internal static bool AskUserToRemovePrefabInstanceUnusedOverrides(InstanceOverridesInfo[] instanceOverridesInfos)
+        {
+            if (DoRemovePrefabInstanceUnusedOverridesDialog(instanceOverridesInfos))
+            {
+                RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, InteractionMode.UserAction);
+                return true;
+            }
+
+            return false;
         }
 
         private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, Object prefabSourceObject)
@@ -3999,6 +4143,41 @@ namespace UnityEditor
             var saveStartTime = DateTime.UtcNow.Subtract(duration);
 
             UsabilityAnalytics.SendEvent("prefabSave", saveStartTime, duration, true, null);
+        }
+
+        internal static bool ShowPrefabModeButton(GameObject gameObject)
+        {
+            if (gameObject == null)
+                return false;
+
+            if (!IsPartOfAnyPrefab(gameObject))
+                return false;
+
+            if (!IsAnyPrefabInstanceRoot(gameObject))
+                return false;
+
+            // Don't show button if prefab asset is missing
+            if (GetPrefabInstanceStatus(gameObject) == PrefabInstanceStatus.Connected)
+            {
+                var source = GetOriginalSourceOrVariantRoot(gameObject);
+                if (source == null)
+                    return false;
+
+                // Don't show buttons for model prefabs but allow buttons for other immutables
+                if (IsPartOfModelPrefab(source))
+                    return false;
+            }
+            else if (GetPrefabInstanceHandle(gameObject) == null)
+                return false;
+            else
+            {
+                var assetPath = GetAssetPathOfSourcePrefab(gameObject);
+                var broken = AssetDatabase.LoadMainAssetAtPath(assetPath) as BrokenPrefabAsset;
+                if (broken == null || !broken.isPrefabFileValid)
+                    return false;
+            }
+
+            return true;
         }
 
         public struct EditPrefabContentsScope : IDisposable

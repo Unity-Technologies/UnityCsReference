@@ -11,6 +11,7 @@ using UnityEngine.Bindings;
 namespace Unity.Hierarchy
 {
     [NativeHeader("Modules/HierarchyCore/HierarchyTestsHelper.h")]
+    [NativeHeader("Modules/HierarchyCore/HierarchyTestsHelperBindings.h")]
     internal static class HierarchyTestsHelper
     {
         [NativeHeader("Modules/HierarchyCore/HierarchyTestsHelper.h")]
@@ -31,8 +32,18 @@ namespace Unity.Hierarchy
         /// <param name="depth">The maximum depth.</param>
         /// <param name="maxCount">The maximum node count to add.</param>
         /// <returns>The number of nodes added.</returns>
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern int GenerateNodesTree(Hierarchy hierarchy, in HierarchyNode root, int width, int depth, int maxCount = 0);
+        internal static int GenerateNodesTree(Hierarchy hierarchy, in HierarchyNode root, int width, int depth, int maxCount = 0) => GenerateNodesTreeHierarchy(hierarchy, root, width, depth, maxCount);
+
+        /// <summary>
+        /// Generate a tree of nodes with the specified <paramref name="width"/> and <paramref name="depth"/>, up to a maximum of <paramref name="maxCount"/> nodes.
+        /// </summary>
+        /// <param name="handler">The node type handler.</param>
+        /// <param name="root">The root node to add nodes to.</param>
+        /// <param name="width">The number of nodes added per depth level.</param>
+        /// <param name="depth">The maximum depth.</param>
+        /// <param name="maxCount">The maximum node count to add.</param>
+        /// <returns>The number of nodes added.</returns>
+        internal static int GenerateNodesTree(HierarchyNodeTypeHandlerBase handler, in HierarchyNode root, int width, int depth, int maxCount = 0) => GenerateNodesTreeHandler(handler, root, width, depth, maxCount);
 
         /// <summary>
         /// Generate a fixed count of nodes by repeatedly generating trees of nodes with the specified <paramref name="width"/> and <paramref name="depth"/>.
@@ -42,13 +53,35 @@ namespace Unity.Hierarchy
         /// <param name="count">The number of nodes to add.</param>
         /// <param name="width">The number of nodes added per depth level.</param>
         /// <param name="depth">The maximum depth.</param>
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern void GenerateNodesCount(Hierarchy hierarchy, in HierarchyNode root, int count, int width, int depth);
+        internal static void GenerateNodesCount(Hierarchy hierarchy, in HierarchyNode root, int count, int width, int depth) => GenerateNodesCountHierarchy(hierarchy, root, count, width, depth);
 
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern void GenerateSortIndex(Hierarchy hierarchy, in HierarchyNode root, SortOrder order);
+        /// <summary>
+        /// Generate a fixed count of nodes by repeatedly generating trees of nodes with the specified <paramref name="width"/> and <paramref name="depth"/>.
+        /// </summary>
+        /// <param name="handler">The hierarchy.</param>
+        /// <param name="root">The root node to add nodes to.</param>
+        /// <param name="count">The number of nodes to add.</param>
+        /// <param name="width">The number of nodes added per depth level.</param>
+        /// <param name="depth">The maximum depth.</param>
+        internal static void GenerateNodesCount(HierarchyNodeTypeHandlerBase handler, in HierarchyNode root, int count, int width, int depth) => GenerateNodesCountHandler(handler, root, count, width, depth);
 
-        internal static void ForEach(Hierarchy hierarchy, in HierarchyNode root, ForEachDelegate func)
+        /// <summary>
+        /// Sets sort index recursively on all nodes starting from the specified node.
+        /// </summary>
+        /// <param name="hierarchy"></param>
+        /// <param name="root"></param>
+        /// <param name="order"></param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        internal static extern void GenerateSortIndexRecursive(Hierarchy hierarchy, in HierarchyNode root, SortOrder order);
+
+        /// <summary>
+        /// Execute a lambda function recursively on all nodes starting from the specified node.
+        /// </summary>
+        /// <param name="hierarchy"></param>
+        /// <param name="root"></param>
+        /// <param name="func"></param>
+        /// <exception cref="InvalidOperationException"></exception>
+        internal static void ForEachRecursive(Hierarchy hierarchy, in HierarchyNode root, ForEachDelegate func)
         {
             var stack = new Stack<HierarchyNode>();
             stack.Push(root);
@@ -78,12 +111,15 @@ namespace Unity.Hierarchy
         }
 
         [NativeMethod(IsThreadSafe = true)]
+        internal extern static byte[] GenerateInvalidViewModelState_BadIndices();
+
+        [NativeMethod(IsThreadSafe = true)]
         internal static extern void SetNextHierarchyNodeId(Hierarchy hierarchy, int id);
 
         internal static int GetNodeType<T>() where T : HierarchyNodeTypeHandlerBase => GetNodeType(typeof(T));
 
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        static extern int GetNodeType(Type type);
+        internal static extern int GetNodeType(Type type);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int[] GetRegisteredNodeTypes(Hierarchy hierarchy);
@@ -91,17 +127,19 @@ namespace Unity.Hierarchy
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetCapacity(Hierarchy hierarchy);
 
-        [NativeMethod(IsThreadSafe = true)]
-        internal static extern int GetVersion(Hierarchy hierarchy);
+        internal static int GetVersion(Hierarchy hierarchy) => GetHierarchyVersion(hierarchy);
+
+        internal static int GetVersion(Hierarchy hierarchy, in HierarchyNode node) => GetHierarchyNodeVersion(hierarchy, in node);
+
+        internal static int GetVersion(HierarchyFlattened hierarchyFlattened) => GetHierarchyFlattenedVersion(hierarchyFlattened);
+
+        internal static int GetVersion(HierarchyViewModel hierarchyViewModel) => GetHierarchyViewModelVersion(hierarchyViewModel);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern int GetChildrenCapacity(Hierarchy hierarchy, in HierarchyNode node);
 
-        internal static bool SearchMatch(HierarchyViewModel model, in HierarchyNode node)
-        {
-            var handler = model.Hierarchy.GetNodeTypeHandlerBase(in node);
-            return handler?.Internal_SearchMatch(in node) ?? false;
-        }
+        [NativeMethod(IsThreadSafe = true)]
+        internal static extern bool CompareSortIndex(Hierarchy hierarchy, in HierarchyNode a, in HierarchyNode b);
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern object GetHierarchyScriptingObject(Hierarchy hierarchy);
@@ -114,5 +152,29 @@ namespace Unity.Hierarchy
 
         [NativeMethod(IsThreadSafe = true)]
         internal static extern object GetHierarchyCommandListScriptingObject(HierarchyCommandList cmdList);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GenerateNodesTreeHierarchy", IsThreadSafe = true, ThrowsException = true)]
+        static extern int GenerateNodesTreeHierarchy(Hierarchy hierarchy, in HierarchyNode root, int width, int depth, int maxCount);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GenerateNodesTreeHandler", IsThreadSafe = true, ThrowsException = true)]
+        static extern int GenerateNodesTreeHandler(HierarchyNodeTypeHandlerBase handler, in HierarchyNode root, int width, int depth, int maxCount);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GenerateNodesCountHierarchy", IsThreadSafe = true, ThrowsException = true)]
+        static extern void GenerateNodesCountHierarchy(Hierarchy hierarchy, in HierarchyNode root, int count, int width, int depth);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GenerateNodesCountHandler", IsThreadSafe = true, ThrowsException = true)]
+        static extern void GenerateNodesCountHandler(HierarchyNodeTypeHandlerBase handler, in HierarchyNode root, int count, int width, int depth);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyVersion(Hierarchy hierarchy);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyNodeVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyNodeVersion(Hierarchy hierarchy, in HierarchyNode node);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyFlattenedVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyFlattenedVersion(HierarchyFlattened hierarchyFlattened);
+
+        [FreeFunction("HierarchyTestsHelperBindings::GetHierarchyViewModelVersion", IsThreadSafe = true)]
+        static extern int GetHierarchyViewModelVersion(HierarchyViewModel hierarchyViewModel);
     }
 }

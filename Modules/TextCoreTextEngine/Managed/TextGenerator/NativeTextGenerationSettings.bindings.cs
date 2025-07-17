@@ -33,6 +33,11 @@ namespace UnityEngine.TextCore
         internal VerticalAlignment verticalAlignment;
 
         public int fontSize;        // Encoded in Fixed Point.
+
+        public bool bestFit;
+        public int maxFontSize;          // Encoded in Fixed Point.
+        public int minFontSize;          // Encoded in Fixed Point.
+
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
 
@@ -54,6 +59,17 @@ namespace UnityEngine.TextCore
                 color = this.color,
                 fontStyle = this.fontStyle,
                 fontWeight = this.fontWeight,
+                alignment = this.horizontalAlignment,
+                highlightColor = RichTextTagParser.k_HighlightColor,
+                highlightPadding = Vector4.zero,
+                mspace = 0,
+                mspaceUnitType = RichTextTagParser.TagUnitType.Pixels,
+                cspace = 0,
+                cspaceUnitType = RichTextTagParser.TagUnitType.Pixels,
+                spriteColor = this.color,
+                spriteID = -1,
+                spriteScale = 0,
+                spriteTint = false,
                 linkID = -1
             };
         }
@@ -93,6 +109,9 @@ namespace UnityEngine.TextCore
         {
             text = tgs.text;
             fontSize = tgs.fontSize;
+            bestFit = tgs.bestFit;
+            maxFontSize = tgs.maxFontSize;
+            minFontSize = tgs.minFontSize;
             screenWidth = tgs.screenWidth;
             screenHeight = tgs.screenHeight;
             wordWrap = tgs.wordWrap;
@@ -137,6 +156,9 @@ namespace UnityEngine.TextCore
                 $"{nameof(screenWidth)}: {screenWidth}\n" +
                 $"{nameof(screenHeight)}: {screenHeight}\n" +
                 $"{nameof(fontSize)}: {fontSize}\n" +
+                $"{nameof(bestFit)}: {bestFit}\n" +
+                $"{nameof(maxFontSize)}: {maxFontSize}\n" +
+                $"{nameof(minFontSize)}: {minFontSize}\n" +
                 $"{nameof(wordWrap)}: {wordWrap}\n" +
                 $"{nameof(languageDirection)}: {languageDirection}\n" +
                 $"{nameof(horizontalAlignment)}: {horizontalAlignment}\n" +
@@ -164,7 +186,19 @@ namespace UnityEngine.TextCore
         public Color32 color;
         public FontStyles fontStyle;
         public TextFontWeight fontWeight;
+        public int mspace;          // Encoded in Fixed Point.
+        public RichTextTagParser.TagUnitType mspaceUnitType;
+        public int cspace;           // Encoded in Fixed Point.
+        public RichTextTagParser.TagUnitType cspaceUnitType;
         public int linkID;
+        public HorizontalAlignment alignment;
+        public Color32 highlightColor;
+        public Vector4 highlightPadding;
+        public GlyphMetrics spriteMetrics;
+        public int spriteID;
+        public bool spriteTint;
+        public int spriteScale;
+        public Color32 spriteColor;
 
         public override string ToString()
         {

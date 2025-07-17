@@ -40,7 +40,7 @@ namespace UnityEditor.Overlays
 
         protected override bool ShouldEnable(Overlay draggedOverlay)
         {
-            return !m_Container.HasVisibleOverlays(GetSection())
+            return !m_Container.GetContainerSection(GetSection()).HasVisibleOverlays()
                 && !m_Container.ContainsOverlay(draggedOverlay, GetSection());
         }
 
@@ -54,7 +54,7 @@ namespace UnityEditor.Overlays
             SetHidden(shouldHide);
         }
 
-        protected OverlayContainerSection GetSection()
+        protected virtual OverlayContainerSection GetSection()
         {
             switch (placement)
             {
@@ -67,7 +67,7 @@ namespace UnityEditor.Overlays
 
         public override void DropOverlay(Overlay overlay)
         {
-            overlay.DockAt(m_Container, GetSection(), 0);
+            overlay.DockAt(targetContainer, GetSection(), 0);
             overlay.floating = false;
         }
     }

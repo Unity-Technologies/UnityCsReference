@@ -14,14 +14,6 @@ namespace Unity.UI.Builder
 {
     internal static class VisualElementExtensions
     {
-        static readonly List<string> s_SkippedAttributeNames = new List<string>()
-        {
-            "content-container",
-            "class",
-            "style",
-            "template",
-        };
-
         public static bool HasLinkedAttributeDescription(this VisualElement ve)
         {
             return ve.GetProperty(BuilderConstants.InspectorLinkedAttributeDescriptionVEPropertyName) is UxmlAttributeDescription;
@@ -69,138 +61,9 @@ namespace Unity.UI.Builder
             row.SetProperty(BuilderConstants.InspectorLinkedFieldsForStyleRowVEPropertyName, list);
         }
 
-        public static List<UxmlAttributeDescription> GetAttributeDescriptions(this VisualElement ve, bool useTraits = false)
-        {
-            var uxmlQualifiedName = GetUxmlQualifiedName(ve);
 
-            var desc = UxmlSerializedDataRegistry.GetDescription(uxmlQualifiedName);
-            if (desc != null && !useTraits)
-                return desc.serializedAttributes.ToList<UxmlAttributeDescription>();
 
-            var attributeList = new List<UxmlAttributeDescription>();
-            if (!VisualElementFactoryRegistry.TryGetValue(uxmlQualifiedName, out var factoryList))
-                return attributeList;
 
-            #pragma warning disable CS0618 // Type or member is obsolete
-            foreach (IUxmlFactory f in factoryList)
-            {
-                // For user created types, they may return null for uxmlAttributeDescription, so we need to check in order not to crash.
-                if (f.uxmlAttributesDescription != null)
-                {
-                    foreach (var a in f.uxmlAttributesDescription)
-                    {
-                        // For user created types, they may `yield return null` which would create an array with a null, so we need
-                        // to check in order not to crash.
-                        if (a == null || s_SkippedAttributeNames.Contains(a.name))
-                            continue;
-
-                        attributeList.Add(a);
-                    }
-                }
-            }
-            #pragma warning restore CS0618 // Type or member is obsolete
-
-            return attributeList;
-        }
-
-        static string GetUxmlQualifiedName(VisualElement ve)
-        {
-            var uxmlQualifiedName = ve.GetType().FullName;
-
-            // Try get uxmlQualifiedName from the UxmlFactory.
-            var factoryTypeName = $"{ve.GetType().FullName}+UxmlFactory";
-            var asm = ve.GetType().Assembly;
-            var factoryType = asm.GetType(factoryTypeName);
-            if (factoryType != null)
-            {
-                #pragma warning disable CS0618 // Type or member is obsolete
-                var factoryTypeInstance = (IUxmlFactory)Activator.CreateInstance(factoryType);
-                if (factoryTypeInstance != null)
-                {
-                    uxmlQualifiedName = factoryTypeInstance.uxmlQualifiedName;
-                }
-                #pragma warning restore CS0618 // Type or member is obsolete
-            }
-
-            return uxmlQualifiedName;
-        }
-
-        public static Dictionary<string, string> GetOverriddenAttributes(this VisualElement ve)
-        {
-            var attributeList = ve.GetAttributeDescriptions();
-            var overriddenAttributes = new Dictionary<string, string>();
-
-            foreach (var attribute in attributeList)
-            {
-                if (attribute?.name == null)
-                    continue;
-
-                if (attribute is UxmlSerializedAttributeDescription attributeDescription)
-                {
-                    // UxmlSerializedData
-                    if (attributeDescription.TryGetValueFromObject(ve, out var value) &&
-                        UxmlAttributeComparison.ObjectEquals(value, attributeDescription.defaultValue))
-                    {
-                        continue;
-                    }
-
-                    string valueAsString = null;
-                    if (value != null)
-                        UxmlAttributeConverter.TryConvertToString(value, ve.visualTreeAssetSource, out valueAsString);
-                    overriddenAttributes.Add(attribute.name, valueAsString);
-                }
-                else
-                {
-                    // UxmlTraits
-                    var veType = ve.GetType();
-                    var camel = BuilderNameUtilities.ConvertDashToCamel(attribute.name);
-                    var fieldInfo = veType.GetProperty(camel);
-                    if (fieldInfo != null)
-                    {
-                        var veValueAbstract = fieldInfo.GetValue(ve, null);
-                        if (veValueAbstract == null)
-                            continue;
-
-                        var veValueStr = veValueAbstract.ToString();
-                        if (veValueStr == "False")
-                            veValueStr = "false";
-                        else if (veValueStr == "True")
-                            veValueStr = "true";
-
-                        // The result of Type.ToString is not enough for us to find the correct Type.
-                        if (veValueAbstract is Type type)
-                            veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
-
-                        if (veValueAbstract is IEnumerable<string> enumerable)
-                            veValueStr = string.Join(",", enumerable);
-
-                        var attributeValueStr = attribute.defaultValueAsString;
-                        if (veValueStr == attributeValueStr)
-                            continue;
-
-                        overriddenAttributes.Add(attribute.name, veValueStr);
-                    }
-                    // This is a special patch that allows to search for built-in elements' attribute specifically
-                    // without needing to add to the public API.
-                    // Allowing to search for internal/private properties in all cases could lead to unforeseen issues.
-                    else if (ve is EnumField or EnumFlagsField && camel == "type")
-                    {
-                        fieldInfo = veType.GetProperty(camel, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                        var veValueAbstract = fieldInfo.GetValue(ve, null);
-                        if (!(veValueAbstract is Type type))
-                            continue;
-
-                        var veValueStr = $"{type.FullName}, {type.Assembly.GetName().Name}";
-                        var attributeValueStr = attribute.defaultValueAsString;
-                        if (veValueStr == attributeValueStr)
-                            continue;
-                        overriddenAttributes.Add(attribute.name, veValueStr);
-                    }
-                }
-            }
-
-            return overriddenAttributes;
-        }
 
         public static VisualTreeAsset GetVisualTreeAsset(this VisualElement element)
         {
@@ -356,16 +219,15 @@ namespace Unity.UI.Builder
         {
             if (!builderDocument.activeOpenUXMLFile.isChildSubDocument ||
                 element is not TemplateContainer templateContainer ||
-                templateContainer.templateSource != builderDocument.activeOpenUXMLFile.visualTreeAsset)
+                templateContainer.templateSource != builderDocument.activeOpenUXMLFile.visualTreeAsset ||
+                element.visualTreeAssetSource.ResolveTemplate(templateContainer.templateId) != builderDocument.activeOpenUXMLFile.visualTreeAsset)
             {
                 return false;
             }
 
             var templateAsset = templateContainer.GetVisualElementAsset() as TemplateAsset;
             var activeOpenUxmlFile = builderDocument.activeOpenUXMLFile;
-            var templateAssetIndex =
-                activeOpenUxmlFile.openSubDocumentParent.visualTreeAsset.templateAssets.IndexOf(templateAsset);
-            return templateAssetIndex == activeOpenUxmlFile.openSubDocumentParentSourceTemplateAssetIndex;
+            return templateAsset == activeOpenUxmlFile.templateAsset;
         }
 
         public static bool IsSelector(this VisualElement element)
@@ -604,25 +466,6 @@ namespace Unity.UI.Builder
                 return factories[0].uxmlName;
 
             return element.typeName;
-        }
-
-        public static string GetUxmlFullTypeName(this VisualElement element)
-        {
-            if (null == element)
-                return null;
-
-            var desc = UxmlSerializedDataRegistry.GetDescription(element.fullTypeName);
-
-            if (null != desc)
-                return desc.uxmlFullName;
-
-            if (VisualElementFactoryRegistry.TryGetValue(element.fullTypeName, out var factories))
-                return factories[0].uxmlQualifiedName;
-
-            if (VisualElementFactoryRegistry.TryGetValue(element.GetType(), out factories))
-                return factories[0].uxmlQualifiedName;
-
-            return null;
         }
     }
 

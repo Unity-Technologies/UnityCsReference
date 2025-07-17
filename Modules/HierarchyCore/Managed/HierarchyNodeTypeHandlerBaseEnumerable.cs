@@ -31,14 +31,15 @@ namespace Unity.Hierarchy
         /// </summary>
         public struct Enumerator : IDisposable
         {
-            readonly IMemoryOwner<IntPtr> m_Handlers;
+            readonly IntPtr[] m_Handlers;
             readonly int m_Count;
             int m_Index;
 
             internal Enumerator(Hierarchy hierarchy)
             {
-                m_Handlers = MemoryPool<IntPtr>.Shared.Rent(hierarchy.GetNodeTypeHandlersBaseCount());
-                m_Count = hierarchy.GetNodeTypeHandlersBaseSpan(m_Handlers.Memory.Span);
+                var count = hierarchy.GetNodeTypeHandlersBaseCount();
+                m_Handlers = ArrayPool<IntPtr>.Shared.Rent(count);
+                m_Count = hierarchy.GetNodeTypeHandlersBaseSpan(m_Handlers.AsSpan()[..count]);
                 m_Index = -1;
             }
 
@@ -47,7 +48,7 @@ namespace Unity.Hierarchy
             /// </summary>
             public void Dispose()
             {
-                m_Handlers.Dispose();
+                ArrayPool<IntPtr>.Shared.Return(m_Handlers);
             }
 
             /// <summary>
@@ -56,7 +57,7 @@ namespace Unity.Hierarchy
             public HierarchyNodeTypeHandlerBase Current
             {
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                get => HierarchyNodeTypeHandlerBase.FromIntPtr(m_Handlers.Memory.Span[m_Index]);
+                get => HierarchyNodeTypeHandlerBase.FromIntPtr(m_Handlers[m_Index]);
             }
 
             /// <summary>

@@ -28,6 +28,7 @@ namespace UnityEditor.SceneManagement
         public event Action<Stage, Stage> stageChanged;                              // previousStage, newStage
         public event Action<Stage> beforeSwitchingAwayFromStage;
         public event Action<Stage> afterSuccessfullySwitchedToStage;
+        public event Action StagesTicked;
 
         internal Stage currentStage
         {
@@ -156,6 +157,8 @@ namespace UnityEditor.SceneManagement
             {
                 stage.Tick();
             }
+
+            StagesTicked?.Invoke();
         }
 
         internal void NavigateBack(Analytics.ChangeType stageChangeAnalytics)

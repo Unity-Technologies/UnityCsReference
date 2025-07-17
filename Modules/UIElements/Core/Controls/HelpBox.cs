@@ -95,7 +95,7 @@ namespace UnityEngine.UIElements
                 {
                     new (nameof(text), "text"),
                     new (nameof(messageType), "message-type"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

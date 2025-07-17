@@ -4,6 +4,8 @@
 
 using System;
 using System.Globalization;
+using UnityEngine.Bindings;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -199,6 +201,7 @@ namespace UnityEngine.UIElements
             return $"{valueStr}{unitStr}";
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static Length ParseString(string str, Length defaultValue = default)
         {
             if (string.IsNullOrEmpty(str))
@@ -222,7 +225,7 @@ namespace UnityEngine.UIElements
                 for (int i = 0; i < str.Length; i++)
                 {
                     var c = str[i];
-                    if (char.IsNumber(c) || c == '.')
+                    if (char.IsNumber(c) || c == '.' || c == '-')
                     {
                         ++digitEndIndex;
                     }
@@ -251,7 +254,7 @@ namespace UnityEngine.UIElements
                 // Note: ideally we would not specify NumberStyle settings, but there is no API that allows
                 // it while also defining which culture to use. The value used here is the right default for float
                 // (looking at source code from Mono & CoreCLR)
-                if (float.TryParse(floatStr, NumberStyles.Float | NumberStyles.AllowThousands, CultureInfo.InvariantCulture.NumberFormat, out var v))
+                if (StylePropertyUtil.TryParseFloat(floatStr, out var v))
                     value = v;
 
                 switch (unitStr)

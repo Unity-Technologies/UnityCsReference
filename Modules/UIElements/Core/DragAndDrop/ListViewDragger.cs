@@ -92,7 +92,7 @@ namespace UnityEngine.UIElements
         public ListViewDragger(BaseVerticalCollectionView listView)
             : base(listView) {}
 
-        protected override bool CanStartDrag(Vector3 pointerPosition)
+        protected override bool CanStartDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             if (dragAndDropController == null)
                 return false;
@@ -104,7 +104,7 @@ namespace UnityEngine.UIElements
             if (recycledItem != null && targetView.HasCanStartDrag())
             {
                 var ids = targetView.selectedIds.Any() ? targetView.selectedIds : new[] { recycledItem.id };
-                return targetView.RaiseCanStartDrag(recycledItem, ids);
+                return targetView.RaiseCanStartDrag(recycledItem, ids, modifiers);
             }
 
             if (targetView.selectedIds.Any())
@@ -115,18 +115,25 @@ namespace UnityEngine.UIElements
             return recycledItem != null && dragAndDropController.CanStartDrag(new[] { recycledItem.id });
         }
 
-        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
+        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             var recycledItem = GetRecycledItem(pointerPosition);
             IEnumerable<int> ids;
             if (recycledItem != null)
             {
-                if (!targetView.selectedIndices.Contains(recycledItem.index))
+                if (targetView.selectionType == SelectionType.None)
                 {
-                    targetView.SetSelection(recycledItem.index);
+                    ids = new[] { recycledItem.index };
                 }
+                else
+                {
+                    if (!targetView.selectedIndices.Contains(recycledItem.index))
+                    {
+                        targetView.SetSelection(recycledItem.index);
+                    }
 
-                ids = targetView.selectedIds;
+                    ids = targetView.selectedIds;
+                }
             }
             else
             {
@@ -142,10 +149,10 @@ namespace UnityEngine.UIElements
             return startDragArgs;
         }
 
-        protected internal override void UpdateDrag(Vector3 pointerPosition)
+        protected internal override void UpdateDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             var dragPosition = new DragPosition();
-            var visualMode = GetVisualMode(pointerPosition, ref dragPosition);
+            var visualMode = GetVisualMode(pointerPosition, modifiers, ref dragPosition);
 
             if (visualMode == DragVisualMode.Rejected)
             {
@@ -162,7 +169,7 @@ namespace UnityEngine.UIElements
             dragAndDrop.UpdateDrag(pointerPosition);
         }
 
-        DragVisualMode GetVisualMode(Vector3 pointerPosition, ref DragPosition dragPosition)
+        DragVisualMode GetVisualMode(Vector3 pointerPosition, EventModifiers modifiers, ref DragPosition dragPosition)
         {
             if (dragAndDropController == null)
             {
@@ -170,7 +177,7 @@ namespace UnityEngine.UIElements
             }
 
             var foundPosition = TryGetDragPosition(pointerPosition, ref dragPosition);
-            var args = MakeDragAndDropArgs(dragPosition);
+            var args = MakeDragAndDropArgs(dragPosition, modifiers);
 
             // User defined handling, if any.
             var mode = targetView.RaiseHandleDragAndDrop(pointerPosition, args);
@@ -180,13 +187,13 @@ namespace UnityEngine.UIElements
             return foundPosition ? dragAndDropController.HandleDragAndDrop(args) : DragVisualMode.Rejected;
         }
 
-        protected internal override void OnDrop(Vector3 pointerPosition)
+        protected internal override void OnDrop(Vector3 pointerPosition, EventModifiers modifiers)
         {
             var dragPosition = new DragPosition();
             if (!TryGetDragPosition(pointerPosition, ref dragPosition))
                 return;
 
-            var args = MakeDragAndDropArgs(dragPosition);
+            var args = MakeDragAndDropArgs(dragPosition, modifiers);
 
             // User defined drop handling.
             var mode = targetView.RaiseDrop(pointerPosition, args);
@@ -548,7 +555,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        protected DragAndDropArgs MakeDragAndDropArgs(DragPosition dragPosition)
+        protected DragAndDropArgs MakeDragAndDropArgs(DragPosition dragPosition, EventModifiers modifiers)
         {
             object target = null;
             var recycledItem = dragPosition.recycledItem;
@@ -563,6 +570,7 @@ namespace UnityEngine.UIElements
                 childIndex = dragPosition.childIndex,
                 dragAndDropPosition = dragPosition.dropPosition,
                 dragAndDropData = DragAndDropUtility.GetDragAndDrop(m_Target.panel).data,
+                modifiers = modifiers
             };
         }
 

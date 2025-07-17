@@ -24,9 +24,23 @@ namespace UnityEditor.Search
             m_Set = new HashSet<SearchResult>(inset);
         }
 
+        public SearchResultCollection(IReadOnlyCollection<int> docIndexes)
+        {
+            m_Set = new HashSet<SearchResult>(docIndexes.Count);
+            foreach (var docIndex in docIndexes)
+            {
+                m_Set.Add(new SearchResult(docIndex));
+            }
+        }
+
         public void Add(SearchResult item)
         {
             m_Set.Add(item);
+        }
+
+        public void Add(IEnumerable<SearchResult> orSet)
+        {
+            m_Set.UnionWith(orSet);
         }
 
         public void Clear()
@@ -49,9 +63,24 @@ namespace UnityEditor.Search
             m_Set.CopyTo(array, arrayIndex);
         }
 
+        public void CopyTo(SearchResult[] array)
+        {
+            m_Set.CopyTo(array);
+        }
+
         public bool Remove(SearchResult item)
         {
             return m_Set.Remove(item);
+        }
+
+        public void ExceptWith(IEnumerable<SearchResult> results)
+        {
+            m_Set.ExceptWith(results);
+        }
+
+        public void IntersectWith(IEnumerable<SearchResult> results)
+        {
+            m_Set.IntersectWith(results);
         }
 
         public IEnumerator<SearchResult> GetEnumerator()

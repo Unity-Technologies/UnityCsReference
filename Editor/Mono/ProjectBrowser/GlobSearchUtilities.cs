@@ -80,9 +80,18 @@ namespace UnityEditor
             return true;
         }
 
-        internal static IEnumerable<string> GlobToRegex(this SearchFilter filter)
+        internal static string[] GlobToRegex(this SearchFilter filter)
         {
-            return filter.globs.Select(GlobToRegex).Where(IsRegexValid);
+            var regexes = new List<string>();
+            foreach (var glob in filter.globs)
+            {
+                var regex = GlobToRegex(glob);
+                if (IsRegexValid(regex))
+                {
+                    regexes.Add(regex);
+                }
+            }
+            return regexes.ToArray();
         }
     }
 }

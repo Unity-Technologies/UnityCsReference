@@ -13,7 +13,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
-using TreeView = UnityEditor.IMGUI.Controls.TreeView;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -295,7 +297,7 @@ namespace UnityEditor
         private Dictionary<string, Texture> m_IconCache;
 
 
-        [SerializeField]
+        [field: SerializeField]
         public bool IsInitialized { get; set; }
 
 
@@ -1351,13 +1353,6 @@ namespace UnityEditor
                     if (value == null)
                         m_IconCache[selectedExtension] = icon;
                 }
-            }
-
-            var folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
-            if (folderItem != null)
-            {
-                if (folderItem.IsEmpty)
-                    icon = emptyFolderTexture;
             }
 
             return icon;

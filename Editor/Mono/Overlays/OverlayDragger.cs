@@ -15,6 +15,7 @@ namespace UnityEditor.Overlays
         {
             static readonly Type[] s_PickingPriority =
             {
+                typeof(DynamicPanelDropZone),
                 typeof(ToolbarDropZone),
                 typeof(OverlayGhostDropZone),
                 typeof(OverlayDropZone),
@@ -32,13 +33,15 @@ namespace UnityEditor.Overlays
             readonly OverlayContainer m_OriginContainer;
             readonly OverlayGhostDropZone m_OriginGhostDropZone;
             readonly VisualElement m_CanvasRoot;
+            readonly OverlayCanvas m_Canvas;
             OverlayDropZoneBase m_Hovered;
 
             public DockingOperation(OverlayCanvas canvas, Overlay targetOverlay)
             {
+                m_Canvas = canvas;
                 m_InsertIndicator = new OverlayInsertIndicator(canvas.rootVisualElement);
                 m_OriginContainer = targetOverlay.container;
-                m_OriginContainer.GetOverlayIndex(targetOverlay, out var section, out var index);
+                m_OriginContainer.GetOverlayIndex(targetOverlay, out OverlayContainerSection section, out var index);
                 m_TargetOverlay = targetOverlay;
                 m_CanvasRoot = canvas.rootVisualElement;
                 targetOverlay.rootVisualElement.AddToClassList(k_OverlayDraggedState);
@@ -50,7 +53,8 @@ namespace UnityEditor.Overlays
                 }
 
                 //Collect dropzones
-                m_DropZones.AddRange(canvas.dockArea.GetDropZones());
+                if (canvas.dockArea is not null)
+                    m_DropZones.AddRange(canvas.dockArea.GetDropZones());
 
                 foreach (var overlay in canvas.overlays)
                 {
@@ -80,7 +84,9 @@ namespace UnityEditor.Overlays
 
                 // Remove dropzone if we have a different container
                 if ((m_Hovered == null || m_Hovered.targetContainer != m_OriginContainer)
-                    && m_OriginGhostDropZone != null && !(m_OriginGhostDropZone.targetContainer is ToolbarOverlayContainer))
+                    && m_OriginGhostDropZone != null
+                    && !(m_OriginGhostDropZone.targetContainer is ToolbarOverlayContainer)
+                    && !(m_OriginGhostDropZone.targetContainer is DynamicPanelOverlayContainer))
                 {
                     m_OriginGhostDropZone.RemoveFromHierarchy();
                     foreach (var dropZone in m_DropZones)
@@ -109,12 +115,21 @@ namespace UnityEditor.Overlays
                         m_DropZoneBuffer.Add(dropZone);
 
                 if (m_DropZoneBuffer.Count == 0)
-                    return null;
+                    return GetBackupDropzone(mousePosition);
 
                 //Sort by priority
                 m_DropZoneBuffer.Sort((a, b) => Array.IndexOf(s_PickingPriority, a.GetType()).CompareTo(Array.IndexOf(s_PickingPriority, b.GetType())));
 
                 return m_DropZoneBuffer[0];
+            }
+
+            OverlayDropZoneBase GetBackupDropzone(Vector2 mousePosition)
+            {
+                switch (m_Canvas.mode)
+                {
+                    case OverlayCanvasMode.MainToolbar: return OverlayUtilities.FindNearestValidDockZoneHorizontally(m_DropZones, m_TargetOverlay, mousePosition);
+                    default: return null;
+                }
             }
 
             public void Dispose()
@@ -153,9 +168,38 @@ namespace UnityEditor.Overlays
         public OverlayDragger(Overlay overlay)
         {
             m_Overlay = overlay;
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
+            m_Overlay.canvasModeChanged += ApplyCanvasMode;
+            ApplyCanvasMode();
             m_Active = false;
+        }
+
+        void ApplyCanvasMode()
+        {
+            activators.Clear();
+            if (m_Overlay.canvasMode != OverlayCanvasMode.MainToolbar)
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+            }
+            else
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor ||
+                    Application.platform == RuntimePlatform.OSXPlayer)
+                {
+                    activators.Add(new ManipulatorActivationFilter
+                    { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+                }
+                else
+                {
+                    activators.Add(new ManipulatorActivationFilter
+                    { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+                }
+            }
+
+            if (target != null)
+            {
+                UnregisterCallbacksFromTarget();
+                RegisterCallbacksOnTarget();
+            }
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -197,7 +241,9 @@ namespace UnityEditor.Overlays
             m_DockOperation = new DockingOperation(canvas, m_Overlay);
 
             m_StartMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
-            m_StartLeftCornerPosition = m_Overlay.rootVisualElement.Q(Overlay.draggerName).worldBound.position;
+            var dragger = m_Overlay.rootVisualElement.Q(Overlay.draggerName);
+
+            m_StartLeftCornerPosition = dragger is not null ? dragger.worldBound.position : m_Overlay.rootVisualElement.worldBound.position;
 
             m_InitialLayoutPosition = floatingContainer.WorldToLocal(m_Overlay.rootVisualElement.worldBound.position);
 
@@ -205,6 +251,10 @@ namespace UnityEditor.Overlays
             if (!m_Overlay.floating)
             {
                 m_Overlay.container.GetOverlayIndex(m_Overlay, out m_InitialSection, out m_InitialIndex);
+
+                //Ensure that we don't change layout until we move away from the current container
+                m_Overlay.tempTargetContainer = m_Overlay.container;
+
                 m_Overlay.Undock();
                 m_Overlay.floatingPosition = m_InitialLayoutPosition;
                 m_Overlay.UpdateAbsolutePosition();
@@ -212,20 +262,20 @@ namespace UnityEditor.Overlays
 
             m_Overlay.BringToFront();
 
+            UpdateLayout(e.mousePosition);
+
             m_Active = true;
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove, TrickleDown.TrickleDown);
             target.CaptureMouse();
             e.StopPropagation();
         }
 
-        void OnMouseMove(MouseMoveEvent e)
+        bool UpdateLayout(Vector2 mousePosition)
         {
-            if (!m_Active)
-                return;
-
-            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
+            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(mousePosition, canvas.rootVisualElement.worldBound);
 
             var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(constrainedMousePosition);
+
             var targetContainer = dropZone != null ? dropZone.targetContainer : null;
 
             bool delayPositionUpdate = false;
@@ -237,6 +287,19 @@ namespace UnityEditor.Overlays
                 if (m_Overlay.activeLayout != prevLayout)
                     delayPositionUpdate = true;
             }
+
+            return delayPositionUpdate;
+        }
+
+        void OnMouseMove(MouseMoveEvent e)
+        {
+            if (!m_Active)
+                return;
+
+            var constrainedMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
+            var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(constrainedMousePosition);
+
+            bool delayPositionUpdate = UpdateLayout(e.mousePosition);
 
             var diff = (constrainedMousePosition - (!m_WasCollapsed && m_Overlay.collapsed ? m_StartLeftCornerPosition : m_StartMousePosition));
             var targetPosition = m_InitialLayoutPosition + diff;
@@ -272,7 +335,9 @@ namespace UnityEditor.Overlays
 
             e.StopPropagation();
 
-            var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound));
+            Vector2 constrainedMousePosition = OverlayUtilities.ClampPositionToRect(e.mousePosition, canvas.rootVisualElement.worldBound);
+            var dropZone = m_DockOperation.GetOverlayDropZoneAtPosition(constrainedMousePosition);
+
             if (dropZone != null)
             {
                 if (dropZone is OverlayGhostDropZone)

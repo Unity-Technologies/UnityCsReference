@@ -343,6 +343,9 @@ namespace UnityEditor
                         {
                             AssetDatabase.StopAssetEditing();
                         }
+
+                        GUIUtility.ExitGUI();
+                        
                         // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
                         return true;
                     }
@@ -404,6 +407,8 @@ namespace UnityEditor
                         {
                             AssetDatabase.StopAssetEditing();
                         }
+
+                        GUIUtility.ExitGUI();
 
                         // AssetDatabase.StopAssetEditing() invokes OnEnable(), which invalidates all the serialized properties, so we must return.
                         return true;

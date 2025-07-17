@@ -24,7 +24,7 @@ namespace UnityEditor.Rendering
                 if (assetPath.Equals(currentInstanceAssetPath, StringComparison.InvariantCultureIgnoreCase))
                 {
                     if (!EditorUtility.DisplayDialog($"Deleting current {nameof(RenderPipelineGlobalSettings)}",
-                        $@"This asset is assigned to the currently active {GraphicsSettings.currentRenderPipeline.GetType().Name}. Unity will recreate the asset with the default values. 
+                        $@"This asset is assigned to the currently active {GraphicsSettings.currentRenderPipeline.GetType().Name}. Unity will recreate the asset with the default values.
 Are you sure you want to proceed?",
                         "Yes", "No"))
                     {
@@ -65,7 +65,7 @@ Are you sure you want to proceed?",
                 EditorGraphicsSettings.Internal_GetSettingsInstanceIDForRenderPipeline(renderPipelineAsset.pipelineType.FullName) : 0;
             if (id != 0)
             {
-                string currentInstanceAssetPath = AssetDatabase.GetAssetPath(id);
+                string currentInstanceAssetPath = AssetDatabase.GetAssetPath((EntityId)id);
 
                 // Global settings asset has been deleted as the instance id is not null, but the asset does not longer exist
                 // or the current global settings asset is on the imported assets because some modification has been done

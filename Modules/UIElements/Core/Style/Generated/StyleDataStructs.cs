@@ -267,6 +267,7 @@ namespace UnityEngine.UIElements
         public float unitySliceScale;
         public int unitySliceTop;
         public SliceType unitySliceType;
+        public TextAutoSize unityTextAutoSize;
         public TextOverflowPosition unityTextOverflowPosition;
 
         public RareData Copy()
@@ -291,6 +292,7 @@ namespace UnityEngine.UIElements
                 lhs.unitySliceScale == rhs.unitySliceScale &&
                 lhs.unitySliceTop == rhs.unitySliceTop &&
                 lhs.unitySliceType == rhs.unitySliceType &&
+                lhs.unityTextAutoSize == rhs.unityTextAutoSize &&
                 lhs.unityTextOverflowPosition == rhs.unityTextOverflowPosition;
         }
 
@@ -326,6 +328,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ unitySliceScale.GetHashCode();
                 hashCode = (hashCode * 397) ^ unitySliceTop;
                 hashCode = (hashCode * 397) ^ (int)unitySliceType;
+                hashCode = (hashCode * 397) ^ unityTextAutoSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)unityTextOverflowPosition;
                 return hashCode;
             }
@@ -488,17 +491,57 @@ namespace UnityEngine.UIElements
         public Color borderTopColor;
         public Length borderTopLeftRadius;
         public Length borderTopRightRadius;
+        public List<FilterFunction> filter;
         public float opacity;
         public OverflowInternal overflow;
 
         public VisualData Copy()
         {
-            return this;
+            var data = new VisualData();
+            data.backgroundColor = backgroundColor;
+            data.backgroundImage = backgroundImage;
+            data.backgroundPositionX = backgroundPositionX;
+            data.backgroundPositionY = backgroundPositionY;
+            data.backgroundRepeat = backgroundRepeat;
+            data.backgroundSize = backgroundSize;
+            data.borderBottomColor = borderBottomColor;
+            data.borderBottomLeftRadius = borderBottomLeftRadius;
+            data.borderBottomRightRadius = borderBottomRightRadius;
+            data.borderLeftColor = borderLeftColor;
+            data.borderRightColor = borderRightColor;
+            data.borderTopColor = borderTopColor;
+            data.borderTopLeftRadius = borderTopLeftRadius;
+            data.borderTopRightRadius = borderTopRightRadius;
+            data.filter = new List<FilterFunction>(filter);
+            data.opacity = opacity;
+            data.overflow = overflow;
+            return data;
         }
 
         public void CopyFrom(ref VisualData other)
         {
-            this = other;
+            backgroundColor = other.backgroundColor;
+            backgroundImage = other.backgroundImage;
+            backgroundPositionX = other.backgroundPositionX;
+            backgroundPositionY = other.backgroundPositionY;
+            backgroundRepeat = other.backgroundRepeat;
+            backgroundSize = other.backgroundSize;
+            borderBottomColor = other.borderBottomColor;
+            borderBottomLeftRadius = other.borderBottomLeftRadius;
+            borderBottomRightRadius = other.borderBottomRightRadius;
+            borderLeftColor = other.borderLeftColor;
+            borderRightColor = other.borderRightColor;
+            borderTopColor = other.borderTopColor;
+            borderTopLeftRadius = other.borderTopLeftRadius;
+            borderTopRightRadius = other.borderTopRightRadius;
+            if (!ReferenceEquals(filter, other.filter))
+            {
+                filter.Clear();
+                filter.AddRange(other.filter);
+            }
+
+            opacity = other.opacity;
+            overflow = other.overflow;
         }
 
         public static bool operator ==(VisualData lhs, VisualData rhs)
@@ -517,6 +560,7 @@ namespace UnityEngine.UIElements
                 lhs.borderTopColor == rhs.borderTopColor &&
                 lhs.borderTopLeftRadius == rhs.borderTopLeftRadius &&
                 lhs.borderTopRightRadius == rhs.borderTopRightRadius &&
+                lhs.filter == rhs.filter &&
                 lhs.opacity == rhs.opacity &&
                 lhs.overflow == rhs.overflow;
         }
@@ -557,6 +601,7 @@ namespace UnityEngine.UIElements
                 hashCode = (hashCode * 397) ^ borderTopColor.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderTopLeftRadius.GetHashCode();
                 hashCode = (hashCode * 397) ^ borderTopRightRadius.GetHashCode();
+                hashCode = (hashCode * 397) ^ filter.GetHashCode();
                 hashCode = (hashCode * 397) ^ opacity.GetHashCode();
                 hashCode = (hashCode * 397) ^ (int)overflow;
                 return hashCode;

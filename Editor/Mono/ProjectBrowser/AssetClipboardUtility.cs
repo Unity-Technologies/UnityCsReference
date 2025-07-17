@@ -74,9 +74,9 @@ namespace UnityEditor
             return PasteCopiedAssets();
         }
 
-        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<int> instanceIDs)
+        internal static IEnumerable<Object> DuplicateAssets(IEnumerable<EntityId> instanceIDs)
         {
-            return DuplicateAssets(instanceIDs.Select(id => EditorUtility.InstanceIDToObject(id)));
+            return DuplicateAssets(instanceIDs.Select(id => EditorUtility.EntityIdToObject(id)));
         }
 
         static void CutCopyAssets(IEnumerable<Object> assets)
@@ -209,21 +209,21 @@ namespace UnityEditor
         }
 
         // Returns list of duplicated instanceIDs
-        internal static int[] DuplicateFolders(int[] instanceIDs)
+        internal static EntityId[] DuplicateFolders(EntityId[] instanceIDs)
         {
             CutCopySelectedFolders(instanceIDs, PerformedAction.Copy);
             return PasteFoldersAfterCopy();
         }
 
-        internal static void CutCopySelectedFolders(int[] instanceIDs, PerformedAction action)
+        internal static void CutCopySelectedFolders(EntityId[] instanceIDs, PerformedAction action)
         {
             Reset();
             performedAction = action;
             AssetDatabase.Refresh();
 
-            int assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+            EntityId assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets");
 
-            foreach (int instanceID in instanceIDs)
+            foreach (EntityId instanceID in instanceIDs)
             {
                 if (instanceID == assetsFolderInstanceID)
                     continue;
@@ -233,7 +233,7 @@ namespace UnityEditor
             }
         }
 
-        internal static int[] PasteFolders()
+        internal static EntityId[] PasteFolders()
         {
             if (performedAction == PerformedAction.Cut)
             {
@@ -245,7 +245,7 @@ namespace UnityEditor
             }
         }
 
-        static int[] PasteFoldersAfterCopy(string destination = null)
+        static EntityId[] PasteFoldersAfterCopy(string destination = null)
         {
             List<string> copiedPaths = new List<string>();
             bool failed = false;
@@ -267,16 +267,16 @@ namespace UnityEditor
 
             AssetDatabase.Refresh();
 
-            int[] copiedAssets = new int[copiedPaths.Count];
+            EntityId[] copiedAssets = new EntityId[copiedPaths.Count];
             for (int i = 0; i < copiedPaths.Count; i++)
             {
-                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(copiedPaths[i]).GetInstanceID();
+                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(copiedPaths[i]).GetEntityId();
             }
 
             return copiedAssets;
         }
 
-        static int[] PasteFoldersAfterCut(string destination = null)
+        static EntityId[] PasteFoldersAfterCut(string destination = null)
         {
             List<string> pastedObjects = new List<string>();
             string[] assetPaths = new string[assetClipboard.Count];
@@ -308,11 +308,11 @@ namespace UnityEditor
             performedAction = PerformedAction.None;
             AssetDatabase.Refresh();
 
-            int[] copiedAssets = new int[pastedObjects.Count];
+            EntityId[] copiedAssets = new EntityId[pastedObjects.Count];
 
             for (int i = 0; i < pastedObjects.Count; i++)
             {
-                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(pastedObjects[i]).GetInstanceID();
+                copiedAssets[i] = AssetDatabase.LoadMainAssetAtPath(pastedObjects[i]).GetEntityId();
             }
 
             return copiedAssets;
@@ -327,7 +327,7 @@ namespace UnityEditor
         {
             if (performedAction == PerformedAction.Cut)
             {
-                Object obj = EditorUtility.InstanceIDToObject(instanceID);
+                Object obj = EditorUtility.EntityIdToObject(instanceID);
                 ObjectIdentifier.GetObjectIdentifierFromInstanceID(instanceID, out var identifier);
                 return obj != null && assetClipboard.Contains(identifier);
             }

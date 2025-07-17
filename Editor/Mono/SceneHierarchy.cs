@@ -83,12 +83,11 @@ namespace UnityEditor
         }
 
         public Rect position { get; set; }
-        const int kInvalidSceneHandle = 0;
         bool m_RectSelectInProgress;
 
-        IMGUI.Controls.TreeViewController m_TreeView;
+        TreeViewController<EntityId> m_TreeView;
         [SerializeField]
-        TreeViewState m_TreeViewState;
+        TreeViewState<EntityId> m_TreeViewState;
 
         [SerializeField]
         List<string> m_ExpandedScenes = new List<string>(); // saved in layout so we can expand on next Unity session (expanded state is saved per window)
@@ -222,12 +221,12 @@ namespace UnityEditor
             get { return position; }
         }
 
-        internal TreeViewState treeViewState
+        internal TreeViewState<EntityId> treeViewState
         {
             get { return m_TreeViewState; }
         }
 
-        internal IMGUI.Controls.TreeViewController treeView
+        internal TreeViewController<EntityId> treeView
         {
             get
             {
@@ -264,13 +263,13 @@ namespace UnityEditor
         void Init()
         {
             if (m_TreeViewState == null)
-                m_TreeViewState = new TreeViewState();
+                m_TreeViewState = new TreeViewState<EntityId>();
             m_TreeViewState.searchString = ""; // search string is controlled by m_SearchFilter, clearing old layouts, case 1346524
 
             if (m_SortingObjects == null)
                 SetUpSortMethodLists();
 
-            m_TreeView = new IMGUI.Controls.TreeViewController(m_EditorWindow, m_TreeViewState);
+            m_TreeView = new TreeViewController<EntityId>(m_EditorWindow, m_TreeViewState);
             m_TreeView.itemDoubleClickedCallback += TreeViewItemDoubleClicked;
             m_TreeView.selectionChangedCallback += TreeViewSelectionChanged;
             m_TreeView.onGUIRowCallback += OnRowGUICallback;
@@ -410,7 +409,7 @@ namespace UnityEditor
             EditorGUIUtility.ExitGUI(); // exit gui since this can be called while iterating items
         }
 
-        public int[] GetExpandedIDs()
+        public EntityId[] GetExpandedIDs()
         {
             return m_TreeViewState.expandedIDs.ToArray();
         }
@@ -442,7 +441,7 @@ namespace UnityEditor
             for (int i = 0; i < SceneManager.sceneCount; ++i)
             {
                 Scene scene = SceneManager.GetSceneAt(i);
-                if (treeView.data.IsExpanded(scene.handle))
+                if (treeView.data.IsExpanded(scene.handle.ToEntityId()))
                 {
                     expandedScenes.Add(scene.name);
                 }
@@ -458,11 +457,11 @@ namespace UnityEditor
                 Scene scene = SceneManager.GetSceneByName(sceneName);
                 if (scene.IsValid())
                 {
-                    sceneHandles.Add(scene.handle);
+                    sceneHandles.Add(scene.handle.ToEntityId());
                 }
             }
             if (sceneHandles.Count > 0)
-                treeView.data.SetExpandedIDs(sceneHandles.ToArray());
+                treeView.data.SetExpandedIDs(sceneHandles.ToArray().ToEntityIdArray());
         }
 
         void PlayModeStateChanged(PlayModeStateChange state)
@@ -473,13 +472,13 @@ namespace UnityEditor
         void OnSceneCreated(Scene scene, NewSceneSetup setup, NewSceneMode mode)
         {
             ClearSearchSessionIfAny();
-            ExpandTreeViewItem(scene.handle, true);
+            ExpandTreeViewItem(scene.handle.ToEntityId(), true);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
         {
             ClearSearchSessionIfAny();
-            ExpandTreeViewItem(scene.handle, true);
+            ExpandTreeViewItem(scene.handle.ToEntityId(), true);
         }
 
         void ClearSearchSessionIfAny()
@@ -493,9 +492,9 @@ namespace UnityEditor
             }
         }
 
-        internal void ExpandTreeViewItem(int id, bool expand)
+        internal void ExpandTreeViewItem(EntityId id, bool expand)
         {
-            var dataSource = treeView.data as TreeViewDataSource;
+            var dataSource = treeView.data as TreeViewDataSource<EntityId>;
             if (dataSource != null)
                 dataSource.SetExpanded(id, expand);
         }
@@ -580,7 +579,7 @@ namespace UnityEditor
             // If only one scene ensure it is expanded (new project)
             if (SceneManager.sceneCount == 1)
             {
-                treeView.data.SetExpanded(SceneManager.GetSceneAt(0).handle, true);
+                treeView.data.SetExpanded(SceneManager.GetSceneAt(0).handle.ToEntityId(), true);
             }
 
             // Ensure scenes are expanded from last session
@@ -592,7 +591,7 @@ namespace UnityEditor
             m_ExpandedScenes = GetExpandedSceneNames().ToList();
 
             // Game objects will have new instanceIDs in the next Unity session, so clear all state before serializing to layout to prevent saving redundant data
-            m_TreeViewState = new TreeViewState();
+            m_TreeViewState = new TreeViewState<EntityId>();
         }
 
         public virtual void OnDestroy()
@@ -629,7 +628,7 @@ namespace UnityEditor
                 bool animatedFraming = userJustInteracted && frame;
                 m_FrameOnSelectionSync = false;
 
-                treeView.SetSelection(Selection.instanceIDs, frame, animatedFraming);
+                treeView.SetSelection(Selection.entityIds, frame, animatedFraming);
             }
         }
 
@@ -671,18 +670,18 @@ namespace UnityEditor
             return scene.IsValid();
         }
 
-        void TreeViewItemDoubleClicked(int instanceID)
+        void TreeViewItemDoubleClicked(EntityId instanceID)
         {
             bool setActiveScene = false;
 
-            Scene scene = EditorSceneManager.GetSceneByHandle(instanceID);
+            Scene scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(instanceID));
             if (IsSceneHeaderInHierarchyWindow(scene))
             {
                 setActiveScene = true;
             }
             else if (SubSceneGUI.IsUsingSubScenes())
             {
-                var gameObject = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+                var gameObject = EditorUtility.EntityIdToObject(instanceID) as GameObject;
                 if (gameObject != null && SubSceneGUI.IsSubSceneHeader(gameObject))
                 {
                     scene = SubSceneGUI.GetSubScene(gameObject);
@@ -703,9 +702,9 @@ namespace UnityEditor
             }
         }
 
-        public void SetExpandedRecursive(int id, bool expand)
+        public void SetExpandedRecursive(EntityId id, bool expand)
         {
-            TreeViewItem item = treeView.data.FindItem(id);
+            var item = treeView.data.FindItem(id);
 
             // If the item is null reload the data as the scene might have changed.
             if (item == null)
@@ -718,12 +717,12 @@ namespace UnityEditor
                 treeView.data.SetExpandedWithChildren(item, expand);
         }
 
-        void OnRowGUICallback(int itemID, Rect rect)
+        void OnRowGUICallback(EntityId itemID, Rect rect)
         {
             GameObjectTreeViewGUI.UserCallbackRowGUI(itemID, rect);
         }
 
-        void OnDragEndedCallback(int[] draggedInstanceIds, bool draggedItemsFromOwnTreeView)
+        void OnDragEndedCallback(EntityId[] draggedInstanceIds, bool draggedItemsFromOwnTreeView)
         {
             // We only change selection if 'draggedItemsFromOwnTreeView' == true.
             // This ensures that we do not override the selection that might have been set before
@@ -733,7 +732,6 @@ namespace UnityEditor
                 ReloadData();
                 treeView.SetSelection(draggedInstanceIds, true);
                 treeView.NotifyListenersThatSelectionChanged(); // behave as if selection was performed in treeview
-                GameObjectTreeViewGUI.RemoveInvalidActiveParentObjects();
                 Repaint();
                 GUIUtility.ExitGUI();
             }
@@ -792,7 +790,7 @@ namespace UnityEditor
             if (m_DidSelectSearchResult && string.IsNullOrEmpty(searchString))
             {
                 m_DidSelectSearchResult = false;
-                FrameObjectPrivate(Selection.activeInstanceID, true, false, false);
+                FrameObjectPrivate(Selection.activeEntityId, true, false, false);
 
                 // Ensure item has focus for visual feedback and instant key navigation
                 if (GUIUtility.keyboardControl == 0)
@@ -800,11 +798,11 @@ namespace UnityEditor
             }
         }
 
-        void TreeViewSelectionChanged(int[] ids)
+        void TreeViewSelectionChanged(EntityId[] ids)
         {
             //Last selected should be the active selected object to reflect the behavior of the scene view selection
             int active = ids.Length > 0 ? ids[ids.Length - 1] : 0;
-            Selection.SetSelectionWithActiveInstanceID(ids, active);
+            Selection.SetSelectionWithActiveEntityId(ids, active);
 
             if (!IsTreeViewSelectionInSyncWithBackend())
             {
@@ -817,7 +815,7 @@ namespace UnityEditor
         bool IsTreeViewSelectionInSyncWithBackend()
         {
             if (m_TreeView != null)
-                return m_TreeView.state.selectedIDs.SequenceEqual(Selection.instanceIDs);
+                return m_TreeView.state.selectedIDs.SequenceEqual(Selection.entityIds);
             return false;
         }
 
@@ -875,74 +873,16 @@ namespace UnityEditor
             treeView.OnGUI(rect, m_TreeViewKeyboardControlID);
         }
 
-        /*
-         * NOTE: AddCreateGameObjectItemsToMenu() cooks existing menu, so that make sure menu entries are added to
-         *               localization entry.
-         * @Localization("Create Empty", "MenuItem")
-         * @Localization("Create Empty Child", "MenuItem")
-         */
-        void AddCreateGameObjectItemsToMenu(GenericMenu menu, UnityEngine.Object[] context, bool includeCreateEmptyChild, bool useCreateEmptyParentMenuItem, bool includeGameObjectInPath, int targetSceneHandle, MenuUtils.ContextMenuOrigin origin)
+        void BeforeCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, SceneHandle userData)
         {
-            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", true, false);
-            int previousMenuItemPosition = -1;
-
-            foreach (var menuItem in menus)
-            {
-                string path = menuItem.path;
-
-                string hotkey = Menu.GetHotkey(menuItem.path);
-
-                UnityEngine.Object[] tempContext = context;
-                if (!includeCreateEmptyChild && path.ToLower() == "GameObject/Create Empty Child".ToLower())
-                    continue;
-
-                if (!useCreateEmptyParentMenuItem && path.ToLower() == "GameObject/Create Empty Parent".ToLower())
-                {
-                    if (GOCreationCommands.ValidateCreateEmptyParent())
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Create Empty Parent " + hotkey), false, GOCreationCommands.CreateEmptyParent);
-                    continue;
-                }
-
-                // The first item after the GameObject creation menu items
-                if (path.ToLower() == GameObjectUtility.GetFirstItemPathAfterGameObjectCreationMenuItems().ToLower())
-                    continue;
-
-                string menupath = path;
-
-                // cut away "GameObject/"
-                if (!includeGameObjectInPath)
-                    menupath = path.Substring(11);
-
-                if (!string.IsNullOrEmpty(hotkey))
-                    menupath += " " + hotkey;
-
-                MenuUtils.ExtractOnlyEnabledMenuItem(menuItem,
-                    menu,
-                    menupath,
-                    tempContext,
-                    targetSceneHandle,
-                    BeforeCreateGameObjectMenuItemWasExecuted,
-                    AfterCreateGameObjectMenuItemWasExecuted,
-                    origin,
-                    previousMenuItemPosition);
-
-                previousMenuItemPosition = menuItem.priority;
-            }
-
-            MenuUtils.RemoveInvalidMenuItems(menu);
-        }
-
-        void BeforeCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, int userData)
-        {
-            int sceneHandle = userData;
             if (origin == MenuUtils.ContextMenuOrigin.Scene || origin == MenuUtils.ContextMenuOrigin.Subscene)
                 GOCreationCommands.forcePlaceObjectsAtWorldOrigin = true;
-            EditorSceneManager.SetTargetSceneForNewGameObjects(sceneHandle);
+            EditorSceneManager.SetTargetSceneForNewGameObjects(userData);
         }
 
-        void AfterCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, int userData)
+        void AfterCreateGameObjectMenuItemWasExecuted(string menuPath, UnityEngine.Object[] contextObjects, MenuUtils.ContextMenuOrigin origin, SceneHandle userData)
         {
-            EditorSceneManager.SetTargetSceneForNewGameObjects(kInvalidSceneHandle);
+            EditorSceneManager.SetTargetSceneForNewGameObjects(SceneHandle.None);
             GOCreationCommands.forcePlaceObjectsAtWorldOrigin = false;
             // Ensure framing when creating game objects even if we are locked
             if (isLocked)
@@ -961,9 +901,10 @@ namespace UnityEditor
                 GUIUtility.hotControl = 0;
 
                 GenericMenu menu = new GenericMenu();
-                var targetSceneHandle = m_CustomParentForNewGameObjects != null ? m_CustomParentForNewGameObjects.gameObject.scene.handle : kInvalidSceneHandle;
+                var targetSceneHandle = m_CustomParentForNewGameObjects != null ? m_CustomParentForNewGameObjects.gameObject.scene.handle : SceneHandle.None;
                 // The context should be null, just like it is in the main menu. Case 1185434.
-                AddCreateGameObjectItemsToMenu(menu, null, true, true, false, targetSceneHandle, MenuUtils.ContextMenuOrigin.Toolbar);
+                MenuUtils.AddCreateGameObjectItemsToMenu(menu, null, true, true, false, targetSceneHandle, MenuUtils.ContextMenuOrigin.Toolbar,
+                    BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
 
                 SceneHierarchyHooks.AddCustomItemsToCreateMenu(menu);
 
@@ -1191,7 +1132,7 @@ namespace UnityEditor
                 }
             }
 
-            var contextClickedGameObject = contextClickedItemID == 0 ? null : EditorUtility.InstanceIDToObject(contextClickedItemID) as GameObject;
+            var contextClickedGameObject = contextClickedItemID == 0 ? null : EditorUtility.EntityIdToObject(contextClickedItemID) as GameObject;
             var isSelectPrefabRootAvailable = IsSelectPrefabRootAvailable();
 
             if (contextClickedGameObject != null || !string.IsNullOrEmpty(assetPath))
@@ -1234,7 +1175,7 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Select Root"), false, SelectPrefabRoot);
             }
 
-            GameObject sourceRoot = GetSourceRootWhereGameObjectIsAddedAsOverride(go);
+            GameObject sourceRoot = PrefabUtility.GetSourceRootWhereGameObjectIsAddedAsOverride(go);
             if (sourceRoot != null)
             {
                 var s = PrefabUtility.GetOriginalSourceRootWhereGameObjectIsAdded(go);
@@ -1244,43 +1185,7 @@ namespace UnityEditor
                 });
             }
 
-            GameObject[] selectedGOs = Selection.gameObjects;
-
-            if (selectedGOs.Any() && PrefabUtility.IsAllAddedGameObjectOverrides(selectedGOs))
-            {
-                go = selectedGOs[0];
-                // Handle added GameObject or prefab.
-                Transform parentTransform = go.transform.parent;
-                PrefabUtility.HandleApplyRevertMenuItems(
-                    (selectedGOs.Length > 1) ? "Added GameObjects" : "Added GameObject",
-                    parentTransform.gameObject,
-                    (menuItemContent, sourceGo, _) =>
-                    {
-                        GameObject rootGo = PrefabUtility.GetRootGameObject(sourceGo);
-                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootGo) || EditorUtility.IsPersistent(parentTransform) || !PrefabUtility.HasSameParent(selectedGOs))
-                            menu.AddDisabledItem(menuItemContent);
-                        else
-                        {
-                            string assetPath = AssetDatabase.GetAssetPath(sourceGo);
-                            TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[] childInfos = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo[selectedGOs.Length];
-                            for (int i = 0; i < selectedGOs.Length; i++)
-                            {
-                                GameObject go = selectedGOs[i];
-                                TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
-                                info.instanceObject = go;
-                                info.assetPath = assetPath;
-                                childInfos[i] = info;
-                            }
-
-                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedGameObjects, childInfos);
-                        }
-                    },
-                    (menuItemContent) =>
-                    {
-                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedGameObjects, selectedGOs);
-                    }
-                );
-            }
+            PrefabUtility.HandleAddedGameObjectOverridesMenuItems(menu, Selection.gameObjects);
 
             if (contextClickedGameObject != null)
             {
@@ -1294,13 +1199,13 @@ namespace UnityEditor
                 PrefabReplaceUtility.AddReplaceMenuItemsToMenuBasedOnCurrentSelection(menu, "Prefab/", contextClickedGameObject, listOfInstanceRoots, listOfPlainGameObjects, null);
             }
 
-            if (AnyOutermostPrefabRoots())
+            if (PrefabUtility.AnyOutermostPrefabRoots(Selection.gameObjects))
             {
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, UnpackPrefab);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, UnpackPrefabCompletely);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack"), false, () => PrefabUtility.UnpackPrefab(Selection.gameObjects));
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Unpack Completely"), false, () => PrefabUtility.UnpackPrefabCompletely(Selection.gameObjects));
                 menu.AddSeparator("Prefab/");
-                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveSelectedPrefabInstanceUnusedOverrides);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, () => PrefabUtility.RemoveSelectedPrefabInstanceUnusedOverrides(Selection.gameObjects));
             }
         }
 
@@ -1388,7 +1293,7 @@ namespace UnityEditor
             {
                 menu.AddDisabledItem(Styles.setOriginLabel);
             }
-            else if (selectedObject && (selectedObject.GetInstanceID() != GetDefaultParentForSession(selectedObject.scene.guid) || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
+            else if (selectedObject && (selectedObject.GetEntityId() != selectedObject.scene.defaultParent || EditorSceneManager.GetActiveScene().guid != selectedObject.scene.guid))
             {
                 menu.AddItem(Styles.setOriginLabel, false, () =>
                 {
@@ -1409,13 +1314,13 @@ namespace UnityEditor
             {
                 menu.AddSeparator("");
 
-                int targetSceneForCreation = selectedGameObjects.Length > 0
+                var targetSceneForCreation = selectedGameObjects.Length > 0
                     ? selectedGameObjects.Last().scene.handle
                     : SceneManager.GetActiveScene().handle;
 
                 // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
                 // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
-                AddCreateGameObjectItemsToMenu(menu,
+                MenuUtils.AddCreateGameObjectItemsToMenu(menu,
                     selectedGameObjects,
                     false,
                     false,
@@ -1423,10 +1328,12 @@ namespace UnityEditor
                     targetSceneForCreation,
                     contextClickedItemID == 0
                     ? MenuUtils.ContextMenuOrigin.None
-                    : MenuUtils.ContextMenuOrigin.GameObject);
+                    : MenuUtils.ContextMenuOrigin.GameObject,
+                    BeforeCreateGameObjectMenuItemWasExecuted,
+                    AfterCreateGameObjectMenuItemWasExecuted);
             }
 
-            SceneHierarchyHooks.AddCustomGameObjectContextMenuItems(menu, contextClickedItemID == 0 ? null : (GameObject)EditorUtility.InstanceIDToObject(contextClickedItemID));
+            SceneHierarchyHooks.AddCustomGameObjectContextMenuItems(menu, contextClickedItemID == 0 ? null : (GameObject)EditorUtility.EntityIdToObject(contextClickedItemID));
 
             if (selectedGameObjects.Length > 0)
             {
@@ -1475,12 +1382,14 @@ namespace UnityEditor
 
         protected void AddCreateGameObjectItemsToSceneMenu(GenericMenu menu, Scene scene)
         {
-            AddCreateGameObjectItemsToMenu(menu, Selection.transforms.Select(t => t.gameObject).ToArray(), false, false, true, scene.handle, MenuUtils.ContextMenuOrigin.Scene);
+            MenuUtils.AddCreateGameObjectItemsToMenu(menu, Selection.transforms.Select(t => t.gameObject).ToArray(), false, false, true, scene.handle,
+                MenuUtils.ContextMenuOrigin.Scene, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
         }
 
         protected void AddCreateGameObjectItemsToSubSceneMenu(GenericMenu menu, Scene scene)
         {
-            AddCreateGameObjectItemsToMenu(menu, new UnityEngine.Object[0], false, true, true, scene.handle, MenuUtils.ContextMenuOrigin.Subscene);
+            MenuUtils.AddCreateGameObjectItemsToMenu(menu, new UnityEngine.Object[0], false, true, true, scene.handle,
+                MenuUtils.ContextMenuOrigin.Subscene, BeforeCreateGameObjectMenuItemWasExecuted, AfterCreateGameObjectMenuItemWasExecuted);
         }
 
         internal bool CanScenesBeReloaded(Scene[] scenes)
@@ -1607,7 +1516,7 @@ namespace UnityEditor
             }
 
             menu.AddSeparator("");
-            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Prefab/Remove Unused Overrides..."), false, PrefabUtility.RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem, scene);
 
             // Set the context of each MenuItem to the current selection, so the created gameobjects will be added as children
             // Sets includeCreateEmptyChild to false, since that item is superfluous here (the normal "Create Empty" is added as a child anyway)
@@ -1624,7 +1533,7 @@ namespace UnityEditor
         int GetNumLoadedScenesInSelection()
         {
             int loadedScenes = 0;
-            foreach (int handle in GetSelectedScenes())
+            foreach (var handle in GetSelectedScenes())
             {
                 if (EditorSceneManager.GetSceneByHandle(handle).isLoaded)
                     loadedScenes++;
@@ -1633,19 +1542,20 @@ namespace UnityEditor
         }
 
         // returns selected scene handles
-        List<int> GetSelectedScenes()
+        List<SceneHandle> GetSelectedScenes()
         {
-            var selectedSceneHandles = new List<int>();
-            int[] instanceIDs = m_TreeView.GetSelection();
+            var selectedSceneHandles = new List<SceneHandle>();
+            var instanceIDs = m_TreeView.GetSelection();
             foreach (int id in instanceIDs)
             {
-                if (IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(id)))
+                var sceneHandle = SceneHandle.From(id);
+                if (IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(sceneHandle)))
                 {
-                    selectedSceneHandles.Add(id);
+                    selectedSceneHandles.Add(sceneHandle);
                 }
                 else
                 {
-                    GameObject gameObject = EditorUtility.InstanceIDToObject(id) as GameObject;
+                    GameObject gameObject = EditorUtility.EntityIdToObject(id) as GameObject;
                     if (gameObject)
                     {
                         var subSceneInfo = SubSceneGUI.GetSubSceneInfo(gameObject);
@@ -1666,7 +1576,7 @@ namespace UnityEditor
             // Clear selection when clicking outside items so the new game object is
             // added to the last loaded scene in the Hierarchy (otherwise it would be parented
             // to current selcection)
-            Selection.activeInstanceID = 0;
+            Selection.activeEntityId = EntityId.None;
 
             var menu = new GenericMenu();
 
@@ -1675,14 +1585,14 @@ namespace UnityEditor
             menu.ShowAsContext();
         }
 
-        void ItemContextClick(int contextClickedItemID)
+        void ItemContextClick(EntityId contextClickedItemID)
         {
             Event evt = Event.current;
 
             evt.Use();
             var menu = new GenericMenu();
 
-            Scene scene = EditorSceneManager.GetSceneByHandle(contextClickedItemID);
+            Scene scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(contextClickedItemID));
             bool clickedSceneHeader = IsSceneHeaderInHierarchyWindow(scene);
 
             if (clickedSceneHeader)
@@ -1693,7 +1603,7 @@ namespace UnityEditor
             }
             else
             {
-                GameObject gameObject = EditorUtility.InstanceIDToObject(contextClickedItemID) as GameObject;
+                GameObject gameObject = EditorUtility.EntityIdToObject(contextClickedItemID) as GameObject;
                 var subSceneInfo = SubSceneGUI.GetSubSceneInfo(gameObject);
                 if (subSceneInfo.isValid)
                 {
@@ -1755,106 +1665,10 @@ namespace UnityEditor
             Unsupported.DeleteGameObjectSelection();
         }
 
-        bool AnyOutermostPrefabRoots()
-        {
-            var gameObjects = Selection.gameObjects;
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                var go = gameObjects[i];
-                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
-                    return true;
-            }
-            return false;
-        }
-
-        void UnpackPrefab()
-        {
-            var gameObjects = Selection.gameObjects;
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                var go = gameObjects[i];
-                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
-                    PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
-            }
-        }
-
-        void UnpackPrefabCompletely()
-        {
-            var gameObjects = Selection.gameObjects;
-            for (int i = 0; i < gameObjects.Length; i++)
-            {
-                var go = gameObjects[i];
-                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
-                    PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
-            }
-        }
-
-        void RemoveAllPrefabInstancesUnusedOverridesFromSceneForMenuItem(object userData)
-        {
-            RemoveAllPrefabInstancesUnusedOverridesFromScene((Scene)userData);
-        }
-
-        void RemoveSelectedPrefabInstanceUnusedOverrides()
-        {
-            PrefabUtility.InstanceOverridesInfo[] instanceOverrideInfos = PrefabUtility.GetPrefabInstancesOverridesInfos(Selection.gameObjects);
-
-            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverrideInfos);
-        }
-
-        void RemoveAllPrefabInstancesUnusedOverridesFromScene(Scene scene)
-        {
-            if (!scene.IsValid())
-                return;
-
-            PrefabUtility.InstanceOverridesInfo[] instanceOverridesInfos = null;
-
-            List<GameObject> gos = GetScenePrefabInstancesWithNonDefaultOverrides(scene);
-            if (gos != null && gos.Any())
-                instanceOverridesInfos = PrefabUtility.GetPrefabInstancesOverridesInfos(gos.ToArray());
-
-            AskUserToRemovePrefabInstanceUnusedOverrides(instanceOverridesInfos);
-        }
-
-        bool AskUserToRemovePrefabInstanceUnusedOverrides(PrefabUtility.InstanceOverridesInfo[] instanceOverridesInfos)
-        {
-            if (PrefabUtility.DoRemovePrefabInstanceUnusedOverridesDialog(instanceOverridesInfos))
-            {
-                PrefabUtility.RemovePrefabInstanceUnusedOverrides(instanceOverridesInfos, InteractionMode.UserAction);
-                return true;
-            }
-
-            return false;
-        }
-
-        List<GameObject> GetScenePrefabInstancesWithNonDefaultOverrides(Scene scene)
-        {
-            List<GameObject> gameObjects = new List<GameObject>();
-            TransformVisitor visitor = new TransformVisitor();
-
-            var roots = scene.GetRootGameObjects();
-            foreach (var root in roots)
-            {
-                visitor.VisitAll(root.transform, (transform, list) => {
-                    GameObject go = transform.gameObject;
-                    if (PrefabUtility.IsOutermostPrefabInstanceRoot(go) && PrefabUtility.HasPrefabInstanceNonDefaultOverridesOrUnusedOverrides_CachedForUI(go))
-                    {
-                        gameObjects.Add(go);
-                    }
-                }, null);
-            }
-
-            return gameObjects;
-        }
-
         void SetSceneActive(object userData)
         {
             Scene scene = (Scene)userData;
             EditorSceneManager.SetActiveScene(scene);
-        }
-
-        private static string GetDefaultParentKeyForScene(string sceneGUID)
-        {
-            return String.Format("DefaultParentObject-{0}", sceneGUID);
         }
 
         [Shortcut("Hierarchy View/Set as Default Parent")]
@@ -1862,23 +1676,6 @@ namespace UnityEditor
         {
             SetDefaultParentObject(true);
             SceneHierarchyWindow.lastInteractedHierarchyWindow?.Repaint();
-        }
-
-        internal static int GetDefaultParentForSession(string sceneGUID)
-        {
-            return SessionState.GetInt(GetDefaultParentKeyForScene(sceneGUID), 0);
-        }
-
-        internal static void SetDefaultParentForSession(string sceneGUID, int instanceID)
-        {
-            SessionState.SetInt(GetDefaultParentKeyForScene(sceneGUID), instanceID);
-        }
-
-        [RequiredByNativeCode]
-        internal static void UpdateSessionStateInfoAndActiveParentObjectValuesForScene(string sceneGUID, int id)
-        {
-            SetDefaultParentForSession(sceneGUID, id);
-            GameObjectTreeViewGUI.UpdateActiveParentObjectValuesForScene(sceneGUID, id);
         }
 
         internal static void SetDefaultParentObject(bool toggle, GameObject defaultParentObject = null)
@@ -1918,7 +1715,7 @@ namespace UnityEditor
             }
 
             string undoText = "Set Default Parent Object";
-            int currentlySetID = GetDefaultParentForSession(sceneGUID);
+            var currentlySetID = scene.defaultParent;
 
             var objectInstanceID = lastSelectedObject ? lastSelectedObject.GetInstanceID() : 0;
             var isPrefabStage = PrefabStageUtility.IsPrefabStageScene(scene);
@@ -1947,37 +1744,37 @@ namespace UnityEditor
 
             if (toggle && currentlySetID != 0 || lastSelectedObject != null)
             {
-                InternalEditorUtility.RegisterSetDefaultParentObjectUndo(sceneGUID, GetDefaultParentForSession(sceneGUID), undoText);
+                InternalEditorUtility.RegisterSetDefaultParentObjectUndo(scene, scene.defaultParent, undoText);
                 if (!isPrefabStage)
                     EditorSceneManager.SetActiveScene(scene);
             }
 
-            UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, id);
+            scene.defaultParent = id;
         }
 
-        internal static void ClearDefaultParentObject(string sceneGUID = "")
+        internal static void ClearDefaultParentObject(Scene scene = default)
         {
             UnityEngine.GameObject lastSelectedObject = null;
 
-            if (sceneGUID == "")
+            if (scene == default)
             {
                 if (Selection.objects.Length > 0)
                 {
                     lastSelectedObject = Selection.objects[Selection.objects.Length - 1] as GameObject;
                 }
                 if (lastSelectedObject)
-                    sceneGUID = lastSelectedObject.scene.guid;
+                    scene = lastSelectedObject.scene;
                 else
-                    sceneGUID = EditorSceneManager.GetActiveScene().guid;
+                    scene = EditorSceneManager.GetActiveScene();
             }
 
-            InternalEditorUtility.RegisterSetDefaultParentObjectUndo(sceneGUID, GetDefaultParentForSession(sceneGUID), "Clear Default Parent Object");
-            UpdateSessionStateInfoAndActiveParentObjectValuesForScene(sceneGUID, 0);
+            InternalEditorUtility.RegisterSetDefaultParentObjectUndo(scene, scene.defaultParent, "Clear Default Parent Object");
+            scene.defaultParent = EntityId.None;
         }
 
         private void LoadSelectedScenes(object userdata)
         {
-            List<int> selectedScenes = GetSelectedScenes();
+            var selectedScenes = GetSelectedScenes();
             foreach (var id in selectedScenes)
             {
                 var scene = EditorSceneManager.GetSceneByHandle(id);
@@ -1988,7 +1785,7 @@ namespace UnityEditor
             EditorApplication.RequestRepaintAllViews();
         }
 
-        private void SaveSceneAs(object userdata)
+        internal static void SaveSceneAs(object userdata)
         {
             Scene scene = (Scene)userdata;
             if (scene.isLoaded)
@@ -2004,7 +1801,7 @@ namespace UnityEditor
 
         void SaveSelectedScenes(object userdata)
         {
-            List<int> selectedScenes = GetSelectedScenes();
+            var selectedScenes = GetSelectedScenes();
             foreach (var id in selectedScenes)
             {
                 var scene = EditorSceneManager.GetSceneByHandle(id);
@@ -2025,7 +1822,7 @@ namespace UnityEditor
             CloseSelectedScenes(removeScenesFromHierarchy);
         }
 
-        bool UserAllowedDiscardingChanges(Scene[] modifiedScenes)
+        internal static bool UserAllowedDiscardingChanges(Scene[] modifiedScenes)
         {
             string title = LocalizationDatabase.GetLocalizedString("Discard Changes");
             string message = LocalizationDatabase.GetLocalizedString("Are you sure you want to discard the changes in the following scenes:\n\n   {0}\n\nYour changes will be lost.");
@@ -2036,7 +1833,7 @@ namespace UnityEditor
             return EditorUtility.DisplayDialog(title, message, LocalizationDatabase.GetLocalizedString("OK"), LocalizationDatabase.GetLocalizedString("Cancel"));
         }
 
-        void DiscardChangesInSelectedScenes(object userData)
+        internal void DiscardChangesInSelectedScenes(object userData)
         {
             var expandedSceneNames = GetExpandedSceneNames();
             var selectedSceneHandles = GetSelectedScenes();
@@ -2062,9 +1859,9 @@ namespace UnityEditor
             EditorApplication.RequestRepaintAllViews();
         }
 
-        Scene[] GetModifiedScenes(List<int> handles)
+        internal static Scene[] GetModifiedScenes(List<SceneHandle> handles)
         {
-            return handles.Select(handle => EditorSceneManager.GetSceneByHandle(handle)).Where(scene => scene.isDirty).ToArray();
+            return handles.Select(EditorSceneManager.GetSceneByHandle).Where(scene => scene.isDirty).ToArray();
         }
 
         void CloseSelectedScenes(bool removeScenes)
@@ -2082,7 +1879,7 @@ namespace UnityEditor
             EditorApplication.RequestRepaintAllViews();
         }
 
-        void AddNewScene(object userData)
+        internal static void AddNewScene(object userData)
         {
             // Check for existing untitled scene
             Scene untitledScene = EditorSceneManager.GetSceneByPath("");
@@ -2107,7 +1904,7 @@ namespace UnityEditor
                 EditorSceneManager.MoveSceneAfter(newScene, scene);
         }
 
-        void SelectSceneAsset(object userData)
+        internal static void SelectSceneAsset(object userData)
         {
             Scene scene = (Scene)userData;
             var sceneObject = AssetDatabase.LoadMainAssetAtPath(scene.path);
@@ -2117,21 +1914,21 @@ namespace UnityEditor
 
         void SelectAll()
         {
-            int[] instanceIDs = treeView.GetRowIDs();
+            var instanceIDs = treeView.GetRowIDs();
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
         }
 
         void DeselectAll()
         {
-            int[] instanceIDs = new int[0];
+            var instanceIDs = new EntityId[0];
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
         }
 
         void InvertSelection()
         {
-            int[] instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
+            var instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
             treeView.SetSelection(instanceIDs, true);
             TreeViewSelectionChanged(instanceIDs);
         }
@@ -2140,7 +1937,8 @@ namespace UnityEditor
         {
             foreach (var id in treeView.GetSelection())
             {
-                var scene = EditorSceneManager.GetSceneByHandle(id);
+                var sceneHandle = SceneHandle.From(id);
+                var scene = EditorSceneManager.GetSceneByHandle(sceneHandle);
                 if (IsSceneHeaderInHierarchyWindow(scene) && scene.isLoaded)
                 {
                     foreach (var rootGameObject in scene.GetRootGameObjects())
@@ -2165,23 +1963,24 @@ namespace UnityEditor
 
         void SelectChildren()
         {
-            List<int> instanceIDs = new List<int>(treeView.GetSelection());
+            List<EntityId> instanceIDs = new List<EntityId>(treeView.GetSelection());
             foreach (var id in treeView.GetSelection())
             {
-                var scene = EditorSceneManager.GetSceneByHandle(id);
+                var sceneHandle = SceneHandle.From(id);
+                var scene = EditorSceneManager.GetSceneByHandle(sceneHandle);
                 if (IsSceneHeaderInHierarchyWindow(scene))
                 {
                     foreach (var rootGameObject in scene.GetRootGameObjects())
                     {
                         instanceIDs.Add(rootGameObject.GetInstanceID());
-                        instanceIDs.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetInstanceID()));
+                        instanceIDs.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
                     }
                 }
                 else
                 {
                     var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
                     if (go != null)
-                        instanceIDs.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetInstanceID()));
+                        instanceIDs.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetEntityId()));
                 }
             }
 
@@ -2211,7 +2010,7 @@ namespace UnityEditor
 
         private void SelectPrefabRoot()
         {
-            List<int> instanceIDs = new List<int>(treeView.GetSelection().Length);
+            List<EntityId> instanceIDs = new List<EntityId>(treeView.GetSelection().Length);
             foreach (var id in treeView.GetSelection())
             {
                 var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
@@ -2230,24 +2029,6 @@ namespace UnityEditor
             TreeViewSelectionChanged(newSelection);
         }
 
-        static internal GameObject GetSourceRootWhereGameObjectIsAddedAsOverride(GameObject go)
-        {
-            if (go == null)
-                return null;
-
-            var source = PrefabUtility.GetCorrespondingObjectFromSource(go);
-
-            while (source != null)
-            {
-                if (PrefabUtility.IsAddedGameObjectOverride(source))
-                    return PrefabUtility.GetPrefabAssetRootGameObject(source);
-
-                source = PrefabUtility.GetCorrespondingObjectFromSource(source);
-            }
-
-            return null;
-        }
-
         public void CollapseAll()
         {
             treeViewState.expandedIDs.Clear();
@@ -2256,7 +2037,7 @@ namespace UnityEditor
 
         public void ExpandAll()
         {
-            int[] instanceIDs = treeView.GetRowIDs();
+            EntityId[] instanceIDs = treeView.GetRowIDs();
             foreach (var id in instanceIDs)
                 SetExpandedRecursive(id, true);
             ReloadData();
@@ -2268,7 +2049,7 @@ namespace UnityEditor
             menu.AddSeparator("");
             m_LockTracker.AddItemsToMenu(menu);
 
-            menu.AddItem(Styles.renamingEnabledContent, SceneHierarchyWindow.s_EnterRenameModeForNewGO, SceneHierarchyWindow.SwitchEnterRenameModeForNewGO);
+            menu.AddItem(Styles.renamingEnabledContent, HierarchyPreferences.RenameNewObjects, SceneHierarchyWindow.SwitchEnterRenameModeForNewGO);
 
             if (Unsupported.IsDeveloperMode())
             {
@@ -2374,7 +2155,7 @@ namespace UnityEditor
         {
             foreach (var selectedID in treeViewState.selectedIDs)
             {
-                var scene = EditorSceneManager.GetSceneByHandle(selectedID);
+                var scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(selectedID));
 
                 if (scene.IsValid())
                 {

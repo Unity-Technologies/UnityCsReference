@@ -125,8 +125,8 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Serialize/PersistentManager.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/FastPropertyName.h")]
     [NativeHeader("Runtime/Serialize/PersistentManager.h")]
-    [NativeHeader("Runtime/Threads/ThreadChecks.h")]
-    [NativeHeader("Runtime/Utilities/Word.h")]
+    [NativeHeader("NativeKernel/Threads/ThreadChecks.h")]
+    [NativeHeader("NativeKernel/Utilities/Word.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildPlayer.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetPlatformSpecific.h")]
     [NativeHeader("Runtime/Utilities/Argv.h")]
@@ -254,12 +254,22 @@ namespace UnityEditorInternal
         [NativeMethod("SetInspectorExpanded")]
         extern public static void SetIsInspectorExpanded(Object obj, bool isExpanded);
 
+        [Obsolete("expandedProjectWindowItems is deprecated. Use expandedProjectWindowItemIds instead", true)]
         extern public static int[] expandedProjectWindowItems
+        {
+            [StaticAccessor("AssetDatabase::GetProjectWindowHierarchyState()", StaticAccessorType.Dot)]
+            [NativeMethod("GetExpandedIntArray")]
+            get;
+            [FreeFunction("InternalEditorUtilityBindings::SetExpandedProjectWindowItems")]
+            set;
+        }
+
+        extern public static EntityId[] expandedProjectWindowItemIds
         {
             [StaticAccessor("AssetDatabase::GetProjectWindowHierarchyState()", StaticAccessorType.Dot)]
             [NativeMethod("GetExpandedArray")]
             get;
-            [FreeFunction("InternalEditorUtilityBindings::SetExpandedProjectWindowItems")]
+            [FreeFunction("InternalEditorUtilityBindings::SetExpandedProjectWindowItemIds")]
             set;
         }
 
@@ -287,12 +297,20 @@ namespace UnityEditorInternal
         extern public static LoadFileAndForgetOperation LoadSerializedFileAndForgetAsync(string path, long localIdentifierInFile, ulong offsetInFile=0, long fileSize=-1, Scene destScene = default);
 
         [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
+        extern public static DragAndDropVisualMode ProjectWindowDragV2([Unmarshalled] HierarchyIterator iterator, bool perform);
+        [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
+        [Obsolete("ProjectWindowDrag is obsolete. Use ProjectWindowDragV2 instead")]
         extern public static DragAndDropVisualMode ProjectWindowDrag([Unmarshalled] HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
+        extern public static DragAndDropVisualMode HierarchyWindowDragV2([Unmarshalled] HierarchyIterator iterator, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
+        [Obsolete("HierarchyWindowDrag is obsolete. Use HierarchyWindowDragV2 instead")]
         extern public static DragAndDropVisualMode HierarchyWindowDrag([Unmarshalled] HierarchyProperty property, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         public static DragAndDropVisualMode HierarchyWindowDragByID(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
+            => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
+        public static DragAndDropVisualMode HierarchyWindowDragByID(EntityId dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform)
             => HierarchyWindowDragByID(dropTargetInstanceID, GOCreationCommands.GetNewObjectPosition(), dropMode, parentForDraggedObjects, perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDragByID")]
@@ -481,7 +499,7 @@ namespace UnityEditorInternal
         [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
         extern internal static void CalculateAmbientProbeFromSkybox();
 
-        [Obsolete("SetupShaderMenu is obsolete. You can get list of available shaders with ShaderUtil.GetAllShaderInfos", true)]
+        [Obsolete("SetupShaderMenu is obsolete. You can get list of available shaders with ShaderUtil.GetAllShaderInfo", true)]
         public static void SetupShaderMenu(Material material) {}
 
         [FreeFunction("UnityConfig::GetUnityBuildFullVersion")]
@@ -1004,7 +1022,7 @@ namespace UnityEditorInternal
 
         [FreeFunction]
         [NativeHeader("Editor/Src/Undo/DefaultParentObjectUndo.h")]
-        internal static extern void RegisterSetDefaultParentObjectUndo(string sceneGUID, int instanceID, string undoName);
+        internal static extern void RegisterSetDefaultParentObjectUndo(Scene scene, int instanceID, string undoName);
 
         // Aux window functionality is quite brittle. It is strongly advised to avoid
         // using this method but if you really need it, consult Desktop team first.

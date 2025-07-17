@@ -66,6 +66,7 @@ namespace UnityEngine.UIElements
             // Assume events here bubble up or trickle down, otherwise HandleEventAtTargetPhase is called directly.
             if ((evt as IPointerEventInternal)?.compatibilityMouseEvent is EventBase compatibilityEvt)
             {
+                compatibilityEvt.AssignTimeStamp(evt.timestamp);
                 HandleEventAcrossPropagationPathWithCompatibilityEvent(evt, compatibilityEvt, panel, target, isCapturingTarget);
             }
             else
@@ -74,7 +75,27 @@ namespace UnityEngine.UIElements
             }
         }
 
-        public static void HandleEventAtTargetAndDefaultPhase(EventBase evt, [NotNull] BaseVisualElementPanel panel, [NotNull] VisualElement target)
+        /// <summary>
+        /// Sends event immediately, directly to the target.
+        /// </summary>
+        /// <remarks>Doesn't take the event queue into account.</remarks>
+        /// <remarks>Doesn't take the propagation properties into account.</remarks>
+        /// <remarks>Assumes panel is same as target's panel. Leads to undefined behaviour if that's not the case.</remarks>
+        /// <remarks>Assumes event interests are tested before calling this method.</remarks>
+        /// <remarks>Assumes event has not been handled before and has no stop propagation flags set.</remarks>
+        /// <param name="evt">The event to send</param>
+        /// <param name="panel">The panel that the target needs to remain on to get all its callbacks triggered</param>
+        /// <param name="target">The element handling the event</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void SendEventDirectlyToTarget(EventBase evt, BaseVisualElementPanel panel,
+            [NotNull] VisualElement target)
+        {
+            evt.elementTarget = target;
+            evt.AssignTimeStamp(target.TimeSinceStartupMs());
+            HandleEventAtTargetAndDefaultPhase(evt, panel, target);
+        }
+
+        public static void HandleEventAtTargetAndDefaultPhase(EventBase evt, BaseVisualElementPanel panel, VisualElement target)
         {
             var eventCategories = evt.eventCategories;
             if (!target.HasSelfEventInterests(eventCategories) || evt.isPropagationStopped)

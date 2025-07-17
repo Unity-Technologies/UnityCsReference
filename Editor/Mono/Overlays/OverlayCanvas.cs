@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.Toolbars;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Serialization;
@@ -89,18 +90,19 @@ namespace UnityEditor.Overlays
         internal SaveData(Overlay overlay, int indexInContainer)
         {
             if (indexInContainer < 0)
-                if (overlay.container == null || !overlay.container.GetOverlayIndex(overlay, out _, out indexInContainer))
+                if (overlay.container == null || !overlay.container.GetOverlayIndex(overlay, out int _, out indexInContainer))
                     indexInContainer = k_InvalidIndex;
 
             string container = overlay.container != null ? overlay.container.name : "";
-            DockPosition dock = overlay.container != null
-                                && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
-                ? DockPosition.Top
-                : DockPosition.Bottom;
+            overlay.container.GetOverlayIndex(overlay, out int section, out var _);
+            //DockPosition dock = overlay.container != null
+            //                    && overlay.container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer)
+            //    ? DockPosition.Top
+            //    : DockPosition.Bottom;
 
             containerId = container;
             index = indexInContainer;
-            dockPosition = dock;
+            dockPosition = (DockPosition)section;
             id = overlay.id;
             displayed = overlay.displayed;
             contents = EditorJsonUtility.ToJson(overlay);
@@ -191,6 +193,29 @@ namespace UnityEditor.Overlays
         public float scrollOffset;
     }
 
+    [Serializable]
+    sealed class DividerSaveData
+    {
+        public float percentage;
+    }
+
+    [Serializable]
+    sealed class DynamicPanelContainerData
+    {
+        public string containerId;
+        public float width;
+        public DynamicPanelOverlayContainer.ContainerSaveData saveData;
+
+        public DynamicPanelContainerData() { }
+
+        public DynamicPanelContainerData(DynamicPanelContainerData other)
+        {
+            containerId = other.containerId;
+            width = other.width;
+            saveData = other.saveData;
+        }
+    }
+
     //Dock position within container
     //for a horizontal container, Top is left, Bottom is right
     public enum DockPosition
@@ -216,25 +241,32 @@ namespace UnityEditor.Overlays
         BottomToolbar = 3,
         LeftColumn = 4,
         RightColumn = 5,
-        Floating = 6
+        Floating = 6,
+        LeftDynamicPanel = 7,
+        RightDynamicPanel = 8
+    }
+
+    enum OverlayCanvasMode
+    {
+        Default,
+        MainToolbar
     }
 
     [Serializable]
     public sealed class OverlayCanvas : ISerializationCallbackReceiver
     {
         internal static readonly string ussClassName = "unity-overlay-canvas";
-        const string k_UxmlPath = "UXML/Overlays/overlay-canvas.uxml";
         const string k_UxmlPathDropZone = "UXML/Overlays/overlay-toolbar-dropzone.uxml";
         internal const string k_StyleCommon = "StyleSheets/Overlays/OverlayCommon.uss";
         internal const string k_StyleLight = "StyleSheets/Overlays/OverlayLight.uss";
         internal const string k_StyleDark = "StyleSheets/Overlays/OverlayDark.uss";
-        internal const int k_OverlayMinVisibleArea = 24;
 
         const string k_FloatingContainer = "overlay-container--floating";
         const string k_ToolbarArea = "overlay-toolbar-area";
-        const string k_DropTargetClassName = "overlay-droptarget";
         const string k_DefaultContainer = "overlay-container-default";
-        static VisualTreeAsset s_TreeAsset;
+        const string k_WindowRootName = "overlay-window-root";
+        const string k_SceneContainersName = "overlay-scene-containers";
+        const string k_AnchoredContainerName = "AnchoredContainers";
         static VisualTreeAsset s_DropZoneTreeAsset;
 
         static SaveData defaultSaveData => new SaveData()
@@ -246,7 +278,7 @@ namespace UnityEditor.Overlays
         };
 
         // order must match OverlayDockArea
-        static readonly string[] k_DockZoneContainerIDs = new string[7]
+        static readonly string[] k_DockZoneContainerIDs = new string[9]
         {
             "overlay-toolbar__left",
             "overlay-toolbar__right",
@@ -254,22 +286,24 @@ namespace UnityEditor.Overlays
             "overlay-toolbar__bottom",
             "overlay-container--left",
             "overlay-container--right",
-            "Floating"
+            "Floating",
+            "overlay-dynamic-panel--left",
+            "overlay-dynamic-panel--right"
         };
 
         internal static DockZone GetDockZone(OverlayContainer container)
         {
-            for(int i = 0, c = k_DockZoneContainerIDs.Length; i < c; i++)
+            for (int i = 0, c = k_DockZoneContainerIDs.Length; i < c; i++)
                 if (k_DockZoneContainerIDs[i] == container.name)
                     return (DockZone)i;
             return DockZone.Floating;
         }
-        
+
         // used by tests
         [EditorBrowsable(EditorBrowsableState.Never)]
         internal OverlayContainer GetDockZoneContainer(DockZone zone)
         {
-            foreach(var container in m_Containers)
+            foreach (var container in m_Containers)
                 if (container.name == k_DockZoneContainerIDs[(int)zone])
                     return container;
             return null;
@@ -282,8 +316,9 @@ namespace UnityEditor.Overlays
         List<Overlay> m_Overlays = new List<Overlay>();
         List<Overlay> m_TransientOverlays = new();
 
+        internal static string k_DefaultPresetName = "Default";
         [SerializeField]
-        string m_LastAppliedPresetName = "Default";
+        string m_LastAppliedPresetName = k_DefaultPresetName;
 
         [SerializeField]
         List<SaveData> m_SaveData = new List<SaveData>();
@@ -292,14 +327,19 @@ namespace UnityEditor.Overlays
         List<ContainerData> m_ContainerData = new List<ContainerData>();
 
         [SerializeField]
+        List<DynamicPanelContainerData> m_DynamicPanelContainerData = new List<DynamicPanelContainerData>();
+
+        [SerializeField]
         bool m_OverlaysVisible = true;
-        
+
         bool m_OverlaysSupportEnabled = true;
+
+        OverlayCanvasMode m_Mode = OverlayCanvasMode.Default;
 
         VisualElement m_RootVisualElement;
         internal EditorWindow containerWindow { get; set; }
 
-        internal FloatingOverlayContainer floatingContainer => m_FloatingOverlayContainer ??= new FloatingOverlayContainer {canvas = this};
+        internal FloatingOverlayContainer floatingContainer => m_FloatingOverlayContainer ??= new FloatingOverlayContainer { canvas = this };
 
         FloatingOverlayContainer m_FloatingOverlayContainer;
         Overlay m_HoveredOverlay;
@@ -309,9 +349,10 @@ namespace UnityEditor.Overlays
         internal Overlay hoveredOverlay => m_HoveredOverlay;
         OverlayContainer hoveredOverlayContainer { get; set; }
         OverlayContainer defaultContainer { get; set; }
-        OverlayContainer defaultToolbarContainer { get; set; }
+        internal OverlayContainer defaultToolbarContainer { get; set; }
 
-        internal OverlayDockArea dockArea { get; private set; }
+        internal OverlayCanvasMode mode => m_Mode;
+
 
         List<OverlayContainer> m_Containers;
 
@@ -326,7 +367,9 @@ namespace UnityEditor.Overlays
         OverlayPopup m_PopupOverlay;
 
         VisualElement m_WindowRoot;
+        OverlayCanvasModeDefinition m_ModeDefinition;
         internal VisualElement windowRoot => m_WindowRoot;
+        internal OverlayDockArea dockArea { get; private set; }
 
         internal Action afterOverlaysInitialized;
         internal event Action<bool> overlaysEnabledChanged;
@@ -397,7 +440,38 @@ namespace UnityEditor.Overlays
             }
         }
 
+        internal enum DynamicPanelBehavior
+        {
+            None,
+            DisplaceWindow
+        }
+
+        [SerializeField]
+        DynamicPanelBehavior m_DynamicPanelBehavior = DynamicPanelBehavior.None;
+
+        internal DynamicPanelBehavior dynamicPanelBehavior
+        {
+            get => m_DynamicPanelBehavior;
+            set
+            {
+                if (m_DynamicPanelBehavior != value)
+                {
+                    m_DynamicPanelBehavior = value;
+                    DisplaceWindow();
+                }
+            }
+        }
+
         internal OverlayCanvas() { }
+
+        OverlayCanvasModeDefinition CreateModeDefinition(OverlayCanvasMode mode)
+        {
+            switch (mode)
+            {
+                case OverlayCanvasMode.MainToolbar: return new ToolbarCanvasModeDefinition();
+                default: return new DefaultCanvasModeDefinition();
+            }
+        }
 
         VisualElement CreateRoot()
         {
@@ -414,13 +488,13 @@ namespace UnityEditor.Overlays
             else
                 sheet = EditorGUIUtility.Load(k_StyleLight) as StyleSheet;
 
+            m_ModeDefinition = CreateModeDefinition(m_Mode);
+
             ve.styleSheets.Add(sheet);
 
-            if (s_TreeAsset == null)
-                s_TreeAsset = EditorGUIUtility.Load(k_UxmlPath) as VisualTreeAsset;
-
-            if (s_TreeAsset != null)
-                s_TreeAsset.CloneTree(ve);
+            var uxml = m_ModeDefinition.GetUXML();
+            if (uxml != null)
+                uxml.CloneTree(ve);
 
             if (s_DropZoneTreeAsset == null)
                 s_DropZoneTreeAsset = EditorGUIUtility.Load(k_UxmlPathDropZone) as VisualTreeAsset;
@@ -436,6 +510,8 @@ namespace UnityEditor.Overlays
 
             foreach (var container in m_Containers)
             {
+                container.canvas = this;
+
                 container.RegisterCallback<MouseEnterEvent>(OnMouseEnterOverlayContainer);
                 if (container.ClassListContains(k_DefaultContainer))
                 {
@@ -447,30 +523,104 @@ namespace UnityEditor.Overlays
 
                 var data = GetContainerData(container.name);
                 if (container is ToolbarOverlayContainer toolbar)
+                {
                     toolbar.scrollOffset = data.scrollOffset;
+                }
+
+                container.canvas = this;
             }
+
+            if (mode == OverlayCanvasMode.MainToolbar)
+                defaultContainer = defaultToolbarContainer;
 
             SetPickingMode(ve, PickingMode.Ignore);
 
             ve.RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
             ve.RegisterCallback<DetachFromPanelEvent>(OnDetachedFromPanel);
 
-            m_WindowRoot = ve.Q("overlay-window-root");
+            m_WindowRoot = ve.Q(k_WindowRootName);
+            var verticalContainer = ve.Q<VisualElement>("overlay-container-group--vertical");
 
-            ve.Add(dockArea = new OverlayDockArea(this));
-            m_WindowRoot.RegisterCallback<GeometryChangedEvent>((evt) =>
+            dockArea = m_ModeDefinition.GetDockArea(this, m_WindowRoot, verticalContainer, ve.Q<VisualElement>("AnchoredContainers"));
+            if (dockArea != null)
             {
-                var worldPos = m_WindowRoot.LocalToWorld(evt.newRect.position);
-#pragma warning disable CS0618 // Type or member is obsolete
-                dockArea.transform.position = ve.WorldToLocal(worldPos);
-#pragma warning restore CS0618 // Type or member is obsolete
-                dockArea.style.width = evt.newRect.width;
-                dockArea.style.height = evt.newRect.height;
-            });
+                ve.Add(dockArea);
+            }
 
             overlaysEnabled = m_OverlaysVisible;
 
             return ve;
+        }
+
+        void DisplaceWindow()
+        {
+            if (rootVisualElement == null)
+                return;
+
+            var verticalContainer = rootVisualElement.Q<VisualElement>("overlay-container-group--vertical");
+            if (verticalContainer == null)
+                return;
+
+            var leftDynamicPanelOverlayContainer = verticalContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameLeft);
+            var rightDynamicPanelOverlayContainer = verticalContainer.Q<DynamicPanelOverlayContainer>(className: DynamicPanelOverlayContainer.k_ClassNameRight);
+            if (leftDynamicPanelOverlayContainer == null || rightDynamicPanelOverlayContainer == null)
+                return;
+
+            if (dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow)
+            {
+                // Verify if the left and right dynamic panel overlay containers
+                // are direct children of the vertical overlay container group.
+                // If they are, the layout is already correct.
+                if (verticalContainer.Children().Contains(leftDynamicPanelOverlayContainer)
+                    && verticalContainer.Children().Contains(rightDynamicPanelOverlayContainer))
+                    return;
+
+                var leftToolbarContainer = verticalContainer.Q<ToolbarOverlayContainer>(ToolbarOverlayContainer.k_LeftToolbarName);
+                if (leftToolbarContainer == null)
+                    return;
+
+                var leftToolbarContainerIndex = verticalContainer.IndexOf(leftToolbarContainer);
+                verticalContainer.Insert(leftToolbarContainerIndex + 1, leftDynamicPanelOverlayContainer);
+
+                var rightToolbarContainer = verticalContainer.Q<ToolbarOverlayContainer>(ToolbarOverlayContainer.k_RightToolbarName);
+                if (rightToolbarContainer == null)
+                    return;
+
+                var rightToolbarContainerIndex = verticalContainer.IndexOf(rightToolbarContainer);
+                verticalContainer.Insert(rightToolbarContainerIndex, rightDynamicPanelOverlayContainer);
+            }
+            else if (dynamicPanelBehavior == DynamicPanelBehavior.None)
+            {
+                var sceneContainers = verticalContainer.Q<VisualElement>(k_SceneContainersName);
+                if (sceneContainers == null)
+                    return;
+
+                // Verify if the left and right dynamic panel overlay containers
+                // are direct children of the overlay scene container.
+                // If they are, the layout is already correct.
+                if (sceneContainers.Children().Contains(leftDynamicPanelOverlayContainer)
+                    && sceneContainers.Children().Contains(rightDynamicPanelOverlayContainer))
+                    return;
+
+                var anchoredContainer = sceneContainers.Q<VisualElement>(k_AnchoredContainerName);
+                if (anchoredContainer == null)
+                    return;
+
+                var anchoredContainerIndex = sceneContainers.IndexOf(anchoredContainer);
+                sceneContainers.Insert(anchoredContainerIndex, leftDynamicPanelOverlayContainer);
+
+                // Get the index of the anchored container again, after adding the
+                // left dynamic panel overlay container.
+                anchoredContainerIndex = sceneContainers.IndexOf(anchoredContainer);
+
+                if (anchoredContainerIndex == sceneContainers.childCount - 1)
+                    sceneContainers.Add(rightDynamicPanelOverlayContainer);
+                else
+                    sceneContainers.Insert(anchoredContainerIndex + 1, leftDynamicPanelOverlayContainer);
+            }
+
+            leftDynamicPanelOverlayContainer.UpdateStyling();
+            rightDynamicPanelOverlayContainer.UpdateStyling();
         }
 
         void SetPickingMode(VisualElement element, PickingMode mode)
@@ -513,12 +663,12 @@ namespace UnityEditor.Overlays
                 // This closing container is last instance of its type
                 if (containerTypeWindows.Length <= 1)
                 {
-                    // Ensures m_SaveData is refreshed.
+                    // Ensures m_SaveData and m_DynamicPanelContainerData are refreshed.
                     OnBeforeSerialize();
-                    overlayCanvasesData.AddAndSaveCanvasData(containerWindow, m_SaveData);
+                    overlayCanvasesData.AddAndSaveCanvasData(containerWindow, new OverlayCanvasesDataContainer(m_SaveData, m_DynamicPanelContainerData));
                 }
             }
-            
+
             foreach (var overlay in m_Overlays)
                 overlay.OnWillBeDestroyed();
         }
@@ -539,27 +689,16 @@ namespace UnityEditor.Overlays
             m_MouseInCurrentCanvas = false;
         }
 
-        internal Rect ClampToOverlayWindow(Rect rect)
+        // This ensures that the rect is at least partly contained within the boundary. Use ClampRectToRect if the rect needs to be fully within.
+        internal Rect EnsureOverlapsWindow(Rect rect)
         {
-            return ClampRectToBounds(rootVisualElement.localBound, rect);
+            return OverlayUtilities.EnsureRectOverlapsRect(rect, rootVisualElement.localBound);
         }
 
-        // ensure that a minimum area of a rect is within boundary
-        internal static Rect ClampRectToBounds(Rect boundary, Rect rectToClamp)
+        // This ensure the given rect is fully within the window (unless the window is smaller then the rect)
+        internal Rect ClampToWindow(Rect rect)
         {
-            if (rectToClamp.x > boundary.xMax - k_OverlayMinVisibleArea)
-                rectToClamp.x = boundary.xMax - k_OverlayMinVisibleArea;
-
-            if (rectToClamp.xMax < boundary.xMin + k_OverlayMinVisibleArea)
-                rectToClamp.x = (boundary.xMin + k_OverlayMinVisibleArea) - rectToClamp.width;
-
-            if (rectToClamp.y > boundary.yMax - k_OverlayMinVisibleArea)
-                rectToClamp.y = boundary.yMax - k_OverlayMinVisibleArea;
-
-            if (rectToClamp.y < boundary.yMin)
-                rectToClamp.y = boundary.yMin;
-
-            return rectToClamp;
+            return OverlayUtilities.ClampRectToRect(rect, rootVisualElement.localBound);
         }
 
         // clamp all overlays to  root visual element's new bounds
@@ -609,48 +748,92 @@ namespace UnityEditor.Overlays
 
         internal bool IsTransient(Overlay overlay) => m_TransientOverlays.Contains(overlay);
 
-        internal Func<OverlayUtilities.OverlayEditorWindowAssociation, bool> filterOverlays;
-
-        internal void Initialize(EditorWindow window)
+        internal void Initialize(EditorWindow window, OverlayCanvasMode mode = OverlayCanvasMode.Default, Func<string, bool> filter = null)
         {
             Profiler.BeginSample("OverlayCanvas.Initialize");
+
             containerWindow = window;
+            m_Mode = mode;
+            if (m_RootVisualElement == null)
+                m_RootVisualElement = CreateRoot();
 
             AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
 
-            List<Type> overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType(), filterOverlays);
-
-            // init all overlays
-            foreach (var overlayType in overlayTypes)
-                AddOverlay(OverlayUtilities.CreateOverlay(overlayType));
-            
-            // No save data deserialized from layout or this is a new instance
-            if (m_SaveData == null || m_SaveData.Count < 1)
+            if (mode == OverlayCanvasMode.MainToolbar)
             {
-                var containerTypeWindows = Resources.FindObjectsOfTypeAll(containerWindow.GetType());
-                var overlayCanvasesData = OverlayCanvasesData.instance;
-                
-                // If our container is not the first instance of its type (i.e. container window is duplicate),
-                // we want to "inherit" overlay save data from the last focused overlay canvas.
-                if (containerTypeWindows.Length > 1 && overlayCanvasesData.TryGetLastActiveCanvasForWindowType(containerWindow, out var lastActiveCanvas))
+                var mainToolbarElementDefintions = MainToolbar.GetAllElementDefinitions();
+                foreach (var definition in mainToolbarElementDefintions)
                 {
-                    lastActiveCanvas.CopySaveData(out var lastActiveCanvasData);
-                    m_SaveData = new List<SaveData>(lastActiveCanvasData);
+                    OverlayAttribute defaultOverlayAttrib = new OverlayAttribute();
+                    MainToolbarOverlay mainToolbarOverlay = new MainToolbarOverlay();
+                    mainToolbarOverlay.createElementMethod = definition.method;
+                    mainToolbarOverlay.Initialize(definition.attr.path, definition.attr.ussName, definition.attr.displayName, defaultOverlayAttrib.defaultSize, defaultOverlayAttrib.minSize, defaultOverlayAttrib.maxSize);
+                    AddOverlay(mainToolbarOverlay);
                 }
-                // Otherwise check if SaveData's been serialized in OverlayCanvasesData asset during last window close of container type.
-                else if (!overlayCanvasesData.GetCanvasSaveData(containerWindow, out m_SaveData))
+            }
+            else
+            {
+                List<Type> overlayTypes = OverlayUtilities.GetOverlaysForType(window.GetType(), filter);
+                // init all overlays
+                foreach (var overlayType in overlayTypes)
+                    AddOverlay(OverlayUtilities.CreateOverlay(overlayType));
+            }
+
+            if (window.GetType() != typeof(MainToolbarWindow))
+            {
+                // No save data deserialized from layout or this is a new instance
+                if (m_SaveData == null || m_SaveData.Count < 1)
                 {
-                    var preset = OverlayPresetManager.GetDefaultPreset(window.GetType());
-                    if (preset != null && preset.saveData != null)
-                        m_SaveData = new List<SaveData>(preset.saveData);
+                    var containerTypeWindows = Resources.FindObjectsOfTypeAll(containerWindow.GetType());
+                    var overlayCanvasesData = OverlayCanvasesData.instance;
+
+                    // If our container is not the first instance of its type (i.e. container window is duplicate),
+                    // we want to "inherit" overlay save data from the last focused overlay canvas.
+                    if (containerTypeWindows.Length > 1 && overlayCanvasesData.TryGetLastActiveCanvasForWindowType(containerWindow, out var lastActiveCanvas))
+                    {
+                        lastActiveCanvas.CopySaveData(out var lastActiveSaveData, out var lastActiveDynamicPanelContainerData);
+                        m_SaveData = new List<SaveData>(lastActiveSaveData);
+                        m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(lastActiveDynamicPanelContainerData);
+                    }
+                    // Otherwise check if SaveData's been serialized in OverlayCanvasesData asset during last window close of container type.
+                    else
+                    {
+                        var foundDataContainer = overlayCanvasesData.GetCanvasData(containerWindow, out var dataContainer);
+                        if (foundDataContainer)
+                        {
+                            m_SaveData = dataContainer.m_SaveData;
+                            m_DynamicPanelContainerData = dataContainer.m_DynamicPanelContainerData;
+                        }
+                        else
+                        {
+                            var preset = OverlayPresetManager.GetDefaultPreset(window.GetType());
+                            if (preset != null)
+                            {
+                                if (preset.saveData != null)
+                                    m_SaveData = new List<SaveData>(preset.saveData);
+
+                                if (preset.dynamicPanelContainerData != null)
+                                    m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(preset.dynamicPanelContainerData);
+                            }
+                        }
+                    }
                 }
             }
 
-            // If save data is still null at this point, initialize it to empty list as code down the line is not expecting it to be null
+            // If save data is still null at this point, initialize it to empty list as code down the line is not expecting it to be null.
             if (m_SaveData == null)
                 m_SaveData = new List<SaveData>();
 
+            // If dynamic panel container data is still null at this point, initialize it to empty list as code down the line is not
+            // expecting it to be null.
+            if (m_DynamicPanelContainerData == null)
+                m_DynamicPanelContainerData = new List<DynamicPanelContainerData>();
+
             RestoreOverlays();
+
+            if (dynamicPanelBehavior == DynamicPanelBehavior.DisplaceWindow)
+                DisplaceWindow();
+
             Profiler.EndSample();
         }
 
@@ -681,24 +864,27 @@ namespace UnityEditor.Overlays
             {
                 if (container != null)
                 {
-                    var before = container.GetSection(OverlayContainerSection.BeforeSpacer);
-                    var after = container.GetSection(OverlayContainerSection.AfterSpacer);
-
-                    for (int i = 0, c = before.Count; i < c; ++i)
+                    for (int i = 0; i < container.sectionCount; ++i)
                     {
-                        if (!before[i].dontSaveInLayout)
-                            WriteOrReplaceSaveData(before[i], i);
-                    }
-
-                    for (int i = 0, c = after.Count; i < c; ++i)
-                    {
-                        if (!after[i].dontSaveInLayout)
-                            WriteOrReplaceSaveData(after[i], i);
+                        var section = container.GetContainerSection(i);
+                        for (int j = 0; j < section.overlayCount; ++j)
+                        {
+                            var overlay = section.GetOverlay(j);
+                            if (!overlay.dontSaveInLayout)
+                                WriteOrReplaceSaveData(overlay, j);
+                        }
                     }
 
                     var data = GetContainerData(container.name);
                     if (container is ToolbarOverlayContainer toolbar)
                         data.scrollOffset = toolbar.scrollOffset;
+
+                    if (container is DynamicPanelOverlayContainer dynamicPanelOverlayContainer)
+                    {
+                        var dynamicPanelOverlayContainerData = GetDynamicPanelOverlayContainerData(container.name);
+                        dynamicPanelOverlayContainerData.saveData = dynamicPanelOverlayContainer.GetSaveData();
+                        dynamicPanelOverlayContainerData.width = dynamicPanelOverlayContainer.width;
+                    }
                 }
             }
         }
@@ -706,13 +892,30 @@ namespace UnityEditor.Overlays
         public void OnAfterDeserialize() {}
 
         // used by tests
-        internal void CopySaveData(out SaveData[] saveData)
+        internal void CopySaveData(out SaveData[] saveData, out DynamicPanelContainerData[] dynamicPanelContainerData)
         {
             // Force a save of the current data
             OnBeforeSerialize();
+
             saveData = m_SaveData.ToArray();
             for (int i = 0; i < saveData.Length; ++i)
                 saveData[i] = new SaveData(saveData[i]);
+
+            dynamicPanelContainerData = m_DynamicPanelContainerData.ToArray();
+            for (int i = 0; i < dynamicPanelContainerData.Length; ++i)
+                dynamicPanelContainerData[i] = new DynamicPanelContainerData(dynamicPanelContainerData[i]);
+        }
+
+        internal void SavePreset(OverlayPreset preset)
+        {
+            CopySaveData(out var saveData, out var dynamicPanelContainerData);
+            preset.saveData = saveData;
+            preset.dynamicPanelContainerData = dynamicPanelContainerData;
+        }
+
+        internal void SetLastAppliedPresetName(string name)
+        {
+            m_LastAppliedPresetName = name;
         }
 
         internal void ApplyPreset(IOverlayPreset preset)
@@ -724,15 +927,20 @@ namespace UnityEditor.Overlays
                 return;
             }
 
-            m_LastAppliedPresetName = preset.name;
-            ApplySaveData(preset.saveData);
+            SetLastAppliedPresetName(preset.name);
+            ApplySaveData(preset.saveData, preset.dynamicPanelContainerData);
             preset.ApplyCustomData(this);
             presetChanged?.Invoke();
         }
 
-        internal void ApplySaveData(SaveData[] saveData)
+        internal void ApplySaveData(SaveData[] saveData, DynamicPanelContainerData[] dynamicPanelContainerData)
         {
-            m_SaveData = new List<SaveData>(saveData);
+            if (saveData != null)
+                m_SaveData = new List<SaveData>(saveData);
+
+            if (dynamicPanelContainerData != null)
+                m_DynamicPanelContainerData = new List<DynamicPanelContainerData>(dynamicPanelContainerData);
+
             RestoreOverlays();
         }
 
@@ -756,7 +964,7 @@ namespace UnityEditor.Overlays
         // created using this method.
         public void Add(Overlay overlay)
         {
-            if(m_Overlays.Contains(overlay))
+            if (m_Overlays.Contains(overlay))
                 return;
             overlay.canvas?.Remove(overlay);
             AddOverlay(overlay, true);
@@ -870,7 +1078,7 @@ namespace UnityEditor.Overlays
             if (overlay == null)
                 return;
 
-            if(!OverlayUtilities.EnsureValidId(m_Overlays, overlay))
+            if (!OverlayUtilities.EnsureValidId(m_Overlays, overlay))
             {
                 Debug.LogError($"An overlay with id \"{overlay.id}\" was already registered to window " +
                     $"({containerWindow.titleContent.text}).");
@@ -913,7 +1121,7 @@ namespace UnityEditor.Overlays
             if (string.IsNullOrEmpty(id))
                 id = attrib.id;
 
-            if(TryGetOverlay(id, out T overlay))
+            if (TryGetOverlay(id, out T overlay))
                 return overlay;
 
             overlay = new T();
@@ -954,6 +1162,20 @@ namespace UnityEditor.Overlays
                     data.floating = attrib.defaultDockZone == DockZone.Floating;
 #pragma warning restore 612
                 }
+
+                if (mode == OverlayCanvasMode.MainToolbar && overlay is MainToolbarOverlay mtOverlay)
+                {
+                    data.containerId = k_DockZoneContainerIDs[(int)DockZone.TopToolbar];
+                    overlay.layout = Layout.HorizontalToolbar;
+
+                    var attr = mtOverlay.createElementMethod.GetCustomAttribute<MainToolbarElementAttribute>();
+                    if (attr != null)
+                    {
+                        data.index = attr.defaultDockIndex;
+                        data.dockPosition = (DockPosition)(int)attr.defaultDockPosition;
+                        data.displayed = attr.defaultDisplay;
+                    }
+                }
             }
 
             return data;
@@ -970,19 +1192,18 @@ namespace UnityEditor.Overlays
 
             if (attrib.defaultDockPosition == DockPosition.Top)
             {
-                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.BeforeSpacer) - (container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer) ? 1 : 0));
-
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetContainerSection(OverlayContainerSection.BeforeSpacer).overlayCount - (container.ContainsOverlay(overlay, OverlayContainerSection.BeforeSpacer) ? 1 : 0));
                 overlay.DockAt(container, OverlayContainerSection.BeforeSpacer, index);
             }
             else if (attrib.defaultDockPosition == DockPosition.Bottom)
             {
-                var index = Mathf.Min(attrib.defaultDockIndex, container.GetSectionCount(OverlayContainerSection.AfterSpacer) - (container.ContainsOverlay(overlay, OverlayContainerSection.AfterSpacer) ? 1 : 0));
+                var index = Mathf.Min(attrib.defaultDockIndex, container.GetContainerSection(OverlayContainerSection.AfterSpacer).overlayCount - (container.ContainsOverlay(overlay, OverlayContainerSection.AfterSpacer) ? 1 : 0));
                 overlay.DockAt(container, OverlayContainerSection.AfterSpacer, index);
             }
             else
                 throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
 
-            if(overlay.floating)
+            if (overlay.floating)
                 overlay.Undock();
 
             if (overlay.displayed != attrib.defaultDisplay)
@@ -999,7 +1220,7 @@ namespace UnityEditor.Overlays
 
         public void RestoreOverlay(Overlay overlay, SaveData data = null)
         {
-            if(data == null)
+            if (data == null)
                 data = FindSaveData(overlay);
 
             try
@@ -1011,10 +1232,10 @@ namespace UnityEditor.Overlays
                 data.contents = string.Empty;
             }
 
-            #pragma warning disable 618
-            if(string.IsNullOrEmpty(data.contents))
+#pragma warning disable 618
+            if (string.IsNullOrEmpty(data.contents))
                 overlay.ApplySaveData(data);
-            #pragma warning restore 618
+#pragma warning restore 618
 
             var container = m_Containers.FirstOrDefault(x => data.containerId == x.name);
 
@@ -1022,28 +1243,21 @@ namespace UnityEditor.Overlays
             // this doesn't really need to be true (floating Overlays don't need a Container), the code isn't capable
             // of handling that case. So if a valid container can't be found from the serialized data, we just add it
             // to a default container.
-            if(container == null)
+            if (container == null)
                 container = overlay is ToolbarOverlay ? defaultToolbarContainer : defaultContainer;
-
-
 
             // Overlays are sorted by their index in containers so we can directly add them to top or bottom without
             // thinking of order
-            if (data.dockPosition == DockPosition.Top || container is FloatingOverlayContainer)
-                overlay.DockAt(container, OverlayContainerSection.BeforeSpacer);
-            else if (data.dockPosition == DockPosition.Bottom)
-                overlay.DockAt(container, OverlayContainerSection.AfterSpacer);
-            else
-                throw new Exception("data.dockPosition is not Top or Bottom, did someone add a new one?");
+            overlay.DockAt(container, (OverlayContainerSection)data.dockPosition);
 
-            if(overlay.floating)
+            if (overlay.floating)
                 overlay.Undock();
 
             // when restoring an overlay from serialized state, always start from "not shown" state so that
             // Overlay.displayedChanged is called
             overlay.rootVisualElement.style.display = DisplayStyle.None;
 
-            if(overlay.displayed != data.displayed)
+            if (overlay.displayed != data.displayed)
                 overlay.displayed = data.displayed;
             else
                 overlay.RebuildContent();
@@ -1077,6 +1291,16 @@ namespace UnityEditor.Overlays
             foreach (var o in ordered)
                 RestoreOverlay(o.Item2, o.Item1);
 
+            foreach (var container in m_Containers)
+            {
+                if (container is DynamicPanelOverlayContainer dynamicPanelOverlayContainer)
+                {
+                    var dynamicPanelOverlayContainerData = GetDynamicPanelOverlayContainerData(container.name);
+                    dynamicPanelOverlayContainer.ApplySaveData(dynamicPanelOverlayContainerData.saveData);
+                    dynamicPanelOverlayContainer.SetWidth(dynamicPanelOverlayContainerData.width);
+                }
+            }
+
             afterOverlaysInitialized?.Invoke();
         }
 
@@ -1093,6 +1317,30 @@ namespace UnityEditor.Overlays
             };
 
             m_ContainerData.Add(newData);
+            return newData;
+        }
+
+        // Used in tests.
+        internal DynamicPanelContainerData GetDynamicPanelOverlayContainerData(string containerId)
+        {
+            foreach (var data in m_DynamicPanelContainerData)
+            {
+                if (data.containerId == containerId)
+                    return data;
+            }
+
+            var newData = new DynamicPanelContainerData
+            {
+                containerId = containerId,
+                width = 0,
+                saveData = new DynamicPanelOverlayContainer.ContainerSaveData
+                {
+                    state = DynamicPanelOverlayContainer.State.Panel,
+                    overlayData = new List<DynamicPanelOverlayContainer.OverlaySaveData>()
+                }
+            };
+
+            m_DynamicPanelContainerData.Add(newData);
             return newData;
         }
     }

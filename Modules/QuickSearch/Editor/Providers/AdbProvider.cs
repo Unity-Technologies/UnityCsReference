@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.IO;
+using UnityEngine;
 
 namespace UnityEditor.Search.Providers
 {
@@ -59,7 +60,7 @@ namespace UnityEditor.Search.Providers
             var rIt = AssetDatabase.EnumerateAllAssets(searchFilter);
             while (rIt.MoveNext())
             {
-                yield return rIt.Current.instanceID;
+                yield return rIt.Current.entityId;
             }
         }
 
@@ -79,7 +80,7 @@ namespace UnityEditor.Search.Providers
         public static IEnumerable<string> EnumeratePaths(SearchContext context)
         {
             foreach (var id in EnumerateInstanceIDs(context))
-                yield return AssetDatabase.GetAssetPath(id);
+                yield return AssetDatabase.GetAssetPath((EntityId)id);
         }
 
         static Dictionary<string, UnityEngine.Object[]> s_BundleResourceObjects = new Dictionary<string, UnityEngine.Object[]>();
@@ -109,12 +110,12 @@ namespace UnityEditor.Search.Providers
             // Search asset database
             foreach (var id in EnumerateInstanceIDs(context))
             {
-                var path = AssetDatabase.GetAssetPath(id);
+                var path = AssetDatabase.GetAssetPath((EntityId)id);
                 if (string.IsNullOrEmpty(path))
                     continue;
                 var gid = GlobalObjectId.GetGlobalObjectIdSlow(id).ToString();
                 var flags = SearchDocumentFlags.Asset;
-                if (AssetDatabase.IsSubAsset(id))
+                if (AssetDatabase.IsSubAsset((EntityId)id))
                 {
                     var obj = UnityEngine.Object.FindObjectFromInstanceID(id);
                     var filename = Path.GetFileNameWithoutExtension(path);

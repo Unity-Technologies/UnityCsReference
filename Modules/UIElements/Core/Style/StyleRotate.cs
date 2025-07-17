@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style value that can be either a <see cref="Rotate"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleRotate : IStyleValue<Rotate>, IEquatable<StyleRotate>
     {
         /// <summary>
@@ -75,7 +76,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private Rotate m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

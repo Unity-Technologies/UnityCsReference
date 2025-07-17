@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
@@ -46,7 +47,7 @@ namespace UnityEditor
         [SerializeField]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
-        private int[] m_SceneHandles;
+        private SceneHandle[] m_SceneHandles;
         [SerializeField]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
@@ -79,7 +80,7 @@ namespace UnityEditor
         public string[] assetLabels { get { return m_AssetLabels; } set { m_AssetLabels = value; }}
         public string[] assetBundleNames { get { return m_AssetBundleNames; } set { m_AssetBundleNames = value; }}
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; }}
-        public int[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; }}
+        public SceneHandle[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; }}
         public bool showAllHits { get { return m_ShowAllHits; } set { m_ShowAllHits = value; }}
         public bool skipHidden { get { return m_SkipHidden; } set { m_SkipHidden = value; }}
         public string[] folders { get { return m_Folders; } set { m_Folders = value; }}
@@ -101,7 +102,7 @@ namespace UnityEditor
             m_AssetLabels = new string[0];
             m_AssetBundleNames = new string[0];
             m_ReferencingInstanceIDs = new int[0];
-            m_SceneHandles = new int[0];
+            m_SceneHandles = new SceneHandle[0];
             m_Globs = new string[0];
             m_ProductIds = new int[0];
             m_AnyWithAssetOrigin = false;

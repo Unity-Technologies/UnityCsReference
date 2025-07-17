@@ -383,7 +383,7 @@ namespace UnityEngine.TextCore.Text
                                     if (paramCount != 4) return false;
 
                                     highlightPadding = new Offset(m_AttributeParameterValues[0], m_AttributeParameterValues[1], m_AttributeParameterValues[2], m_AttributeParameterValues[3]);
-                                    highlightPadding *= m_FontSize * 0.01f * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                    highlightPadding *= m_FontSize * 0.01f ;
                                     break;
                             }
                         }
@@ -410,7 +410,7 @@ namespace UnityEngine.TextCore.Text
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.subscriptSize > 0 ? m_CurrentFontAsset.faceInfo.subscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
                         m_MaterialReferenceStack.Push(m_MaterialReferences[m_CurrentMaterialIndex]);
-                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.subscriptOffset * fontScale * m_FontScaleMultiplier;
 
                         m_FontStyleStack.Add(FontStyles.Subscript);
@@ -434,7 +434,7 @@ namespace UnityEngine.TextCore.Text
                         m_FontScaleMultiplier *= m_CurrentFontAsset.faceInfo.superscriptSize > 0 ? m_CurrentFontAsset.faceInfo.superscriptSize : 1;
                         m_BaselineOffsetStack.Push(m_BaselineOffset);
                         m_MaterialReferenceStack.Push(m_MaterialReferences[m_CurrentMaterialIndex]);
-                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                        fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                         m_BaselineOffset += m_CurrentFontAsset.faceInfo.superscriptOffset * fontScale * m_FontScaleMultiplier;
 
                         m_FontStyleStack.Add(FontStyles.Superscript);
@@ -458,7 +458,7 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch ((int)value)
                         {
@@ -507,16 +507,16 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_XAdvance = value * (generationSettings.isOrthographic ? 1.0f : 0.1f);
+                                m_XAdvance = value;
                                 //m_isIgnoringAlignment = true;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_XAdvance = value * m_CurrentFontSize * (generationSettings.isOrthographic ? 1.0f : 0.1f);
+                                m_XAdvance = value * m_CurrentFontSize;
                                 //m_isIgnoringAlignment = true;
                                 return true;
                             case TagUnitType.Percentage:
@@ -532,15 +532,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_BaselineOffset = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_BaselineOffset = value * generationSettings.pixelsPerPoint;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_BaselineOffset = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_BaselineOffset = value  * m_CurrentFontSize;
                                 return true;
                             case TagUnitType.Percentage:
                                 //m_BaselineOffset = m_MarginHeight * val / 100;
@@ -551,14 +551,8 @@ namespace UnityEngine.TextCore.Text
                         m_BaselineOffset = 0;
                         return true;
                     case MarkupTag.PAGE:
-                        // This tag only works when Overflow - Page mode is used.
-                        if (generationSettings.overflowMode == TextOverflowMode.Page)
-                        {
-                            m_XAdvance = 0 + m_TagLineIndent + m_TagIndent;
-                            m_LineOffset = 0;
-                            m_PageNumber += 1;
-                            m_IsNewPage = true;
-                        }
+                        // This tag only works when Overflow - Page mode is used
+                        // TODO Remove page tag parsing
                         return true;
                     case MarkupTag.NO_BREAK:
                         m_IsNonBreakingSpace = true;
@@ -570,26 +564,26 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
-                            case TagUnitType.Pixels:
+                            case TagUnitType.Pixels: //scalePixelValues (need to apply scaling)
                                 if (m_HtmlTag[5] == k_Plus) // <size=+00>
                                 {
-                                    m_CurrentFontSize = m_FontSize + value;
+                                    m_CurrentFontSize = m_FontSize + value * generationSettings.pixelsPerPoint;
                                     m_SizeStack.Add(m_CurrentFontSize);
                                     return true;
                                 }
                                 else if (m_HtmlTag[5] == k_HyphenMinus) // <size=-00>
                                 {
-                                    m_CurrentFontSize = m_FontSize + value;
+                                    m_CurrentFontSize = m_FontSize + value * generationSettings.pixelsPerPoint;
                                     m_SizeStack.Add(m_CurrentFontSize);
                                     return true;
                                 }
                                 else // <size=00.0>
                                 {
-                                    m_CurrentFontSize = value;
+                                    m_CurrentFontSize = value * generationSettings.pixelsPerPoint;
                                     m_SizeStack.Add(m_CurrentFontSize);
                                     return true;
                                 }
@@ -782,15 +776,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_XAdvance += value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_XAdvance += value * generationSettings.pixelsPerPoint;
                                 return true;
                             case TagUnitType.FontUnits:
-                                m_XAdvance += value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_XAdvance += value * m_CurrentFontSize;
                                 return true;
                             case TagUnitType.Percentage:
                                 // Not applicable
@@ -809,6 +803,7 @@ namespace UnityEngine.TextCore.Text
                             // For IMGUI, we want to treat the a tag as we do with the link tag
                             if (generationSettings.isIMGUI && textInfo != null)
                             {
+                                CloseLastLinkTag(textInfo);
                                 int index = textInfo.linkCount;
 
                                 if (index + 1 > textInfo.linkInfo.Length)
@@ -831,9 +826,11 @@ namespace UnityEngine.TextCore.Text
                                 }
                                 if (m_XmlAttribute[1].valueLength > 0)
                                     textInfo.linkInfo[index].SetLinkId(m_HtmlTag, 2, lastIndex - 1);
+                                textInfo.linkCount += 1;
                             }
                             else if (m_XmlAttribute[1].nameHashCode == (int)MarkupTag.HREF && textInfo != null)
                             {
+                                CloseLastLinkTag(textInfo);
                                 // Make sure linkInfo array is of appropriate size.
                                 int index = textInfo.linkCount;
 
@@ -844,8 +841,9 @@ namespace UnityEngine.TextCore.Text
                                 textInfo.linkInfo[index].linkTextfirstCharacterIndex = m_CharacterCount;
                                 textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[1].valueStartIndex;
                                 textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
+                                textInfo.linkInfo[index].linkTextLength = -1;
+                                textInfo.linkCount += 1;
                             }
-                            textInfo.linkCount += 1;
                         }
                         return true;
 
@@ -868,6 +866,7 @@ namespace UnityEngine.TextCore.Text
                     case MarkupTag.LINK:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
+                            CloseLastLinkTag(textInfo);
                             int index = textInfo.linkCount;
 
                             if (index + 1 > textInfo.linkInfo.Length)
@@ -878,16 +877,22 @@ namespace UnityEngine.TextCore.Text
 
                             textInfo.linkInfo[index].linkIdFirstCharacterIndex = startIndex + m_XmlAttribute[0].valueStartIndex;
                             textInfo.linkInfo[index].SetLinkId(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
+                            textInfo.linkInfo[index].linkTextLength = -1;
+
+                            textInfo.linkCount += 1;
                         }
                         return true;
                     case MarkupTag.SLASH_LINK:
                         if (m_isTextLayoutPhase && !m_IsCalculatingPreferredValues && textInfo != null)
                         {
-                            if (textInfo.linkCount < textInfo.linkInfo.Length)
+                            if (textInfo.linkInfo.Length <= 0 || textInfo.linkCount <= 0)
                             {
-                                textInfo.linkInfo[textInfo.linkCount].linkTextLength = m_CharacterCount - textInfo.linkInfo[textInfo.linkCount].linkTextfirstCharacterIndex;
-
-                                textInfo.linkCount += 1;
+                                if (generationSettings.textSettings.displayWarnings)
+                                    Debug.LogWarning($"There seems to be an issue with the formatting of the <link> tag. Possible issues include: missing or misplaced closing '>', missing or incorrect attribute, or unclosed quotes for attribute values. Please review the tag syntax.");
+                            }
+                            else
+                            {
+                                textInfo.linkInfo[textInfo.linkCount - 1].linkTextLength = m_CharacterCount - textInfo.linkInfo[textInfo.linkCount - 1].linkTextfirstCharacterIndex;
                             }
                         }
                         return true;
@@ -923,12 +928,12 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_Width = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_Width = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
                                 return false;
@@ -1158,15 +1163,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_CSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_CSpacing = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_CSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_CSpacing = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 return false;
@@ -1187,15 +1192,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (m_XmlAttribute[0].unitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MonoSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MonoSpacing = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MonoSpacing = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MonoSpacing = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 return false;
@@ -1219,15 +1224,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_TagIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_TagIndent = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_TagIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_TagIndent = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_TagIndent = m_MarginWidth * value / 100;
@@ -1245,15 +1250,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_TagLineIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_TagLineIndent = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_TagLineIndent = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_TagLineIndent = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_TagLineIndent = m_MarginWidth * value / 100;
@@ -1274,11 +1279,7 @@ namespace UnityEngine.TextCore.Text
                         if (m_XmlAttribute[0].valueType == TagValueType.None || m_XmlAttribute[0].valueType == TagValueType.NumericalValue)
                         {
                             // No Sprite Asset is assigned to the text object
-                            if (generationSettings.spriteAsset != null)
-                            {
-                                m_CurrentSpriteAsset = generationSettings.spriteAsset;
-                            }
-                            else if (textSettings.defaultSpriteAsset != null)
+                            if (textSettings.defaultSpriteAsset != null)
                             {
                                 m_CurrentSpriteAsset = textSettings.defaultSpriteAsset;
                             }
@@ -1335,7 +1336,7 @@ namespace UnityEngine.TextCore.Text
                             int index = (int)TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                             // Reject tag if value is invalid.
-                            if (index == Int16.MinValue) return false;
+                            if (index == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                             // Check to make sure sprite index is valid
                             if (index > m_CurrentSpriteAsset.spriteCharacterTable.Count - 1) return false;
@@ -1364,7 +1365,7 @@ namespace UnityEngine.TextCore.Text
                                     index = (int)TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[1].valueStartIndex, m_XmlAttribute[1].valueLength);
 
                                     // Reject tag if value is invalid.
-                                    if (index == Int16.MinValue) return false;
+                                    if (index == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                                     // Check to make sure sprite index is valid
                                     if (index > m_CurrentSpriteAsset.spriteCharacterTable.Count - 1) return false;
@@ -1452,16 +1453,16 @@ namespace UnityEngine.TextCore.Text
                                 value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength); // px
 
                                 // Reject tag if value is invalid.
-                                if (value == Int16.MinValue) return false;
+                                if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                                 // Determine tag unit type
                                 switch (tagUnitType)
                                 {
                                     case TagUnitType.Pixels:
-                                        m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                        m_MarginLeft = value * generationSettings.pixelsPerPoint;
                                         break;
                                     case TagUnitType.FontUnits:
-                                        m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                        m_MarginLeft = value * m_CurrentFontSize;
                                         break;
                                     case TagUnitType.Percentage:
                                         m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1483,15 +1484,15 @@ namespace UnityEngine.TextCore.Text
                                             value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[i].valueStartIndex, m_XmlAttribute[i].valueLength); // px
 
                                             // Reject tag if value is invalid.
-                                            if (value == Int16.MinValue) return false;
+                                            if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                                             switch (m_XmlAttribute[i].unitType)
                                             {
                                                 case TagUnitType.Pixels:
-                                                    m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                                    m_MarginLeft = value * generationSettings.pixelsPerPoint;
                                                     break;
                                                 case TagUnitType.FontUnits:
-                                                    m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                                    m_MarginLeft = value * m_CurrentFontSize;
                                                     break;
                                                 case TagUnitType.Percentage:
                                                     m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1504,15 +1505,15 @@ namespace UnityEngine.TextCore.Text
                                             value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[i].valueStartIndex, m_XmlAttribute[i].valueLength); // px
 
                                             // Reject tag if value is invalid.
-                                            if (value == Int16.MinValue) return false;
+                                            if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                                             switch (m_XmlAttribute[i].unitType)
                                             {
                                                 case TagUnitType.Pixels:
-                                                    m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                                    m_MarginRight = value * generationSettings.pixelsPerPoint;
                                                     break;
                                                 case TagUnitType.FontUnits:
-                                                    m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                                    m_MarginRight = value * m_CurrentFontSize;
                                                     break;
                                                 case TagUnitType.Percentage:
                                                     m_MarginRight = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1534,15 +1535,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength); // px
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MarginLeft = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MarginLeft = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MarginLeft = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_MarginLeft = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1554,15 +1555,15 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength); // px
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_MarginRight = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_MarginRight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_MarginRight = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
                                 m_MarginRight = (m_MarginWidth - (m_Width != -1 ? m_Width : 0)) * value / 100;
@@ -1574,18 +1575,18 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         switch (tagUnitType)
                         {
                             case TagUnitType.Pixels:
-                                m_LineHeight = value * (generationSettings.isOrthographic ? 1 : 0.1f);
+                                m_LineHeight = value * generationSettings.pixelsPerPoint;
                                 break;
                             case TagUnitType.FontUnits:
-                                m_LineHeight = value * (generationSettings.isOrthographic ? 1 : 0.1f) * m_CurrentFontSize;
+                                m_LineHeight = value * m_CurrentFontSize;
                                 break;
                             case TagUnitType.Percentage:
-                                fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale * (generationSettings.isOrthographic ? 1 : 0.1f));
+                                fontScale = (m_CurrentFontSize / m_CurrentFontAsset.faceInfo.pointSize * m_CurrentFontAsset.faceInfo.scale );
                                 m_LineHeight = generationSettings.fontAsset.faceInfo.lineHeight * value / 100 * fontScale;
                                 break;
                         }
@@ -1622,7 +1623,7 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat) return false;
 
                         m_FXScale = new Vector3(value, 1, 1);
 
@@ -1635,7 +1636,7 @@ namespace UnityEngine.TextCore.Text
                         value = TextGeneratorUtilities.ConvertToFloat(m_HtmlTag, m_XmlAttribute[0].valueStartIndex, m_XmlAttribute[0].valueLength);
 
                         // Reject tag if value is invalid.
-                        if (value == Int16.MinValue) return false;
+                        if (value == TextGeneratorUtilities.largeNegativeFloat  ) return false;
 
                         m_FXRotation = Quaternion.Euler(0, 0, value);
 
@@ -1728,6 +1729,24 @@ namespace UnityEngine.TextCore.Text
             #endregion
 
             return false;
+        }
+
+        internal void CloseLastLinkTag(TextInfo textInfo)
+        {
+            if (textInfo.linkInfo.Length > 0 && textInfo.linkCount > 0)
+                CloseLinkTag(textInfo, textInfo.linkCount - 1);
+        }
+
+        internal void CloseAllLinkTags(TextInfo textInfo)
+        {
+            for (int i = textInfo.linkCount - 1; i >= 0; i--)
+                CloseLinkTag(textInfo, i);
+        }
+
+        private void CloseLinkTag(TextInfo textInfo, int index)
+        {
+            if (textInfo.linkInfo[index].linkTextLength == -1)
+                textInfo.linkInfo[index].linkTextLength = m_CharacterCount - textInfo.linkInfo[index].linkTextfirstCharacterIndex;
         }
 
         void ClearMarkupTagAttributes()

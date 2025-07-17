@@ -331,11 +331,6 @@ namespace UnityEditor
             visualTree.Query<TextElement>().ForEach((te) => k_QueryIncrementVersion(te, changeType));
         }
 
-        internal void UpdateEditorTextRenderingMode(EditorTextRenderingMode mode)
-        {
-            visualTree.style.unityEditorTextRenderingMode = mode;
-        }
-
         [RequiredByNativeCode]
         private void SetActiveWindowAsPresented()
         {

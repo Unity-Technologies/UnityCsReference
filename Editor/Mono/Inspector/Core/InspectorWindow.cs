@@ -16,9 +16,13 @@ using AssetImporterEditor = UnityEditor.AssetImporters.AssetImporterEditor;
 
 namespace UnityEditor
 {
-    [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
+    [EditorWindowTitle(title = k_InspectorWindowTitle, useTypeNameAsIconName = true)]
     internal class InspectorWindow : PropertyEditor, IPropertyView, IHasCustomMenu
     {
+        const string k_InspectorWindowTitle = "Inspector";
+        const string k_InspectorWindowTitleDebug = "Inspector (Debug)";
+        const string k_InspectorWindowTitleDebugInternal = "Inspector (Debug Internal)";
+
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
@@ -49,6 +53,14 @@ namespace UnityEditor
 
         internal class TestHelper
         {
+            public static string GetExpectedWindowTitle(InspectorMode mode) => mode switch
+            {
+                InspectorMode.Normal => k_InspectorWindowTitle,
+                InspectorMode.Debug => k_InspectorWindowTitleDebug,
+                InspectorMode.DebugInternal => k_InspectorWindowTitleDebugInternal,
+                _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
+            };
+
             public static void PopupPreviewWindow(InspectorWindow inspector)
             {
                 inspector.PopupPreviewWindow();
@@ -187,7 +199,7 @@ namespace UnityEditor
         {
             if (isLocked)
                 return;
-        
+
             RebuildContentsContainers();
             if (Selection.objects.Length == 0 && m_MultiEditLabel != null)
             {
@@ -262,15 +274,34 @@ namespace UnityEditor
         protected override void RefreshTitle()
         {
             string iconName = "UnityEditor.InspectorWindow";
-            if (m_InspectorMode == InspectorMode.Normal)
-                titleContent = EditorGUIUtility.TrTextContentWithIcon("Inspector", iconName);
-            else
-                titleContent = EditorGUIUtility.TrTextContentWithIcon("Debug", iconName);
+
+            switch (m_InspectorMode)
+            {
+                case InspectorMode.Normal:
+                {
+                    titleContent = EditorGUIUtility.TrTextContentWithIcon(k_InspectorWindowTitle, iconName);
+                    break;
+                }
+                case InspectorMode.Debug:
+                {
+                    titleContent = EditorGUIUtility.TrTextContentWithIcon(k_InspectorWindowTitleDebug, iconName);
+                    break;
+                }
+                case InspectorMode.DebugInternal:
+                {
+                    titleContent = EditorGUIUtility.TrTextContentWithIcon(k_InspectorWindowTitleDebugInternal, iconName);
+                    break;
+                }
+                default:
+                {
+                    throw new ArgumentOutOfRangeException(nameof(m_InspectorMode), m_InspectorMode, null);
+                }
+            }
         }
 
         protected override void UpdateWindowObjectNameTitle()
         {
-            // The inspector window doesn't not track the object name.
+            // The inspector window does not track the object name.
         }
 
         protected override void CreateTracker()
@@ -392,28 +423,15 @@ namespace UnityEditor
             if (previewWindow == null)
                 return;
 
-            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
-            var previewContainer = m_SplitView.Q(s_PreviewContainer);
-
             previewWindow.ClearEllipsisMenu();
             previewWindow.AppendActionToEllipsisMenu(
                 "Convert to Floating Window",
                 (e) =>
                 {
                     if (m_PreviewWindow == null)
-                    {
                         PopupPreviewWindow();
-
-                        previewContainer.style.display = DisplayStyle.None;
-                        draglineAnchor.style.display = DisplayStyle.None;
-                    }
                     else
-                    {
                         DockPreviewWindow();
-
-                        previewContainer.style.display = DisplayStyle.Flex;
-                        draglineAnchor.style.display = DisplayStyle.Flex;
-                    }
                 },
                 a => DropdownMenuAction.Status.Normal);
 
@@ -426,7 +444,7 @@ namespace UnityEditor
                 a => !showingPreview ? DropdownMenuAction.Status.Checked : DropdownMenuAction.Status.Normal
             );
 
-            draglineAnchor.RegisterCallback<PointerUpEvent>(OnDraglineChange);
+            m_SplitView.Q(s_draglineAnchor).RegisterCallback<PointerUpEvent>(OnDraglineChange);
         }
 
         void OnDraglineChange(PointerUpEvent evt)
@@ -441,11 +459,27 @@ namespace UnityEditor
         {
             DetachPreview(exitGUI);
             previewWindow.parent?.Remove(previewWindow);
+
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView.Q(s_PreviewContainer);
+
+            if (previewContainer != null)
+                previewContainer.style.display = DisplayStyle.None;
+            if (draglineAnchor != null)
+                draglineAnchor.style.display = DisplayStyle.None;
         }
 
         void DockPreviewWindow()
         {
             m_PreviewWindow?.Close();
+
+            var draglineAnchor = m_SplitView.Q(s_draglineAnchor);
+            var previewContainer = m_SplitView.Q(s_PreviewContainer);
+
+            if (previewContainer != null)
+                previewContainer.style.display = DisplayStyle.Flex;
+            if (draglineAnchor != null)
+                draglineAnchor.style.display = DisplayStyle.Flex;
         }
 
         private void DetachPreview(bool exitGUI = true)
@@ -528,7 +562,7 @@ namespace UnityEditor
             {
                 for (int i = 0; i < m_InstanceIDsLockedBeforeSerialization.Count; i++)
                 {
-                    Object instance = EditorUtility.InstanceIDToObject(m_InstanceIDsLockedBeforeSerialization[i]);
+                    Object instance = EditorUtility.EntityIdToObject(m_InstanceIDsLockedBeforeSerialization[i]);
                     //don't add null objects (i.e.
                     if (instance)
                     {

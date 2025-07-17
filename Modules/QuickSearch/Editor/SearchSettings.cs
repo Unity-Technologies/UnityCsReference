@@ -149,6 +149,8 @@ namespace UnityEditor.Search
         public bool showPackageIndexes { get; set; }
         public bool showStatusBar { get; set; }
         public bool hideTabs { get; set; }
+        public bool indexOnEditorStartup { get; set; }
+        public bool logIndexingPerformanceReport { get; set; }
         public SearchQuerySortOrder savedSearchesSortOrder { get; set; }
         public bool showSavedSearchPanel { get; set; }
         public Dictionary<string, string> scopes { get; private set; } = new();
@@ -236,6 +238,8 @@ namespace UnityEditor.Search
             showPackageIndexes = ReadSetting(settings, nameof(showPackageIndexes), false);
             showStatusBar = ReadSetting(settings, nameof(showStatusBar), false);
             hideTabs = ReadSetting(settings, nameof(hideTabs), false);
+            indexOnEditorStartup = ReadSetting(settings, nameof(indexOnEditorStartup), !Unsupported.IsSourceBuild(checkHumanControllingUs: false));
+            logIndexingPerformanceReport = ReadSetting(settings, nameof(logIndexingPerformanceReport), !Unsupported.IsSourceBuild(checkHumanControllingUs: false));
             savedSearchesSortOrder = (SearchQuerySortOrder)ReadSetting(settings, nameof(savedSearchesSortOrder), 0);
             showSavedSearchPanel = ReadSetting(settings, nameof(showSavedSearchPanel), false);
             queryBuilder = ReadSetting(settings, nameof(queryBuilder), true);
@@ -293,6 +297,8 @@ namespace UnityEditor.Search
                 [nameof(savedSearchesSortOrder)] = (int)savedSearchesSortOrder,
                 [nameof(showSavedSearchPanel)] = showSavedSearchPanel,
                 [nameof(hideTabs)] = hideTabs,
+                [nameof(indexOnEditorStartup)] = indexOnEditorStartup,
+                [nameof(logIndexingPerformanceReport)] = logIndexingPerformanceReport,
                 [nameof(expandedQueries)] = expandedQueries ?? Array.Empty<int>(),
                 [nameof(queryBuilder)] = queryBuilder,
                 [nameof(ignoredProperties)] = ignoredProperties,
@@ -636,6 +642,18 @@ namespace UnityEditor.Search
             set => s_SettingsStorage.hideTabs = value;
         }
 
+        internal static bool indexOnEditorStartup
+        {
+            get => s_SettingsStorage.indexOnEditorStartup;
+            set => s_SettingsStorage.indexOnEditorStartup = value;
+        }
+
+        internal static bool logIndexingPerformanceReport
+        {
+            get => s_SettingsStorage.logIndexingPerformanceReport;
+            set => s_SettingsStorage.logIndexingPerformanceReport = value;
+        }
+
         internal static SearchQuerySortOrder savedSearchesSortOrder
         {
             get => s_SettingsStorage.savedSearchesSortOrder;
@@ -835,8 +853,22 @@ namespace UnityEditor.Search
             return new SettingsProvider("Preferences/Search/Indexing", SettingsScope.User)
             {
                 guiHandler = DrawSearchIndexingSettings,
-                keywords = new[] { "search", "index", "indexer", "custom" },
+                activateHandler = (_, root) =>
+                {
+                    SearchDatabase.indexLoaded -= RepaintSettingsOnIndexLoaded;
+                    SearchDatabase.indexLoaded += RepaintSettingsOnIndexLoaded;
+                },
+                deactivateHandler = () =>
+                {
+                    SearchDatabase.indexLoaded -= RepaintSettingsOnIndexLoaded;
+                },
+                keywords = new[] { "search", "index", "indexer", "custom" }
             };
+        }
+
+        static void RepaintSettingsOnIndexLoaded(SearchDatabase db)
+        {
+            SettingsService.RepaintAllSettingsWindow();
         }
 
         static void DrawSearchServiceSettings()
@@ -1062,6 +1094,16 @@ namespace UnityEditor.Search
             GUILayout.EndHorizontal();
         }
 
+        private static string GetIndexReport(SearchDatabase db)
+        {
+            if (db.ready)
+            {
+                return $"Index Size: {EditorUtility.FormatBytes(db.indexSize)}\nNb of properties: {db.index.indexCount}\nNb of documents: {db.index.documentCount}\nNb of Keywords: {db.index.keywordCount}";
+            }
+            
+            return "Index is not ready yet.";
+        }
+
         private static void DrawSearchIndexingSettings(string searchContext)
         {
             EditorGUIUtility.labelWidth = 350;
@@ -1073,10 +1115,56 @@ namespace UnityEditor.Search
                     EditorGUILayout.HelpBox("Any changes here requires to restart the editor to take effect.", MessageType.Warning);
                     if (EditorGUILayout.DropdownButton(Utils.GUIContentTemp("Custom Indexers"), FocusType.Passive))
                         OpenCustomIndexerMenu();
-
                     EditorGUI.BeginChangeCheck();
-                    if (Unsupported.IsSourceBuild())
+
+                    indexOnEditorStartup = EditorGUILayout.Toggle("Index on editor startup", indexOnEditorStartup);
+
+                    var db = SearchDatabase.GetDefaultSearchDatabase();
+                    var indexReady = db.ready;
+
+                    using (new EditorGUI.DisabledScope(!indexReady))
                     {
+                        var hasDeepIndexing = db.indexingOptions.HasFlag(IndexingOptions.Extended);
+                        var deepIndexing = EditorGUILayout.Toggle("Deep scene and prefab indexing", hasDeepIndexing);
+                        if (deepIndexing != hasDeepIndexing)
+                        {
+                            db.settings.options.extended = deepIndexing;
+                            db.SaveSettingsOptions( startIndexing:true);
+                        }
+                    }
+                    if (indexReady)
+                        EditorGUILayout.HelpBox("Deep indexing will make indexation longer and increase size of index on disk.", MessageType.Warning);
+                    else
+                        EditorGUILayout.HelpBox("You can only change this settings if indexing is done.", MessageType.Warning);
+
+                    GUILayout.Label("Index Information", EditorStyles.boldLabel);
+                    GUILayout.Label($"Index settings location: {db.path}");
+                    var str = GetIndexReport(db);
+                    GUILayout.Label($"{str}");
+                    using (new EditorGUI.DisabledScope(!indexReady))
+                    {
+                        if (GUILayout.Button("Force rebuild Index", GUILayout.Width(200)))
+                        {
+                            SearchDatabase.ForceRebuildIndex(db);
+                        }
+                    }
+
+                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
+                    ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.Height(200));
+                    if (EditorGUI.EndChangeCheck())
+                        Save();
+
+                    if (Unsupported.IsSourceBuild(checkHumanControllingUs: false))
+                    {
+                        GUILayout.Space(10);
+                        GUILayout.Label("Secret Developer Options", EditorStyles.boldLabel);
+                        if (GUILayout.Button("Index Manager Legacy", GUILayout.Width(200)))
+                        {
+                            IndexManager.OpenWindow();
+                        }
+
+                        logIndexingPerformanceReport = EditorGUILayout.Toggle("Log performance report at exit", logIndexingPerformanceReport);
+
                         findProviderIndexHelper = EditorGUILayout.Toggle("Use Find Provider", findProviderIndexHelper);
                         minIndexVariations = EditorGUILayout.IntField("Min Variations", minIndexVariations);
                         if (minIndexVariations < 1)
@@ -1088,11 +1176,6 @@ namespace UnityEditor.Search
                             minIndexVariations = 5;
                         }
                     }
-
-                    EditorGUILayout.LabelField(L10n.Tr("Ignored properties (Use line break or ; to separate tokens)"), EditorStyles.largeLabel);
-                    ignoredProperties = EditorGUILayout.TextArea(ignoredProperties, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-                    if (EditorGUI.EndChangeCheck())
-                        Save();
                 }
                 GUILayout.EndVertical();
             }

@@ -39,6 +39,7 @@ namespace UnityEngine.UIElements
         public float bottom => ve.layoutNode.LayoutBottom;
         public Color color => ve.computedStyle.color;
         public DisplayStyle display => ve.computedStyle.display;
+        public IEnumerable<FilterFunction> filter => ve.computedStyle.filter;
         public StyleFloat flexBasis => new StyleFloat(ve.layoutNode.ComputedFlexBasis);
         public FlexDirection flexDirection => ve.computedStyle.flexDirection;
         public float flexGrow => ve.computedStyle.flexGrow;
@@ -123,6 +124,7 @@ namespace UnityEngine.UIElements
         float IResolvedStyle.bottom => resolvedStyle.bottom;
         Color IResolvedStyle.color => resolvedStyle.color;
         DisplayStyle IResolvedStyle.display => resolvedStyle.display;
+        IEnumerable<FilterFunction> IResolvedStyle.filter => resolvedStyle.filter;
         StyleFloat IResolvedStyle.flexBasis => resolvedStyle.flexBasis;
         FlexDirection IResolvedStyle.flexDirection => resolvedStyle.flexDirection;
         float IResolvedStyle.flexGrow => resolvedStyle.flexGrow;

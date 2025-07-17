@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -20,7 +21,7 @@ namespace Unity.Hierarchy
     {
         internal static class BindingsMarshaller
         {
-            public static IntPtr ConvertToNative(HierarchyCommandList cmdList) => cmdList.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(HierarchyCommandList cmdList) => cmdList.m_Ptr;
         }
 
         IntPtr m_Ptr;
@@ -138,6 +139,9 @@ namespace Unity.Hierarchy
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         public bool Add(in HierarchyNode parent, int count, out HierarchyNode[] nodes)
         {
+            if (count < 0)
+                throw new ArgumentException($"{nameof(count)} must be positive, but was {count}");
+
             nodes = new HierarchyNode[count];
             return AddNodeSpan(in parent, nodes);
         }
@@ -188,10 +192,24 @@ namespace Unity.Hierarchy
         /// Sorts the child nodes of a hierarchy node by their sort index.
         /// </summary>
         /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
-        /// <param name="recurse">Whether to sort the child nodes recursively.</param>
         /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern bool SortChildren(in HierarchyNode node, bool recurse = false);
+        public extern bool SortChildren(in HierarchyNode node);
+
+        /// <summary>
+        /// Recursively sorts the child nodes of a hierarchy node by their sort index.
+        /// </summary>
+        /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool SortChildrenRecursive(in HierarchyNode node);
+
+        /// <summary>
+        /// Marks a hierarchy node as requiring sorting of its children in the next sorting operation.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern bool SetChildrenNeedsSorting(in HierarchyNode node);
 
         /// <summary>
         /// Sets a value for a property of a hierarchy node.
@@ -245,6 +263,13 @@ namespace Unity.Hierarchy
         public extern bool SetName(in HierarchyNode node, string name);
 
         /// <summary>
+        /// Force an update of the hierarchy, even if no changes are pending.
+        /// </summary>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern bool SetDirty();
+
+        /// <summary>
         /// Executes all the commands in the hierarchy command list.
         /// </summary>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
@@ -292,6 +317,24 @@ namespace Unity.Hierarchy
         #region Called from native
         [RequiredByNativeCode]
         static IntPtr CreateCommandList(IntPtr nativePtr) => GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyCommandList(nativePtr)));
+        #endregion
+
+        #region Obsolete public APIs to remove in 2024
+        /// <summary>
+        /// Sorts the child nodes of a hierarchy node by their sort index.
+        /// </summary>
+        /// <param name="node">The hierarchy node with child nodes to sort by their index.</param>
+        /// <param name="recurse">Whether to sort the child nodes recursively.</param>
+        /// <returns><see langword="true"/> if the command was appended to the list, <see langword="false"/> otherwise.</returns>
+        [Obsolete("SortChildren(node, recurse) with a bool parameter is obsolete, please use SortChildren(node) or SortChildrenRecursive(node) instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public bool SortChildren(in HierarchyNode node, bool recurse)
+        {
+            if (recurse)
+                return SortChildrenRecursive(in node);
+            else
+                return SortChildren(in node);
+        }
         #endregion
     }
 }

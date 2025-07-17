@@ -2,10 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Text;
 using UnityEngine.Pool;
 using UnityEngine.Serialization;
 
@@ -77,26 +76,30 @@ namespace UnityEngine.UIElements
     /// </remarks>
     public static class UxmlDescriptionCache
     {
-        private static readonly Dictionary<Type, UxmlAttributeNames[]> s_NamesPerType = new ();
+        private static readonly Dictionary<Type, CachedDescription> s_NamesPerType = new ();
+
+        internal struct CachedDescription
+        {
+            public UxmlAttributeNames[] attributeNames;
+            public bool editorOnly;
+        }
 
         /// <summary>
         /// Registers pre-processed UXML attribute descriptions.
         /// </summary>
         /// <param name="type">The type to register.</param>
         /// <param name="attributeNames">The pre-processed UXML attribute information.</param>
+        /// <param name="isEditorOnly">Indicates whether the type is editor-only.</param>
         /// <remarks>
         /// This is used by the code generator when a control is using <see cref="UxmlElementAttribute"/> and
         /// <see cref="UxmlAttributeAttribute"/>.
         /// </remarks>
-        public static void RegisterType(Type type, UxmlAttributeNames[] attributeNames)
+        public static void RegisterType(Type type, UxmlAttributeNames[] attributeNames, bool isEditorOnly = false)
         {
-            s_NamesPerType[type] = attributeNames;
+            s_NamesPerType[type] = new CachedDescription { attributeNames = attributeNames, editorOnly = isEditorOnly };
         }
 
-        internal static bool TryGetCachedDescription(Type type, out UxmlAttributeNames[] attributes)
-        {
-            return s_NamesPerType.TryGetValue(type, out attributes);
-        }
+        internal static bool TryGetCachedDescription(Type type, out CachedDescription description) => s_NamesPerType.TryGetValue(type, out description);
     }
 
     internal readonly struct UxmlDescription
@@ -144,6 +147,7 @@ namespace UnityEngine.UIElements
         public readonly List<UxmlDescription> attributeDescriptions;
         public readonly Dictionary<string, int> uxmlNameToIndex;
         public readonly Dictionary<string, int> cSharpNameToIndex;
+        public readonly bool isEditorOnly;
 
         public UxmlTypeDescription(Type type)
         {
@@ -154,10 +158,16 @@ namespace UnityEngine.UIElements
             attributeDescriptions = new();
             uxmlNameToIndex = new();
             cSharpNameToIndex = new();
-            GenerateAttributeDescription(type);
+
+            if (UxmlDescriptionCache.TryGetCachedDescription(type, out var cachedDescription))
+                isEditorOnly = cachedDescription.editorOnly;
+            else
+                isEditorOnly = false;
+
+            GenerateAttributeDescription(type, cachedDescription.attributeNames);
         }
 
-        private void GenerateAttributeDescription(Type t)
+        private void GenerateAttributeDescription(Type t, UxmlAttributeNames[] attributes)
         {
             // Retrieve the base classes' attributes instead of recomputing them.
             if (t.BaseType != null && t.BaseType != s_UxmlSerializedDataType)
@@ -170,7 +180,7 @@ namespace UnityEngine.UIElements
                     cSharpNameToIndex[kvp.Key] = kvp.Value;
             }
 
-            if (UxmlDescriptionCache.TryGetCachedDescription(t, out var attributes))
+            if (attributes != null)
             {
                 foreach (var attribute in attributes)
                 {
@@ -321,24 +331,7 @@ namespace UnityEngine.UIElements
             }
 
             // Use the name of the field to determine the attribute name
-            var sb = GenericPool<StringBuilder>.Get();
-
-            var fieldName = fieldInfo.Name;
-            for (var i = 0; i < fieldName.Length; i++)
-            {
-                var c = fieldName[i];
-                if (char.IsUpper(c))
-                {
-                    c = char.ToLower(c);
-                    if (i > 0)
-                        sb.Append("-");
-                }
-
-                sb.Append(c);
-            }
-
-            var result = sb.ToString();
-            GenericPool<StringBuilder>.Release(sb.Clear());
+            var result = fieldInfo.Name.ToKebabCase();
             return (true, result, GetArray(obsoleteNamesList));
         }
     }

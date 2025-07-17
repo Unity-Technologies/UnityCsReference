@@ -63,17 +63,17 @@ namespace UnityEngine.UIElements
                     new (nameof(typeAsString), "type", typeof(Enum)),
                     new (nameof(valueAsString), "value"),
                     new (nameof(includeObsoleteValues), "include-obsolete-values"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
             [UxmlTypeReference(typeof(Enum))]
             [SerializeField, UxmlAttribute("type")] string typeAsString;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags typeAsString_UxmlAttributeFlags;
             [EnumFieldValueDecorator]
             [SerializeField, UxmlAttribute("value")] string valueAsString;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueAsString_UxmlAttributeFlags;
             [SerializeField] bool includeObsoleteValues;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags typeAsString_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags valueAsString_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags includeObsoleteValues_UxmlAttributeFlags;
             #pragma warning restore 649
 

@@ -125,21 +125,21 @@ namespace UnityEditor.CrashReporting
 
             if (Application.platform == RuntimePlatform.WindowsEditor)
             {
-                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool.exe");
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma.exe");
+                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, "usymtool.exe");
+                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma.exe");
                 config.LogFilePath = Paths.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Unity", "Editor", "symbol_upload.log");
             }
             else if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 string usymtoolFileName = RuntimeInformation.ProcessArchitecture.ToString().ToLower() == "arm64" ? "usymtoolarm64" :"usymtool";
-                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "macosx", usymtoolFileName);
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma");
+                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, usymtoolFileName);
+                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), "Library", "Logs", "Unity", "symbol_upload.log");
             }
             else if (Application.platform == RuntimePlatform.LinuxEditor)
             {
-                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool");
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma-linux64");
+                config.UsymtoolPath = Paths.Combine(EditorApplication.applicationToolsPath, "usymtool");
+                config.LzmaPath = Paths.Combine(EditorApplication.applicationToolsPath, "lzma-linux64");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), ".config", "unity3d", "symbol_upload.log");
             }
 

@@ -21,12 +21,19 @@ namespace UnityEditor.Search
         Vector2,
         Vector3,
         Vector4,
-        Expression
+        Expression,
+        Range
     }
 
-    class QueryFilterBlock : QueryBlock, IQueryExpressionBlock
+    interface IQueryMarkerBlock
     {
-        public static readonly string[] ops = new[] { "=", "<", "<=", ">=", ">" };
+        public QueryMarker marker { get; }
+        public void UpdateMarker(in QueryMarker marker);
+    }
+
+    class QueryFilterBlock : QueryBlock, IQueryExpressionBlock, IQueryMarkerBlock
+    {
+        public static readonly List<string> ops = new() { ":", "=", "!=", "<", "<=", ">=", ">" };
 
         private VisualElement m_InPlaceEditorElement;
 
@@ -61,11 +68,10 @@ namespace UnityEditor.Search
 
             if (!string.IsNullOrEmpty(this.value))
             {
-                if (!ParseValue(this.value))
-                {
-                    if (QueryMarker.TryParse(this.value.GetStringView(), out var marker))
-                        ParseMarker(marker);
-                }
+                if (QueryMarker.TryParse(this.value.GetStringView(), out var marker))
+                    ParseMarker(marker);
+                else
+                    ParseValue(this.value);
             }
         }
 
@@ -111,6 +117,11 @@ namespace UnityEditor.Search
             }
         }
 
+        public void UpdateMarker(in QueryMarker marker)
+        {
+            this.marker = marker;
+        }
+
         public override string ToString()
         {
             return $"{FormatFilterName()}{op}{FormatStringValue(value)}";
@@ -131,10 +142,21 @@ namespace UnityEditor.Search
             switch (format)
             {
                 case QueryBlockFormat.Expression: return QueryExpressionBlockEditor.Open(screenRect, this);
-                case QueryBlockFormat.Number: return QueryNumberBlockEditor.Open(screenRect, this);
+                case QueryBlockFormat.Number:
+                {
+                    if (!marker.valid || marker.args.Length == 1)
+                        return QueryNumberBlockEditor.Open(screenRect, this);
+                    return QueryBoundNumberBlockEditor.Open(screenRect, this);
+                }
                 case QueryBlockFormat.Vector2: return QueryVectorBlockEditor.Open(screenRect, this, 2);
                 case QueryBlockFormat.Vector3: return QueryVectorBlockEditor.Open(screenRect, this, 3);
                 case QueryBlockFormat.Vector4: return QueryVectorBlockEditor.Open(screenRect, this, 4);
+                case QueryBlockFormat.Range:
+                {
+                    if (!marker.valid || marker.args.Length == 1)
+                            return QueryRangeBlockEditor.Open(screenRect, this);
+                    return QueryBoundRangeBlockEditor.Open(screenRect, this);
+                }
                 case QueryBlockFormat.Enum: return QuerySelector.Open(rect, this);
                 case QueryBlockFormat.Color:
                     Color c = Color.black;
@@ -189,6 +211,8 @@ namespace UnityEditor.Search
                 AddLabel(container, "\u003E");
             else if (string.Equals(op, "<", StringComparison.Ordinal))
                 AddLabel(container, "\u003C");
+            else if (string.Equals(op, "!=", StringComparison.Ordinal))
+                AddLabel(container, "\u2260");
             else if (!HasInPlaceEditor())
                 AddSeparator(container);
 
@@ -333,6 +357,7 @@ namespace UnityEditor.Search
         internal override void AddContextualMenuItems(GenericMenu menu)
         {
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Equal (=)"), string.Equals(op, "=", StringComparison.Ordinal), () => SetOperator("="));
+            menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Not Equal (!=)"), string.Equals(op, "!=", StringComparison.Ordinal), () => SetOperator("!="));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Contains (:)"), string.Equals(op, ":", StringComparison.Ordinal), () => SetOperator(":"));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Less Than or Equal (<=)"), string.Equals(op, "<=", StringComparison.Ordinal), () => SetOperator("<="));
             menu.AddItem(EditorGUIUtility.TrTextContent($"Operator/Greater Than or Equal (>=)"), string.Equals(op, ">=", StringComparison.Ordinal), () => SetOperator(">="));
@@ -345,8 +370,11 @@ namespace UnityEditor.Search
 
         private void EditParameter()
         {
-            var screenRect = new Rect(drawRect.position + context.searchView.position.position, drawRect.size);
+            var screenRect = new Rect(worldBound.position + context.searchView.position.position, rect.size);
+            if (parent != null)
+                screenRect.y -= screenRect.height;
             editor = QueryParamBlockEditor.Open(screenRect, this);
+            UpdateOpenEditorStyles(opened: true);
         }
 
         public void UpdateName()
@@ -445,6 +473,11 @@ namespace UnityEditor.Search
                 formatValue = objValue;
                 formatType = formatType ?? objValue?.GetType();
             }
+            else if (Utils.TryParseRange(value, out var propertyRange))
+            {
+                format = QueryBlockFormat.Range;
+                formatValue = propertyRange;
+            }
             else
             {
                 format = QueryBlockFormat.Text;
@@ -541,6 +574,8 @@ namespace UnityEditor.Search
         {
             if ((format == QueryBlockFormat.Enum || format == QueryBlockFormat.Object) && formatType != null)
                 return $",{formatType.FullName}";
+            else if (marker.valid)
+                return $",{string.Join(",", marker.args[1..Index.End])}";
             return string.Empty;
         }
 
@@ -554,9 +589,29 @@ namespace UnityEditor.Search
                 else
                     formatValue = new Vector4(float.NaN, float.NaN, float.NaN, float.NaN);
             }
+            else if (format == QueryBlockFormat.Range)
+            {
+                if (Utils.TryParseRange(value, out var range))
+                    SetValue(range);
+                else if (Utils.TryGetFloat(value, out var number))
+                    SetValue(new PropertyRange(number, number));
+                else
+                    formatValue = new PropertyRange(float.NaN, float.NaN);
+            }
             else if (format == QueryBlockFormat.Expression)
             {
                 formatValue = ExpressionBlock.Create(value);
+            }
+            else if (format == QueryBlockFormat.Number)
+            {
+                if (formatValue is PropertyRange range)
+                    SetValue(range.min);
+                else if (formatValue is Vector4 v4)
+                    SetValue(v4.x);
+                else if (formatValue is Vector3 v3)
+                    SetValue(v3.x);
+                else if (formatValue is Vector2 v2)
+                    SetValue(v2.x);
             }
             ApplyChanges();
         }

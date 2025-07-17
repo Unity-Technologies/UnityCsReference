@@ -19,6 +19,7 @@ using UnityEngine.Audio;
 using UnityEngine.UIElements;
 using UnityObject = UnityEngine.Object;
 using Scene = UnityEngine.SceneManagement.Scene;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
 
 namespace UnityEditor
 {
@@ -110,7 +111,7 @@ namespace UnityEditor
 
         bool m_SelectionCancelled;
         bool m_PreventSetSelectionOnClose;
-        int m_LastSelectedInstanceId = 0;
+        EntityId m_LastSelectedInstanceId = 0;
         readonly SearchService.ObjectSelectorSearchSessionHandler m_SearchSessionHandler = new SearchService.ObjectSelectorSearchSessionHandler();
         readonly SearchSessionOptions m_LegacySearchSessionOptions = new SearchSessionOptions { legacyOnly = true };
 
@@ -220,13 +221,13 @@ namespace UnityEditor
         {
             if (m_ListArea == null)
                 InitIfNeeded();
-            int[] selection = IsUsingTreeView() ? m_ObjectTreeWithSearch.GetSelection() : m_ListArea.GetSelection();
+            EntityId[] selection = IsUsingTreeView() ? m_ObjectTreeWithSearch.GetSelection() : m_ListArea.GetSelection();
             if (selection.Length >= 1)
                 return selection[0];
             return 0;
         }
 
-        int GetSelectedInstanceID()
+        EntityId GetSelectedInstanceID()
         {
             return m_LastSelectedInstanceId;
         }
@@ -238,7 +239,7 @@ namespace UnityEditor
                 return;
 
             if (instanceID != 0)
-                m_ListArea.m_SelectedObjectIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(instanceID));
+                m_ListArea.m_SelectedObjectIcon = AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath((EntityId)instanceID));
             else
                 m_ListArea.m_SelectedObjectIcon = null;
         }
@@ -288,7 +289,7 @@ namespace UnityEditor
                 m_EditorCache.Dispose();
 
             AssetPreview.ClearTemporaryAssetPreviews();
-            HierarchyProperty.ClearSceneObjectsFilter();
+            HierarchyIterator.ClearSceneObjectsFilter();
             m_Debounce?.Dispose();
             m_Debounce = null;
         }
@@ -628,6 +629,12 @@ namespace UnityEditor
                 };
                 Action<UnityObject, bool> onSelectorClosed = (selectedObj, canceled) =>
                 {
+                    bool notifySelectorClosedOnly = false;
+                    if (m_SearchSessionHandler.context is ObjectSelectorSearchContext c)
+                    {
+                        notifySelectorClosedOnly = (c.endSessionModes & ObjectSelectorSearchEndSessionModes.CloseSelector) == ObjectSelectorSearchEndSessionModes.CloseSelector;
+                    }
+
                     m_SearchSessionHandler.EndSession();
                     if (canceled)
                     {
@@ -643,9 +650,17 @@ namespace UnityEditor
                     }
 
                     m_EditedProperty = null;
-                    NotifySelectorClosed(false);
 
-                    ObjectSelector.DestroySharedSelector();
+                    // When force closing the selector because we are opening a new ObjectSelector, we must not destroy the shared selector.
+                    if (notifySelectorClosedOnly)
+                    {
+                        NotifySelectorClosed(false);
+                    }
+                    else
+                    {
+                        // This will call OnDisable, which will call NotifySelectorClosed(false)
+                        DestroySharedSelector();
+                    }
                 };
 
                 if (m_SearchSessionHandler.SelectObject(onSelectorClosed, onSelectionChanged))
@@ -687,7 +702,7 @@ namespace UnityEditor
                 m_Parent.AddToAuxWindowList();
 
             // Initial selection
-            int initialSelection = obj != null ? obj.GetInstanceID() : 0;
+            var initialSelection = obj != null ? obj.GetEntityId() : EntityId.None;
 
             if (initialSelection != 0)
             {
@@ -764,7 +779,7 @@ namespace UnityEditor
             TreeViewForAudioMixerGroup.CreateAndSetTreeView(data);
         }
 
-        void TreeViewSelection(TreeViewItem item)
+        void TreeViewSelection(TreeViewItem<EntityId> item)
         {
             SetSelectedInstanceID(GetInternalSelectedInstanceID());
             NotifySelectionChanged(true);
@@ -803,7 +818,7 @@ namespace UnityEditor
 
         public static UnityObject GetCurrentObject()
         {
-            return EditorUtility.InstanceIDToObject(ObjectSelector.get.GetSelectedInstanceID());
+            return EditorUtility.EntityIdToObject(ObjectSelector.get.GetSelectedInstanceID());
         }
 
         // This is the public Object that the inspector might revert to
@@ -962,7 +977,8 @@ namespace UnityEditor
             GUI.changed = false;
 
             // Handle preview size
-            m_PreviewSize = m_PreviewResizer.ResizeHandle(m_Position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, kMinTopSize + kResizerHeight, kResizerHeight) + kResizerHeight;
+            float minRemainingSize = kMinTopSize + kResizerHeight - m_Toolbar.rect.height - m_SearchField.parent.rect.height;
+            m_PreviewSize = m_PreviewResizer.ResizeHandle(m_Position, kPreviewExpandedAreaHeight + kPreviewMargin * 2 - kResizerHeight, minRemainingSize, kResizerHeight) + kResizerHeight;
             m_TopSize = m_Position.height - m_PreviewSize;
 
             bool open = PreviewIsOpen();
@@ -1028,7 +1044,7 @@ namespace UnityEditor
             Undo.RevertAllDownToGroup(m_ModalUndoGroup);
 
             // Clear selection so that object field doesn't grab it
-            m_ListArea?.InitSelection(new int[0]);
+            m_ListArea?.InitSelection(new EntityId[0]);
             m_ObjectTreeWithSearch.Clear();
             SetSelectedInstanceID(0);
             m_SelectionCancelled = true;

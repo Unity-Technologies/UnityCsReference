@@ -11,6 +11,7 @@ using UnityEngine.U2D;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace UnityEditor.U2D.SpritePacking
 {
@@ -73,6 +74,17 @@ namespace UnityEditor.U2D.SpritePacking
     internal struct SpritePackConfig
     {
         public int padding;
+    };
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct SpriteFitInfo
+    {
+        public GUID guid;
+        public GUID spriteGuid;
+        public RectInt rect;
+        public int page;
+        public int textureWidth;
+        public int textureHeight;
     };
 
     [NativeHeader("Runtime/2D/SpriteAtlas/SpriteAtlas.h")]
@@ -176,8 +188,25 @@ namespace UnityEditor.U2D.SpritePacking
             return PackCustomSpritesWrapper(spriteDataInput, packConfig, outputAlloc);
         }
 
+        internal static JobHandle FitSpriteAtlas(string spriteAtlasPath, NativeArray<SpriteFitInfo> spriteFitInfo)
+        {
+            JobHandle jobHandle = default;
+            if (0 != spriteFitInfo.Length)
+            {
+                unsafe
+                {
+                    jobHandle = FitSpriteAtlasInternal(spriteAtlasPath, (SpriteFitInfo*)spriteFitInfo.GetUnsafePtr(), spriteFitInfo.Length);
+                }
+            }
+            return jobHandle;
+        }
+
         [NativeThrows]
         [FreeFunction("PackCustomSprites")]
         extern internal unsafe static IntPtr PackCustomSpritesInternal(int spriteCount, SpritePackDatasetInternal* data, SpritePackConfig packConfig);
+
+        [NativeThrows]
+        [FreeFunction("SpritePacking::FitSpriteAtlas")]
+        extern internal unsafe static JobHandle FitSpriteAtlasInternal(string spriteAtlasPath, SpriteFitInfo* data, int dataCount);
     }
 }

@@ -14,12 +14,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class BackgroundSizeStyleField : BaseField<BackgroundSize>
     {
-        public class BackgroundSizeConverter : UxmlAttributeConverter<BackgroundSize>
-        {
-            public override BackgroundSize FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BackgroundSize value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<BackgroundSize>.UxmlSerializedData
         {

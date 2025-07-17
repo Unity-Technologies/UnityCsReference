@@ -15,7 +15,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         Imported,
         InDevelopment,
         UpdateAvailable,
-        InProgress,
         Error,
         Warning
     }

@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         StyleSheet inputDropdownStyleSheet { get; }
         StyleSheet inProgressDropdownStyleSheet { get; }
         StyleSheet selectionWindowStyleSheet { get; }
+        StyleSheet customDisplayDialogStyleSheet { get; }
         VisualElement GetTemplate(string templateFilename, bool shouldThrowException = true);
     }
 
@@ -63,12 +64,14 @@ namespace UnityEditor.PackageManager.UI.Internal
                 "StyleSheets/PackageManager/PackageDetailsHeader.uss",
                 "StyleSheets/PackageManager/Sidebar.uss",
                 "StyleSheets/PackageManager/SignInBar.uss",
-                "StyleSheets/PackageManager/PartiallyNonCompliantRegistryMessage.uss"
+                "StyleSheets/PackageManager/PartiallyNonCompliantRegistryMessage.uss",
+                "StyleSheets/PackageManager/MainContainerOverlay.uss"
             };
 
             internal static readonly string filtersDropdown = "StyleSheets/PackageManager/Filters.uss";
             internal static readonly string inputDropdown = "StyleSheets/PackageManager/InputDropdown.uss";
             internal static readonly string inProgressDropdown = "StyleSheets/PackageManager/InProgressDropdown.uss";
+            internal static readonly string customDisplayDialog = "StyleSheets/PackageManager/CustomDisplayDialog.uss";
 
             internal static readonly string selectionWindowCommon = "StyleSheets/PackageManager/SelectionWindow.uss";
             internal static string selectionWindowVariables => EditorGUIUtility.isProSkin ?
@@ -84,6 +87,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             FiltersDropdown,
             InProgressDropdown,
             SelectionWindow,
+            CustomDisplayDialog,
 
             Count
         }
@@ -183,6 +187,12 @@ namespace UnityEditor.PackageManager.UI.Internal
                 StyleSheetPath.defaultCommon,
                 StyleSheetPath.packageManagerVariables,
                 StyleSheetPath.inProgressDropdown);
+
+        public StyleSheet customDisplayDialogStyleSheet =>
+            FindResolvedStyleSheetFromType(StyleSheetType.CustomDisplayDialog)
+            ?? ResolveStyleSheets(StyleSheetType.CustomDisplayDialog,
+                        StyleSheetPath.packageManagerVariables,
+                        StyleSheetPath.customDisplayDialog);
 
         public StyleSheet selectionWindowStyleSheet
         {

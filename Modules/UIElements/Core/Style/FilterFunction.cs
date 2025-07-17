@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements.Layout; // For FixedBuffer4<T>
 using System.Data.Common;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
@@ -16,7 +17,7 @@ namespace UnityEngine.UIElements
     /// The filter function type for a <see cref="FilterFunction"/> .
     /// </summary>
     [Serializable]
-    internal enum FilterFunctionType
+    public enum FilterFunctionType
     {
         /// <undoc/>
         None,
@@ -42,6 +43,12 @@ namespace UnityEngine.UIElements
         /// <summary>A built-in blur filter function that expects a single float value (sigma).</summary>
         Blur,
 
+        /// <summary>A built-in contrast filter function that expects a single float value (percent).</summary>
+        Contrast,
+
+        /// <summary>A built-in hue-rotation filter function that expects a single float value (angle).</summary>
+        HueRotate,
+
         /// <undoc/>
         Count
     }
@@ -50,7 +57,7 @@ namespace UnityEngine.UIElements
     /// The type of a filter parameter.
     /// </summary>
     [Serializable]
-    internal enum FilterParameterType
+    public enum FilterParameterType
     {
         /// <summary>A float value.</summary>
         Float,
@@ -63,7 +70,8 @@ namespace UnityEngine.UIElements
     /// Represents a filter parameter for a <see cref="FilterFunctionDefinition"/>.
     /// </summary>
     [Serializable]
-    internal struct FilterParameter : IEquatable<FilterParameter>
+
+    public struct FilterParameter : IEquatable<FilterParameter>
     {
         [SerializeField]
         private FilterParameterType m_Type;
@@ -159,7 +167,8 @@ namespace UnityEngine.UIElements
     /// Represents a filter function that holds the definition and parameters of a filter.
     /// </summary>
     [Serializable]
-    internal partial struct FilterFunction : IEquatable<FilterFunction>
+
+    public partial struct FilterFunction : IEquatable<FilterFunction>
     {
         [SerializeField]
         private FilterFunctionType m_Type;
@@ -274,6 +283,22 @@ namespace UnityEngine.UIElements
             m_Parameters = new FixedBuffer4<FilterParameter>();
         }
 
+        /// <summary>
+        /// Convenience constructor for a filter function with a single float parameter.
+        /// </summary>
+        internal FilterFunction(FilterFunctionType type, float arg)
+            : this(type, new FixedBuffer4<FilterParameter> { [0] = new FilterParameter(arg) }, 1)
+        {
+        }
+
+        /// <summary>
+        /// Convenience constructor for a filter function with a single color parameter.
+        /// </summary>
+        internal FilterFunction(FilterFunctionType type, Color arg)
+            : this(type, new FixedBuffer4<FilterParameter> { [0] = new FilterParameter(arg) }, 1)
+        {
+        }
+
         internal FilterFunction(FilterFunctionType type, FixedBuffer4<FilterParameter> parameters, int paramCount)
         {
             m_Type = type;
@@ -305,6 +330,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal FilterFunctionDefinition GetDefinition()
         {
             if (m_Type == FilterFunctionType.Custom)
@@ -350,7 +376,7 @@ namespace UnityEngine.UIElements
         {
             unchecked
             {
-                return (m_Parameters.GetHashCode() * 397) ^ m_CustomDefinition.GetHashCode();
+                return (m_Parameters.GetHashCode() * 397) ^ (m_CustomDefinition != null ? m_CustomDefinition.GetHashCode() : 0);
             }
         }
 

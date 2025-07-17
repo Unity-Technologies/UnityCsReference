@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -29,6 +30,9 @@ internal class SerializedObjectBindingContext
     private long m_BindingOperationStartTimeMs;
     private const int k_MaxBindingTimeMs = 50;
     private long m_LastFrame = long.MinValue;
+
+    delegate void BindUnityObjectMethod(SerializedObjectBindingContext context, VisualElement element, SerializedProperty prop);
+    static readonly Dictionary<Type, BindUnityObjectMethod> s_DefaultBindUnityObjectMethods = new();
 
     public SerializedObjectBindingContext(SerializedObject so)
     {
@@ -80,7 +84,7 @@ internal class SerializedObjectBindingContext
     {
         try
         {
-            m_BindingOperationStartTimeMs = Panel.TimeSinceStartupMs();
+            m_BindingOperationStartTimeMs = element.TimeSinceStartupMs();
             m_DelayBind = false;
             BindTree(element, parentProperty);
         }
@@ -90,11 +94,11 @@ internal class SerializedObjectBindingContext
         }
     }
 
-    private bool ShouldDelayBind()
+    private bool ShouldDelayBind(VisualElement element)
     {
         if (!m_DelayBind && !VisualTreeBindingsUpdater.disableBindingsThrottling)
         {
-            m_DelayBind = (Panel.TimeSinceStartupMs() - m_BindingOperationStartTimeMs) > k_MaxBindingTimeMs;
+            m_DelayBind = (element.TimeSinceStartupMs() - m_BindingOperationStartTimeMs) > k_MaxBindingTimeMs;
         }
 
         return m_DelayBind;
@@ -110,7 +114,9 @@ internal class SerializedObjectBindingContext
             {
                 return;
             }
-            element.SetProperty(FindContextPropertyKey, null);
+
+            element.ClearProperty(FindContextPropertyKey);
+            element.ClearProperty(BaseField<string>.serializedPropertyCopyName);
         }
 
         var serializedObjectBinding = element.GetBinding(BindingExtensions.s_SerializedBindingId) as SerializedObjectBindingBase;
@@ -129,8 +135,7 @@ internal class SerializedObjectBindingContext
     private static bool SendBindingEvent<TEventType>(TEventType evt, VisualElement target)
         where TEventType : EventBase<TEventType>, new()
     {
-        evt.elementTarget = target;
-        EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, target.elementPanel, target);
+        EventDispatchUtilities.SendEventDirectlyToTarget(evt, target.elementPanel, target);
         return evt.isPropagationStopped;
     }
 
@@ -147,7 +152,7 @@ internal class SerializedObjectBindingContext
             }
         }
 
-        if (ShouldDelayBind())
+        if (ShouldDelayBind(element))
         {
             // too much time spent on binding, we`ll do the rest on the next frame
             var request = DefaultSerializedObjectBindingImplementation.BindingRequest.CreateDelayBinding(this, parentProperty);
@@ -337,6 +342,10 @@ internal class SerializedObjectBindingContext
                     {
                         DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValueAsFloat, SerializedPropertyHelper.SetFloatPropertyValue, SerializedPropertyHelper.ValueEquals);
                     }
+                    else if (element is INotifyValueChanged<bool>)
+                    {
+                        DefaultBind(element, prop, SerializedPropertyHelper.GetIntPropertyValueAsBool, SerializedPropertyHelper.SetBoolPropertyValue, SerializedPropertyHelper.ValueEquals);
+                    }
                 }
                 break;
             case SerializedPropertyType.Boolean:
@@ -377,7 +386,7 @@ internal class SerializedObjectBindingContext
                 if (element is ObjectField objectField)
                     SerializedObjectReferenceBinding.CreateBind(objectField, this, prop);
                 else
-                    DefaultBind(element, prop, SerializedPropertyHelper.GetObjectRefPropertyValue, SerializedPropertyHelper.SetObjectRefPropertyValue, SerializedPropertyHelper.ValueEquals);
+                    DefaultBindUnityObject(element, prop);
                 break;
             case SerializedPropertyType.LayerMask:
                 DefaultBind(element, prop, SerializedPropertyHelper.GetLayerMaskPropertyValue, SerializedPropertyHelper.SetLayerMaskPropertyValue, SerializedPropertyHelper.ValueEquals);
@@ -459,6 +468,35 @@ internal class SerializedObjectBindingContext
                     prop.propertyPath));
                 break;
         }
+    }
+
+    static void CreateUnityObjectBinding<TValue>(SerializedObjectBindingContext context, VisualElement element, SerializedProperty prop) where TValue : Object
+    {
+        context.DefaultBind(element, prop, SerializedPropertyHelper.GetObjectRefPropertyValue<TValue>, SerializedPropertyHelper.SetObjectRefPropertyValue<TValue>, SerializedPropertyHelper.ValueEquals<TValue>);
+    }
+
+    void DefaultBindUnityObject(VisualElement element, SerializedProperty prop)
+    {
+        // Resolve the Unity.Object type
+        ScriptAttributeUtility.GetFieldInfoFromProperty(prop, out var fieldType);
+
+        // Handle Object type
+        if (fieldType == typeof(Object) || element is INotifyValueChanged<Object> || fieldType == null)
+        {
+            CreateUnityObjectBinding<Object>(this, element, prop);
+            return;
+        }
+
+        if (!s_DefaultBindUnityObjectMethods.TryGetValue(fieldType, out var bindDelegate))
+        {
+            var genericMethod = this.GetType().GetMethod(nameof(CreateUnityObjectBinding), BindingFlags.NonPublic | BindingFlags.Static);
+            var methodInfo = genericMethod.MakeGenericMethod(fieldType);
+
+            bindDelegate = (BindUnityObjectMethod)Delegate.CreateDelegate(typeof(BindUnityObjectMethod), methodInfo);
+            s_DefaultBindUnityObjectMethods.Add(fieldType, bindDelegate);
+        }
+
+        bindDelegate(this, element, prop);
     }
 
     private void DefaultBind<TValue>(VisualElement element, SerializedProperty prop,
@@ -840,8 +878,16 @@ internal class SerializedObjectBindingContext
         m_RegisteredBindings.Remove(b);
     }
 
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal static Action PostProcessTrackedPropertyChanges;
+    private static event Action<uint,uint> m_PostProcessTrackedPropertyChanges;
+
+
+    internal static event Action<uint, uint> PostProcessTrackedPropertyChanges
+    {
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        add => m_PostProcessTrackedPropertyChanges += value;
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        remove => m_PostProcessTrackedPropertyChanges -= value;
+    }
 
     void UpdateTrackedProperties()
     {
@@ -861,12 +907,14 @@ internal class SerializedObjectBindingContext
                 {
                     var changedProperties = changeTracker.GetModifiedTrackedProperties();
 
+                    var serializedObjectVersion = serializedObject.objectVersion;
+
                     for (int i = 0; i < changedProperties.Length; ++i)
                     {
                         m_ValueTracker.NotifyValueChanged(this, changedProperties[i]);
                     }
 
-                    PostProcessTrackedPropertyChanges?.Invoke();
+                    m_PostProcessTrackedPropertyChanges?.Invoke(serializedObjectVersion, serializedObject.objectVersion);
                 }
                 catch (Exception e)
                 {

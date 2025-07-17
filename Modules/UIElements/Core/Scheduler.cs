@@ -83,27 +83,7 @@ namespace UnityEngine.UIElements
         }
     }
 
-    // the scheduler public interface
-    internal interface IScheduler
-    {
-        ScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs);
-        ScheduledItem ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, Func<bool> stopCondition = null);
-        ScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs, long durationMs);
-
-        // removes the event.
-        // an event that is never stopped will not be stopped until the panel is cleaned-up.
-        void Unschedule(ScheduledItem item);
-
-        void Schedule(ScheduledItem item);
-
-        void UpdateScheduledEvents();
-
-        // For UI Test Framework.
-        long FrameCount { get; }
-    }
-
-
-    internal abstract class ScheduledItem //: IScheduledItem
+    internal abstract class ScheduledItem
     {
         // delegate that returns a boolean
         public Func<bool> timerUpdateStopCondition;
@@ -117,15 +97,15 @@ namespace UnityEngine.UIElements
 
         public long endTimeMs { get; private set; }
 
-        public ScheduledItem()
+        public ScheduledItem(long startMs)
         {
-            ResetStartTime();
+            ResetStartTime(startMs);
             timerUpdateStopCondition = OnceCondition;
         }
 
-        protected void ResetStartTime()
+        protected void ResetStartTime(long startMs)
         {
-            this.startMs = Panel.TimeSinceStartupMs();
+            this.startMs = startMs;
         }
 
         public void SetDuration(long durationMs)
@@ -133,6 +113,14 @@ namespace UnityEngine.UIElements
             endTimeMs = startMs + durationMs;
         }
 
+        public void OffsetBy(long deltaMs)
+        {
+            if (endTimeMs > 0)
+            {
+                endTimeMs += deltaMs;
+            }
+            startMs += deltaMs;
+        }
         public abstract void PerformTimerUpdate(TimerState state);
 
         internal virtual void OnItemUnscheduled()
@@ -150,7 +138,7 @@ namespace UnityEngine.UIElements
     }
 
     // default scheduler implementation
-    internal class TimerEventScheduler : IScheduler
+    internal class TimerEventScheduler
     {
         private readonly List<ScheduledItem> m_ScheduledItems = new List<ScheduledItem>();
 
@@ -161,12 +149,19 @@ namespace UnityEngine.UIElements
         internal bool disableThrottling = false;
 
         private int m_LastUpdatedIndex = -1;
+
+        private BaseVisualElementPanel panel;
+        public TimerEventScheduler(BaseVisualElementPanel p)
+        {
+            panel = p;
+        }
+
         private class TimerEventSchedulerItem : ScheduledItem
         {
             // delegate that takes a timer state and returns void
             private readonly Action<TimerState> m_TimerUpdateEvent;
 
-            public TimerEventSchedulerItem(Action<TimerState> updateEvent)
+            public TimerEventSchedulerItem(long startMs, Action<TimerState> updateEvent) : base(startMs)
             {
                 m_TimerUpdateEvent = updateEvent;
             }
@@ -224,7 +219,7 @@ namespace UnityEngine.UIElements
 
         public ScheduledItem ScheduleOnce(Action<TimerState> timerUpdateEvent, long delayMs)
         {
-            var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
+            var scheduleItem = new TimerEventSchedulerItem(panel.TimeSinceStartupMs(), timerUpdateEvent)
             {
                 delayMs = delayMs
             };
@@ -237,7 +232,7 @@ namespace UnityEngine.UIElements
         public ScheduledItem  ScheduleUntil(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
             Func<bool> stopCondition)
         {
-            var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
+            var scheduleItem = new TimerEventSchedulerItem(panel.TimeSinceStartupMs(), timerUpdateEvent)
             {
                 delayMs = delayMs,
                 intervalMs = intervalMs,
@@ -251,7 +246,7 @@ namespace UnityEngine.UIElements
         public ScheduledItem ScheduleForDuration(Action<TimerState> timerUpdateEvent, long delayMs, long intervalMs,
             long durationMs)
         {
-            var scheduleItem = new TimerEventSchedulerItem(timerUpdateEvent)
+            var scheduleItem = new TimerEventSchedulerItem(panel.TimeSinceStartupMs(), timerUpdateEvent)
             {
                 delayMs = delayMs,
                 intervalMs = intervalMs,
@@ -314,6 +309,21 @@ namespace UnityEngine.UIElements
             }
         }
 
+        public void AdjustCurrentTime(double previousCurrentTime, double newCurrentTime)
+        {
+            if (m_ScheduleTransactions.Count > 0 || m_UnscheduleTransactions.Count > 0)
+            {
+                throw new InvalidOperationException("Adjusting time cannot be done while the scheduler is being updated");
+            }
+
+            long deltaMs = (long)((newCurrentTime - previousCurrentTime) * 1000.0);
+
+            for (int i = 0; i < m_ScheduledItems.Count; ++i)
+            {
+                m_ScheduledItems[i].OffsetBy(deltaMs);
+            }
+        }
+
         bool PrivateUnSchedule(ScheduledItem sItem)
         {
             return m_ScheduleTransactions.Remove(sItem) || RemovedScheduledItemAt(m_ScheduledItems.IndexOf(sItem));
@@ -335,9 +345,7 @@ namespace UnityEngine.UIElements
             {
                 m_TransactionMode = true;
 
-                // TODO: On a GAME Panel game time should be per frame and not change during a frame.
-                // TODO: On an Editor Panel time should be real time
-                long currentTime = Panel.TimeSinceStartupMs();
+                long currentTime = panel.TimeSinceStartupMs();
 
                 int itemsCount = m_ScheduledItems.Count;
 
@@ -350,7 +358,7 @@ namespace UnityEngine.UIElements
 
                 for (int i = 0; i < itemsCount; i++)
                 {
-                    currentTime = Panel.TimeSinceStartupMs();
+                    currentTime = panel.TimeSinceStartupMs();
 
                     if (!disableThrottling && currentTime >= maxTime)
                     {

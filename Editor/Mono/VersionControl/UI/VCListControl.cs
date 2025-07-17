@@ -1079,7 +1079,7 @@ namespace UnityEditorInternal.VersionControl
         {
             selectList.Clear();
             Selection.activeObject = null;
-            Selection.instanceIDs = new int[0];
+            Selection.entityIds = new EntityId[0];
         }
 
         // Single selection - clears all previous selections
@@ -1195,7 +1195,7 @@ namespace UnityEditorInternal.VersionControl
                 return; // The items were already present
 
             // Update core selection list... Only non-meta files can be selectable
-            int[] selection = Selection.instanceIDs;
+            EntityId[] selection = Selection.entityIds;
 
             int arrayLen = 0;
             if (selection != null) arrayLen = selection.Length;
@@ -1203,9 +1203,9 @@ namespace UnityEditorInternal.VersionControl
             // UnityEngine.Object tmpObj = item.Asset.Load ();
 
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
-            int itemID = AssetDatabase.GetMainAssetInstanceID(name.TrimEnd('/'));
+            int itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
 
-            int[] newSel = new int[arrayLen + 1];
+            EntityId[] newSel = new EntityId[arrayLen + 1];
 
             //asset is in current project - the correct folder is opened
             //asset is in another project - current project root folder is opened
@@ -1216,7 +1216,7 @@ namespace UnityEditorInternal.VersionControl
 
             Debug.Assert(selection != null, nameof(selection) + " != null");
             Array.Copy(selection, newSel, arrayLen);
-            Selection.instanceIDs = newSel;
+            Selection.entityIds = newSel;
         }
 
         void SelectedRemove(ListItem item)
@@ -1231,20 +1231,20 @@ namespace UnityEditorInternal.VersionControl
 
             // Sync with core selection list.
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
-            int itemID = AssetDatabase.GetMainAssetInstanceID(name.TrimEnd('/'));
-            int[] sel = Selection.instanceIDs;
+            int itemID = AssetDatabase.GetMainAssetEntityId(name.TrimEnd('/'));
+            EntityId[] sel = Selection.entityIds;
             if (itemID != 0 && sel.Length > 0)
             {
                 int idx = Array.IndexOf(sel, itemID);
                 if (idx < 0)
                     return;
 
-                int[] newSel = new int[sel.Length - 1];
+                EntityId[] newSel = new EntityId[sel.Length - 1];
                 Array.Copy(sel, newSel, idx);
                 if (idx < (sel.Length - 1))
                     Array.Copy(sel, idx + 1, newSel, idx, sel.Length - idx - 1);
 
-                Selection.instanceIDs = newSel;
+                Selection.entityIds = newSel;
             }
         }
 

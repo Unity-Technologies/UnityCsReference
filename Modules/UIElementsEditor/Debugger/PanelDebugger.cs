@@ -100,6 +100,7 @@ namespace UnityEditor.UIElements.Debugger
             m_PanelChoices = new List<IPanelChoice>();
             m_PanelSelect = new ToolbarMenu() { name = "panelSelectPopup", variant = ToolbarMenu.Variant.Popup};
             m_PanelSelect.text = "Select a panel";
+            m_PanelSelect.menu.allowDuplicateNames = true;
 
             m_Toolbar.Insert(0, m_PanelSelect);
 

@@ -71,7 +71,7 @@ namespace UnityEditor.U2D.Physics2D
                 }
                 else
                 {
-                    var obj = EditorUtility.InstanceIDToObject(instanceId);
+                    var obj = EditorUtility.EntityIdToObject(instanceId);
                     AssetDatabase.CreateAsset(obj, uniqueName);
                 }
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);

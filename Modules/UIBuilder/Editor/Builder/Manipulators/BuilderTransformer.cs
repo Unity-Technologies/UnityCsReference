@@ -32,6 +32,8 @@ namespace Unity.UI.Builder
         protected Rect m_TargetRectOnStartDrag;
         protected Rect m_ThisRectOnStartDrag;
 
+        protected bool isTargetScaledOrRotated => !Mathf.Approximately(m_Target.computedStyle.rotate.angle.value, 0) || m_Target.computedStyle.scale != Scale.Initial();
+
         public BuilderTransformer()
         {
             var builderTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
@@ -47,11 +49,10 @@ namespace Unity.UI.Builder
 
         protected void OnStartDrag(VisualElement handle)
         {
-            bool isScaledOrRotated = !Mathf.Approximately(m_Target.computedStyle.rotate.angle.value, 0) || m_Target.computedStyle.scale != Scale.Initial();
-
-            if (isScaledOrRotated)
+            if (isTargetScaledOrRotated)
             {
                 Builder.ShowWarning(BuilderConstants.CannotManipulateResizedOrScaledItemMessage);
+                return;
             }
 
             m_TargetRectOnStartDrag = m_Target.layout;

@@ -234,7 +234,7 @@ namespace UnityEngine.UIElements
         {
             RemoveUnusedPanels();
             UIRenderDevice.ProcessDeviceFreeQueue();
-            
+
             if (LayoutManager.IsSharedManagerCreated)
             {
                 // This is already called in the Editor loop (UIElementsUtility) but we also need this in the Player
@@ -429,7 +429,7 @@ namespace UnityEngine.UIElements
         internal static Vector2 ScreenBottomLeftToPanelPosition(Vector2 position, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            return FlipY(position, targetDisplay);
+            return FlipY(position, GetRuntimeDisplayHeight(targetDisplay));
         }
 
         internal static Vector2 ScreenBottomLeftToPanelDelta(Vector2 delta)
@@ -441,15 +441,12 @@ namespace UnityEngine.UIElements
         internal static Vector2 PanelToScreenBottomLeftPosition(Vector2 panelPosition, int targetDisplay)
         {
             // Flip positions Y axis between input and UITK
-            return FlipY(panelPosition, targetDisplay);
+            return FlipY(panelPosition, GetRuntimeDisplayHeight(targetDisplay));
         }
 
-        private static Vector2 FlipY(Vector2 p, int targetDisplay)
+        internal static Vector2 FlipY(Vector2 p, float displayHeight)
         {
-            var screenHeight = Screen.height;
-            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
-                screenHeight = Display.displays[targetDisplay].systemHeight;
-            p.y = screenHeight - p.y;
+            p.y = displayHeight - p.y;
             return p;
         }
 
@@ -457,6 +454,23 @@ namespace UnityEngine.UIElements
         {
             delta.y = -delta.y;
             return delta;
+        }
+
+        private static float GetRuntimeDisplayHeight(int targetDisplay)
+        {
+            if (targetDisplay > 0 && targetDisplay < Display.displays.Length)
+                return Display.displays[targetDisplay].systemHeight;
+
+            return Screen.height;
+        }
+
+        // Seems to not work well if used in unit tests, e.g. MacEditor Arm64 EventSystemTests.ClickEventIsSent
+        internal static float GetEditorDisplayHeight(int targetDisplay)
+        {
+            var gameViewResolution = PanelSettings.GetGameViewResolution(targetDisplay);
+            if (gameViewResolution.HasValue)
+                return gameViewResolution.Value.y;
+            return GetRuntimeDisplayHeight(targetDisplay);
         }
 
         // Don't rely on Application.isPlaying because its value is true for a few extra frames

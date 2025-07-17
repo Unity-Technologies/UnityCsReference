@@ -100,11 +100,11 @@ namespace UnityEngine.UIElements
         {
             if (evt is BlurEvent)
             {
-                m_TextElement.uitkTextHandle.RemoveTextInfoFromPermanentCache();
+                m_TextElement.uitkTextHandle.RemoveFromPermanentCache();
             }
             else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || isClicking)
             {
-                m_TextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
             }
 
             switch (evt)
@@ -141,7 +141,7 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = false;
 
             // If focus was given to this element from a mouse click or a Panel.Focus call, allow select on mouse up.
-            if (isClicking || m_TextElement.panel.contextType == ContextType.Editor && (Event.current == null || Event.current.type == EventType.Ignore))
+            if (isClicking)
                 selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
 
             m_SelectingUtilities.OnFocus(m_TextElement.selection.selectAllOnFocus && !isClicking);
@@ -152,14 +152,12 @@ namespace UnityEngine.UIElements
             selectAllOnMouseUp = m_TextElement.selection.selectAllOnMouseUp;
         }
 
-        readonly Event m_ImguiEvent = new Event();
         void OnKeyDown(KeyDownEvent evt)
         {
             if (!m_TextElement.hasFocus)
                 return;
 
-            evt.GetEquivalentImguiEvent(m_ImguiEvent);
-            if (m_SelectingUtilities.HandleKeyEvent(m_ImguiEvent))
+            if (m_SelectingUtilities.HandleKeyEvent(evt.keyCode, evt.modifiers))
                 evt.StopPropagation();
         }
 

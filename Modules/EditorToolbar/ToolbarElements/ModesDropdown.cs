@@ -2,57 +2,37 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Overlays;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Editor Utility/Modes", typeof(DefaultMainToolbar))]
-    sealed class ModesDropdown : EditorToolbarDropdown
+    static class ModesDropdown
     {
-        public ModesDropdown()
+        const string k_Path = "Editor Utility/Modes";
+
+        static ModesDropdown()
         {
-            name = "ModesDropdown";
-
-            clicked += OpenModesDropdown;
-
-            style.display = DisplayStyle.None;
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-            EditorApplication.delayCall += CheckAvailability; //Immediately after a domain reload, calling check availability sometimes returns the wrong value
+            EditorApplication.delayCall += RebuildContent; //Immediately after a domain reload, calling check availability sometimes returns the wrong value
+            ModeService.modeChanged += (args) => RebuildContent();
         }
 
-        void OnAttachedToPanel(AttachToPanelEvent evt)
+        static void RebuildContent()
         {
-            ModeService.modeChanged += OnModeChanged;
+            MainToolbar.Refresh(k_Path);
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 2, defaultDockPosition = MainToolbarDockPosition.Right)]
+        static MainToolbarElement CreateButton()
         {
-            ModeService.modeChanged -= OnModeChanged;
+            return new MainToolbarDropdown(new MainToolbarContent(ModeService.modeNames[ModeService.currentIndex], L10n.Tr("Select which layers display in the Scene view.")), (buttonRect) => OpenModesDropdown(buttonRect))
+            {
+                displayed = Unsupported.IsDeveloperBuild() && ModeService.hasSwitchableModes
+            };
         }
 
-        void CheckAvailability()
-        {
-            style.display = Unsupported.IsDeveloperBuild() && ModeService.hasSwitchableModes
-                ? DisplayStyle.Flex
-                : DisplayStyle.None;
-            UpdateContent();
-        }
-
-        void OnModeChanged(ModeService.ModeChangedArgs args)
-        {
-            CheckAvailability();
-            UpdateContent();
-        }
-
-        void UpdateContent()
-        {
-            text = ModeService.modeNames[ModeService.currentIndex];
-        }
-
-        void OpenModesDropdown()
+        static void OpenModesDropdown(Rect buttonRect)
         {
             GenericMenu menu = new GenericMenu();
             var modes = ModeService.modeNames;
@@ -68,7 +48,7 @@ namespace UnityEditor.Toolbars
                         EditorApplication.delayCall += () => ModeService.ChangeModeByIndex(selected);
                     });
             }
-            menu.DropDown(worldBound, true);
+            menu.DropDown(buttonRect, true);
         }
     }
 }

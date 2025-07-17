@@ -117,16 +117,9 @@ namespace UnityEditor.Toolbars
 
         public override void SetValueWithoutNotify(bool newValue)
         {
-            if (newValue)
-            {
-                m_Toggle.pseudoStates |= PseudoStates.Checked;
-                m_DropdownButton.pseudoStates |= PseudoStates.Checked;
-            }
-            else
-            {
-                m_Toggle.pseudoStates &= ~PseudoStates.Checked;
-                m_DropdownButton.pseudoStates &= ~PseudoStates.Checked;
-            }
+            m_Toggle.SetCheckedPseudoState(newValue);
+            m_DropdownButton.SetCheckedPseudoState(newValue);
+
             base.SetValueWithoutNotify(newValue);
         }
 

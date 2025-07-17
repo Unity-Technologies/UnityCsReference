@@ -2,53 +2,30 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.UIElements;
 using UnityEditor.Toolbars;
 using UnityEditor.SearchService;
+using UnityEditor.Overlays;
+using UnityEngine;
 
 namespace UnityEditor.Search
 {
-    [EditorToolbarElement("Editor Utility/Search", typeof(DefaultMainToolbar))]
-    sealed class SearchButton : EditorToolbarButton
+    static class SearchButton
     {
+        const string k_Path = "Editor Utility/Search";
         const string k_CommandName = "OpenQuickSearch";
 
-        public SearchButton() : base(() => CommandService.Execute(k_CommandName))
-        {
-            icon = EditorGUIUtility.FindTexture("Search Icon");
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-        }
-
-        void OnAttachedToPanel(AttachToPanelEvent evt)
+        static SearchButton()
         {
             EditorApplication.delayCall += DelayInitialization;
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        static void DelayInitialization()
         {
-            ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged -= UpdateTooltip;
+            MainToolbar.Refresh(k_Path);
+            ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged += (args) => MainToolbar.Refresh(k_Path);
         }
 
-        private void DelayInitialization()
-        {
-            UpdateTooltip();
-            style.display = CommandService.Exists(k_CommandName) ? DisplayStyle.Flex : DisplayStyle.None;
-            ShortcutManagement.ShortcutManager.instance.shortcutBindingChanged += UpdateTooltip;
-        }
-
-        private void UpdateTooltip()
-        {
-            tooltip = GetTooltipText();
-        }
-
-        private void UpdateTooltip(ShortcutManagement.ShortcutBindingChangedEventArgs obj)
-        {
-            UpdateTooltip();
-        }
-
-        private string GetTooltipText()
+        static string GetTooltipText()
         {
             try
             {
@@ -59,6 +36,16 @@ namespace UnityEditor.Search
             {
                 return L10n.Tr($"Global Search");
             }
+        }
+
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 1, defaultDockPosition = MainToolbarDockPosition.Right)]
+        static MainToolbarElement CreateButton()
+        {
+            return new MainToolbarButton(new MainToolbarContent("", EditorGUIUtility.FindTexture("Search Icon"), GetTooltipText()), () => CommandService.Execute(k_CommandName))
+            {
+                displayed = CommandService.Exists(k_CommandName)
+            };
         }
     }
 }

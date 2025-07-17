@@ -1231,14 +1231,13 @@ namespace UnityEditor
         // Ping an object in a window like clicking it in an inspector
         public static void PingObject(int targetInstanceID)
         {
-            foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
+            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            foreach (var win in windows)
             {
-                shw.FrameObject(targetInstanceID, true);
-            }
-
-            foreach (ProjectBrowser pb in ProjectBrowser.GetAllProjectBrowsers())
-            {
-                pb.FrameObject(targetInstanceID, true);
+                if (win is IFramableContainer container)
+                {
+                    container.FrameObject(targetInstanceID, true);
+                }
             }
         }
 
@@ -1338,7 +1337,7 @@ namespace UnityEditor
 
         public static bool textFieldHasSelection
         {
-            get { return EditorGUI.s_RecycledEditor.hasSelection; }
+            get { return EditorGUI.s_RecycledEditor.hasSelection || EditorGUI.s_DelayedTextEditor.hasSelection; }
         }
 
         // hierarchyMode changes how foldouts are drawn so the foldout triangle is drawn to the left,

@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(bindingPaths), "binding-paths")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

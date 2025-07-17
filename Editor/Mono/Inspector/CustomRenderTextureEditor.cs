@@ -490,7 +490,7 @@ namespace UnityEditor
             }
             else
             {
-                directory = Path.GetDirectoryName(AssetDatabase.GetAssetPath(texture.GetInstanceID()));
+                directory = Path.GetDirectoryName(AssetDatabase.GetAssetPath(texture.GetEntityId()));
             }
 
             string assetPath = EditorUtility.SaveFilePanel("Save Custom Render Texture", directory, texture.name, extension);

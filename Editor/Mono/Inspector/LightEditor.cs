@@ -28,7 +28,9 @@ namespace UnityEditor
             public SerializedProperty spotAngle { get; private set; }
             public SerializedProperty innerSpotAngle { get; private set; }
             public SerializedProperty enableSpotReflector { get; private set; }
+            [Obsolete("This property has been deprecated. Use cookieSize2D instead")]
             public SerializedProperty cookieSize { get; private set; }
+            public SerializedProperty cookieSize2D { get; private set; }
             public SerializedProperty color { get; private set; }
             public SerializedProperty intensity { get; private set; }
             public SerializedProperty bounceIntensity { get; private set; }
@@ -194,7 +196,7 @@ namespace UnityEditor
                 spotAngle = m_SerializedObject.FindProperty("m_SpotAngle");
                 innerSpotAngle = m_SerializedObject.FindProperty("m_InnerSpotAngle");
                 enableSpotReflector = m_SerializedObject.FindProperty("m_EnableSpotReflector");
-                cookieSize = m_SerializedObject.FindProperty("m_CookieSize");
+                cookieSize2D = m_SerializedObject.FindProperty("m_CookieSize2D");
                 color = m_SerializedObject.FindProperty("m_Color");
                 intensity = m_SerializedObject.FindProperty("m_Intensity");
                 bounceIntensity = m_SerializedObject.FindProperty("m_BounceIntensity");
@@ -567,7 +569,7 @@ namespace UnityEditor
             public void DrawCookieSize()
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(cookieSize, Styles.CookieSize);
+                EditorGUILayout.PropertyField(cookieSize2D, Styles.CookieSize);
                 EditorGUI.indentLevel--;
             }
 

@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine.Bindings;
+using UnityEngine.TextCore.Text;
 
 #nullable enable
 
@@ -15,6 +17,9 @@ namespace UnityEngine.TextCore
     [VisibleToOtherModules("UnityEngine.UIElementsModule")]
     internal static class RichTextTagParser
     {
+        internal static readonly Color32 k_HighlightColor = new Color32(255, 255, 0, 64);
+        internal static readonly char k_PrivateArea = '\uE000';
+
         public enum TagType
         {
             Hyperlink,
@@ -52,9 +57,20 @@ namespace UnityEngine.TextCore
             //gradient: margin, pos, rotate , width, voffset will not be supported
         }
 
+        public enum ValueID
+        {
+            Color,
+            Padding,
+            AssetID,
+            GlyphMetrics,
+            Scale,
+            Tint,
+            SpriteColor
+        }
+
         internal record TagTypeInfo
         {
-            internal TagTypeInfo(TagType tagType, string name, TagValueType valueType = TagValueType.None, TagUnitType unitType = TagUnitType.Pixels)
+            internal TagTypeInfo(TagType tagType, string name, TagValueType valueType = TagValueType.None, TagUnitType unitType = TagUnitType.Unknown)
             {
                 TagType = tagType;
                 this.name = name;
@@ -108,17 +124,21 @@ namespace UnityEngine.TextCore
 
         internal enum TagValueType
         {
-            None = 0x0,
-            NumericalValue = 0x1,
-            StringValue = 0x2,
-            ColorValue = 0x4,
+            None = 0,
+            NumericalValue = 1,
+            StringValue = 2,
+            ColorValue = 3,
+            Vector4Value = 4,
+            GlyphMetricsValue = 5,
+            BoolValue = 6
         }
 
         internal enum TagUnitType
         {
-            Pixels = 0x0,
-            FontUnits = 0x1,
-            Percentage = 0x2,
+            Unknown = 0x0,
+            Pixels = 0x1,
+            FontUnits = 0x2,
+            Percentage = 0x4
         }
 
         //TODO : change this for an union when development is over to save memory
@@ -126,29 +146,54 @@ namespace UnityEngine.TextCore
         //[StructLayout(LayoutKind.Explicit)]
         internal record TagValue
         {
-            internal TagValue(float value)
+            internal TagValue(float value, TagUnitType tagUnitType = TagUnitType.Unknown, ValueID? id = null)
             {
                 type = TagValueType.NumericalValue;
+                unit = tagUnitType;
                 m_numericalValue = value;
+                m_ID = id;
             }
 
-            internal TagValue(Color value)
+            internal TagValue(Color value, ValueID? id = null)
             {
                 type = TagValueType.ColorValue;
                 m_colorValue = value;
+                m_ID = id;
             }
 
-            internal TagValue(string value)
+            internal TagValue(string value, ValueID? id = null)
             {
                 type = TagValueType.StringValue;
                 m_stringValue = value;
+                m_ID = id;
+            }
+
+            internal TagValue(Vector4 value, ValueID? id = null)
+            {
+                type = TagValueType.Vector4Value;
+                m_vector4Value = value;
+                m_ID = id;
+            }
+
+            internal TagValue(GlyphMetrics value, ValueID? id = null)
+            {
+                type = TagValueType.GlyphMetricsValue;
+                m_glyphMetricsValue = value;
+                m_ID = id;
+            }
+
+            internal TagValue(bool value, ValueID? id = null)
+            {
+                type = TagValueType.BoolValue;
+                m_boolValue = value;
+                m_ID = id;
             }
 
             //[FieldOffset(0)]
             internal TagValueType type;
 
             //[FieldOffset(4)]
-            //private TagUnitType unit;
+            internal TagUnitType unit;
 
             //[FieldOffset(8)]
             private string? m_stringValue;
@@ -158,6 +203,14 @@ namespace UnityEngine.TextCore
 
             //[FieldOffset(8)]
             private Color m_colorValue;
+
+            private Vector4 m_vector4Value;
+
+            private GlyphMetrics m_glyphMetricsValue;
+
+            private bool m_boolValue;
+
+            private ValueID? m_ID;
 
 
             internal string? StringValue
@@ -190,7 +243,43 @@ namespace UnityEngine.TextCore
                 }
             }
 
+            internal Vector4 Vector4Value
+            {
+                get
+                {
+                    if (type != TagValueType.Vector4Value)
+                        throw new InvalidOperationException("Not a vector4 value");
+                    return m_vector4Value;
+                }
+            }
 
+            internal GlyphMetrics GlyphMetricsValue
+            {
+                get
+                {
+                    if (type != TagValueType.GlyphMetricsValue)
+                        throw new InvalidOperationException("Not a GlyphMetrics value");
+                    return m_glyphMetricsValue;
+                }
+            }
+
+            internal bool BoolValue
+            {
+                get
+                {
+                    if (type != TagValueType.BoolValue)
+                        throw new InvalidOperationException("Not a Bool value");
+                    return m_boolValue;
+                }
+            }
+
+            internal ValueID? ID
+            {
+                get
+                {
+                    return m_ID;
+                }
+            }
         }
 
 
@@ -201,6 +290,10 @@ namespace UnityEngine.TextCore
             public int start; //position of the '<' character
             public int end; //position of the '>' character
             public TagValue? value; //could be replaced by a nullable struct?
+            public TagValue? value2;
+            public TagValue? value3;
+            public TagValue? value4;
+            public TagValue? value5;
         }
 
         public struct Segment
@@ -256,8 +349,215 @@ namespace UnityEngine.TextCore
             return false;
         }
 
+        static TagValue? ParseColorAttribute(ReadOnlySpan<char> attributeSection)
+        {
+            attributeSection = GetAttributeSpan(attributeSection);
 
-        internal static List<Tag> FindTags(string inputStr, List<ParseError>? errors = null)
+            if (ColorUtility.TryParseHtmlString(attributeSection, out Color color))
+                return new TagValue(color, ValueID.Color);
+
+            return null;
+        }
+
+        static TagValue? ParsePaddingAttribute(ReadOnlySpan<char> value)
+        {
+            Span<int> paddings = stackalloc int[4];
+            int index = 0;
+
+            while (!value.IsEmpty && index < 4)
+            {
+                int commaIndex = value.IndexOf(',');
+
+                ReadOnlySpan<char> num;
+                if (commaIndex >= 0)
+                {
+                    num = value.Slice(0, commaIndex);
+                    value = value.Slice(commaIndex + 1);
+                }
+                else
+                {
+                    num = value;
+                    value = ReadOnlySpan<char>.Empty;
+                }
+
+                if (!int.TryParse(num, NumberStyles.Integer, CultureInfo.InvariantCulture, out paddings[index]))
+                    return null;
+
+                index++;
+            }
+
+            if (index != 4)
+                return null;
+
+            return new TagValue(new Vector4(paddings[0], paddings[1], paddings[2], paddings[3]), ValueID.Padding);
+        }
+
+        private static bool ParseSpriteAttributes(ReadOnlySpan<char> attributeSection, TextSettings textSettings, out char unicode, out TagValue? spriteAssetValue, out TagValue? glyphMetricsValue, out TagValue? tintValue, out TagValue? scaleValue, out TagValue? colorValue)
+        {
+            int spriteIndex = -1;
+            unicode = default;
+            spriteAssetValue = null;
+            glyphMetricsValue = null;
+            tintValue = null;
+            scaleValue = null;
+            colorValue = null; 
+            ReadOnlySpan<char> spriteAssetName = ReadOnlySpan<char>.Empty;
+            ReadOnlySpan<char> spriteName = ReadOnlySpan<char>.Empty;
+            SpriteAsset? spriteAsset = null;
+
+            while (!attributeSection.IsEmpty)
+            {
+                attributeSection = attributeSection.TrimStart();
+                if (attributeSection.IsEmpty) break;
+
+                ReadOnlySpan<char> key;
+                ReadOnlySpan<char> val;
+
+                int eqIndex = attributeSection.IndexOf('=');
+                if (eqIndex == -1) break; // Malformed
+
+                key = attributeSection.Slice(0, eqIndex).Trim();
+                var valueAndRest = attributeSection.Slice(eqIndex + 1).TrimStart();
+
+                char quote = valueAndRest.Length > 0 ? valueAndRest[0] : '\0';
+                if (quote == '"' || quote == '\'')
+                {
+                    var valueWithoutQuotes = valueAndRest.Slice(1);
+                    int endQuoteIndex = valueWithoutQuotes.IndexOf(quote);
+                    if (endQuoteIndex == -1) break; // Malformed
+
+                    val = valueWithoutQuotes.Slice(0, endQuoteIndex);
+                    attributeSection = valueWithoutQuotes.Slice(endQuoteIndex + 1);
+                }
+                else
+                {
+                    int spaceIndex = valueAndRest.IndexOf(' ');
+                    if (spaceIndex == -1)
+                    {
+                        val = valueAndRest;
+                        attributeSection = ReadOnlySpan<char>.Empty;
+                    }
+                    else
+                    {
+                        val = valueAndRest.Slice(0, spaceIndex);
+                        attributeSection = valueAndRest.Slice(spaceIndex);
+                    }
+                }
+
+                if (key.IsEmpty) // This is the shorthand case, e.g., <sprite=1> or <sprite="asset Name">
+                {
+                    if (int.TryParse(val, out int index))
+                    {
+                        spriteIndex = index;
+                    }
+                    else
+                    {
+                        spriteAssetName = val;
+                    }
+                }
+                else if (key.SequenceEqual("name"))
+                {
+                    spriteName = val;
+                }
+                else if (key.SequenceEqual("index"))
+                {
+                    if (int.TryParse(val, out int index))
+                    {
+                        spriteIndex = index;
+                    }
+                }
+                else if (key.SequenceEqual("tint"))
+                {
+                    if (int.TryParse(val, out int tint) && tint == 1)
+                    {
+                        tintValue = new TagValue(true, ValueID.Tint);
+                    }
+                }
+                else if (key.SequenceEqual("color"))
+                {
+                    val = GetAttributeSpan(val);
+
+                    if (ColorUtility.TryParseHtmlString(val, out Color color))
+                        colorValue = new TagValue(color, ValueID.SpriteColor);
+                }
+            }
+
+            // We specified the SpriteAsset
+            if (!spriteAssetName.IsEmpty)
+            {
+                // TODO: This is not supported on a thread...
+                return false;
+                //var spriteAssetHashCode = GetHashCode(spriteAssetName);
+                //if (MaterialReferenceManager.TryGetSpriteAsset(spriteAssetHashCode, out var tempSpriteAsset))
+                //{
+                //    spriteAsset = tempSpriteAsset;
+                //}
+                //else
+                //{
+                //    // Load Sprite Asset
+                //    if (tempSpriteAsset == null)
+                //    {
+                //        tempSpriteAsset = Resources.Load<SpriteAsset>(textSettings.defaultSpriteAssetPath + spriteAssetName.ToString());
+                //    }
+
+                //    if (tempSpriteAsset == null)
+                //        return false;
+
+                //    MaterialReferenceManager.AddSpriteAsset(spriteAssetHashCode, tempSpriteAsset);
+                //    spriteAsset = tempSpriteAsset;
+                //}
+            }
+            // We use the default Sprite Asset
+            else
+            {
+                // No Sprite Asset is assigned to the text object
+                if (textSettings.defaultSpriteAsset != null)
+                {
+                    spriteAsset = textSettings.defaultSpriteAsset;
+                }
+                else if (TextSettings.s_GlobalSpriteAsset != null)
+                {
+                    spriteAsset = TextSettings.s_GlobalSpriteAsset;
+                }
+
+                // No valid sprite asset available
+                if (spriteAsset == null)
+                    return false;
+            }
+
+            if (!spriteName.IsEmpty)
+            {
+                // TODO optimize string allocation
+                spriteIndex = spriteAsset.GetSpriteIndexFromName(spriteName.ToString());
+            }
+            if (spriteIndex == -1)
+                return false;
+
+            if (spriteAsset.spriteCharacterTable.Count <= spriteIndex)
+                return false;
+
+            var sprite = spriteAsset.spriteCharacterTable[spriteIndex];
+
+            spriteAssetValue = new TagValue(spriteAsset.instanceID, TagUnitType.Unknown, ValueID.AssetID);
+            glyphMetricsValue = new TagValue(sprite.glyph.metrics, ValueID.GlyphMetrics);
+            scaleValue = new TagValue(sprite.scale, TagUnitType.Unknown, ValueID.Scale);
+            // Sprites are assigned in the E000 Private Area + sprite Index
+            unicode = (char)(k_PrivateArea + spriteIndex);
+
+            return true;
+        }
+
+        public static int GetHashCode(ReadOnlySpan<char> span)
+        {
+            var hash = new HashCode();
+            foreach (char c in span)
+            {
+                hash.Add(c);
+            }
+            return hash.ToHashCode();
+        }
+
+        internal static List<Tag> FindTags(ref string inputStr, TextSettings textSettings, List<ParseError>? errors = null)
         {
             var input = inputStr.ToCharArray();
             var result = new List<Tag>();
@@ -287,25 +587,15 @@ namespace UnityEngine.TextCore
                 if (!isClosing)
                 {
                     var span = input.AsSpan(start + 1, end - start - 1);
-                    if (SpanToEnum(span, out TagType tagType, out string? error, out var atributeSection))
+                    if (SpanToEnum(span, out TagType tagType, out string? error, out var attributeSection))
                     {
                         // TODO Manual parsing of color need to be moved elsewhere
                         TagValue? value = null;
+                        TagValue? value2 = null;
+
                         if (tagType == TagType.Color)
                         {
-                            if (atributeSection.Length >= 2 && atributeSection[0] == '=')
-                                atributeSection = atributeSection.Slice(1); // we should probably have a better way to do this
-
-                            if (atributeSection.Length >= 4 && atributeSection[0] == '"' && atributeSection[atributeSection.Length - 1] == '"')
-                            {
-                                ColorUtility.TryParseHtmlString(atributeSection.Slice(1, atributeSection.Length - 2).ToString(), out Color color);
-                                value = new TagValue(color);
-                            }
-                            else
-                            {
-                                ColorUtility.TryParseHtmlString(atributeSection.ToString(), out Color color);
-                                value = new TagValue(color);
-                            }
+                            value = ParseColorAttribute(attributeSection);
 
                             if (value is null)
                             {
@@ -315,30 +605,143 @@ namespace UnityEngine.TextCore
                             }
                         }
 
+                        if (tagType == TagType.Mark)
+                        {
+                            // try the simple mark=myColor
+                            value = ParseColorAttribute(attributeSection);
+
+                            if (value == null)
+                            {
+                                while (!attributeSection.IsEmpty)
+                                {
+                                    int spaceIndex = attributeSection.IndexOf(' ');
+                                    ReadOnlySpan<char> pair;
+
+                                    if (spaceIndex >= 0)
+                                    {
+                                        pair = attributeSection.Slice(0, spaceIndex);
+
+                                        if (spaceIndex + 1 < attributeSection.Length)
+                                            attributeSection = attributeSection.Slice(spaceIndex + 1);
+                                        else
+                                            attributeSection = ReadOnlySpan<char>.Empty;
+                                    }
+                                    else
+                                    {
+                                        pair = attributeSection;
+                                        attributeSection = ReadOnlySpan<char>.Empty;
+                                    }
+
+                                    int eqIndex = pair.IndexOf('=');
+                                    if (eqIndex <= 0 || eqIndex >= pair.Length - 1)
+                                        continue; // malformed
+
+                                    var key = pair.Slice(0, eqIndex);
+                                    var val = pair.Slice(eqIndex + 1);
+
+                                    if (key.SequenceEqual("color"))
+                                    {
+                                        value = ParseColorAttribute(val);
+                                    }
+                                    else if (key.SequenceEqual("padding"))
+                                    {
+                                        value2 = ParsePaddingAttribute(val);
+                                    }
+                                }
+                            }
+                        }
+
                         if (tagType == TagType.Link || tagType == TagType.Hyperlink)
                         {
-                            if (tagType == TagType.Hyperlink && atributeSection.StartsWith(" href="))
-                                atributeSection = atributeSection.Slice(" href=".Length);
-
-                            // strip the = for <link=xxxx>. The lenght need to be checked so that it is greater than 0
-                            if (atributeSection.Length >= 1 && atributeSection[0] == '=')
-                                atributeSection = atributeSection.Slice(1); // we should probably have a better way to do this
+                            if (tagType == TagType.Hyperlink && attributeSection.StartsWith(" href="))
+                                attributeSection = attributeSection.Slice(" href=".Length);
 
                             // strip the quotes for both  <link="xxxx"> and <a href="...">
                             // The length need to be checked so that it is greater than 0
                             // Quotes are not mandatory for link tag and for url it isn't problematic if they aren't there unless there is a <> in the url.
                             // We would need to stop parsing from the beginning of the quote until the second one (a bit like for the noparse tags) for supporting <> character in url
-                            if (atributeSection.Length >= 2 && atributeSection[0] == '"' && atributeSection[atributeSection.Length - 1] == '"')
-                            {
-                                value = new TagValue(atributeSection.Slice(1, atributeSection.Length - 2).ToString());
-                            }
-                            else
-                            {
-                                value = new TagValue(atributeSection.ToString());
-                            }
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            var str = attributeSection.ToString();
+
+                            value = new TagValue(str);
                         }
 
-                        result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value });
+                        if (tagType == TagType.Sprite)
+                        {
+                            bool success = ParseSpriteAttributes(attributeSection, textSettings, out char unicode, out value, out value2, out TagValue? value3, out TagValue? value4, out TagValue? value5);
+                            if (!success)
+                                continue;
+
+                            result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = value, value2 = value2, value3 = value3, value4 = value4, value5 = value5 });
+                            // TODO: This is really inefficient, we should do this at the end of parsing instead, which isn't straightforward.
+                            inputStr = inputStr.Insert(end + 1, unicode+"/");
+                            input = inputStr.ToCharArray();
+                            result.Add(new Tag { tagType = tagType, start = end + 2, end = end + 2, isClosing = true, value = value, value2 = value2, value3 = value3, value4 = value4, value5 = value5 });
+                            // Adjust position to continue after the newly inserted text
+                            pos = end + 2;
+                            continue;
+                        }
+
+                        if (tagType == TagType.Br)
+                        {
+                            if (!attributeSection.IsEmpty)
+                                continue;
+                            // TODO: This is really inefficient, we should do this at the end of parsing instead, which isn't straightforward.
+                            result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = false, value = null });
+                            inputStr = inputStr.Insert(end + 1, "\n/");
+                            input = inputStr.ToCharArray();
+                            result.Add(new Tag { tagType = tagType, start = end + 2, end = end + 2, isClosing = true, value = null });
+                            // Adjust position to continue after the newly inserted text
+                            pos = end + 2;
+                            continue;
+                        }
+
+                        if (tagType == TagType.Align)
+                        {
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            var str = attributeSection.ToString();
+
+                            if (Enum.TryParse<HorizontalAlignment>(str, true, out _))
+                            {
+                                value = new TagValue(str);
+                            }
+
+                            if (value is null)
+                            {
+                                errors?.Add(new($"Invalid {tagType} value", start));
+                                pos = start + 1; //malformed tag, skip the '<' character
+                                continue;
+                            }
+                        }
+         
+                        if (tagType == TagType.Mspace || tagType == TagType.CSpace)
+                        {
+                            var tagUnitType = ParseTagUnitType(ref attributeSection);
+
+                            if (tagUnitType == TagUnitType.Percentage)
+                            {
+                                errors?.Add(new($"Invalid {tagUnitType} value", start));
+                                pos = start + 1; //malformed tag, skip the '<' character
+                                continue;
+                            }
+
+                            // Not specifying a unit is same as using px.
+                            if (tagUnitType == TagUnitType.Unknown)
+                                tagUnitType = TagUnitType.Pixels;
+
+                            attributeSection = GetAttributeSpan(attributeSection);
+                            float parsedValue;
+                            if (!float.TryParse(attributeSection, NumberStyles.Float, CultureInfo.InvariantCulture, out parsedValue))
+                            {
+                                // Handle parse error, e.g. skip or log
+                                errors?.Add(new("Invalid numerical value", start));
+                                pos = start + 1;
+                                continue;
+                            }
+                            value = new TagValue(parsedValue, tagUnitType);
+                        }
+
+                        result.Add(new Tag { tagType = tagType, start = start, end = end, isClosing = isClosing, value = value, value2 = value2 });
 
                         if (tagType == TagType.NoParse)
                         {
@@ -380,6 +783,49 @@ namespace UnityEngine.TextCore
             }
 
             return result;
+        }
+
+        private static ReadOnlySpan<char> GetAttributeSpan(ReadOnlySpan<char> attributeSection)
+        {
+            if (attributeSection.Length >= 1 && attributeSection[0] == '=')
+                attributeSection = attributeSection.Slice(1);
+
+            // Handle quoted values
+            if (attributeSection.Length >= 2 &&
+                ((attributeSection[0] == '"' && attributeSection[^1] == '"') ||
+                 (attributeSection[0] == '\'' && attributeSection[^1] == '\'')))
+            {
+                return attributeSection.Slice(1, attributeSection.Length - 2);
+            }
+            else
+            {
+                // Unquoted value
+                return attributeSection;
+            }
+        }
+
+        private static TagUnitType ParseTagUnitType(ref ReadOnlySpan<char> attributeSection)
+        {
+
+            if (attributeSection.EndsWith("em".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                attributeSection = attributeSection.Slice(0, attributeSection.Length - 2);
+                return TagUnitType.FontUnits;
+            }
+            else if (attributeSection.EndsWith("px".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                attributeSection = attributeSection.Slice(0, attributeSection.Length - 2);
+                return TagUnitType.Pixels;
+            }
+            else if (attributeSection.EndsWith("%".AsSpan(), StringComparison.OrdinalIgnoreCase))
+            {
+                attributeSection = attributeSection.Slice(0, attributeSection.Length - 1);
+                return TagUnitType.Percentage;
+            }
+            else
+            {
+                return TagUnitType.Unknown;
+            }
         }
 
 
@@ -536,7 +982,7 @@ namespace UnityEngine.TextCore
             return nextIndex;
         }
 
-        static TextSpan CreateTextSpan(Segment segment, ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, Color hyperlinkColor )
+        static TextSpan CreateTextSpan(Segment segment, ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, Color hyperlinkColor, float pixelsPerPoint)
         {
             var textSpan = tgs.CreateTextSpan();
 
@@ -584,6 +1030,15 @@ namespace UnityEngine.TextCore
                         break;
                     case TagType.Mark:
                         textSpan.fontStyle |= TextCore.Text.FontStyles.Highlight;
+
+                        if (segment.tags[i].value?.ID == ValueID.Color)
+                            textSpan.highlightColor = segment.tags[i].value!.ColorValue;
+                        else
+                            textSpan.highlightColor = k_HighlightColor;
+
+                        if (segment.tags[i].value2?.ID == ValueID.Padding)
+                            textSpan.highlightPadding = segment.tags[i].value2!.Vector4Value;
+
                         break;
 
                     //Asset required
@@ -602,6 +1057,18 @@ namespace UnityEngine.TextCore
                         textSpan.linkID = AddLink(TagType.Link, segment.tags[i].value?.StringValue ?? "", links);
                         break;
                     case TagType.Sprite:
+                        if (segment.tags[i].value?.ID == ValueID.AssetID)
+                            textSpan.spriteID = (int)segment.tags[i].value!.NumericalValue;
+                        if (segment.tags[i].value2?.ID == ValueID.GlyphMetrics)
+                            textSpan.spriteMetrics = segment.tags[i].value2!.GlyphMetricsValue;
+                        if (segment.tags[i].value3?.ID == ValueID.Tint)
+                            textSpan.spriteTint = segment.tags[i].value3!.BoolValue;
+                        if (segment.tags[i].value4?.ID == ValueID.Scale)
+                            textSpan.spriteScale = (int)segment.tags[i].value4!.NumericalValue;
+                        if (segment.tags[i].value5?.ID == ValueID.SpriteColor)
+                            textSpan.spriteColor = segment.tags[i].value5!.ColorValue;
+                        else
+                            textSpan.spriteColor = Color.white;
                         //TODO : Add support for sprite
                         break;
 
@@ -611,13 +1078,17 @@ namespace UnityEngine.TextCore
                         //textSpan.fontSize = (int)(segment.tags[i].value!.NumericalValue/64f);
                         break;
                     case TagType.CSpace:
-                        //TODO : Add support for cspace
-                        break;
+                        float cspaceMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.cspace = (int)(segment.tags[i].value!.NumericalValue * cspaceMult);
+                        textSpan.cspaceUnitType = segment.tags[i].value!.unit;
+                            break;
                     case TagType.Br:
                         //TODO : Add support for br
                         break;
                     case TagType.Mspace:
-                        //TODO : Add support for mspace
+                        float mspaceMult = segment.tags[i].value!.unit == TagUnitType.Pixels ? (pixelsPerPoint * 64.0f) : 64.0f;
+                        textSpan.mspace = (int)(segment.tags[i].value!.NumericalValue * mspaceMult);
+                        textSpan.mspaceUnitType = segment.tags[i].value!.unit;
                         break;
                     case TagType.LineIndent:
                         //TODO : Add support for lineindent
@@ -629,7 +1100,7 @@ namespace UnityEngine.TextCore
                         //TODO : Add support for nobr
                         break;
                     case TagType.Align:
-                        //TODO : Add support for align
+                        Enum.TryParse<HorizontalAlignment>(segment.tags[i].value!.StringValue, true, out textSpan.alignment);
                         break;
                     case TagType.LineHeight:
                         //TODO : Add support for lineheight
@@ -648,12 +1119,12 @@ namespace UnityEngine.TextCore
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static void CreateTextGenerationSettingsArray(ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, Color hyperlinkColor)
+        internal static void CreateTextGenerationSettingsArray(ref NativeTextGenerationSettings tgs, List<(int, TagType, string)> links, Color hyperlinkColor, float pixelsPerPoint, TextSettings textSettings)
         {
 			links.Clear();
 
 
-            var tags = FindTags(tgs.text);
+            var tags = FindTags(ref tgs.text, textSettings);
             var segments = GenerateSegments(tgs.text, tags);
             ApplyStateToSegment(tgs.text, tags, segments);
 
@@ -666,7 +1137,7 @@ namespace UnityEngine.TextCore
                 var segment = segments[i];
                 string segmentText = tgs.text.Substring(segment.start, segment.end + 1 - segment.start);
 
-                var textSpan = CreateTextSpan(segment, ref tgs,links, hyperlinkColor );
+                var textSpan = CreateTextSpan(segment, ref tgs,links, hyperlinkColor, pixelsPerPoint);
                 textSpan.startIndex = parsedIndex;
                 textSpan.length = segmentText.Length;
                 tgs.textSpans[i] = textSpan;

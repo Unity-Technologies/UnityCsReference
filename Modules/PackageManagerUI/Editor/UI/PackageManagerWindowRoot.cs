@@ -29,6 +29,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private readonly IPageRefreshHandler m_PageRefreshHandler;
         private readonly IPackageOperationDispatcher m_OperationDispatcher;
         private readonly IDelayedSelectionHandler m_DelayedSelectionHandler;
+        private readonly ICustomDisplayDialog m_CustomDisplayDialog;
         public PackageManagerWindowRoot(IResourceLoader resourceLoader,
             IExtensionManager extensionManager,
             ISelectionProxy selection,
@@ -41,7 +42,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             IAssetStoreCachePathProxy assetStoreCachePathProxy,
             IPageRefreshHandler pageRefreshHandler,
             IPackageOperationDispatcher packageOperationDispatcher,
-            IDelayedSelectionHandler delayedSelectionHandler)
+            IDelayedSelectionHandler delayedSelectionHandler,
+            ICustomDisplayDialog customDisplayDialog)
         {
             m_ResourceLoader = resourceLoader;
             m_ExtensionManager = extensionManager;
@@ -56,6 +58,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_PageRefreshHandler = pageRefreshHandler;
             m_OperationDispatcher = packageOperationDispatcher;
             m_DelayedSelectionHandler = delayedSelectionHandler;
+            m_CustomDisplayDialog = customDisplayDialog;
         }
 
         public void OnEnable()
@@ -68,7 +71,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnEnable();
             packageSearchBar.OnEnable();
-            nonCompliantRegistryMessage.OnEnable();
+            partiallyNonCompliantRegistryMessage.OnEnable();
             signInBar.OnEnable();
             packageList.OnEnable();
             packageManagerToolbar.OnEnable();
@@ -86,6 +89,9 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             EditorApplication.focusChanged += OnFocusChanged;
             m_Selection.onSelectionChanged += RefreshSelectedInInspectorClass;
+
+            m_PageManager.onSelectionChanged += OnPageSelectionChange;
+            RefreshMainContainerContent();
 
             focusable = true;
             RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
@@ -207,15 +213,15 @@ namespace UnityEditor.PackageManager.UI.Internal
 
             packageDetails.OnDisable();
             packageSearchBar.OnDisable();
-            nonCompliantRegistryMessage.OnDisable();
+            partiallyNonCompliantRegistryMessage.OnDisable();
             signInBar.OnDisable();
             packageList.OnDisable();
             packageManagerToolbar.OnDisable();
             packageStatusbar.OnDisable();
             sidebar.OnDisable();
-
             EditorApplication.focusChanged -= OnFocusChanged;
             m_Selection.onSelectionChanged -= RefreshSelectedInInspectorClass;
+            m_PageManager.onSelectionChanged -= OnPageSelectionChange;
 
             m_PackageManagerPrefs.sidebarWidth = sidebar.layout.width;
             m_PackageManagerPrefs.leftContainerWidth = leftColumnContainer.layout.width;
@@ -261,7 +267,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public void OnLostFocus()
         {
-            rightContainer.RemoveFromClassList(k_FocusedClassName);
+            mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
             sidebar.RemoveFromClassList(k_FocusedClassName);
             RemoveFromClassList(k_FocusedClassName);
         }
@@ -270,15 +276,15 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             // We have to use PointerDownEvent instead of MouseDownEvent because in some cases (i.e. selectable text fields)
             // the event won't reach our code. PointerDownEvent will always be triggered on click which guarantees full support.
-            rightContainer.RegisterCallback<PointerDownEvent>(e =>
+            mainContainerSplitter.RegisterCallback<PointerDownEvent>(e =>
             {
-                rightContainer.AddToClassList(k_FocusedClassName);
+                mainContainerSplitter.AddToClassList(k_FocusedClassName);
                 sidebar.RemoveFromClassList(k_FocusedClassName);
             }, TrickleDown.TrickleDown);
 
             sidebar.RegisterCallback<PointerDownEvent>(e =>
             {
-                rightContainer.RemoveFromClassList(k_FocusedClassName);
+                mainContainerSplitter.RemoveFromClassList(k_FocusedClassName);
                 sidebar.AddToClassList(k_FocusedClassName);
             }, TrickleDown.TrickleDown);
         }
@@ -293,7 +299,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         public AddPackageByNameDropdown OpenAddPackageByNameDropdown(string url, EditorWindow anchorWindow)
         {
-            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_ApplicationProxy, anchorWindow);
+            var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, anchorWindow);
 
             var packageNameAndVersion = url.Replace(PackageManagerWindow.k_UpmUrl, string.Empty);
             var packageName = string.Empty;
@@ -358,22 +364,47 @@ namespace UnityEditor.PackageManager.UI.Internal
             }
         }
 
+        private void OnPageSelectionChange(PageSelectionChangeArgs _)
+        {
+            RefreshMainContainerContent();
+        }
+
+        private void RefreshMainContainerContent()
+        {
+            var page = m_PageManager.activePage;
+            var isOverlayVisible = page.scopedRegistry?.compliance.status == RegistryComplianceStatus.NonCompliant;
+            UIUtils.SetElementDisplay(mainContainerOverlay, isOverlayVisible);
+            UIUtils.SetElementDisplay(mainContainerSplitter, !isOverlayVisible);
+
+            if (!isOverlayVisible)
+                return;
+
+            mainContainerOverlay.titleLabel.text = page.scopedRegistry.name;
+
+            var violation = page.scopedRegistry.compliance.violations[0];
+            mainContainerOverlay.extendedHelpBox.customIcon = Icon.PackageErrorLarge;
+            mainContainerOverlay.extendedHelpBox.text = violation?.message ?? string.Empty;
+            mainContainerOverlay.extendedHelpBox.readMoreUrl = violation?.readMoreLink;
+            mainContainerOverlay.extendedHelpBox.analyticsId = "non-compliant-registry-help-box";
+        }
+
         public IMenu addMenu => packageManagerToolbar.addMenu;
         public IMenu advancedMenu => packageManagerToolbar.toolbarSettingsMenu;
 
         private VisualElementCache cache { set; get; }
 
         public PackageSearchBar packageSearchBar => cache.Get<PackageSearchBar>("packageSearchBar");
-        public PartiallyNonCompliantRegistryMessage nonCompliantRegistryMessage => cache.Get<PartiallyNonCompliantRegistryMessage>("partiallyNonCompliantRegistryMessage");
+        public PartiallyNonCompliantRegistryMessage partiallyNonCompliantRegistryMessage => cache.Get<PartiallyNonCompliantRegistryMessage>("partiallyNonCompliantRegistryMessage");
         public SignInBar signInBar => cache.Get<SignInBar>("signInBar");
         public PackageList packageList => cache.Get<PackageList>("packageList");
         public PackageDetails packageDetails => cache.Get<PackageDetails>("packageDetails");
         public PackageManagerToolbar packageManagerToolbar => cache.Get<PackageManagerToolbar>("topMenuToolbar");
         public PackageStatusBar packageStatusbar => cache.Get<PackageStatusBar>("packageStatusBar");
         private VisualElement leftColumnContainer => cache.Get<VisualElement>("leftColumnContainer");
-        private VisualElement rightContainer => cache.Get<VisualElement>("rightSideContainer");
         private Sidebar sidebar => cache.Get<Sidebar>("sidebar");
         private TwoPaneSplitView globalSplitter => cache.Get<TwoPaneSplitView>("globalSplitter");
-        private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainer");
+        private VisualElement mainContainer => cache.Get<VisualElement>("mainContainer");
+        private TwoPaneSplitView mainContainerSplitter => cache.Get<TwoPaneSplitView>("mainContainerSplitter");
+        private MainContainerOverlay mainContainerOverlay => cache.Get<MainContainerOverlay>("mainContainerOverlay");
     }
 }

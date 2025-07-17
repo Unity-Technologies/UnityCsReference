@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either an enum or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleEnum<T> : IStyleValue<T>, IEquatable<StyleEnum<T>> where T : struct, IConvertible
     {
         /// <summary>
@@ -54,7 +55,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private T m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>
@@ -104,6 +107,21 @@ namespace UnityEngine.UIElements
         public override string ToString()
         {
             return this.DebugString();
+        }
+
+        internal static bool TryParseString(string str, out StyleEnum<T> styleEnum)
+        {
+            if (Enum.TryParse<T>(str, true, out var result))
+            {
+                styleEnum = new StyleEnum<T>(result);
+                return true;
+            }
+            else
+            {
+                styleEnum = default;
+            }
+
+            return false;
         }
     }
 }

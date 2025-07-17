@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="Cursor"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleCursor : IStyleValue<Cursor>, IEquatable<StyleCursor>
     {
         /// <summary>
@@ -56,7 +57,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private Cursor m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

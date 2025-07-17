@@ -67,6 +67,17 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.Motion.Editor.AnimationWindow")]
 
+[assembly: InternalsVisibleTo("Unity.Modules.SpriteAPI.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.SpriteDeform.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.SpriteShape.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.DrivenProperties.Tests.Editor")]
+
+[assembly: InternalsVisibleTo("Unity.Modules.Core.Tests.ColorPicker")]
+
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")]
+
+
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud.Service")]
@@ -82,6 +93,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.2D")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Android")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Deployment")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Tooling")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.CommonUtils")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.Application")]
+[assembly: InternalsVisibleTo("Unity.IntegrationTests.Android.PlayerBuildAndRun")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.Animation")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetBundles")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.AssetImporting")]
@@ -117,6 +133,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 [assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
 [assembly: InternalsVisibleTo("Unity.RenderPipelines.Universal.2D.Runtime")]
+[assembly: InternalsVisibleTo("UnityEngine.TestTools.Graphics.Contexts")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.Editor")]
 [assembly: InternalsVisibleTo("Unity.2D.Sprite.EditorTests")]
 [assembly: InternalsVisibleTo("Universal2DGraphicsTests")]
@@ -187,4 +204,11 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.Subsystem.Registration")]
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
 
+
+// Test Assemblies
+[assembly: InternalsVisibleTo("Unity.Core.Scripting.AssemblyVersion.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.CrossModule.ScriptableRenderPipeline.Tests.Runtime")]
+[assembly: InternalsVisibleTo("Unity.Modules.PlayableGraph.Tests.Editor")]
+[assembly: InternalsVisibleTo("Unity.Modules.PlayableGraph.Tests")]
 

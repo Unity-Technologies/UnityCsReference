@@ -27,9 +27,12 @@ namespace UnityEditor.Search
         }
 
         public AssetIndexer(SearchDatabase.Settings settings)
-            : base(string.IsNullOrEmpty(settings.name) ? "assets" : settings.name, settings)
-        {
-        }
+            : this(settings, new SearchIndexEntryStorage())
+        {}
+
+        public AssetIndexer(SearchDatabase.Settings settings, ISearchIndexerStorage storage)
+            : base(string.IsNullOrEmpty(settings.name) ? "assets" : settings.name, settings, storage)
+        {}
 
         internal override IEnumerable<string> GetRoots()
         {
@@ -75,23 +78,10 @@ namespace UnityEditor.Search
 
         public void IndexTypes(Type objType, int documentIndex, bool isPrefabDocument, string name = "t", bool exact = false)
         {
-            while (objType != null && objType != typeof(Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            Utils.EnumerateIndexedTypesAndInterfaces(objType, isPrefabDocument, (typeName, isFullName) =>
             {
-                if (isPrefabDocument && objType == typeof(GameObject))
-                    IndexProperty(documentIndex, name, "prefab", saveKeyword: true, exact: true);
-                else if (objType == typeof(MonoScript))
-                    IndexProperty(documentIndex, name, "script", saveKeyword: true, exact: true);
-
-                IndexType(objType, documentIndex);
-                objType = objType.BaseType;
-            }
-        }
-
-        private void IndexType(Type objType, int documentIndex)
-        {
-            IndexProperty(documentIndex, "t", objType.Name, saveKeyword: true);
-            if (objType.Name != objType.FullName)
-                IndexProperty(documentIndex, "t", objType.FullName, exact: true, saveKeyword: true);
+                IndexProperty(documentIndex, name, typeName, saveKeyword: true, exact: isFullName);
+            });
         }
 
         private void IndexSubAsset(Object subObj, string containerPath, string containerGlobalObjectId, bool checkIfDocumentExists, bool hasCustomIndexers)
@@ -426,21 +416,26 @@ namespace UnityEditor.Search
                 var id = gid.ToString();
                 var transformPath = SearchUtils.GetTransformPath(obj.transform);
                 var documentIndex = AddDocument(id, options.types ? transformPath : null, containerPath, checkIfDocumentExists, SearchDocumentFlags.Nested | SearchDocumentFlags.Object);
-
+                var depth = GetObjectDepth(obj);
                 if (options.types)
                 {
-                    IndexNumber(documentIndex, "depth", GetObjectDepth(obj));
+                    IndexNumber(documentIndex, "depth", depth);
                     IndexProperty(documentIndex, "from", type, saveKeyword: true, exact: true);
                 }
 
                 if (options.dependencies)
                 {
                     IndexProperty(documentIndex, type, containerName, saveKeyword: false);
-                    IndexProperty(documentIndex, type, containerPath, exact: true, saveKeyword: false);
+                    IndexProperty(documentIndex, type, containerPath, saveKeyword: false);
                 }
+
+                // TODO Deep Indexing: we are currently not indexing all the properties of a nested objects. It could be worth indexing the same set of properties as a root object:
+                // types, path, dir, name, size, age, ext
 
                 IndexWord(documentIndex, Utils.RemoveInvalidCharsFromPath(obj.transform.name, '_'));
                 IndexProperty(documentIndex, "is", "nested", saveKeyword: true, exact: true);
+
+                // Root objects have already all their properties indexed.
                 IndexGameObject(documentIndex, obj, options);
                 IndexCustomGameObjectProperties(id, documentIndex, obj);
             }
@@ -462,7 +457,7 @@ namespace UnityEditor.Search
         {
             if (!transform || !transform.gameObject || (transform.gameObject.hideFlags & (HideFlags.DontSave | HideFlags.HideInInspector)) != 0)
                 return;
-            if (!skipSelf || transform.childCount == 0)
+            if (!skipSelf)
                 objects.Add(transform.gameObject);
             for (int c = 0, end = transform.childCount; c != end; ++c)
                 MergeObjects(objects, transform.GetChild(c), false);

@@ -223,6 +223,7 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::InstanceIDToObject")]
         public extern static Object EntityIdToObject(EntityId entityId);
 
+        [Obsolete("InstanceIDToObject is obsolete. Use EntityIdToObject instead.")]
         public static Object InstanceIDToObject(int instanceID)
         {
             return EntityIdToObject(instanceID);
@@ -237,10 +238,26 @@ namespace UnityEngine
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDToObjectList", IsThreadSafe = true)]
-        extern private static void InstanceIDToObjectList(IntPtr instanceIDs, int instanceCount, List<Object> objects);
+        extern private static void EntityIdsToObjectList(IntPtr entityIds, int instanceCount, List<Object> objects);
 
+        public static unsafe void EntityIdsToObjectList(NativeArray<EntityId> entityIds, List<Object> objects)
+        {
+            if (!entityIds.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(entityIds));
+            if (objects == null)
+                throw new ArgumentNullException(nameof(objects));
+            if (entityIds.Length == 0)
+            {
+                objects.Clear();
+                return;
+            }
+            EntityIdsToObjectList((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), entityIds.Length, objects);
+        }
+
+        [Obsolete("InstanceIDToObjectList is obsolete. Use EntityIdsToObjectList instead.")]
         public static unsafe void InstanceIDToObjectList(NativeArray<int> instanceIDs, List<Object> objects)
         {
+            Debug.Assert(sizeof(int) == sizeof(EntityId), "Update this path to 64bit when we support 64bit");
             if (!instanceIDs.IsCreated)
                 throw new ArgumentException("NativeArray is uninitialized", nameof(instanceIDs));
             if (objects == null)
@@ -252,7 +269,7 @@ namespace UnityEngine
                 return;
             }
 
-            InstanceIDToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
+            EntityIdsToObjectList((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), instanceIDs.Length, objects);
         }
 
         [FreeFunction("Resources_Bindings::InstanceIDsToValidArray", IsThreadSafe = true)]
@@ -261,11 +278,13 @@ namespace UnityEngine
         [FreeFunction("Resources_Bindings::DoesObjectWithInstanceIDExist", IsThreadSafe = true)]
         public static extern bool EntityIdIsValid(EntityId entityId);
 
+        [Obsolete("InstanceIDIsValid is obsolete. Use EntityIdIsValid instead.")]
         public static bool InstanceIDIsValid(int instanceId)
         {
             return EntityIdIsValid(instanceId);
         }
 
+        [Obsolete("InstanceIDsToValidArray is obsolete. Use EntityIdsToValidArray instead.")]
         public static unsafe void InstanceIDsToValidArray(NativeArray<int> instanceIDs, NativeArray<bool> validArray)
         {
             if (!instanceIDs.IsCreated)

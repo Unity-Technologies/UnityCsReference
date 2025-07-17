@@ -54,7 +54,7 @@ namespace UnityEditor.Overlays
             get => SnapToFloatingPosition(floatingSnapCorner, m_LockAnchor ? m_FloatingSnapOffset : floatingSnapOffset);
             set
             {
-                var position = canvas.ClampToOverlayWindow(new Rect(value, rootVisualElement.rect.size)).position;
+                var position = canvas.EnsureOverlapsWindow(new Rect(value, rootVisualElement.rect.size)).position;
                 UpdateSnapping(position);
             }
         }
@@ -69,7 +69,7 @@ namespace UnityEditor.Overlays
                 OnFloatingChanged(value);
             }
         }
-        
+
         internal event Action<OverlayContainer> dockingCompleted;
 
         void OnFloatingChanged(bool floating)
@@ -80,17 +80,24 @@ namespace UnityEditor.Overlays
             floatingChanged?.Invoke(floating);
         }
 
-        internal bool DockAt(OverlayContainer container, OverlayContainerSection section)
+        internal bool DockAt(OverlayContainer container, DockingHint hint = DockingHint.None)
         {
-            return DockAt(container, section, container.ContainsOverlay(this, section) ? container.GetSectionCount(section) - 1 : container.GetSectionCount(section));
+            return DockAt(container, OverlayContainerSection.BeforeSpacer, hint);
+        }
+
+        internal bool DockAt(OverlayContainer container, OverlayContainerSection section, DockingHint hint = DockingHint.None)
+        {
+            return DockAt(container, section, container.ContainsOverlay(this, section)
+                ? container.GetContainerSection(section).overlayCount - 1
+                : container.GetContainerSection(section).overlayCount);
         }
 
         // The index must be either less or equal to the section count if this overlay is not in already in the container.
         // If the overlay is already in the container, the index must be less than the section count
-        internal bool DockAt(OverlayContainer container, OverlayContainerSection section, int index)
+        internal bool DockAt(OverlayContainer container, OverlayContainerSection section, int index, DockingHint hint = DockingHint.None)
         {
             //If the overlay is staying in the same container
-            var existsInContainer = container.GetOverlayIndex(this, out var originSection, out var originIndex);
+            var existsInContainer = container.GetOverlayIndex(this, out OverlayContainerSection originSection, out var originIndex);
             if (existsInContainer)
             {
                 if (originSection == section && originIndex == index)
@@ -101,22 +108,22 @@ namespace UnityEditor.Overlays
 
             this.container = container;
 
-            int sectionCount = container.GetSectionCount(section);
+            int sectionCount = container.GetContainerSection(section).overlayCount;
             if (index > sectionCount)
             {
                 Debug.LogWarning("Trying to dock overlay at an invalid index. Docking at the end of the section instead.");
                 index = sectionCount;
             }
 
-            this.container.InsertOverlay(this, section, index);
+            this.container.InsertOverlay(this, section, index, hint);
 
             floating = container is FloatingOverlayContainer;
 
-            if(!existsInContainer)
+            if (!existsInContainer)
                 RebuildContent();
-            
+
             dockingCompleted?.Invoke(container);
-            
+
             return true;
         }
 
@@ -126,14 +133,14 @@ namespace UnityEditor.Overlays
                 throw new ArgumentException("Target overlay has an invalid container", nameof(target));
 
             var targetContainer = target.container;
-            targetContainer.GetOverlayIndex(target, out var section, out var targetIndex);
+            targetContainer.GetOverlayIndex(target, out OverlayContainerSection section, out var targetIndex);
             if (container == targetContainer)
             {
-                container.GetOverlayIndex(this, out var thisSection, out var thisIndex);
-                if( thisIndex < targetIndex && thisSection == section)
+                container.GetOverlayIndex(this, out OverlayContainerSection thisSection, out var thisIndex);
+                if (thisIndex < targetIndex && thisSection == section)
                     targetIndex--;
-
             }
+
             return DockAt(targetContainer, section, targetIndex);
         }
 
@@ -143,14 +150,14 @@ namespace UnityEditor.Overlays
                 throw new ArgumentException("Target overlay has an invalid container", nameof(target));
 
             var targetContainer = target.container;
-            targetContainer.GetOverlayIndex(target, out var section, out var targetIndex);
+            targetContainer.GetOverlayIndex(target, out OverlayContainerSection section, out var targetIndex);
             if (container == targetContainer)
             {
-                container.GetOverlayIndex(this, out var thisSection, out var thisIndex);
-                if( thisIndex < targetIndex && thisSection == section)
+                container.GetOverlayIndex(this, out OverlayContainerSection thisSection, out var thisIndex);
+                if (thisIndex < targetIndex && thisSection == section)
                     targetIndex--;
-
             }
+
             return DockAt(targetContainer, section, targetIndex + 1);
         }
 
@@ -167,7 +174,7 @@ namespace UnityEditor.Overlays
             if (!(container is FloatingOverlayContainer))
                 return;
 
-            DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetSectionCount(OverlayContainerSection.BeforeSpacer) -1);
+            DockAt(container, OverlayContainerSection.BeforeSpacer, container.GetContainerSection(OverlayContainerSection.BeforeSpacer).overlayCount - 1);
         }
 
         internal void SetSnappingOffset(Vector2 snapOffset, Vector2 snapOffsetDelta)
@@ -271,7 +278,7 @@ namespace UnityEditor.Overlays
             }
 
             // When visual state changes, we need to wait until geometry recalculates to enforce bounds clamping
-            if(m_ContentsChanged)
+            if (m_ContentsChanged)
                 floatingPosition = floatingPosition;
 
             m_ContentsChanged = false;

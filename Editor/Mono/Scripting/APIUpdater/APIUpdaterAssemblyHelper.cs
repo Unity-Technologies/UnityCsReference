@@ -48,7 +48,7 @@ namespace UnityEditor.Scripting
             return assemblyUpdaterProcess.ExitCode;
         }
         
-        static string AssemblyUpdaterPath() => $"{EditorApplication.applicationContentsPath}/Tools/Compilation/ApiUpdater/AssemblyUpdater.dll";
+        static string AssemblyUpdaterPath() => $"{EditorApplication.applicationBuildPipelinePath}/Compilation/ApiUpdater/AssemblyUpdater.dll";
 
         internal static string ArgumentsForUpdateAssembly(string assemblyPath, string tempOutputPath, IEnumerable<string> updateConfigSourcePaths)
         {

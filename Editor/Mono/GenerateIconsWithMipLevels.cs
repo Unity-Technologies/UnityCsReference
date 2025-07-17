@@ -112,14 +112,14 @@ namespace UnityEditorInternal
         public static void GenerateSelectedIconsWithMips()
         {
             // If no selection do all
-            if (Selection.activeInstanceID == 0)
+            if (Selection.activeEntityId == EntityId.None)
             {
-                Debug.Log("Ensure to select a mip texture..." + Selection.activeInstanceID);
+                Debug.Log("Ensure to select a mip texture..." + Selection.activeEntityId);
                 return;
             }
 
-            int instanceID = Selection.activeInstanceID;
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
+            EntityId entityId = Selection.activeEntityId;
+            string assetPath = AssetDatabase.GetAssetPath(entityId);
 
             GenerateIconWithMipLevels(assetPath, null, null);
         }
@@ -354,7 +354,7 @@ namespace UnityEditorInternal
 
         private static void EnsureFolderIsCreatedRecursively(string targetFolder)
         {
-            if (AssetDatabase.GetMainAssetInstanceID(targetFolder) == 0)
+            if (AssetDatabase.GetMainAssetEntityId(targetFolder) == EntityId.None)
             {
                 EnsureFolderIsCreatedRecursively(Path.GetDirectoryName(targetFolder));
                 Debug.Log("Created target folder " + targetFolder);
@@ -364,7 +364,7 @@ namespace UnityEditorInternal
 
         private static void EnsureFolderIsCreated(string targetFolder)
         {
-            if (AssetDatabase.GetMainAssetInstanceID(targetFolder) == 0)
+            if (AssetDatabase.GetMainAssetEntityId(targetFolder) == EntityId.None)
             {
                 Debug.Log("Created target folder " + targetFolder);
                 AssetDatabase.CreateFolder(Path.GetDirectoryName(targetFolder), Path.GetFileName(targetFolder));
@@ -373,7 +373,7 @@ namespace UnityEditorInternal
 
         static void DeleteFile(string file)
         {
-            if (AssetDatabase.GetMainAssetInstanceID(file) != 0)
+            if (AssetDatabase.GetMainAssetEntityId(file) != EntityId.None)
             {
                 Debug.Log("Deleted unused file: " + file);
                 AssetDatabase.DeleteAsset(file);

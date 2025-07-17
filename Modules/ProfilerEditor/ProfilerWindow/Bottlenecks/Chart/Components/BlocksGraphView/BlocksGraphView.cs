@@ -23,9 +23,7 @@ namespace Unity.Profiling.Editor.UI
         const string k_UssClass_HoverIndicator = "blocks-graph-view__hover-indicator";
 
         readonly VisualElement m_HoverIndicator;
-
-        bool m_IsPointerDown;
-        int m_LastReportedSelectedUnit = -1;
+        int? m_PointerDownUnit;
 
         public BlocksGraphView()
         {
@@ -125,8 +123,11 @@ namespace Unity.Profiling.Editor.UI
         void OnPointerDown(PointerDownEvent evt)
         {
             this.CapturePointer(evt.pointerId);
-            m_IsPointerDown = true;
-            ReportSelectionAtPositionIfNecessary(evt.localPosition);
+            var hoveredUnit = UnitAtPosition(evt.localPosition);
+            m_PointerDownUnit = hoveredUnit;
+
+            var selectionRange = new Range(hoveredUnit, hoveredUnit + 1);
+            Responder?.GraphViewUpdatedPendingSelection(selectionRange);
         }
 
         void OnPointerMove(PointerMoveEvent evt)
@@ -137,28 +138,40 @@ namespace Unity.Profiling.Editor.UI
 
             Responder?.GraphViewPointerHoverMoved(hoveredUnit, evt.position);
 
-            if (m_IsPointerDown)
-                ReportSelectionAtPositionIfNecessary(evt.localPosition);
+            if (m_PointerDownUnit.HasValue)
+            {
+                var selectionStartUnit = m_PointerDownUnit.Value;
+                var selectionRange = SelectionRangeFromUnits(selectionStartUnit, hoveredUnit);
+                Responder?.GraphViewUpdatedPendingSelection(selectionRange);
+            }
         }
 
         void OnPointerUp(PointerUpEvent evt)
         {
-            if (m_IsPointerDown)
-                ReportSelectionAtPositionIfNecessary(evt.localPosition);
+            if (m_PointerDownUnit.HasValue)
+            {
+                var selectionStartUnit = m_PointerDownUnit.Value;
+                var selectionEndUnit = UnitAtPosition(evt.localPosition);
+                var selectionRange = SelectionRangeFromUnits(selectionStartUnit, selectionEndUnit);
+                Responder?.GraphViewSelectedUnitRange(selectionRange);
+            }
 
-            m_LastReportedSelectedUnit = -1;
-            m_IsPointerDown = false;
+            m_PointerDownUnit = null;
             this.ReleasePointer(evt.pointerId);
         }
 
-        void ReportSelectionAtPositionIfNecessary(Vector2 localPosition)
+        Range SelectionRangeFromUnits(int startUnit, int endUnit)
         {
-            var selectedUnit = UnitAtPosition(localPosition);
-            if (selectedUnit == m_LastReportedSelectedUnit)
-                return;
+            // Always place lowest unit at the start of the range (if user drags
+            // from right to left). One is added to the end because C# ranges have
+            // an exclusive end index.
+            Range selectionRange;
+            if (startUnit <= endUnit)
+                selectionRange = new Range(startUnit, endUnit + 1);
+            else
+                selectionRange = new Range(endUnit, startUnit + 1);
 
-            Responder?.GraphViewSelectedUnit(selectedUnit);
-            m_LastReportedSelectedUnit = selectedUnit;
+            return selectionRange;
         }
 
         void OnPointerOver(PointerOverEvent evt)
@@ -178,7 +191,7 @@ namespace Unity.Profiling.Editor.UI
 
         int UnitAtPosition(Vector2 localPosition)
         {
-            return Mathf.FloorToInt(localPosition.x / UnitWidth);
+            return Math.Max(Mathf.FloorToInt(localPosition.x / UnitWidth), 0);
         }
 
         public interface IDataSource
@@ -204,7 +217,9 @@ namespace Unity.Profiling.Editor.UI
 
         public interface IResponder
         {
-            void GraphViewSelectedUnit(int unit);
+            void GraphViewUpdatedPendingSelection(Range unitRange);
+
+            void GraphViewSelectedUnitRange(Range unitRange);
 
             void GraphViewPointerHoverBegan(int unit, Vector2 position);
 

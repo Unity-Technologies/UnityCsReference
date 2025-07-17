@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -21,9 +22,9 @@ namespace UnityEditor
             None
         }
 
-        public static void MenuCallback(object callbackObject)
+        public static void MenuCallback<T>(object callbackObject)
         {
-            MenuCallbackObject menuCallBackObject = callbackObject as MenuCallbackObject;
+            MenuCallbackObject<T> menuCallBackObject = callbackObject as MenuCallbackObject<T>;
 
             if (menuCallBackObject.onBeforeExecuteCallback != null)
                 menuCallBackObject.onBeforeExecuteCallback(menuCallBackObject.menuItemPath, menuCallBackObject.temporaryContext, menuCallBackObject.origin, menuCallBackObject.userData);
@@ -41,18 +42,18 @@ namespace UnityEditor
                 menuCallBackObject.onAfterExecuteCallback(menuCallBackObject.menuItemPath, menuCallBackObject.temporaryContext, menuCallBackObject.origin, menuCallBackObject.userData);
         }
 
-        public static void ExtractOnlyEnabledMenuItem(
+        public static void ExtractOnlyEnabledMenuItem<T>(
             ScriptingMenuItem menuItem,
             GenericMenu menu,
             string replacementMenuString,
             Object[] temporaryContext,
-            int userData,
-            Action<string, Object[], ContextMenuOrigin, int> onBeforeExecuteCallback,
-            Action<string, Object[], ContextMenuOrigin, int> onAfterExecuteCallback,
+            T userData,
+            Action<string, Object[], ContextMenuOrigin, T> onBeforeExecuteCallback,
+            Action<string, Object[], ContextMenuOrigin, T> onAfterExecuteCallback,
             ContextMenuOrigin origin,
             int previousMenuItemPriority = -1)
         {
-            MenuCallbackObject callbackObject = new MenuCallbackObject();
+            MenuCallbackObject<T> callbackObject = new MenuCallbackObject<T>();
             callbackObject.menuItemPath = menuItem.path;
             callbackObject.temporaryContext = temporaryContext;
             callbackObject.onBeforeExecuteCallback = onBeforeExecuteCallback;
@@ -68,7 +69,7 @@ namespace UnityEditor
             }
 
             if (!menuItem.isSeparator && EditorApplication.ValidateMenuItem(menuItem.path))
-                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback, callbackObject);
+                menu.AddItem(new GUIContent(L10n.TrPath(replacementMenuString)), false, MenuCallback<T>, callbackObject);
         }
 
         static string GetSubmenuPath(GenericMenu.MenuItem item)
@@ -183,14 +184,80 @@ namespace UnityEditor
             RemoveInvalidSeparators(menu);
         }
 
-        class MenuCallbackObject
+        class MenuCallbackObject<T>
         {
             public string menuItemPath;
             public Object[] temporaryContext;
-            public Action<string, Object[], ContextMenuOrigin, int> onBeforeExecuteCallback; // <menuItemPath, temporaryContext, userData>
-            public Action<string, Object[], ContextMenuOrigin, int> onAfterExecuteCallback;  // <menuItemPath, temporaryContext, userData>
-            public int userData;
+            public Action<string, Object[], ContextMenuOrigin, T> onBeforeExecuteCallback; // <menuItemPath, temporaryContext, userData>
+            public Action<string, Object[], ContextMenuOrigin, T> onAfterExecuteCallback;  // <menuItemPath, temporaryContext, userData>
+            public T userData;
             public ContextMenuOrigin origin;
+        }
+
+        /*
+         * NOTE: AddCreateGameObjectItemsToMenu() cooks existing menu, so that make sure menu entries are added to
+         *               localization entry.
+         * @Localization("Create Empty", "MenuItem")
+         * @Localization("Create Empty Child", "MenuItem")
+         */
+        public static void AddCreateGameObjectItemsToMenu(
+            GenericMenu menu,
+            Object[] context,
+            bool includeCreateEmptyChild,
+            bool useCreateEmptyParentMenuItem,
+            bool includeGameObjectInPath,
+            SceneHandle targetSceneHandle,
+            ContextMenuOrigin origin,
+            Action<string, Object[], ContextMenuOrigin, SceneHandle> onBeforeExecuteCallback,
+            Action<string, Object[], ContextMenuOrigin, SceneHandle> onAfterExecuteCallback)
+        {
+            ScriptingMenuItem[] menus = Menu.GetMenuItems("GameObject", true, false);
+            int previousMenuItemPosition = -1;
+
+            foreach (var menuItem in menus)
+            {
+                string path = menuItem.path;
+
+                string hotkey = Menu.GetHotkey(menuItem.path);
+
+                Object[] tempContext = context;
+                if (!includeCreateEmptyChild && path.ToLower() == "GameObject/Create Empty Child".ToLower())
+                    continue;
+
+                if (!useCreateEmptyParentMenuItem && path.ToLower() == "GameObject/Create Empty Parent".ToLower())
+                {
+                    if (GOCreationCommands.ValidateCreateEmptyParent())
+                        menu.AddItem(EditorGUIUtility.TrTextContent("Create Empty Parent " + hotkey), false, GOCreationCommands.CreateEmptyParent);
+                    continue;
+                }
+
+                // The first item after the GameObject creation menu items
+                if (path.ToLower() == GameObjectUtility.GetFirstItemPathAfterGameObjectCreationMenuItems().ToLower())
+                    continue;
+
+                string menupath = path;
+
+                // cut away "GameObject/"
+                if (!includeGameObjectInPath)
+                    menupath = path.Substring(11);
+
+                if (!string.IsNullOrEmpty(hotkey))
+                    menupath += " " + hotkey;
+
+                ExtractOnlyEnabledMenuItem(menuItem,
+                    menu,
+                    menupath,
+                    tempContext,
+                    targetSceneHandle,
+                    onBeforeExecuteCallback,
+                    onAfterExecuteCallback,
+                    origin,
+                    previousMenuItemPosition);
+
+                previousMenuItemPosition = menuItem.priority;
+            }
+
+            RemoveInvalidMenuItems(menu);
         }
     }
 }

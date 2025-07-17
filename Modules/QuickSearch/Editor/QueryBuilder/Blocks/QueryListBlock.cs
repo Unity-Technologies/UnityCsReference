@@ -4,10 +4,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEditor.Search.Providers;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -469,6 +472,51 @@ namespace UnityEditor.Search
             yield return CreateProposition(flags, "Static", "static", "Search static objects");
             yield return CreateProposition(flags, "Prefab", "prefab", "Search prefab objects");
             yield return CreateProposition(flags, "Main", "main", "Search main asset representation");
+        }
+    }
+
+    [QueryListBlock("Scenes", "scene", "scene", "=")]
+    class QuerySceneFilterBlock : QueryListBlock
+    {
+        public QuerySceneFilterBlock(IQuerySource source, string id, string value, QueryListBlockAttribute attr)
+            : base(source, id, value, attr)
+        {
+            icon = Utils.LoadIcon("Filter Icon");
+            alwaysDrawLabel = false;
+        }
+
+        public override IEnumerable<SearchProposition> GetPropositions(SearchPropositionFlags flags)
+        {
+            var stage = StageUtility.GetCurrentStage();
+            if (stage is not MainStage)
+            {
+                yield break;
+            }
+            else
+            {
+                for (int i = 0; i < SceneManager.sceneCount; ++i)
+                {
+                    var scene = SceneManager.GetSceneAt(i);
+                    if (scene.path == "")
+                    {
+                        yield return CreateProposition(flags, SceneQueryEngine.k_UntitledScene, SceneQueryEngine.k_UntitledScene, $"Filter by scene {SceneQueryEngine.k_UntitledScene}");
+                    }
+                    else
+                    {
+                        yield return CreateProposition(flags, scene.name, scene.path, $"Filter by scene {scene.name}");
+                    }
+                }
+            }
+        }
+
+        public override string ToString()
+        {
+            return $"{id}{op}{EscapeLiteralString(value)}";
+        }
+
+        internal override string FormatUIValue(string originalValue)
+        {
+            return Path.GetFileNameWithoutExtension(originalValue);
         }
     }
 

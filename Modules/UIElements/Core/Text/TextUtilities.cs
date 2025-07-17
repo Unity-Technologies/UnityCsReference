@@ -27,7 +27,7 @@ namespace UnityEngine.UIElements
             }
         }
 
-        internal static Vector2 MeasureVisualElementTextSize(TextElement te, in RenderedText textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode)
+        internal static Vector2 MeasureVisualElementTextSize(TextElement te, in RenderedText textToMeasure, float width, VisualElement.MeasureMode widthMode, float height, VisualElement.MeasureMode heightMode, float? fontsize= null)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
@@ -44,7 +44,7 @@ namespace UnityEngine.UIElements
 
             if (widthMode != VisualElement.MeasureMode.Exactly || heightMode != VisualElement.MeasureMode.Exactly)
             {
-                var size = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height);
+                var size = te.uitkTextHandle.ComputeTextSize(textToMeasure, width, height, fontsize);
                 measuredWidth = size.x;
                 measuredHeight = size.y;
             }
@@ -130,7 +130,11 @@ namespace UnityEngine.UIElements
                 return false;
             var isAdvancedTextGeneratorEnabledOnTextElement = ve.computedStyle.unityTextGenerator == TextGeneratorType.Advanced;
             var isAdvancedTextGeneratorEnabledOnProject = false;
-            isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
+            if (ve.panel is RuntimePanel runtimePanel)
+                isAdvancedTextGeneratorEnabledOnProject = IsAdvancedTextEnabled?.Invoke() ?? false;
+            else
+                isAdvancedTextGeneratorEnabledOnProject = true;
+
             if (!s_HasAdvancedTextSystemErrorBeenShown && !isAdvancedTextGeneratorEnabledOnProject && isAdvancedTextGeneratorEnabledOnTextElement)
             {
                 s_HasAdvancedTextSystemErrorBeenShown = true;

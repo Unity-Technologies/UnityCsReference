@@ -5,54 +5,48 @@
 using System;
 using UnityEditor.Connect;
 using UnityEditor.PackageManager.UI;
-using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Services/Cloud", typeof(DefaultMainToolbar))]
-    sealed class CloudButton : EditorToolbarButton
+    static class CloudButton
     {
-        public CloudButton() : base(OpenCloudWindow)
+        static bool s_Availability = true;
+        const string k_Path = "Services/Cloud";
+
+        static CloudButton()
         {
-            name = "Cloud";
-            tooltip = L10n.Tr("Manage services");
-
-            this.Q<Image>(className: EditorToolbar.elementIconClassName).style.display = DisplayStyle.Flex;
-
-            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
-        }
-
-        void OnAttachedToPanel(AttachToPanelEvent evt)
-        {
+            s_Availability = MPE.ProcessService.level == MPE.ProcessLevel.Main;
             EditorApplication.update += CheckAvailability;
         }
 
-        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        static void CheckAvailability()
         {
-            EditorApplication.update -= CheckAvailability;
+            var available = MPE.ProcessService.level == MPE.ProcessLevel.Main;
+            if (s_Availability != available)
+                MainToolbar.Refresh(k_Path);
+            s_Availability = available;
         }
 
-        void CheckAvailability()
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement(k_Path, true, defaultDockIndex = 6, defaultDockPosition = MainToolbarDockPosition.Right)]
+        static MainToolbarElement CreateButton()
         {
-            style.display = MPE.ProcessService.level == MPE.ProcessLevel.Main ? DisplayStyle.Flex : DisplayStyle.None;
-        }
-
-        [MenuItem("Window/Package Management/Services %0", false, 1502)]
-        static void OpenServicesDiscoveryWindowFromMenu()
-        {
-            OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendTopMenuServicesEvent);
-        }
-
-        static void OpenCloudWindow()
-        {
-            OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendToolbarCloudEvent);
+            return new MainToolbarButton(new MainToolbarContent(EditorGUIUtility.LoadIcon("Icons/CloudConnect.png"), L10n.Tr("Manage services")), () => OpenServicesDiscoveryWindow(EditorGameServicesAnalytics.SendToolbarCloudEvent))
+            {
+                displayed = s_Availability
+            };
         }
 
         static void OpenServicesDiscoveryWindow(Action analyticTrackingAction = null)
         {
             analyticTrackingAction?.Invoke();
             PackageManagerWindow.OpenAndSelectPage(ServicesConstants.ExploreServicesPackageManagerPageId);
+        }
+
+        [MenuItem("Window/Package Management/Services %0", false, 1502)]
+        static void OpenServicesDiscoveryWindowFromMenu()
+        {
+            OpenServicesDiscoveryWindow(Connect.EditorGameServicesAnalytics.SendTopMenuServicesEvent);
         }
     }
 }

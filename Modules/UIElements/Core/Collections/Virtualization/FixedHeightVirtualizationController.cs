@@ -8,6 +8,7 @@ namespace UnityEngine.UIElements
     {
         float resolvedItemHeight => m_CollectionView.ResolveItemHeight();
         int? m_ScrolledToItemIndex;
+        bool m_ForcedScroll;
 
         protected override bool VisibleItemPredicate(T i)
         {
@@ -61,6 +62,8 @@ namespace UnityEngine.UIElements
                 ScheduleDeferredScrollToItem();
 
             var pixelAlignedItemHeight = resolvedItemHeight;
+            m_ForcedScroll = true;
+
             if (index == -1)
             {
                 // Scroll to last item
@@ -138,12 +141,25 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            OnScroll(new Vector2(0, scrollOffset));
+            OnScrollUpdate();
         }
 
         public override void OnScroll(Vector2 scrollOffset)
         {
-            var offset = Mathf.Max(0, scrollOffset.y);
+            // In the events of ScrollToItem and Resize, we do not want to batch the scroll event as we need to perform the update immediately.
+            if (m_ForcedScroll)
+            {
+                OnScrollUpdate();
+                return;
+            }
+
+            // Schedule later to allow receiving multiple scroll events in one frame and potentially avoid a few expensive rebind.
+            ScheduleScroll();
+        }
+
+        protected override void OnScrollUpdate()
+        {
+            var offset = Mathf.Max(0, m_ScrollView.scrollOffset.y);
             var pixelAlignedItemHeight = resolvedItemHeight;
             var firstVisibleItemIndex = (int)(offset / pixelAlignedItemHeight);
 
@@ -158,24 +174,23 @@ namespace UnityEngine.UIElements
                     // we try to avoid rebinding a few items
                     if (firstVisibleIndex < m_ActiveItems[0].index) //we're scrolling up
                     {
-                        //How many do we have to swap back
-                        int count = m_ActiveItems[0].index - firstVisibleIndex;
-
+                        // How many do we have to swap back
+                        var count = m_ActiveItems[0].index - firstVisibleIndex;
                         var inserting = m_ScrollInsertionList;
 
-                        for (int i = 0; i < count && m_ActiveItems.Count > 0; ++i)
+                        for (var i = 0; i < count && m_ActiveItems.Count > 0; ++i)
                         {
                             var last = m_ActiveItems[^1];
                             inserting.Add(last);
                             m_ActiveItems.RemoveAt(m_ActiveItems.Count - 1); //we remove from the end
 
-                            last.rootElement.SendToBack(); //We send the element to the top of the list (back in z-order)
+                            last.rootElement.SendToBack(); // We send the element to the top of the list (back in z-order)
                         }
 
                         m_ActiveItems.InsertRange(0, inserting);
                         m_ScrollInsertionList.Clear();
                     }
-                    else //down
+                    else // down
                     {
                         if (firstVisibleIndex < m_ActiveItems[^1].index)
                         {
@@ -188,7 +203,7 @@ namespace UnityEngine.UIElements
                                 inserting.Add(first);
                                 checkIndex++;
 
-                                first.rootElement.BringToFront(); //We send the element to the bottom of the list (front in z-order)
+                                first.rootElement.BringToFront(); // We send the element to the bottom of the list (front in z-order)
                             }
 
                             m_ActiveItems.RemoveRange(0, checkIndex); //we remove them all at once
@@ -197,7 +212,7 @@ namespace UnityEngine.UIElements
                         }
                     }
 
-                    //Let's rebind everything
+                    // Let's rebind everything
                     for (var i = 0; i < m_ActiveItems.Count; i++)
                     {
                         var index = i + firstVisibleIndex;
@@ -205,6 +220,8 @@ namespace UnityEngine.UIElements
                     }
                 }
             }
+
+            m_ForcedScroll = false;
         }
 
         internal override T GetOrMakeItemAtIndex(int activeItemIndex = -1, int scrollViewIndex = -1)

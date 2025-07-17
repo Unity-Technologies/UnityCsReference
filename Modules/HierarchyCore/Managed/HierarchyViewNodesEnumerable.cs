@@ -42,7 +42,7 @@ namespace Unity.Hierarchy
         /// </summary>
         public unsafe struct Enumerator
         {
-            readonly HierarchyFlattened m_HierarchyFlattened;
+            readonly HierarchyViewModel m_HierarchyViewModel;
             readonly Predicate m_Predicate;
             readonly HierarchyNodeFlags m_Flags;
             readonly HierarchyFlattenedNode* m_NodesPtr;
@@ -52,12 +52,12 @@ namespace Unity.Hierarchy
 
             internal Enumerator(HierarchyViewNodesEnumerable enumerable)
             {
-                m_HierarchyFlattened = enumerable.m_HierarchyViewModel.HierarchyFlattened;
+                m_HierarchyViewModel = enumerable.m_HierarchyViewModel;
                 m_Predicate = enumerable.m_Predicate;
                 m_Flags = enumerable.m_Flags;
-                m_NodesPtr = m_HierarchyFlattened.NodesPtr;
-                m_NodesCount = m_HierarchyFlattened.Count;
-                m_Version = m_HierarchyFlattened.Version;
+                m_NodesPtr = m_HierarchyViewModel.NodesPtr;
+                m_NodesCount = m_HierarchyViewModel.NodesCount;
+                m_Version = m_HierarchyViewModel.Version;
                 m_Index = 0; // We initialize at 0 instead of -1 to skip the root node in the hierarchy flattened
             }
 
@@ -82,7 +82,7 @@ namespace Unity.Hierarchy
             public bool MoveNext()
             {
                 ThrowIfVersionChanged();
-                for (;;)
+                while (true)
                 {
                     if (++m_Index >= m_NodesCount)
                         return false;
@@ -95,8 +95,8 @@ namespace Unity.Hierarchy
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             void ThrowIfVersionChanged()
             {
-                if (m_Version != m_HierarchyFlattened.Version)
-                    throw new InvalidOperationException("HierarchyFlattened was modified.");
+                if (m_Version != m_HierarchyViewModel.Version)
+                    throw new InvalidOperationException("HierarchyViewModel was modified.");
             }
         }
     }

@@ -209,8 +209,9 @@ namespace Unity.UI.Builder
 
             var isLinkedOpenVTAActiveVTA = linkedOpenVTA == activeOpenUXML.visualTreeAsset;
             var isLinkedInstancedVTAActiveVTA = linkedInstancedVTA == activeOpenUXML.visualTreeAsset;
-            var isLinkedVEADirectChild = activeOpenUXML.visualTreeAsset.templateAssets.Contains(linkedTemplateVEA);
+            var isLinkedVEADirectChild = activeOpenUXML.visualTreeAsset.DepthFirstTraversalOfType<TemplateAsset>().Contains(linkedTemplateVEA);
             var isSelector = documentElement != null && BuilderSharedStyles.IsSelectorElement(documentElement);
+            var isStyleSheet = documentElement != null && BuilderSharedStyles.IsStyleSheetElement(documentElement);
 
             var showOpenInBuilder = linkedInstancedVTA != null;
             var showReturnToParentAction = isLinkedOpenVTAActiveVTA && activeOpenUXML.isChildSubDocument;
@@ -218,7 +219,7 @@ namespace Unity.UI.Builder
             var showOpenInPlaceAction = showOpenInIsolationAction;
             var showSiblingOpenActions = !isLinkedOpenVTAActiveVTA && isLinkedInstancedVTAActiveVTA;
             var showUnpackAction = isLinkedVEADirectChild;
-            var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.visualElementAssets.Contains(linkedVEA) &&
+            var showCreateTemplateAction = activeOpenUXML.visualTreeAsset.DepthFirstTraversal().Contains(linkedVEA) &&
                                            isSingleElementAffected;
 
             if (showOpenInBuilder || showReturnToParentAction || showOpenInIsolationAction || showOpenInPlaceAction || showSiblingOpenActions)
@@ -291,7 +292,7 @@ namespace Unity.UI.Builder
                     BuilderConstants.ExplorerHierarchyUnpackTemplate,
                     action =>
                     {
-                        m_PaneWindow.commandHandler.UnpackTemplateContainer(documentElement);
+                        m_PaneWindow.commandHandler.UnpackTemplateContainer((TemplateContainer)documentElement);
                     });
             }
             if (showUnpackAction)
@@ -300,7 +301,7 @@ namespace Unity.UI.Builder
                     BuilderConstants.ExplorerHierarchyUnpackCompletely,
                     action =>
                     {
-                        m_PaneWindow.commandHandler.UnpackTemplateContainer(documentElement, true);
+                        m_PaneWindow.commandHandler.UnpackTemplateContainer((TemplateContainer)documentElement, true);
                     });
             }
             if (showCreateTemplateAction)
@@ -313,7 +314,7 @@ namespace Unity.UI.Builder
                     });
             }
 
-            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector)
+            if (documentElement != null && !isLinkedOpenVTAActiveVTA && !isSelector && !isStyleSheet)
             {
                 evt.menu.AppendSeparator();
 

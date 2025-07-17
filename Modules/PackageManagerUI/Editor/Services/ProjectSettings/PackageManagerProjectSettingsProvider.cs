@@ -169,7 +169,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private VisualElementCache cache { get; set; }
 
-        private HelpBoxWithOptionalReadMore preReleaseInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("preReleaseInfoBox");
+        private ExtendedHelpBox preReleaseInfoBox => cache.Get<ExtendedHelpBox>("preReleaseInfoBox");
         private Toggle enablePreReleasePackages => rootVisualElement.Q<Toggle>("enablePreReleasePackages");
         private Foldout advancedSettingsFoldout => rootVisualElement.Q<Foldout>("advancedSettingsFoldout");
         private Foldout scopedRegistriesSettingsFoldout => rootVisualElement.Q<Foldout>("scopedRegistriesSettingsFoldout");

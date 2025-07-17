@@ -20,8 +20,10 @@ namespace Unity.Hierarchy
         static readonly HierarchyFlattenedNode s_Null;
         readonly HierarchyNode m_Node;
         readonly HierarchyNodeType m_Type;
+        readonly int m_Version;
         readonly int m_ParentOffset;
         readonly int m_NextSiblingOffset;
+        readonly int m_ChildIndex;
         readonly int m_ChildrenCount;
         readonly int m_Depth;
 
@@ -51,6 +53,11 @@ namespace Unity.Hierarchy
         public int NextSiblingOffset => m_NextSiblingOffset;
 
         /// <summary>
+        /// The index of the node in its parent's children list.
+        /// </summary>
+        public int ChildIndex => m_ChildIndex;
+
+        /// <summary>
         /// The number of children nodes that the node has.
         /// </summary>
         public int ChildrenCount => m_ChildrenCount;
@@ -67,8 +74,10 @@ namespace Unity.Hierarchy
         {
             m_Node = HierarchyNode.Null;
             m_Type = HierarchyNodeType.Null;
+            m_Version = 0;
             m_ParentOffset = 0;
             m_NextSiblingOffset = 0;
+            m_ChildIndex = 0;
             m_ChildrenCount = 0;
             m_Depth = 0;
         }

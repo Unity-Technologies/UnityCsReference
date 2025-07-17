@@ -16,7 +16,7 @@ using static UnityEditorInternal.InternalEditorUtility;
 
 namespace UnityEditor
 {
-    internal class AssetsTreeViewGUI : TreeViewGUI
+    internal class AssetsTreeViewGUI : TreeViewGUI<EntityId>
     {
         static bool s_VCEnabled;
         const float k_IconOverlayPadding = 7f;
@@ -51,7 +51,7 @@ namespace UnityEditor
         private static IDictionary<int, string> s_GUIDCache = null;
         private readonly Action m_TreeViewRepaintAction;
 
-        public AssetsTreeViewGUI(TreeViewController treeView)
+        public AssetsTreeViewGUI(TreeViewController<EntityId> treeView)
             : base(treeView)
         {
             iconOverlayGUI += OnIconOverlayGUI;
@@ -117,7 +117,7 @@ namespace UnityEditor
         {
             if (!m_TreeView.data.HasFakeItem() && GetCreateAssetUtility().IsCreatingNewAsset())
             {
-                int parentInstanceID = AssetDatabase.GetMainAssetInstanceID(GetCreateAssetUtility().folder);
+                int parentInstanceID = AssetDatabase.GetMainAssetEntityId(GetCreateAssetUtility().folder);
                 m_TreeView.data.InsertFakeItem(GetCreateAssetUtility().instanceID, parentInstanceID, GetCreateAssetUtility().originalName, GetCreateAssetUtility().icon);
             }
 
@@ -144,7 +144,7 @@ namespace UnityEditor
         }
 
         // Handles fetching rename icon or cached asset database icon
-        protected override Texture GetIconForItem(TreeViewItem item)
+        protected override Texture GetIconForItem(TreeViewItem<EntityId> item)
         {
             if (item == null)
                 return null;
@@ -162,8 +162,7 @@ namespace UnityEditor
                 icon = AssetDatabase.GetCachedIcon(path);
             }
 
-            var folderItem = item as AssetsTreeViewDataSource.FolderTreeItemBase;
-            if (folderItem != null)
+            if (item is FolderTreeItemBase folderItem)
             {
                 if (folderItem.IsEmpty)
                     icon = emptyFolderTexture;
@@ -174,7 +173,7 @@ namespace UnityEditor
             return icon;
         }
 
-        protected override void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)
+        protected override void DoItemGUI(Rect rect, int row, TreeViewItem<EntityId> item, bool selected, bool focused, bool useBoldFont)
         {
             if (item is AssetsTreeViewDataSource.RootTreeItem)
             {
@@ -187,7 +186,7 @@ namespace UnityEditor
                 base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
         }
 
-        private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
+        private void OnIconOverlayGUI(TreeViewItem<EntityId> item, Rect overlayRect)
         {
             if (!AssetReference.IsAssetImported(item.id))
             {
@@ -220,21 +219,21 @@ namespace UnityEditor
                 overlayRect.width += k_IconOverlayPadding * 2;
             }
 
-            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(instanceID))
+            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset((EntityId)instanceID))
             {
                 string guid = GetGUIDForInstanceID(instanceID);
                 postAssetIconDrawCallback(overlayRect, guid);
             }
 
             // Draw vcs icons
-            if (s_VCEnabled && AssetDatabase.IsMainAsset(instanceID))
+            if (s_VCEnabled && AssetDatabase.IsMainAsset((EntityId)instanceID))
             {
                 string guid = GetGUIDForInstanceID(instanceID);
                 ProjectHooks.OnProjectWindowItem(guid, overlayRect, repaintAction);
             }
         }
 
-        private void OnLabelOverlayGUI(TreeViewItem item, Rect labelRect)
+        private void OnLabelOverlayGUI(TreeViewItem<EntityId> item, Rect labelRect)
         {
             if (postAssetLabelDrawCallback != null && AssetDatabase.IsMainAsset(item.id))
             {
@@ -255,7 +254,7 @@ namespace UnityEditor
             string GUID = null;
             if (!s_GUIDCache.TryGetValue(instanceID, out GUID))
             {
-                string path = AssetDatabase.GetAssetPath(instanceID);
+                string path = AssetDatabase.GetAssetPath((EntityId)instanceID);
                 GUID = AssetDatabase.AssetPathToGUID(path);
                 Assert.IsTrue(!string.IsNullOrEmpty(GUID));
                 s_GUIDCache.Add(instanceID, GUID);
@@ -267,7 +266,7 @@ namespace UnityEditor
 
 
     [System.Serializable]
-    internal class TreeViewStateWithAssetUtility : TreeViewState
+    internal class TreeViewStateWithAssetUtility : TreeViewState<EntityId>
     {
         [SerializeField]
         CreateAssetUtility m_CreateAssetUtility = new CreateAssetUtility();

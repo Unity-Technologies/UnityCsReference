@@ -130,7 +130,7 @@ namespace UnityEditor.Experimental.GraphView
             m_Contents = this.Q<Label>(name: "contents");
             if (m_Contents != null)
             {
-                m_ContentsField = m_Contents.Q<TextField>(name: "contents-field");
+                m_ContentsField = this.Q<TextField>(name: "contents-field");
                 if (m_ContentsField != null)
                 {
                     m_ContentsField.style.display = DisplayStyle.None;
@@ -227,7 +227,7 @@ namespace UnityEditor.Experimental.GraphView
 
         public static readonly Vector2 defaultSize = new Vector2(200, 160);
 
-        public void BuildContextualMenu(ContextualMenuPopulateEvent evt)
+        public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
             if (evt.target is StickyNote)
             {
@@ -302,15 +302,6 @@ namespace UnityEditor.Experimental.GraphView
                 if (m_Title != null)
                 {
                     m_Title.text = value;
-
-                    if (!string.IsNullOrEmpty(m_Title.text))
-                    {
-                        m_Title.RemoveFromClassList("empty");
-                    }
-                    else
-                    {
-                        m_Title.AddToClassList("empty");
-                    }
                 }
             }
         }
@@ -333,8 +324,7 @@ namespace UnityEditor.Experimental.GraphView
         {
             title = m_TitleField.value;
             m_TitleField.style.display = DisplayStyle.None;
-
-            m_Title.UnregisterCallback<GeometryChangedEvent>(OnTitleRelayout);
+            m_Title.style.display = DisplayStyle.Flex;
 
             //Notify change
             NotifyChange(StickyNoteChange.Title);
@@ -345,6 +335,7 @@ namespace UnityEditor.Experimental.GraphView
             bool changed = m_Contents.text != m_ContentsField.value;
             m_Contents.text = m_ContentsField.value;
             m_ContentsField.style.display = DisplayStyle.None;
+            m_Contents.style.display = DisplayStyle.Flex;
 
             //Notify change
             if (changed)
@@ -353,34 +344,16 @@ namespace UnityEditor.Experimental.GraphView
             }
         }
 
-        void OnTitleRelayout(GeometryChangedEvent e)
-        {
-            UpdateTitleFieldRect();
-        }
-
-        void UpdateTitleFieldRect()
-        {
-            Rect rect = m_Title.layout;
-            m_Title.parent.ChangeCoordinatesTo(m_TitleField.parent, rect);
-
-            m_TitleField.style.left = rect.xMin - 1;
-            m_TitleField.style.right = rect.yMin + m_Title.resolvedStyle.marginTop;
-            m_TitleField.style.width = rect.width - m_Title.resolvedStyle.marginLeft - m_Title.resolvedStyle.marginRight;
-            m_TitleField.style.height = rect.height - m_Title.resolvedStyle.marginTop - m_Title.resolvedStyle.marginBottom;
-        }
-
         void OnTitleMouseDown(MouseDownEvent e)
         {
             if (e.button == (int)MouseButton.LeftMouse && e.clickCount == 2)
             {
-                m_TitleField.RemoveFromClassList("empty");
                 m_TitleField.value = m_Title.text;
                 m_TitleField.style.display = DisplayStyle.Flex;
-                UpdateTitleFieldRect();
-                m_Title.RegisterCallback<GeometryChangedEvent>(OnTitleRelayout);
 
                 m_TitleField.Q(TextField.textInputUssName).Focus();
                 m_TitleField.textSelection.SelectAll();
+                m_Title.style.display = DisplayStyle.None;
 
                 e.StopPropagation();
                 focusController.IgnoreEvent(e);
@@ -402,6 +375,7 @@ namespace UnityEditor.Experimental.GraphView
                 m_ContentsField.value = m_Contents.text;
                 m_ContentsField.style.display = DisplayStyle.Flex;
                 m_ContentsField.Q(TextField.textInputUssName).Focus();
+                m_Contents.style.display = DisplayStyle.None;
                 e.StopPropagation();
                 focusController.IgnoreEvent(e);
             }

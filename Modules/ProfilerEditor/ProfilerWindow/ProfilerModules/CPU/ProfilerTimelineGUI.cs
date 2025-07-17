@@ -1309,7 +1309,7 @@ namespace UnityEditorInternal
 
         void UpdateSelectedObject(bool singleClick, bool doubleClick)
         {
-            var obj = EditorUtility.InstanceIDToObject(m_SelectedEntry.instanceId);
+            var obj = EditorUtility.EntityIdToObject(m_SelectedEntry.instanceId);
             if (obj is Component)
                 obj = ((Component)obj).gameObject;
 

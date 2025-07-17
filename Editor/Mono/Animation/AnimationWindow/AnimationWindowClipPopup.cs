@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -31,7 +30,7 @@ namespace UnityEditor
             private readonly int m_ControlID = 0;
 
             // Which item was selected
-            private AnimationClip m_SelectedClip = null;
+            private IAnimationWindowClip m_SelectedClip = null;
 
             // Which view should we send it to.
             private readonly GUIView m_SourceView;
@@ -42,7 +41,7 @@ namespace UnityEditor
                 m_SourceView = GUIView.current;
             }
 
-            public static AnimationClip GetSelectedClipForControl(int controlID, AnimationClip clip)
+            public static IAnimationWindowClip GetSelectedClipForControl(int controlID, IAnimationWindowClip clip)
             {
                 Event evt = Event.current;
                 if (evt.type == EventType.ExecuteCommand && evt.commandName == kPopupMenuChangedMessage)
@@ -63,7 +62,7 @@ namespace UnityEditor
                 return clip;
             }
 
-            public static void SetSelectedClip(AnimationClip clip)
+            public static void SetSelectedClip(IAnimationWindowClip clip)
             {
                 if (instance == null)
                 {
@@ -87,9 +86,9 @@ namespace UnityEditor
         }
 
 
-        private void DisplayClipMenu(Rect position, int controlID, AnimationClip clip)
+        private void DisplayClipMenu(Rect position, int controlID, IAnimationWindowClip clip)
         {
-            AnimationClip[] clips = GetOrderedClipList();
+            var clips = GetOrderedClipList();
             GUIContent[] menuContent = GetClipMenuContent(clips);
             int selected = ClipToIndex(clips, clip);
 
@@ -109,12 +108,8 @@ namespace UnityEditor
                 }
                 else
                 {
-                    AnimationClip newClip = AnimationWindowUtility.CreateNewClip(state.selection.rootGameObject.name);
-                    if (newClip)
-                    {
-                        AnimationWindowUtility.AddClipToAnimationPlayerComponent(state.activeAnimationPlayer, newClip);
-                        ClipPopupCallbackInfo.SetSelectedClip(newClip);
-                    }
+                    var newClip = state.selection.CreateNewClip();
+                    ClipPopupCallbackInfo.SetSelectedClip(newClip ?? clip);
                 }
 
                 ClipPopupCallbackInfo.SendEvent();
@@ -122,7 +117,7 @@ namespace UnityEditor
         }
 
         // (case 1029160) Modified version of EditorGUI.DoPopup to fit large data list query.
-        private AnimationClip DoClipPopup(AnimationClip clip, GUIStyle style)
+        private IAnimationWindowClip DoClipPopup(IAnimationWindowClip clip, GUIStyle style)
         {
             Rect position = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, style);
             int controlID = GUIUtility.GetControlID(s_ClipPopupHash, FocusType.Keyboard, position);
@@ -140,7 +135,7 @@ namespace UnityEditor
                     }
 
                     GUIContent buttonContent = EditorGUIUtility.TempContent(CurveUtility.GetClipName(clip));
-                    buttonContent.tooltip = AssetDatabase.GetAssetPath(clip);
+                    //buttonContent.tooltip = AssetDatabase.GetAssetPath(clip);
 
                     style.Draw(position, buttonContent, controlID, false);
 
@@ -168,26 +163,29 @@ namespace UnityEditor
 
         public void OnGUI()
         {
-            if (state.selection.canChangeAnimationClip)
+            if (state.selection.canChangeClip)
             {
                 EditorGUI.BeginChangeCheck();
-                var newClip = DoClipPopup(state.activeAnimationClip, AnimationWindowStyles.animClipToolbarPopup);
+                var newClip = DoClipPopup(state.activeClip, AnimationWindowStyles.animClipToolbarPopup);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    state.activeAnimationClip = newClip;
+                    if (state.animEditor.DisplayUnsavedChangesDialogIfNecessary())
+                    {
+                        state.activeClip = newClip;
+                    }
 
                     //  Layout has changed, bail out now.
                     EditorGUIUtility.ExitGUI();
                 }
             }
-            else if (state.activeAnimationClip != null)
+            else if (state.activeClip != null)
             {
                 Rect r = EditorGUILayout.GetControlRect(false, EditorGUIUtility.singleLineHeight, AnimationWindowStyles.toolbarLabel);
-                EditorGUI.LabelField(r, CurveUtility.GetClipName(state.activeAnimationClip), AnimationWindowStyles.toolbarLabel);
+                EditorGUI.LabelField(r, CurveUtility.GetClipName(state.selection.clip), AnimationWindowStyles.toolbarLabel);
             }
         }
 
-        private GUIContent[] GetClipMenuContent(AnimationClip[] clips)
+        private GUIContent[] GetClipMenuContent(IAnimationWindowClip[] clips)
         {
             int size = clips.Length;
             if (state.selection.canCreateClips)
@@ -208,24 +206,28 @@ namespace UnityEditor
             return content;
         }
 
-        private AnimationClip[] GetOrderedClipList()
+        private IAnimationWindowClip[] GetOrderedClipList()
         {
-            AnimationClip[] clips = new AnimationClip[0];
-            if (state.activeRootGameObject != null)
-                clips = AnimationUtility.GetAnimationClips(state.activeRootGameObject);
+            var clips = state.selection.GetClips();
 
             //Using AlphaNum/Natural Compare to sort clips
-            Array.Sort(clips, (AnimationClip clip1, AnimationClip clip2) => EditorUtility.NaturalCompareObjectNames(clip1, clip2));
+            Array.Sort(clips, (clip1, clip2) => EditorUtility.NaturalCompare(clip1.name, clip2.name));
 
             return clips;
         }
 
-        private int ClipToIndex(AnimationClip[] clips, AnimationClip clip)
+        private int ClipToIndex(IAnimationWindowClip[] clips, IAnimationWindowClip clip)
         {
+            if (!clip?.isValid ?? true)
+                return 0;
+
             for (int index = 0; index < clips.Length; ++index)
             {
-                if (clips[index] == clip)
-                    return index;
+                if (clips[index]?.isValid ?? false)
+                {
+                    if (clips[index].id == clip.id)
+                        return index;
+                }
             }
 
             return 0;

@@ -21,7 +21,9 @@ namespace UnityEngine.UIElements
         FilterInvert,
         FilterGrayscale,
         FilterSepia,
-        FilterBlur
+        FilterBlur,
+        FilterContrast,
+        FilterHueRotate,
     }
 
     internal static class StyleValueFunctionExtension
@@ -37,6 +39,8 @@ namespace UnityEngine.UIElements
         public const string k_FilterGrayscale = "grayscale";
         public const string k_FilterSepia = "sepia";
         public const string k_FilterBlur = "blur";
+        public const string k_FilterContrast = "contrast";
+        public const string k_FilterHueRotate = "hue-rotate";
 
         public static StyleValueFunction FromUssString(string ussValue)
         {
@@ -65,6 +69,10 @@ namespace UnityEngine.UIElements
                     return StyleValueFunction.FilterSepia;
                 case k_FilterBlur:
                     return StyleValueFunction.FilterBlur;
+                case k_FilterContrast:
+                    return StyleValueFunction.FilterContrast;
+                case k_FilterHueRotate:
+                    return StyleValueFunction.FilterHueRotate;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(ussValue), ussValue, "Unknown function name");
             }
@@ -96,6 +104,10 @@ namespace UnityEngine.UIElements
                     return k_FilterSepia;
                 case StyleValueFunction.FilterBlur:
                     return k_FilterBlur;
+                case StyleValueFunction.FilterContrast:
+                    return k_FilterContrast;
+                case StyleValueFunction.FilterHueRotate:
+                    return k_FilterHueRotate;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(svf), svf, $"Unknown {nameof(StyleValueFunction)}");
             }

@@ -21,7 +21,7 @@ namespace UnityEditor
 
         public void SaveStateFromHierarchy(SceneHierarchyWindow hierarchy, Stage stage)
         {
-            var lastClickedGameObject = EditorUtility.InstanceIDToObject(hierarchy.sceneHierarchy.treeViewState.lastClickedID) as GameObject;
+            var lastClickedGameObject = EditorUtility.EntityIdToObject(hierarchy.sceneHierarchy.treeViewState.lastClickedID) as GameObject;
             m_LastClickedFileID = lastClickedGameObject != null ? Unsupported.GetOrGenerateFileIDHint(lastClickedGameObject) : 0;
             m_ExpandedPrefabGameObjectFileIDs = GetExpandedGameObjectFileIDs(hierarchy);
 
@@ -39,7 +39,7 @@ namespace UnityEditor
             // Restore selection and scroll value when requested
             if (stage.setSelectionAndScrollWhenBecomingCurrentStage)
             {
-                Selection.activeInstanceID = hierarchy.sceneHierarchy.treeViewState.lastClickedID;
+                Selection.activeEntityId = hierarchy.sceneHierarchy.treeViewState.lastClickedID;
                 hierarchy.sceneHierarchy.treeViewState.scrollPos.y = m_ScrollY;
             }
 
@@ -74,7 +74,7 @@ namespace UnityEditor
             readonly List<UInt64> m_FileIDs;
             readonly UInt64 m_FileID = 0;
 
-            public List<int> instanceIDs = new List<int>();
+            public List<EntityId> instanceIDs = new List<EntityId>();
             public int instanceID = 0;
 
             public FileIDToInstanceIDMapper(Transform searchRoot, List<UInt64> fileIDs, UInt64 fileID)

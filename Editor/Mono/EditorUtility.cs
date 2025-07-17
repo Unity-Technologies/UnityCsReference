@@ -4,15 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using UnityEditor.Compilation;
 using UnityEditor.Experimental;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.Internal;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using UnityEditor.ShortcutManagement;
@@ -43,12 +40,6 @@ namespace UnityEditor
         Best = 100 // Best compression
     }
 
-    public enum DialogOptOutDecisionType
-    {
-        ForThisMachine,
-        ForThisSession,
-    }
-
     public class SceneAsset : Object
     {
         private SceneAsset() {}
@@ -65,7 +56,7 @@ namespace UnityEditor
             {
                 switch (dialogOptOutType)
                 {
-                    case DialogOptOutDecisionType.ForThisMachine:
+                    case DialogOptOutDecisionType.ForThisUser:
                         return k_DialogOptOutForThisMachine;
                     case DialogOptOutDecisionType.ForThisSession:
                         return k_DialogOptOutForThisSession;
@@ -181,7 +172,7 @@ namespace UnityEditor
         {
             switch (dialogOptOutDecisionType)
             {
-                case DialogOptOutDecisionType.ForThisMachine:
+                case DialogOptOutDecisionType.ForThisUser:
                     return EditorPrefs.GetBool(dialogOptOutDecisionStorageKey, false);
                 case DialogOptOutDecisionType.ForThisSession:
                     return SessionState.GetBool(dialogOptOutDecisionStorageKey, false);
@@ -194,7 +185,7 @@ namespace UnityEditor
         {
             switch (dialogOptOutDecisionType)
             {
-                case DialogOptOutDecisionType.ForThisMachine:
+                case DialogOptOutDecisionType.ForThisUser:
                     EditorPrefs.SetBool(dialogOptOutDecisionStorageKey, optOutDecision);
                     break;
                 case DialogOptOutDecisionType.ForThisSession:
@@ -205,40 +196,59 @@ namespace UnityEditor
             }
         }
 
+        public static bool DisplayDialog(string title, string message, string ok, string cancel)
+        {
+            return EditorDialog.DisplayDecisionDialog(titleText: title, messageText: message, yesButtonText: ok, noButtonText: cancel);
+        }
+
+        public static bool DisplayDialog(string title, string message, string ok)
+        {
+            EditorDialog.DisplayAlertDialog(titleText: title, messageText: message, buttonText: ok);
+            return true;
+        }
+
+        public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
+        {
+            var result = EditorDialog.DisplayComplexDecisionDialog(
+                titleText: title,
+                messageText: message,
+                defaultButtonText: ok,
+                cancelButtonText: cancel,
+                altButtonText: alt);
+
+            switch (result)
+            {
+                case DialogResult.DefaultAction:
+                    return 0;
+                case DialogResult.AlternateAction:
+                    return 2;
+                case DialogResult.Cancel:
+                    return 1;
+                default:
+                    throw new NotImplementedException(string.Format("The DialogComplexResult named {0} has not been implemented.", result));
+            }
+        }
+
         public static bool DisplayDialog(string title, string message, string ok, DialogOptOutDecisionType dialogOptOutDecisionType, string dialogOptOutDecisionStorageKey)
         {
-            return DisplayDialog(title, message, ok, string.Empty, dialogOptOutDecisionType, dialogOptOutDecisionStorageKey);
+            EditorDialog.DisplayAlertDialogWithOptOut(
+                titleText: title,
+                messageText: message,
+                buttonText: ok,
+                optOutDecisionType: dialogOptOutDecisionType,
+                optOutKey: dialogOptOutDecisionStorageKey);
+            return true;
         }
 
-        public static bool DisplayDialog(string title, string message, string ok, [DefaultValue("\"\"")] string cancel, DialogOptOutDecisionType dialogOptOutDecisionType, string dialogOptOutDecisionStorageKey)
+        public static bool DisplayDialog(string title, string message, string ok, string cancel, DialogOptOutDecisionType dialogOptOutDecisionType, string dialogOptOutDecisionStorageKey)
         {
-            if (GetDialogOptOutDecision(dialogOptOutDecisionType, dialogOptOutDecisionStorageKey))
-            {
-                return true;
-            }
-            else
-            {
-                bool optOutDecision;
-                bool dialogDecision = DisplayDialog(title, message, ok, cancel, Content.GetDialogOptOutMessage(dialogOptOutDecisionType), out optOutDecision);
-                // Cancel means the user pressed ESC as the Cancel button was grayed out. Don't store the opt-out decision on cancel. Also, only store it if the user opted out since it defaults to opt-in.
-                if (dialogDecision && optOutDecision)
-                    SetDialogOptOutDecision(dialogOptOutDecisionType, dialogOptOutDecisionStorageKey, optOutDecision);
-                return dialogDecision;
-            }
-        }
-
-        // TODO: This is an MVP solution. The OptOut option should be a check-box in the dialog. To achieve that, this API will need to move to bindings and get platform specific implementations.
-        static bool DisplayDialog(string title, string message, string ok, string cancel, string optOutText, out bool optOutDecision)
-        {
-            if (string.IsNullOrEmpty(cancel))
-            {
-                // we can't allow empty cancel buttons in this MVP workaround. Only the two button dialog would be possible to use and it can't differentiate between pressing a cancel button (labeled with OptOut text) and pressing X or ESC.
-                cancel = Content.Cancel;
-            }
-            int result = DisplayDialogComplex(title, message, ok, cancel, string.Format("{0} - {1}", ok, optOutText));
-            // result 0 -> OK, 1 -> Cancel, 2 -> Ok & opt out
-            optOutDecision = result == 2;
-            return result != 1;
+            return EditorDialog.DisplayDecisionDialogWithOptOut(
+                titleText: title,
+                messageText: message,
+                yesButtonText: ok,
+                noButtonText: cancel,
+                optOutDecisionType: dialogOptOutDecisionType,
+                optOutKey: dialogOptOutDecisionStorageKey);
         }
 
         public static void DisplayPopupMenu(Rect position, string menuItemPath, MenuCommand command)
@@ -296,7 +306,8 @@ namespace UnityEditor
             }
             else
             {
-                enabled = Enumerable.Repeat(true, options.Length).ToArray();
+                enabled = new bool[options.Length];
+                Array.Fill(enabled, true);
             }
             DisplayCustomMenu(position, strings, enabled, selectedArray, callback, userData, showHotkey);
         }
@@ -435,7 +446,8 @@ namespace UnityEditor
 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
         {
-            bool[] enabled = Enumerable.Repeat(true, options.Length).ToArray();
+            var enabled = new bool[options.Length];
+            Array.Fill(enabled, true);
 
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
@@ -774,10 +786,7 @@ namespace UnityEditor
 
         public static void ClearDefaultParentObject(Scene scene)
         {
-            if (scene != null)
-                SceneHierarchy.ClearDefaultParentObject(scene.guid);
-            else
-                SceneHierarchy.ClearDefaultParentObject("");
+            SceneHierarchy.ClearDefaultParentObject(scene);
         }
 
         public static void ClearDefaultParentObject()

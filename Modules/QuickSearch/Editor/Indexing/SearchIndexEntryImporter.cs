@@ -5,7 +5,9 @@
 //#define DEBUG_INDEXING
 using System;
 using System.IO;
+using System.Reflection;
 using UnityEditor.AssetImporters;
+using UnityEditor.Profiling;
 
 namespace UnityEditor.Search
 {
@@ -43,23 +45,25 @@ namespace UnityEditor.Search
 
         public abstract IndexingOptions options { get; }
 
-        private SearchDatabase.Options GetOptions()
+        internal static SearchDatabase.Options GetOptions(IndexingOptions options, string assetPath)
         {
             return new SearchDatabase.Options()
             {
                 types = options.HasFlag(IndexingOptions.Types),
                 properties = options.HasFlag(IndexingOptions.Properties),
-                extended = options.HasFlag(IndexingOptions.Extended),
+                extended = SearchDatabase.SupportsExtendedIndexing(assetPath) && options.HasFlag(IndexingOptions.Extended),
                 dependencies = options.HasFlag(IndexingOptions.Dependencies)
             };
         }
 
         public override void OnImportAsset(AssetImportContext ctx)
         {
-            var settings = new SearchDatabase.Settings { type = "asset", options = GetOptions() };
-            using var indexer = SearchDatabase.CreateIndexer(settings);
+            var settings = new SearchDatabase.Settings { type = "asset", options = GetOptions(options, ctx.assetPath) };
+            using var indexer = SearchDatabase.CreateIndexer(settings, null, new SearchIndexEntryStorage());
             try
             {
+                using var pp = new EditorPerformanceMarker("SearchImporter").Auto();
+
                 indexer.IndexDocument(ctx.assetPath, false);
                 indexer.Finish(removedDocuments: null);
 

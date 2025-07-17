@@ -242,6 +242,7 @@ namespace UnityEditor
             public VertexAttribute[] Attributes { get; }
             public ConstantBufferInfo[] ConstantBuffers { get; }
             public TextureBindingInfo[] TextureBindings { get; }
+            public ResourceBindingInfo[] ResourceBindings { get; }
         }
 
         [DebuggerDisplay("cbuffer {Name} ({Size} bytes)")]
@@ -277,6 +278,27 @@ namespace UnityEditor
             public bool Multisampled { get; }
             public int ArraySize { get; }
             public TextureDimension Dim { get; }
+        }
+
+        public enum ResourceKind
+        {
+            ConstantBuffer = 0,
+            Buffer,
+            TypedBuffer,
+            Texture,
+            CombinedTextureSampler,
+            Sampler,
+            RayTracingAccelerationStructure,
+        };
+
+        [DebuggerDisplay("{Kind} {Name} {Index} {Writable}")]
+        public struct ResourceBindingInfo
+        {
+            public string Name { get; }
+            public int Index { get; }
+            public int SamplerIndex { get; }
+            public ResourceKind Kind { get; }
+            public bool Writable { get; }
         }
     }
 

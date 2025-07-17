@@ -9,6 +9,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Pool;
@@ -554,17 +555,10 @@ namespace UnityEditor.Search
 
             if (!s_BaseTypes.TryGetValue(typeof(T), out var types))
             {
-                var ignoredAssemblies = new[]
-                {
-                    typeof(EditorApplication).Assembly,
-                    typeof(UnityEditorInternal.InternalEditorUtility).Assembly
-                };
                 types = TypeCache.GetTypesDerivedFrom<T>()
-                .Where(t => !t.IsGenericType)
-                .Where(t => !ignoredAssemblies.Contains(t.Assembly))
-                .Where(t => !typeof(Editor).IsAssignableFrom(t))
-                .Where(t => !typeof(EditorWindow).IsAssignableFrom(t))
-                .Where(t => t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1).ToList();
+                .Where(TypePredicate)
+                .SelectMany(t => t.GetInterfaces().Where(TypePredicate).Append(t))
+                .Distinct().ToList();
                 s_BaseTypes[typeof(T)] = types;
             }
             foreach (var t in types)
@@ -575,11 +569,25 @@ namespace UnityEditor.Search
                     label: t.Name,
                     replacement: $"t:{t.Name}",
                     data: t,
-                    help: $"Search {t.Name}",
+                    help: $"Search {ObjectNames.NicifyVariableName(t.Name)}",
                     type: blockType,
                     icon: GetTypeIcon(t),
                     color: QueryColors.type);
             }
+        }
+
+        static Assembly[] s_IgnoredAssemblies = new[]
+        {
+            typeof(EditorApplication).Assembly,
+            typeof(UnityEditorInternal.InternalEditorUtility).Assembly
+        };
+        static bool TypePredicate(Type t)
+        {
+            return !t.IsGenericType &&
+                     !s_IgnoredAssemblies.Contains(t.Assembly) &&
+                     !typeof(Editor).IsAssignableFrom(t) &&
+                     !typeof(EditorWindow).IsAssignableFrom(t) &&
+                     t.Assembly.GetName().Name.IndexOf("Editor", StringComparison.Ordinal) == -1;
         }
 
         internal static SearchProposition CreateKeywordProposition(in string keyword)
@@ -680,7 +688,7 @@ namespace UnityEditor.Search
                 if (!script)
                     return s_TypeIcons[type] = AssetPreview.GetMiniTypeThumbnail(type) ?? AssetPreview.GetMiniTypeThumbnail(typeof(DefaultAsset));
 
-                var obj = EditorUtility.InstanceIDToObject(script.GetInstanceID());
+                var obj = EditorUtility.EntityIdToObject(script.GetEntityId());
                 var customIcon = AssetPreview.GetMiniThumbnail(obj);
                 return s_TypeIcons[type] = customIcon;
             }
@@ -1682,13 +1690,9 @@ namespace UnityEditor.Search
             {
                 window.Focus();
             }
-            if (focusWindow is SearchableEditorWindow searchableWindow)
+            if (focusWindow is ISearchableContainer searchable)
             {
-                query = searchableWindow.m_SearchFilter;
-            }
-            else if (focusWindow is ISearchableContainer searchable)
-            {
-                query = searchable.searchText;
+                query = searchable.SearchText;
             }
 
             return OpenFromContextWindow(query, "Help/Search Contextual");
@@ -1702,14 +1706,89 @@ namespace UnityEditor.Search
                 eventType: SearchAnalytics.GenericEventType.QuickSearchJumpToSearch, eventContext: sourceContext);
         }
 
-
-        internal static string GetGroupFromId(int instanceID)
+        internal static bool IsGroupValid(SearchViewState viewState, string groupId)
         {
-            var path = AssetDatabase.GetAssetPath(instanceID);
+            var isGroupInvalid = groupId == null ||
+                                 (groupId == GroupedSearchList.allGroupId && viewState.hideAllGroup) ||
+                                 (groupId == GroupedSearchList.allGroupId && viewState.context.providers.Count() == 1) ||
+                                 (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null);
+            return !isGroupInvalid;
+        }
+
+        internal static string GetValidGroupForState(SearchViewState viewState, string groupId)
+        {
+            groupId = viewState.group;
+            if (viewState.isPicker)
+            {
+                if (!viewState.hideTabs && groupId == null && viewState.selectedIds.Length > 0)
+                {
+                    var id = viewState.selectedIds[0];
+                    groupId = SearchUtils.GetGroupFromId(id);
+                }
+                else if (groupId != GroupedSearchList.allGroupId && viewState.context.providers.FirstOrDefault(provider => provider.id == groupId) == null)
+                {
+                    // If we have an invalid group, default to all if we can.
+                    if (viewState.hideAllGroup)
+                    {
+                        groupId = viewState.context.providers.First().id;
+                    }
+                    else
+                    {
+                        groupId = GroupedSearchList.allGroupId;
+                    }
+                }
+
+                return groupId;
+            }
+
+            if (!IsGroupValid(viewState, groupId))
+            {
+                var providers = viewState.context.providers;
+                if (viewState.hideAllGroup || providers.Count() == 1)
+                {
+                    groupId = viewState.context.providers.First().id;
+                }
+                else
+                {
+                    groupId = GroupedSearchList.allGroupId;
+                }
+            }
+
+            return groupId;
+        }
+        
+        internal static string ToEngineeringNotation(double d, bool printSign = false)
+        {
+            var sign = !printSign || d < 0 ? "" : "+";
+            if (Math.Abs(d) >= 1)
+                return $"{sign}{d.ToString("###.0", System.Globalization.CultureInfo.InvariantCulture)}";
+
+            if (Math.Abs(d) > 0)
+            {
+                double exponent = Math.Log10(Math.Abs(d));
+                switch ((int)Math.Floor(exponent))
+                {
+                    case -1: case -2: case -3: return $"{sign}{(d * 1e3):###.0} m";
+                    case -4: case -5: case -6: return $"{sign}{(d * 1e6):###.0} µ";
+                    case -7: case -8: case -9: return $"{sign}{(d * 1e9):###.0} n";
+                    case -10: case -11: case -12: return $"{sign}{(d * 1e12):###.0} p";
+                    case -13: case -14: case -15: return $"{sign}{(d * 1e15):###.0} f";
+                    case -16: case -17: case -18: return $"{sign}{(d * 1e15):###.0} a";
+                    case -19: case -20: case -21: return $"{sign}{(d * 1e15):###.0} z";
+                    default: return $"{sign}{(d * 1e15):###.0} y";
+                }
+            }
+
+            return "0";
+        }
+
+        internal static string GetGroupFromId(EntityId instanceID)
+        {
+            var path = AssetDatabase.GetAssetPath((EntityId)instanceID);
             if (string.IsNullOrEmpty(path))
             {
                 // Check if this is a scene object or something else
-                var obj = EditorUtility.InstanceIDToObject(instanceID);
+                var obj = EditorUtility.EntityIdToObject(instanceID);
                 if (!obj || !(obj is GameObject))
                     return GroupedSearchList.allGroupId;
             }
@@ -1750,6 +1829,17 @@ namespace UnityEditor.Search
                     GetQueryParts(child, filters, searches);
                 }
             }
+        }
+
+        internal static string EscapeLiteralString(in string sv, bool explicitQuotes = false)
+        {
+            if (string.IsNullOrEmpty(sv))
+                return "\"\"";
+            if (sv[0] == '"' || sv[sv.Length - 1] == '"')
+                return sv;
+            if (explicitQuotes || sv.IndexOfAny(new[] { ' ', '/', '*' }) != -1)
+                return '"' + sv + '"';
+            return sv;
         }
     }
 }

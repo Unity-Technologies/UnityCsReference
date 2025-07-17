@@ -78,7 +78,7 @@ namespace UnityEditor
             // Otherwise, move to the scene of the active object
             else
             {
-                Scene targetScene = EditorSceneManager.GetSceneByHandle(Selection.activeInstanceID);
+                Scene targetScene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(Selection.activeEntityId));
                 PasteToScene(targetScene, fallbackParent);
             }
         }

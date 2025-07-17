@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -90,7 +91,7 @@ namespace UnityEditor
 
         public void OnSelectionChange()
         {
-            OnSelectionChange(Selection.instanceIDs);
+            OnSelectionChange(Selection.entityIds.ToIntArray());
         }
 
         public void OnSelectionChange(int[] instanceIDs)

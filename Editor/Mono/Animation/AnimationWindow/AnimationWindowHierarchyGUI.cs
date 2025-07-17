@@ -9,6 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+
 namespace UnityEditorInternal
 {
     internal class AnimationWindowHierarchyGUI : TreeViewGUI
@@ -21,6 +25,7 @@ namespace UnityEditorInternal
         private GUIStyle m_AnimationRowOddStyle;
         private GUIStyle m_AnimationSelectionTextField;
         private GUIStyle m_AnimationCurveDropdown;
+        private GUIStyle m_OverridenPropertyStyle;
         private bool m_StyleInitialized;
         private AnimationWindowHierarchyNode m_RenamedNode;
         private Color m_LightSkinPropertyTextColor = new Color(.35f, .35f, .35f);
@@ -52,11 +57,14 @@ namespace UnityEditorInternal
         private static readonly string k_DefaultValue = L10n.Tr(" (Default Value)");
         private static readonly string k_TransformPosition = L10n.Tr("Transform position, rotation and scale can't be partially animated. This value will be animated to the default value");
         private static readonly string k_Missing = L10n.Tr(" (Missing!)");
+        private static readonly string k_OverridenTooltip = L10n.Tr("Value is overriding a curve in a higher layer");
         private static readonly string k_GameObjectComponentMissing = L10n.Tr("The GameObject or Component is missing ({0})");
         private static readonly string k_DuplicateGameObjectName = L10n.Tr(" (Duplicate GameObject name!)");
         private static readonly string k_TargetForCurveIsAmbigous = L10n.Tr("Target for curve is ambiguous since there are multiple GameObjects with same name ({0})");
         private static readonly string k_RemoveProperties = L10n.Tr("Remove Properties");
         private static readonly string k_RemoveProperty = L10n.Tr("Remove Property");
+        private static readonly string k_RemoveOverrides = L10n.Tr("Revert Properties");
+        private static readonly string k_RemoveOverride = L10n.Tr("Revert Property");
         private static readonly string k_AddKey = L10n.Tr("Add Key");
         private static readonly string k_DeleteKey = L10n.Tr("Delete Key");
         private static readonly string k_RemoveCurve = L10n.Tr("Remove Curve");
@@ -82,6 +90,8 @@ namespace UnityEditorInternal
                 lineStyle.padding.left = 0;
 
                 m_AnimationCurveDropdown = "AnimPropDropdown";
+
+                m_OverridenPropertyStyle = "PR PrefabLabel";
 
                 m_StyleInitialized = true;
             }
@@ -117,12 +127,7 @@ namespace UnityEditorInternal
                 DoIconAndName(rect, node, selected, focused, indent);
                 DoFoldout(node, rect, indent, row);
 
-                bool enabled = false;
-                if (node.curves != null)
-                {
-                    enabled = !Array.Exists(node.curves, curve => curve.animationIsEditable == false);
-                }
-
+                bool enabled = !state.selection.isReadOnly;
                 using (new EditorGUI.DisabledScope(!enabled))
                 {
                     DoValueField(rect, node, row);
@@ -150,7 +155,7 @@ namespace UnityEditorInternal
             for (int i = 0; i < rowCount; ++i)
             {
                 var propertyNode  = m_TreeView.data.GetItem(i) as AnimationWindowHierarchyPropertyNode;
-                if (propertyNode != null && !propertyNode.isPptrNode)
+                if (propertyNode != null && !propertyNode.isPPtrNode)
                     m_HierarchyItemValueControlIDs[i] = GUIUtility.GetControlID(FocusType.Keyboard);
                 else
                     m_HierarchyItemValueControlIDs[i] = 0; // not needed.
@@ -174,7 +179,7 @@ namespace UnityEditorInternal
             // the control id counter to shift when scrolling through the view.
             if (DoTreeViewButton(m_HierarchyItemButtonControlIDs[row], rectWithMargin, k_AnimatePropertyLabel, GUI.skin.button))
             {
-                if (AddCurvesPopup.ShowAtPosition(rectWithMargin, state, OnNewCurveAdded))
+                if (AddCurvesPopup.ShowAtPosition(rectWithMargin, state))
                 {
                     GUIUtility.ExitGUI();
                 }
@@ -220,7 +225,7 @@ namespace UnityEditorInternal
                 AnimationWindowHierarchyPropertyNode hierarchyPropertyNode = node as AnimationWindowHierarchyPropertyNode;
                 AnimationWindowHierarchyState hierarchyState = m_TreeView.state as AnimationWindowHierarchyState;
 
-                if (hierarchyPropertyNode != null && hierarchyPropertyNode.isPptrNode)
+                if (hierarchyPropertyNode != null && hierarchyPropertyNode.isPPtrNode)
                 {
                     Rect toggleRect = rect;
                     toggleRect.x = indent;
@@ -250,25 +255,31 @@ namespace UnityEditorInternal
                     rect.width -= k_ValueFieldOffsetFromRightSide + 2;
 
                 bool isLeftOverCurve = AnimationWindowUtility.IsNodeLeftOverCurve(state, node);
-                bool isAmbiguous = AnimationWindowUtility.IsNodeAmbiguous(node);
+                bool isAmbiguous = AnimationWindowUtility.IsNodeAmbiguous(state, node);
                 bool isPhantom = AnimationWindowUtility.IsNodePhantom(node);
+                bool isOverriden = AnimationWindowUtility.IsNodeOverriden(node);
 
                 string warningText = "";
                 string tooltipText = "";
-                if (isPhantom)
-                {
-                    warningText = k_DefaultValue;
-                    tooltipText = k_TransformPosition;
-                }
-                if (isLeftOverCurve)
-                {
-                    warningText = k_Missing;
-                    tooltipText = string.Format(k_GameObjectComponentMissing, node.path);
-                }
+
                 if (isAmbiguous)
                 {
                     warningText = k_DuplicateGameObjectName;
                     tooltipText = string.Format(k_TargetForCurveIsAmbigous, node.path);
+                }
+                else if (isLeftOverCurve)
+                {
+                    warningText = k_Missing;
+                    tooltipText = string.Format(k_GameObjectComponentMissing, node.path);
+                }
+                else if (isPhantom)
+                {
+                    warningText = k_DefaultValue;
+                    tooltipText = k_TransformPosition;
+                }
+                else if (isOverriden)
+                {
+                    tooltipText = k_OverridenTooltip;
                 }
 
                 Color oldColor = lineStyle.normal.textColor;
@@ -278,25 +289,29 @@ namespace UnityEditorInternal
                     string nodePrefix = "";
                     if (node.curves.Length > 0)
                     {
-                        AnimationWindowSelectionItem selectionBinding = node.curves[0].selectionBinding;
+                        var selectionBinding = state.selection;
                         string gameObjectName = GetGameObjectName(selectionBinding != null ? selectionBinding.rootGameObject : null, node.path);
                         nodePrefix = string.IsNullOrEmpty(gameObjectName) ? "" : gameObjectName + " : ";
                     }
 
                     Styles.content = new GUIContent(nodePrefix + node.displayName + warningText, GetIconForItem(node), tooltipText);
 
-                    textColor = EditorGUIUtility.isProSkin ? Color.gray * 1.35f : Color.black;
+                    textColor = EditorStyles.label.normal.textColor;
                 }
                 else
                 {
                     Styles.content = new GUIContent(node.displayName + warningText, GetIconForItem(node), tooltipText);
 
-                    textColor = EditorGUIUtility.isProSkin ? Color.gray : m_LightSkinPropertyTextColor;
+                    textColor = EditorStyles.label.normal.textColor;
 
                     var phantomColor = selected ? m_PhantomCurveColor * k_SelectedPhantomCurveColorMultiplier : m_PhantomCurveColor;
                     textColor = isPhantom ? phantomColor : textColor;
                 }
                 textColor = isLeftOverCurve || isAmbiguous ? k_LeftoverCurveColor : textColor;
+
+                var overridenColor = m_OverridenPropertyStyle.normal.textColor;
+                textColor = isOverriden ? overridenColor : textColor;
+
                 SetStyleTextColor(lineStyle, textColor);
 
                 rect.xMin += (int)(indent + foldoutStyleWidth + lineStyle.margin.left);
@@ -525,7 +540,7 @@ namespace UnityEditorInternal
                 switch (Event.current.type)
                 {
                     case EventType.ExecuteCommand:
-                        if ((Event.current.commandName == EventCommandNames.SoftDelete || Event.current.commandName == EventCommandNames.Delete))
+                        if ((Event.current.commandName == "SoftDelete" || Event.current.commandName == "Delete"))
                         {
                             if (Event.current.type == EventType.ExecuteCommand)
                                 RemoveCurvesFromSelectedNodes();
@@ -560,26 +575,49 @@ namespace UnityEditorInternal
 
         private GenericMenu GenerateMenu(List<AnimationWindowHierarchyNode> interactedNodes, bool enabled)
         {
-            List<AnimationWindowCurve> curves = GetCurvesAffectedByNodes(interactedNodes, false);
+            var curves = GetCurvesAffectedByNodes(interactedNodes, false);
             // Linked curves are like regular affected curves but always include transform siblings
-            List<AnimationWindowCurve> linkedCurves = GetCurvesAffectedByNodes(interactedNodes, true);
+            var linkedCurves = GetCurvesAffectedByNodes(interactedNodes, true);
+
+            var removableCurves = new List<AnimationWindowCurve>();
+            var overridenCurves = new List<AnimationWindowCurve>();
+            foreach (var curve in curves)
+            {
+                if (curve.inheritanceState == InheritanceState.Overridden)
+                {
+                    overridenCurves.Add(curve);
+                    removableCurves.Add(curve);
+                }
+                else if (curve.inheritanceState == InheritanceState.None)
+                    removableCurves.Add(curve);
+            }
 
             bool forceGroupRemove = curves.Count == 1 ? AnimationWindowUtility.ForceGrouping(curves[0].binding) : false;
+            bool multipleSelection = removableCurves.Count > 1 || forceGroupRemove;
 
             GenericMenu menu = new GenericMenu();
 
+            string removeContentString = multipleSelection ? k_RemoveProperties : k_RemoveProperty;
+            if (overridenCurves.Count > 0)
+                removeContentString = multipleSelection ? k_RemoveOverrides : k_RemoveOverride;
+
             // Remove curves
-            GUIContent removePropertyContent = new GUIContent(curves.Count > 1 || forceGroupRemove ? k_RemoveProperties : k_RemoveProperty);
-            if (!enabled)
+            GUIContent removePropertyContent = new GUIContent(removeContentString);
+            if (!enabled || removableCurves.Count == 0)
                 menu.AddDisabledItem(removePropertyContent);
             else
                 menu.AddItem(removePropertyContent, false, RemoveCurvesFromSelectedNodes);
 
             // Change rotation interpolation
             bool showInterpolation = true;
+            bool rotationEnabled = enabled;
             EditorCurveBinding[] curveBindings = new EditorCurveBinding[linkedCurves.Count];
             for (int i = 0; i < linkedCurves.Count; i++)
+            {
                 curveBindings[i] = linkedCurves[i].binding;
+                rotationEnabled &= linkedCurves[i].inheritanceState == InheritanceState.None;
+            }
+
             RotationCurveInterpolation.Mode rotationInterpolation = GetRotationInterpolationMode(curveBindings);
             if (rotationInterpolation == RotationCurveInterpolation.Mode.Undefined)
             {
@@ -595,43 +633,38 @@ namespace UnityEditorInternal
             }
             if (showInterpolation)
             {
-                string legacyWarning = state.activeAnimationClip.legacy ? " (Not fully supported in Legacy)" : "";
                 GenericMenu.MenuFunction2 nullMenuFunction2 = null;
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles" + legacyWarning), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles (Quaternion)"), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
-                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Quaternion"), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, enabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles"), rotationInterpolation == RotationCurveInterpolation.Mode.RawEuler, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.RawEuler);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Euler Angles (Quaternion)"), rotationInterpolation == RotationCurveInterpolation.Mode.Baked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.Baked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Interpolation/Quaternion"), rotationInterpolation == RotationCurveInterpolation.Mode.NonBaked, rotationEnabled ? ChangeRotationInterpolation : nullMenuFunction2, RotationCurveInterpolation.Mode.NonBaked);
             }
 
-            // Menu items that are only applicaple when in animation mode:
-            if (state.previewing)
+            menu.AddSeparator("");
+
+            bool allHaveKeys = true;
+            bool noneHaveKeys = true;
+            foreach (AnimationWindowCurve curve in curves)
             {
-                menu.AddSeparator("");
-
-                bool allHaveKeys = true;
-                bool noneHaveKeys = true;
-                foreach (AnimationWindowCurve curve in curves)
-                {
-                    bool curveHasKey = curve.HasKeyframe(state.time);
-                    if (!curveHasKey)
-                        allHaveKeys = false;
-                    else
-                        noneHaveKeys = false;
-                }
-
-                string str;
-
-                str = k_AddKey;
-                if (allHaveKeys || !enabled)
-                    menu.AddDisabledItem(new GUIContent(str));
+                bool curveHasKey = curve.HasKeyframe(state.time);
+                if (!curveHasKey)
+                    allHaveKeys = false;
                 else
-                    menu.AddItem(new GUIContent(str), false, AddKeysAtCurrentTime, curves);
-
-                str = k_DeleteKey;
-                if (noneHaveKeys || !enabled)
-                    menu.AddDisabledItem(new GUIContent(str));
-                else
-                    menu.AddItem(new GUIContent(str), false, DeleteKeysAtCurrentTime, curves);
+                    noneHaveKeys = false;
             }
+
+            string str;
+
+            str = k_AddKey;
+            if (allHaveKeys || !enabled)
+                menu.AddDisabledItem(new GUIContent(str));
+            else
+                menu.AddItem(new GUIContent(str), false, AddKeysAtCurrentTime, curves);
+
+            str = k_DeleteKey;
+            if (noneHaveKeys || !enabled)
+                menu.AddDisabledItem(new GUIContent(str));
+            else
+                menu.AddItem(new GUIContent(str), false, DeleteKeysAtCurrentTime, curves);
 
             return menu;
         }
@@ -648,8 +681,11 @@ namespace UnityEditorInternal
             AnimationWindowUtility.RemoveKeyframes(state, curves, state.time);
         }
 
-        private void ChangeRotationInterpolation(System.Object interpolationMode)
+        void ChangeRotationInterpolation(System.Object interpolationMode)
         {
+            if (state.activeClip == null)
+                return;
+
             RotationCurveInterpolation.Mode mode = (RotationCurveInterpolation.Mode)interpolationMode;
 
             AnimationWindowCurve[] activeCurves = state.activeCurves.ToArray();
@@ -660,7 +696,7 @@ namespace UnityEditorInternal
                 curveBindings[i] = activeCurves[i].binding;
             }
 
-            RotationCurveInterpolation.SetInterpolation(state.activeAnimationClip, curveBindings, mode);
+            state.activeClip.SetInterpolations(curveBindings, mode, L10n.Tr("Rotation Interpolation"));
             MaintainTreeviewStateAfterRotationInterpolation(mode);
             state.hierarchyData.ReloadData();
         }
@@ -674,6 +710,8 @@ namespace UnityEditorInternal
         {
             string undoLabel = k_RemoveCurve;
             state.SaveKeySelection(undoLabel);
+
+            var curvesToRemove = new List<EditorCurveBinding>();
 
             foreach (var node in nodes)
             {
@@ -694,12 +732,13 @@ namespace UnityEditorInternal
                     curves = AnimationWindowUtility.FilterCurves(hierarchyNode.curves.ToArray(), hierarchyNode.path, hierarchyNode.animatableObjectType);
 
                 foreach (AnimationWindowCurve animationWindowCurve in curves)
-                    state.RemoveCurve(animationWindowCurve, undoLabel);
+                    curvesToRemove.Add(animationWindowCurve.binding);
             }
 
-            m_TreeView.ReloadData();
+            state.activeClip.RemoveCurves(curvesToRemove, undoLabel);
 
-            state.controlInterface.ResampleAnimation();
+            m_TreeView.ReloadData();
+            state.controller.ResampleAnimation();
         }
 
         private List<AnimationWindowCurve> GetCurvesAffectedByNodes(List<AnimationWindowHierarchyNode> nodes, bool includeLinkedCurves)
@@ -878,20 +917,11 @@ namespace UnityEditorInternal
 
                 if (newName != oldName)
                 {
-                    Undo.RecordObject(state.activeAnimationClip, "Rename Curve");
+                    var bindings = m_RenamedNode.curves.Select(c => c.binding);
+                    var newNames = new string[m_RenamedNode.curves.Length];
+                    Array.Fill(newNames, newName);
 
-                    foreach (AnimationWindowCurve curve in m_RenamedNode.curves)
-                    {
-                        EditorCurveBinding newBinding = AnimationWindowUtility.GetRenamedBinding(curve.binding, newName);
-
-                        if (AnimationWindowUtility.CurveExists(newBinding, state.filteredCurves.ToArray()))
-                        {
-                            Debug.LogWarning("Curve already exists, renaming cancelled.");
-                            continue;
-                        }
-
-                        AnimationWindowUtility.RenameCurvePath(curve, newBinding, curve.clip);
-                    }
+                    state.selection.clip.RenameCurves(bindings, newNames, "Rename Curve");
                 }
             }
 

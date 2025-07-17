@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style value that can be either a <see cref="BackgroundPosition"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleBackgroundPosition : IStyleValue<BackgroundPosition>, IEquatable<StyleBackgroundPosition>
     {
         /// <summary>
@@ -53,7 +54,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private BackgroundPosition m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

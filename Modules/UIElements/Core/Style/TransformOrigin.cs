@@ -19,6 +19,7 @@ namespace UnityEngine.UIElements
     /// regardless of whether you use percentages or pixels.
     /// Negative values and values larger than 100% are valid and move the transform-origin outside the element.
     /// </remarks>
+    [Serializable]
     public partial struct TransformOrigin : IEquatable<TransformOrigin>
     {
         /// <undoc/>
@@ -65,8 +66,12 @@ namespace UnityEngine.UIElements
             get => m_Z;
             set => m_Z = value;
         }
+
+        [SerializeField]
         private Length m_X;
+        [SerializeField]
         private Length m_Y;
+        [SerializeField]
         private float m_Z;
 
         /// <undoc/>

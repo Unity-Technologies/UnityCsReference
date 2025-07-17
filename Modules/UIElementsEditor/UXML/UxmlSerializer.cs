@@ -503,12 +503,8 @@ namespace UnityEditor.UIElements
         {
             if (bag is UxmlAsset ua)
             {
-                var entry = cc.visualTreeAsset.GetUxmlObjectEntry(ua.id);
-                if (entry.uxmlObjectAssets == null)
-                {
-                    value = null;
-                    return false;
-                }
+                using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
+                ua.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
 
                 // First we need to extract the element that contains the values for this field.
                 // Legacy fields, such as those found in MultiColumnListView and MultiColumnTreeView, do not have a root element.
@@ -526,89 +522,88 @@ namespace UnityEditor.UIElements
                 // </visual-element>
                 if (!string.IsNullOrEmpty(rootName))
                 {
-                    foreach (var asset in entry.uxmlObjectAssets)
+                    foreach (var asset in uxmlObjectAssets)
                     {
-                        if (asset.isField && asset.fullTypeName == rootName)
+                        if (!asset.isField || asset.fullTypeName != rootName)
                         {
-                            entry = cc.visualTreeAsset.GetUxmlObjectEntry(asset.id);
-                            break;
+                            continue;
                         }
+
+                        asset.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
+                        break;
                     }
                 }
 
                 // Extract values.
-                if (entry.uxmlObjectAssets != null)
+                Type objectType = type;
+                using (ListPool<(UxmlObjectAsset, UxmlSerializedDataDescription)>.Get(out var foundObjects))
                 {
-                    Type objectType = type;
-                    using (ListPool<(UxmlObjectAsset, UxmlSerializedDataDescription)>.Get(out var foundObjects))
+                    if (isList)
+                    {
+                        objectType = type.GetArrayOrListElementType();
+                    }
+
+                    foreach (var asset in uxmlObjectAssets)
+                    {
+                        if (asset.isNull)
+                        {
+                            foundObjects.Add(default);
+                        }
+                        else
+                        {
+                            var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
+                            if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
+                            {
+                                foundObjects.Add((asset, assetDescription));
+                            }
+                        }
+                    }
+
+                    // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
+                    if (uxmlObjectAssets.Count > 1 && isUxmlObject && !isList)
+                    {
+                        var foundTypes = new HashSet<string>();
+                        foreach (var asset in uxmlObjectAssets)
+                        {
+                            if (foundTypes.Contains(asset.fullTypeName))
+                            {
+                                Debug.LogWarning(string.Format(k_MultipleUxmlObjectsWarning, asset.fullTypeName));
+                                break;
+                            }
+                            foundTypes.Add(asset.fullTypeName);
+                        }
+                    }
+
+                    IList list = null;
+                    if (foundObjects.Count > 0)
                     {
                         if (isList)
                         {
-                            objectType = type.GetArrayOrListElementType();
+                            list = type.IsArray ? Array.CreateInstance(objectType, foundObjects.Count) : (IList)Activator.CreateInstance(type);
                         }
 
-                        foreach (var asset in entry.uxmlObjectAssets)
+                        for (int i = 0; i < foundObjects.Count; ++i)
                         {
-                            if (asset.isNull)
+                            (var asset, var assetDescription) = foundObjects[i];
+                            var nestedData = asset != null ? UxmlSerializer.Serialize(assetDescription, asset, cc) : null;
+                            if (isList)
                             {
-                                foundObjects.Add(default);
+                                if (type.IsArray)
+                                    list[i] = nestedData;
+                                else
+                                    list.Add(nestedData);
                             }
                             else
                             {
-                                var assetDescription = UxmlSerializedDataRegistry.GetDescription(asset.fullTypeName);
-                                if (assetDescription != null && objectType.IsAssignableFrom(assetDescription.serializedDataType))
-                                {
-                                    foundObjects.Add((asset, assetDescription));
-                                }
+                                value = nestedData;
+                                return true;
                             }
                         }
-
-                        // Display a warning when uxml file contains more than one named UxmlObject of a type defined in a single instance attribute
-                        if (entry.uxmlObjectAssets.Count > 1 && isUxmlObject && !isList)
-                        {
-                            var foundTypes = new HashSet<string>();
-                            foreach (var asset in entry.uxmlObjectAssets)
-                            {
-                                if (foundTypes.Contains(asset.fullTypeName))
-                                {
-                                    Debug.LogWarning(string.Format(k_MultipleUxmlObjectsWarning, asset.fullTypeName));
-                                    break;
-                                }
-                                foundTypes.Add(asset.fullTypeName);
-                            }
-                        }
-
-                        IList list = null;
-                        if (foundObjects.Count > 0)
-                        {
-                            if (isList)
-                            {
-                                list = type.IsArray ? Array.CreateInstance(objectType, foundObjects.Count) : (IList)Activator.CreateInstance(type);
-                            }
-
-                            for (int i = 0; i < foundObjects.Count; ++i)
-                            {
-                                (var asset, var assetDescription) = foundObjects[i];
-                                var nestedData = asset != null ? UxmlSerializer.Serialize(assetDescription, asset, cc) : null;
-                                if (isList)
-                                {
-                                    if (type.IsArray)
-                                        list[i] = nestedData;
-                                    else
-                                        list.Add(nestedData);
-                                }
-                                else
-                                {
-                                    value = nestedData;
-                                    return true;
-                                }
-                            }
-                        }
-                        if (list != null)
-                        {
-                            value = list;
-                            return true;
-                        }
+                    }
+                    if (list != null)
+                    {
+                        value = list;
+                        return true;
                     }
                 }
             }
@@ -720,23 +715,22 @@ namespace UnityEditor.UIElements
         {
             // Skip the Uxml root element
             var vta = cc.visualTreeAsset;
-            var veaCount = vta.visualElementAssets?.Count ?? 0;
-            for (var i = 1; i < veaCount; i++)
+            foreach (var asset in vta.DepthFirstTraversal())
             {
-                var vea = vta.visualElementAssets[i];
-                SyncVisualTreeElementSerializedData(vea, cc, syncDefaultValues);
+                if (asset is TemplateAsset)
+                    continue;
+                if (asset is VisualElementAsset vea)
+                    SyncVisualTreeElementSerializedData(vea, cc, syncDefaultValues);
             }
 
-            var tplCount = vta.templateAssets?.Count ?? 0;
-            for (var i = 0; i < tplCount; i++)
+            foreach (var asset in vta.DepthFirstTraversalOfType<TemplateAsset>())
             {
-                var rootTemplate = vta.templateAssets[i];
                 var namesPath = new List<string>();
                 var idsList = new List<int>();
 
-                rootTemplate.serializedData = Serialize(rootTemplate.fullTypeName, rootTemplate, cc);
-                rootTemplate.serializedDataOverrides.Clear();
-                CreateSerializedDataOverride(rootTemplate, vta, rootTemplate, cc, namesPath, idsList);
+                asset.serializedData = Serialize(asset.fullTypeName, asset, cc);
+                asset.serializedDataOverrides.Clear();
+                CreateSerializedDataOverride(asset, vta, asset, cc, namesPath, idsList);
             }
         }
 
@@ -747,9 +741,20 @@ namespace UnityEditor.UIElements
             {
                 vea.serializedData = Serialize(desc, vea, cc);
 
+                if (desc.isEditorOnly)
+                    cc.visualTreeAsset.hasEditorElements = true;
+
                 if (syncDefaultValues)
                     desc.SyncDefaultValues(vea.serializedData, false);
             }
+        }
+
+        static string GetElementName(VisualElementAsset vea)
+        {
+            if (vea.serializedData == null)
+                return null;
+            var desc = UxmlSerializedDataRegistry.GetDescription(vea.fullTypeName);
+            return desc?.FindAttributeWithPropertyName(nameof(VisualElement.name))?.GetSerializedValue(vea.serializedData) as string;
         }
 
         private static void CreateSerializedDataOverride(TemplateAsset rootTemplate, VisualTreeAsset vta, TemplateAsset templateAsset, CreationContext cc, List<string> namesPath, List<int> idsList)
@@ -781,27 +786,31 @@ namespace UnityEditor.UIElements
                 return;
 
             // For each element with an override create a serialized data stored in the template asset
-            foreach (var vea in templateVta.visualElementAssets)
+            foreach (var asset in templateVta.DepthFirstTraversal())
             {
+                if (asset is not VisualElementAsset vea)
+                    continue;
+
                 var namesCopy = new List<string>(namesPath);
                 var idsCopy = new List<int>(idsList);
 
-                if (!vea.TryGetAttributeValue(nameof(VisualElement.name), out var elementName) || string.IsNullOrEmpty(elementName))
+                var elementName = GetElementName(vea);
+                if (string.IsNullOrEmpty(elementName))
                     continue;
 
-                var parentAsset = templateVta.GetParentAsset(vea);
+                var parentAsset = vea.parentAsset;
                 var nameInsertIndex = namesCopy.Count;
                 var idInsertIndex = idsCopy.Count;
-                var rootElement = templateVta.GetRootUxmlElement();
+                var rootElement = templateVta.visualTreeNoAlloc;
 
                 // For attribute overrides, we need to take into account template assets in the hierarchy
                 // from the root to the current element.
                 while (parentAsset != rootElement)
                 {
-                    if (parentAsset is TemplateAsset)
+                    if (parentAsset is TemplateAsset parentTemplateAsset)
                     {
-                        if (parentAsset.TryGetAttributeValue(nameof(VisualElement.name), out var parentElementName) &&
-                            !string.IsNullOrEmpty(parentElementName))
+                        var parentElementName = GetElementName(parentTemplateAsset);
+                        if (!string.IsNullOrEmpty(parentElementName))
                         {
                             namesCopy.Insert(nameInsertIndex, parentElementName);
                         }
@@ -809,7 +818,7 @@ namespace UnityEditor.UIElements
                         idsCopy.Insert(idInsertIndex, parentAsset.id);
                     }
 
-                    parentAsset = templateVta.GetParentAsset(parentAsset);
+                    parentAsset = parentAsset.parentAsset;
                 }
 
                 namesCopy.Add(elementName);
@@ -842,12 +851,13 @@ namespace UnityEditor.UIElements
                 });
             }
 
-            foreach (var ta in templateVta.templateAssets)
+            foreach (var ta in templateVta.DepthFirstTraversalOfType<TemplateAsset>())
             {
                 var idsCopy = new List<int>(idsList);
                 var namesCopy = new List<string>(namesPath);
 
-                if (ta.TryGetAttributeValue(nameof(VisualElement.name), out var elementName))
+                var elementName = GetElementName(ta);
+                if (!string.IsNullOrEmpty(elementName))
                 {
                     namesCopy.Add(elementName);
                 }

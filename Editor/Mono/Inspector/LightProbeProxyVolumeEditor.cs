@@ -197,8 +197,8 @@ namespace UnityEditor
 
                 if (oldEditMode != EditMode.editMode)
                 {
-                    if (Toolbar.get != null)
-                        Toolbar.get.Repaint();
+                    if (Toolbar.instance != null)
+                        Toolbar.instance.Repaint();
                 }
 
                 GUILayout.FlexibleSpace();

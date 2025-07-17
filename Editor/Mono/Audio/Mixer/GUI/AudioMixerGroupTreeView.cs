@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.IO;
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEditorInternal;
 using UnityEditor.Audio;
 using UnityEditor.IMGUI.Controls;
@@ -15,12 +16,11 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     // Item
-
-    internal class AudioMixerTreeViewNode : TreeViewItem
+    internal class AudioMixerTreeViewNode : TreeViewItem<EntityId>
     {
         public AudioMixerGroupController group { get; set; }
 
-        public AudioMixerTreeViewNode(int instanceID, int depth, TreeViewItem parent, string displayName, AudioMixerGroupController group)
+        public AudioMixerTreeViewNode(EntityId instanceID, int depth, TreeViewItem<EntityId> parent, string displayName, AudioMixerGroupController group)
             : base(instanceID, depth, parent, displayName)
         {
             this.group = group;
@@ -36,25 +36,25 @@ namespace UnityEditor
     {
         private AudioMixerGroupTreeView m_owner;
 
-        public AudioGroupTreeViewDragging(TreeViewController treeView, AudioMixerGroupTreeView owner)
+        public AudioGroupTreeViewDragging(TreeViewController<EntityId> treeView, AudioMixerGroupTreeView owner)
             : base(treeView)
         {
             m_owner = owner;
         }
 
-        public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
+        public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
             if (!EditorApplication.isPlaying)
                 base.StartDrag(draggedItem, draggedItemIDs);
         }
 
-        public override DragAndDropVisualMode DoDrag(TreeViewItem parentNode, TreeViewItem targetNode, bool perform, DropPosition dragPos)
+        public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentNode, TreeViewItem<EntityId> targetNode, bool perform, DropPosition dragPos)
         {
             var parentGroupNode = parentNode as AudioMixerTreeViewNode;
             var draggedGroups = new List<Object>(DragAndDrop.objectReferences).OfType<AudioMixerGroupController>().ToList();
             if (parentGroupNode != null && draggedGroups.Count > 0)
             {
-                var draggedIDs = (from i in draggedGroups select i.GetInstanceID()).ToList();
+                var draggedIDs = (from i in draggedGroups select i.GetEntityId()).ToList();
                 bool validDrag = ValidDrag(parentNode, draggedIDs) && !AudioMixerController.WillModificationOfTopologyCauseFeedback(m_owner.Controller.GetAllAudioGroupsSlow(), draggedGroups, parentGroupNode.group, null);
                 if (perform && validDrag)
                 {
@@ -75,9 +75,9 @@ namespace UnityEditor
             return DragAndDropVisualMode.None;
         }
 
-        bool ValidDrag(TreeViewItem parent, List<int> draggedInstanceIDs)
+        bool ValidDrag(TreeViewItem<EntityId> parent, List<EntityId> draggedInstanceIDs)
         {
-            TreeViewItem currentParent = parent;
+            TreeViewItem<EntityId> currentParent = parent;
             while (currentParent != null)
             {
                 if (draggedInstanceIDs.Contains(currentParent.id))
@@ -91,17 +91,17 @@ namespace UnityEditor
 
     // Datasource
 
-    internal class AudioGroupDataSource : TreeViewDataSource
+    internal class AudioGroupDataSource : TreeViewDataSource<EntityId>
     {
-        public AudioGroupDataSource(TreeViewController treeView, AudioMixerController controller)
+        public AudioGroupDataSource(TreeViewController<EntityId> treeView, AudioMixerController controller)
             : base(treeView)
         {
             m_Controller = controller;
         }
 
-        private void AddNodesRecursively(AudioMixerGroupController group, TreeViewItem parent, int depth)
+        private void AddNodesRecursively(AudioMixerGroupController group, TreeViewItem<EntityId> parent, int depth)
         {
-            var children = new List<TreeViewItem>();
+            var children = new List<TreeViewItem<EntityId>>();
             for (int i = 0; i < group.children.Length; ++i)
             {
                 int uniqueNodeID = GetUniqueNodeID(group.children[i]);
@@ -140,7 +140,7 @@ namespace UnityEditor
             m_NeedRefreshRows = true;
         }
 
-        public override bool IsRenamingItemAllowed(TreeViewItem node)
+        public override bool IsRenamingItemAllowed(TreeViewItem<EntityId> node)
         {
             var audioNode = node as AudioMixerTreeViewNode;
             if (audioNode.group == m_Controller.masterGroup)
@@ -154,7 +154,7 @@ namespace UnityEditor
 
     // Node GUI
 
-    internal class AudioGroupTreeViewGUI : TreeViewGUI
+    internal class AudioGroupTreeViewGUI : TreeViewGUI<EntityId>
     {
         readonly float column1Width = 20f;
         readonly GUIContent k_VisibleON = EditorGUIUtility.TrIconContent("animationvisibilitytoggleon");
@@ -162,7 +162,7 @@ namespace UnityEditor
         public Action<AudioMixerTreeViewNode, bool> NodeWasToggled;
         public AudioMixerController m_Controller = null;
 
-        public AudioGroupTreeViewGUI(TreeViewController treeView)
+        public AudioGroupTreeViewGUI(TreeViewController<EntityId> treeView)
             : base(treeView)
         {
             k_BaseIndent = column1Width;
@@ -191,7 +191,7 @@ namespace UnityEditor
             menu.ShowAsContext();
         }
 
-        override public void OnRowGUI(Rect rowRect, TreeViewItem node, int row, bool selected, bool focused)
+        override public void OnRowGUI(Rect rowRect, TreeViewItem<EntityId> node, int row, bool selected, bool focused)
         {
             Event evt = Event.current;
             DoItemGUI(rowRect, row, node, selected, focused, false);
@@ -233,7 +233,7 @@ namespace UnityEditor
             }
         }
 
-        protected override Texture GetIconForItem(TreeViewItem node)
+        protected override Texture GetIconForItem(TreeViewItem<EntityId> node)
         {
             if (node != null && node.icon != null)
                 return node.icon;
@@ -287,8 +287,8 @@ namespace UnityEditor
     {
         private AudioMixerController m_Controller;
         private AudioGroupDataSource m_AudioGroupTreeDataSource;
-        private TreeViewState m_AudioGroupTreeState;
-        private TreeViewController m_AudioGroupTree;
+        private TreeViewState<EntityId> m_AudioGroupTreeState;
+        private TreeViewController<EntityId> m_AudioGroupTree;
         private AudioGroupTreeViewGUI m_TreeViewGUI;
         private AudioMixerGroupController m_ScrollToItem;
 
@@ -301,11 +301,11 @@ namespace UnityEditor
 
         static Styles s_Styles;
 
-        public AudioMixerGroupTreeView(AudioMixerWindow mixerWindow, TreeViewState treeState)
+        public AudioMixerGroupTreeView(AudioMixerWindow mixerWindow, TreeViewState<EntityId> treeState)
         {
             m_AudioGroupTreeState = treeState;
 
-            m_AudioGroupTree = new TreeViewController(mixerWindow, m_AudioGroupTreeState);
+            m_AudioGroupTree = new TreeViewController<EntityId>(mixerWindow, m_AudioGroupTreeState);
             m_AudioGroupTree.deselectOnUnhandledMouseDown = false;
             m_AudioGroupTree.selectionChangedCallback += OnTreeSelectionChanged;
             m_AudioGroupTree.contextClickItemCallback += OnTreeViewContextClick;
@@ -382,7 +382,7 @@ namespace UnityEditor
 
             Selection.objects = new[] { newGroup };
             m_Controller.OnUnitySelectionChanged();
-            m_AudioGroupTree.SetSelection(new int[] { newGroup.GetInstanceID() }, true);
+            m_AudioGroupTree.SetSelection(new [] { newGroup.GetEntityId() }, true);
             ReloadTree();
             m_Controller.OnSubAssetChanged();
             m_AudioGroupTree.BeginNameEditing(0f);
@@ -423,7 +423,7 @@ namespace UnityEditor
             {
                 ReloadTree();
                 m_Controller.OnSubAssetChanged();
-                var instanceIDs = duplicatedRoots.Select(audioMixerGroup => audioMixerGroup.GetInstanceID()).ToArray();
+                var instanceIDs = duplicatedRoots.Select(audioMixerGroup => audioMixerGroup.GetEntityId()).ToArray();
                 m_AudioGroupTree.SetSelection(instanceIDs, false);
                 m_AudioGroupTree.Frame(instanceIDs[instanceIDs.Length - 1], true, false);
             }
@@ -443,8 +443,8 @@ namespace UnityEditor
 
         void RenameGroupCallback(object obj)
         {
-            var item = (TreeViewItem)obj;
-            m_AudioGroupTree.SetSelection(new int[] { item.id }, false);
+            var item = (TreeViewItem<EntityId>)obj;
+            m_AudioGroupTree.SetSelection(new [] { item.id }, false);
             m_AudioGroupTree.BeginNameEditing(0f);
         }
 
@@ -455,7 +455,7 @@ namespace UnityEditor
             return items;
         }
 
-        public void OnTreeViewContextClick(int index)
+        public void OnTreeViewContextClick(EntityId index)
         {
             var node = m_AudioGroupTree.FindItem(index);
             if (node != null)
@@ -512,7 +512,7 @@ namespace UnityEditor
             m_Controller.SetCurrentViewVisibility(newSelection.ToArray());
         }
 
-        List<AudioMixerGroupController> GetAudioMixerGroupsFromNodeIDs(int[] instanceIDs)
+        List<AudioMixerGroupController> GetAudioMixerGroupsFromNodeIDs(EntityId[] instanceIDs)
         {
             List<AudioMixerGroupController> newSelectedGroups = new List<AudioMixerGroupController>();
             foreach (var s in instanceIDs)
@@ -529,7 +529,7 @@ namespace UnityEditor
             return newSelectedGroups;
         }
 
-        public void OnTreeSelectionChanged(int[] selection)
+        public void OnTreeSelectionChanged(EntityId[] selection)
         {
             var groups = GetAudioMixerGroupsFromNodeIDs(selection);
             Selection.objects = groups.ToArray();
@@ -545,7 +545,7 @@ namespace UnityEditor
                 return;
 
             var groups = m_Controller.CachedSelection;
-            m_AudioGroupTree.SetSelection((from x in groups select x.GetInstanceID()).ToArray(), revealSelectionAndFrameLastSelected);
+            m_AudioGroupTree.SetSelection((from x in groups select x.GetEntityId()).ToArray(), revealSelectionAndFrameLastSelected);
         }
 
         public float GetTotalHeight()
@@ -626,7 +626,7 @@ namespace UnityEditor
             Event evt = Event.current;
             if (evt.keyCode == KeyCode.Space && evt.type == EventType.KeyDown)
             {
-                int[] selection = m_AudioGroupTree.GetSelection();
+                EntityId[] selection = m_AudioGroupTree.GetSelection();
                 if (selection.Length > 0)
                 {
                     AudioMixerTreeViewNode node = m_AudioGroupTree.FindItem(selection[0]) as AudioMixerTreeViewNode;
@@ -661,20 +661,24 @@ namespace UnityEditor
 
         void SaveExpandedState()
         {
-            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), m_AudioGroupTreeState.expandedIDs.ToArray());
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            var expandedIDsRaw = Array.ConvertAll(m_AudioGroupTreeState.expandedIDs.ToArray(), input => (int) input);
+            SessionState.SetIntArray(GetUniqueAudioMixerName(m_Controller), expandedIDsRaw);
         }
 
         void LoadExpandedState()
         {
-            int[] cachedExpandedState = SessionState.GetIntArray(GetUniqueAudioMixerName(m_Controller), null);
-            if (cachedExpandedState != null)
+            Debug.Assert(sizeof(int)==UnsafeUtility.SizeOf<EntityId>(), "EntityId is not the same size as int, update this code to use ulong");
+            var cachedExpandedStateRaw = SessionState.GetIntArray(GetUniqueAudioMixerName(m_Controller), null);
+            if (cachedExpandedStateRaw != null)
             {
-                m_AudioGroupTreeState.expandedIDs = new List<int>(cachedExpandedState);
+                var cachedExpandedState = Array.ConvertAll(cachedExpandedStateRaw, input => EntityId.From(input));
+                m_AudioGroupTreeState.expandedIDs = new List<EntityId>(cachedExpandedState);
             }
             else
             {
                 // Expand whole tree. If no cached data then its the first time tree was loaded in this session
-                m_AudioGroupTree.state.expandedIDs = new List<int>();
+                m_AudioGroupTree.state.expandedIDs = new List<EntityId>();
                 m_AudioGroupTree.data.SetExpandedWithChildren(m_AudioGroupTree.data.root, true);
             }
         }

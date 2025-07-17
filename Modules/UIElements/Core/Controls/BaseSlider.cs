@@ -48,7 +48,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(fill), "fill"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

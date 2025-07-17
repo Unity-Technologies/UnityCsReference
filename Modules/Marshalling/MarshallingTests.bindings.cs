@@ -867,6 +867,12 @@ namespace UnityEngine
         public SomeEnum eVal;
     }
 
+    unsafe struct StructWithSelfPointer
+    {
+        public int value;
+        public StructWithSelfPointer* other;
+    }
+
     // --------------------------------------------------------------------
     // System.Array tests
     [NativeType("Modules/Marshalling/MarshallingTests.h")]
@@ -901,6 +907,7 @@ namespace UnityEngine
         [NativeThrows] public static extern void ParameterCharReadOnlySpan(ReadOnlySpan<char> param);
         [NativeThrows] public static extern void ParameterEnumReadOnlySpan(ReadOnlySpan<SomeEnum> param);
         [NativeThrows] public static extern void ParameterBlittableCornerCaseStructReadOnlySpan(ReadOnlySpan<BlittableCornerCases> param);
+        [NativeThrows] public static extern void ParameterStructWithSelfPointerSpan(Span<StructWithSelfPointer> param);
         public static extern Span<int> ReturnsArrayRefWritableAsSpan(int val1, int val2, int val3);
         public static extern Span<int> ReturnsCoreVectorRefAsSpan(int val1, int val2, int val3);
         public static extern Span<int> ReturnsScriptingSpanAsSpan(int val1, int val2, int val3);

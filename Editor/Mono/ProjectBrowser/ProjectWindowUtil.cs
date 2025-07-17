@@ -65,7 +65,7 @@ namespace UnityEditor
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
                 var cleanPath = AssetDatabase.GenerateUniqueAssetPath(pathName);
-                AssetDatabase.CreateAsset(EditorUtility.InstanceIDToObject(instanceId),
+                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(instanceId),
                     cleanPath);
                 var obj = AssetDatabase.LoadMainAssetAtPath(cleanPath);
                 var name = obj.name;
@@ -85,7 +85,7 @@ namespace UnityEditor
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
-                AssetDatabase.CreateAsset(EditorUtility.InstanceIDToObject(instanceId),
+                AssetDatabase.CreateAsset(EditorUtility.EntityIdToObject(instanceId),
                     AssetDatabase.GenerateUniqueAssetPath(pathName));
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
             }
@@ -736,7 +736,7 @@ namespace UnityEditor
                     pathName = "Assets/" + pathName;
                 EndNameEditAction(endAction, instanceID, pathName, resourceFile, true);
                 if (selectAssetBeingCreated)
-                    Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
+                    Selection.activeObject = EditorUtility.EntityIdToObject(instanceID);
             }
         }
 
@@ -759,12 +759,12 @@ namespace UnityEditor
         internal static string k_DraggingFavoriteGenericData = "DraggingFavorite";
         internal static string k_IsFolderGenericData = "IsFolder";
 
-        internal static bool IsFavoritesItem(int instanceID)
+        internal static bool IsFavoritesItem(EntityId instanceID)
         {
             return instanceID >= k_FavoritesStartInstanceID && instanceID != ProjectBrowser.kPackagesFolderInstanceId;
         }
 
-        internal static void StartDrag(int draggedInstanceID, List<int> selectedInstanceIDs)
+        internal static void StartDrag(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
         {
             if (draggedInstanceID == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
@@ -795,7 +795,7 @@ namespace UnityEditor
             DragAndDrop.StartDrag(title);
         }
 
-        internal static Object[] GetDragAndDropObjects(int draggedInstanceID, List<int> selectedInstanceIDs)
+        internal static Object[] GetDragAndDropObjects(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
         {
             List<Object> outList = new List<Object>(selectedInstanceIDs.Count);
             if ((Event.current.control || Event.current.command) && !selectedInstanceIDs.Contains(draggedInstanceID))
@@ -820,15 +820,15 @@ namespace UnityEditor
             return outList.ToArray();
         }
 
-        internal static string[] GetDragAndDropPaths(int draggedInstanceID, List<int> selectedInstanceIDs)
+        internal static string[] GetDragAndDropPaths(EntityId draggedInstanceID, List<EntityId> selectedInstanceIDs)
         {
             // Assets
             List<string> paths = new List<string>();
-            foreach (int instanceID in selectedInstanceIDs)
+            foreach (EntityId entityId in selectedInstanceIDs)
             {
-                if (AssetDatabase.IsMainAsset(instanceID))
+                if (AssetDatabase.IsMainAsset(entityId))
                 {
-                    string path = AssetDatabase.GetAssetPath(instanceID);
+                    string path = AssetDatabase.GetAssetPath(entityId);
                     paths.Add(path);
                 }
             }
@@ -854,30 +854,42 @@ namespace UnityEditor
         }
 
         // Returns instanceID of folders (and main asset if input is a subasset) up until and including the Assets folder
-        public static int[] GetAncestors(int instanceID)
+        public static EntityId[] GetAncestors(EntityId instanceID)
         {
-            HashSet<int> ancestors = new HashSet<int>();
+            var ancestors = new HashSet<EntityId>();
             GetAncestors(instanceID, ancestors);
             return ancestors.ToArray();
         }
 
-        internal static void GetAncestors(int instanceID, HashSet<int> ancestors)
+        [Obsolete("GetAncestors is deprecated. Use GetAncestors(EntityId) instead.", true)]
+        public static int[] GetAncestors(int instanceID)
+        {
+            var ancestors = new HashSet<EntityId>();
+            GetAncestors(instanceID, ancestors);
+            var result = new int[ancestors.Count];
+            var i = 0;
+            foreach (var ancestor in ancestors)
+                result[i++] = ancestor;
+            return result;
+        }
+
+        internal static void GetAncestors(EntityId entityId, HashSet<EntityId> ancestors)
         {
             // Ensure we handle packages root folder
-            if (instanceID == ProjectBrowser.kPackagesFolderInstanceId)
+            if (entityId == ProjectBrowser.kPackagesFolderInstanceId)
                 return;
 
             // Ensure we add the main asset as ancestor if input is a sub-asset
-            int mainAssetInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetAssetPath(instanceID));
-            bool isSubAsset = mainAssetInstanceID != instanceID;
+            EntityId mainAssetEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(AssetDatabase.GetAssetPath(entityId));
+            bool isSubAsset = mainAssetEntityId != entityId;
             if (isSubAsset)
-                ancestors.Add(mainAssetInstanceID);
+                ancestors.Add(mainAssetEntityId);
 
             // Find ancestors of main asset
-            string currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(mainAssetInstanceID));
+            string currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(mainAssetEntityId));
             while (!string.IsNullOrEmpty(currentFolderPath))
             {
-                int currentInstanceID = ProjectBrowser.GetFolderInstanceID(currentFolderPath);
+                EntityId currentInstanceID = ProjectBrowser.GetFolderInstanceID(currentFolderPath);
                 ancestors.Add(currentInstanceID);
                 currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(currentInstanceID));
             }
@@ -885,7 +897,7 @@ namespace UnityEditor
 
         public static bool IsFolder(int instanceID)
         {
-            return AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath(instanceID));
+            return AssetDatabase.IsValidFolder(AssetDatabase.GetAssetPath((EntityId)instanceID));
         }
 
         // Returns containing folder if possible otherwise null.
@@ -967,12 +979,12 @@ namespace UnityEditor
             GUID[] guids = targetPaths.Select(path => AssetDatabase.GUIDFromAssetPath(path)).ToArray();
 
             Func<string, bool> HasChildrenInPath = (string rootPath) => {
-                var property = new HierarchyProperty(rootPath, false);
+                var property = new HierarchyIterator(rootPath, false);
                 property.SetSearchFilter(new SearchFilter { classNames = new string[] { "Material" }, searchArea = SearchFilter.SearchArea.AllAssets });
-                while (property.Next(null))
+                while (property.Next(default(EntityId[])))
                 {
                     GUID parent;
-                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetInstanceIDIfImported()) as Material;
+                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetEntityIdIfImported()) as Material;
                     if (child)
                     {
                         if (AssetDatabase.IsForeignAsset(child))
@@ -1013,11 +1025,11 @@ namespace UnityEditor
             var newParent = toDelete.parent;
 
             Action<string> ReparentInPath = (string rootPath) => {
-                var property = new HierarchyProperty(rootPath, false);
+                var property = new HierarchyIterator(rootPath, false);
                 property.SetSearchFilter(new SearchFilter { classNames = new string[] { "Material" }, searchArea = SearchFilter.SearchArea.AllAssets });
-                while (property.Next(null))
+                while (property.Next(default(EntityId[])))
                 {
-                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetInstanceIDIfImported()) as Material;
+                    var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(property.GetEntityIdIfImported()) as Material;
                     if (!child)
                     {
                         // First check guid from file to avoid loading all materials in memory
@@ -1043,12 +1055,12 @@ namespace UnityEditor
         // Returns true if the delete operation was successfully performed on all assets.
         // Note: Zero input assets always returns true.
         // Also note that the operation cannot be undone even if some operations failed.
-        internal static bool DeleteAssets(List<int> instanceIDs, bool askIfSure)
+        internal static bool DeleteAssets(List<EntityId> instanceIDs, bool askIfSure)
         {
             if (instanceIDs.Count == 0)
                 return true;
 
-            bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets")) >= 0;
+            bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets")) >= 0;
             if (foundAssetsFolder)
             {
                 EditorUtility.DisplayDialog(L10n.Tr("Cannot Delete"), L10n.Tr("Deleting the 'Assets' folder is not allowed"), L10n.Tr("OK"));
@@ -1163,7 +1175,7 @@ namespace UnityEditor
             return success;
         }
 
-        internal static IEnumerable<string> GetMainPathsOfAssets(IEnumerable<int> instanceIDs)
+        internal static IEnumerable<string> GetMainPathsOfAssets(IEnumerable<EntityId> instanceIDs)
         {
             foreach (var instanceID in instanceIDs)
             {

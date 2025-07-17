@@ -16,12 +16,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TransformOriginStyleField : BaseField<TransformOrigin>
     {
-        public class BuilderTransformOriginConverter : UxmlAttributeConverter<TransformOrigin>
-        {
-            public override TransformOrigin FromString(string value) => throw new NotImplementedException();
-            public override string ToString(TransformOrigin value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<TransformOrigin>.UxmlSerializedData
         {

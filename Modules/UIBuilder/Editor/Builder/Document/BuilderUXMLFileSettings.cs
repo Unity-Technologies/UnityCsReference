@@ -42,7 +42,7 @@ namespace Unity.UI.Builder
 
         internal void SetRootElementAsset(VisualTreeAsset visualTreeAsset)
         {
-            m_RootElementAsset = visualTreeAsset.GetRootUxmlElement();
+            m_RootElementAsset = visualTreeAsset.visualTree;
 
             RetrieveEditorExtensionModeSetting();
         }

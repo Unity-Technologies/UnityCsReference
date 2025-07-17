@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Collections;
@@ -105,7 +105,7 @@ partial struct LayoutNode
         ref var data = ref m_Access.GetNodeData(m_Handle);
 
         if (!data.Children.IsCreated)
-            data.Children = new LayoutList<LayoutHandle>(k_DefaultChildCapacity, Allocator.Persistent);
+            data.Children = new LayoutList<LayoutHandle>(k_DefaultChildCapacity);
 
         data.Children.Insert(index, child.Handle);
         child.Parent = this;

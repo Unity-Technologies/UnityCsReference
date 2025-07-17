@@ -11,10 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
 {
     internal class AddPackageByNameDropdown : DropdownContent
     {
-        internal static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted package");
-        internal static readonly string k_NonCompliantMessage = L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance.");
-        internal static readonly string k_NonCompliantReadMore = L10n.Tr("Read More");
-        internal static readonly string k_NonCompliantClose = L10n.Tr("Close");
+        internal static readonly string k_NonCompliantDialogTitle = L10n.Tr("Restricted Package");
 
         private static readonly Vector2 k_DefaultWindowSize = new(320, 72);
         private static readonly Vector2 k_WindowSizeWithError = new(320, 110);
@@ -30,20 +27,21 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IPackageDatabase m_PackageDatabase;
         private IPageManager m_PageManager;
         private IPackageOperationDispatcher m_OperationDispatcher;
-        private IApplicationProxy m_ApplicationProxy;
-        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, IApplicationProxy applicationProxy)
+        private ICustomDisplayDialog m_CustomDisplayDialog;
+
+        private void ResolveDependencies(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom)
         {
             m_ResourceLoader = resourceLoader;
             m_UpmClient = upmClient;
             m_PackageDatabase = packageDatabase;
             m_PageManager = packageManager;
             m_OperationDispatcher = packageOperationDispatcher;
-            m_ApplicationProxy = applicationProxy;
+            m_CustomDisplayDialog = displayDialogCustom;
         }
 
-        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, IApplicationProxy applicationProxy, EditorWindow anchorWindow)
+        public AddPackageByNameDropdown(IResourceLoader resourceLoader, IUpmClient upmClient, IPackageDatabase packageDatabase, IPageManager packageManager, IPackageOperationDispatcher packageOperationDispatcher, ICustomDisplayDialog displayDialogCustom, EditorWindow anchorWindow)
         {
-            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager, packageOperationDispatcher, applicationProxy);
+            ResolveDependencies(resourceLoader, upmClient, packageDatabase, packageManager, packageOperationDispatcher, displayDialogCustom);
 
             styleSheets.Add(m_ResourceLoader.inputDropdownStyleSheet);
 
@@ -141,7 +139,8 @@ namespace UnityEditor.PackageManager.UI.Internal
             var package = m_PackageDatabase.GetPackage(packageNameIsolated);
             if (package != null && (string.IsNullOrEmpty(packageVersionIsolated) || package.versions.Any(v => v.versionString == packageVersionIsolated)))
             {
-                CheckComplianceAndInstallPackage(package.compliance, packageNameIsolated, packageVersionIsolated, package.product?.id.ToString());
+                CheckComplianceAndInstallPackage(package.compliance, packageNameIsolated, package.displayName,
+                    packageVersionIsolated, package.product?.id.ToString());
                 return;
             }
 
@@ -151,7 +150,8 @@ namespace UnityEditor.PackageManager.UI.Internal
                     if (packageInfo != null)
                     {
                         if (string.IsNullOrEmpty(packageVersionIsolated) || packageInfo.versions.all.Contains(packageVersionIsolated))
-                            CheckComplianceAndInstallPackage(packageInfo.compliance, packageNameIsolated, packageVersionIsolated, packageInfo.assetStore?.productId);
+                            CheckComplianceAndInstallPackage(packageInfo.compliance, packageNameIsolated,
+                                packageInfo.displayName, packageVersionIsolated, packageInfo.assetStore?.productId);
                         else
                         {
                             // As of the time of writing, users may specify a version that is not included in the version list but is still returned by UPM.
@@ -160,7 +160,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                                 {
                                     if (morePackageInfo != null)
                                     {
-                                        CheckComplianceAndInstallPackage(morePackageInfo.compliance, packageNameIsolated, packageVersionIsolated, packageInfo.assetStore?.productId);
+                                        CheckComplianceAndInstallPackage(morePackageInfo.compliance,
+                                            packageNameIsolated, morePackageInfo.displayName, packageVersionIsolated,
+                                            packageInfo.assetStore?.productId);
                                     }
                                 }, errorCallback: error => SetError(isVersionError: true));
                         }
@@ -175,27 +177,27 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         private bool ShouldBlockDueToComplianceViolation(PackageCompliance compliance)
         {
-            if (compliance == null || compliance.status == PackageComplianceStatus.Compliant)
-                return false;
-
-            var shouldOpenReadMoreLink = m_ApplicationProxy.DisplayDialog(
-                "addByNameNonCompliantPackage",
-                k_NonCompliantDialogTitle,
-                k_NonCompliantMessage + " " + compliance.violation.message,
-                k_NonCompliantReadMore,
-                k_NonCompliantClose);
-
-            if (shouldOpenReadMoreLink)
-                m_ApplicationProxy.OpenURL(compliance.violation.readMoreLink);
-
-            return true;
+            return compliance != null && compliance.status != PackageComplianceStatus.Compliant;
         }
 
 
-        private void CheckComplianceAndInstallPackage(PackageCompliance compliance, string packageName, string packageVersion, string productId)
+        private void CheckComplianceAndInstallPackage(PackageCompliance compliance, string packageName,
+            string packageDisplayName, string packageVersion, string productId)
         {
             if (ShouldBlockDueToComplianceViolation(compliance))
             {
+                var displayDialogArgs = new CustomDisplayDialogArgs(k_NonCompliantDialogTitle, idForAnalytics: "addByNameNonCompliantPackage")
+                {
+                    headerIcon = Icon.PackageErrorLarge,
+                    headerMainText = packageDisplayName,
+                    headerSubText = packageName,
+                    headerInfoBoxIcon = Icon.Error,
+                    headerInfoBoxText = k_NonCompliantDialogTitle,
+                    bodyText = compliance.violation.message,
+                    readMoreUrl = compliance.violation.readMoreLink,
+                    readMoreClickedAnalyticsId = "restricted-package-read-more-clicked"
+                };
+                m_CustomDisplayDialog.Show(displayDialogArgs);
                 Close();
                 return;
             }

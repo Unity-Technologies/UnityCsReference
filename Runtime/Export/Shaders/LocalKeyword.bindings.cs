@@ -22,6 +22,8 @@ namespace UnityEngine.Rendering
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetShaderKeywordIndex(Shader shader, string keyword);
         [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetComputeShaderKeywordCount(ComputeShader shader);
         [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetComputeShaderKeywordIndex(ComputeShader shader, string keyword);
+        [FreeFunction("ShaderScripting::GetKeywordCount")] extern private static uint GetRayTracingShaderKeywordCount(RayTracingShader shader);
+        [FreeFunction("ShaderScripting::GetKeywordIndex")] extern private static uint GetRayTracingShaderKeywordIndex(RayTracingShader shader, string keyword);
         [FreeFunction("keywords::GetKeywordType")] extern private static ShaderKeywordType GetKeywordType(LocalKeywordSpace spaceInfo, uint keyword);
         [FreeFunction("keywords::IsKeywordValid")] extern private static bool IsValid(LocalKeywordSpace spaceInfo, uint keyword);
 
@@ -51,6 +53,17 @@ namespace UnityEngine.Rendering
             m_Index = GetComputeShaderKeywordIndex(shader, name);
             if (m_Index >= GetComputeShaderKeywordCount(shader))
                 Debug.LogErrorFormat("Local keyword {0} doesn't exist in the compute shader.", name);
+        }
+
+        public LocalKeyword(RayTracingShader shader, string name)
+        {
+            if (shader == null)
+                Debug.LogError("Cannot initialize a LocalKeyword with a null RayTracingShader.");
+            m_SpaceInfo = shader.keywordSpace;
+            m_Name = name;
+            m_Index = GetRayTracingShaderKeywordIndex(shader, name);
+            if (m_Index >= GetRayTracingShaderKeywordCount(shader))
+                Debug.LogErrorFormat("Local keyword {0} doesn't exist in the ray tracing shader.", name);
         }
 
         public override string ToString() { return m_Name; }

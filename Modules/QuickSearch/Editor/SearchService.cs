@@ -4,11 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using UnityEditor.SearchService;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Search;
+using UnityEditor.Profiling;
+
 
 using System.Reflection;
 
@@ -73,6 +76,104 @@ namespace UnityEditor.Search
         {
             Refresh();
             RefreshObjectSelectors();
+        }
+
+        [InitializeOnLoadMethod]
+        internal static void ScheduleIndexationOnStartup()
+        {
+            EditorApplication.wantsToQuit -= UnityQuit;
+            EditorApplication.wantsToQuit += UnityQuit;
+
+            if (EditorUtility.isInSafeMode || !SearchSettings.indexOnEditorStartup || SessionState.GetBool("StartIndexationOnStartup", false))
+            {
+                return;
+            }
+
+            // Always create Default index.
+            if (!System.IO.File.Exists(SearchDatabase.defaultSearchDatabaseIndexPath))
+                SearchDatabase.CreateDefaultIndex();
+
+            EditorApplication.delayCall -= IndexationOnStartup;
+            EditorApplication.delayCall += IndexationOnStartup;
+        }
+
+        struct MarkerData
+        {
+            public string name;
+            public double avgTime;
+            public int sampleCount;
+            public double totalTime;
+        }
+
+        static void LogPerf(StringBuilder builder, string lineMsg)
+        {
+            Debug.LogFormat(LogType.Log, LogOption.NoStacktrace, null, lineMsg);
+            builder.AppendLine(lineMsg);
+        }
+
+        internal static bool UnityQuit()
+        {
+            if (SearchSettings.logIndexingPerformanceReport)
+            {
+                var perTypeMarkers = new List<MarkerData>();
+                var genericMarkers = new List<MarkerData>();
+
+                var reportDir = "IndexingPerformanceReport";
+                if (!Directory.Exists(reportDir))
+                {
+                    Directory.CreateDirectory(reportDir);
+                }
+
+                var report = new StringBuilder();
+                LogPerf(report, $"[Indexing Performance] All time units in seconds");
+                var trackerNames = EditorPerformanceTracker.GetAvailableTrackers();
+                foreach (var trackerName in trackerNames)
+                {
+                    if (trackerName.StartsWith("SearchImporter") || trackerName.StartsWith("NativeImporter"))
+                    {
+                        var sampleCount = EditorPerformanceTracker.GetSampleCount(trackerName);
+                        var totalTime = EditorPerformanceTracker.GetTotalTime(trackerName);
+                        var avgTime = EditorPerformanceTracker.GetAverageTime(trackerName);
+
+                        var markerData = new MarkerData()
+                        {
+                            name = trackerName, avgTime = avgTime, sampleCount = sampleCount, totalTime = totalTime
+                        };
+                        if (trackerName.StartsWith("SearchImporter.per_ext"))
+                        {
+                            perTypeMarkers.Add(markerData);
+                        }
+                        else
+                        {
+                            genericMarkers.Add(markerData);
+                        }
+                    }
+                }
+
+                foreach (var marker in genericMarkers.OrderBy(e => e.name))
+                {
+                    LogPerf(report, $"{marker.name} samples:{marker.sampleCount} totalTime:{marker.totalTime} avgTime:{marker.avgTime}");
+                }
+
+                foreach (var marker in perTypeMarkers.OrderByDescending(e => e.avgTime))
+                {
+                    LogPerf(report, $"{marker.name} samples:{marker.sampleCount} totalTime:{marker.totalTime} avgTime:{marker.avgTime}");
+                }
+
+                var projectName = Path.GetFileName(Application.dataPath.Replace("/Assets", ""));
+                var dateTime = DateTime.Now;
+                var fileName = $"{reportDir}/{projectName}{dateTime:yyyy-MM-dd_HH-mm-ss}.log";
+                File.WriteAllText(fileName, report.ToString());
+            }
+            return true;
+        }
+
+        internal static void IndexationOnStartup()
+        {
+            // Acessing the default DB will import it and start Indexing.
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            SessionState.SetBool("StartIndexationOnStartup", true);
+            Console.WriteLine($"[Indexation] Starting Initial Indexing for {db.name}");
         }
 
         /// <summary>
@@ -809,6 +910,7 @@ namespace UnityEditor.Search
         /// </summary>
         /// <param name="name">Unique name of the index to be used.</param>
         /// <param name="onIndexReady">Callback invoked when the new search index is ready to be used.</param>
+        [Obsolete]
         public static void CreateIndex(
             in string name,
             in IndexingOptions options,
@@ -817,49 +919,60 @@ namespace UnityEditor.Search
             IEnumerable<string> excludes,
             Action<string, string, Action> onIndexReady)
         {
-            var indexName = name;
-            var indexPath = name;
-            if (name.EndsWith(".index"))
-                indexName = name.Substring(0, name.Length - 6);
-            else
-                indexPath = $"{name}.index";
+            // This is not allowed anymore.
+            Debug.LogWarning("You cannot create new index anymore. Unity uses a single index solution.");
+        }
 
-            if (options.HasNone(IndexingOptions.Temporary))
+        internal static bool IsDeepIndexingEnabled()
+        {
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            return db.settings.options.extended;
+        }
+
+        internal static bool IsPackageIndexingEnabled()
+        {
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            return db.settings.roots.Any(r => r == "Packages");
+        }
+
+        internal static void ChangeIndexingSettings(bool deepIndexing, bool packageIndexing, Action indexingReady)
+        {
+            var settingsDirty = false;
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            if (db.settings.options.extended != deepIndexing)
             {
-                indexName = System.IO.Path.GetFileNameWithoutExtension(indexPath);
-                if (!AssetDatabase.TryGetAssetFolderInfo(indexPath, out var rootFolder, out var immutable) || immutable)
-                    indexPath = AssetDatabase.GenerateUniqueAssetPath($"Assets/{indexName}.index");
+                db.settings.options.extended = deepIndexing;
+                settingsDirty = true;
+            }
+
+            if (IsPackageIndexingEnabled() != packageIndexing)
+            {
+                if (packageIndexing)
+                    db.settings.roots = db.settings.roots.Concat(new [] {"Packages"}).ToArray();
+                else
+                {
+                    db.settings.roots = db.settings.roots.Where(r => !r.Equals("Packages", StringComparison.InvariantCultureIgnoreCase)).ToArray();
+                }
+                settingsDirty = true;
+            }
+
+            if (settingsDirty)
+                db.SaveSettingsOptions(true);
+
+            WaitForForIndexReady(indexingReady);
+        }
+
+        internal static void WaitForForIndexReady(Action indexingReady)
+        {
+            var db = SearchDatabase.GetDefaultSearchDatabase();
+            if (db.ready)
+            {
+                indexingReady?.Invoke();
             }
             else
             {
-                indexPath = AssetDatabase.GenerateUniqueAssetPath($"Temp/{indexPath}");
-
-                if (roots == null)
-                    roots = new[] { "Assets" };
+                Utils.CallDelayed(() => WaitForForIndexReady(indexingReady), 1d);
             }
-
-            roots = roots ?? Enumerable.Empty<string>();
-            includes = includes ?? Enumerable.Empty<string>();
-            excludes = excludes ?? Enumerable.Empty<string>();
-
-            var indexDir = System.IO.Path.GetDirectoryName(indexPath);
-            if (!System.IO.Directory.Exists(indexDir))
-                AssetDatabase.CreateFolder(System.IO.Path.GetDirectoryName(indexDir), System.IO.Path.GetFileName(indexDir));
-
-            Utils.WriteTextFileToDisk(indexPath,
-                $"{{\n\t" +
-                $"\"roots\": [{string.Join(",", roots.Select(p => $"\"{p}\""))}],\n\t" +
-                $"\"includes\": [{string.Join(",", includes.Select(p => $"\"{p}\""))}],\n\t" +
-                $"\"excludes\": [{string.Join(",", excludes.Select(p => $"\"{p}\""))}],\n\t" +
-                $"\"options\": {{\n\t\t" +
-                $"\"types\": {options.HasAny(IndexingOptions.Types).ToString().ToLowerInvariant()},\n\t\t" +
-                $"\"properties\": {options.HasAny(IndexingOptions.Properties).ToString().ToLowerInvariant()},\n\t\t" +
-                $"\"extended\": {options.HasAny(IndexingOptions.Extended).ToString().ToLowerInvariant()},\n\t\t" +
-                $"\"dependencies\": {options.HasAny(IndexingOptions.Dependencies).ToString().ToLowerInvariant()}\n\t}},\n\t" +
-                $"\"baseScore\": 9999\n}}");
-
-            var db = SearchDatabase.ImportAsset(indexPath);
-            TrackCreateIndex(db, options, indexName, indexPath, onIndexReady, 1d);
         }
 
         public static IEnumerable<ISearchDatabase> EnumerateDatabases()
@@ -885,37 +998,6 @@ namespace UnityEditor.Search
                     return true;
                 return false;
             }).All(db => db.ready && !db.updating);
-        }
-
-        static void TrackCreateIndex(SearchDatabase db, IndexingOptions options, string indexName, string indexPath, Action<string, string, Action> onIndexReady, double delay)
-        {
-            if (db.ready)
-            {
-                onIndexReady?.Invoke(indexName, indexPath.Replace("\\", "/"), () =>
-                {
-                    SearchDatabase.Unload(db);
-
-                    try
-                    {
-                        if (options.HasNone(IndexingOptions.Keep) && System.IO.File.Exists(indexPath))
-                        {
-                            if (options.HasAny(IndexingOptions.Temporary))
-                                System.IO.File.Delete(indexPath);
-                            else
-                            {
-                                AssetDatabase.DeleteAsset(indexPath);
-                            }
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        // Ignore any file IO errors (for the user)
-                        Console.WriteLine(ex.Message);
-                    }
-                });
-            }
-            else
-                Utils.CallDelayed(() => TrackCreateIndex(db, options, indexName, indexPath, onIndexReady, delay), delay);
         }
 
         static bool TryParseExpression(SearchContext context, out SearchExpression expression)

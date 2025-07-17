@@ -16,10 +16,16 @@ namespace UnityEditor.Search
 {
     class IndexManager : EditorWindow
     {
-        [MenuItem("Window/Search/Index Manager", priority = 200)]
+        
         public static void OpenWindow()
         {
             OpenWindow(-1);
+        }
+
+        [MenuItem("Window/Search/Index Management", priority = 200)]
+        public static void OpenIndexPreferences()
+        {
+            SettingsService.OpenUserPreferences("Preferences/Search/Indexing");
         }
 
         public static void OpenWindow(int instanceID)
@@ -34,11 +40,11 @@ namespace UnityEditor.Search
         }
 
         [Callbacks.OnOpenAsset(1)]
-        public static bool OnOpenAsset(int instanceID, int _)
+        public static bool OnOpenAsset(EntityId entityId, int _)
         {
-            if (Path.GetExtension(AssetDatabase.GetAssetPath(instanceID)) == "." + k_IndexExtension)
+            if (Path.GetExtension(AssetDatabase.GetAssetPath(entityId)) == "." + k_IndexExtension)
             {
-                OpenWindow(instanceID);
+                OpenWindow(entityId);
                 return true;
             }
             return false;
@@ -388,17 +394,20 @@ namespace UnityEditor.Search
             m_IndexDetailsElementScrollView.Add(m_SavedIndexData);
 
             m_DependenciesListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DependenciesListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_DependenciesListView);
             m_DependenciesListView.selectionChanged += PingAsset;
             m_DependenciesListView.AddToClassList("PreviewListView");
 
             m_SavedIndexData.Add(m_DependenciesListView);
 
             m_DocumentsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_DocumentsListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_DocumentsListView);
             m_DocumentsListView.selectionChanged += PingAsset;
             m_DocumentsListView.AddToClassList("PreviewListView");
             m_SavedIndexData.Add(m_DocumentsListView);
 
             m_KeywordsListView = new UIToolkitListView() { fixedItemHeight = 20, makeItem = () => { return new Label(); }, bindItem = (e, i) => { e.Q<Label>().text = (string)(m_KeywordsListView.itemsSource[i]); } };
+            EnableListViewHorizontalScroll(m_KeywordsListView);
             m_KeywordsListView.AddToClassList("PreviewListView");
             m_SavedIndexData.Add(m_KeywordsListView);
 
@@ -417,6 +426,12 @@ namespace UnityEditor.Search
             SelectTab(0);
 
             UpdateDetailsForNewOrExistingSettings();
+        }
+
+        private void EnableListViewHorizontalScroll(ListView listView)
+        {
+            var listViewInnerScrollView = listView.Q<ScrollView>();
+            listViewInnerScrollView.mode = ScrollViewMode.VerticalAndHorizontal;
         }
 
         private void OnIndexLoaded(SearchDatabase sb)
@@ -863,7 +878,7 @@ namespace UnityEditor.Search
             else if (m_IndexSettingsFilePaths.Count == 1)
                 warningMessage = "If you delete all indexes, search functionality is limited to file names only. Continue?";
 
-            if (EditorUtility.DisplayDialog(L10n.Tr("Delete selected index?"), L10n.Tr(warningMessage), L10n.Tr("Yes"), L10n.Tr("No")))
+            if (EditorDialog.DisplayDecisionDialog(L10n.Tr("Delete selected index?"), L10n.Tr(warningMessage), default, default))
                 DeleteSelectedIndexSetting();
         }
 
@@ -930,9 +945,16 @@ namespace UnityEditor.Search
                 Debug.LogError("The chosen template was null");
                 return;
             }
-            if ((SearchDatabase.IndexType)Enum.Parse(typeof(SearchDatabase.IndexType), template.type) == SearchDatabase.IndexType.asset || EditorUtility.DisplayDialog("Create non asset index?", $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?", "Yes", "No"))
+
+            if ((SearchDatabase.IndexType)Enum.Parse(typeof(SearchDatabase.IndexType), template.type) == SearchDatabase.IndexType.asset)
             {
-                CreateNewIndexSettingFromTemplate(template);
+                if (EditorDialog.DisplayDecisionDialog(
+                    titleText: L10n.Tr("Create non-asset index?"),
+                    messageText: $"You are about to create a {template.type} index, this type of index will do a deep indexing that will be longer and take more space than a standard asset index, are you sure?",
+                    default, default))
+                {
+                    CreateNewIndexSettingFromTemplate(template);
+                }
             }
         }
 
@@ -1041,12 +1063,7 @@ namespace UnityEditor.Search
                 return;
             if (index < 0 || index >= m_IndexSettingsAssets.Count)
                 throw new ArgumentOutOfRangeException(nameof(index));
-            var settings = m_IndexSettingsAssets[index].settings;
-            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
-            var customDependencyName = SearchIndexEntryImporter.GetCustomDependencyName(indexImporterType);
-            AssetDatabaseAPI.RegisterCustomDependency(customDependencyName, Hash128.Parse(Guid.NewGuid().ToString("N")));
-            AssetDatabase.Refresh();
-            SearchDatabase.ImportAsset(m_IndexSettingsFilePaths[index], true);
+            SearchDatabase.ForceRebuildIndex(m_IndexSettingsAssets[index]);
         }
 
         internal SearchDatabase GetSearchDatabaseAtIndex(int index)
@@ -1563,9 +1580,6 @@ namespace UnityEditor.Search
             ListView.SetSelection(index);
         }
 
-        internal void SetSelectionWithoutNotify(int index)
-        {
-            ListView.SetSelectionWithoutNotify(new int[] { index });
-        }
+        internal void SetSelectionWithoutNotify(int index) => ListView.SetSelectionWithoutNotify(stackalloc int[1] { index });
     }
 }

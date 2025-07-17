@@ -96,7 +96,7 @@ namespace UnityEditor
 
         private void ShowCompiledCodeSection(ComputeShader cs)
         {
-            ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetInstanceID())) as ComputeShaderImporter;
+            ComputeShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(cs.GetEntityId())) as ComputeShaderImporter;
 
             s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
             if (s_PreprocessOnly)

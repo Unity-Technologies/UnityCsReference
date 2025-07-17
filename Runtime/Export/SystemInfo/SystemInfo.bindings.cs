@@ -53,6 +53,7 @@ namespace UnityEngine
 
     // Access system information.
     [NativeHeader("Runtime/Misc/SystemInfo.h")]
+    [NativeHeader("Runtime/Misc/SystemInfoAudio.h")]
     [NativeHeader("Runtime/Misc/SystemInfoMemory.h")]
     [NativeHeader("Runtime/Shaders/GraphicsCapsScriptBindings.h")]
     [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]

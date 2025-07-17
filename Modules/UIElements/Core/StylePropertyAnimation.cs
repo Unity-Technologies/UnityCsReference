@@ -5,11 +5,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Assertions;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal interface IStylePropertyAnimations
     {
         bool Start(StylePropertyId id, float from, float to, int durationMs, int delayMs, Func<float, float> easingCurve);
@@ -55,6 +57,18 @@ namespace UnityEngine.UIElements
 
         internal IStylePropertyAnimations styleAnimation => this;
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal bool HasRunningAnimation(StylePropertyId id)
+        {
+            return GetStylePropertyAnimationSystem()?.HasRunningAnimation(this, id) ?? false;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void CancelAnimation(StylePropertyId id)
+        {
+            GetStylePropertyAnimationSystem()?.CancelAnimation(this, id);
+        }
+
         bool IStylePropertyAnimations.Start(StylePropertyId id, float from, float to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
             return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
@@ -77,7 +91,7 @@ namespace UnityEngine.UIElements
 
         bool IStylePropertyAnimations.StartEnum(StylePropertyId id, int from, int to, int durationMs, int delayMs, Func<float, float> easingCurve)
         {
-            return GetStylePropertyAnimationSystem().StartTransition(this, id, from, to, durationMs, delayMs, easingCurve);
+            return GetStylePropertyAnimationSystem().StartTransitionEnum(this, id, from, to, durationMs, delayMs, easingCurve);
         }
 
         bool IStylePropertyAnimations.Start(StylePropertyId id, Background from, Background to, int durationMs, int delayMs, Func<float, float> easingCurve)

@@ -88,23 +88,18 @@ namespace UnityEngine.UIElements
 
         // Only the importer should write to these fields
         // Normal usage should only go through ReadXXX methods
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal float[] floats = Array.Empty<float>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Dimension[] dimensions = Array.Empty<Dimension>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Color[] colors = Array.Empty<Color>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal string[] strings = Array.Empty<string>();
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField]
         internal Object[] assets = Array.Empty<Object>();
 
@@ -251,7 +246,7 @@ namespace UnityEngine.UIElements
             {
                 foreach (var property in rule.properties)
                 {
-                    if (CustomStartsWith(property.name, kCustomPropertyMarker))
+                    if (StringUtils.StartsWith(property.name, kCustomPropertyMarker))
                     {
                         ++rule.customPropertiesCount;
                         property.isCustomProperty = true;
@@ -366,7 +361,6 @@ namespace UnityEngine.UIElements
             return array.Length - 1;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(StyleValueKeyword keyword)
         {
             // Keywords are not stored as a regular enum. Instead, we use the
@@ -375,7 +369,6 @@ namespace UnityEngine.UIElements
             return (int)keyword;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(StyleValueFunction function)
         {
             // Functions are not stored as a regular enum. Instead, we use the
@@ -384,25 +377,18 @@ namespace UnityEngine.UIElements
             return (int)function;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(float value) => AddValueToArray(ref floats, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(Dimension value) => AddValueToArray(ref dimensions, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(Color value) => AddValueToArray(ref colors, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(ScalableImage value) => AddValueToArray(ref scalableImages, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(string value) => AddValueToArray(ref strings, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(Object value) => AddValueToArray(ref assets, value);
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int AddValue(Enum value)
         {
             var valueStr = StyleSheetUtility.GetEnumExportString(value);
@@ -457,6 +443,7 @@ namespace UnityEngine.UIElements
             return CheckAccess(dimensions, StyleValueType.Dimension, handle);
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal bool TryReadDimension(StyleValueHandle handle, out Dimension value)
         {
             if (TryCheckAccess(dimensions, StyleValueType.Dimension, handle, out value))
@@ -724,6 +711,7 @@ namespace UnityEngine.UIElements
             return false;
         }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal TimeValue ReadTimeValue(StyleValueHandle handle)
         {
             var dimension = ReadDimension(handle);
@@ -741,22 +729,6 @@ namespace UnityEngine.UIElements
             }
             value = default;
             return false;
-        }
-
-        private static bool CustomStartsWith(string originalString, string pattern)
-        {
-            int originalLength = originalString.Length;
-            int patternLength = pattern.Length;
-            int originalPos = 0;
-            int patternPos = 0;
-
-            while (originalPos < originalLength && patternPos < patternLength && originalString[originalPos] == pattern[patternPos])
-            {
-                originalPos++;
-                patternPos++;
-            }
-
-            return (patternPos == patternLength && originalLength >= patternLength) || (originalPos == originalLength && patternLength >= originalLength);
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -947,13 +919,16 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void WriteStylePropertyName(ref StyleValueHandle handle, StylePropertyName propertyName)
         {
+            var exportName = propertyName.id != StylePropertyId.Unknown
+                ? propertyName.ToString()
+                : "ignored";
             if (handle.valueType == StyleValueType.Enum)
             {
-                strings[handle.valueIndex] = propertyName.ToString();
+                strings[handle.valueIndex] = exportName;
             }
             else
             {
-                var valueIndex = AddValue(propertyName.ToString());
+                var valueIndex = AddValue(exportName);
                 handle.valueType = StyleValueType.Enum;
                 handle.valueIndex = valueIndex;
             }

@@ -21,16 +21,16 @@ namespace UnityEditorInternal
 
         public abstract void OnSelectionChanged();
 
+        public void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+        }
+
         public void Init(AnimationWindowState state)
         {
             m_State = state;
         }
 
-        void IAnimationWindowController.OnCreate(AnimationWindow animationWindow, UnityEngine.Component component)
-        {
-        }
-
-        void IAnimationWindowController.OnDestroy()
+        void IDisposable.Dispose()
         {
             // Animation Window has ownership of `IAnimationWindowControl` in legacy workflow.
             Object.DestroyImmediate(this);
@@ -129,66 +129,6 @@ namespace UnityEditorInternal
         public abstract void ProcessCandidates();
         public abstract void ClearCandidates();
 
-        EditorCurveBinding[] IAnimationWindowController.GetAnimatableBindings()
-        {
-            if (m_State == null)
-                return Array.Empty<EditorCurveBinding>();
-
-            var rootGameObject = m_State.activeRootGameObject;
-            var scriptableObject = m_State.activeScriptableObject;
-
-            if (rootGameObject != null)
-            {
-                return AnimationWindowUtility.GetAnimatableBindings(rootGameObject);
-            }
-            if (scriptableObject != null)
-            {
-                return AnimationUtility.GetAnimatableBindings(scriptableObject);
-            }
-
-            return Array.Empty<EditorCurveBinding>();
-        }
-
-        EditorCurveBinding[] IAnimationWindowController.GetAnimatableBindings(GameObject gameObject)
-        {
-            if (m_State == null)
-                return Array.Empty<EditorCurveBinding>();
-
-            var rootGameObject = m_State.activeRootGameObject;
-            return AnimationUtility.GetAnimatableBindings(gameObject, rootGameObject);
-        }
-
-        System.Type IAnimationWindowController.GetValueType(EditorCurveBinding binding)
-        {
-            if (m_State == null)
-                return default;
-
-            var rootGameObject = m_State.activeRootGameObject;
-            var scriptableObject = m_State.activeScriptableObject;
-
-            if (rootGameObject != null)
-            {
-                return AnimationUtility.GetEditorCurveValueType(rootGameObject, binding);
-            }
-            else if (scriptableObject != null)
-            {
-                return AnimationUtility.GetEditorCurveValueType(scriptableObject, binding);
-            }
-            else
-            {
-                if (binding.isPPtrCurve)
-                {
-                    // Cannot extract type of PPtrCurve.
-                    return null;
-                }
-                else
-                {
-                    // Cannot extract type of AnimationCurve.  Default to float.
-                    return typeof(float);
-                }
-            }
-        }
-
         float IAnimationWindowController.GetFloatValue(EditorCurveBinding binding)
         {
             if (m_State == null)
@@ -215,6 +155,5 @@ namespace UnityEditorInternal
             AnimationUtility.GetObjectReferenceValue(m_State.activeRootGameObject, binding, out var value);
             return value;
         }
-
     }
 }

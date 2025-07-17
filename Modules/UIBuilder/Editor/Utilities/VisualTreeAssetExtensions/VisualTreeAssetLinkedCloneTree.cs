@@ -3,24 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
-using UnityEngine.Assertions;
 using System;
-using System.Linq;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.UIElements;
+using UnityEngine.Assertions;
 
 namespace Unity.UI.Builder
 {
     internal static class VisualTreeAssetLinkedCloneTree
     {
-        static readonly StylePropertyReader s_StylePropertyReader = new StylePropertyReader();
         static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
 
-        static VisualElement CloneSetupRecursively(VisualTreeAsset vta, VisualElementAsset root,
-            Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
+        static VisualElement CloneSetupRecursively(VisualTreeAsset vta, VisualElementAsset root, CreationContext context)
         {
             if (root.skipClone)
                 return null;
@@ -31,6 +26,18 @@ namespace Unity.UI.Builder
             }
 
             var ve = VisualTreeAsset.Create(root, context);
+
+            if (ve == null)
+                return null;
+
+            // Save reference to the visualElementAsset so elements can be reinitialized when
+            // we set their attributes in the editor
+            ve.SetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName, root);
+
+            // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
+            // tracked for live reloading on changes, and also accessible for users that need to keep track
+            // of their cloned VisualTreeAssets.
+            ve.visualTreeAssetSource = vta;
 
             // Linking the new element with its VisualElementAsset.
             // All this copied code for this one line!
@@ -54,14 +61,6 @@ namespace Unity.UI.Builder
                 context.slotInsertionPoints.Add(slotName, ve);
             }
 
-            if (root.classes != null)
-            {
-                for (int i = 0; i < root.classes.Length; i++)
-                {
-                    ve.AddToClassList(root.classes[i]);
-                }
-            }
-
             if (root.ruleIndex != -1)
             {
                 if (vta.inlineSheet == null)
@@ -83,64 +82,61 @@ namespace Unity.UI.Builder
                     ve.SetProperty(BuilderConstants.ElementLinkedInstancedVisualTreeAssetVEPropertyName, instancedTemplateVTA);
             }
 
-            List<VisualElementAsset> children;
-            if (idToChildren.TryGetValue(root.id, out children))
+            for (var i = 0; i < root.childCount; ++i)
             {
-                children.Sort(VisualTreeAssetUtilities.CompareForOrder);
+                var childVea = root[i] as VisualElementAsset;
 
-                foreach (VisualElementAsset childVea in children)
+                // It can be a UxmlObjectAsset. We only want to clone VisualElementAssets
+                if (childVea == null)
                 {
-                    var isTemplate = false;
-                    if (childVea is TemplateAsset)
+                    continue;
+                }
+
+                var isTemplate = false;
+                if (childVea is TemplateAsset)
+                {
+                    context.veaIdsPath.Add(childVea.id);
+                    isTemplate = true;
+                }
+
+                var childVe = CloneSetupRecursively(vta, childVea, context);
+
+                if (isTemplate)
+                {
+                    context.veaIdsPath.Remove(childVea.id);
+                }
+
+                if (childVe == null)
+                    continue;
+
+                childVe.visualTreeAssetSource = vta;
+
+                // Save reference to the visualElementAsset so elements can be reinitialized when
+                // we set their attributes in the editor
+                childVe.SetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName, childVea);
+
+                var index = templateAsset?.slotUsages?.FindIndex(u => u.assetId == childVea.id) ?? -1;
+                if (index != -1)
+                {
+                    VisualElement parentSlot;
+                    var key = templateAsset.slotUsages[index].slotName;
+                    Assert.IsFalse(string.IsNullOrEmpty(key),
+                        "a lost name should not be null or empty, this probably points to an importer or serialization bug");
+                    if (context.slotInsertionPoints == null ||
+                        !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
                     {
-                        context.veaIdsPath.Add(childVea.id);
-                        isTemplate = true;
-                    }
-
-                    // this will fill the slotInsertionPoints mapping
-                    var childVe = CloneSetupRecursively(vta, childVea, idToChildren, context);
-
-                    if (isTemplate)
-                    {
-                        context.veaIdsPath.Remove(childVea.id);
-                    }
-
-                    if (childVe == null)
-                        continue;
-
-                    // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
-                    // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place
-                    if (templateAsset == null)
-                    {
-                        ve.Add(childVe);
-                        continue;
-                    }
-
-                    int index = templateAsset.slotUsages == null
-                        ? -1
-                        : templateAsset.slotUsages.FindIndex(u => u.assetId == childVea.id);
-                    if (index != -1)
-                    {
-                        VisualElement parentSlot;
-                        string key = templateAsset.slotUsages[index].slotName;
-                        Assert.IsFalse(String.IsNullOrEmpty(key),
-                            "a lost name should not be null or empty, this probably points to an importer or serialization bug");
-                        if (context.slotInsertionPoints == null ||
-                            !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
-                        {
-                            Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
-                                context.slotInsertionPoints == null
+                        Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
+                            context.slotInsertionPoints == null
                                 ? String.Empty
                                 : String.Join(", ",
                                     System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
-                            ve.Add(childVe);
-                        }
-                        else
-                            parentSlot.Add(childVe);
+                        ve.Add(childVe);
                     }
                     else
-                        ve.Add(childVe);
+                        parentSlot.Add(childVe);
                 }
+                else
+                    ve.Add(childVe);
             }
 
             if (templateAsset != null && context.slotInsertionPoints != null)
@@ -157,44 +153,34 @@ namespace Unity.UI.Builder
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
-            if ((vta.visualElementAssets == null || vta.visualElementAssets.Count <= 0) &&
-                (vta.templateAssets == null || vta.templateAssets.Count <= 0))
+            if (null == vta.visualTreeNoAlloc)
                 return;
 
-            var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
+            var cc = new CreationContext(slotInsertionPoints, attributeOverridesRanges);
 
-            List<VisualElementAsset> rootAssets;
+            var root = vta.visualTree;
+            vta.AssignClassListFromAssetToElement(root, target);
+            vta.AssignStyleSheetFromAssetToElement(root, target);
 
-            // Tree root has parentId == 0
-            idToChildren.TryGetValue(0, out rootAssets);
-            if (rootAssets == null || rootAssets.Count == 0)
-                return;
-
-            var uxmlRootAsset = rootAssets[0];
-
-            vta.AssignClassListFromAssetToElement(uxmlRootAsset, target);
-            vta.AssignStyleSheetFromAssetToElement(uxmlRootAsset, target);
-
-            // Get the first-level elements. These will be instantiated and added to target.
-            idToChildren.TryGetValue(uxmlRootAsset.id, out rootAssets);
-            if (rootAssets == null || rootAssets.Count == 0)
-                return;
-
-            rootAssets.Sort(VisualTreeAssetUtilities.CompareForOrder);
-            foreach (VisualElementAsset rootElement in rootAssets)
+            for (var i = 0; i < root.childCount; ++i)
             {
-                Assert.IsNotNull(rootElement);
+                // Assumes the m_VisualTree only contain VisualElementAssets.
+                var child = root[i] as VisualElementAsset;
+
+                // Don't try to instantiate the special selection tracking element.
+                if (child.fullTypeName == BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName)
+                    continue;
 
                 var veaIds = new List<int>();
-                var rootVe = CloneSetupRecursively(vta, rootElement, idToChildren,
-                    new CreationContext(slotInsertionPoints, attributeOverridesRanges, null, vta, target, veaIds, null));
 
-                if (rootVe == null)
+                var childElement = CloneSetupRecursively(vta, child, new CreationContext(slotInsertionPoints, attributeOverridesRanges, null, vta, target, veaIds, null));
+
+                if (childElement == null)
                     continue;
 
                 // if contentContainer == this, the shadow and the logical hierarchy are identical
                 // otherwise, if there is a CC, we want to insert in the shadow
-                target.hierarchy.Add(rootVe);
+                target.hierarchy.Add(childElement);
             }
         }
 

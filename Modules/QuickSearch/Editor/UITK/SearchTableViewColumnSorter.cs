@@ -227,10 +227,10 @@ namespace UnityEditor.Search
 
         readonly struct ValueKey : IEquatable<ValueKey>
         {
-            public readonly ulong itemKey;
+            public readonly int itemKey;
             public readonly int columnKey;
 
-            public ValueKey(ulong itemKey, int columnKey)
+            public ValueKey(int itemKey, int columnKey)
             {
                 this.itemKey = itemKey;
                 this.columnKey = columnKey;
@@ -288,7 +288,7 @@ namespace UnityEditor.Search
 
         object GetValue(in SearchColumnEventArgs args)
         {
-            var key = new ValueKey(args.item.id.GetHashCode64(), args.column.path.GetHashCode());
+            var key = new ValueKey(args.item.id.GetHashCode(), args.column.path.GetHashCode());
             if (m_ValueCache.TryGetValue(key, out var value))
                 return value;
             value = args.column.getter(args);

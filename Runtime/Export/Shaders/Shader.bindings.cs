@@ -11,6 +11,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 [assembly: InternalsVisibleTo("UnityEditor.ShaderUtil.Tests")]
+[assembly: InternalsVisibleTo("Unity.Shader.Tests")]
 
 namespace UnityEngine
 {
@@ -63,6 +64,10 @@ namespace UnityEngine
         public static void DisableKeyword(in GlobalKeyword keyword)         { DisableKeywordFast(keyword); }
         public static void SetKeyword(in GlobalKeyword keyword, bool value) { SetKeywordFast(keyword, value); }
         public static bool IsKeywordEnabled(in GlobalKeyword keyword)       { return IsKeywordEnabledFast(keyword); }
+
+        [FreeFunction("ShaderScripting::GetGlobalPropertyCount")] extern internal static int GetGlobalPropertyCount();
+        [FreeFunction("ShaderScripting::GetGlobalPropertyCount")] extern private static int GetGlobalPropertyCountImpl(int propertyType);
+        [FreeFunction("ShaderScripting::ExtractGlobalPropertyNames")] extern private static void ExtractGlobalPropertyNamesImpl(int propertyType, [Out] string[] names);
 
         extern public int renderQueue {[FreeFunction("ShaderScripting::GetRenderQueue", HasExplicitThis = true)] get; }
         extern internal DisableBatchingType disableBatching {[FreeFunction("ShaderScripting::GetDisableBatchingType", HasExplicitThis = true)] get; }

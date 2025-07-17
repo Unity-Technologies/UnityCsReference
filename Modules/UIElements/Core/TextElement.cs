@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Collections;
 using Unity.Properties;
 using UnityEngine.Serialization;
 using UnityEngine.TextCore.Text;
@@ -48,7 +49,7 @@ namespace UnityEngine.UIElements
                     new(nameof(doubleClickSelectsWord), "double-click-selects-word", null,"selectWordByDoubleClick", "select-word-by-double-click"),
                     new(nameof(tripleClickSelectsLine), "triple-click-selects-line", null, "selectLineByTripleClick", "select-line-by-triple-click"),
                     new(nameof(displayTooltipWhenElided), "display-tooltip-when-elided"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
@@ -60,6 +61,7 @@ namespace UnityEngine.UIElements
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags emojiFallbackSupport_UxmlAttributeFlags;
             [SerializeField] bool parseEscapeSequences;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags parseEscapeSequences_UxmlAttributeFlags;
+            [SelectableTextElement]
             [FormerlySerializedAs("selectable")]
             [SerializeField, UxmlAttribute("selectable")] bool isSelectable;
             [FormerlySerializedAs("selectable_UxmlAttributeFlags")]
@@ -118,8 +120,8 @@ namespace UnityEngine.UIElements
             UxmlBoolAttributeDescription m_EmojiFallbackSupport = new UxmlBoolAttributeDescription { name = "emoji-fallback-support", defaultValue = true };
             UxmlBoolAttributeDescription m_ParseEscapeSequences = new UxmlBoolAttributeDescription { name = "parse-escape-sequences" };
             UxmlBoolAttributeDescription m_Selectable = new UxmlBoolAttributeDescription { name = "selectable" };
-            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "select-word-by-double-click" };
-            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "select-line-by-triple-click" };
+            UxmlBoolAttributeDescription m_SelectWordByDoubleClick = new UxmlBoolAttributeDescription { name = "double-click-selects-word" };
+            UxmlBoolAttributeDescription m_SelectLineByTripleClick = new UxmlBoolAttributeDescription { name = "triple-click-selects-line" };
             UxmlBoolAttributeDescription m_DisplayTooltipWhenElided = new UxmlBoolAttributeDescription { name = "display-tooltip-when-elided" };
 
             /// <summary>
@@ -178,13 +180,48 @@ namespace UnityEngine.UIElements
 
             generateVisualContent += OnGenerateVisualContent;
             edition.GetDefaultValueType = GetDefaultValueType;
-            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            RegisterCallback<AttachToPanelEvent>(OnAttachToPanel);
-            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
         }
-        string GetDefaultValueType() { return ""; }
+        string GetDefaultValueType() { return string.Empty; }
 
+        /// <summary>
+        /// Callback fired after UI Toolkit has generated the vertex data for a
+        /// <see cref="TextElement"/> and before the geometry is sent to the renderer.
+        /// Use it to inspect or modify each glyph’s quad (position, tint, UVs, etc.) to
+        /// implement custom per‑glyph effects.
+        /// </summary>
+        public Action<GlyphsEnumerable> PostProcessTextVertices { get; set; }
         internal UITKTextHandle uitkTextHandle { get; set; }
+
+        // From SelectingManipulator.HandleEventBubbleUp, EditingManipulator.HandleEventBubbleUp
+        [EventInterest(typeof(ContextualMenuPopulateEvent), typeof(KeyDownEvent), typeof(KeyUpEvent),
+            typeof(ValidateCommandEvent), typeof(ExecuteCommandEvent),
+            typeof(FocusEvent), typeof(BlurEvent), typeof(FocusInEvent), typeof(FocusOutEvent),
+            typeof(PointerDownEvent), typeof(PointerUpEvent), typeof(PointerMoveEvent),
+            typeof(NavigationMoveEvent), typeof(NavigationSubmitEvent), typeof(NavigationCancelEvent), typeof(IMEEvent),
+            typeof(GeometryChangedEvent), typeof(AttachToPanelEvent), typeof(DetachFromPanelEvent)
+        )]
+        protected override void HandleEventBubbleUp(EventBase evt)
+        {
+            base.HandleEventBubbleUp(evt);
+
+            if (evt.target == this)
+            {
+                switch (evt)
+                {
+                    case GeometryChangedEvent @event:
+                        OnGeometryChanged(@event);
+                        return;
+                    case AttachToPanelEvent @event:
+                        OnAttachToPanel(@event);
+                        return;
+                    case DetachFromPanelEvent @event:
+                        OnDetachFromPanel(@event);
+                        return;
+                }
+            }
+
+            EditionHandleEvent(evt);
+        }
 
         private void OnGeometryChanged(GeometryChangedEvent e)
         {
@@ -201,8 +238,8 @@ namespace UnityEngine.UIElements
 
         private void OnDetachFromPanel(DetachFromPanelEvent detachEvent)
         {
-            uitkTextHandle.RemoveTextInfoFromPermanentCache();
-            uitkTextHandle.RemoveTextInfoFromTemporaryCache();
+            uitkTextHandle.RemoveFromPermanentCache();
+            uitkTextHandle.RemoveFromTemporaryCache();
             (detachEvent.originPanel as BaseVisualElementPanel)?.liveReloadSystem.UnregisterTextElement(this);
             uitkTextHandle.ReleaseResourcesIfPossible();
         }
@@ -327,14 +364,17 @@ namespace UnityEngine.UIElements
         private bool m_WasElided;
 
         // Used in tests
-        internal void OnGenerateVisualContent(MeshGenerationContext mgc)
+        internal static void OnGenerateVisualContent(MeshGenerationContext mgc)
         {
-            UpdateVisibleText();
-
-            if (TextUtilities.IsFontAssigned(this))
+            if (mgc.visualElement is TextElement element)
             {
-                uitkTextHandle.ReleaseResourcesIfPossible();
-                mgc.meshGenerator.textJobSystem.GenerateText(mgc, this);
+                element.UpdateVisibleText();
+
+                if (TextUtilities.IsFontAssigned(element))
+                {
+                    element.uitkTextHandle.ReleaseResourcesIfPossible();
+                    mgc.meshGenerator.textJobSystem.GenerateText(mgc, element);
+                }
             }
         }
 
@@ -357,6 +397,9 @@ namespace UnityEngine.UIElements
                 DrawNativeHighlighting(mgc);
             else if (!edition.isReadOnly && selection.isSelectable && selectingManipulator.RevealCursor())
                 DrawCaret(mgc);
+
+            if (ShouldElide() && uitkTextHandle.TextLibraryCanElide())
+                isElided = uitkTextHandle.IsElided();
         }
 
         internal string ElideText(string drawText, string ellipsisText, float width, TextOverflowPosition textOverflowPosition)
@@ -501,6 +544,21 @@ namespace UnityEngine.UIElements
             MeasureMode heightMode)
         {
             return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode);
+        }
+
+        /// <summary>
+        /// Computes the size needed to display a text string based on element style values such as font, font-size, word-wrap, and so on.
+        /// </summary>
+        /// <param name="textToMeasure">The text to measure.</param>
+        /// <param name="width">Suggested width. Can be zero.</param>
+        /// <param name="widthMode">Width restrictions.</param>
+        /// <param name="height">Suggested height.</param>
+        /// <param name="heightMode">Height restrictions.</param>
+        /// <param name="fontsize">Optional parameter that override the fontSize that would be applied on the visualElement.</param>
+        /// <returns>The horizontal and vertical size needed to display the text string.</returns>
+        internal Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode, float? fontsize = null)
+        {
+            return TextUtilities.MeasureVisualElementTextSize(this, new RenderedText(textToMeasure), width, widthMode, height, heightMode, fontsize);
         }
 
         protected internal override Vector2 DoMeasure(float desiredWidth, MeasureMode widthMode, float desiredHeight, MeasureMode heightMode)

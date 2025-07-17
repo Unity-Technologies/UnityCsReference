@@ -169,7 +169,7 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("SetTargetSceneForNewGameObjects")]
-        internal extern static void SetTargetSceneForNewGameObjects(int sceneHandle);
+        internal extern static void SetTargetSceneForNewGameObjects(SceneHandle sceneHandle);
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
@@ -178,7 +178,7 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("GetSceneByHandle")]
-        internal extern static Scene GetSceneByHandle(int handle);
+        internal extern static Scene GetSceneByHandle(SceneHandle handle);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("MoveSceneBefore")]
@@ -268,6 +268,9 @@ namespace UnityEditor.SceneManagement
 
         [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
         extern public static ulong CalculateAvailableSceneCullingMask();
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        extern internal static Scene FindSceneBySceneGUID(GUID sceneGUID);
 
         // Use SceneCullingMasks.DefaultSceneCullingMask
         public const ulong DefaultSceneCullingMask = SceneCullingMasks.DefaultSceneCullingMask;

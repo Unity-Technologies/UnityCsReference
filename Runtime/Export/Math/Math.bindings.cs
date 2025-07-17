@@ -112,7 +112,7 @@ namespace UnityEngine
     }
 
     [NativeHeader("Runtime/Math/ColorSpaceConversion.h")]
-    [NativeHeader("Runtime/Math/FloatConversion.h")]
+    [NativeHeader("NativeKernel/Math/FloatConversion.h")]
     [NativeHeader("Runtime/Math/PerlinNoise.h")]
     public partial struct Mathf
     {

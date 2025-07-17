@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEditorInternal;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
@@ -26,6 +27,12 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
         {
             public override object CreateInstance() => new UnityEventItem();
+
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
+            }
         }
 
         // uss names
@@ -113,14 +120,10 @@ namespace UnityEditor.UIElements
             leftColumn.Add(listenerTarget);
             listenerTarget.RegisterCallback<ChangeEvent<UnityEngine.Object>>((e) =>
             {
-                var isTargetValid = e.newValue != null;
-
-                if (!isTargetValid)
-                {
+                if (UnityEventDrawer.ShouldClearMethodAfterTargetChanged(m_PropertyData.listener, e.newValue))
                     functionDropdown.value = null;
-                }
 
-                functionDropdown.SetEnabled(isTargetValid);
+                functionDropdown.SetEnabled(e.newValue != null);
 
                 UpdateParameterField();
             });
@@ -195,8 +198,8 @@ namespace UnityEditor.UIElements
                 }
 
                 objectParameter.objectType = desiredType;
-                objectParameter.value = argument.objectReferenceValue;
-           }
+                objectParameter.SetValueWithoutNotify(argument.objectReferenceValue);
+            }
             else
             {
                 parameterProperty.BindProperty(argument);

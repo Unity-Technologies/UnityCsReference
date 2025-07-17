@@ -5,12 +5,10 @@
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
-using System;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
-    internal class AddCurvesPopup : EditorWindow
+    class AddCurvesPopup : EditorWindow
     {
         const float k_WindowPadding = 3;
         const float k_SpaceForSlider = 16;
@@ -26,8 +24,6 @@ namespace UnityEditorInternal
         private static AddCurvesPopupHierarchy s_Hierarchy;
 
         public delegate void OnNewCurveAdded(AddCurvesPopupPropertyNode node);
-
-        private static OnNewCurveAdded NewCurveAddedCallback;
 
         Vector2 GetWindowSize()
         {
@@ -62,11 +58,28 @@ namespace UnityEditorInternal
         internal static void AddNewCurve(AddCurvesPopupPropertyNode node)
         {
             AnimationWindowUtility.CreateDefaultCurves(s_State, node.curveBindings);
-            if (NewCurveAddedCallback != null)
-                NewCurveAddedCallback(node);
         }
 
-        internal static bool ShowAtPosition(Rect buttonRect, AnimationWindowState state, OnNewCurveAdded newCurveCallback)
+        internal static void AddNewCurves(IReadOnlyCollection<AddCurvesPopupPropertyNode> nodes)
+        {
+            var count = 0;
+            foreach (var node in nodes)
+            {
+                count += node.curveBindings.Length;
+            }
+
+            EditorCurveBinding[] bindings = new EditorCurveBinding[count];
+            var index = 0;
+            foreach (var node in nodes)
+            {
+                node.curveBindings.CopyTo(bindings, index);
+                index += node.curveBindings.Length;
+            }
+
+            AnimationWindowUtility.CreateDefaultCurves(s_State, bindings);
+        }
+
+        internal static bool ShowAtPosition(Rect buttonRect, AnimationWindowState state)
         {
             // We could not use realtimeSinceStartUp since it is set to 0 when entering/exitting playmode, we assume an increasing time when comparing time.
             long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
@@ -77,7 +90,6 @@ namespace UnityEditorInternal
                 if (s_AddCurvesPopup == null)
                     s_AddCurvesPopup = ScriptableObject.CreateInstance<AddCurvesPopup>();
 
-                NewCurveAddedCallback = newCurveCallback;
                 s_State = state;
                 s_AddCurvesPopup.Init(buttonRect);
                 return true;

@@ -65,116 +65,11 @@ namespace Unity.UI.Builder
             }
         }
 
-        internal struct StyleValueHandleContext
-        {
-            /// <summary>
-            /// The stylesheet in which the <see cref="handle"/> lives.
-            /// </summary>
-            public StyleSheet styleSheet;
-
-            /// <summary>
-            /// Handle to the actual value inside the <see cref="styleSheet"/>
-            /// </summary>
-            public StyleValueHandle handle;
-
-            public Dimension AsDimension()
-            {
-                if (handle.valueType == StyleValueType.Dimension)
-                    return styleSheet.ReadDimension(handle);
-
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Dimension}`.");
-            }
-
-            public StyleValueKeyword AsKeyword()
-            {
-                if (handle.valueType == StyleValueType.Keyword)
-                    return styleSheet.ReadKeyword(handle);
-
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Keyword}`.");
-            }
-
-            public float AsFloat()
-            {
-                if (handle.valueType == StyleValueType.Float)
-                    return styleSheet.ReadFloat(handle);
-
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Float}`.");
-            }
-
-            public Color AsColor()
-            {
-                if (handle.valueType == StyleValueType.Color)
-                    return styleSheet.ReadColor(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Color}`.");
-            }
-
-            public string AsResourcePath()
-            {
-                if (handle.valueType == StyleValueType.ResourcePath)
-                    return styleSheet.ReadResourcePath(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.ResourcePath}`.");
-            }
-
-            public UnityEngine.Object AsAssetReference()
-            {
-                if (handle.valueType == StyleValueType.AssetReference)
-                    return styleSheet.ReadAssetReference(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.AssetReference}`.");
-            }
-
-            public T AsEnum<T>()
-                where T : Enum
-            {
-                if (handle.valueType == StyleValueType.Enum)
-                    return (T) Enum.Parse(typeof(T), styleSheet.ReadEnum(handle));
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Enum}`.");
-            }
-
-            public string AsEnum()
-            {
-                if (handle.valueType == StyleValueType.Enum)
-                    return styleSheet.ReadEnum(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.Enum}`.");
-            }
-
-            public string AsString()
-            {
-                if (handle.valueType == StyleValueType.String)
-                    return styleSheet.ReadString(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.String}`.");
-            }
-
-            public ScalableImage AsScalableImage()
-            {
-                if (handle.valueType == StyleValueType.ScalableImage)
-                    return styleSheet.ReadScalableImage(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.ScalableImage}`.");
-            }
-
-            public string AsMissingAssetReference()
-            {
-                if (handle.valueType == StyleValueType.MissingAssetReference)
-                    return styleSheet.ReadMissingAssetReferenceUrl(handle);
-                throw new InvalidCastException(
-                    $"Cannot cast value of type `{handle.valueType}` into a `{StyleValueType.MissingAssetReference}`.");
-            }
-        }
-
         internal struct StylePropertyPart : IDisposable
         {
-            static readonly UnityEngine.Pool.ObjectPool<List<StyleValueHandleContext>> s_Pool =
-                new UnityEngine.Pool.ObjectPool<List<StyleValueHandleContext>>(
-                    () => new List<StyleValueHandleContext>(),
+            static readonly UnityEngine.Pool.ObjectPool<List<StylePropertyValue>> s_Pool =
+                new UnityEngine.Pool.ObjectPool<List<StylePropertyValue>>(
+                    () => new List<StylePropertyValue>(),
                     null,
                     s => { s.Clear(); }
                 );
@@ -206,7 +101,7 @@ namespace Unity.UI.Builder
             /// <summary>
             /// Handles that are related to this style property value. For a variable, this can resolve to multiple values.
             /// </summary>
-            public List<StyleValueHandleContext> handles;
+            public List<StylePropertyValue> handles;
 
             public bool isVariableUnresolved => isVariable && handles?.Count == 0;
 
@@ -282,42 +177,42 @@ namespace Unity.UI.Builder
                             yield return "<invalid>";
                             break;
                         case StyleValueType.Keyword:
-                            yield return valueHandle.styleSheet.ReadKeyword(valueHandle.handle).ToUssString();
+                            yield return valueHandle.sheet.ReadKeyword(valueHandle.handle).ToUssString();
                             break;
                         case StyleValueType.Float:
-                            yield return valueHandle.styleSheet.ReadFloat(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadFloat(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.Dimension:
-                            yield return valueHandle.styleSheet.ReadDimension(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadDimension(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.Color:
-                            yield return valueHandle.styleSheet.ReadColor(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadColor(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.ResourcePath:
-                            yield return valueHandle.styleSheet.ReadResourcePath(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadResourcePath(valueHandle.handle);
                             break;
                         case StyleValueType.AssetReference:
-                            yield return valueHandle.styleSheet.ReadAssetReference(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadAssetReference(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.Enum:
-                            yield return valueHandle.styleSheet.ReadEnum(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadEnum(valueHandle.handle);
                             break;
                         case StyleValueType.Variable:
-                            yield return valueHandle.styleSheet.ReadVariable(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadVariable(valueHandle.handle);
                             break;
                         case StyleValueType.String:
-                            yield return valueHandle.styleSheet.ReadString(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadString(valueHandle.handle);
                             break;
                         case StyleValueType.Function:
-                            yield return valueHandle.styleSheet.ReadFunction(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadFunction(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.CommaSeparator:
                             break;
                         case StyleValueType.ScalableImage:
-                            yield return valueHandle.styleSheet.ReadScalableImage(valueHandle.handle).ToString();
+                            yield return valueHandle.sheet.ReadScalableImage(valueHandle.handle).ToString();
                             break;
                         case StyleValueType.MissingAssetReference:
-                            yield return valueHandle.styleSheet.ReadMissingAssetReferenceUrl(valueHandle.handle);
+                            yield return valueHandle.sheet.ReadMissingAssetReferenceUrl(valueHandle.handle);
                             break;
                         default:
                             throw new ArgumentOutOfRangeException();
@@ -361,14 +256,14 @@ namespace Unity.UI.Builder
             return GetValueContextAtIndex(index).handle.valueType == StyleValueType.Keyword;
         }
 
-        public StyleValueHandleContext GetValueContextAtIndex(int index)
+        public StylePropertyValue GetValueContextAtIndex(int index)
         {
             var indices = GetInternalIndices(index);
             // Unresolved variable
             return indices.valueIndex < 0 ? default : stylePropertyParts[indices.partIndex].handles[indices.valueIndex];
         }
 
-        public void AddValue<T>(T value, StyleValueType valueType)
+        public void AddEnumAsString(string value)
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
@@ -376,16 +271,101 @@ namespace Unity.UI.Builder
 
             var offset = styleProperty.values.Length;
 
+            var manipulator = styleProperty.GetManipulator(styleSheet);
             if (offset > 0)
             {
-                AddCommaSeparator();
+                manipulator.AddCommaSeparator();
                 ++offset;
             }
 
-            var handle = AddTypedValue(value, valueType);
+            manipulator.AddEnum(value);
+            var handle = styleProperty.values[^1];
             var part = CreatePart(styleSheet, handle, offset);
             stylePropertyParts.Add(part);
-            UpdateStylesheet();
+        }
+
+        public void AddStylePropertyName(StylePropertyName value)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            EnsureStylePropertyExists();
+
+            var offset = styleProperty.values.Length;
+
+            var manipulator = styleProperty.GetManipulator(styleSheet);
+            if (offset > 0)
+            {
+                manipulator.AddCommaSeparator();
+                ++offset;
+            }
+
+            manipulator.AddStylePropertyName(value);
+            var handle = styleProperty.values[^1];
+            var part = CreatePart(styleSheet, handle, offset);
+            stylePropertyParts.Add(part);
+        }
+
+        public void AddTimeValue(TimeValue value)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            EnsureStylePropertyExists();
+
+            var offset = styleProperty.values.Length;
+
+            var manipulator = styleProperty.GetManipulator(styleSheet);
+            if (offset > 0)
+            {
+                manipulator.AddCommaSeparator();
+                ++offset;
+            }
+
+            manipulator.AddTimeValue(value);
+            var handle = styleProperty.values[^1];
+            var part = CreatePart(styleSheet, handle, offset);
+            stylePropertyParts.Add(part);
+        }
+
+        public void AddEasingFunction(EasingFunction value)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            EnsureStylePropertyExists();
+
+            var offset = styleProperty.values.Length;
+
+            var manipulator = styleProperty.GetManipulator(styleSheet);
+            if (offset > 0)
+            {
+                manipulator.AddCommaSeparator();
+                ++offset;
+            }
+
+            manipulator.AddEasingFunction(value);
+            var handle = styleProperty.values[^1];
+            var part = CreatePart(styleSheet, handle, offset);
+            stylePropertyParts.Add(part);
+        }
+
+        public void AddKeyword(StyleValueKeyword value)
+        {
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
+
+            EnsureStylePropertyExists();
+
+            var offset = styleProperty.values.Length;
+
+            var manipulator = styleProperty.GetManipulator(styleSheet);
+            if (offset > 0)
+            {
+                manipulator.AddCommaSeparator();
+                ++offset;
+            }
+
+            manipulator.AddKeyword(value);
+            var handle = styleProperty.values[^1];
+            var part = CreatePart(styleSheet, handle, offset);
+            stylePropertyParts.Add(part);
         }
 
         public void AddVariable(string variableName)
@@ -396,17 +376,20 @@ namespace Unity.UI.Builder
 
             var offset = styleProperty.values.Length;
 
+            var manipulator = styleProperty.GetManipulator(styleSheet);
             if (offset > 0)
             {
-                AddCommaSeparator();
+                manipulator.AddCommaSeparator();
                 ++offset;
             }
 
-            var part = ResolveVariable(AddVariableToStyleSheet(variableName));
+            manipulator.AddVariableReference(variableName);
+
+            var part = ResolveVariable(styleProperty.values[^3..]);
             part.offset = offset;
             stylePropertyParts.Add(part);
-            UpdateStylesheet();
         }
+
 
         public void SetValueAtIndex<T>(int index, T value, StyleValueType type)
         {
@@ -419,7 +402,6 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             SetValue(indices, value, type);
-            UpdateStylesheet();
         }
 
         public void SetVariableAtIndex(int index, string variableName)
@@ -436,7 +418,6 @@ namespace Unity.UI.Builder
                 OverrideVariableWithValue(indices, new Variable(variableName), StyleValueType.Variable);
             else
                 SetVariable(indices, variableName);
-            UpdateStylesheet();
         }
 
         public void RemoveAtIndex(int index)
@@ -446,7 +427,6 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             RemoveValue(indices);
-            UpdateStylesheet();
         }
 
         public void RemoveProperty()
@@ -460,7 +440,6 @@ namespace Unity.UI.Builder
                     part.Dispose();
                 }
                 stylePropertyParts.Clear();
-                UpdateStylesheet();
             }
         }
 
@@ -471,39 +450,49 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            styleProperty.values = Array.Empty<StyleValueHandle>();
+            styleProperty.ClearValue();
             foreach (var part in stylePropertyParts)
             {
                 part.Dispose();
             }
             stylePropertyParts.Clear();
-            UpdateStylesheet();
         }
 
-        StyleValueHandle TransferTypedValue(StyleValueHandleContext handle)
+        StyleValueHandle TransferTypedValue(StylePropertyValue handle)
         {
+            var manipulator = styleProperty.GetManipulator(styleSheet);
             switch (handle.handle.valueType)
             {
                 case StyleValueType.Keyword:
-                    return AddTypedValue(handle.AsKeyword(), StyleValueType.Keyword);
+                    manipulator.AddKeyword(handle.sheet.ReadKeyword(handle.handle));
+                    break;
                 case StyleValueType.Float:
-                    return AddTypedValue(handle.AsFloat(), StyleValueType.Float);
+                    manipulator.AddFloat(handle.sheet.ReadFloat(handle.handle));
+                    break;
                 case StyleValueType.Dimension:
-                    return AddTypedValue(handle.AsDimension(), StyleValueType.Dimension);
+                    manipulator.AddDimension(handle.sheet.ReadDimension(handle.handle));
+                    break;
                 case StyleValueType.Color:
-                    return AddTypedValue(handle.AsColor(), StyleValueType.Color);
+                    manipulator.AddColor(handle.sheet.ReadColor(handle.handle));
+                    break;
                 case StyleValueType.ResourcePath:
-                    return AddTypedValue(handle.AsResourcePath(), StyleValueType.ResourcePath);
+                    manipulator.AddResourcePath(handle.sheet.ReadResourcePath(handle.handle));
+                    break;
                 case StyleValueType.AssetReference:
-                    return AddTypedValue(handle.AsAssetReference(), StyleValueType.AssetReference);
+                    manipulator.AddAssetReference(handle.sheet.ReadAssetReference(handle.handle));
+                    break;
                 case StyleValueType.Enum:
-                    return AddTypedValue(handle.AsEnum(), StyleValueType.Enum);
+                    manipulator.AddEnum(handle.sheet.ReadEnum(handle.handle));
+                    break;
                 case StyleValueType.String:
-                    return AddTypedValue(handle.AsString(), StyleValueType.String);
+                    manipulator.AddString(handle.sheet.ReadString(handle.handle));
+                    break;
                 case StyleValueType.ScalableImage:
-                    return AddTypedValue(handle.AsScalableImage(), StyleValueType.ScalableImage);
+                    manipulator.AddScalableImage(handle.sheet.ReadScalableImage(handle.handle));
+                    break;
                 case StyleValueType.MissingAssetReference:
-                    return AddTypedValue(handle.AsString(), StyleValueType.MissingAssetReference);
+                    manipulator.AddMissingAssetReferenceUrl(handle.sheet.ReadMissingAssetReferenceUrl(handle.handle));
+                    break;
                 case StyleValueType.Invalid:
                 case StyleValueType.Variable:
                 case StyleValueType.Function:
@@ -511,9 +500,10 @@ namespace Unity.UI.Builder
                 default:
                     throw new ArgumentOutOfRangeException();
             }
+            return styleProperty.values[^1];
         }
 
-        void SetTypedValue<T>(StyleValueHandleContext handle, T value)
+        void SetTypedValue<T>(StylePropertyValue handle, T value)
         {
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
             switch (handle.handle.valueType)
@@ -531,7 +521,15 @@ namespace Unity.UI.Builder
                     styleSheet.WriteColor(ref handle.handle, (Color)(object) value);
                     break;
                 case StyleValueType.ResourcePath:
-                    styleSheet.WriteResourcePath(ref handle.handle, (string)(object) value);
+                    if (value is UnityEngine.Object resourceObject)
+                    {
+                        var resourcesPath = BuilderAssetUtilities.GetResourcesPathForAsset(resourceObject);
+                        styleSheet.WriteResourcePath(ref handle.handle, resourcesPath);
+                    }
+                    else
+                    {
+                        styleSheet.WriteResourcePath(ref handle.handle, (string)(object)value);
+                    }
                     break;
                 case StyleValueType.AssetReference:
                     styleSheet.WriteAssetReference(ref handle.handle, (UnityEngine.Object)(object) value);
@@ -549,7 +547,7 @@ namespace Unity.UI.Builder
                     styleSheet.WriteMissingAssetReferenceUrl(ref handle.handle, (string)(object) value);
                     break;
                 case StyleValueType.ScalableImage:
-                    styleSheet.WriteScalableImage(ref handle.handle, handle.AsScalableImage());
+                    styleSheet.WriteScalableImage(ref handle.handle, (ScalableImage)(object) value);
                     break;
                 // These are not "values".
                 case StyleValueType.Invalid:
@@ -563,42 +561,46 @@ namespace Unity.UI.Builder
 
         StyleValueHandle AddTypedValue<T>(T value, StyleValueType type)
         {
+            var manipulator = styleProperty.GetManipulator(styleSheet);
             switch (type)
             {
                 case StyleValueType.Keyword:
-                    return styleSheet.AddValue(styleProperty, (StyleValueKeyword)(object) value);
+                    manipulator.AddKeyword((StyleValueKeyword)(object) value);
+                    break;
                 case StyleValueType.Float:
-                    return styleSheet.AddValue(styleProperty, (float)(object) value);
+                    manipulator.AddFloat((float)(object) value);
+                    break;
                 case StyleValueType.Dimension:
-                    return styleSheet.AddValue(styleProperty, (Dimension)(object) value);
+                    manipulator.AddDimension((Dimension)(object) value);
+                    break;
                 case StyleValueType.Color:
-                    return styleSheet.AddValue(styleProperty, (Color)(object) value);
+                    manipulator.AddColor((Color)(object) value);
+                    break;
                 case StyleValueType.ResourcePath:
-                    return styleSheet.AddValue(styleProperty, (string)(object) value);
+                    manipulator.AddResourcePath((string)(object) value);
+                    break;
                 case StyleValueType.AssetReference:
-                    return styleSheet.AddValue(styleProperty, (UnityEngine.Object)(object) value);
+                    manipulator.AddAssetReference((UnityEngine.Object)(object) value);
+                    break;
                 case StyleValueType.Enum:
                 {
                     if (value is string strValue)
-                    {
-                        // Add value data to data array.
-                        var index = styleSheet.AddValue(strValue);
-
-                        // Add value object to property.
-                        return styleSheet.AddValueHandle(styleProperty, index, StyleValueType.Enum);
-
-                    }
-                    return styleSheet.AddValue(styleProperty, (Enum) (object) value);
+                        manipulator.AddEnum(strValue);
+                    else
+                        manipulator.AddEnum((Enum) (object) value);
+                    break;
                 }
                 case StyleValueType.String:
-                    return styleSheet.AddValue(styleProperty, (string)(object) value);
+                    manipulator.AddString((string)(object) value);
+                    break;
 
                 case StyleValueType.MissingAssetReference:
-                    return styleSheet.AddValue(styleProperty, (string)(object) value);
+                    manipulator.AddMissingAssetReferenceUrl((string)(object) value);
+                    break;
 
                 case StyleValueType.ScalableImage:
-                    // Not actually supported
-                    //return styleSheet.AddValue(styleProperty, (ScalableImage)(object) value);
+                    manipulator.AddScalableImage((ScalableImage)(object) value);
+                    break;
                 // These are not "values".
                 case StyleValueType.Invalid:
                 case StyleValueType.Variable:
@@ -607,6 +609,7 @@ namespace Unity.UI.Builder
                 default:
                     throw new ArgumentOutOfRangeException(nameof(type), type, null);
             }
+            return styleProperty.values[^1];
         }
 
         void OverrideVariableWithValue<T>(Index indices, T value, StyleValueType valueType)
@@ -641,7 +644,8 @@ namespace Unity.UI.Builder
 
                 if (i == indices.valueIndex && typeof(Variable).IsAssignableFrom(typeof(T)) && value is Variable variable)
                 {
-                    var handles = AddVariableToStyleSheet(variable.name);
+                    styleProperty.GetManipulator(styleSheet).AddVariableReference(variable.name);
+                    var handles = styleProperty.values[^3..];
 
                     var property = new StyleProperty
                     {
@@ -670,7 +674,7 @@ namespace Unity.UI.Builder
                     if (i < part.handles.Count - 1 || indices.partIndex < stylePropertyParts.Count - 1)
                         list.Insert(++currentOffset, new StyleValueHandle(-1, StyleValueType.CommaSeparator));
 
-                    propertyValue.handles.Add(new StyleValueHandleContext { styleSheet = styleSheet, handle = handle });
+                    propertyValue.handles.Add(new StylePropertyValue { sheet = styleSheet, handle = handle });
 
                     newParts.Add(propertyValue);
                 }
@@ -680,12 +684,13 @@ namespace Unity.UI.Builder
             {
                 if (typeof(Variable).IsAssignableFrom(typeof(T)) && value is Variable variable)
                 {
-                    var handles = AddVariableToStyleSheet(variable.name);
+                    styleProperty.GetManipulator(styleSheet).AddVariableReference(variable.name);
+                    var handles = styleProperty.values[^3..];
                     var newPart = StylePropertyPart.Create();
                     newPart.offset = currentOffset;
-                    newPart.handles.Add( new StyleValueHandleContext
+                    newPart.handles.Add( new StylePropertyValue
                     {
-                        styleSheet = styleSheet,
+                        sheet = styleSheet,
                         handle = handles[2],
                     });
                     list.InsertRange(currentOffset, handles);
@@ -697,9 +702,9 @@ namespace Unity.UI.Builder
 
                     var newPart = StylePropertyPart.Create();
                     newPart.offset = currentOffset;
-                    newPart.handles.Add(new StyleValueHandleContext
+                    newPart.handles.Add(new StylePropertyValue
                     {
-                        styleSheet = styleSheet,
+                        sheet = styleSheet,
                         handle = handle,
                     });
                     list.Insert(currentOffset, handle);
@@ -722,21 +727,6 @@ namespace Unity.UI.Builder
                 nextPart.offset += offset;
                 stylePropertyParts[i] = nextPart;
             }
-        }
-
-        void AddCommaSeparator()
-        {
-            styleSheet.AddValueHandle(styleProperty, -1, StyleValueType.CommaSeparator);
-        }
-
-        StyleValueHandle AddKeywordToStyleSheet(StyleValueKeyword keyword)
-        {
-            return styleSheet.AddValue(styleProperty, keyword);
-        }
-
-        StyleValueHandle[] AddVariableToStyleSheet(string variableName)
-        {
-            return styleSheet.AddVariable(styleProperty, variableName);
         }
 
         void SetValue<T>(Index indices, T value, StyleValueType valueType)
@@ -787,7 +777,8 @@ namespace Unity.UI.Builder
 
             var list = styleProperty.values.ToList();
             list.RemoveRange(initialOffset, range);
-            var handles = AddVariableToStyleSheet(variableName);
+            styleProperty.GetManipulator(styleSheet).AddVariableReference(variableName);
+            var handles = styleProperty.values[^3..];
             list.InsertRange(initialOffset, handles);
 
             styleProperty.values = list.ToArray();
@@ -906,7 +897,7 @@ namespace Unity.UI.Builder
                     if (i < part.handles.Count - 1 || indices.partIndex < stylePropertyParts.Count - 1)
                         list.Insert(++currentOffset, new StyleValueHandle(-1, StyleValueType.CommaSeparator));
 
-                    propertyValue.handles.Add(new StyleValueHandleContext { styleSheet = styleSheet, handle = handle });
+                    propertyValue.handles.Add(new StylePropertyValue { sheet = styleSheet, handle = handle });
 
                     newParts.Add(propertyValue);
                 }
@@ -990,9 +981,9 @@ namespace Unity.UI.Builder
                     ++currentIndex;
 
                     var part = StylePropertyPart.Create();
-                    part.handles.Add(new StyleValueHandleContext
+                    part.handles.Add(new StylePropertyValue
                     {
-                        styleSheet = styleSheet,
+                        sheet = styleSheet,
                         handle = handle
                     });
                     return part;
@@ -1001,40 +992,48 @@ namespace Unity.UI.Builder
                 case StyleValueType.Function:
                 {
                     var argCountHandle = property.values[++currentIndex];
-                    var argCount = (int) styleSheet.ReadFloat(argCountHandle);
-                    var varHandle = property.values[++currentIndex];
-                    var variable = styleSheet.ReadVariable(varHandle);
-                    using (var manipulator = ResolveVariable(element, styleSheet, styleRule, variable, isEditorExtensionMode))
+                    var argCount = (int)styleSheet.ReadFloat(argCountHandle);
+
+                    if (argCount > 0)
                     {
-                        if (argCount == 1)
+                        var varHandle = property.values[++currentIndex];
+                        if (varHandle.valueType != StyleValueType.Variable)
+                            return StylePropertyPart.Create();
+
+                        var variable = styleSheet.ReadVariable(varHandle);
+                        using (var manipulator = ResolveVariable(element, styleSheet, styleRule, variable, isEditorExtensionMode))
                         {
-                            // Skip comma
-                            ++currentIndex;
-                            var part = StylePropertyPart.Create();
-                            if (null == manipulator || manipulator.stylePropertyParts.Count == 0)
+                            if (argCount == 1)
                             {
+                                // Skip comma
+                                ++currentIndex;
+                                var part = StylePropertyPart.Create();
+                                if (null == manipulator || manipulator.stylePropertyParts.Count == 0)
+                                {
+                                    part.isVariable = true;
+                                    part.variableName = variable;
+                                    return part;
+                                }
+
+                                part.handles.AddRange(manipulator.stylePropertyParts.SelectMany(o => o.handles));
                                 part.isVariable = true;
                                 part.variableName = variable;
                                 return part;
                             }
-
-                            part.handles.AddRange(manipulator.stylePropertyParts.SelectMany(o => o.handles));
-                            part.isVariable = true;
-                            part.variableName = variable;
-                            return part;
                         }
+
+                        // Skip comma and point to next function argument.
+                        currentIndex += 2;
+
+                        var fallbackPart = ResolveValueOrVariable(styleSheet, element, styleRule, property, ref currentIndex, isEditorExtensionMode);
+                        fallbackPart.isVariable = true;
+                        fallbackPart.variableName = variable;
+
+                        return fallbackPart;
                     }
 
-                    // Skip comma and point to next function argument.
-                    currentIndex += 2;
-
-                    var fallbackPart = ResolveValueOrVariable(styleSheet, element, styleRule, property, ref currentIndex, isEditorExtensionMode);
-                    fallbackPart.isVariable = true;
-                    fallbackPart.variableName = variable;
-
-                    return fallbackPart;
+                    return StylePropertyPart.Create();
                 }
-
                 // These should never be hit as they are being handled by the cases above
                 case StyleValueType.Variable:
                 case StyleValueType.CommaSeparator:
@@ -1168,20 +1167,6 @@ namespace Unity.UI.Builder
                 editorExtensionMode);
         }
 
-        void UpdateStylesheet()
-        {
-            // Set the contentHash to 0 if the style sheet is empty
-            if (styleSheet.rules == null || styleSheet.rules.Length == 0)
-                styleSheet.contentHash = 0;
-            else
-                // Use a random value instead of computing the real contentHash.
-                // This is faster (for large content) and safe enough to avoid conflicts with other style sheets
-                // since contentHash is used internally as a optimized way to compare style sheets.
-                // However, note that the real contentHash will still be computed on import.
-
-                styleSheet.contentHash = UnityEngine.Random.Range(1, int.MaxValue);
-        }
-
         void EnsureStylePropertyExists()
         {
             m_StyleProperty
@@ -1199,9 +1184,9 @@ namespace Unity.UI.Builder
             var part = StylePropertyPart.Create();
             part.offset = offset;
             part.handles.Add(
-                new StyleValueHandleContext
+                new StylePropertyValue
                 {
-                    styleSheet = styleSheet,
+                    sheet = styleSheet,
                     handle = handle
                 });
             return part;

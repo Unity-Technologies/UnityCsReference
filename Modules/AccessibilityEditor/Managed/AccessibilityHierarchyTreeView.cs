@@ -36,7 +36,7 @@ namespace UnityEditor.Accessibility
                     new (nameof(label), "label"),
                     new (nameof(role), "role"),
                     new (nameof(isActive), "is-active"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

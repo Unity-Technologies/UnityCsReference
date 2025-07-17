@@ -28,6 +28,8 @@ namespace UnityEditor.UIElements
         public EditorPanel(ScriptableObject ownerObject)
             : base(ownerObject, ContextType.Editor, EventDispatcher.editorDispatcher, InitEditorUpdater)
         {
+            TimeSinceStartupFunc = () => EditorApplication.timeSinceStartup;
+
             name = ownerObject.GetType().Name;
             cursorManager = m_CursorManager;
             contextualMenuManager = s_ContextualMenuManager;

@@ -69,13 +69,7 @@ namespace UnityEditor
             {
                 if (this is ISupportsOverlays)
                 {
-                    if (!m_OverlaysInitialized)
-                    {
-                        var ve = overlayCanvas.rootVisualElement;
-                        baseRootVisualElement.Add(ve);
-                        overlayCanvas.Initialize(this);
-                        m_OverlaysInitialized = true;
-                    }
+                    InitializeOverlayCanvas();
 
                     return overlayCanvas.windowRoot;
                 }
@@ -1301,6 +1295,25 @@ namespace UnityEditor
             UpdateWindowMenuListing();
         }
 
+        void InitializeOverlayCanvas()
+        {
+            if (this is ISupportsOverlays && !m_OverlaysInitialized)
+            {
+                var mode = OverlayCanvasMode.Default;
+                if (this is ISupportsOverlaysCustomMode modeRef)
+                    mode = modeRef.overlayCanvasMode;
+
+                Func<string, bool> filter = null;
+                if (this is ISupportsOverlaysWithFilter filterRef)
+                    filter = filterRef.IsOverlaySupported;
+
+                overlayCanvas.Initialize(this, mode, filter);
+                var ve = overlayCanvas.rootVisualElement;
+                baseRootVisualElement.Add(ve);
+                m_OverlaysInitialized = true;
+            }
+        }
+
         void __internalAwake()
         {
             hideFlags = HideFlags.DontSave; // Can't be HideAndDontSave, as that would make scriptable wizard GUI be disabled
@@ -1316,6 +1329,7 @@ namespace UnityEditor
         void OnEnableINTERNAL()
         {
             activeEditorWindows.Add(this);
+            InitializeOverlayCanvas();
         }
 
         void OnDisableINTERNAL()
@@ -1426,7 +1440,7 @@ namespace UnityEditor
                     var focusedWindow = EditorWindow.focusedWindow;
                     if (focusedWindow != null)
                     {
-                        if (focusedWindow is ISupportsOverlays)
+                        if (focusedWindow is ISupportsOverlays && (focusedWindow is not ISupportsOverlaysCustomMode custom || custom.overlayCanvasMode != OverlayCanvasMode.MainToolbar))
                         {
                             editorWindow = focusedWindow;
                             return true;

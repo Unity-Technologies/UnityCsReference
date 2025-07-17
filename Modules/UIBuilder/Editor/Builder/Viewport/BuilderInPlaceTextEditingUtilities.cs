@@ -112,7 +112,7 @@ namespace Unity.UI.Builder
                 case TextElement textElement:
                     context.targetTextElement = textElement;
                     context.uxmlAttributeName = uxmlAttributeName;
-                    context.propertyName = BuilderNameUtilities.ConvertDashToCamel(uxmlAttributeName);;
+                    context.propertyName = StyleSheetUtility.ConvertDashToCamel(uxmlAttributeName);;
                     break;
                 case BaseListView {showFoldoutHeader: true} listView:
                     context.targetTextElement = listView.headerFoldout.toggle.boolFieldLabelElement;

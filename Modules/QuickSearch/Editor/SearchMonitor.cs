@@ -380,8 +380,6 @@ namespace UnityEditor.Search
 
         static void EnableContentRefresh()
         {
-            if (!Utils.IsMainProcess())
-                return;
             s_ContentRefreshedEnabled = true;
         }
 
@@ -519,7 +517,7 @@ namespace UnityEditor.Search
 
         private static void InvalidateObject(int instanceId)
         {
-            var obj = EditorUtility.InstanceIDToObject(instanceId);
+            var obj = EditorUtility.EntityIdToObject(instanceId);
             var documentKey = SearchUtils.GetDocumentKey(obj);
             InvalidateDocument(documentKey);
         }

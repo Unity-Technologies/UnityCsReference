@@ -41,9 +41,6 @@ namespace Unity.UI.Builder
                 name = name
             };
 
-            // Create empty values array.
-            newProperty.values = new StyleValueHandle[0];
-
             // Add property to selector's rule's properties.
             var properties = rule.properties.ToList();
             properties.Add(newProperty);

@@ -72,7 +72,7 @@ namespace UnityEditor
 
             // Ensure valid folder to place the asset in
             string folder = Path.GetDirectoryName(filePath);
-            int instanceID = AssetDatabase.GetMainAssetInstanceID(folder);
+            int instanceID = AssetDatabase.GetMainAssetEntityId(folder);
             return instanceID != 0;
         }
 
@@ -110,7 +110,7 @@ namespace UnityEditor
             if (selectAssetBeingCreated)
             {
                 // Change selection to none or instanceID
-                Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);
+                Selection.activeObject = EditorUtility.EntityIdToObject(instanceID);
             }
             return true;
         }

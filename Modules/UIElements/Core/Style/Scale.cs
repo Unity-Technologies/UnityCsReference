@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents the scale applied as element transformations. The center point that doesn't move when the scaling is applied is the <see cref="TransformOrigin"/>.
     /// </summary>
+    [Serializable]
     public partial struct Scale : IEquatable<Scale>
     {
         /// <summary>
@@ -58,7 +59,9 @@ namespace UnityEngine.UIElements
             set => m_Scale = value;
         }
 
+        [SerializeField]
         Vector3 m_Scale;
+        [SerializeField]
         private bool m_IsNone;
 
         internal bool IsNone() => m_IsNone;

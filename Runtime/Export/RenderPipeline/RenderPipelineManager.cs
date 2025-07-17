@@ -15,19 +15,22 @@ namespace UnityEngine.Rendering
     {
         private static bool s_CleanUpPipeline = false;
 
-        const string k_BuiltinPipelineName = "Built-in Pipeline";
-        private static string s_CurrentPipelineType = k_BuiltinPipelineName;
         private static RenderPipelineAsset s_CurrentPipelineAsset;
-        private static RenderPipeline s_CurrentPipeline = null;
 
         internal static RenderPipelineAsset currentPipelineAsset => s_CurrentPipelineAsset;
+        static RenderPipeline s_CurrentPipeline = null;
+        static bool s_PendingRPAssignationToRaise = false;
         public static RenderPipeline currentPipeline
         {
             get => s_CurrentPipeline;
             private set
             {
-                s_CurrentPipelineType = (value != null) ? value.GetType().ToString() : k_BuiltinPipelineName;
                 s_CurrentPipeline = value;
+                if (s_PendingRPAssignationToRaise)
+                {
+                    s_PendingRPAssignationToRaise = false;
+                    activeRenderPipelineTypeChanged?.Invoke();
+                }
             }
         }
 
@@ -70,15 +73,26 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        internal static void OnActiveRenderPipelineTypeChanged()
+        static void OnActiveRenderPipelineAssetChanged(ScriptableObject from, ScriptableObject to, bool raiseTypeChanged)
         {
-            activeRenderPipelineTypeChanged?.Invoke();
-        }
-
-        [RequiredByNativeCode]
-        internal static void OnActiveRenderPipelineAssetChanged(ScriptableObject from, ScriptableObject to)
-        {
-            activeRenderPipelineAssetChanged?.Invoke(from as RenderPipelineAsset, to as RenderPipelineAsset);
+            var fromRPAsset = from as RenderPipelineAsset;
+            var toRPAsset = to as RenderPipelineAsset;
+            activeRenderPipelineAssetChanged?.Invoke(fromRPAsset, toRPAsset);
+            if (raiseTypeChanged)
+            {
+                // At this point we know that the RenderPipelineAsset is switching to one of a different type.
+                // This should call activeRenderPipelineTypeChanged. But prior, it was only called if RP was already assigned.
+                // Depending on which view / preview / camera rendering exists:
+                // Sometimes, pipeline creation will be triggered before this event.
+                // Sometimes, it is after.
+                // And sometimes the creation fails and delays this more.
+                // Resyncing everything:
+                Type targetRPType = toRPAsset == null ? null : toRPAsset.pipelineType;
+                if (currentPipeline?.GetType() != targetRPType)
+                    s_PendingRPAssignationToRaise = true;
+                else
+                    activeRenderPipelineTypeChanged?.Invoke();
+            }
         }
 
         [RequiredByNativeCode]
@@ -123,13 +137,6 @@ namespace UnityEngine.Rendering
         }
 
         [RequiredByNativeCode]
-        static string GetCurrentPipelineAssetType()
-        {
-            return s_CurrentPipelineType;
-        }
-
-        [RequiredByNativeCode]
-
         static void DoRenderLoop_Internal
         (
             RenderPipelineAsset pipelineAsset,

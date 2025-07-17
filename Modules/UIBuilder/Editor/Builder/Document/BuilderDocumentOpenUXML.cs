@@ -40,6 +40,9 @@ namespace Unity.UI.Builder
         LazyLoadReference<VisualTreeAsset> m_VisualTreeAssetRef;
 
         [SerializeField]
+        int m_TemplateAssetId;
+
+        [SerializeField]
         StyleSheet m_ActiveStyleSheet;
 
         [SerializeField]
@@ -47,9 +50,6 @@ namespace Unity.UI.Builder
 
         [SerializeField]
         int m_OpenSubDocumentParentIndex = -1;
-
-        [SerializeField]
-        int m_OpenSubDocumentParentSourceTemplateAssetIndex = -1;
 
         //
         // Unserialized Data
@@ -117,7 +117,7 @@ namespace Unity.UI.Builder
             get
             {
                 // If this uxml is being edited in place then use the parent document's settings
-                if (isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex != -1)
+                if (isChildSubDocument && templateAsset != null)
                 {
                     m_Settings = openSubDocumentParent.settings;
                 }
@@ -127,6 +127,31 @@ namespace Unity.UI.Builder
                 }
                 return m_Settings;
             }
+        }
+
+        public TemplateAsset templateAsset
+        {
+            get
+            {
+                if (m_TemplateAssetId == 0)
+                    return null;
+
+                if (!isChildSubDocument)
+                    return null;
+
+                var parentDocument = openSubDocumentParent;
+
+                var templateAssets = parentDocument.visualTreeAsset.DepthFirstTraversalOfType<TemplateAsset>();
+
+                foreach (var template in templateAssets)
+                {
+                    if (template.id == m_TemplateAssetId)
+                        return template;
+                }
+
+                return null;
+            }
+            set => m_TemplateAssetId = value?.id ?? 0;
         }
 
         public string uxmlFileName
@@ -249,15 +274,6 @@ namespace Unity.UI.Builder
             }
         }
 
-        public int openSubDocumentParentSourceTemplateAssetIndex
-        {
-            get { return m_OpenSubDocumentParentSourceTemplateAssetIndex; }
-            set
-            {
-                m_OpenSubDocumentParentSourceTemplateAssetIndex = value;
-            }
-        }
-
         bool m_IsLoadQueued;
 
         //
@@ -355,7 +371,6 @@ namespace Unity.UI.Builder
                     continue;
 
                 rootAsset.AddStyleSheet(m_OpenUSSFiles[i].styleSheet);
-                rootAsset.AddStyleSheetPath(localUssPath);
             }
         }
 
@@ -372,13 +387,12 @@ namespace Unity.UI.Builder
                     continue;
 
                 rootAsset.RemoveStyleSheet(m_OpenUSSFiles[i].styleSheet);
-                rootAsset.RemoveStyleSheetPath(localUssPath);
             }
         }
 
         public void AddStyleSheetsToAllRootElements(string newUssPath = null, int newUssIndex = 0)
         {
-            var rootVEA = visualTreeAsset.GetRootUxmlElement();
+            var rootVEA = visualTreeAsset.visualTree;
             AddStyleSheetsToRootAsset(rootVEA, newUssPath, newUssIndex);
         }
 
@@ -440,7 +454,7 @@ namespace Unity.UI.Builder
                 }
             }
 
-            var oldUxmlTest = m_VisualTreeAssetBackup?.GenerateUXML(m_OpenendVisualTreeAssetOldPath, true);
+            var oldUxmlTest = m_VisualTreeAssetBackup ? m_VisualTreeAssetBackup.GenerateUXML() : string.Empty;
 
             // Save UXML files
             // Saving all open UXML files to ensure references correct upon changes in child documents.
@@ -448,7 +462,7 @@ namespace Unity.UI.Builder
                 openUXMLFile.PreSaveSyncBackup();
 
             bool shouldSave = m_OpenendVisualTreeAssetOldPath != newUxmlPath;
-            var uxmlText = visualTreeAsset.GenerateUXML(newUxmlPath, true);
+            var uxmlText = visualTreeAsset.GenerateUXML();
 
             if (uxmlText != null)
             {
@@ -485,9 +499,6 @@ namespace Unity.UI.Builder
             {
                 m_DocumentBeingSavedExplicitly = false;
             }
-
-            // Reorder document after reimporting
-            VisualTreeAssetUtilities.ReOrderDocument(visualTreeAsset);
 
             // Check if any USS assets have changed reload them.
             foreach (var openUSSFile in savedUSSFiles)
@@ -527,7 +538,7 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            var inlineSheet = visualTreeAsset.inlineSheet;
+            var inlineSheet = visualTreeAsset.GetOrCreateInlineStyleSheet();
             var vea = ve.GetVisualElementAsset();
 
             if (vea != null && vea.ruleIndex != -1)
@@ -698,9 +709,6 @@ namespace Unity.UI.Builder
             m_VisualTreeAssetRef = visualTreeAsset;
             m_ContentHash = m_VisualTreeAsset.contentHash;
 
-            // Re-stamp orderInDocument values using BuilderConstants.VisualTreeAssetOrderIncrement
-            VisualTreeAssetUtilities.ReOrderDocument(visualTreeAsset);
-
             PostLoadDocumentStyleSheetCleanup();
 
             hasUnsavedChanges = false;
@@ -812,7 +820,7 @@ namespace Unity.UI.Builder
 
         internal void GenerateUxmlPreview()
         {
-            m_UxmlPreview = visualTreeAsset.GenerateUXML(uxmlPath, true); // Set this to false to see the special selection elements and attributes.
+            m_UxmlPreview = visualTreeAsset.GenerateUXML(); // Set this to false to see the special selection elements and attributes.
         }
 
         void GenerateUssPreview()
@@ -1027,7 +1035,7 @@ namespace Unity.UI.Builder
 
         bool WriteUXMLToFile(string uxmlPath)
         {
-            var uxmlText = visualTreeAsset.GenerateUXML(uxmlPath, true);
+            var uxmlText = visualTreeAsset.GenerateUXML();
 
             // This will only be null (not empty) if the UXML is invalid in some way.
             if (uxmlText == null)
@@ -1039,12 +1047,12 @@ namespace Unity.UI.Builder
         VisualElement ReloadChildToCanvas(BuilderDocumentOpenUXML childOpenUXML, VisualElement rootElement)
         {
             var childRootElement = rootElement;
-            if (childOpenUXML.openSubDocumentParentSourceTemplateAssetIndex > -1)
+            if (childOpenUXML.templateAsset != null)
             {
                 var parentOpenUXML = openUXMLFiles[childOpenUXML.openSubDocumentParentIndex];
                 rootElement = ReloadChildToCanvas(parentOpenUXML, rootElement);
 
-                var targetTemplateAsset = parentOpenUXML.visualTreeAsset.templateAssets[childOpenUXML.openSubDocumentParentSourceTemplateAssetIndex];
+                var targetTemplateAsset = childOpenUXML.templateAsset;
                 var templateContainerQuery = rootElement.Query<TemplateContainer>().Where(container =>
                     container.GetProperty(BuilderConstants.ElementLinkedVisualElementAssetVEPropertyName) as TemplateAsset == targetTemplateAsset);
                 var foundTemplateContainer = templateContainerQuery.First();
@@ -1168,7 +1176,7 @@ namespace Unity.UI.Builder
             var parentIndex = openSubDocumentParentIndex;
 
             // Do not display styles from parent documents if this is a subdocument open in isolation.
-            bool isIsolationMode = isChildSubDocument && openSubDocumentParentSourceTemplateAssetIndex == -1;
+            bool isIsolationMode = isChildSubDocument && templateAsset == null;
 
             while (parentIndex > -1 && !isIsolationMode)
             {
@@ -1217,6 +1225,7 @@ namespace Unity.UI.Builder
                 // To get all the selection markers into the new assets.
                 m_VisualTreeAssetBackup.DeepOverwrite(m_VisualTreeAsset);
                 m_VisualTreeAsset.UpdateUsingEntries();
+                m_VisualTreeAsset.SetupReferences();
 
                 // Update hash. Otherwise we end up with the old overwritten contentHash
                 var hash = UXMLImporterImpl.GenerateHash(localUxmlPath);
@@ -1225,9 +1234,24 @@ namespace Unity.UI.Builder
             }
 
             // Reset file settings
-            m_FileSettings.SetRootElementAsset(m_VisualTreeAsset);
+            fileSettings.SetRootElementAsset(m_VisualTreeAsset);
 
             return needsFullRefresh;
+        }
+
+        public BuilderDocumentOpenUSS GetUssFileFromSheet(StyleSheet styleSheet)
+        {
+            if (styleSheet == null)
+                return null;
+
+            foreach (var openUSSFile in m_OpenUSSFiles)
+            {
+                if (openUSSFile?.styleSheet == styleSheet)
+                    return openUSSFile;
+            }
+
+            // If this is a subdocument, check the parent document for the style sheet.
+            return openSubDocumentParent?.GetUssFileFromSheet(styleSheet);
         }
     }
 }

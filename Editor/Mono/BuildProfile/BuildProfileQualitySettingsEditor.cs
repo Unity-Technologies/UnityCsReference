@@ -189,7 +189,7 @@ namespace UnityEditor.Build.Profile
         public bool IsDataEqualToGlobalQualitySettings(BuildProfile profile)
         {
             var buildTarget = profile.buildTarget;
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroupName(buildTarget);
 
             var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
             if (m_QualityLevels.arraySize != globalQualityLevels.Length)

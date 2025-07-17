@@ -10,9 +10,9 @@ using UnityEditor.StyleSheets;
 
 namespace UnityEditor.IMGUI.Controls
 {
-    internal abstract class TreeViewGUI : ITreeViewGUI
+    internal abstract class TreeViewGUI<TIdentifier> : ITreeViewGUI<TIdentifier> where TIdentifier : unmanaged, IEquatable<TIdentifier>
     {
-        protected TreeViewController m_TreeView;
+        protected TreeViewController<TIdentifier>  m_TreeView;
         protected PingData m_Ping = new PingData();
         protected Rect m_DraggingInsertionMarkerRect;
         protected Rect m_DraggingAncestorMarkerRect;
@@ -22,8 +22,8 @@ namespace UnityEditor.IMGUI.Controls
         public float iconLeftPadding { get; set; }
         public float iconRightPadding { get; set; }
         public float iconTotalPadding { get { return iconLeftPadding + iconRightPadding; } }
-        public System.Action<TreeViewItem, Rect> iconOverlayGUI { get; set; } // Rect includes iconLeftPadding and iconRightPadding
-        public System.Action<TreeViewItem, Rect> labelOverlayGUI { get; set; }
+        public System.Action<TreeViewItem<TIdentifier> , Rect> iconOverlayGUI { get; set; } // Rect includes iconLeftPadding and iconRightPadding
+        public System.Action<TreeViewItem<TIdentifier> , Rect> labelOverlayGUI { get; set; }
 
         private bool m_AnimateScrollBarOnExpandCollapse = true;
 
@@ -153,12 +153,12 @@ namespace UnityEditor.IMGUI.Controls
             get { return foldoutStyle.fixedWidth; }
         }
 
-        public TreeViewGUI(TreeViewController treeView)
+        public TreeViewGUI(TreeViewController<TIdentifier>  treeView)
         {
             m_TreeView = treeView;
         }
 
-        public TreeViewGUI(TreeViewController treeView, bool useHorizontalScroll)
+        public TreeViewGUI(TreeViewController<TIdentifier>  treeView, bool useHorizontalScroll)
         {
             m_TreeView = treeView;
             m_UseHorizontalScroll = useHorizontalScroll;
@@ -166,7 +166,7 @@ namespace UnityEditor.IMGUI.Controls
 
         virtual public void OnInitialize()
         {
-            var dragging = m_TreeView.dragging as TreeViewDragging;
+            var dragging = m_TreeView.dragging as TreeViewDragging<TIdentifier> ;
             if (dragging != null)
                 dragging.getIndentLevelForMouseCursor = GetIndentLevelForMouseCursor;
         }
@@ -178,7 +178,7 @@ namespace UnityEditor.IMGUI.Controls
             return Mathf.FloorToInt((mousePosX - contentStartX) / indentWidth);
         }
 
-        internal Texture GetEffectiveIcon(TreeViewItem item, bool selected, bool focused)
+        internal Texture GetEffectiveIcon(TreeViewItem<TIdentifier>  item, bool selected, bool focused)
         {
             var icon = GetIconForItem(item);
 
@@ -193,12 +193,13 @@ namespace UnityEditor.IMGUI.Controls
             return icon;
         }
 
-        protected virtual Texture GetIconForItem(TreeViewItem item)
+        protected virtual Texture GetIconForItem(TreeViewItem<TIdentifier>  item) => GetIconForItemInternal(item);
+        protected virtual Texture GetIconForItemInternal(TreeViewItem<TIdentifier>  item)
         {
             return item.icon;
         }
 
-        internal virtual Texture GetIconForSelectedItem(TreeViewItem item)
+        internal virtual Texture GetIconForSelectedItem(TreeViewItem<TIdentifier>  item)
         {
             return EditorUtility.GetIconInActiveState(GetIconForItem(item));
         }
@@ -229,11 +230,11 @@ namespace UnityEditor.IMGUI.Controls
             return new Vector2(width, height);
         }
 
-        protected float GetMaxWidth(IList<TreeViewItem> rows)
+        protected float GetMaxWidth(IList<TreeViewItem<TIdentifier>> rows)
         {
             float maxWidth = 1f;
 
-            foreach (TreeViewItem item in rows)
+            foreach (TreeViewItem<TIdentifier>  item in rows)
             {
                 float width = 0f;
 
@@ -256,7 +257,7 @@ namespace UnityEditor.IMGUI.Controls
             return maxWidth;
         }
 
-        virtual public int GetNumRowsOnPageUpDown(TreeViewItem fromItem, bool pageUp, float heightOfTreeView)
+        virtual public int GetNumRowsOnPageUpDown(TreeViewItem<TIdentifier>  fromItem, bool pageUp, float heightOfTreeView)
         {
             return (int)Mathf.Floor(heightOfTreeView / k_LineHeight);
         }
@@ -309,7 +310,7 @@ namespace UnityEditor.IMGUI.Controls
                 return;
 
             // If an inheriting class already set the m_DraggingInsertionMarkerRect we don't overwrite it
-            var dragging = m_TreeView.dragging as TreeViewDragging;
+            var dragging = m_TreeView.dragging as TreeViewDragging<TIdentifier>;
             if (dragging != null && dragging.insertionMarkerYPosition > 0 && m_DraggingInsertionMarkerRect.x == -1)
             {
                 float xPos = GetContentIndent(dragging.insertRelativeToSibling) + extraInsertionMarkerIndent;
@@ -341,13 +342,14 @@ namespace UnityEditor.IMGUI.Controls
             HandlePing();
         }
 
-        virtual public void OnRowGUI(Rect rowRect, TreeViewItem item, int row, bool selected, bool focused)
+        virtual public void OnRowGUI(Rect rowRect, TreeViewItem<TIdentifier>  item, int row, bool selected, bool focused) => OnRowGUIInternal(rowRect, item, row, selected, focused);
+        virtual public void OnRowGUIInternal(Rect rowRect, TreeViewItem<TIdentifier>  item, int row, bool selected, bool focused)
         {
             DoItemGUI(rowRect, row, item, selected, focused, false);
         }
 
         // Override this method for custom rendering of background behind selection and drop effect rendering
-        protected virtual void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        protected virtual void DrawItemBackground(Rect rect, int row, TreeViewItem<TIdentifier>  item, bool selected, bool focused)
         {
             if (item == m_TreeView.hoveredItem)
             {
@@ -358,7 +360,7 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
-        public virtual Rect GetRenameRect(Rect rowRect, int row, TreeViewItem item)
+        public virtual Rect GetRenameRect(Rect rowRect, int row, TreeViewItem<TIdentifier>  item)
         {
             float offset = GetContentIndent(item) + extraSpaceBeforeIconAndLabel;
 
@@ -370,11 +372,11 @@ namespace UnityEditor.IMGUI.Controls
                 rowRect.height);
         }
 
-        virtual protected void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)
+        virtual protected void DoItemGUI(Rect rect, int row, TreeViewItem<TIdentifier>  item, bool selected, bool focused, bool useBoldFont)
         {
             EditorGUIUtility.SetIconSize(new Vector2(k_IconWidth, k_IconWidth)); // If not set we see icons scaling down if text is being cropped
 
-            int itemControlID = TreeViewController.GetItemControlID(item);
+            int itemControlID = TreeViewController<TIdentifier>.GetItemControlID(item);
 
             bool isRenamingThisItem = IsRenaming(item.id);
             bool showFoldout = m_TreeView.data.IsExpandable(item);
@@ -411,7 +413,7 @@ namespace UnityEditor.IMGUI.Controls
                     }
 
                     // Ancestor item marker is rendered after all rows in RowEndGUI - extra visual helper marker when previous sibling is far away from the cursor
-                    var dragging = m_TreeView.dragging as TreeViewDragging;
+                    var dragging = m_TreeView.dragging as TreeViewDragging<TIdentifier>;
                     if (dragging != null && dragging.GetAncestorControlID() == itemControlID && dragging.insertRelativeToSibling != null)
                     {
                         m_DraggingAncestorMarkerRect = rect;
@@ -462,7 +464,7 @@ namespace UnityEditor.IMGUI.Controls
             return rectY + customFoldoutYOffset;
         }
 
-        protected virtual Rect DoFoldout(Rect rect, TreeViewItem item, int row)
+        protected virtual Rect DoFoldout(Rect rect, TreeViewItem<TIdentifier>  item, int row)
         {
             float indent = GetFoldoutIndent(item);
             Rect foldoutRect = new Rect(rect.x + indent, GetFoldoutYPosition(rect.y), foldoutStyleWidth, k_LineHeight);
@@ -470,7 +472,7 @@ namespace UnityEditor.IMGUI.Controls
             return foldoutRect;
         }
 
-        protected virtual void FoldoutButton(Rect foldoutRect, TreeViewItem item, int row, GUIStyle foldoutStyle)
+        protected virtual void FoldoutButton(Rect foldoutRect, TreeViewItem<TIdentifier>  item, int row, GUIStyle foldoutStyle)
         {
             var expansionAnimator = m_TreeView.expansionAnimator;
 
@@ -491,11 +493,11 @@ namespace UnityEditor.IMGUI.Controls
             return GUI.Toggle(foldoutRect, expandedState, GUIContent.none, foldoutStyle);
         }
 
-        protected virtual void OnAdditionalGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        protected virtual void OnAdditionalGUI(Rect rect, int row, TreeViewItem<TIdentifier>  item, bool selected, bool focused)
         {
         }
 
-        protected virtual void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
+        protected virtual void OnContentGUI(Rect rect, int row, TreeViewItem<TIdentifier>  item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
         {
             if (Event.current.rawType != EventType.Repaint)
                 return;
@@ -542,7 +544,7 @@ namespace UnityEditor.IMGUI.Controls
         // Ping Item
         // -------------
 
-        virtual public void BeginPingItem(TreeViewItem item, float topPixelOfRow, float availableWidth)
+        virtual public void BeginPingItem(TreeViewItem<TIdentifier>  item, float topPixelOfRow, float availableWidth)
         {
             if (item == null)
                 return;
@@ -592,17 +594,18 @@ namespace UnityEditor.IMGUI.Controls
         //-------------------
         // Rename section
 
-        protected RenameOverlay GetRenameOverlay()
+        protected RenameOverlay<TIdentifier> GetRenameOverlay()
         {
             return m_TreeView.state.renameOverlay;
         }
 
-        virtual protected bool IsRenaming(int id)
+        virtual protected bool IsRenaming(TIdentifier id)
         {
-            return GetRenameOverlay().IsRenaming() && GetRenameOverlay().userData == id && !GetRenameOverlay().isWaitingForDelay;
+            return GetRenameOverlay().IsRenaming() && GetRenameOverlay().userData.Equals(id) && !GetRenameOverlay().isWaitingForDelay;
         }
 
-        virtual public bool BeginRename(TreeViewItem item, float delay)
+        virtual public bool BeginRename(TreeViewItem<TIdentifier>  item, float delay) => BeginRenameInternal(item, delay);
+        virtual public bool BeginRenameInternal(TreeViewItem<TIdentifier>  item, float delay)
         {
             return GetRenameOverlay().BeginRename(item.displayName, item.id, delay);
         }
@@ -635,7 +638,7 @@ namespace UnityEditor.IMGUI.Controls
             GetRenameOverlay().Clear();
         }
 
-        virtual public float GetFoldoutIndent(TreeViewItem item)
+        virtual public float GetFoldoutIndent(TreeViewItem<TIdentifier>  item)
         {
             // Ignore depth when showing search results
             if (m_TreeView.isSearching)
@@ -644,7 +647,7 @@ namespace UnityEditor.IMGUI.Controls
             return k_BaseIndent + item.depth * indentWidth;
         }
 
-        virtual public float GetContentIndent(TreeViewItem item)
+        virtual public float GetContentIndent(TreeViewItem<TIdentifier>  item)
         {
             return GetFoldoutIndent(item) + foldoutStyleWidth + lineStyle.margin.left;
         }

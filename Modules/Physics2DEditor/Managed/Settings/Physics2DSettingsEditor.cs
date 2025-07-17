@@ -17,7 +17,7 @@ namespace UnityEditor
             public static readonly GUIContent kSimulationModeLabel = EditorGUIUtility.TrTextContent("Simulation Mode", "Controls when and how the physics simulation will be run.");
             public static readonly GUIContent kLayerCollisionMatrixLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Allows the configuration of the layer-based collision detection.");
             public static readonly GUIContent kReuseCollisionCallbacksLabel = EditorGUIUtility.TrTextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.");
-            public static readonly GUIContent kAutoSyncTransformsLabel = EditorGUIUtility.TrTextContent("This option is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.");
+            public static readonly GUIContent kAutoSyncTransformsLabel = EditorGUIUtility.TrTextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.");
 
             public static readonly GUIContent kGeneralLabel = EditorGUIUtility.TrTextContent("General Settings", "General Settings");
             public static readonly GUIContent kCollisionLabel = EditorGUIUtility.TrTextContent("Layer Collision Matrix", "Collision Settings");

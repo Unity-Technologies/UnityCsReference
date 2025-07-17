@@ -18,7 +18,7 @@ namespace UnityEditor
     // GameObjectTreeViewDataSource only fetches current visible items of the scene tree, because we derive from LazyTreeViewDataSource
     // Note: every time a Item's expanded state changes FetchData is called
 
-    internal class GameObjectTreeViewDataSource : LazyTreeViewDataSource
+    internal class GameObjectTreeViewDataSource : LazyTreeViewDataSource<EntityId>
     {
         const double k_LongFetchTime = 0.05; // How much time is considered to be a long fetch
         const double k_FetchDelta = 0.1; // How much time between long fetches is acceptable.
@@ -26,7 +26,7 @@ namespace UnityEditor
         const HierarchyType k_HierarchyType = HierarchyType.GameObjects;
         const int k_DefaultStartCapacity = 1000;
 
-        int m_RootInstanceID;
+        EntityId m_RootInstanceID;
         string m_SearchString = "";
         readonly SearchService.SceneSearchSessionHandler m_SearchSessionHandler = new SearchService.SceneSearchSessionHandler();
         SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
@@ -35,7 +35,7 @@ namespace UnityEditor
         bool m_NeedsChildParentReferenceSetup;
         bool m_RowsPartiallyInitialized;
         int m_RowCount;
-        List<TreeViewItem> m_ListOfRows; // We need the generic List type in this class for Add/RemoveRange and Sorting (m_Rows is IList)
+        List<TreeViewItem<EntityId>> m_ListOfRows; // We need the generic List type in this class for Add/RemoveRange and Sorting (m_Rows is IList)
         List<GameObjectTreeViewItem> m_StickySceneHeaderItems = new List<GameObjectTreeViewItem>();
         internal event System.Action beforeReloading;
         public HierarchySorting sortingState = new TransformSorting();
@@ -60,7 +60,7 @@ namespace UnityEditor
 
         public Scene[] scenes { get; set; }
 
-        public GameObjectTreeViewDataSource(TreeViewController treeView, int rootInstanceID, bool showRoot, bool rootItemIsCollapsable)
+        public GameObjectTreeViewDataSource(TreeViewController<EntityId> treeView, EntityId rootInstanceID, bool showRoot, bool rootItemIsCollapsable)
             : base(treeView)
         {
             m_RootInstanceID = rootInstanceID;
@@ -78,7 +78,7 @@ namespace UnityEditor
             if (m_NeedsChildParentReferenceSetup)
             {
                 m_NeedsChildParentReferenceSetup = false;
-                TreeViewUtility.SetChildParentReferences(GetRows(), m_RootItem);
+                TreeViewUtility<EntityId>.SetChildParentReferences(GetRows(), m_RootItem);
             }
         }
 
@@ -99,17 +99,17 @@ namespace UnityEditor
             }
         }
 
-        public override void RevealItem(int itemID)
+        public override void RevealItem(EntityId itemID)
         {
             // Optimization: Only spend time on revealing item if it is part of the Hierarchy
             if (IsValidHierarchyInstanceID(itemID))
                 base.RevealItem(itemID);
         }
 
-        public override void RevealItems(int[] itemIDs)
+        public override void RevealItems(EntityId[] itemIDs)
         {
             // Optimization: Only spend time on revealing item if it is part of the Hierarchy
-            HashSet<int> validItemIDs = new HashSet<int>();
+            var validItemIDs = new HashSet<EntityId>();
             foreach (var itemID in itemIDs)
             {
                 if (IsValidHierarchyInstanceID(itemID))
@@ -117,11 +117,11 @@ namespace UnityEditor
             }
 
             // Get existing expanded in hashset
-            HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
+            HashSet<EntityId> expandedSet = new HashSet<EntityId>(expandedIDs);
             int orgSize = expandedSet.Count;
 
-            IHierarchyProperty propertyIterator = CreateHierarchyProperty();
-            int[] ancestors = propertyIterator.FindAllAncestors(validItemIDs.ToArray());
+            var propertyIterator = CreateHierarchyProperty();
+            EntityId[] ancestors = propertyIterator.FindAllAncestors(validItemIDs.ToArray());
 
             // Add all parents above id
             foreach (var itemID in ancestors)
@@ -140,7 +140,7 @@ namespace UnityEditor
             }
         }
 
-        override public bool IsRevealed(int id)
+        override public bool IsRevealed(EntityId id)
         {
             return GetRow(id) != -1;
         }
@@ -149,10 +149,10 @@ namespace UnityEditor
         {
             //Get is persistent without loading object
             var obj = InternalEditorUtility.GetObjectFromInstanceID(instanceID);
-            if (obj != null ? EditorUtility.IsPersistent(obj) : AssetDatabase.Contains(instanceID))
+            if (obj != null ? EditorUtility.IsPersistent(obj) : AssetDatabase.Contains((EntityId)instanceID))
                 return false;
 
-            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID)))
+            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(SceneHandle.From(instanceID))))
                 return true;
 
             if (InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject))
@@ -161,20 +161,20 @@ namespace UnityEditor
             return false;
         }
 
-        HierarchyProperty FindHierarchyProperty(int instanceID)
+        HierarchyIterator FindHierarchyProperty(EntityId instanceID)
         {
             // Optimization: Prevent search by early out if 'id' is not a game object (or scene handle)
             if (!IsValidHierarchyInstanceID(instanceID))
                 return null;
 
-            HierarchyProperty property = CreateHierarchyProperty();
+            var property = CreateHierarchyProperty();
             if (property.Find(instanceID, m_TreeView.state.expandedIDs.ToArray()))
                 return property;
 
             return null;
         }
 
-        override public int GetRow(int id)
+        override public int GetRow(EntityId id)
         {
             bool isSearching = !string.IsNullOrEmpty(m_SearchString);
             if (isSearching)
@@ -183,19 +183,19 @@ namespace UnityEditor
             // We read from the backend directly instead of using GetRows()
             // because we might not yet have initialized tree view after creating a new
             // game object. GetRows also needs full init which we want to prevent
-            HierarchyProperty property = FindHierarchyProperty(id);
+            var property = FindHierarchyProperty(id);
             if (property != null)
                 return property.row;
 
             return -1;
         }
 
-        override public TreeViewItem GetItem(int row)
+        override public TreeViewItem<EntityId> GetItem(int row)
         {
             return m_Rows[row];
         }
 
-        public override IList<TreeViewItem> GetRows()
+        public override IList<TreeViewItem<EntityId>> GetRows()
         {
             InitIfNeeded();
             EnsureFullyInitialized();
@@ -203,7 +203,7 @@ namespace UnityEditor
             return m_Rows;
         }
 
-        override public TreeViewItem FindItem(int id)
+        override public TreeViewItem<EntityId> FindItem(EntityId id)
         {
             // Since this is a LazyTreeViewDataSource that only knows about expanded items
             // we need to reveal the item before searching for it (expand its ancestors)
@@ -228,9 +228,9 @@ namespace UnityEditor
             return true;
         }
 
-        internal HierarchyProperty CreateHierarchyProperty()
+        internal HierarchyIterator CreateHierarchyProperty()
         {
-            HierarchyProperty property = new HierarchyProperty(k_HierarchyType);
+            var property = new HierarchyIterator(k_HierarchyType);
             property.alphaSorted = IsUsingAlphaSort();
             property.showSceneHeaders = ShouldShowSceneHeaders();
             if (SceneHierarchyHooks.provideSubScenes != null)
@@ -247,7 +247,7 @@ namespace UnityEditor
             return (scenes == null || scenes.Length != 1 || !EditorSceneManager.IsPreviewScene(scenes[0]));
         }
 
-        void CreateRootItem(HierarchyProperty property)
+        void CreateRootItem(HierarchyIterator property)
         {
             int rootDepth = 0; // hiddden
 
@@ -266,8 +266,7 @@ namespace UnityEditor
         void ClearSearchFilter()
         {
             var property = CreateHierarchyProperty();
-            property.SetSearchFilter("", 0); // 0 = All
-
+            property.SetSearchFilter(SearchableEditorWindow.CreateFilter("", SearchableEditorWindow.SearchMode.All)); // 0 = All
             m_SearchSessionHandler.EndSession();
         }
 
@@ -279,7 +278,7 @@ namespace UnityEditor
             m_RowsPartiallyInitialized = false;
             double fetchStartTime = EditorApplication.timeSinceStartup;
 
-            HierarchyProperty property = CreateHierarchyProperty();
+            var property = CreateHierarchyProperty();
             if (m_RootInstanceID != 0)
             {
                 bool found = property.Find(m_RootInstanceID, null);
@@ -303,7 +302,7 @@ namespace UnityEditor
 
             if (isSearching)
             {
-                m_SearchSessionHandler.BeginSession(() => new SearchService.SceneSearchContext {rootProperty = property});
+                m_SearchSessionHandler.BeginSession(() => new SearchService.SceneSearchContext {rootIterator = property});
             }
 
             if (isSearching || subTreeWanted)
@@ -329,7 +328,7 @@ namespace UnityEditor
             m_LastFetchTime = fetchStartTime;
 
             // We want to reset selection on copy/duplication/delete
-            m_TreeView.SetSelection(Selection.instanceIDs, false); // use false because we might just be expanding/collapsing a Item (which would prevent collapsing a Item with a selected child)
+            m_TreeView.SetSelection(Selection.entityIds, false); // use false because we might just be expanding/collapsing a Item (which would prevent collapsing a Item with a selected child)
 
             CreateSceneHeaderItems();
 
@@ -339,7 +338,7 @@ namespace UnityEditor
             Profiler.EndSample();
         }
 
-        public override bool CanBeParent(TreeViewItem item)
+        public override bool CanBeParent(TreeViewItem<EntityId> item)
         {
             // Ensure parent child-parent references are setup if requesting parent information
             SetupChildParentReferencesIfNeeded();
@@ -352,7 +351,7 @@ namespace UnityEditor
             return sortingState.GetType() == typeof(AlphabeticalSorting);
         }
 
-        static void Resize(List<TreeViewItem> list, int count)
+        static void Resize(List<TreeViewItem<EntityId>> list, int count)
         {
             int cur = list.Count;
             if (count < cur)
@@ -361,7 +360,7 @@ namespace UnityEditor
             {
                 if (count > list.Capacity) // this bit is purely an optimisation, to avoid multiple automatic capacity changes.
                     list.Capacity = count + 20; // add some extra to prevent alloc'ing when adding to list
-                list.AddRange(Enumerable.Repeat(default(TreeViewItem), count - cur)); // add range is nulls
+                list.AddRange(Enumerable.Repeat(default(TreeViewItem<EntityId>), count - cur)); // add range is nulls
             }
         }
 
@@ -381,16 +380,16 @@ namespace UnityEditor
             if (m_Rows == null)
             {
                 int startCapacity = m_RowCount > k_DefaultStartCapacity ? m_RowCount : k_DefaultStartCapacity;
-                m_ListOfRows = new List<TreeViewItem>(startCapacity);
+                m_ListOfRows = new List<TreeViewItem<EntityId>>(startCapacity);
                 m_Rows = m_ListOfRows;
             }
         }
 
         private void InitializeMinimal()
         {
-            int[] expanded = m_TreeView.state.expandedIDs.ToArray();
+            var expanded = m_TreeView.state.expandedIDs.ToArray();
 
-            HierarchyProperty property = CreateHierarchyProperty();
+            var property = CreateHierarchyProperty();
             m_RowCount = property.CountRemaining(expanded);
             ResizeItemList(m_RowCount);
             property.Reset();
@@ -411,7 +410,7 @@ namespace UnityEditor
             if (SceneHierarchy.s_Debug)
                 Log("Init full (" + m_RowCount + ")");
 
-            HierarchyProperty property = CreateHierarchyProperty();
+            var property = CreateHierarchyProperty();
             m_RowCount = property.CountRemaining(m_TreeView.state.expandedIDs.ToArray());
             ResizeItemList(m_RowCount);
             property.Reset();
@@ -420,7 +419,7 @@ namespace UnityEditor
         }
 
         // Used for search results, sub tree view (of e.g. a prefab) and custom sorting
-        void InitializeProgressivly(HierarchyProperty property, bool subTreeWanted, bool isSearching)
+        void InitializeProgressivly(HierarchyIterator property, bool subTreeWanted, bool isSearching)
         {
             AllocateBackingArrayIfNeeded();
 
@@ -430,7 +429,7 @@ namespace UnityEditor
             {
                 // Subtree setup
                 int row = 0;
-                int[] expanded = expandedIDs.ToArray();
+                var expanded = expandedIDs.ToArray();
                 int subtractDepth = subTreeWanted ? property.depth + 1 : 0;
 
                 while (property.NextWithDepthCheck(expanded, minAllowedDepth))
@@ -451,17 +450,17 @@ namespace UnityEditor
         }
 
         // Returns number of rows in search result
-        int InitializeSearchResults(HierarchyProperty property, int minAllowedDepth)
+        int InitializeSearchResults(HierarchyIterator property, int minAllowedDepth)
         {
             // Search setup
             const bool kShowItemHasChildren = false;
             const int kItemDepth = 0;
-            int currentSceneHandle = -1;
+            SceneHandle currentSceneHandle = SceneHandle.None;
             int row = 0;
             var searchFilter = SearchableEditorWindow.CreateFilter(searchString, (SearchableEditorWindow.SearchMode)m_SearchMode);
             var searchContext = (SearchService.SceneSearchContext)m_SearchSessionHandler.context;
             searchContext.searchFilter = searchFilter;
-            searchContext.rootProperty = property;
+            searchContext.rootIterator = property;
 
             m_SearchSessionHandler.BeginSearch(searchString);
 
@@ -502,19 +501,19 @@ namespace UnityEditor
                 for (int i = 1; i < headerRows.Count; i++)
                 {
                     int count = headerRows[i] - currentSortStart - 1;
-                    m_ListOfRows.Sort(currentSortStart, count, new TreeViewItemAlphaNumericSort());
+                    m_ListOfRows.Sort(currentSortStart, count, new TreeViewItemAlphaNumericSort<EntityId>());
                     currentSortStart = headerRows[i];
                 }
 
                 // last section
-                m_ListOfRows.Sort(currentSortStart, numRows - currentSortStart, new TreeViewItemAlphaNumericSort());
+                m_ListOfRows.Sort(currentSortStart, numRows - currentSortStart, new TreeViewItemAlphaNumericSort<EntityId>());
             }
 
 
             return numRows;
         }
 
-        bool AddSceneHeaderToSearchIfNeeded(GameObjectTreeViewItem item, HierarchyProperty property, ref int currentSceneHandle)
+        bool AddSceneHeaderToSearchIfNeeded(GameObjectTreeViewItem item, HierarchyIterator property, ref SceneHandle currentSceneHandle)
         {
             if (PrefabStageUtility.GetCurrentPrefabStage() != null)
                 return false;
@@ -523,7 +522,7 @@ namespace UnityEditor
             if (currentSceneHandle != scene.handle)
             {
                 currentSceneHandle = scene.handle;
-                InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                InitTreeViewItem(item, scene.handle.ToEntityId(), scene, true, 0, null, false, 0);
                 return true;
             }
             return false;
@@ -543,11 +542,11 @@ namespace UnityEditor
             return item;
         }
 
-        void InitializeRows(HierarchyProperty property, int firstRow, int lastRow)
+        void InitializeRows(HierarchyIterator property, int firstRow, int lastRow)
         {
             property.Reset();
 
-            int[] expanded = expandedIDs.ToArray();
+            var expanded = expandedIDs.ToArray();
 
             // Skip items if needed
             if (firstRow > 0)
@@ -568,9 +567,9 @@ namespace UnityEditor
             }
         }
 
-        private void InitTreeViewItem(GameObjectTreeViewItem item, HierarchyProperty property, bool itemHasChildren, int itemDepth)
+        private void InitTreeViewItem(GameObjectTreeViewItem item, HierarchyIterator property, bool itemHasChildren, int itemDepth)
         {
-            InitTreeViewItem(item, property.instanceID, property.GetScene(), property.isSceneHeader, property.colorCode, property.pptrValue, itemHasChildren, itemDepth);
+            InitTreeViewItem(item, property.entityId, property.GetScene(), property.isSceneHeader, property.colorCode, property.pptrValue, itemHasChildren, itemDepth);
         }
 
         private void InitTreeViewItem(GameObjectTreeViewItem item, int itemID, Scene scene, bool isSceneHeader, int colorCode, Object pptrObject, bool hasChildren, int depth)
@@ -600,29 +599,29 @@ namespace UnityEditor
             }
         }
 
-        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
+        protected override void GetParentsAbove(EntityId id, HashSet<EntityId> parentsAbove)
         {
             if (!IsValidHierarchyInstanceID(id))
                 return;
 
-            IHierarchyProperty propertyIterator = CreateHierarchyProperty();
+            var propertyIterator = CreateHierarchyProperty();
             if (propertyIterator.Find(id, null))
             {
                 while (propertyIterator.Parent())
                 {
-                    parentsAbove.Add((propertyIterator.instanceID));
+                    parentsAbove.Add((propertyIterator.entityId));
                 }
             }
         }
 
         // Should return the items that have children from id and below
-        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
+        protected override void GetParentsBelow(EntityId id, HashSet<EntityId> parentsBelow)
         {
             // Add all children expanded ids to hashset
             if (!IsValidHierarchyInstanceID(id))
                 return;
 
-            IHierarchyProperty search = CreateHierarchyProperty();
+            var search = CreateHierarchyProperty();
             if (search.Find(id, null))
             {
                 parentsBelow.Add(id);
@@ -631,7 +630,7 @@ namespace UnityEditor
                 while (search.Next(null) && search.depth > depth)
                 {
                     if (search.hasChildren)
-                        parentsBelow.Add(search.instanceID);
+                        parentsBelow.Add(search.entityId);
                 }
             }
         }
@@ -642,7 +641,7 @@ namespace UnityEditor
             Debug.Log(text);
         }
 
-        override public bool IsRenamingItemAllowed(TreeViewItem item)
+        override public bool IsRenamingItemAllowed(TreeViewItem<EntityId> item)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem.isSceneHeader)
@@ -679,7 +678,7 @@ namespace UnityEditor
                     else
                     {
                         var item = new GameObjectTreeViewItem(0, 0, null, null);
-                        InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                        InitTreeViewItem(item, scene.handle.ToEntityId(), scene, true, 0, null, false, 0);
                         m_StickySceneHeaderItems.Add(item);
                     }
                 }
@@ -691,7 +690,7 @@ namespace UnityEditor
                     Scene scene = SceneManager.GetSceneAt(i);
 
                     var item = new GameObjectTreeViewItem(0, 0, null, null);
-                    InitTreeViewItem(item, scene.handle, scene, true, 0, null, false, 0);
+                    InitTreeViewItem(item, scene.handle.ToEntityId(), scene, true, 0, null, false, 0);
                     m_StickySceneHeaderItems.Add(item);
                 }
             }

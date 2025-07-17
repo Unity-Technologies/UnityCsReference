@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either an integer or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleInt : IStyleValue<int>, IEquatable<StyleInt>
     {
         /// <summary>
@@ -53,7 +54,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private int m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

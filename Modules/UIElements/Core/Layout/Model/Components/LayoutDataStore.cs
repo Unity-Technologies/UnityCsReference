@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
+using Unity.Profiling.LowLevel.Unsafe;
 using UnityEngine.Assertions;
 
 namespace UnityEngine.UIElements.Layout;
@@ -16,7 +17,13 @@ struct ComponentType
 {
     public int Size;
 
-    public static ComponentType Create<T>() where T : unmanaged => new ComponentType {Size = UnsafeUtility.SizeOf<T>()};
+    public static ComponentType Create<T>() where T : unmanaged
+    {
+        return new ComponentType
+        {
+            Size = UnsafeUtility.SizeOf<T>()
+        };
+    }
 }
 
 /// <summary>
@@ -38,12 +45,12 @@ unsafe partial struct LayoutDataStore : IDisposable
     /// The <see cref="ComponentDataStore"/> stores a contiguous array of one specific component where the <see cref="LayoutHandle.Index"/> maps to the data for that node.
     /// </summary>
     [StructLayout(LayoutKind.Sequential)]
-    struct ComponentDataStore : IDisposable
+    internal struct ComponentDataStore : IDisposable
     {
         /// <summary>
-        /// The allocator to use for the chunk storage.
+        /// The label to use for the chunk storage.
         /// </summary>
-        public Allocator Allocator;
+        public readonly UnsafeAllocLabel AllocLabel;
 
         /// <summary>
         /// The size of the component.
@@ -65,12 +72,12 @@ unsafe partial struct LayoutDataStore : IDisposable
         /// </summary>
         [NativeDisableUnsafePtrRestriction] Chunk* m_Chunks;
 
-        public ComponentDataStore(int size, Allocator allocator)
+        public ComponentDataStore(int size, UnsafeAllocLabel allocLabel)
         {
-            Allocator = allocator;
             Size = size;
             ComponentCountPerChunk = k_ChunkSize / size;
             ChunkCount = 0;
+            AllocLabel = allocLabel;
             m_Chunks = null;
         }
 
@@ -80,9 +87,9 @@ unsafe partial struct LayoutDataStore : IDisposable
                 return;
 
             for (var i = 0; i < ChunkCount; i++)
-                UnsafeUtility.Free(m_Chunks[i].Buffer, Allocator);
+                UnsafeUtility.Free(m_Chunks[i].Buffer, AllocLabel);
 
-            UnsafeUtility.Free(m_Chunks, Allocator);
+            UnsafeUtility.Free(m_Chunks, AllocLabel);
 
             ChunkCount = 0;
             m_Chunks = null;
@@ -103,14 +110,14 @@ unsafe partial struct LayoutDataStore : IDisposable
             if (newChunkCount > ChunkCount)
             {
                 // Grow the chunk ptr array.
-                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), Allocator);
+                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), AllocLabel);
 
                 // Allocate new chunks.
                 for (var i = ChunkCount; i<newChunkCount; i++)
                 {
                     m_Chunks[i] = new Chunk
                     {
-                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, 4, Allocator)
+                        Buffer = (byte*)UnsafeUtility.Malloc(k_ChunkSize, 4, AllocLabel)
                     };
                 }
             }
@@ -119,11 +126,11 @@ unsafe partial struct LayoutDataStore : IDisposable
                 // Free up allocated chunks.
                 for (var i = ChunkCount - 1; i >= newChunkCount; i--)
                 {
-                    UnsafeUtility.Free(m_Chunks[i].Buffer, Allocator);
+                    UnsafeUtility.Free(m_Chunks[i].Buffer, AllocLabel);
                 }
 
                 // Shrink down the chunk ptr array.
-                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), Allocator);
+                m_Chunks = (Chunk*)ResizeArray(m_Chunks, ChunkCount, newChunkCount, UnsafeUtility.SizeOf<Chunk>(), UnsafeUtility.AlignOf<Chunk>(), AllocLabel);
             }
 
             ChunkCount = newChunkCount;
@@ -141,28 +148,30 @@ unsafe partial struct LayoutDataStore : IDisposable
         [NativeDisableUnsafePtrRestriction] public ComponentDataStore* Components;
     }
 
-    readonly Allocator m_Allocator;
+
+
+    readonly UnsafeAllocLabel m_AllocLabel;
     [NativeDisableUnsafePtrRestriction] Data* m_Data;
 
     public bool IsValid => null != m_Data;
 
     public int Capacity => m_Data->Capacity;
 
-    public LayoutDataStore(ComponentType[] components, int initialCapacity, Allocator allocator)
+    public LayoutDataStore(ComponentType[] components, ReadOnlySpan<UnsafeAllocLabel> labels, int initialCapacity, Allocator allocator)
     {
         Assert.IsTrue(components.Length > 0, $"{nameof(LayoutDataStore)} requires at least one component size.");
         Assert.IsTrue(components[0].Size >= sizeof(int), $"{nameof(LayoutDataStore)} requires a minimum element size of {sizeof(int)} to alias");
-
-        m_Allocator = allocator;
-        m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), UnsafeUtility.AlignOf<Data>(), m_Allocator);
+        Assert.AreEqual(components.Length, labels.Length, "Expected a matching number of component names and components.");
+        m_AllocLabel = new UnsafeAllocLabel(nameof(UIElements), "LayoutDataStore", allocator);
+        m_Data = (Data*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<Data>(), UnsafeUtility.AlignOf<Data>(), m_AllocLabel);
         UnsafeUtility.MemClear(m_Data, UnsafeUtility.SizeOf<Data>());
 
         m_Data->ComponentCount = components.Length;
-        m_Data->Components = (ComponentDataStore*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<ComponentDataStore>() * components.Length, UnsafeUtility.AlignOf<ComponentDataStore>(), allocator);
+        m_Data->Components = (ComponentDataStore*)UnsafeUtility.Malloc(UnsafeUtility.SizeOf<ComponentDataStore>() * components.Length, UnsafeUtility.AlignOf<ComponentDataStore>(), m_AllocLabel);
 
         for (var i = 0; i < components.Length; i++)
         {
-            m_Data->Components[i] = new ComponentDataStore(components[i].Size, allocator);
+            m_Data->Components[i] = new ComponentDataStore(components[i].Size, labels[i]);
         }
 
         ResizeCapacity(initialCapacity);
@@ -175,9 +184,9 @@ unsafe partial struct LayoutDataStore : IDisposable
         for (var i = 0; i < m_Data->ComponentCount; i++)
             m_Data->Components[i].Dispose();
 
-        UnsafeUtility.Free(m_Data->Versions, m_Allocator);
-        UnsafeUtility.Free(m_Data->Components, m_Allocator);
-        UnsafeUtility.Free(m_Data, m_Allocator);
+        UnsafeUtility.Free(m_Data->Versions, m_AllocLabel);
+        UnsafeUtility.Free(m_Data->Components, m_AllocLabel);
+        UnsafeUtility.Free(m_Data, m_AllocLabel);
 
         m_Data = null;
     }
@@ -266,7 +275,7 @@ unsafe partial struct LayoutDataStore : IDisposable
     {
         Assert.IsTrue(capacity > 0);
 
-        m_Data->Versions = (int*)ResizeArray(m_Data->Versions, m_Data->Capacity, capacity, sizeof(int), 4, m_Allocator);
+        m_Data->Versions = (int*)ResizeArray(m_Data->Versions, m_Data->Capacity, capacity, sizeof(int), 4, m_AllocLabel);
 
         for (var i=0; i<m_Data->ComponentCount; i++)
             m_Data->Components[i].ResizeCapacity(capacity);
@@ -287,11 +296,11 @@ unsafe partial struct LayoutDataStore : IDisposable
         m_Data->Capacity = capacity;
     }
 
-    static void* ResizeArray(void* fromPtr, long fromCount, long toCount, long size, int align, Allocator allocator)
+    static void* ResizeArray(void* fromPtr, long fromCount, long toCount, long size, int align, UnsafeAllocLabel label)
     {
         Assert.IsTrue(toCount > 0);
 
-        var toPtr = UnsafeUtility.Malloc(size * toCount, align, allocator);
+        var toPtr = UnsafeUtility.Malloc(size * toCount, align, label);
         Assert.IsTrue(toPtr != null);
 
         if (fromCount <= 0)
@@ -301,7 +310,7 @@ unsafe partial struct LayoutDataStore : IDisposable
         var bytesToCopy = countToCopy * size;
 
         UnsafeUtility.MemCpy(toPtr, fromPtr, bytesToCopy);
-        UnsafeUtility.Free(fromPtr, allocator);
+        UnsafeUtility.Free(fromPtr, label);
 
         return toPtr;
     }

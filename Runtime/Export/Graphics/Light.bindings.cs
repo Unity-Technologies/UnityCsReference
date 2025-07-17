@@ -68,7 +68,14 @@ namespace UnityEngine
             set;
         }
 
-        extern public float cookieSize { get; set; }
+        [Obsolete("Light.cookieSize has been deprecated. Use Light.cookieSize2D instead.", false)]
+        public float cookieSize
+        {
+            get { return cookieSize2D.x; }
+            set { cookieSize2D = new Vector2(value, value); }
+        }
+
+        extern public Vector2 cookieSize2D { get; set; }
 
         // The cookie texture projected by the light.
         extern public Texture cookie { get; set; }

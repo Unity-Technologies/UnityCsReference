@@ -19,7 +19,7 @@ namespace UnityEditor.Search
 
         public NativeArray<T> BackingArray => m_BackingArray;
         public int Capacity => m_BackingArray.Length;
-        public int Count { get; private set; }
+        public int Count { get; internal set; }
         public bool IsReadOnly => false;
 
         public Allocator Allocator => m_BackingArray.m_AllocatorLabel;
@@ -43,6 +43,16 @@ namespace UnityEditor.Search
         {
             var subArray = m_BackingArray.GetSubArray(0, Count);
             return subArray.AsReadOnly();
+        }
+
+        public Span<T> AsSpanFullCapacity()
+        {
+            return m_BackingArray.AsSpan();
+        }
+
+        public ReadOnlySpan<T> AsReadOnlySpan()
+        {
+            return m_BackingArray.AsReadOnlySpan().Slice(0, Count);
         }
 
         public void Dispose()
@@ -126,7 +136,7 @@ namespace UnityEditor.Search
             QuickSort(span, 0, span.Length - 1, comparer);
         }
 
-        void GrowIfNeeded(int newCount)
+        public void GrowIfNeeded(int newCount)
         {
             if (newCount > Capacity)
                 Grow(newCount * 2);

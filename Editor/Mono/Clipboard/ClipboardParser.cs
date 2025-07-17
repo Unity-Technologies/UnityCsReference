@@ -616,7 +616,7 @@ namespace UnityEditor
                 if (o != null)
                     return o;
             }
-            return EditorUtility.InstanceIDToObject(instanceID);
+            return EditorUtility.EntityIdToObject(instanceID);
         }
 
         // guid/localId/type are for asset references; these are used if present

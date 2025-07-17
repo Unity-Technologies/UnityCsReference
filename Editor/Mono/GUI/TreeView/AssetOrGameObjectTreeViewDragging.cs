@@ -16,15 +16,14 @@ using Object = UnityEngine.Object;
 namespace UnityEditor
 {
     // Implements dragging behavior for HierarchyProperty based data: Assets or GameObjects
-
-    internal class AssetsTreeViewDragging : TreeViewDragging
+    internal class AssetsTreeViewDragging : TreeViewDragging<EntityId>
     {
-        public AssetsTreeViewDragging(TreeViewController treeView)
+        public AssetsTreeViewDragging(TreeViewController<EntityId> treeView)
             : base(treeView)
         {
         }
 
-        public override bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition)
+        public override bool CanStartDrag(TreeViewItem<EntityId> targetItem, List<EntityId> draggedItemIDs, Vector2 mouseDownPosition)
         {
             // Prevent dragging of immutable root folder
             foreach (var draggedItemID in draggedItemIDs)
@@ -37,7 +36,7 @@ namespace UnityEditor
             return true;
         }
 
-        public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
+        public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
 
@@ -53,14 +52,14 @@ namespace UnityEditor
             }
         }
 
-        public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
+        public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentItem, TreeViewItem<EntityId> targetItem, bool perform, DropPosition dropPos)
         {
             var dragToInstanceId = parentItem?.id ?? 0;
             return DragAndDrop.DropOnProjectBrowserWindow(dragToInstanceId, AssetDatabase.GetAssetPath(dragToInstanceId), perform);
         }
     }
 
-    internal class GameObjectsTreeViewDragging : TreeViewDragging
+    internal class GameObjectsTreeViewDragging : TreeViewDragging<EntityId>
     {
         public delegate DragAndDropVisualMode CustomDraggingDelegate(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, DropPosition dropPos, bool perform);
         CustomDraggingDelegate m_CustomDragHandling;
@@ -68,14 +67,14 @@ namespace UnityEditor
 
         public Transform parentForDraggedObjectsOutsideItems { get; set; }
 
-        public GameObjectsTreeViewDragging(TreeViewController treeView) : base(treeView) {}
+        public GameObjectsTreeViewDragging(TreeViewController<EntityId> treeView) : base(treeView) {}
 
         public void SetCustomDragHandler(CustomDraggingDelegate handler)
         {
             m_CustomDragHandling = handler;
         }
 
-        public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
+        public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
 
@@ -88,7 +87,7 @@ namespace UnityEditor
             draggedItemIDs = m_TreeView.SortIDsInVisiblityOrder(draggedItemIDs);
 
             if (!draggedItemIDs.Contains(draggedItem.id))
-                draggedItemIDs = new List<int> { draggedItem.id };
+                draggedItemIDs = new List<EntityId> { draggedItem.id };
 
             Object[] draggedObjReferences = ProjectWindowUtil.GetDragAndDropObjects(draggedItem.id, draggedItemIDs);
             DragAndDrop.objectReferences = draggedObjReferences;
@@ -132,7 +131,7 @@ namespace UnityEditor
 
         GameObjectTreeViewDataSource dataSource { get { return (GameObjectTreeViewDataSource)m_TreeView.data; } }
 
-        public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
+        public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentItem, TreeViewItem<EntityId> targetItem, bool perform, DropPosition dropPos)
         {
             var hierarchyTargetItem = targetItem as GameObjectTreeViewItem;
 
@@ -173,13 +172,13 @@ namespace UnityEditor
                         return DragAndDropVisualMode.Rejected;
 
                     option |= HierarchyDropFlags.DropUpon;
-                    return DragAndDrop.DropOnHierarchyWindow(lastScene.handle, option, null, perform);
+                    return DragAndDrop.DropOnHierarchyWindow(lastScene.handle.ToEntityId(), option, null, perform);
                 }
             }
 
             // Here we are hovering over items
 
-            var draggingUpon = dropPos == TreeViewDragging.DropPosition.Upon;
+            var draggingUpon = dropPos == DropPosition.Upon;
 
             if (searchActive && !draggingUpon)
             {
@@ -192,7 +191,7 @@ namespace UnityEditor
             }
             else
             {
-                if (dropPos == TreeViewDragging.DropPosition.Above)
+                if (dropPos == DropPosition.Above)
                 {
                     option |= HierarchyDropFlags.DropAbove;
                 }
@@ -213,7 +212,7 @@ namespace UnityEditor
             if (perform && SubSceneGUI.IsUsingSubScenes() && !IsValidSubSceneDropTarget(gameObjectOrSceneInstanceID, dropPos, DragAndDrop.objectReferences))
                 return DragAndDropVisualMode.Rejected;
 
-            GameObject go = EditorUtility.InstanceIDToObject(gameObjectOrSceneInstanceID) as GameObject;
+            GameObject go = EditorUtility.EntityIdToObject(gameObjectOrSceneInstanceID) as GameObject;
             if (go != null)
             {
                 DragAndDropVisualMode visualMode;
@@ -239,7 +238,7 @@ namespace UnityEditor
                     {
                         Scene subScene = SubSceneGUI.GetSubScene(gameObjectDropTarget);
                         if (subScene.IsValid())
-                            return subScene.handle;
+                            return subScene.handle.ToEntityId();
                         else
                             return 0;
                     }
@@ -277,7 +276,7 @@ namespace UnityEditor
 
         Transform GetTransformParentForDrop(int gameObjectOrSceneInstanceID, DropPosition dropPosition)
         {
-            var obj = EditorUtility.InstanceIDToObject(gameObjectOrSceneInstanceID);
+            var obj = EditorUtility.EntityIdToObject(gameObjectOrSceneInstanceID);
             if (obj != null)
             {
                 // Find transform parent from GameObject
@@ -306,7 +305,7 @@ namespace UnityEditor
             else
             {
                 // Find transform parent from Scene
-                var scene = EditorSceneManager.GetSceneByHandle(gameObjectOrSceneInstanceID);
+                var scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(gameObjectOrSceneInstanceID));
                 var subSceneInfo = SubSceneGUI.GetSubSceneInfo(scene);
                 if (subSceneInfo.isValid)
                     return subSceneInfo.transform;
@@ -350,12 +349,12 @@ namespace UnityEditor
             base.DragCleanup(revertExpanded);
         }
 
-        private List<Scene> GetDraggedScenes(List<int> draggedItemIDs)
+        private List<Scene> GetDraggedScenes(List<EntityId> draggedItemIDs)
         {
             List<Scene> scenes = new List<Scene>();
             foreach (int id in draggedItemIDs)
             {
-                Scene scene = EditorSceneManager.GetSceneByHandle(id);
+                Scene scene = EditorSceneManager.GetSceneByHandle(SceneHandle.From(id));
                 if (!SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
                     return null;
                 scenes.Add(scene);
@@ -402,7 +401,7 @@ namespace UnityEditor
                         string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
                         Scene scene = SceneManager.GetSceneByPath(scenePath);
                         if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
-                            m_TreeView.Frame(scene.handle, true, true);
+                            m_TreeView.Frame(scene.handle.ToEntityId(), true, true);
                         else
                         {
                             bool unloaded = Event.current.alt;
@@ -421,8 +420,8 @@ namespace UnityEditor
                     // Select added scenes and frame last scene
                     if (insertedScenes.Count > 0)
                     {
-                        Selection.instanceIDs = insertedScenes.Select(x => x.handle).ToArray();
-                        m_TreeView.Frame(insertedScenes.Last().handle, true, false);
+                        Selection.entityIds = insertedScenes.Select(x => x.handle).ToArray().ToEntityIdArray();
+                        m_TreeView.Frame(insertedScenes.Last().handle.ToEntityId(), true, false);
                     }
                 }
                 else // reorderExistingScenes

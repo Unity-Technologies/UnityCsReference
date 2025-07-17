@@ -26,7 +26,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             int referencesLength = scriptAssembly.References.Length;
             var newReferences = new string[referencesLength + 1];
             Array.Copy(scriptAssembly.References, newReferences, referencesLength);
-            newReferences[referencesLength] = AssetPath.Combine(EditorApplication.applicationContentsPath, "Managed", "Unity.CompilationPipeline.Common.dll");
+            newReferences[referencesLength] = AssetPath.Combine(EditorApplication.applicationScriptingPath, "Managed", "Unity.CompilationPipeline.Common.dll");
             scriptAssembly.References = newReferences;
         }
     }

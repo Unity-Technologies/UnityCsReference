@@ -10,9 +10,15 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.Toolbars
 {
-    [EditorToolbarElement("Package Management/Package Manager", typeof(DefaultMainToolbar))]
     sealed class PackageManagerButton : ToolbarButton
     {
+        [UnityOnlyMainToolbarPreset]
+        [MainToolbarElement("Package Management/Package Manager", true, defaultDockIndex = 3, defaultDockPosition = MainToolbarDockPosition.Right)]
+        static MainToolbarElement Create()
+        {
+            return new MainToolbarCustom(() => new PackageManagerButton());
+        }
+
         private readonly IPackageDatabase m_PackageDatabase;
         private readonly VisualElement m_Icon;
         private Action m_ClickAction;

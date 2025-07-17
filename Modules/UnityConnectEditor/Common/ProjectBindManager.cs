@@ -356,9 +356,9 @@ namespace UnityEditor.Connect
         {
             var abort = false;
             var projectInfo = m_ProjectInfoByName[m_LastReuseBlockProject.LastProjectName];
-            if (EditorUtility.DisplayDialog(L10n.Tr(k_LinkProjectWindowTitle),
+            if (EditorDialog.DisplayDecisionDialog(L10n.Tr(k_LinkProjectWindowTitle),
                     string.Format(L10n.Tr(k_DialogConfirmationMessage), projectInfo.Name, projectInfo.OrganizationName),
-                    L10n.Tr(k_Yes), L10n.Tr(k_No)))
+                    default, default))
             {
                 try
                 {

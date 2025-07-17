@@ -21,7 +21,7 @@ namespace UnityEditor
         public string m_Name;
         public int m_Depth;             // Can be used for tree view representation
         public float m_PreviewSize = -1f; // if -1f then preview size is not applied when set
-        public int m_ID;
+        public EntityId m_ID;
         public SearchFilter m_Filter;
 
         public SavedFilter(string name, SearchFilter filter, int depth, float previewSize)
@@ -57,9 +57,9 @@ namespace UnityEditor
             return instanceID;
         }
 
-        public static int AddSavedFilterAfterInstanceID(string displayName, SearchFilter filter, float previewSize, int insertAfterID, bool addAsChild)
+        public static EntityId AddSavedFilterAfterInstanceID(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterID, bool addAsChild)
         {
-            int instanceID = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
+            EntityId instanceID = instance.Add(displayName, filter, previewSize, insertAfterID, addAsChild);
             return instanceID;
         }
 
@@ -68,7 +68,7 @@ namespace UnityEditor
             instance.Remove(instanceID);
         }
 
-        public static bool IsSavedFilter(int instanceID)
+        public static bool IsSavedFilter(EntityId instanceID)
         {
             return instance.IndexOf(instanceID) >= 0;
         }
@@ -120,7 +120,7 @@ namespace UnityEditor
             return "";
         }
 
-        public static void SetName(int instanceID, string name)
+        public static void SetName(EntityId instanceID, string name)
         {
             SavedFilter filter = instance.Find(instanceID);
             if (filter != null)
@@ -137,7 +137,7 @@ namespace UnityEditor
             instance.UpdateFilter(instanceID, filter, previewSize);
         }
 
-        public static TreeViewItem ConvertToTreeView()
+        public static TreeViewItem<EntityId> ConvertToTreeView()
         {
             return instance.BuildTreeView();
         }
@@ -300,7 +300,7 @@ namespace UnityEditor
             return ProjectWindowUtil.k_FavoritesStartInstanceID + 1000;
         }
 
-        int Add(string displayName, SearchFilter filter, float previewSize, int insertAfterInstanceID, bool addAsChild)
+        EntityId Add(string displayName, SearchFilter filter, float previewSize, EntityId insertAfterInstanceID, bool addAsChild)
         {
             SearchFilter filterCopy = null;
             if (filter != null)
@@ -315,7 +315,7 @@ namespace UnityEditor
             }
 
             int afterIndex = 0; // add after root index
-            if (insertAfterInstanceID != 0)
+            if (insertAfterInstanceID != EntityId.None)
             {
                 afterIndex = IndexOf(insertAfterInstanceID);
                 if (afterIndex == -1)
@@ -346,7 +346,7 @@ namespace UnityEditor
             return savedFilter.m_ID;
         }
 
-        List<SavedFilter> GetSavedFilterAndChildren(int instanceID)
+        List<SavedFilter> GetSavedFilterAndChildren(EntityId instanceID)
         {
             List<SavedFilter> result = new List<SavedFilter>();
             int index = IndexOf(instanceID);
@@ -365,7 +365,7 @@ namespace UnityEditor
             return result;
         }
 
-        void Remove(int instanceID)
+        void Remove(EntityId instanceID)
         {
             int index = IndexOf(instanceID);
             if (index >= 1)
@@ -379,7 +379,7 @@ namespace UnityEditor
             }
         }
 
-        int IndexOf(int instanceID)
+        int IndexOf(EntityId instanceID)
         {
             for (int i = 0; i < m_SavedFilters.Count; ++i)
                 if (m_SavedFilters[i].m_ID == instanceID)
@@ -388,7 +388,7 @@ namespace UnityEditor
             return -1;
         }
 
-        SavedFilter Find(int instanceID)
+        SavedFilter Find(EntityId instanceID)
         {
             int index = IndexOf(instanceID);
             if (index >= 0)
@@ -439,7 +439,7 @@ namespace UnityEditor
         }
 
         // Utility function for building a tree view from saved filter state. Returns root of tree
-        TreeViewItem BuildTreeView()
+        TreeViewItem<EntityId> BuildTreeView()
         {
             Init();
 
@@ -449,17 +449,17 @@ namespace UnityEditor
                 return null;
             }
 
-            TreeViewItem root = null;
+            TreeViewItem<EntityId> root = null;
 
             // Create rest of nodes
-            List<TreeViewItem> items = new List<TreeViewItem>();
+            var items = new List<TreeViewItem<EntityId>>();
             for (int i = 0; i < m_SavedFilters.Count; ++i)
             {
                 SavedFilter savedFilter = m_SavedFilters[i];
                 int instanceID = savedFilter.m_ID;
                 int depth = savedFilter.m_Depth;
                 bool isFolder = savedFilter.m_Filter.GetState() == SearchFilter.State.FolderBrowsing;
-                TreeViewItem item = new SearchFilterTreeItem(instanceID, depth, null, savedFilter.m_Name, isFolder);
+                var item = new SearchFilterTreeItem(instanceID, depth, null, savedFilter.m_Name, isFolder);
                 if (i == 0)
                     root = item;
                 else
@@ -469,7 +469,7 @@ namespace UnityEditor
             }
 
             // Fix child/parent references
-            TreeViewUtility.SetChildParentReferences(items, root);
+            TreeViewUtility<EntityId>.SetChildParentReferences(items, root);
 
             return root;
         }

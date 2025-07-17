@@ -41,6 +41,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId colorProperty = "style." + nameof(IStyle.color);
             internal static readonly BindingId cursorProperty = "style." + nameof(IStyle.cursor);
             internal static readonly BindingId displayProperty = "style." + nameof(IStyle.display);
+            internal static readonly BindingId filterProperty = "style." + nameof(IStyle.filter);
             internal static readonly BindingId flexBasisProperty = "style." + nameof(IStyle.flexBasis);
             internal static readonly BindingId flexDirectionProperty = "style." + nameof(IStyle.flexDirection);
             internal static readonly BindingId flexGrowProperty = "style." + nameof(IStyle.flexGrow);
@@ -96,6 +97,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId unitySliceTopProperty = "style." + nameof(IStyle.unitySliceTop);
             internal static readonly BindingId unitySliceTypeProperty = "style." + nameof(IStyle.unitySliceType);
             internal static readonly BindingId unityTextAlignProperty = "style." + nameof(IStyle.unityTextAlign);
+            internal static readonly BindingId unityTextAutoSizeProperty = "style." + nameof(IStyle.unityTextAutoSize);
             internal static readonly BindingId unityTextGeneratorProperty = "style." + nameof(IStyle.unityTextGenerator);
             internal static readonly BindingId unityTextOutlineColorProperty = "style." + nameof(IStyle.unityTextOutlineColor);
             internal static readonly BindingId unityTextOutlineWidthProperty = "style." + nameof(IStyle.unityTextOutlineWidth);

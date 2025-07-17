@@ -41,13 +41,12 @@ namespace UnityEngine.UIElements.UIR
     {
         RenderTreeCompositor m_Compositor;
         VisualChangesProcessor m_VisualChangesProcessor;
-        LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), null);
+        LinkedPool<RenderChainCommand> m_CommandPool = new(() => new RenderChainCommand(), cmd => cmd.Reset());
         LinkedPool<ExtraRenderData> m_ExtraDataPool = new(() => new ExtraRenderData(), null);
         BasicNodePool<MeshHandle> m_MeshHandleNodePool = new();
         BasicNodePool<TextureEntry> m_TexturePool = new();
         Dictionary<RenderData, ExtraRenderData> m_ExtraData = new();
         internal List<ElementInsertionData> m_InsertionList = new(1024); // Internal for testing purposes
-        HashSet<UIRenderer> m_RenderersToReset = new();
 
         MeshGenerationDeferrer m_MeshGenerationDeferrer = new();
         Material m_DefaultMat;
@@ -67,6 +66,7 @@ namespace UnityEngine.UIElements.UIR
         UnityEngine.Pool.ObjectPool<RenderTree> m_RenderTreePool = new(() => new RenderTree(), null, null, null, false, 8, 128);
 
         bool blockDirtyRegistration { get; set; }
+        public TextureSlotCount textureSlotCount { get; set;} = TextureSlotCount.Eight;
 
         internal RenderData GetPooledRenderData()
         {
@@ -78,7 +78,10 @@ namespace UnityEngine.UIElements.UIR
         internal void ReturnPoolRenderData(RenderData data)
         {
             if (data != null)
+            {
+                data.Reset();
                 m_RenderDataPool.Release(data);
+            }
         }
 
         internal RenderTree GetPooledRenderTree(RenderTreeManager renderTreeManager, RenderData rootRenderData)
@@ -91,7 +94,10 @@ namespace UnityEngine.UIElements.UIR
         internal void ReturnPoolRenderTree(RenderTree tree)
         {
             if (tree != null)
+            {
+                tree.Reset();
                 m_RenderTreePool.Release(tree);
+            }
         }
 
         static EntryPool s_SharedEntryPool = new(10000);
@@ -319,55 +325,14 @@ namespace UnityEngine.UIElements.UIR
             device.EvaluateChain(
                 m_RootRenderTree.firstCommand,
                 m_DefaultMat,
-                m_DefaultMat,
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 null,
                 panel.scaledPixelsPerPoint,
                 true,
+                textureSlotCount,
                 ref immediateException);
             m_BlockDirtyRegistration = false;
-
-            // Assign the command lists to the UIRenderer components.
-            // Note that the device may be null at this point (e.g., EvaluateChain may had to
-            // dispose of the RenderChain when evaluating an immediate element that closed a window).
-            List<CommandList> frameCommandLists = device?.currentFrameCommandLists;
-            if (drawInCameras && frameCommandLists != null)
-            {
-                for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
-                {
-                    var cmdList = frameCommandLists[cmdListIndex];
-                    if (cmdList.m_Owner.isWorldSpaceRootUIDocument)
-                    {
-                        var rootUIDocumentElement = cmdList.m_Owner as UIDocumentRootElement;
-                        Debug.Assert(rootRenderTree != null); // Otherwise the flag should not be set
-                        UIRenderer renderer = rootUIDocumentElement.uiRenderer;
-                        if (!m_RenderersToReset.Contains(renderer))
-                        {
-                            renderer.ResetDrawCallData();
-                            m_RenderersToReset.Add(renderer);
-                        }
-                    }
-                }
-
-                for (int cmdListIndex = 0; cmdListIndex < device.currentFrameCommandListCount; ++cmdListIndex)
-                {
-                    var cmdList = frameCommandLists[cmdListIndex];
-                    var renderer = (cmdList.m_Owner as UIDocumentRootElement).uiRenderer;
-                    if (renderer != null)
-                    {
-                        var commandLists = device.commandLists;
-                        renderer.commandLists = commandLists;
-
-                        int safeFrameIndex = (int)device.frameIndex % commandLists.Length;
-                        renderer.AddDrawCallData(safeFrameIndex, cmdListIndex, cmdList.m_Material);
-                    }
-                }
-
-                m_RenderersToReset.Clear();
-            }
-
-            device.SynchronizeMaterials();
 
             Debug.Assert(immediateException == null); // Not supported for cameras
             k_MarkerSerialize.End();
@@ -432,13 +397,6 @@ namespace UnityEngine.UIElements.UIR
                 GL.Clear(true, true, Color.clear, UIRUtility.k_ClearZ);
             }
 
-            if (forceGammaRendering)
-                m_DefaultMat.EnableKeyword(Shaders.k_ForceGammaKeyword);
-            else
-                m_DefaultMat.DisableKeyword(Shaders.k_ForceGammaKeyword);
-
-            m_DefaultMat.SetPass(0);
-
             var projection = ProjectionUtils.Ortho(viewport.xMin, viewport.xMax, viewport.yMax, viewport.yMin, -0.001f, 1.001f);
             GL.LoadProjectionMatrix(projection);
             GL.modelview = Matrix4x4.identity;
@@ -450,12 +408,12 @@ namespace UnityEngine.UIElements.UIR
             device.EvaluateChain(
                 renderTree.firstCommand,
                 m_DefaultMat,
-                m_DefaultMat,
                 vectorImageManager?.atlas,
                 shaderInfoAllocator.atlas,
                 scissor,
                 panel.scaledPixelsPerPoint,
                 false,
+                textureSlotCount,
                 ref immediateException);
             m_BlockDirtyRegistration = false;
 
@@ -654,12 +612,7 @@ namespace UnityEngine.UIElements.UIR
         internal bool isFlat { get; }
         public bool forceGammaRendering { get; } // This indicates the effective state, unlike Panel.forceGammaRendering.
 
-        internal RenderChainCommand AllocCommand()
-        {
-            var cmd = m_CommandPool.Get();
-            cmd.Reset();
-            return cmd;
-        }
+        internal RenderChainCommand AllocCommand() => m_CommandPool.Get();
 
         internal void FreeCommand(RenderChainCommand cmd)
         {

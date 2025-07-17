@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(reorderable), "reorderable")
-                });
+                }, false);
             }
 
             #pragma warning disable 649

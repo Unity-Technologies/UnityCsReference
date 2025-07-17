@@ -36,7 +36,11 @@ namespace UnityEditor.U2D
                     throw new ArgumentNullException("atlases", "One of the elements in atlases is null. Please check your Inputs.");
             PackAtlasesInternal(atlases, target, canCancel, false, true);
         }
+
+        [FreeFunction("GetSpriteTexture")]
+        extern internal static Texture2D GetSpriteTexture([NotNull] Sprite sprite, bool fromAtlas);
     }
+
 
     [StructLayout(LayoutKind.Sequential)]
     public struct SpriteAtlasTextureSettings

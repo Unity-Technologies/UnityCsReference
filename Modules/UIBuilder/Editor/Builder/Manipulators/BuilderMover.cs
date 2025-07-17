@@ -55,12 +55,18 @@ namespace Unity.UI.Builder
         {
             base.OnStartDrag(handle);
 
+            if (isTargetScaledOrRotated)
+                return;
+
             parentTracker?.Activate(m_Target.parent);
         }
 
         new void OnEndDrag()
         {
             base.OnEndDrag();
+
+            if (isTargetScaledOrRotated)
+                return;
 
             parentTracker?.Deactivate();
 
@@ -89,6 +95,9 @@ namespace Unity.UI.Builder
 
         void OnMove(Vector2 diff)
         {
+            if (isTargetScaledOrRotated)
+                return;
+
             m_ScratchChangeList.Clear();
 
             bool forceTop = IsNoneOrAuto(TrackedStyles.Top) && IsNoneOrAuto(TrackedStyles.Bottom);

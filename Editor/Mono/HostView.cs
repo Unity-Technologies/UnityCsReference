@@ -116,7 +116,7 @@ namespace UnityEditor
             set { SetActualViewInternal(value, sendEvents: true); }
         }
 
-        static readonly Vector2 k_DockedMinSize = new Vector2(100, 50);
+        static readonly Vector2 k_DockedMinSize = new Vector2(100, 56);
         static readonly Vector2 k_DockedMaxSize = new Vector2(8096, 8096);
         public override Vector2 minSize { get => (actualView?.docked ?? false) ? k_DockedMinSize : base.minSize; }
         public override Vector2 maxSize { get => (actualView?.docked ?? false) ? k_DockedMaxSize : base.maxSize; }
@@ -386,16 +386,19 @@ namespace UnityEditor
             base.OnDestroy();
         }
 
-        private static readonly Type[] k_PaneTypes =
+        private static IEnumerable<Type> GetBuiltInPaneTypes()
         {
-            typeof(SceneView),
-            typeof(GameView),
-            typeof(InspectorWindow),
-            typeof(SceneHierarchyWindow),
-            typeof(ProjectBrowser),
-            typeof(ProfilerWindow),
-            typeof(AnimationWindow)
-        };
+            yield return typeof(SceneView);
+            yield return typeof(GameView);
+            yield return typeof(InspectorWindow);
+            if (HierarchyPreferences.UseNewHierarchy)
+                yield return HierarchyPreferences.HierarchyV2WindowType;
+            else
+                yield return typeof(SceneHierarchyWindow);
+            yield return typeof(ProjectBrowser);
+            yield return typeof(ProfilerWindow);
+            yield return typeof(AnimationWindow);
+        }
 
         private static IEnumerable<Type> GetCurrentModePaneTypes(string modePaneTypeSectionName)
         {
@@ -415,7 +418,7 @@ namespace UnityEditor
         {
             const string k_PaneTypesSectionName = "pane_types";
             if (!ModeService.HasSection(ModeService.currentIndex, k_PaneTypesSectionName))
-                return k_PaneTypes;
+                return GetBuiltInPaneTypes();
             return GetCurrentModePaneTypes(k_PaneTypesSectionName);
         }
 

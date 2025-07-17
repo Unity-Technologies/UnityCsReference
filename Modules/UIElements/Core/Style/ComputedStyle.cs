@@ -182,5 +182,10 @@ namespace UnityEngine.UIElements
             return element.styleAnimation.Start(StylePropertyId.BackgroundSize, computedStyle.visualData.Read().backgroundSize, to, durationMs, delayMs, easingCurve);
         }
 
+        public static bool StartAnimationInlineFilter(VisualElement element, ref ComputedStyle computedStyle, StyleList<FilterFunction> filter, int durationMs, int delayMs, Func<float, float> easingCurve)
+        {
+            var to = filter.keyword == StyleKeyword.Initial ? InitialStyle.filter : filter.value;
+            return element.styleAnimation.Start(StylePropertyId.Filter, computedStyle.visualData.Read().filter, to, durationMs, delayMs, easingCurve);
+        }
     }
 }

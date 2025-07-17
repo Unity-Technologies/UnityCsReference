@@ -408,6 +408,11 @@ namespace UnityEngine.Animations
             PlayInternal(ref m_Handle, stateNameHash, layer, normalizedTime);
         }
 
+        public void ResetControllerState([UnityEngine.Internal.DefaultValue("true")] bool resetParameters = true)
+        {
+            ResetControllerStateInternal(ref m_Handle, resetParameters);
+        }
+
         public bool HasState(int layerIndex, int stateID)
         {
             return HasStateInternal(ref m_Handle, layerIndex, stateID);
@@ -474,6 +479,7 @@ namespace UnityEngine.Animations
         [NativeThrows]
         extern private static void CrossFadeInFixedTimeInternal(ref PlayableHandle handle, int stateNameHash, float transitionDuration, int layer, float fixedTime);
 
+
         [NativeThrows]
         extern private static void CrossFadeInternal(ref PlayableHandle handle, int stateNameHash, float transitionDuration, int layer, float normalizedTime);
 
@@ -482,6 +488,9 @@ namespace UnityEngine.Animations
 
         [NativeThrows]
         extern private static void PlayInternal(ref PlayableHandle handle, int stateNameHash, int layer, float normalizedTime);
+
+        [NativeThrows]
+        extern private static void ResetControllerStateInternal(ref PlayableHandle handle, bool resetParameters);
 
         [NativeThrows]
         extern private static bool HasStateInternal(ref PlayableHandle handle, int layerIndex, int stateID);

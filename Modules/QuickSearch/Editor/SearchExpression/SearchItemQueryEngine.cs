@@ -27,6 +27,11 @@ namespace UnityEditor.Search
                 return true;
             return false;
         }
+
+        public override string ToString()
+        {
+            return $"{min}..{max}";
+        }
     }
 
     readonly struct SearchColor : IEquatable<SearchColor>, IComparable<SearchColor>
@@ -548,11 +553,11 @@ namespace UnityEditor.Search
                 case SearchIndexOperator.Greater:
                     return v.floatNumber > range.max;
                 case SearchIndexOperator.GreaterOrEqual:
-                    return v.floatNumber >= range.max;
+                    return v.floatNumber >= range.min; // If equals mean inside the range, then GreaterOrEqual means greater or inside the range.
                 case SearchIndexOperator.Less:
                     return v.floatNumber < range.min;
                 case SearchIndexOperator.LessOrEqual:
-                    return v.floatNumber <= range.min;
+                    return v.floatNumber <= range.max; // If equals mean inside the range, then LessOrEqual means less or inside the range.
             }
             return false;
         }

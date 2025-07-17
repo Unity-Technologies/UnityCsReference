@@ -17,7 +17,7 @@ namespace UnityEditor
 {
     // Item
 
-    internal class AudioMixerItem : TreeViewItem
+    internal class AudioMixerItem : TreeViewItem<EntityId>
     {
         public AudioMixerController mixer { get; set; }
         public string infoText { get; set; }
@@ -25,7 +25,7 @@ namespace UnityEditor
         bool lastSuspendedState { get; set; }
         const string kSuspendedText = " - Inactive";
 
-        public AudioMixerItem(int id, int depth, TreeViewItem parent, string displayName, AudioMixerController mixer, string infoText)
+        public AudioMixerItem(EntityId id, int depth, TreeViewItem<EntityId> parent, string displayName, AudioMixerController mixer, string infoText)
             : base(id, depth, parent, displayName)
         {
             this.mixer = mixer;
@@ -65,7 +65,7 @@ namespace UnityEditor
 
     // Dragging
 
-    internal class AudioMixerTreeViewDragging : TreeViewDragging
+    internal class AudioMixerTreeViewDragging : TreeViewDragging<EntityId>
     {
         private const string k_AudioMixerDraggingID = "AudioMixerDragging";
         Action<List<AudioMixerController>, AudioMixerController> m_MixersDroppedOnMixerCallback;
@@ -80,13 +80,13 @@ namespace UnityEditor
             public List<AudioMixerItem> m_DraggedItems;
         }
 
-        public AudioMixerTreeViewDragging(TreeViewController treeView, Action<List<AudioMixerController>, AudioMixerController> mixerDroppedOnMixerCallback)
+        public AudioMixerTreeViewDragging(TreeViewController<EntityId> treeView, Action<List<AudioMixerController>, AudioMixerController> mixerDroppedOnMixerCallback)
             : base(treeView)
         {
             m_MixersDroppedOnMixerCallback = mixerDroppedOnMixerCallback;
         }
 
-        public override void StartDrag(TreeViewItem draggedNode, List<int> draggedNodes)
+        public override void StartDrag(TreeViewItem<EntityId> draggedNode, List<EntityId> draggedNodes)
         {
             // We do not allow changing routing in playmode for now
             if (EditorApplication.isPlaying)
@@ -100,7 +100,7 @@ namespace UnityEditor
             DragAndDrop.StartDrag(title);
         }
 
-        public override bool DragElement(TreeViewItem targetItem, Rect targetItemRect, int row)
+        public override bool DragElement(TreeViewItem<EntityId> targetItem, Rect targetItemRect, int row)
         {
             // First ensure we are dragging AudioMixers (and not some other objects)
             var dragData = DragAndDrop.GetGenericData(k_AudioMixerDraggingID) as DragData;
@@ -135,7 +135,7 @@ namespace UnityEditor
             return base.DragElement(targetItem, targetItemRect, row);
         }
 
-        public override DragAndDropVisualMode DoDrag(TreeViewItem parentNode, TreeViewItem targetNode, bool perform, DropPosition dragPos)
+        public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentNode, TreeViewItem<EntityId> targetNode, bool perform, DropPosition dragPos)
         {
             var dragData = DragAndDrop.GetGenericData(k_AudioMixerDraggingID) as DragData;
             if (dragData == null)
@@ -159,11 +159,11 @@ namespace UnityEditor
             return DragAndDropVisualMode.None;
         }
 
-        bool ValidDrag(TreeViewItem parent, List<AudioMixerItem> draggedItems)
+        bool ValidDrag(TreeViewItem<EntityId> parent, List<AudioMixerItem> draggedItems)
         {
-            List<int> draggedIDs = (from n in draggedItems select n.id).ToList();
+            var draggedIDs = (from n in draggedItems select n.id).ToList();
 
-            TreeViewItem currentParent = parent;
+            var currentParent = parent;
             while (currentParent != null)
             {
                 if (draggedIDs.Contains(currentParent.id))
@@ -173,9 +173,9 @@ namespace UnityEditor
             return true;
         }
 
-        private List<AudioMixerItem> GetAudioMixerItemsFromIDs(List<int> draggedMixers)
+        private List<AudioMixerItem> GetAudioMixerItemsFromIDs(List<EntityId> draggedMixers)
         {
-            var found = TreeViewUtility.FindItemsInList(draggedMixers, m_TreeView.data.GetRows());
+            var found = TreeViewUtility<EntityId>.FindItemsInList(draggedMixers, m_TreeView.data.GetRows());
             return found.OfType<AudioMixerItem>().ToList();
         }
 
@@ -188,11 +188,11 @@ namespace UnityEditor
 
     // Datasource
 
-    internal class AudioMixersDataSource : TreeViewDataSource
+    internal class AudioMixersDataSource : TreeViewDataSource<EntityId>
     {
         Func<List<AudioMixerController>> m_GetAllControllersCallback;
 
-        public AudioMixersDataSource(TreeViewController treeView, Func<List<AudioMixerController>> getAllControllersCallback)
+        public AudioMixersDataSource(TreeViewController<EntityId> treeView, Func<List<AudioMixerController>> getAllControllersCallback)
             : base(treeView)
         {
             showRootItem = false;
@@ -204,7 +204,7 @@ namespace UnityEditor
             int depth = -1;
             bool expandAll = m_TreeView.state.expandedIDs.Count == 0; // State is persisted so only do this once per new AudioMixerWindow
 
-            m_RootItem = new TreeViewItem(1010101010, depth, null, "InvisibleRoot");
+            m_RootItem = new TreeViewItem<EntityId>(EntityId.From(1010101010), depth, null, "InvisibleRoot");
             SetExpanded(m_RootItem.id, true);
 
             List<AudioMixerController> m_Mixers = m_GetAllControllersCallback();
@@ -244,7 +244,7 @@ namespace UnityEditor
             if (item.mixer.outputAudioMixerGroup != null)
             {
                 var parentMixer = item.mixer.outputAudioMixerGroup.audioMixer;
-                var parentItem = TreeViewUtility.FindItemInList(parentMixer.GetInstanceID(), items) as AudioMixerItem;
+                var parentItem = TreeViewUtility<EntityId>.FindItemInList(parentMixer.GetInstanceID(), items) as AudioMixerItem;
                 if (parentItem != null)
                 {
                     parentItem.AddChild(item);
@@ -256,7 +256,7 @@ namespace UnityEditor
             }
         }
 
-        void SetItemDepthRecursive(TreeViewItem item, int depth)
+        void SetItemDepthRecursive(TreeViewItem<EntityId> item, int depth)
         {
             item.depth = depth;
             if (!item.hasChildren)
@@ -266,22 +266,22 @@ namespace UnityEditor
                 SetItemDepthRecursive(child, depth + 1);
         }
 
-        void SortRecursive(TreeViewItem item)
+        void SortRecursive(TreeViewItem<EntityId> item)
         {
             if (!item.hasChildren)
                 return;
-            item.children.Sort(new TreeViewItemAlphaNumericSort());
+            item.children.Sort(new TreeViewItemAlphaNumericSort<EntityId>());
 
             foreach (var child in item.children)
                 SortRecursive(child);
         }
 
-        public override bool IsRenamingItemAllowed(TreeViewItem item)
+        public override bool IsRenamingItemAllowed(TreeViewItem<EntityId> item)
         {
             return true;
         }
 
-        public int GetInsertAfterItemIDForNewItem(string newName, TreeViewItem parentItem)
+        public int GetInsertAfterItemIDForNewItem(string newName, TreeViewItem<EntityId> parentItem)
         {
             // Find pos under parent
             int insertAfterID = parentItem.id;
@@ -294,7 +294,7 @@ namespace UnityEditor
                 int instanceID = parentItem.children[idx].id;
 
                 // Use same name compare as when we sort in the backend: See AssetDatabase.cpp: SortChildren
-                string propertyPath = AssetDatabase.GetAssetPath(instanceID);
+                string propertyPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
                 if (EditorUtility.NaturalCompare(Path.GetFileNameWithoutExtension(propertyPath), newName) > 0)
                     break;
 
@@ -303,9 +303,9 @@ namespace UnityEditor
             return insertAfterID;
         }
 
-        override public void InsertFakeItem(int id, int parentID, string name, Texture2D icon)
+        override public void InsertFakeItem(EntityId id, EntityId parentID, string name, Texture2D icon)
         {
-            TreeViewItem checkItem = FindItem(id);
+            var checkItem = FindItem(id);
             if (checkItem != null)
             {
                 Debug.LogError("Cannot insert fake Item because id is not unique " + id + " Item already there: " + checkItem.displayName);
@@ -319,8 +319,8 @@ namespace UnityEditor
 
                 var visibleRows = GetRows();
 
-                TreeViewItem parentItem;
-                int parentIndex = TreeViewController.GetIndexOfID(visibleRows, parentID);
+                TreeViewItem<EntityId> parentItem;
+                int parentIndex = TreeViewController<EntityId>.GetIndexOfID(visibleRows, parentID);
                 if (parentIndex >= 0)
                     parentItem = visibleRows[parentIndex];
                 else
@@ -328,14 +328,14 @@ namespace UnityEditor
 
                 // Create fake item for insertion
                 int indentLevel = parentItem.depth + 1;
-                m_FakeItem = new TreeViewItem(id, indentLevel, parentItem, name);
+                m_FakeItem = new TreeViewItem<EntityId>(id, indentLevel, parentItem, name);
                 m_FakeItem.icon = icon;
 
                 // Find pos under parent
                 int insertAfterID = GetInsertAfterItemIDForNewItem(name, parentItem);
 
                 // Find pos in expanded rows and insert
-                int index = TreeViewController.GetIndexOfID(visibleRows, insertAfterID);
+                int index = TreeViewController<EntityId>.GetIndexOfID(visibleRows, insertAfterID);
                 if (index >= 0)
                 {
                     // Ensure to bypass all children of 'insertAfterID'
@@ -373,16 +373,16 @@ namespace UnityEditor
 
     // Item GUI
 
-    internal class AudioMixersTreeViewGUI : TreeViewGUI
+    internal class AudioMixersTreeViewGUI : TreeViewGUI<EntityId>
     {
-        public AudioMixersTreeViewGUI(TreeViewController treeView)
+        public AudioMixersTreeViewGUI(TreeViewController<EntityId> treeView)
             : base(treeView)
         {
             k_IconWidth = 0;
             k_TopRowMargin = k_BottomRowMargin = 2f;
         }
 
-        protected override void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
+        protected override void OnContentGUI(Rect rect, int row, TreeViewItem<EntityId> item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)
         {
             if (Event.current.type != EventType.Repaint)
                 return;
@@ -426,7 +426,7 @@ namespace UnityEditor
             }
         }
 
-        protected override Texture GetIconForItem(TreeViewItem node)
+        protected override Texture GetIconForItem(TreeViewItem<EntityId> node)
         {
             return null; // We do not want any icons
         }
@@ -521,7 +521,7 @@ namespace UnityEditor
 
     internal class AudioMixersTreeView
     {
-        private TreeViewController m_TreeView;
+        private TreeViewController<EntityId> m_TreeView;
         const int kObjectSelectorID = 1212;
         List<AudioMixerController> m_DraggedMixers;
 
@@ -533,9 +533,9 @@ namespace UnityEditor
         }
         static Styles s_Styles;
 
-        public AudioMixersTreeView(AudioMixerWindow mixerWindow, TreeViewState treeState, Func<List<AudioMixerController>> getAllControllersCallback)
+        public AudioMixersTreeView(AudioMixerWindow mixerWindow, TreeViewState<EntityId> treeState, Func<List<AudioMixerController>> getAllControllersCallback)
         {
-            m_TreeView = new TreeViewController(mixerWindow, treeState);
+            m_TreeView = new TreeViewController<EntityId>(mixerWindow, treeState);
             m_TreeView.deselectOnUnhandledMouseDown = false;
             m_TreeView.selectionChangedCallback += OnTreeSelectionChanged;
             m_TreeView.contextClickItemCallback += OnTreeViewContextClick;
@@ -556,7 +556,7 @@ namespace UnityEditor
         public void OnMixerControllerChanged(AudioMixerController controller)
         {
             if (controller != null)
-                m_TreeView.SetSelection(new int[] {controller.GetInstanceID()}, true);
+                m_TreeView.SetSelection(new [] {controller.GetEntityId()}, true);
         }
 
         public void DeleteAudioMixerCallback(object obj)
@@ -564,11 +564,11 @@ namespace UnityEditor
             AudioMixerController controller = (AudioMixerController)obj;
             if (controller != null)
             {
-                ProjectWindowUtil.DeleteAssets(new[] { controller.GetInstanceID() }.ToList(), true);
+                ProjectWindowUtil.DeleteAssets(new[] { controller.GetEntityId() }.ToList(), true);
             }
         }
 
-        public void OnTreeViewContextClick(int index)
+        public void OnTreeViewContextClick(EntityId index)
         {
             AudioMixerItem node = (AudioMixerItem)m_TreeView.FindItem(index);
             if (node != null)
@@ -579,9 +579,9 @@ namespace UnityEditor
             }
         }
 
-        public void OnTreeSelectionChanged(int[] selection)
+        public void OnTreeSelectionChanged(EntityId[] selection)
         {
-            Selection.instanceIDs = selection;
+            Selection.entityIds = selection;
         }
 
         public float GetTotalHeight()
@@ -665,9 +665,9 @@ namespace UnityEditor
         void OnMixersDroppedOnMixerCallback(List<AudioMixerController> draggedMixers, AudioMixerController droppedUponMixer)
         {
             // Set Unity selection when drag ended (when dragging non selected items we just render them as selected while dragging)
-            int[] draggedIDs = (from i in draggedMixers select i.GetInstanceID()).ToArray();
+            var draggedIDs = (from i in draggedMixers select i.GetEntityId()).ToArray();
             m_TreeView.SetSelection(draggedIDs, true);
-            Selection.instanceIDs = draggedIDs;
+            Selection.entityIds = draggedIDs;
 
             if (droppedUponMixer == null)
             {
@@ -717,7 +717,7 @@ namespace UnityEditor
                     ReloadTree();
 
                     // Ensure newly selected output group is revealed
-                    int[] selectedIDs = (from i in m_DraggedMixers select i.GetInstanceID()).ToArray();
+                    var selectedIDs = (from i in m_DraggedMixers select i.GetEntityId()).ToArray();
                     m_TreeView.SetSelection(selectedIDs, true);
                 }
 

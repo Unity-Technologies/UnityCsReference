@@ -20,5 +20,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.FontEngine.Tests")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Tests")]
 [assembly: InternalsVisibleTo("Unity.TextCore.FontEngine.Tests")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
+
+
 [assembly: InternalsVisibleTo("Unity.FontEngine.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.TextCore.Editor.Tests")]

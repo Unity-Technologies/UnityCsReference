@@ -122,8 +122,8 @@ namespace UnityEngine
         [NativeProperty("LightType")] extern public LightType type { get; set; }
         [System.Obsolete("This property has been deprecated. Use Light.type instead.")] public LightShape shape { get; set; }
 
-        extern public float spotAngle        { get; set; }
-        extern public float innerSpotAngle   { get; set; }
+        extern public float spotAngle { get; set; }
+        extern public float innerSpotAngle { get; set; }
         extern public Color color            { get; set; }
         extern public float colorTemperature { get; set; }
         extern public bool useColorTemperature { get; set; }

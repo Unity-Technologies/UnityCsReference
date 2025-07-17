@@ -21,7 +21,15 @@ namespace UnityEditor.UIElements
         }
 
         public override object source => DragAndDrop.GetGenericData(dragSourceKey);
-        public override IEnumerable<Object> unityObjectReferences => DragAndDrop.objectReferences;
+        public override IEnumerable<Object> unityObjectReferences
+        {
+            get
+            {
+                foreach (var entityId in DragAndDrop.entityIds)
+                    yield return Object.FindObjectFromInstanceID(entityId);
+            }
+        }
+        public override IReadOnlyList<EntityId> entityIds => DragAndDrop.entityIds;
 
         public override string[] paths
         {
@@ -58,8 +66,8 @@ namespace UnityEditor.UIElements
         {
             DragAndDrop.PrepareStartDrag();
 
-            if (args.unityObjectReferences != null)
-                DragAndDrop.objectReferences = args.unityObjectReferences.ToArray();
+            if (args.entityIds != null)
+                DragAndDrop.entityIds = args.entityIds.ToArray();
 
             paths = args.assetPaths;
             SetVisualMode(args.visualMode);

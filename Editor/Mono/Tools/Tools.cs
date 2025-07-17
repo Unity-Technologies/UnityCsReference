@@ -480,7 +480,7 @@ namespace UnityEditor
         static void SetToolMode(Tool toolMode)
         {
             current = toolMode;
-            Toolbar.get?.Repaint();
+            Toolbar.instance?.Repaint();
             ResetGlobalHandleRotation();
         }
 

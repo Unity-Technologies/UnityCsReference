@@ -69,7 +69,7 @@ namespace UnityEditor.AddComponent
             if (command.StartsWith("SCRIPT"))
             {
                 var scriptId = int.Parse(command.Substring(6));
-                var obj = EditorUtility.InstanceIDToObject(scriptId);
+                var obj = EditorUtility.EntityIdToObject(scriptId);
                 var icon = AssetPreview.GetMiniThumbnail(obj);
                 base.name = name;
                 base.icon = icon;

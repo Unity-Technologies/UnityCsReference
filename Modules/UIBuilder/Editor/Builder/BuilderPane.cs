@@ -30,7 +30,7 @@ namespace Unity.UI.Builder
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(title), "title")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

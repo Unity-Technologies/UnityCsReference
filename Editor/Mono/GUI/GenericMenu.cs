@@ -5,6 +5,8 @@
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine.Pool;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor
 {
@@ -13,6 +15,10 @@ namespace UnityEditor
         List<MenuItem> m_MenuItems = new List<MenuItem>();
         public bool allowDuplicateNames {get; set; }
         internal List<MenuItem> menuItems => m_MenuItems;
+        internal static ObjectPool<GenericMenu> Pool => s_Pool;
+        [NoAutoStaticsCleanup]
+        static ObjectPool<GenericMenu> s_Pool =
+            new ObjectPool<GenericMenu>(() => new GenericMenu(), null, m => m.menuItems.Clear());
 
         // Callback function, called when a menu item is selected
         public delegate void MenuFunction();

@@ -6,11 +6,6 @@ using System;
 
 namespace UnityEditor
 {
-    interface ISearchableContainer
-    {
-        string searchText { get; }
-    }
-
     static class SearchUtils
     {
         internal static bool MatchSearch(string searchContext, string content)

@@ -931,7 +931,7 @@ namespace Unity.UI.Builder
 
             foreach (var asset in assets)
             {
-                var assetPath = AssetDatabase.GetAssetPath(asset.instanceID);
+                var assetPath = AssetDatabase.GetAssetPath(asset.entityId);
                 AddThemeFile(assetPath);
             }
 

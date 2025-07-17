@@ -61,15 +61,17 @@ namespace UnityEditor
         {
             if (EditorApplication.isCompiling)
             {
-                EditorUtility.DisplayDialog(L10n.Tr("Exit Safe Mode blocked"), L10n.Tr("Cannot exit Safe Mode while compiling scripts"), L10n.Tr("OK"));
+                EditorDialog.DisplayAlertDialog(L10n.Tr("Exit Safe Mode blocked"), L10n.Tr("Cannot exit Safe Mode while compiling scripts"), default, DialogIconType.Error);
                 return;
             }
 
-            if (EditorUtility.DisplayDialog(L10n.Tr("Exiting Safe Mode"),
-                L10n.Tr("Are you sure you want to exit?\n\n" +
+            if (EditorDialog.DisplayDecisionDialog(
+                titleText: L10n.Tr("Exiting Safe Mode"),
+                messageText: L10n.Tr("Are you sure you want to exit?\n\n" +
                     "Exiting Safe Mode while you still have compilation errors may cause your project to be in an incomplete or broken state. " +
                     "For example, packages in your project may fail to load, and your assets may not import correctly."),
-                L10n.Tr("Cancel"), L10n.Tr("Exit Anyway")) == false) // the default btn is Cancel, when dialog returns true. Exit Anyway returns false.
+                yesButtonText: L10n.Tr("Exit Anyway"),
+                noButtonText: L10n.Tr("Cancel")))
             {
                 EditorUtility.RequestPartialScriptReload();
             }

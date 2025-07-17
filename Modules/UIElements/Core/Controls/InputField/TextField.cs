@@ -29,7 +29,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(multiline), "multiline")
-                });
+                }, false);
             }
 
             #pragma warning disable 649

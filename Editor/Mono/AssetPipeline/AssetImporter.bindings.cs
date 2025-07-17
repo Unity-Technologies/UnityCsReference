@@ -111,6 +111,7 @@ namespace UnityEditor
         extern internal void SetThumbnailFromTexture2D(Texture2D image, int instanceID);
 
         [FreeFunction("FindAssetImporterAtAssetPath")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_Warning, "AssetImporters may not be accessed during gathering of import dependencies, as it is a source of non-determinism and will be disallowed in a forthcoming release.")]
         extern public static  AssetImporter GetAtPath(string path);
 
         public void SaveAndReimport()

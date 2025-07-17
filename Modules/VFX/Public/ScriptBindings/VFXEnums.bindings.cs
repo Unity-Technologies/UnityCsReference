@@ -234,6 +234,7 @@ namespace UnityEngine.VFX
         SpawnerStateLoopCount,
     }
 
+    // Must match enum in VFXEnums.h
     internal enum VFXValueType
     {
         None,
@@ -243,6 +244,7 @@ namespace UnityEngine.VFX
         Float4,
         Int32,
         Uint32,
+        EntityId,
         Texture2D,
         Texture2DArray,
         Texture3D,
@@ -374,6 +376,12 @@ namespace UnityEngine.VFX
         [Description("Unknown reason.")]
         Unknown = -1
     };
+
+    internal enum VFXCompilationMode
+    {
+        Runtime = 0,
+        Edition = 1
+    }
 
     internal enum VFXMainCameraBufferFallback
     {

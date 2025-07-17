@@ -11,16 +11,32 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> cursor style property <see cref="IStyle.cursor"/>.
     /// </summary>
+    [Serializable]
     public partial struct Cursor : IEquatable<Cursor>
     {
+        [SerializeField]
+        Texture2D m_Texture;
+        [SerializeField]
+        Vector2 m_Hotspot;
+
         /// <summary>
         /// The texture to use for the cursor style. To use a texture as a cursor, import the texture with "Read/Write enabled" in the texture importer (or using the "Cursor" defaults).
         /// </summary>
-        public Texture2D texture { get; set; }
+        public Texture2D texture
+        {
+            get => m_Texture;
+            set => m_Texture = value;
+        }
+
         /// <summary>
         /// The offset from the top left of the texture to use as the active point of the cursor. The offset must be within the bounds of the cursor.
         /// </summary>
-        public Vector2 hotspot { get; set; }
+        public Vector2 hotspot
+        {
+            get => m_Hotspot;
+            set => m_Hotspot = value;
+        }
+
         // Used to support default cursor in the editor (map to MouseCursor enum)
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int defaultCursorId { get; set; }

@@ -42,6 +42,8 @@ namespace UnityEngine.VFX
         internal extern uint GetCompilationVersion();
 
         static internal extern uint currentRuntimeDataVersion { get; }
+
+        internal extern VFXInstancingMode instancingMode { get; set; }
         [FreeFunction(Name = "VisualEffectAssetBindings::GetTextureDimension", HasExplicitThis = true)] extern public UnityEngine.Rendering.TextureDimension GetTextureDimension(int nameID);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedSpace", HasExplicitThis = true)] extern public VFXSpace GetExposedSpace(int nameID);
         [FreeFunction(Name = "VisualEffectAssetBindings::GetExposedProperties", HasExplicitThis = true)] extern public void GetExposedProperties([NotNull] List<VFXExposedProperty> exposedProperties);

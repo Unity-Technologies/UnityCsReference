@@ -36,7 +36,7 @@ namespace UnityEngine.UIElements
                 {
                     new(nameof(isMultipleSelection), "is-multiple-selection"),
                     new(nameof(allowEmptySelection), "allow-empty-selection"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
@@ -236,7 +236,7 @@ namespace UnityEngine.UIElements
             : base(label)
         {
             AddToClassList(ussClassName);
-            visualInput = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName }, focusable = false };
+            visualInput = new VisualElement { name = containerUssClassName, classList = { buttonGroupClassName }, delegatesFocus = true};
             m_ButtonGroupContainer = visualInput;
 
             // Note: We are changing the workflow through these series of callback. The desired workflow is when a user
@@ -265,7 +265,7 @@ namespace UnityEngine.UIElements
             {
                 foreach (var button in m_Buttons)
                 {
-                    button.pseudoStates &= ~(PseudoStates.Checked);
+                    button.SetCheckedPseudoState(false);
                     button.IncrementVersion(VersionChangeType.Styles);
                 }
             }
@@ -295,6 +295,17 @@ namespace UnityEngine.UIElements
 
             base.SetValueWithoutNotify(newValue);
             UpdateButtonStates(newValue);
+        }
+
+        /// <summary>
+        /// Returns the button at the specified index.
+        /// </summary>
+        public Button GetButton(int index)
+        {
+            if (index < 0 || index >= m_Buttons.Count)
+                return null;
+
+            return m_Buttons[index];
         }
 
         void OnButtonGroupContainerElementAdded(VisualElement ve, int index)
@@ -361,7 +372,7 @@ namespace UnityEngine.UIElements
             button.clickable.clickedWithEventInfo -= OnOptionChange;
 
             if (isRemovedButtonChecked)
-                m_Buttons[checkedButtonIndex].pseudoStates &= ~(PseudoStates.Checked);
+                m_Buttons[checkedButtonIndex].SetCheckedPseudoState(false);
 
             m_Buttons.Remove(button);
             UpdateButtonsStyling();
@@ -391,12 +402,12 @@ namespace UnityEngine.UIElements
             {
                 if (span.IndexOf(i) == -1)
                 {
-                    m_Buttons[i].pseudoStates &= ~(PseudoStates.Checked);
+                    m_Buttons[i].SetCheckedPseudoState(false);
                     m_Buttons[i].IncrementVersion(VersionChangeType.Styles);
                     continue;
                 }
 
-                m_Buttons[i].pseudoStates |= PseudoStates.Checked;
+                m_Buttons[i].SetCheckedPseudoState(true);
                 m_Buttons[i].IncrementVersion(VersionChangeType.Styles);
             }
         }

@@ -15,8 +15,9 @@ namespace Unity.Profiling.Editor
     {
         public LegacySingletonProfilerCaptureDataService()
         {
-            ProfilerDriver.profileLoaded += OnProfileChanged;
-            ProfilerDriver.profileCleared += OnProfileChanged;
+            ProfilerDriver.profileLoaded += OnProfileLoaded;
+            ProfilerDriver.profileCleared += OnProfileCleared;
+            ProfilerDriver.NewProfilerFrameRecorded += OnNewProfilerFrameRecorded;
         }
 
         public int FrameCount
@@ -71,7 +72,9 @@ namespace Unity.Profiling.Editor
             }
         }
 
-        public event Action NewDataLoadedOrCleared;
+        public event Action DataCleared;
+        public event Action DataLoaded;
+        public event Action<int, int> NewFrameRecorded;
 
         public void GetCounterValues(
             string categoryName,
@@ -95,13 +98,24 @@ namespace Unity.Profiling.Editor
 
         public void Dispose()
         {
-            ProfilerDriver.profileCleared -= OnProfileChanged;
-            ProfilerDriver.profileLoaded -= OnProfileChanged;
+            ProfilerDriver.profileCleared -= OnProfileCleared;
+            ProfilerDriver.profileLoaded -= OnProfileLoaded;
+            ProfilerDriver.NewProfilerFrameRecorded -= OnNewProfilerFrameRecorded;
         }
 
-        void OnProfileChanged()
+        void OnProfileCleared()
         {
-            NewDataLoadedOrCleared?.Invoke();
+            DataCleared?.Invoke();
+        }
+
+        void OnProfileLoaded()
+        {
+            DataLoaded?.Invoke();
+        }
+
+        void OnNewProfilerFrameRecorded(int connectionId, int newFrameIndex)
+        {
+            NewFrameRecorded?.Invoke(connectionId, newFrameIndex);
         }
     }
 }

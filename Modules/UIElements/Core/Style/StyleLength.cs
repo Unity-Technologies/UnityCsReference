@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="Length"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleLength : IStyleValue<Length>, IEquatable<StyleLength>
     {
         /// <summary>
@@ -95,7 +96,9 @@ namespace UnityEngine.UIElements
                 m_Keyword = StyleKeyword.None;
         }
 
+        [SerializeField]
         private Length m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

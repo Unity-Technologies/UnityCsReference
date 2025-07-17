@@ -4,6 +4,7 @@
 
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
@@ -48,7 +49,7 @@ namespace UnityEditor.PackageManager
         private static extern NativeStatusCode ListBuiltInPackages([Out] out long operationId);
 
         [FreeFunction("PackageManager::Pack::StartOperation")]
-        private static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder);
+        private static extern NativeStatusCode Pack([Out] out long operationId, string packageFolder, string targetFolder, string ownerOrgId = "");
 
         [FreeFunction("PackageManager::Remove::StartOperation")]
         private static extern NativeStatusCode Remove([Out] out long operationId, string packageId);
@@ -84,6 +85,7 @@ namespace UnityEditor.PackageManager
     [StaticAccessor("PackageManager", StaticAccessorType.DoubleColon)]
     internal class Folders
     {
+        [ThreadAndSerializationSafe]
         public static extern string GetPackagesPath();
         public static extern bool IsPackagedAssetPath(string path);
         public static extern string[] GetPackagesPaths();

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -18,11 +19,11 @@ namespace Unity.Hierarchy
     [NativeHeader("Modules/HierarchyCore/Public/HierarchyNodeTypeHandlerBase.h")]
     [NativeHeader("Modules/HierarchyCore/HierarchyNodeTypeHandlerBaseBindings.h")]
     [RequiredByNativeCode(GenerateProxy = true), StructLayout(LayoutKind.Sequential)]
-    public abstract class HierarchyNodeTypeHandlerBase : IDisposable
+    public abstract partial class HierarchyNodeTypeHandlerBase : IDisposable
     {
         internal static class BindingsMarshaller
         {
-            public static IntPtr ConvertToNative(HierarchyNodeTypeHandlerBase handler) => handler.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(HierarchyNodeTypeHandlerBase handler) => handler.m_Ptr;
         }
 
         /// <summary>
@@ -31,8 +32,12 @@ namespace Unity.Hierarchy
         /// </summary>
         struct ConstructorScope : IDisposable
         {
+            // those are set and cleaned up in using blocks boundaries
+            [NoAutoStaticsCleanup]
             [ThreadStatic] static IntPtr m_Ptr;
+            [NoAutoStaticsCleanup]
             [ThreadStatic] static Hierarchy m_Hierarchy;
+            [NoAutoStaticsCleanup]
             [ThreadStatic] static HierarchyCommandList m_CommandList;
 
             public static IntPtr Ptr { get => m_Ptr; private set => m_Ptr = value; }
@@ -58,6 +63,7 @@ namespace Unity.Hierarchy
         readonly Hierarchy m_Hierarchy;
         readonly HierarchyCommandList m_CommandList;
 
+        [AutoStaticsCleanupOnCodeReload]
         static readonly Dictionary<Type, int> s_NodeTypes = new();
 
         /// <summary>
@@ -125,9 +131,21 @@ namespace Unity.Hierarchy
         /// <summary>
         /// Get the type name of this hierarchy node type handler.
         /// </summary>
+        /// <remarks>
+        /// The returned type name is expected to never change during the lifetime of the handler.
+        /// This is important for serialization and other purposes.
+        /// </remarks>
         /// <returns>The type name of the hierarchy node.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern virtual string GetNodeTypeName();
+
+        /// <summary>
+        /// Gets the hash code for the specified hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The node hash code.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern virtual int GetNodeHashCode(in HierarchyNode node);
 
         /// <summary>
         /// Get the default value used to initialize a hierarchy node flags.
@@ -142,22 +160,26 @@ namespace Unity.Hierarchy
         /// Called when a new search query begins.
         /// </summary>
         /// <param name="query">The search query descriptor.</param>
-        [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::SearchBegin", HasExplicitThis = true, IsThreadSafe = true)]
-        protected extern virtual void SearchBegin(HierarchySearchQueryDescriptor query);
+        protected virtual void SearchBegin(HierarchySearchQueryDescriptor query)
+        {
+        }
 
         /// <summary>
         /// Determines if a node matches the search query.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <returns><see langword="true"/> if the node matches the search query, <see langword="false"/> otherwise.</returns>
-        [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::SearchMatch", HasExplicitThis = true, IsThreadSafe = true)]
-        protected extern virtual bool SearchMatch(in HierarchyNode node);
+        protected virtual bool SearchMatch(in HierarchyNode node)
+        {
+            return false;
+        }
 
         /// <summary>
         /// Called when a search query ends.
         /// </summary>
-        [FreeFunction("HierarchyNodeTypeHandlerBaseBindings::SearchEnd", HasExplicitThis = true, IsThreadSafe = true)]
-        protected extern virtual void SearchEnd();
+        protected virtual void SearchEnd()
+        {
+        }
 
         [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -192,7 +214,6 @@ namespace Unity.Hierarchy
                 if (handler == null)
                     return IntPtr.Zero;
 
-                handler.Initialize();
                 return GCHandle.ToIntPtr(GCHandle.Alloc(handler));
             }
         }
@@ -228,6 +249,9 @@ namespace Unity.Hierarchy
 
         [RequiredByNativeCode]
         static string InvokeGetNodeTypeName(IntPtr handlePtr) => FromIntPtr(handlePtr).GetNodeTypeName();
+
+        [RequiredByNativeCode]
+        static int InvokeGetNodeHashCode(IntPtr handlePtr, in HierarchyNode node) => FromIntPtr(handlePtr).GetNodeHashCode(in node);
 
         [RequiredByNativeCode]
         static HierarchyNodeFlags InvokeGetDefaultNodeFlags(IntPtr handlePtr, in HierarchyNode node, HierarchyNodeFlags defaultFlags) => FromIntPtr(handlePtr).GetDefaultNodeFlags(in node, defaultFlags);

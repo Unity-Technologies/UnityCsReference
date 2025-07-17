@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.UIElements.Debugger;
 using System;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
@@ -62,7 +63,7 @@ namespace Unity.UI.Builder
         internal static string GetSelectorString(VisualElement element)
         {
             var complexSelector = element.GetProperty(BuilderConstants.ElementLinkedStyleSelectorVEPropertyName) as StyleComplexSelector;
-            var selectorStr = StyleSheetToUss.ToUssSelector(complexSelector);
+            var selectorStr = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
             return selectorStr;
         }
 
@@ -157,9 +158,7 @@ namespace Unity.UI.Builder
 
                 foreach (var complexSelector in styleSheet.complexSelectors)
                 {
-                    var complexSelectorStr = StyleSheetToUss.ToUssSelector(complexSelector);
-                    if (complexSelectorStr == BuilderConstants.SelectedStyleSheetSelectorName
-                        || complexSelectorStr.StartsWith(BuilderConstants.UssSelectorNameSymbol + BuilderConstants.StyleSelectorElementName))
+                    if (BuilderStyleSheetExporter.options.IsSelectorIgnored(complexSelector))
                         continue;
 
                     var ssVE = CreateNewSelectorElement(styleSheet, complexSelector);
@@ -256,7 +255,7 @@ namespace Unity.UI.Builder
                 if (complexSelector == null)
                     continue;
 
-                var currentSelectorStr = StyleSheetToUss.ToUssSelector(complexSelector);
+                var currentSelectorStr = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
                 if (currentSelectorStr == selectorStr)
                     return selectorElement;
             }
@@ -286,7 +285,7 @@ namespace Unity.UI.Builder
             foreach (var rule in matchedElementsSelector.selectedElementRules)
             {
                 var complexSelector = rule.matchRecord.complexSelector;
-                var complexSelectorString = StyleSheetToUss.ToUssSelector(complexSelector);
+                var complexSelectorString = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
                 complexSelectors.Add(complexSelectorString);
             }
 

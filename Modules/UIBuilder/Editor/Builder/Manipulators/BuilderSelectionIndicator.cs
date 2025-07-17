@@ -14,6 +14,8 @@ namespace Unity.UI.Builder
         Label m_HeaderLabel;
         BuilderCanvasStyleControls m_CanvasStyleControls;
 
+        public VisualElement header => m_Header;
+
         [Serializable]
         public new class UxmlSerializedData : BuilderTracker.UxmlSerializedData
         {

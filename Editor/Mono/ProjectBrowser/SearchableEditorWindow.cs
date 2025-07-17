@@ -9,7 +9,7 @@ using System;
 
 namespace UnityEditor
 {
-    public class SearchableEditorWindow : EditorWindow
+    public class SearchableEditorWindow : EditorWindow, ISearchableContainer
     {
         public enum SearchMode { All, Name, Type, Label, AssetBundleName }
         public enum SearchModeHierarchyWindow { All, Name, Type }
@@ -88,7 +88,7 @@ namespace UnityEditor
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()
         {
-            SearchForReferencesToInstanceID(Selection.activeInstanceID);
+            SearchForReferencesToInstanceID(Selection.activeEntityId);
         }
 
         [MenuItem("Assets/Find References In Scene", true)]
@@ -118,6 +118,22 @@ namespace UnityEditor
         {
             return Selection.activeObject && Selection.activeObject != null;
         }
+
+        string ISearchableContainer.SearchText
+        {
+            get
+            {
+                return m_SearchFilter;
+            }
+            set
+            {
+                SetSearchFilter(value, SearchMode.All, true, false);
+                m_HasSearchFilterFocus = true;
+                Repaint();
+            }
+        }
+
+        HierarchyType ISearchableContainer.HierarchyType => m_HierarchyType;
 
         virtual public void OnEnable()
         {
@@ -201,7 +217,7 @@ namespace UnityEditor
             CommandService.Execute("OpenToFindReferenceOnObject", CommandHint.Menu, obj);
         }
 
-        internal static void SearchForReferencesToInstanceID(int instanceID)
+        internal static void SearchForReferencesToInstanceID(EntityId instanceID)
         {
             string searchFilter;
 
@@ -215,13 +231,12 @@ namespace UnityEditor
             else
                 searchFilter = "ref:" + instanceID + ":" + path;
 
-            foreach (SearchableEditorWindow sw in searchableWindows)
+            var windows = Resources.FindObjectsOfTypeAll<EditorWindow>();
+            foreach (var win in windows)
             {
-                if (sw.m_HierarchyType == HierarchyType.GameObjects)
+                if (win is ISearchableContainer searchableWin && searchableWin.HierarchyType == HierarchyType.GameObjects)
                 {
-                    sw.SetSearchFilter(searchFilter, SearchMode.All, false, false);
-                    sw.m_HasSearchFilterFocus = true;
-                    sw.Repaint();
+                    searchableWin.SearchText = searchFilter;
                 }
             }
         }

@@ -154,8 +154,58 @@ namespace UnityEngine.UIElements.UIR
             m_RootOperation = m_DrawOperationPool.Get();
             m_RootOperation.Init(rootRenderTree);
 
+            // The root render tree cannot have a post-processing stack. If an element of the root render tree contains
+            // a post-processing stack, it will define a nested render tree which will add the draw operations.
+            var childRenderTree = rootRenderTree.firstChild;
+            while (childRenderTree != null)
+            {
+                AddChildrenOperations_DepthFirst(m_RootOperation, childRenderTree);
+                childRenderTree = childRenderTree.nextSibling;
+            }
         }
 
+        void AddChildrenOperations_DepthFirst(DrawOperation parentOperation, RenderTree renderTree)
+        {
+            VisualElement ve = renderTree.rootRenderData.owner;
+
+            // Extract the filters as List<> to avoid allocations when dealing with IEnumerable<>
+            var filter = ve.resolvedStyle.filter as List<FilterFunction>;
+            if (filter == null)
+                throw new InvalidOperationException("Filter IEnumerable is not a List<FilterFunction>");
+
+            // Add the filters and effects in reversed order since they are applied in a depth-first order
+            for (int i = filter.Count - 1; i >= 0; i--)
+            {
+                var filterDef = filter[i].GetDefinition();
+                if (filterDef?.passes == null)
+                    continue;
+
+                for (int j = filterDef.passes.Length - 1; j >= 0; j--)
+                {
+                    var effect = filterDef.passes[j];
+                    if (effect.material == null)
+                        continue;
+
+                    var operation = m_DrawOperationPool.Get();
+                    operation.Init(ve, effect, filter[i]);
+
+                    parentOperation.AddChild(operation);
+                    parentOperation = operation;
+                }
+            }
+
+            var treeDrawOp = m_DrawOperationPool.Get();
+            treeDrawOp.Init(renderTree);
+
+            parentOperation.AddChild(treeDrawOp);
+
+            var childRenderTree = renderTree.firstChild;
+            while (childRenderTree != null)
+            {
+                AddChildrenOperations_DepthFirst(treeDrawOp, childRenderTree);
+                childRenderTree = childRenderTree.nextSibling;
+            }
+        }
 
         static PostProcessingMargins GetReadMargins(PostProcessingPass effect, FilterFunction func)
         {

@@ -12,16 +12,6 @@ namespace Unity.UI.Builder
 {
     internal static class BuilderNameUtilities
     {
-        public static string ConvertDashToCamel(string dash)
-        {
-            return StyleSheetUtility.ConvertDashToUpperNoSpace(dash, false, false);
-        }
-
-        public static string ConvertDashToHuman(string dash)
-        {
-            return StyleSheetUtility.ConvertDashToUpperNoSpace(dash, true, true);
-        }
-
         public static string ConvertCamelToHuman(string camel)
         {
             return Regex.Replace(camel, "(\\B[A-Z])", " $1");
@@ -46,7 +36,7 @@ namespace Unity.UI.Builder
 
             if (ussName.StartsWith("-unity"))
                 ussName = ussName.Substring(1);
-            return ConvertDashToCamel(ussName);
+            return StyleSheetUtility.ConvertDashToCamel(ussName);
         }
 
         public static string ConvertUssNameToStyleName(string ussName)
@@ -64,7 +54,7 @@ namespace Unity.UI.Builder
             if (ussName.StartsWith("-unity"))
                 ussName = ussName.Substring(1);
 
-            return ConvertDashToCamel(ussName);
+            return StyleSheetUtility.ConvertDashToCamel(ussName);
         }
 
         public static string GetNameByReflection(object obj)

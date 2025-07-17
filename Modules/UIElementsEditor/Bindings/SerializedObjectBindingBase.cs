@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using Unity.Properties;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -16,9 +16,10 @@ internal abstract class SerializedObjectBindingBase : CustomBinding, IDataSource
     private long m_LastUpdateTime;
     private ulong m_LastVersion;
 
-    private static long GetCurrentTime()
+    private long GetCurrentTime()
     {
-        return Panel.TimeSinceStartupMs();
+        var ve = owner;
+        return ve?.TimeSinceStartupMs() ?? 0;
     }
 
     // This is to ensure that getting the resolved data source is as fast as possible, since we don't need to fetch it from the hierarchy.

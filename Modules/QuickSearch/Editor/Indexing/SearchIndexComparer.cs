@@ -4,9 +4,11 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
+    [NativeHeader("Modules/QuickSearch/SearchIndexOperator.h")]
     internal enum SearchIndexOperator
     {
         Contains,

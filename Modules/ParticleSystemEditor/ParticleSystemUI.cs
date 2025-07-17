@@ -281,22 +281,22 @@ namespace UnityEditor
                             // Toggle selected particle system from selection
                             if (EditorGUI.actionKey)
                             {
-                                List<int> newSelection = new List<int>();
-                                int instanceID = m_ParticleSystems[0].gameObject.GetInstanceID();
-                                newSelection.AddRange(Selection.instanceIDs);
-                                if (!newSelection.Contains(instanceID) || newSelection.Count != 1)
+                                List<EntityId> newSelection = new List<EntityId>();
+                                EntityId entityId = m_ParticleSystems[0].gameObject.GetEntityId();
+                                newSelection.AddRange(Selection.entityIds);
+                                if (!newSelection.Contains(entityId) || newSelection.Count != 1)
                                 {
-                                    if (newSelection.Contains(instanceID))
-                                        newSelection.Remove(instanceID);
+                                    if (newSelection.Contains(entityId))
+                                        newSelection.Remove(entityId);
                                     else
-                                        newSelection.Add(instanceID);
+                                        newSelection.Add(entityId);
                                 }
 
-                                Selection.instanceIDs = newSelection.ToArray();
+                                Selection.entityIds = newSelection.ToArray();
                             }
                             else
                             {
-                                Selection.activeInstanceID = m_ParticleSystems[0].gameObject.GetInstanceID();
+                                Selection.activeEntityId = m_ParticleSystems[0].gameObject.GetEntityId();
                             }
                         }
                     }

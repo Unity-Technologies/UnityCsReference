@@ -33,9 +33,6 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             get
             {
-                if (progress != PackageProgress.None)
-                    return PackageState.InProgress;
-
                 var numErrors = 0;
                 var numWarnings = 0;
                 foreach (var error in GetAllErrorsInPackageAndVersions())
@@ -53,8 +50,11 @@ namespace UnityEditor.PackageManager.UI.Internal
                         return PackageState.Error;
                 }
 
+                if (compliance.status == PackageComplianceStatus.NonCompliant)
+                    return PackageState.Error;
+
                 var primary = versions.primary;
-                if ((primary.isInstalled && primary.HasTag(PackageTag.Deprecated)) || compliance.status != PackageComplianceStatus.Compliant)
+                if (primary.isInstalled && (primary.HasTag(PackageTag.Deprecated) || primary.signatureInfo?.status == SignatureStatus.Invalid))
                     return PackageState.Error;
 
                 if (numErrors > 0 && numWarnings == numErrors || isDeprecated)

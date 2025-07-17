@@ -486,6 +486,7 @@ namespace UnityEngine.UIElements.UIR
                 stats.recursiveClipUpdatesExpanded++;
 
             isPendingHierarchicalRepaint |= (renderData.dirtiedValues & RenderDataDirtyTypes.VisualsHierarchy) != 0;
+            hierarchical |= (renderData.dirtiedValues & RenderDataDirtyTypes.ClippingHierarchy) != 0;
 
             // Internal operations (done in this call) to do:
             bool mustUpdateClipRectID = hierarchical || isRootOfChange || inheritedClipRectIDChanged;
@@ -861,7 +862,9 @@ namespace UnityEngine.UIElements.UIR
             if (ve == null || !TextUtilities.IsFontAssigned(ve))
                 return false;
 
-            bool allocatesID = RenderData.AllocatesID(ve.renderData.textCoreSettingsID);
+            var renderData = ve.nestedRenderData ?? ve.renderData;
+
+            bool allocatesID = RenderData.AllocatesID(renderData.textCoreSettingsID);
 
             var settings = TextUtilities.GetTextCoreSettingsForElement(ve, false);
 
@@ -872,14 +875,14 @@ namespace UnityEngine.UIElements.UIR
             if (useDefaultColor && !NeedsTextCoreSettings(ve) && !allocatesID)
             {
                 // Use default TextCore settings
-                ve.renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
+                renderData.textCoreSettingsID = UIRVEShaderInfoAllocator.defaultTextCoreSettings;
                 return true;
             }
 
             if (!allocatesID)
-                ve.renderData.textCoreSettingsID = renderTreeManager.shaderInfoAllocator.AllocTextCoreSettings(settings);
+                renderData.textCoreSettingsID = renderTreeManager.shaderInfoAllocator.AllocTextCoreSettings(settings);
 
-            if (RenderData.AllocatesID(ve.renderData.textCoreSettingsID))
+            if (RenderData.AllocatesID(renderData.textCoreSettingsID))
             {
                 if (ve.panel.contextType == ContextType.Editor)
                 {
@@ -889,7 +892,7 @@ namespace UnityEngine.UIElements.UIR
                     settings.underlayColor *= playModeTintColor;
                 }
 
-                renderTreeManager.shaderInfoAllocator.SetTextCoreSettingValue(ve.renderData.textCoreSettingsID, settings);
+                renderTreeManager.shaderInfoAllocator.SetTextCoreSettingValue(renderData.textCoreSettingsID, settings);
             }
 
             return true;

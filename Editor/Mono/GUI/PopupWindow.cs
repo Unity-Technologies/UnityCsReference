@@ -79,7 +79,7 @@ namespace UnityEditor
                 {
                     win.Init(activatorRect, windowContent, locationPriorityOrder, showMode, true);
                 }
-                if (Event.current != null)
+                if (Event.current != null && !GUIUtility.isUITK)
                 {
                     EditorGUIUtility.ExitGUI(); // Needed to prevent GUILayout errors on OSX
                 }

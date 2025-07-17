@@ -112,6 +112,7 @@ namespace UnityEngine.Video
 
         public extern string targetMaterialProperty { get; set; }
 
+        [VisibleToOtherModules("UnityEditor.VideoModule")]
         internal extern string effectiveTargetMaterialProperty { get; }
 
         public extern VideoAspectRatio aspectRatio { get; set; }

@@ -16,16 +16,6 @@ namespace Unity.UI.Builder
 {
     internal static class VisualTreeAssetExtensions
     {
-        static readonly IComparer<VisualTreeAsset.UsingEntry> s_UsingEntryPathComparer = new UsingEntryPathComparer();
-
-        class UsingEntryPathComparer : IComparer<VisualTreeAsset.UsingEntry>
-        {
-            public int Compare(VisualTreeAsset.UsingEntry x, VisualTreeAsset.UsingEntry y)
-            {
-                return Comparer<string>.Default.Compare(x.path, y.path);
-            }
-        }
-
         public static VisualTreeAsset DeepCopy(this VisualTreeAsset vta, bool syncSerializedData = true)
         {
             var newTreeAsset = VisualTreeAssetUtilities.CreateInstance();
@@ -62,12 +52,22 @@ namespace Unity.UI.Builder
             other.name = vta.name;
         }
 
-        internal static string GenerateUXML(this VisualTreeAsset vta, string vtaPath, bool writingToFile = false)
+        internal static string GenerateUXML(this VisualTreeAsset vta)
         {
             string result = null;
             try
             {
-                result = VisualTreeAssetToUXML.GenerateUXML(vta, vtaPath, writingToFile);
+                var exporter = new VisualTreeAssetExporter();
+                result = exporter.ToUxmlString(vta,
+                    new VisualTreeAssetExporter.ExportOptions
+                    {
+                        ignoreAttributeList = BuilderConstants.IgnoredAttributesWhenExporting,
+                        ignoreTypeList = BuilderConstants.IgnoredTypesWhenExporting,
+                        styleExporterOptions = new StyleSheetExporter.UssExportOptions
+                        {
+                            ignorePropertyList = BuilderConstants.IgnoredStylePropertiesWhenExporting
+                        }
+                    });
             }
             catch (Exception ex)
             {
@@ -90,40 +90,41 @@ namespace Unity.UI.Builder
 
         internal static void LinkedCloneTree(this VisualTreeAsset vta, VisualElement target)
         {
-            VisualTreeAssetLinkedCloneTree.CloneTree(vta, target);
+            VisualTreeAssetLinkedCloneTree.CloneTree(vta, target, null, null);
         }
 
-        public static bool IsEmpty(this VisualTreeAsset vta)
+        public static VisualElementAsset GetRootUXMLElement(this VisualTreeAsset vta)
         {
-            return vta.visualElementAssets.Count <= 1 && vta.templateAssets.Count <= 0; // Because of the <UXML> tag, there's always one.
-        }
-
-        public static int GetRootUXMLElementId(this VisualTreeAsset vta)
-        {
-            return vta.GetRootUxmlElement().id;
-        }
-
-        public static bool IsRootUXMLElement(this VisualTreeAsset vta, VisualElementAsset vea)
-        {
-            return vea == vta.GetRootUxmlElement();
+            return vta.visualTreeNoAlloc;
         }
 
         public static bool IsRootElement(this VisualTreeAsset vta, VisualElementAsset vea)
         {
-            return vea.parentId == vta.GetRootUXMLElementId();
+            return vea.parentAsset?.isRoot ?? false;
         }
 
         internal static VisualElementAsset FindElementByType(this VisualTreeAsset vta, string fullTypeName)
         {
-            foreach (var vea in vta.visualElementAssets)
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+
+            list.AddRange(vta.DepthFirstTraversal());
+
+            foreach (var vea in list)
             {
+                if (vea is TemplateAsset)
+                    continue;
+                if (vea is not VisualElementAsset visualElementAsset)
+                    continue;
                 if (vea.fullTypeName == fullTypeName)
-                    return vea;
+                    return visualElementAsset;
             }
-            foreach (var vea in vta.templateAssets)
+            foreach (var vea in list)
             {
-                if (vea.fullTypeName == fullTypeName)
-                    return vea;
+                if (vea is not TemplateAsset templateAsset)
+                    continue;
+
+                if (vea.fullTypeName  == fullTypeName)
+                    return templateAsset;
             }
             return null;
         }
@@ -131,34 +132,51 @@ namespace Unity.UI.Builder
         internal static List<VisualElementAsset> FindElementsByType(this VisualTreeAsset vta, string fullTypeName)
         {
             var foundList = new List<VisualElementAsset>();
-            foreach (var vea in vta.visualElementAssets)
+
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(vta.DepthFirstTraversal());
+
+            foreach (var vea in list)
             {
+                if (vea is TemplateAsset)
+                    continue;
+                if (vea is not VisualElementAsset visualElementAsset)
+                    continue;
                 if (vea.fullTypeName == fullTypeName)
-                    foundList.Add(vea);
+                    foundList.Add(visualElementAsset);
             }
-            foreach (var vea in vta.templateAssets)
+            foreach (var vea in list)
             {
+                if (vea is not TemplateAsset templateAsset)
+                    continue;
                 if (vea.fullTypeName == fullTypeName)
-                    foundList.Add(vea);
+                    foundList.Add(templateAsset);
             }
             return foundList;
         }
 
         internal static VisualElementAsset FindElementByName(this VisualTreeAsset vta, string name)
         {
-            foreach (var vea in vta.visualElementAssets)
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(vta.DepthFirstTraversal());
+
+            foreach (var vea in list)
             {
-                string currentName;
-                vea.TryGetAttributeValue("name", out currentName);
+                if (vea is TemplateAsset)
+                    continue;
+                if (vea is not VisualElementAsset visualElementAsset)
+                    continue;
+                vea.TryGetAttributeValue("name", out var currentName);
                 if (currentName == name)
-                    return vea;
+                    return visualElementAsset;
             }
-            foreach (var vea in vta.templateAssets)
+            foreach (var vea in list)
             {
-                string currentName;
-                vea.TryGetAttributeValue("name", out currentName);
+                if (vea is not TemplateAsset templateAsset)
+                    continue;
+                vea.TryGetAttributeValue("name", out var currentName);
                 if (currentName == name)
-                    return vea;
+                    return templateAsset;
             }
             return null;
         }
@@ -166,19 +184,27 @@ namespace Unity.UI.Builder
         internal static List<VisualElementAsset> FindElementsByName(this VisualTreeAsset vta, string name)
         {
             var foundList = new List<VisualElementAsset>();
-            foreach (var vea in vta.visualElementAssets)
+
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(vta.DepthFirstTraversal());
+
+            foreach (var vea in list)
             {
-                string currentName;
-                vea.TryGetAttributeValue("name", out currentName);
+                if (vea is TemplateAsset)
+                    continue;
+                if (vea is not VisualElementAsset visualElementAsset)
+                    continue;
+                vea.TryGetAttributeValue("name", out var currentName);
                 if (currentName == name)
-                    foundList.Add(vea);
+                    foundList.Add(visualElementAsset);
             }
-            foreach (var vea in vta.templateAssets)
+            foreach (var vea in list)
             {
-                string currentName;
-                vea.TryGetAttributeValue("name", out currentName);
+                if (vea is not TemplateAsset templateAsset)
+                    continue;
+                vea.TryGetAttributeValue("name", out var currentName);
                 if (currentName == name)
-                    foundList.Add(vea);
+                    foundList.Add(templateAsset);
             }
             return foundList;
         }
@@ -186,15 +212,25 @@ namespace Unity.UI.Builder
         internal static List<VisualElementAsset> FindElementsByClass(this VisualTreeAsset vta, string className)
         {
             var foundList = new List<VisualElementAsset>();
-            foreach (var vea in vta.visualElementAssets)
+
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(vta.DepthFirstTraversal());
+
+            foreach (var vea in list)
             {
-                if (vea.classes.Contains(className))
-                    foundList.Add(vea);
+                if (vea is TemplateAsset)
+                    continue;
+                if (vea is not VisualElementAsset visualElementAsset)
+                    continue;
+                if (visualElementAsset.classes.Contains(className))
+                    foundList.Add(visualElementAsset);
             }
-            foreach (var vea in vta.templateAssets)
+            foreach (var vea in list)
             {
-                if (vea.classes.Contains(className))
-                    foundList.Add(vea);
+                if (vea is not TemplateAsset templateAsset)
+                    continue;
+                if (templateAsset.classes.Contains(className))
+                    foundList.Add(templateAsset);
             }
             return foundList;
         }
@@ -248,10 +284,11 @@ namespace Unity.UI.Builder
         {
             var sheets = new HashSet<StyleSheet>();
 
-            foreach (var vea in vta.visualElementAssets)
-                if (vta.IsRootUXMLElement(vea))
-                    GetAllReferencedStyleSheets(vea, sheets);
+            var visualTree = vta.visualTreeNoAlloc;
+            if (null == visualTree)
+                return new List<StyleSheet>();
 
+            GetAllReferencedStyleSheets(visualTree, sheets);
             return sheets.ToList();
         }
 
@@ -262,22 +299,6 @@ namespace Unity.UI.Builder
                 return null;
 
             return AssetDatabase.GetAssetPath(templateAsset);
-        }
-
-        public static string GetTemplateNameFromPath(this VisualTreeAsset vta, string path)
-        {
-            var usings = vta.usings;
-            if (usings != null && usings.Count > 0)
-            {
-                var lookingFor = new VisualTreeAsset.UsingEntry(null, path);
-                int index = usings.BinarySearch(lookingFor, s_UsingEntryPathComparer);
-                if (index >= 0 && usings[index].path == path)
-                {
-                    return usings[index].alias;
-                }
-            }
-
-            return Path.GetFileNameWithoutExtension(path);
         }
 
         public static bool TemplateExists(this VisualTreeAsset windowVTA, VisualTreeAsset draggingInVTA)
@@ -334,102 +355,22 @@ namespace Unity.UI.Builder
             return false;
         }
 
-        public static TemplateAsset AddTemplateInstance(
-            this VisualTreeAsset vta, VisualElementAsset parent, string path)
+        internal static void SetAssetAttributes(this VisualTreeAsset vta, VisualElementAsset vea, VisualElement visualElement)
         {
-            var templateName = vta.GetTemplateNameFromPath(path);
-            if (!vta.TemplateExists(templateName))
-            {
-                var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
-                if (resolvedAsset)
-                {
-                    vta.RegisterTemplate(templateName, resolvedAsset);
-                }
-                else
-                {
-                    vta.RegisterTemplate(templateName, path);
-                }
-            }
-
-            var typeNamespace = BuilderConstants.UxmlInstanceTypeName;
-            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, typeNamespace);
-            var templateAsset = new TemplateAsset(templateName, BuilderConstants.UxmlInstanceTypeName, xmlns);
-            VisualTreeAssetUtilities.InitializeElement(templateAsset);
-
-            templateAsset.SetAttribute("template", templateName);
-
-            return VisualTreeAssetUtilities.AddElementToDocument(vta, templateAsset, parent) as TemplateAsset;
-        }
-
-        internal static VisualElementAsset AddElement(
-            this VisualTreeAsset vta, VisualElementAsset parent, string fullTypeName, int index = -1)
-        {
-            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, fullTypeName);
-            var vea = new VisualElementAsset(fullTypeName, xmlns);
-            VisualTreeAssetUtilities.InitializeElement(vea);
-            return VisualTreeAssetUtilities.AddElementToDocument(vta, vea, parent);
-        }
-
-        internal static VisualElementAsset AddElement(
-            this VisualTreeAsset vta, VisualElementAsset parent, VisualElement visualElement, int index = -1)
-        {
-            var fullTypeName = visualElement.GetUxmlFullTypeName();
-            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, fullTypeName);
-            var vea = new VisualElementAsset(fullTypeName, xmlns);
-            VisualTreeAssetUtilities.InitializeElement(vea);
-
             visualElement.SetVisualElementAsset(vea);
             visualElement.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, vta);
-
-            var overriddenAttributes = visualElement.GetOverriddenAttributes();
-            foreach (var attribute in overriddenAttributes)
-                vea.SetAttribute(attribute.Key, attribute.Value);
-
-            return VisualTreeAssetUtilities.AddElementToDocument(vta, vea, parent);
-        }
-
-        internal static VisualElementAsset AddElement(
-            this VisualTreeAsset vta, VisualElementAsset parent, VisualElementAsset vea)
-        {
-            return VisualTreeAssetUtilities.AddElementToDocument(vta, vea, parent);
-        }
-
-        public static void RemoveElement(
-            this VisualTreeAsset vta, VisualElement element)
-        {
-            var vea = element.GetVisualElementAsset();
-            if (vea == null)
-                return;
-
-            if (element is TemplateContainer templateContainer && vea is TemplateAsset templateAsset)
-            {
-                vta.templateAssets.Remove(templateAsset);
-                vta.UnregisterTemplate(templateContainer.templateSource);
-            }
-            else
-                vta.RemoveElementAndDependencies(vea);
-        }
-
-        public static void ReparentElement(
-            this VisualTreeAsset vta,
-            VisualElementAsset elementToReparent,
-            VisualElementAsset newParent,
-            int index = -1)
-        {
-            VisualTreeAssetUtilities.ReparentElementInDocument(vta, elementToReparent, newParent, index);
         }
 
         public static StyleSheet GetOrCreateInlineStyleSheet(this VisualTreeAsset vta)
         {
             if (vta.inlineSheet == null)
-                vta.inlineSheet = StyleSheetUtilities.CreateInstance();
+                vta.inlineSheet = UnityEngine.UIElements.StyleSheetUtility.CreateInstanceWithHideFlags();
             return vta.inlineSheet;
         }
 
         public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea)
         {
-            bool wasCreated;
-            return vta.GetOrCreateInlineStyleRule(vea, out wasCreated);
+            return vta.GetOrCreateInlineStyleRule(vea, out var _);
         }
 
         public static StyleRule GetOrCreateInlineStyleRule(this VisualTreeAsset vta, VisualElementAsset vea, out bool wasCreated)
@@ -449,8 +390,12 @@ namespace Unity.UI.Builder
             if (oldUssPath == newUssPath)
                 return;
 
-            foreach (var element in vta.visualElementAssets)
+            foreach (var ua in vta.DepthFirstTraversal())
             {
+                if (ua is TemplateAsset)
+                    continue;
+                if (ua is not VisualElementAsset element)
+                    continue;
                 var styleSheetPaths = element.GetStyleSheetPaths();
                 if (styleSheetPaths != null)
                 {
@@ -475,149 +420,6 @@ namespace Unity.UI.Builder
         {
             var foundElement = vta.FindElementByType(BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
             return foundElement != null;
-        }
-
-        public static void Swallow(this VisualTreeAsset vta, VisualElementAsset parent, VisualTreeAsset other)
-        {
-            var otherIdToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(other);
-
-            if (parent == null)
-                parent = vta.GetRootUxmlElement();
-
-            var nextOrderInDocument = (vta.visualElementAssets.Count + vta.templateAssets.Count) * BuilderConstants.VisualTreeAssetOrderIncrement;
-            var assetsList = new List<VisualElementAsset>();
-
-            assetsList.AddRange(other.visualElementAssets);
-            assetsList.AddRange(other.templateAssets);
-            assetsList = assetsList.OrderBy(x => x.orderInDocument).ToList();
-
-            foreach (var asset in assetsList)
-            {
-                if (other.IsRootUXMLElement(asset))
-                {
-                    continue;
-                }
-
-                ReinitElementWithNewParentAsset(
-                    vta, parent, other, otherIdToChildren, asset, ref nextOrderInDocument);
-            }
-
-            foreach (var vea in other.visualElementAssets)
-            {
-                if (other.IsRootUXMLElement(vea))
-                    continue;
-
-                vta.visualElementAssets.Add(vea);
-            }
-
-            foreach (var vea in other.templateAssets)
-            {
-                if (!vta.TemplateExists(vea.templateAlias))
-                {
-                    vta.RegisterTemplate(vea.templateAlias, other.ResolveTemplate(vea.templateAlias));
-                }
-
-                vta.templateAssets.Add(vea);
-            }
-
-            if (other.uxmlObjectEntries != null)
-            {
-                foreach (var uxmlObjectEntry in other.uxmlObjectEntries)
-                {
-                    vta.uxmlObjectEntries.Add(uxmlObjectEntry);
-                    foreach (var uoa in uxmlObjectEntry.uxmlObjectAssets)
-                    {
-                        vta.uxmlObjectIds.Add(uoa.id);
-                    }
-                }
-            }
-
-            VisualTreeAssetUtilities.ReOrderDocument(vta);
-        }
-
-        static void ReinitElementWithNewParentAsset(
-            VisualTreeAsset vta, VisualElementAsset parent, VisualTreeAsset other,
-            Dictionary<int, List<VisualElementAsset>> otherIdToChildren,
-            VisualElementAsset vea, ref int nextOrderInDocument)
-        {
-            SwallowStyleRule(vta, other, vea);
-
-            // Set new parent id on root elements.
-            if (other.IsRootElement(vea) && parent != null)
-                vea.parentId = parent.id;
-
-            // Set order in document.
-            vea.orderInDocument = nextOrderInDocument;
-            nextOrderInDocument += BuilderConstants.VisualTreeAssetOrderIncrement;
-
-            // Create new id and update parentId in children.
-            var oldId = vea.id;
-            vea.id = VisualTreeAssetUtilities.GenerateNewId(vta, vea);
-            List<VisualElementAsset> children;
-            if (otherIdToChildren.TryGetValue(oldId, out children) && children != null)
-                foreach (var child in children)
-                    child.parentId = vea.id;
-
-            UpdateUxmlObjectEntriesParentId(other, oldId, vea.id);
-        }
-
-        static void UpdateUxmlObjectEntriesParentId(VisualTreeAsset vta, int oldId, int newId)
-        {
-            if (vta.uxmlObjectEntries == null)
-                return;
-
-            var otherIdToUxmlObjectEntry = new Dictionary<int, VisualTreeAsset.UxmlObjectEntry>();
-            for (var i = 0; i < vta.uxmlObjectEntries.Count; i++)
-            {
-                var modifiedEntry = false;
-                foreach (var uoa in vta.uxmlObjectEntries[i].uxmlObjectAssets)
-                {
-                    if (uoa.parentId == oldId)
-                    {
-                        uoa.parentId = newId;
-                        modifiedEntry = true;
-                    }
-                }
-
-                if (modifiedEntry)
-                {
-                    var modifiedUxmlObject = vta.uxmlObjectEntries[i];
-                    modifiedUxmlObject.parentId = newId;
-                    otherIdToUxmlObjectEntry.Add(i, modifiedUxmlObject);
-                }
-            }
-
-            foreach (var uxmlObjectEntry in otherIdToUxmlObjectEntry)
-            {
-                vta.uxmlObjectEntries[uxmlObjectEntry.Key] = uxmlObjectEntry.Value;
-            }
-        }
-
-        static void SwallowStyleRule(VisualTreeAsset vta, VisualTreeAsset other, VisualElementAsset vea)
-        {
-            if (vea.ruleIndex < 0)
-                return;
-
-            if (vta.inlineSheet == null)
-                vta.inlineSheet = StyleSheetUtilities.CreateInstance();
-
-            var toStyleSheet = vta.inlineSheet;
-            var fromStyleSheet = other.inlineSheet;
-
-            var fromRule = fromStyleSheet.rules[vea.ruleIndex];
-
-            var ruleIndex = toStyleSheet.AddRule();
-            var toRule = toStyleSheet.GetRule(ruleIndex);
-
-            foreach (var fromProperty in fromRule.properties)
-            {
-                var toProperty = toStyleSheet.AddProperty(toRule, fromProperty.name);
-                StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, fromProperty, toStyleSheet, toProperty);
-            }
-
-            // If rule was created
-            if (ruleIndex < toStyleSheet.rules.Length)
-                vea.ruleIndex = ruleIndex;
         }
 
         public static void ClearUndo(this VisualTreeAsset vta)
@@ -663,12 +465,56 @@ namespace Unity.UI.Builder
 
         public static void RemoveBinding(this VisualTreeAsset vta, VisualElementAsset element, string property)
         {
-            var uxmlBinding = BuilderBindingUtility.FindUxmlBinding(vta, element, property);
+            var uxmlBinding = BuilderBindingUtility.FindUxmlBinding(element, property);
+            uxmlBinding?.RemoveAssetAndFieldParentIfEmpty();
+        }
 
-            if (uxmlBinding != null)
+        public static string GetSerializedPath(this UxmlAsset asset)
+        {
+            using var _builder = StringBuilderPool.Get(out var sb);
+            using var _parents = ListPool<(UxmlAsset a, int i)>.Get(out var parents);
+            var previous = asset;
+            var current = asset;
+
+            while (null != current)
             {
-                vta.RemoveUxmlObject(uxmlBinding.id);
+                if (current == previous)
+                {
+                    parents.Add((current, -1));
+                }
+                else
+                {
+                    var childIndex = -1;
+                    for (var i = 0; i < current.childCount; ++i)
+                    {
+                        if (current[i] == previous)
+                        {
+                            childIndex = i;
+                            break;
+                        }
+                    }
+                    parents.Add((current, childIndex));
+                }
+
+                previous = current;
+                current = current.parentAsset;
             }
+
+            if (parents.Count == 0 || !parents[^1].a.isRoot)
+                throw new InvalidOperationException("The asset is not part of a UXML document.");
+
+            sb.Append("m_VisualTree");
+            for (var i = parents.Count - 1; i >= 0; --i)
+            {
+                if (parents[i].i < 0)
+                    break;
+                sb.Append($".m_Children.Array.data[{parents[i].i}]");
+            }
+
+            sb.Append(".");
+            sb.Append(BuilderConstants.UxmlSerializedDataFieldName);
+
+            return sb.ToString();
         }
     }
 }

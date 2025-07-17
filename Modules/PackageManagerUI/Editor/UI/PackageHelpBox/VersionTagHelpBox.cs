@@ -26,12 +26,14 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 text = L10n.Tr("Experimental package versions are experiments in the early stages of development. They are usually not supported by package authors and it is not recommended to use them in production.");
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-exp.html";
+                analyticsId = "experimental-version-tag-help-box";
                 UIUtils.SetElementDisplay(this, true);
             }
             else if (version.HasTag(PackageTag.PreRelease))
             {
                 text = L10n.Tr("Pre-release package versions are in the process of becoming stable. The recommended best practice is to use them only for testing purposes and to give direct feedback to the authors.");
                 readMoreUrl = $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/pack-preview.html";
+                analyticsId = "pre-release-version-tag-help-box";
                 UIUtils.SetElementDisplay(this, true);
             }
         }

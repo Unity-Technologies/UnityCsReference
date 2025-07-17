@@ -9,9 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Object = UnityEngine.Object;
 using System.Globalization;
-using UnityEditorInternal;
 using AnimatorController = UnityEditor.Animations.AnimatorController;
 using AnimatorControllerLayer = UnityEditor.Animations.AnimatorControllerLayer;
+using UnityEditorInternal;
+using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor
 {
@@ -1098,7 +1099,7 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             int wrap = m_ClipInfo != null ? m_ClipInfo.wrapMode : (int)m_Clips[0].wrapMode;
-            wrap = (int)(WrapModeFixed)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixed)wrap);
+            wrap = (int)(WrapModeFixedCurve)EditorGUILayout.EnumPopup(Styles.WrapMode, (WrapModeFixedCurve)wrap);
             if (EditorGUI.EndChangeCheck())
             {
                 if (m_ClipInfo != null)
@@ -1782,10 +1783,10 @@ namespace UnityEditor
         private Vector2 m_InstantTooltipPoint = Vector2.zero;
 
         private bool[] m_EventsSelected;
-        private AnimationWindowEvent[] m_Events;
+        private UnityEditor.AnimationWindowBuiltin.AnimationWindowEvent[] m_Events;
 
         private TimeArea m_Timeline;
-        private AnimationEventEditorState m_EventEditorState = new();
+        private UnityEditor.AnimationWindowBuiltin.AnimationEventEditorState m_EventEditorState = new();
 
         public EventManipulationHandler(TimeArea timeArea)
         {

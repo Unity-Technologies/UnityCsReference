@@ -352,6 +352,8 @@ namespace UnityEditor
             m_Value = value;
         }
 
+        public event Action valueChanged;
+
         private void Load()
         {
             if (m_Loaded)
@@ -371,6 +373,7 @@ namespace UnityEditor
                     return;
                 m_Value = value;
                 EditorPrefs.SetBool(m_Name, value);
+                valueChanged?.Invoke();
             }
         }
 

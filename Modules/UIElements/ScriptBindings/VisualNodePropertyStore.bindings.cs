@@ -120,7 +120,7 @@ class VisualNodePropertyRegistry
         // @TODO This requires exposing Hierarchy native to managed bindings.
         /*
         var bindingIndex = typeIndex - 1;
-        m_Bindings[bindingIndex] ??= new HierarchyPropertyBinding<T>(m_Manager.Hierarchy.GetOrCreatePropertyUnmanaged<T>(nameof(T)));
+        m_Bindings[bindingIndex] ??= new HierarchyPropertyBinding<T>(m_Manager.Hierarchy.GetOrCreatePropertyUnmanaged<T>(typeof(T).Name));
         return ((HierarchyPropertyBinding<T>) m_Bindings[bindingIndex]).Property;
         */
         throw new NotImplementedException();

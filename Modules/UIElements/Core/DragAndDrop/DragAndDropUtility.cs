@@ -5,7 +5,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace UnityEngine.UIElements
 {
@@ -39,11 +38,20 @@ namespace UnityEngine.UIElements
 
         readonly Hashtable m_GenericData = new();
 
-        public override IEnumerable<Object> unityObjectReferences => m_UnityObjectReferences;
+        public override IEnumerable<Object> unityObjectReferences
+        {
+            get
+            {
+                foreach (var entityId in m_EntityIds)
+                    yield return Object.FindObjectFromInstanceID(entityId);
+            }
+        }
+
+        public override IReadOnlyList<EntityId> entityIds => m_EntityIds;
 
         Label m_DraggedInfoLabel;
         DragVisualMode m_VisualMode;
-        IEnumerable<Object> m_UnityObjectReferences;
+        IReadOnlyList<EntityId> m_EntityIds;
 
         public override object GetGenericData(string key)
         {
@@ -57,8 +65,8 @@ namespace UnityEngine.UIElements
 
         public void StartDrag(StartDragArgs args, Vector3 pointerPosition)
         {
-            if (args.unityObjectReferences != null)
-                m_UnityObjectReferences = args.unityObjectReferences.ToArray();
+            if (args.entityIds != null)
+                m_EntityIds = args.entityIds;
 
             paths = args.assetPaths;
             m_VisualMode = args.visualMode;
@@ -108,7 +116,7 @@ namespace UnityEngine.UIElements
         public void DragCleanup()
         {
             paths = null;
-            m_UnityObjectReferences = null;
+            m_EntityIds = null;
             m_GenericData?.Clear();
             SetVisualMode(DragVisualMode.None);
             m_DraggedInfoLabel?.RemoveFromHierarchy();

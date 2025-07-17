@@ -85,13 +85,16 @@ namespace UnityEditor.U2D
             public NativeArray<int> indexData;
             public NativeArray<Vector2> vertexData;
         };
+            
+        // Public function to only fit the Atlases. This will not create any textures including intermediate ones.
+        protected virtual bool Fit(SpriteAtlasPackingSettings config, SpriteAtlasTextureSettings setting, PackerData input) { return false; }
 
         // Public function to pack.
         public abstract bool Pack(SpriteAtlasPackingSettings config, SpriteAtlasTextureSettings setting, PackerData input);
 
         // Internal Glue function.
         [RequiredByNativeCode]
-        internal bool PackInternal(SpriteAtlasPackingSettings config, SpriteAtlasTextureSettings setting, PackerDataInternal packerData)
+        internal bool PackInternal(SpriteAtlasPackingSettings config, SpriteAtlasTextureSettings setting, PackerDataInternal packerData, bool packAtlas)
         {
             var input = new PackerData();
             unsafe
@@ -108,7 +111,7 @@ namespace UnityEditor.U2D
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref input.indexData, AtomicSafetyHandle.GetTempMemoryHandle());
                 NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref input.vertexData, AtomicSafetyHandle.GetTempMemoryHandle());
             }
-            return Pack(config, setting, input);
+            return (packAtlas) ? Pack(config, setting, input) : Fit(config, setting, input);
         }
 
     };

@@ -20,11 +20,12 @@ namespace UnityEditor.Overlays
 
         public static OverlayGhostDropZone Create(Overlay overlay)
         {
-            bool found = overlay.container.GetOverlayIndex(overlay, out var section, out int index);
+            bool found = overlay.container.GetOverlayIndex(overlay, out OverlayContainerSection section, out int _);
             OverlayGhostDropZone dropZone = new OverlayGhostDropZone(overlay.container, section);
-            if (found)
+            if (found && overlay.container.GetOverlayHierarchyIndex(overlay, (int)section, out int index))
             {
-                overlay.container.GetSectionElement(section)?.Insert(index, dropZone);
+                
+                overlay.container.GetContainerSection(section)?.Insert(index, dropZone);
                 dropZone.style.width = overlay.rootVisualElement.layout.width;
                 dropZone.style.height = overlay.rootVisualElement.layout.height;
             }

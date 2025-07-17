@@ -21,12 +21,11 @@ namespace UnityEditor.Search
         public delegate void ResolveHandler(SearchTask<T> task, T data);
 
 
-        private const int k_NoProgress = -1;
         private const int k_BlockingProgress = -2;
 
         public readonly string name;
         public readonly string title;
-        private int progressId = k_NoProgress;
+        internal int progressId = Progress.InvalidProgressId;
         private volatile float lastProgress = -1f;
         private EventWaitHandle cancelEvent;
         private readonly ResolveHandler resolver;
@@ -112,7 +111,7 @@ namespace UnityEditor.Search
                 LogProgress("Remove");
                 Progress.Remove(progressId);
             }
-            progressId = k_NoProgress;
+            progressId = Progress.InvalidProgressId;
             disposed = true;
         }
 
@@ -339,7 +338,7 @@ namespace UnityEditor.Search
                 Progress.Finish(progressId, Progress.Status.Failed);
             }
 
-            progressId = k_NoProgress;
+            progressId = Progress.InvalidProgressId;
             status = null;
         }
 
@@ -348,7 +347,7 @@ namespace UnityEditor.Search
             if (disposed)
                 return false;
 
-            if (progressId == k_NoProgress)
+            if (progressId == Progress.InvalidProgressId)
                 return false;
 
             return true;
@@ -375,7 +374,7 @@ namespace UnityEditor.Search
                 Progress.Finish(progressId, Progress.Status.Succeeded);
             }
 
-            progressId = k_NoProgress;
+            progressId = Progress.InvalidProgressId;
         }
 
         private void ClearReport()
@@ -393,12 +392,12 @@ namespace UnityEditor.Search
                 LogProgress("Remove");
             }
 
-            progressId = k_NoProgress;
+            progressId = Progress.InvalidProgressId;
         }
 
         private bool IsProgressRunning(int progressId)
         {
-            if (progressId == k_NoProgress)
+            if (progressId == Progress.InvalidProgressId)
                 return false;
             LogProgress("Exists");
             if (!Progress.Exists(progressId))

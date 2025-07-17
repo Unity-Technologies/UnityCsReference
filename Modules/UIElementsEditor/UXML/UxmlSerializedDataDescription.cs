@@ -68,6 +68,8 @@ namespace UnityEditor.UIElements
             }
         }
 
+        public bool isEditorOnly { get; set; }
+
         public UxmlSerializedData CreateSerializedData() => (UxmlSerializedData)Activator.CreateInstance(m_SerializedDataType);
 
         public UxmlSerializedData CreateDefaultSerializedData()
@@ -138,6 +140,7 @@ namespace UnityEditor.UIElements
                 return;
 
             var desc = UxmlDescriptionRegistry.GetDescription(t);
+            isEditorOnly = desc.isEditorOnly;
             for (var i = 0; i < desc.attributeDescriptions.Count; ++i)
             {
                 var attDescription = desc.attributeDescriptions[i];

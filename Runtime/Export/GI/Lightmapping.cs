@@ -138,7 +138,12 @@ namespace UnityEngine
         public struct DirectionalLight
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -157,7 +162,12 @@ namespace UnityEngine
         public struct PointLight
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -174,7 +184,12 @@ namespace UnityEngine
         public struct SpotLight
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -194,7 +209,12 @@ namespace UnityEngine
         public struct RectangleLight
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -212,7 +232,12 @@ namespace UnityEngine
         public struct DiscLight
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -229,7 +254,12 @@ namespace UnityEngine
         public struct SpotLightBoxShape
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -247,7 +277,12 @@ namespace UnityEngine
         public struct SpotLightPyramidShape
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // shadow
             public bool         shadow;
             // light mode
@@ -266,11 +301,16 @@ namespace UnityEngine
 
         public struct Cookie
         {
-            public int     instanceID;
+            public EntityId entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             public float   scale;
             public Vector2 sizes; // directional lights only
 
-            public static Cookie Defaults() { Cookie c; c.instanceID = 0; c.scale = 1.0f; c.sizes = new Vector2(1.0f, 1.0f); return c; }
+            public static Cookie Defaults() { Cookie c; c.entityId = EntityId.None; c.scale = 1.0f; c.sizes = new Vector2(1.0f, 1.0f); return c; }
         }
 
         // This struct must be kept in sync with its counterpart in LightDataGI.h
@@ -279,9 +319,19 @@ namespace UnityEngine
         public struct LightDataGI
         {
             // light id
-            public int          instanceID;
+            public EntityId     entityId;
+            [System.Obsolete("Please use entityId instead.", false)]
+            public int instanceID
+            {
+                get { return entityId; } set { entityId = value; }
+            }
             // cookie id
-            public int          cookieID;
+            public EntityId     cookieTextureEntityId;
+            [System.Obsolete("Please use cookieTextureEntityId instead.", false)]
+            public int          cookieID
+            {
+                get { return cookieTextureEntityId; } set { cookieTextureEntityId = value; }
+            }
             public float        cookieScale;
             // shared
             public LinearColor  color;
@@ -306,8 +356,8 @@ namespace UnityEngine
 
             public void Init(ref DirectionalLight light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -326,8 +376,8 @@ namespace UnityEngine
 
             public void Init(ref PointLight light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -346,8 +396,8 @@ namespace UnityEngine
 
             public void Init(ref SpotLight light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -366,8 +416,8 @@ namespace UnityEngine
 
             public void Init(ref RectangleLight light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -386,8 +436,8 @@ namespace UnityEngine
 
             public void Init(ref DiscLight light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -406,8 +456,8 @@ namespace UnityEngine
 
             public void Init(ref SpotLightBoxShape light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -426,8 +476,8 @@ namespace UnityEngine
 
             public void Init(ref SpotLightPyramidShape light, ref Cookie cookie)
             {
-                instanceID     = light.instanceID;
-                cookieID       = cookie.instanceID;
+                entityId       = light.entityId;
+                cookieTextureEntityId = cookie.entityId;
                 cookieScale    = cookie.scale;
                 color          = light.color;
                 indirectColor  = light.indirectColor;
@@ -452,9 +502,16 @@ namespace UnityEngine
             public void Init(ref SpotLightBoxShape light)       { Cookie cookie = Cookie.Defaults(); Init(ref light, ref cookie); }
             public void Init(ref SpotLightPyramidShape light)   { Cookie cookie = Cookie.Defaults(); Init(ref light, ref cookie); }
 
+            public void InitNoBake(EntityId lightEntityId)
+            {
+                entityId   = lightEntityId;
+                mode       = LightMode.Unknown;
+            }
+
+            [System.Obsolete("Please use InitNoBake with an EntityId argument instead.", false)]
             public void InitNoBake(int lightInstanceID)
             {
-                instanceID = lightInstanceID;
+                entityId   = lightInstanceID;
                 mode       = LightMode.Unknown;
             }
         }
@@ -502,7 +559,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, ref DirectionalLight dir)
             {
-                dir.instanceID          = l.GetInstanceID();
+                dir.entityId            = l.GetEntityId();
                 dir.mode                = Extract(l.lightmapBakeType);
                 dir.shadow              = l.shadows != LightShadows.None;
                 dir.position            = l.transform.position;
@@ -520,7 +577,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, ref PointLight point)
             {
-                point.instanceID    = l.GetInstanceID();
+                point.entityId      = l.GetEntityId();
                 point.mode          = Extract(l.lightmapBakeType);
                 point.shadow        = l.shadows != LightShadows.None;
                 point.position      = l.transform.position;
@@ -541,7 +598,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, ref SpotLight spot)
             {
-                spot.instanceID    = l.GetInstanceID();
+                spot.entityId      = l.GetEntityId();
                 spot.mode          = Extract(l.lightmapBakeType);
                 spot.shadow        = l.shadows != LightShadows.None;
                 spot.position      = l.transform.position;
@@ -565,7 +622,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, ref RectangleLight rect)
             {
-                rect.instanceID     = l.GetInstanceID();
+                rect.entityId       = l.GetEntityId();
                 rect.mode           = Extract(l.lightmapBakeType);
                 rect.shadow         = l.shadows != LightShadows.None;
                 rect.position       = l.transform.position;
@@ -587,7 +644,7 @@ namespace UnityEngine
 
             public static void Extract(Light l, ref DiscLight disc)
             {
-                disc.instanceID     = l.GetInstanceID();
+                disc.entityId       = l.GetEntityId();
                 disc.mode           = Extract(l.lightmapBakeType);
                 disc.shadow         = l.shadows != LightShadows.None;
                 disc.position       = l.transform.position;
@@ -623,9 +680,9 @@ namespace UnityEngine
 
             public static void Extract(Light l, out Cookie cookie)
             {
-                cookie.instanceID = l.cookie ? l.cookie.GetInstanceID() : 0;
+                cookie.entityId = l.cookie ? l.cookie.GetInstanceID() : EntityId.None;
                 cookie.scale      = 1.0f;
-                cookie.sizes      = (l.type == UnityEngine.LightType.Directional && l.cookie) ? new Vector2(l.cookieSize, l.cookieSize) : new Vector2(1.0f, 1.0f);
+                cookie.sizes      = (l.type == UnityEngine.LightType.Directional && l.cookie) ? l.cookieSize2D : new Vector2(1.0f, 1.0f);
             }
         }
 
@@ -671,7 +728,7 @@ namespace UnityEngine
                         case UnityEngine.LightType.Spot:        LightmapperUtils.Extract(l, ref spot);  LightmapperUtils.Extract(l, out cookie); ld.Init(ref spot,  ref cookie); break;
                         case UnityEngine.LightType.Rectangle:   LightmapperUtils.Extract(l, ref rect);  LightmapperUtils.Extract(l, out cookie); ld.Init(ref rect,  ref cookie); break;
                         case UnityEngine.LightType.Disc:        LightmapperUtils.Extract(l, ref disc);  LightmapperUtils.Extract(l, out cookie); ld.Init(ref disc,  ref cookie); break;
-                        default: ld.InitNoBake(l.GetInstanceID()); break;
+                        default: ld.InitNoBake(l.GetEntityId()); break;
                     }
                     lightsOutput[i] = ld;
                 }

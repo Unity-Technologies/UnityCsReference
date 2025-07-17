@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor;
 using System.Collections.Generic;
-using UnityEditor.ShortcutManagement;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
 
 namespace UnityEditorInternal
 {
@@ -87,6 +89,8 @@ namespace UnityEditorInternal
         private void AddPropertiesFromSelectedNodes()
         {
             int[] ids = m_TreeView.GetSelection();
+
+            var nodes = new HashSet<AddCurvesPopupPropertyNode>(ids.Length);
             for (int i = 0; i < ids.Length; ++i)
             {
                 var node = m_TreeView.FindItem(ids[i]);
@@ -94,7 +98,7 @@ namespace UnityEditorInternal
 
                 if (propertyNode != null)
                 {
-                    AddCurvesPopup.AddNewCurve(propertyNode);
+                    nodes.Add(propertyNode);
                 }
                 else if (node.hasChildren)
                 {
@@ -103,11 +107,13 @@ namespace UnityEditorInternal
                         var childPropertyNode = childNode as AddCurvesPopupPropertyNode;
                         if (childPropertyNode != null)
                         {
-                            AddCurvesPopup.AddNewCurve(childPropertyNode);
+                            nodes.Add(childPropertyNode);
                         }
                     }
                 }
             }
+
+            AddCurvesPopup.AddNewCurves(nodes);
 
             m_TreeView.ReloadData();
         }

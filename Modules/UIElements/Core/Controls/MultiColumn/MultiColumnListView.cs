@@ -30,17 +30,17 @@ namespace UnityEngine.UIElements
                     new (nameof(sortingMode), "sorting-mode"),
                     new (nameof(columns), "columns"),
                     new (nameof(sortColumnDescriptions), "sort-column-descriptions"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
+            [SerializeReference, UxmlObjectReference] Columns.UxmlSerializedData columns;
+            [SerializeReference, UxmlObjectReference] SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
+            [SerializeField] ColumnSortingMode sortingMode;
             [SerializeField, HideInInspector] bool sortingEnabled;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingEnabled_UxmlAttributeFlags;
-            [SerializeField] ColumnSortingMode sortingMode;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortingMode_UxmlAttributeFlags;
-            [SerializeReference, UxmlObjectReference] Columns.UxmlSerializedData columns;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columns_UxmlAttributeFlags;
-            [SerializeReference, UxmlObjectReference] SortColumnDescriptions.UxmlSerializedData sortColumnDescriptions;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortColumnDescriptions_UxmlAttributeFlags;
             #pragma warning restore 649
 

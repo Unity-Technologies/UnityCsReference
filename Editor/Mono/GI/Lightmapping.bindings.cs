@@ -241,12 +241,24 @@ namespace UnityEditor
 
         // Starts an asynchronous bake job.
         [FreeFunction]
-        public static extern bool BakeAsync();
+        internal static extern bool BakeAsyncImpl();
 
-        // Stars a synchronous bake job.
+        // Starts a synchronous bake job.
         [FreeFunction]
-        public static extern bool Bake();
+        internal static extern bool BakeImpl();
+                
+        public static bool BakeAsync()
+        {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+            return BakeAsyncImpl();
+        }
 
+        public static bool Bake()
+        {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
+            return BakeImpl();
+        }
+        
         // Cancels the currently running asynchronous bake job.
         [FreeFunction("CancelLightmapping")]
         public static extern void Cancel();
@@ -430,6 +442,9 @@ namespace UnityEditor
         // Used to quickly update baked reflection probes without GI computations.
         [FreeFunction]
         internal static extern bool BakeReflectionProbeSnapshot(ReflectionProbe probe);
+
+        [FreeFunction]
+        internal static extern bool IsRealtimeGiPrecomputeSupported();
 
         // Used to quickly update all baked reflection probes without GI computations.
         [FreeFunction]
@@ -686,24 +701,28 @@ namespace UnityEditor.Experimental
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern bool probesIgnoreIndirectEnvironment { get; set; }
 
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator to bake environment occlusion for an array of positions.", false)]
         public static void SetCustomBakeInputs(Vector4[] inputData, int sampleCount)
         {
             SetCustomBakeInputs(inputData.AsSpan(), sampleCount);
         }
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator to bake environment occlusion for an array of positions.", false)]
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern void SetCustomBakeInputs(ReadOnlySpan<Vector4> inputData, int sampleCount);
 
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         private static extern unsafe bool GetCustomBakeResultsCopy(Span<Vector4> results);
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator to bake environment occlusion for an array of positions.", false)]
         public static bool GetCustomBakeResults(Span<Vector4> results)
         {
             return GetCustomBakeResultsCopy(results);
         }
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator to bake environment occlusion for an array of positions.", false)]
         public static bool GetCustomBakeResults([Out] Vector4[] results)
         {
             return GetCustomBakeResults(results.AsSpan());
         }
-
+        [Obsolete("Please use UnityEngine.LightTransport.IProbeIntegrator to bake environment occlusion for an array of positions.", false)]
         [StaticAccessor("BakedGISceneManager::Get()", StaticAccessorType.Arrow)]
         public static extern ReadOnlySpan<Vector4> GetCustomBakeResultsNoCopy();
 
@@ -716,6 +735,7 @@ namespace UnityEditor.Experimental
 
         public static bool BakeAsync(Scene targetScene)
         {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
             return BakeSceneAsync(targetScene);
         }
 
@@ -726,6 +746,7 @@ namespace UnityEditor.Experimental
 
         public static bool Bake(Scene targetScene)
         {
+            RenderPipelineManager.TryPrepareRenderPipeline(GraphicsSettings.currentRenderPipeline);
             return BakeScene(targetScene);
         }
 

@@ -107,25 +107,9 @@ namespace Unity.UI.Builder
             m_DragPreviewElement.AddToClassList(s_DragPreviewElementClassName);
         }
 
-        protected override void PerformAction(VisualElement destination, DestinationPane pane, Vector2 localMousePosition, int index = -1)
+        protected override void PerformAction(VisualElement destination, DestinationPane pane,
+            Vector2 localMousePosition, int index = -1)
         {
-            // We should have an item reference here if the OnDragStart() worked.
-            var item = m_LibraryItem;
-            var itemVTA = item.sourceAsset;
-
-            if (paneWindow.document.WillCauseCircularDependency(itemVTA))
-            {
-                BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
-                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
-                return;
-            }
-
-            if (item.makeElementAssetCallback != null && m_DragPreviewElement is TemplateContainer tempContainer)
-            {
-                if (!BuilderAssetUtilities.ValidateAsset(item.sourceAsset, item.sourceAssetPath))
-                    return;
-            }
-
             // Determine if it applies and use Absolute Island insertion.
             if (BuilderProjectSettings.enableAbsolutePositionPlacement && pane == DestinationPane.Viewport && m_DragPreviewLastParent == documentRootElement && index < 0)
                 m_DragPreviewLastParent = BuilderPlacementUtilities.CreateAbsoluteIsland(paneWindow, documentRootElement, localMousePosition);
@@ -138,31 +122,26 @@ namespace Unity.UI.Builder
                 return;
             }
 
-            if (index < 0)
-                m_DragPreviewLastParent.Add(m_DragPreviewElement);
-            else
-                m_DragPreviewLastParent.Insert(index, m_DragPreviewElement);
+            for (var i = 0; i < index; ++i)
+            {
+                var child = m_DragPreviewLastParent[i];
+                if (child.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) == null)
+                    --index;
+            }
 
-            // Create equivalent VisualElementAsset.
-            if (item.makeElementAssetCallback == null)
-                BuilderAssetUtilities.AddElementToAsset(
-                    paneWindow.document, m_DragPreviewElement, index);
-            else
-                BuilderAssetUtilities.AddElementToAsset(
-                    paneWindow.document, m_DragPreviewElement, item.makeElementAssetCallback, index);
+            var inserted = BuilderLibraryUtility.InsertElementToDocument(paneWindow.document, paneWindow.primarySelection, m_LibraryItem, m_DragPreviewLastParent, index, m_DragPreviewElement);
 
-            selection.NotifyOfHierarchyChange(null);
-            selection.NotifyOfStylingChange(null);
-            selection.Select(null, m_DragPreviewElement);
+            if (inserted)
+            {
+                // Commit to the preview element as the final element.
+                // This will stop the ResetDragPreviewElement() from calling
+                // RemoveFromHierarchy() on it.
+                m_DragPreviewElement = null;
 
-            // Commit to the preview element as the final element.
-            // This will stop the ResetDragPreviewElement() from calling
-            // RemoveFromHierarchy() on it.
-            m_DragPreviewElement = null;
-
-            // If we dragged into the Viewport, focus the Viewport.
-            if (pane == DestinationPane.Viewport)
-                viewport.pane.Focus();
+                // If we dragged into the Viewport, focus the Viewport.
+                if (pane == DestinationPane.Viewport)
+                    viewport.pane.Focus();
+            }
         }
 
         protected override void EndDrag()

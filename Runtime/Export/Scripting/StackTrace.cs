@@ -5,10 +5,8 @@
 using System;
 using System.Diagnostics;
 using System.Text;
-using System.Reflection.Emit;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.Collections;
 using UnityEngine.Scripting;
 
 
@@ -41,7 +39,7 @@ namespace UnityEngine
                 return new string((sbyte*)buf, 0, quickSize, Encoding.UTF8);
             }
 
-            StackTrace trace = new StackTrace(1, true);
+            var trace = new StackTrace(1, true);
             string traceString = ExtractFormattedStackTrace(trace);
             return traceString;
         }
@@ -59,7 +57,7 @@ namespace UnityEngine
         {
             if (exceptiono == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with null exception");
             var exception = exceptiono as System.Exception;
-            if (exception == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with an exceptoin that was not of type System.Exception");
+            if (exception == null) throw new ArgumentException("ExtractStringFromExceptionInternal called with an exception that was not of type System.Exception");
 
             // StackTrace might not be available
             StringBuilder sb = new StringBuilder(exception.StackTrace == null ? 512 : exception.StackTrace.Length * 2);
@@ -90,7 +88,7 @@ namespace UnityEngine
 
             sb.Append(traceString + "\n");
 
-            StackTrace trace = new StackTrace(1, true);
+            var trace = new StackTrace(1, true);
             sb.Append(ExtractFormattedStackTrace(trace));
 
             stackTrace = sb.ToString();
@@ -98,16 +96,16 @@ namespace UnityEngine
 
         // NB if you change this formatting/code there is a separate Mono quick path in MonoManager.cpp that must be updated as well.
         [System.Security.SecuritySafeCritical] // System.Diagnostics.StackTrace cannot be accessed from transparent code (PSM, 2.12)
-        static internal string ExtractFormattedStackTrace(StackTrace stackTrace)
+        static internal string ExtractFormattedStackTrace(StackTrace stackFrames)
         {
             StringBuilder sb = new StringBuilder(255);
             int iIndex;
 
             // need to skip over "n" frames which represent the
             // System.Diagnostics package frames
-            for (iIndex = 0; iIndex < stackTrace.FrameCount; iIndex++)
+            for (iIndex = 0; iIndex < stackFrames.FrameCount; iIndex++)
             {
-                StackFrame frame = stackTrace.GetFrame(iIndex);
+                StackFrame frame = stackFrames.GetFrame(iIndex);
 
                 MethodBase mb = frame.GetMethod();
                 if (mb == null)
@@ -151,7 +149,10 @@ namespace UnityEngine
                 string path = frame.GetFileName();
                 if (path != null)
                 {
+                    // Stripping does not exclude line entries entirely but only the
+                    // part that allows us to generate hyperlinks and code pointers.
                     bool shouldStripLineNumbers =
+                        mb.IsDefined(typeof(HideInCallstackAttribute), true) ||
                         (classType.Name == "Debug" && classType.Namespace == "UnityEngine") ||
                         (classType.Name == "Logger" && classType.Namespace == "UnityEngine") ||
                         (classType.Name == "DebugLogHandler" && classType.Namespace == "UnityEngine") ||

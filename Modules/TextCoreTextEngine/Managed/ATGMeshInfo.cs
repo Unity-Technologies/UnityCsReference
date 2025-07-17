@@ -15,11 +15,8 @@ namespace UnityEngine.TextCore.Text
     internal struct ATGMeshInfo
     {
         public NativeTextElementInfo[] textElementInfos;
-        public int fontAssetId;
+        public int textAssetId;
         public int textElementCount;
-
-        [Ignore] // This field must be populated on the managed side
-        public FontAsset fontAsset;
 
         [Ignore]
         public List<List<int>> textElementInfoIndicesByAtlas;

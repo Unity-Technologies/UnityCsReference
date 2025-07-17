@@ -16,10 +16,6 @@ namespace Unity.Profiling.Editor.UI
         const string k_UxmlResourceName = "BottlenecksChartView.uxml";
         const string k_UssClass_Dark = "bottlenecks-chart-view__dark";
         const string k_UssClass_Light = "bottlenecks-chart-view__light";
-        const string k_UxmlIdentifier_TitleLabel = "bottlenecks-chart-view__key__title-label";
-        const string k_UxmlIdentifier_TargetMenu = "bottlenecks-chart-view__key__target-menu";
-        const string k_UxmlIdentifier_BlocksGraphView = "bottlenecks-chart-view__chart__blocks-graph-view";
-        const string k_UxmlIdentifier_FrameIndicator = "bottlenecks-chart-view__chart__frame-indicator";
 
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
@@ -28,6 +24,7 @@ namespace Unity.Profiling.Editor.UI
         BottlenecksChartViewModel m_Model;
 
         // View.
+        VisualElement m_KeyContainer;
         Label m_TitleLabel;
         ToolbarMenu m_TargetMenu;
         BlocksGraphView m_BlocksGraphView;
@@ -51,7 +48,8 @@ namespace Unity.Profiling.Editor.UI
             Responder = responder;
             m_TooltipContainer = tooltipContainer;
 
-            m_DataService.NewDataLoadedOrCleared += OnNewDataLoadedOrCleared;
+            m_DataService.DataCleared += OnNewDataLoadedOrCleared;
+            m_DataService.DataLoaded += OnNewDataLoadedOrCleared;
             m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
             m_SettingsService.MaximumFrameCountChanged += OnMaximumFrameCountChanged;
             m_ProfilerWindow.SelectedFrameIndexChanged += OnNewFrameIndexSelectedInProfilerWindow;
@@ -104,8 +102,8 @@ namespace Unity.Profiling.Editor.UI
             m_BlocksGraphView.Responder = this;
             UpdateTargetLabelText();
 
+            m_KeyContainer.RegisterCallback<ClickEvent>(OnKeyContainerClicked);
             View.RegisterCallback<GeometryChangedEvent>(ViewPerformedLayout);
-            View.RegisterCallback<ClickEvent>(OnViewClicked);
             View.RegisterCallback<KeyDownEvent>(OnKeyDownInView, TrickleDown.TrickleDown);
         }
 
@@ -116,7 +114,8 @@ namespace Unity.Profiling.Editor.UI
                 m_ProfilerWindow.SelectedFrameIndexChanged -= OnNewFrameIndexSelectedInProfilerWindow;
                 m_SettingsService.MaximumFrameCountChanged -= OnMaximumFrameCountChanged;
                 m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
-                m_DataService.NewDataLoadedOrCleared -= OnNewDataLoadedOrCleared;
+                m_DataService.DataLoaded -= OnNewDataLoadedOrCleared;
+                m_DataService.DataCleared -= OnNewDataLoadedOrCleared;
                 m_Model?.Dispose();
             }
 
@@ -125,6 +124,13 @@ namespace Unity.Profiling.Editor.UI
 
         void GatherReferencesInView(VisualElement view)
         {
+            const string k_UxmlIdentifier_KeyContainer = "bottlenecks-chart-view__key";
+            const string k_UxmlIdentifier_TitleLabel = "bottlenecks-chart-view__key__title-label";
+            const string k_UxmlIdentifier_TargetMenu = "bottlenecks-chart-view__key__target-menu";
+            const string k_UxmlIdentifier_BlocksGraphView = "bottlenecks-chart-view__chart__blocks-graph-view";
+            const string k_UxmlIdentifier_FrameIndicator = "bottlenecks-chart-view__chart__frame-indicator";
+
+            m_KeyContainer = view.Q<VisualElement>(k_UxmlIdentifier_KeyContainer);
             m_TitleLabel = view.Q<Label>(k_UxmlIdentifier_TitleLabel);
             m_TargetMenu = view.Q<ToolbarMenu>(k_UxmlIdentifier_TargetMenu);
             m_BlocksGraphView = view.Q<BlocksGraphView>(k_UxmlIdentifier_BlocksGraphView);
@@ -135,10 +141,9 @@ namespace Unity.Profiling.Editor.UI
         {
             var unitWidth = ComputeGraphUnitWidth();
             m_BlocksGraphView.UnitWidth = unitWidth;
-            m_FrameIndicator.style.width = unitWidth;
 
-            if (m_ProfilerWindow.selectedFrameIndex != -1)
-                MoveFrameIndicatorToFrameIndex(Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex));
+            if (m_ProfilerWindow.SelectedFrameRange != null)
+                MoveFrameIndicatorToFrameRange(m_ProfilerWindow.SelectedFrameRange);
         }
 
         void SetTargetFramesPerSecondSetting(int targetFramesPerSecond)
@@ -185,13 +190,12 @@ namespace Unity.Profiling.Editor.UI
             // Re-configure graph view as unit width has changed.
             var unitWidth = ComputeGraphUnitWidth();
             m_BlocksGraphView.UnitWidth = unitWidth;
-            m_FrameIndicator.style.width = unitWidth;
 
             // Reload graph.
             ReloadData();
 
             // Reposition selected frame indicator if necessary.
-            MoveFrameIndicatorToFrameIndex(Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex));
+            MoveFrameIndicatorToFrameRange(m_ProfilerWindow.SelectedFrameRange);
         }
 
         void OnNewFrameIndexSelectedInProfilerWindow(long selectedFrameIndexLong)
@@ -199,14 +203,14 @@ namespace Unity.Profiling.Editor.UI
             if (!IsViewLoaded)
                 return;
 
-            var selectedFrameIndex = Convert.ToInt32(selectedFrameIndexLong);
-            MoveFrameIndicatorToFrameIndex(selectedFrameIndex);
+            MoveFrameIndicatorToFrameRange(m_ProfilerWindow.SelectedFrameRange);
         }
 
-        void OnViewClicked(ClickEvent evt)
+        // This allows the user to click on the key to switch modules.
+        void OnKeyContainerClicked(ClickEvent evt)
         {
-            var selectedFrameIndex = Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex);
-            Responder?.ChartViewSelectedFrameIndex(selectedFrameIndex);
+            var existingSelection = m_ProfilerWindow.SelectedFrameRange;
+            Responder?.ChartViewSelectedFrameRange(existingSelection);
         }
 
         void OnKeyDownInView(KeyDownEvent evt)
@@ -214,16 +218,22 @@ namespace Unity.Profiling.Editor.UI
             if (m_DataService.FrameCount == 0)
                 return;
 
-            int frameIndex;
+            var selectionRange = m_ProfilerWindow.SelectedFrameRange;
+            if (selectionRange == null)
+                return;
+
+            // Shuffle the selection left and right; don't allow the
+            // selection to shift beyond the boundaries.
+            int frameShift;
             switch (evt.keyCode)
             {
                 case KeyCode.LeftArrow:
-                    frameIndex = Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex) - 1;
+                    frameShift = -1;
                     evt.StopPropagation();
                     break;
 
                 case KeyCode.RightArrow:
-                    frameIndex = Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex) + 1;
+                    frameShift = 1;
                     evt.StopPropagation();
                     break;
 
@@ -231,9 +241,15 @@ namespace Unity.Profiling.Editor.UI
                     return;
             }
 
-            var lastFrameIndex = (m_DataService.FirstFrameIndex + m_DataService.FrameCount) - 1;
-            frameIndex = Math.Clamp(frameIndex, m_DataService.FirstFrameIndex, lastFrameIndex);
-            Responder?.ChartViewSelectedFrameIndex(frameIndex);
+            var startFrameIndex = selectionRange.Value.Start.Value + frameShift;
+            if (startFrameIndex < m_DataService.FirstFrameIndex)
+                return;
+
+            var exclusiveEndFrameIndex = selectionRange.Value.End.Value + frameShift;
+            if (exclusiveEndFrameIndex > m_DataService.FirstFrameIndex + m_DataService.FrameCount)
+                return;
+
+            Responder?.ChartViewSelectedFrameRange(startFrameIndex..exclusiveEndFrameIndex);
         }
 
         float ComputeGraphUnitWidth()
@@ -241,17 +257,22 @@ namespace Unity.Profiling.Editor.UI
             return m_BlocksGraphView.contentRect.width / m_Model.DataSeriesCapacity;
         }
 
-        void MoveFrameIndicatorToFrameIndex(int selectedFrameIndex)
+        void MoveFrameIndicatorToFrameRange(Range? frameRange)
         {
-            var isFrameSelected = (m_ProfilerWindow.selectedFrameIndex != -1);
-            UIUtility.SetElementDisplay(m_FrameIndicator, isFrameSelected);
+            var hasSelection = (frameRange != null);
+            UIUtility.SetElementDisplay(m_FrameIndicator, hasSelection);
 
-            if (isFrameSelected)
+            if (hasSelection)
             {
                 var unitWidth = ComputeGraphUnitWidth();
-                var localFrameIndex = selectedFrameIndex - m_Model.FirstFrameIndex;
-                var left = unitWidth * localFrameIndex;
+                var startFrameIndex = frameRange.Value.Start.Value;
+                var localStartFrameIndex = startFrameIndex - m_Model.FirstFrameIndex;
+                var left = unitWidth * localStartFrameIndex;
                 m_FrameIndicator.style.left = left;
+
+                var rangeLength = frameRange.Value.End.Value - startFrameIndex;
+                var width = unitWidth * rangeLength;
+                m_FrameIndicator.style.width = width;
             }
         }
 
@@ -285,15 +306,28 @@ namespace Unity.Profiling.Editor.UI
             return m_Model.DataValueBuffers[dataSeriesIndex];
         }
 
-        void BlocksGraphView.IResponder.GraphViewSelectedUnit(int unit)
+        void BlocksGraphView.IResponder.GraphViewUpdatedPendingSelection(Range unitRange)
         {
             if (m_DataService.FrameCount == 0)
                 return;
 
-            var selectedFrameIndex = m_Model.FirstFrameIndex + unit;
-            var lastFrameIndex = (m_DataService.FirstFrameIndex + m_DataService.FrameCount) - 1;
-            selectedFrameIndex = Math.Clamp(selectedFrameIndex, m_DataService.FirstFrameIndex,  lastFrameIndex);
-            Responder?.ChartViewSelectedFrameIndex(selectedFrameIndex);
+            // Don't allow range selection if the view is not selected. If the Bottleneck module
+            // was not already selected, we do not allow the user to change frame. This matches
+            // existing behaviour to help with switching modules without changing frame.
+            if (m_ProfilerWindow.IsBottleneckViewVisible() == false)
+                return;
+
+            var frameRange = UnitRangeToFrameRange(unitRange);
+            MoveFrameIndicatorToFrameRange(frameRange);
+        }
+
+        void BlocksGraphView.IResponder.GraphViewSelectedUnitRange(Range unitRange)
+        {
+            if (m_DataService.FrameCount == 0)
+                return;
+
+            var selectedFrameRange = UnitRangeToFrameRange(unitRange);
+            Responder?.ChartViewSelectedFrameRange(selectedFrameRange);
 
             View.Focus();
         }
@@ -328,6 +362,23 @@ namespace Unity.Profiling.Editor.UI
             m_TooltipViewController = null;
         }
 
+        Range UnitRangeToFrameRange(Range unitRange)
+        {
+            var model = m_Model;
+            var firstProfilerFrameIndex = m_DataService.FirstFrameIndex;
+            var exclusiveLastProfilerFrameIndex = firstProfilerFrameIndex + m_DataService.FrameCount;
+            var startFrameIndex = Math.Clamp(
+                model.FirstFrameIndex + unitRange.Start.Value,
+                firstProfilerFrameIndex,
+                exclusiveLastProfilerFrameIndex - 1);
+            var exclusiveEndFrameIndex = Math.Clamp(
+                model.FirstFrameIndex + unitRange.End.Value,
+                firstProfilerFrameIndex + 1,
+                exclusiveLastProfilerFrameIndex);
+
+            return new Range(startFrameIndex, exclusiveEndFrameIndex);
+        }
+
         void UpdateTooltip(int hoveredUnitIndex, Vector2 position)
         {
             // Clamp hovered unit index.
@@ -360,7 +411,7 @@ namespace Unity.Profiling.Editor.UI
 
         public interface IResponder
         {
-            void ChartViewSelectedFrameIndex(int frameIndex);
+            void ChartViewSelectedFrameRange(Range? frameRange);
         }
     }
 }

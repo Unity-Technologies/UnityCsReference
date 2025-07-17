@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
 
@@ -95,7 +96,7 @@ namespace Unity.UI.Builder
                             features |= Features.Transforms;
                         }
 
-                        if (property.IsVariable())
+                        if (property.ContainsVariable())
                         {
                             features |= Features.Variables;
                         }
@@ -103,41 +104,53 @@ namespace Unity.UI.Builder
                 }
             }
 
-            if (vta.templateAssets.Count > 0)
+            using var templatesListPool = ListPool<TemplateAsset>.Get(out var templateAssets);
+            templateAssets.AddRange(vta.DepthFirstTraversalOfType<TemplateAsset>());
+
+            using var allAssetsListPool = ListPool<UxmlAsset>.Get(out var allAssets);
+            allAssets.AddRange(vta.DepthFirstTraversal());
+
+            using var uxmlObjectsPool = ListPool<UxmlObjectAsset>.Get(out var uxmlObjects);
+            uxmlObjects.AddRange(vta.DepthFirstTraversalOfType<UxmlObjectAsset>());
+
+            using var visualElementAssetsListPool = ListPool<VisualElementAsset>.Get(out var visualElementAssets);
+            visualElementAssets.AddRange(vta.DepthFirstTraversalOfType<VisualElementAsset>());
+
+            if (templateAssets.Count > 0)
             {
                 features |= Features.Instances;
 
-                if (vta.templateAssets.Exists(x => x.attributeOverrides.Count > 0))
+                if (templateAssets.Exists(x => x.attributeOverrides.Count > 0))
                 {
                     features |= Features.AttributeOverrides;
                 }
             }
 
-            if (vta.visualElementAssets.Exists(x => x.fullTypeName == typeof(ListView).FullName))
+            if (visualElementAssets.Exists(x => x.fullTypeName == typeof(ListView).FullName))
             {
                 features |= Features.ListView;
             }
-            if (vta.visualElementAssets.Exists(x => x.fullTypeName == typeof(TreeView).FullName))
+            if (visualElementAssets.Exists(x => x.fullTypeName == typeof(TreeView).FullName))
             {
                 features |= Features.TreeView;
             }
-            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(o => o.fullTypeName == typeof(DataBinding).FullName)))
+            if (uxmlObjects.Exists(x => x.fullTypeName == typeof(DataBinding).FullName))
             {
                 features |= Features.DataBinding;
             }
-            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(IsCustomBinding<DataBinding>)))
+            if (uxmlObjects.Exists(IsCustomBinding<DataBinding>))
             {
                 features |= Features.UserDataBinding;
             }
-            if (vta.uxmlObjectEntries.Exists(x => x.uxmlObjectAssets.Exists(IsCustomBinding<CustomBinding>)))
+            if (uxmlObjects.Exists(IsCustomBinding<CustomBinding>))
             {
                 features |= Features.CustomBinding;
             }
-            if (vta.visualElementAssets.Exists(x => HasUxmlTraits(x) && IsCustomElement(x)))
+            if (visualElementAssets.Exists(x => HasUxmlTraits(x) && IsCustomElement(x)))
             {
                 features |= Features.UxmlTraits;
             }
-            if (vta.visualElementAssets.Exists(x => x.serializedData != null && IsCustomElement(x)))
+            if (visualElementAssets.Exists(x => x.serializedData != null && IsCustomElement(x)))
             {
                 features |= Features.UxmlSerialization;
             }
@@ -184,8 +197,7 @@ namespace Unity.UI.Builder
                 var openUssFiles = openUxml.openUSSFiles;
                 var openUxmlFiles = openUxml.openUXMLFiles;
                 var editorExtensionMode = openUxml.fileSettings.editorExtensionMode;
-                var idToChildren = VisualTreeAssetUtilities.GenerateIdToChildren(vta);
-                var elementsInfo = VisualTreeAssetUtilities.GetElementsInfo(idToChildren);
+                var elementsInfo = VisualTreeAssetUtilities.GetElementsInfo(vta);
 
                 if (typeCache == null)
                 {

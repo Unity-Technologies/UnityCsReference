@@ -949,20 +949,20 @@ namespace UnityEditor
         void GroupClicked(AudioMixerGroupController clickedGroup, ChannelStripParams p, bool clickedControlInGroup)
         {
             // Get ids from items
-            List<int> allIDs = new List<int>();
+            var allIDs = new List<EntityId>();
             foreach (var group in p.shownGroups)
-                allIDs.Add(group.GetInstanceID());
+                allIDs.Add(group.GetEntityId());
 
-            List<int> selectedIDs = new List<int>();
+            var selectedIDs = new List<EntityId>();
             foreach (var group in m_Controller.CachedSelection)
-                selectedIDs.Add(group.GetInstanceID());
+                selectedIDs.Add(group.GetEntityId());
 
-            int lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : 0;
+            EntityId lastClickedID = selectedIDs.Count > 0 ? selectedIDs.Last() : EntityId.None;
             bool allowMultiselection = true;
             bool keepMultiSelection = Event.current.shift || clickedControlInGroup;
             bool useShiftAsActionKey = false;
 
-            List<int> newSelection = InternalEditorUtility.GetNewSelection(clickedGroup.GetInstanceID(), allIDs, selectedIDs, lastClickedID, keepMultiSelection, useShiftAsActionKey, allowMultiselection);
+            var newSelection = InternalEditorUtility.GetNewSelection(clickedGroup.GetEntityId(), allIDs, selectedIDs, lastClickedID, keepMultiSelection, useShiftAsActionKey, allowMultiselection);
             List<AudioMixerGroupController> groups = (from x in p.allGroups where newSelection.Contains(x.GetInstanceID()) select x).ToList();
 
             Selection.objects = groups.ToArray();

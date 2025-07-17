@@ -19,7 +19,7 @@ namespace UnityEditor.UIElements
         {
             var desiredType = ((UxmlTypeReferenceAttribute)attribute).baseType ?? typeof(object);
             var uxmlAttribute = fieldInfo.GetCustomAttribute<UxmlAttributeAttribute>();
-            var label = uxmlAttribute != null ? BuilderNameUtilities.ConvertDashToHuman(uxmlAttribute.name) : property.localizedDisplayName;
+            var label = uxmlAttribute != null ? StyleSheetUtility.ConvertDashToHuman(uxmlAttribute.name) : property.localizedDisplayName;
             var field = new BuilderTypeField(label, desiredType);
             field.AddToClassList(BuilderTypeField.alignedFieldUssClassName);
             field.BindProperty(property);
@@ -73,6 +73,50 @@ namespace UnityEditor.UIElements
 
             valueFieldInInspector.multiline = multiline;
             valueFieldInInspector.EnableInClassList(BuilderConstants.InspectorMultiLineTextFieldClassName, multiline);
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(SelectableTextElementAttribute))]
+    class SelectableTextElementPropertyDrawer : PropertyDrawer
+    {
+        private SerializedProperty m_FocusableProperty;
+        private SerializedProperty m_SelectableProperty;
+        private Toggle m_SelectableField;
+
+        public override VisualElement CreatePropertyGUI(SerializedProperty property)
+        {
+            m_SelectableProperty = property;
+            var rootPath = property.propertyPath.Substring(0, property.propertyPath.LastIndexOf('.'));
+            var rootProperty = property.serializedObject.FindProperty(rootPath);
+            m_FocusableProperty = rootProperty.FindPropertyRelative("focusable");
+
+            m_SelectableField = new Toggle("Selectable")
+            {
+                value = property.boolValue,
+                bindingPath = property.propertyPath,
+                classList = { Toggle.alignedFieldUssClassName }
+            };
+
+            m_SelectableField.TrackPropertyValue(m_FocusableProperty, (serializedProperty) =>
+            {
+                // If focusable is set to false, we need to reset the isSelectable value as well as it doesn't work
+                // without focusable on. It strictly follows the logic present in the isSelectable setter.
+                if (serializedProperty.boolValue == false && m_SelectableField.value)
+                {
+                    m_SelectableField.value = false;
+                    m_SelectableProperty.boolValue = false;
+                    m_SelectableProperty.serializedObject.ApplyModifiedProperties();
+                }
+            });
+
+            m_SelectableField.TrackPropertyValue(m_SelectableProperty, (serializedProperty) =>
+            {
+                m_SelectableProperty.boolValue = serializedProperty.boolValue;
+                m_FocusableProperty.boolValue = serializedProperty.boolValue;
+                m_SelectableProperty.serializedObject.ApplyModifiedProperties();
+            });
+
+            return m_SelectableField;
         }
     }
 

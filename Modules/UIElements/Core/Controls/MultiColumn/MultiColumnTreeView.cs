@@ -30,7 +30,7 @@ namespace UnityEngine.UIElements
                     new (nameof(sortingMode), "sorting-mode"),
                     new (nameof(columns), "columns"),
                     new (nameof(sortColumnDescriptions), "sort-column-descriptions"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

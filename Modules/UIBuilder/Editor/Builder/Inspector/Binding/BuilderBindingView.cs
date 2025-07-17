@@ -165,7 +165,6 @@ namespace Unity.UI.Builder
             isCreatingBinding = isCreating;
             UpdateBinding();
             inspector.selection.AddNotifier(this);
-            m_AttributesView.selection = inspector.selection;
             UpdateControls();
         }
 

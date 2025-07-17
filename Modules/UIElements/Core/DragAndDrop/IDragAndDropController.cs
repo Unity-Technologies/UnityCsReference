@@ -64,11 +64,17 @@ namespace UnityEngine.UIElements
         /// </summary>
         public readonly IEnumerable<int> selectedIds;
 
-        internal CanStartDragArgs(VisualElement draggedElement, int id, IEnumerable<int> selectedIds)
+        /// <summary>
+        /// The event modifier of the drag operation.
+        /// </summary>
+        internal readonly EventModifiers modifiers;
+
+        internal CanStartDragArgs(VisualElement draggedElement, int id, IEnumerable<int> selectedIds, EventModifiers modifiers)
         {
             this.draggedElement = draggedElement;
             this.id = id;
             this.selectedIds = selectedIds;
+            this.modifiers = modifiers;
         }
     }
 
@@ -151,6 +157,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DragAndDropData dragAndDropData => m_DragAndDropArgs.dragAndDropData;
 
+        internal EventModifiers modifiers => m_DragAndDropArgs.modifiers;
+
         internal HandleDragAndDropArgs(Vector2 position, DragAndDropArgs dragAndDropArgs)
         {
             this.position = position;
@@ -174,18 +182,30 @@ namespace UnityEngine.UIElements
             this.visualMode = visualMode;
             genericData = null;
             assetPaths = null;
-            unityObjectReferences = null;
+            entityIds = null;
+            modifiers = EventModifiers.None;
         }
 
         // This API is used by com.unity.entities, we cannot remove it yet.
-        internal StartDragArgs(string title, object target)
+        internal StartDragArgs(string title, object target) : this()
         {
             this.title = title;
             visualMode = DragVisualMode.Move;
             genericData = null;
             assetPaths = null;
-            unityObjectReferences = null;
+            entityIds = null;
             SetGenericData(DragAndDropData.dragSourceKey, target);
+        }
+
+        /// <summary>
+        /// Initializes a <see cref="StartDragArgs"/>.
+        /// </summary>
+        /// <param name="title">The text to use during the drag.</param>
+        /// <param name="visualMode">The visual mode the drag starts with.</param>
+        /// <param name="modifiers"></param>
+        internal StartDragArgs(string title, DragVisualMode visualMode, EventModifiers modifiers): this(title, visualMode)
+        {
+            this.modifiers = modifiers;
         }
 
         /// <summary>
@@ -199,8 +219,9 @@ namespace UnityEngine.UIElements
         /// </summary>
         public DragVisualMode visualMode { get; }
 
+        internal EventModifiers modifiers { get; set; }
         internal Hashtable genericData { get; private set; }
-        internal IEnumerable<Object> unityObjectReferences { get; private set; }
+        internal IReadOnlyList<EntityId> entityIds { get; private set; }
         internal string[] assetPaths { get; private set; }
 
         /// <summary>
@@ -220,11 +241,20 @@ namespace UnityEngine.UIElements
         /// <param name="references">The Unity Object references.</param>
         public void SetUnityObjectReferences(IEnumerable<Object> references)
         {
-            unityObjectReferences = references;
+            SetEntityIds(references.Select(x => x.GetEntityId()).ToList());
         }
 
         /// <summary>
-        /// Stores an array of paths to assets being dragged during this drag-and-drop operation. 
+        /// Sets Entity Ids associated with the current drag-and-drop operation.
+        /// </summary>
+        /// <param name="references">The Unity Object references.</param>
+        public void SetEntityIds(IReadOnlyList<EntityId> ids)
+        {
+            entityIds = ids;
+        }
+
+        /// <summary>
+        /// Stores an array of paths to assets being dragged during this drag-and-drop operation.
         /// </summary>
         /// <param name="paths">The asset paths.</param>
         public void SetPaths(string[] paths)

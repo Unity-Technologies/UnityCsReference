@@ -118,6 +118,14 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        [SerializeField] private bool m_HasScriptingDefines = false;
+        [VisibleToOtherModules]
+        internal bool hasScriptingDefines
+        {
+            get => m_HasScriptingDefines;
+            set => m_HasScriptingDefines = value;
+        }
+
         /// <summary>
         /// Scripting Compilation Defines used during player and editor builds.
         /// </summary>
@@ -130,6 +138,8 @@ namespace UnityEditor.Build.Profile
 
         [VisibleToOtherModules]
         internal Action OnPackageAddProgress;
+        [VisibleToOtherModules]
+        internal Action OnPackageAddComplete;
 
         [SerializeField]
         PlayerSettingsYaml m_PlayerSettingsYaml = new();
@@ -247,7 +257,7 @@ namespace UnityEditor.Build.Profile
         [VisibleToOtherModules]
         internal void ResetToGlobalQualitySettingsValues()
         {
-            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+            var buildTargetGroupString = BuildPipeline.GetBuildTargetGroupName(buildTarget);
             var globalQualityLevels = QualitySettings.GetActiveQualityLevelsForPlatform(buildTargetGroupString);
 
             var newBuildProfileQualityLevels = new string[globalQualityLevels.Length];
@@ -293,6 +303,7 @@ namespace UnityEditor.Build.Profile
                 packageAddInfo.OnPackageAddComplete = () =>
                 {
                     NotifyBuildProfileExtensionOfCreation(packageAddInfo.preconfiguredSettingsVariant);
+                    OnPackageAddComplete?.Invoke();
                 };
                 packageAddInfo.RequestPackageInstallation();
             }
@@ -373,6 +384,7 @@ namespace UnityEditor.Build.Profile
             targetBuildProfile.TryCreatePlatformSettings();
             targetBuildProfile.overrideGlobalScenes = false;
             targetBuildProfile.scenes = Array.Empty<EditorBuildSettingsScene>();
+            targetBuildProfile.hasScriptingDefines = false;
             targetBuildProfile.scriptingDefines = Array.Empty<string>();
 
             BuildProfileModuleUtil.RemovePlayerSettings(targetBuildProfile);
@@ -380,6 +392,7 @@ namespace UnityEditor.Build.Profile
             targetBuildProfile.RemoveGraphicsSettings();
 
             AssetDatabase.SaveAssetIfDirty(targetBuildProfile);
+            BuildProfileModuleUtil.UpdateActiveEditors(targetBuildProfile);
         }
 
         void ValidateDataConsistency()
@@ -403,6 +416,18 @@ namespace UnityEditor.Build.Profile
             }
 
             CheckSceneListConsistency();
+
+            // Scripting define foldout may be visible
+            // when no scripting defines have been set.
+            if (scriptingDefines.Length > 0 && !m_HasScriptingDefines)
+                m_HasScriptingDefines = true;
+
+            // On disk changes to active profile may change platform guid.
+            // Specifically copying the entire YAML of a valid build profile.
+            if (this == BuildProfileContext.activeProfile && platformGuid != EditorUserBuildSettings.activePlatformGuid)
+            {
+                EditorUserBuildSettings.SwitchActiveBuildTargetGuid(this);
+            }
         }
 
         /// <summary>

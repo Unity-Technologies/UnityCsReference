@@ -185,14 +185,22 @@ namespace UnityEditor.Search
             return Mathf.RoundToInt(go.transform.position.z);
         }
 
-        [SearchSelector("vertices", provider: "scene")]
+        [SearchSelector("vertices")]
         public static object SelectVertices(SearchSelectorArgs args)
         {
-            var go = args.current.ToObject<GameObject>();
-            if (!go)
+            var obj = args.current.ToObject<Object>();
+            if (!obj)
                 return null;
+            if (obj is GameObject go)
+            {
+                return SceneFilterVertices(go);
+            }
 
-            return SceneFilterVertices(go);
+            if (obj is Mesh mesh)
+            {
+                return mesh.vertexCount;
+            }
+            return null;
         }
 
         [SceneQueryEngineFilter("vertices")]
@@ -206,14 +214,23 @@ namespace UnityEditor.Search
             return meshFilter.sharedMesh.vertexCount;
         }
 
-        [SearchSelector("faces", provider: "scene")]
+
+        [SearchSelector("faces")]
         public static object SelectFaces(SearchSelectorArgs args)
         {
-            var go = args.current.ToObject<GameObject>();
-            if (!go)
+            var obj = args.current.ToObject<Object>();
+            if (!obj)
                 return null;
+            if (obj is GameObject go)
+            {
+                return SceneFilterFaces(go);
+            }
 
-            return SceneFilterFaces(go) ?? null;
+            if (obj is Mesh mesh)
+            {
+                return mesh.triangles.Length;
+            }
+            return null;
         }
 
         [SceneQueryEngineFilter("faces")]

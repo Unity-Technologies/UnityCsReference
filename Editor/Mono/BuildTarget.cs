@@ -141,8 +141,8 @@ namespace UnityEditor
         QNX = 46,
 
         VisionOS = 47,
-        
-        ReservedCFE = 48,
+
+        Switch2 = 48,
 
         Kepler = 49,
 

@@ -123,7 +123,7 @@ namespace UnityEngine.UIElements
                 formatString = UINumericFieldsUtils.k_DoubleFieldFormatString;
             }
 
-            protected override string allowedCharacters => UINumericFieldsUtils.k_AllowedCharactersForFloat;
+            protected override string allowedCharacters => parentDoubleField.supportExpressions ? UINumericFieldsUtils.k_AllowedCharactersForFloat : UINumericFieldsUtils.k_AllowedCharactersForFloat_NoExpressions;
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, double startValue)
             {

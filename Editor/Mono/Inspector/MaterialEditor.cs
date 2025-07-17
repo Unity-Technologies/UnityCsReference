@@ -235,7 +235,7 @@ namespace UnityEditor
 
             public void OnEnable()
             {
-                m_SelectedReflectionProbe = EditorUtility.InstanceIDToObject(SessionState.GetInt("PreviewReflectionProbe", 0)) as ReflectionProbe;
+                m_SelectedReflectionProbe = EditorUtility.EntityIdToObject(SessionState.GetInt("PreviewReflectionProbe", 0)) as ReflectionProbe;
             }
 
             public void OnDisable()

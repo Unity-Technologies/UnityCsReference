@@ -19,6 +19,7 @@ namespace UnityEditor.Profiling
         // User setting keys. Don't localize!
         const string k_SettingsPrefix = "Profiler.";
         public const string k_FrameCountSettingKey = k_SettingsPrefix + "FrameCount";
+        public const string k_DropFramesOnMemoryPressureSettingKey = k_SettingsPrefix + "DropFramesOnMemoryPressure";
         public const string k_ProfilerOutOfProcessSettingKey = k_SettingsPrefix + "OutOfProcess";
         public const string k_RememberLastRecordStateSettingKey = k_SettingsPrefix + "RememberLastRecordState";
         public const string k_DefaultRecordStateSettingKey = k_SettingsPrefix + "DefaultRecordState";
@@ -27,8 +28,9 @@ namespace UnityEditor.Profiling
         public const string k_CustomConnectionID = k_SettingsPrefix + "CustomConnectionID";
         public const string k_TargetFramesPerSecond = k_SettingsPrefix + "TargetFramesPerSecond";
 
-        public const int kMinFrameCount = 300;
-        public const int kMaxFrameCount = 2000;
+        public const int kMinFrameCount = 600;
+        public const int kDefaultFrameCount = 2000;
+        public const int kMaxFrameCount = 4000;
         public const int k_MinimumTargetFramesPerSecond = 1;
         public const int k_MaximumTargetFramesPerSecond = 1000;
 
@@ -46,7 +48,12 @@ namespace UnityEditor.Profiling
             {
                 if (m_FrameCount == 0)
                 {
-                    var value = EditorPrefs.GetInt(k_FrameCountSettingKey, kMinFrameCount);
+                    var value = EditorPrefs.GetInt(k_FrameCountSettingKey, kDefaultFrameCount);
+                    if (value == 300)
+                    {
+                        // 300 is the legacy default value - update it to the new default value of 2000.
+                        value = kDefaultFrameCount;
+                    }
                     m_FrameCount = Mathf.Clamp(value, kMinFrameCount, kMaxFrameCount);
                     ProfilerDriver.SetMaxFrameHistoryLength(m_FrameCount);
                 }
@@ -61,12 +68,32 @@ namespace UnityEditor.Profiling
                 if (value != m_FrameCount)
                 {
                     m_FrameCount = value;
-                    EditorPrefs.SetInt(k_FrameCountSettingKey, value);
+                    if (m_FrameCount == kDefaultFrameCount)
+                    {
+                        // Delete the key if the value is the default value.
+                        EditorPrefs.DeleteKey(k_FrameCountSettingKey);
+                    }
+                    else
+                    {
+                        EditorPrefs.SetInt(k_FrameCountSettingKey, value);
+                    }
                     ProfilerDriver.SetMaxFrameHistoryLength(value);
 
-                    if (settingsChanged != null)
-                        settingsChanged.Invoke();
+                    settingsChanged?.Invoke();
                 }
+            }
+        }
+
+        public static bool dropFramesOnMemoryPressure
+        {
+            get { return EditorPrefs.GetBool(k_DropFramesOnMemoryPressureSettingKey, true); }
+            set
+            {
+                if (!value)
+                    EditorPrefs.SetBool(k_DropFramesOnMemoryPressureSettingKey, value);
+                else
+                    EditorPrefs.DeleteKey(k_DropFramesOnMemoryPressureSettingKey);
+                ProfilerDriver.SetAutomaticMemoryManagement(value);
             }
         }
 

@@ -67,9 +67,7 @@ namespace UnityEditor.Toolbars
                 {
                     foreach (var c in definition.targetContexts)
                     {
-                        //The main toolbar isn't a window but we support DefaultMainToolbar as a valid context for adding elements
-                        if (context == null && (c == null || typeof(MainToolbarVisual).IsAssignableFrom(c))
-                            || c.IsInstanceOfType(context))
+                        if (c == null || c.IsInstanceOfType(context))
                         {
                             inProperContext = true;
                         }

@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Analytics;
 using UnityEngine.Scripting;
 using UnityEngine.UIElements;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -62,16 +63,11 @@ namespace UnityEditor
                 guids = new HashSet<string>(AssetDatabase.CollectAllChildren(AssetDatabase.assetFolderGUID, temp));
             }
 
-            ExportPackageItem[] assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(guids.ToArray(), includeDependencies, true);
-
-            if (includeScripts)
-            {
-                assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(
-                    guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies, true);
-            }
+            var guidsArray = includeScripts ? guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray() : guids.ToArray();
+            var assets = PackageUtility.BuildExportPackageItemsListWithPackageManagerWarning(guidsArray, includeDependencies, true);
 
             // If the user exports the root Assets folder, we need to remove it from the list
-            // explicitly, as it doesnt make sense
+            // explicitly, as it doesn't make sense
             assets = assets.Where(val => val.assetPath != "Assets").ToArray();
 
             return assets;

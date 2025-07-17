@@ -3,14 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
-using Object = UnityEngine.Object;
 using System.Collections;
-using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
+using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -49,12 +51,16 @@ namespace UnityEditor
      StaticAccessor("GetDragAndDrop()", StaticAccessorType.Dot)]
     public class DragAndDrop
     {
+        [AutoStaticsCleanupOnCodeReload]
         private static Hashtable s_GenericData;
+        [AutoStaticsCleanupOnCodeReload]
         private static Dictionary<int, List<Delegate>> m_DropHandlers;
-
-        internal static ProjectBrowserDropHandler DefaultProjectBrowserDropHandler = DefaultProjectBrowserDropHandlerImpl;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static ProjectBrowserDropHandlerV2 DefaultProjectBrowserDropHandler = DefaultProjectBrowserDropHandlerImpl;
+        [AutoStaticsCleanupOnCodeReload]
         internal static InspectorDropHandler DefaultInspectorDropHandler = InternalEditorUtility.InspectorWindowDrag;
-        internal static HierarchyDropHandler DefaultHierarchyDropHandler = InternalEditorUtility.HierarchyWindowDragByID;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static HierarchyDropHandlerV2 DefaultHierarchyDropHandler = InternalEditorUtility.HierarchyWindowDragByID;
 
         internal static Dictionary<int, List<Delegate>> dropHandlers
         {
@@ -63,9 +69,9 @@ namespace UnityEditor
                 if (m_DropHandlers == null)
                 {
                     m_DropHandlers = new Dictionary<int, List<Delegate>>();
-                    AddDropHandler(DefaultProjectBrowserDropHandler);
-                    AddDropHandler(DefaultInspectorDropHandler);
-                    AddDropHandler(DefaultHierarchyDropHandler);
+                    AddDropHandlerV2(DefaultProjectBrowserDropHandler);
+                    AddDropHandlerV2(DefaultInspectorDropHandler);
+                    AddDropHandlerV2(DefaultHierarchyDropHandler);
                 }
                 return m_DropHandlers;
             }
@@ -100,7 +106,7 @@ namespace UnityEditor
             }
         }
 
-        internal static DragAndDropVisualMode DropOnProjectBrowserWindow(int dragUponInstanceId, string dropUponPath, bool perform)
+        internal static DragAndDropVisualMode DropOnProjectBrowserWindow(EntityId dragUponInstanceId, string dropUponPath, bool perform)
         {
             return Drop(DragAndDropWindowTarget.projectBrowser, dragUponInstanceId, dropUponPath, perform);
         }
@@ -133,6 +139,10 @@ namespace UnityEditor
             for (var i = handlers.Count - 1; i >= 0; --i)
             {
                 var dropHandler = handlers[i];
+                if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(int) && args[0] is EntityId e)
+                    args[0] = (int)e;
+                if (dropHandler.Method.GetParameters()[0].ParameterType == typeof(EntityId) && args[0] is int number)
+                    args[0] = EntityId.From(number);
                 dropResult = (DragAndDropVisualMode)dropHandler.DynamicInvoke(args);
                 if (dropResult != DragAndDropVisualMode.None)
                 {
@@ -144,11 +154,11 @@ namespace UnityEditor
             return dropResult;
         }
 
-        internal static DragAndDropVisualMode DefaultProjectBrowserDropHandlerImpl(int dragUponInstanceId, string dummy, bool perform)
+        internal static DragAndDropVisualMode DefaultProjectBrowserDropHandlerImpl(EntityId dragUponInstanceId, string dummy, bool perform)
         {
-            HierarchyProperty search = new HierarchyProperty(HierarchyType.Assets);
+            var search = new HierarchyIterator(HierarchyType.Assets);
             if (search.Find(dragUponInstanceId, null))
-                return InternalEditorUtility.ProjectWindowDrag(search, perform);
+                return InternalEditorUtility.ProjectWindowDragV2(search, perform);
 
             if (dragUponInstanceId != 0)
             {
@@ -159,16 +169,16 @@ namespace UnityEditor
                 var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                 if (packageInfo != null)
                 {
-                    search = new HierarchyProperty(packageInfo.assetPath);
+                    search = new HierarchyIterator(packageInfo.assetPath);
                     if (search.Find(dragUponInstanceId, null))
-                        return InternalEditorUtility.ProjectWindowDrag(search, perform);
+                        return InternalEditorUtility.ProjectWindowDragV2(search, perform);
                 }
             }
-            return InternalEditorUtility.ProjectWindowDrag(null, perform);
+            return InternalEditorUtility.ProjectWindowDragV2(null, perform);
         }
 
         // HandleDelayedDrag can be used to start a drag and drop
-        internal static bool HandleDelayedDrag(Rect position, int id, Object objectToDrag)
+        internal static bool HandleDelayedDrag(Rect position, int id, EntityId entityIdToDrag)
         {
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
@@ -193,9 +203,8 @@ namespace UnityEditor
                         {
                             GUIUtility.hotControl = 0;
                             PrepareStartDrag();
-                            Object[] references = { objectToDrag };
-                            objectReferences = references;
-                            StartDrag(ObjectNames.GetDragAndDropTitle(objectToDrag));
+                            entityIds = new[] { entityIdToDrag };
+                            StartDrag(ObjectNames.GetDragAndDropTitle(InternalEditorUtility.GetObjectFromInstanceID(entityIdToDrag)));
                             return true;
                         }
                     }
@@ -220,7 +229,7 @@ namespace UnityEditor
             }
             s_GenericData = null;
             paths = null;
-            objectReferences = new UnityEngine.Object[] {};
+            entityIds = Array.Empty<EntityId>();
             visualMode = DragAndDropVisualMode.None;
             PrepareStartDrag_Internal();
         }
@@ -260,7 +269,39 @@ namespace UnityEditor
             s_GenericData[type] = data;
         }
 
-        public static extern Object[] objectReferences {[NativeMethod("GetPPtrs")] get; [NativeMethod("SetPPtrs")] set; }
+        // Prefer to use entityIds instead to retrieve an array of all entity ids being dragged as it is now possible to drag pure entities in the Editor.
+        public static Object[] objectReferences
+        {
+            get
+            {
+                var ids = new ReadOnlySpan<EntityId>(entityIds);
+                var objects = new List<Object>(entityIds.Length);
+                for (int i = 0; i < ids.Length; ++i)
+                {
+                    var o = InternalEditorUtility.GetObjectFromInstanceID(ids[i]);
+                    if (o != null)
+                        objects.Add(o);
+                }
+                return objects.ToArray();
+            }
+            set
+            {
+                if (value != null)
+                {
+                    var objects = new ReadOnlySpan<Object>(value);
+                    var ids = new EntityId[objects.Length];
+                    for (int i = 0; i < objects.Length; ++i)
+                        ids[i] = objects[i].GetEntityId();
+                    entityIds = ids;
+                }
+                else
+                {
+                    entityIds = null;
+                }
+            }
+        }
+
+        public static extern EntityId[] entityIds { [NativeMethod("GetEntityIds")] get; [NativeMethod("SetEntityIds")] set; }
         public static extern string[] paths { get; set; }
         public static extern int activeControlID { get; set; }
         public static extern DragAndDropVisualMode visualMode { get; set; }
@@ -273,9 +314,13 @@ namespace UnityEditor
         [NativeMethod("StartDrag")]
         private static extern void StartDrag_Internal(string title);
 
-        public delegate DragAndDropVisualMode ProjectBrowserDropHandler(int dragInstanceId, string dropUponPath, bool perform);
+        public delegate DragAndDropVisualMode ProjectBrowserDropHandlerV2(EntityId dragEntityId, string dropUponPath, bool perform);
+        [Obsolete("Use ProjectBrowserDropHandlerV2 instead")]
+        public delegate DragAndDropVisualMode ProjectBrowserDropHandler(int dragInstanceID, string dropUponPath, bool perform);
         public delegate DragAndDropVisualMode SceneDropHandler(UnityEngine.Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);
         public delegate DragAndDropVisualMode InspectorDropHandler(UnityEngine.Object[] targets, bool perform);
+        public delegate DragAndDropVisualMode HierarchyDropHandlerV2(EntityId dropTargetEntityId, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
+        [Obsolete("Use HierarchyDropHandlerV2 instead")]
         public delegate DragAndDropVisualMode HierarchyDropHandler(int dropTargetInstanceID, HierarchyDropFlags dropMode, Transform parentForDraggedObjects, bool perform);
 
         internal static bool HasHandler(int dropDstId)
@@ -293,44 +338,37 @@ namespace UnityEditor
             return handlers != null && handlers.Any(dropHandler => dropHandler == handler);
         }
 
-        public static void AddDropHandler(ProjectBrowserDropHandler handler)
-        {
-            AddDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
-        }
+        [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        public static void AddDropHandler(ProjectBrowserDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
+        public static void AddDropHandlerV2(ProjectBrowserDropHandlerV2 handler) => AddDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
+        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)")]
+        public static void AddDropHandler(SceneDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.sceneView, handler);
+        public static void AddDropHandlerV2(SceneDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.sceneView, handler);
+        [Obsolete("Use AddDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        public static void AddDropHandler(HierarchyDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.hierarchy, handler);
+        public static void AddDropHandlerV2(HierarchyDropHandlerV2 handler) => AddDropHandler(DragAndDropWindowTarget.hierarchy, handler);
+        [Obsolete("Use AddDropHandlerV2 instead (UnityUpgradable) -> AddDropHandlerV2(*)")]
+        public static void AddDropHandler(InspectorDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.inspector, handler);
+        public static void AddDropHandlerV2(InspectorDropHandler handler) => AddDropHandler(DragAndDropWindowTarget.inspector, handler);
 
-        public static void AddDropHandler(SceneDropHandler handler)
-        {
-            AddDropHandler(DragAndDropWindowTarget.sceneView, handler);
-        }
 
-        public static void AddDropHandler(HierarchyDropHandler handler)
-        {
-            AddDropHandler(DragAndDropWindowTarget.hierarchy, handler);
-        }
+        [Obsolete("Use RemoveDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        public static void RemoveDropHandler(ProjectBrowserDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
+        public static void RemoveDropHandlerV2(ProjectBrowserDropHandlerV2 handler) => RemoveDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
 
-        public static void AddDropHandler(InspectorDropHandler handler)
-        {
-            AddDropHandler(DragAndDropWindowTarget.inspector, handler);
-        }
+        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)")]
+        public static void RemoveDropHandler(SceneDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.sceneView, handler);
+        public static void RemoveDropHandlerV2(SceneDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.sceneView, handler);
 
-        public static void RemoveDropHandler(ProjectBrowserDropHandler handler)
-        {
-            RemoveDropHandler(DragAndDropWindowTarget.projectBrowser, handler);
-        }
 
-        public static void RemoveDropHandler(SceneDropHandler handler)
-        {
-            RemoveDropHandler(DragAndDropWindowTarget.sceneView, handler);
-        }
+        [Obsolete("Use RemoveDropHandlerV2 instead")] // not upgradable since it's a different delegate
+        public static void RemoveDropHandler(HierarchyDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.hierarchy, handler);
+        public static void RemoveDropHandlerV2(HierarchyDropHandlerV2 handler) => RemoveDropHandler(DragAndDropWindowTarget.hierarchy, handler);
 
-        public static void RemoveDropHandler(HierarchyDropHandler handler)
-        {
-            RemoveDropHandler(DragAndDropWindowTarget.hierarchy, handler);
-        }
 
-        public static void RemoveDropHandler(InspectorDropHandler handler)
-        {
-            RemoveDropHandler(DragAndDropWindowTarget.inspector, handler);
-        }
+
+        [Obsolete("Use RemoveDropHandlerV2 instead (UnityUpgradable) -> RemoveDropHandlerV2(*)")]
+        public static void RemoveDropHandler(InspectorDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.inspector, handler);
+        public static void RemoveDropHandlerV2(InspectorDropHandler handler) => RemoveDropHandler(DragAndDropWindowTarget.inspector, handler);
     }
 }

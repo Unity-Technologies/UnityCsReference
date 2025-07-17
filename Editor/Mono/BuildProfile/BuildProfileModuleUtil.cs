@@ -6,13 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEditor.Modules;
+using UnityEditor.PackageManager.UI.Internal;
 using UnityEditor.Rendering;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.UIElements;
 using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
-using UnityEditor.Profiling;
+using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 using InternalEditorUtility = UnityEditorInternal.InternalEditorUtility;
 
 namespace UnityEditor.Build.Profile
@@ -26,6 +28,7 @@ namespace UnityEditor.Build.Profile
         const string k_BuyProUrl = "https://store.unity.com/products/unity-pro";
         const string k_ConsoleModuleUrl = "https://unity3d.com/platform-installation";
         const string k_LastRunnableBuildPathSeparator = "_";
+        const string k_StyleSheet = "BuildProfile/StyleSheets/BuildProfile.uss";
         // The asset database supports file name length to max. 250 symbols
         // Leave 3 symbols for the GenerateUniqueAssetPath() that adds " 1"(2,3...) in case
         // an asset with such name already exists.
@@ -44,6 +47,17 @@ namespace UnityEditor.Build.Profile
         {
             "Switch",
         };
+
+        /// <summary>
+        /// Internal callback for BuildProfileModule to be notified of
+        /// reset initiated through the inspector context menu.
+        /// </summary>
+        public static event Action<BuildProfile> OnUpdateActiveEditors;
+
+        public static void UpdateActiveEditors(BuildProfile profile)
+        {
+            OnUpdateActiveEditors?.Invoke(profile);
+        }
 
         /// <summary>
         /// Classic platform display name for a given build profile.
@@ -162,47 +176,30 @@ namespace UnityEditor.Build.Profile
         /// <see cref="BuildPlayerWindow.ShowNoModuleLabel"/>
         public static VisualElement CreateModuleNotInstalledElement(GUID platformId)
         {
+            var buildProfileWindowUss = EditorGUIUtility.LoadRequired(k_StyleSheet) as StyleSheet;
+            VisualElement container = new VisualElement();
+
+            container.styleSheets.Add(buildProfileWindowUss);
+            container.AddClasses("flex-row align-items-center flex-wrap full-width");
+
             if (BuildTargetDiscovery.BuildPlatformIsInstalled(platformId) && BuildTargetDiscovery.BuildPlatformIsDerivedPlatform(platformId))
             {
-                return new IMGUIContainer(() =>
-                {
-                    GUILayout.Label(EditorGUIUtility.TextContent(string.Format(k_DerivedPlatformInactive, BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
-                    if (GUILayout.Button(k_ActivateDerivedPlatform, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        EditorPrefs.SetInt(platformId.ToString(), 1);
-                        RequestScriptCompilation(BuildProfileContext.activeProfile);
-                    }
-                });
+                return GetPlatformNotEnabledElement(platformId, container);
             }
 
             // TODO: this is a workaround for onboarding instructions to fix EmbeddedLinux and QNX
             // needs to be removed when https://jira.unity3d.com/browse/PLAT-7721 is implemented
             if (BuildTargetDiscovery.BuildPlatformTryGetCustomInstallLinkAndText(platformId, out var url, out var text))
             {
-                return new IMGUIContainer(() =>
-                {
-                    GUILayout.Label(EditorGUIUtility.TextContent(text), EditorStyles.wordWrappedLabel);
-                    
-                    EditorGUILayout.BeginHorizontal();
-                    // Add the space to align the button with text
-                    GUILayout.Space(6);
-                    if (GUILayout.Button("Contact Sales", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
-                    {
-                        Help.BrowseURL(url);
-                    }
-                    EditorGUILayout.EndHorizontal();
-                });
+                return GetPlatformContactSalesElement(container, text, url);
             }
 
             if (IsBuildProfileDisabledViaArguments(platformId))
-                return new IMGUIContainer(() =>
-                {
-                    GUILayout.Label(EditorGUIUtility.TextContent(string.Format(k_DerivedPlatformDisabled, BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
-                });
+            {
+                return GetPlatformDisabledViaArgumentsElement(platformId, container);
+            }
 
-            return new IMGUIContainer(
-                () => BuildPlayerWindow.ShowNoModuleLabel(platformId,
-                    k_NoModuleLoaded, k_OpenDownloadPage, k_InstallModuleWithHub, k_EditorWillNeedToBeReloaded));
+            return GetPlatformNotInstalledElement(platformId, container);
         }
 
         static bool IsBuildProfileDisabledViaArguments(GUID platformId)
@@ -677,14 +674,14 @@ namespace UnityEditor.Build.Profile
             return BuildTargetDiscovery.GetBuildTargetAndSubtargetFromGUID(platformId);
         }
 
-        public static string[] BuildPlatformRequiredPackages(GUID platformGuid)
+        public static PlatformPackageList BuildPlatformInternalPackages(GUID platformGuid)
         {
-            return BuildTargetDiscovery.BuildPlatformRequiredPackages(platformGuid);
+            return BuildTargetDiscovery.BuildPlatformInternalPackages(platformGuid);
         }
 
-        public static string[] BuildPlatformRecommendedPackages(GUID platformGuid)
+        public static PlatformPackageList BuildPlatformPartnerPackages(GUID platformGuid)
         {
-            return BuildTargetDiscovery.BuildPlatformRecommendedPackages(platformGuid);
+            return BuildTargetDiscovery.BuildPlatformPartnerPackages(platformGuid);
         }
 
         public static string BuildPlatformDescription(GUID platformGuid)
@@ -935,7 +932,7 @@ namespace UnityEditor.Build.Profile
             if (!properties.ShouldInstallRequiredPackagesOnActivationOfClassicPlatform)
                 return;
 
-            var packages = BuildTargetDiscovery.BuildPlatformRequiredPackages(profile.platformGuid);
+            var packages = BuildTargetDiscovery.BuildPlatformInternalPackages(profile.platformGuid).requiredPackages;
             if (packages.Length == 0)
                 return;
 
@@ -943,10 +940,11 @@ namespace UnityEditor.Build.Profile
             var neededPackages = new List<string>();
             foreach (var package in packages)
             {
-                if (!PackageManager.PackageInfo.IsPackageRegistered(package))
+                var packageName = package.qualifiedName;
+                if (!PackageManager.PackageInfo.IsPackageRegistered(packageName))
                 {
-                    packageStringBuilder.AppendLine().Append(package);
-                    neededPackages.Add(package);
+                    packageStringBuilder.AppendLine().Append(packageName);
+                    neededPackages.Add(packageName);
                 }
             }
 
@@ -957,6 +955,103 @@ namespace UnityEditor.Build.Profile
                 return;
 
             PackageManager.Client.AddAndRemove(neededPackages.ToArray());
+        }
+
+        static VisualElement GetPlatformNotInstalledElement(GUID platformGuid, VisualElement container)
+        {
+            var basePlatformGuid = BuildTargetDiscovery.GetBasePlatformGUID(platformGuid);
+            var displayName = BuildTargetDiscovery.BuildPlatformDisplayName(basePlatformGuid);
+
+            var platformNotLoadedLabel = new Label(string.Format(k_NoModuleLoaded, displayName));
+            var editorReloadNeededLabel = new Label(k_EditorWillNeedToBeReloaded);
+            var labels = new VisualElement();
+
+            labels.AddClasses("flex-column flex-grow-1");
+            editorReloadNeededLabel.AddClasses("text-small wrap");
+
+            labels.Add(platformNotLoadedLabel);
+            labels.Add(editorReloadNeededLabel);
+
+            var url = string.Empty;
+            Button button;
+
+            if (!BuildPlayerWindow.IsEditorInstalledWithHub() || !BuildTargetDiscovery.BuildPlatformCanBeInstalledWithHub(platformGuid))
+            {
+                button = new Button(() =>
+                {
+                    url = BuildPlayerWindow.GetPlaybackEngineDownloadURL(platformGuid);
+                    Help.BrowseURL(url);
+                })
+                {
+                    text = k_OpenDownloadPage.ToString()
+                };
+            }
+            else
+            {
+                button = new Button(() =>
+                {
+                    url = BuildPlayerWindow.GetUnityHubModuleDownloadURL(platformGuid);
+                    Help.BrowseURL(url);
+                })
+                {
+                    text = k_InstallModuleWithHub.ToString()
+                };
+            }
+
+            container.Add(labels);
+            container.Add(button);
+
+            return container;
+        }
+
+        private static VisualElement GetPlatformDisabledViaArgumentsElement(GUID platformId, VisualElement container)
+        {
+            container.Add(new Label(string.Format(k_DerivedPlatformDisabled,
+                BuildTargetDiscovery.BuildPlatformDisplayName(platformId))));
+
+            return container;
+        }
+
+        private static VisualElement GetPlatformContactSalesElement(VisualElement container, string text, string url)
+        {
+            var label = new Label(text);
+
+            label.AddClasses("flex-grow-1 flex-shrink-1 wrap");
+
+            container.Add(label);
+            container.Add(new Button(() =>
+            {
+                Help.BrowseURL(url);
+            })
+            {
+                text = "Contact Sales"
+            });
+
+            return container;
+        }
+
+        private static VisualElement GetPlatformNotEnabledElement(GUID platformId, VisualElement container)
+        {
+            var label = new Label(string.Format(k_DerivedPlatformInactive,
+                BuildTargetDiscovery.BuildPlatformDisplayName(platformId)));
+
+            label.AddToClassList("flex-grow-1");
+
+            container.Add(label);
+            container.Add(new Button(() =>
+            {
+                EditorPrefs.SetInt(platformId.ToString(), 1);
+
+                // Store the platformId to reselect this platform after recompilation
+                EditorPrefs.SetString("LastEnabledPlatformGUID", platformId.ToString());
+
+                RequestScriptCompilation(BuildProfileContext.activeProfile);
+            })
+            {
+                text = k_ActivateDerivedPlatform.ToString()
+            });
+
+            return container;
         }
     }
 }

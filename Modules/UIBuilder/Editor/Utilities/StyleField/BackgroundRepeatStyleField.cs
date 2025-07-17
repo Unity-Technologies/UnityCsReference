@@ -13,12 +13,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class BackgroundRepeatStyleField : BaseField<BackgroundRepeat>
     {
-        public class BackgroundRepeatConverter : UxmlAttributeConverter<BackgroundRepeat>
-        {
-            public override BackgroundRepeat FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BackgroundRepeat value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<BackgroundRepeat>.UxmlSerializedData
         {

@@ -4,6 +4,8 @@
 
 using JetBrains.Annotations;
 using System;
+using System.Collections.Generic;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -41,6 +43,8 @@ namespace Unity.UI.Builder
             fieldContainer.Add(fieldInput);
 
             Add(fieldContainer);
+
+            objectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>() {typeof(FontAsset), typeof(Font)});
         }
     }
 }

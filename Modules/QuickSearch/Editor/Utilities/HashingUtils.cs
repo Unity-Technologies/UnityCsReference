@@ -35,5 +35,25 @@ namespace UnityEditor.Search
         {
             return (unchecked((int)((long)value)) ^ (int)(value >> 32));
         }
+
+        public static ulong GetHashCode64(this string strText)
+        {
+            if (string.IsNullOrEmpty(strText))
+                return 0;
+            // Using http://www.isthe.com/chongo/tech/comp/fnv/index.html#FNV-1a
+            // with basis and prime:
+            const ulong offsetBasis = 14695981039346656037;
+            const ulong prime = 1099511628211;
+
+            ulong result = offsetBasis;
+
+            foreach (var c in strText)
+            {
+                result = prime * (result ^ (byte)(c & 255));
+                result = prime * (result ^ (byte)(c >> 8));
+            }
+
+            return result;
+        }
     }
 }

@@ -30,7 +30,13 @@ internal enum Icon
     Warning,
     Success,
 
-    PullDown
+    PullDown,
+
+    RegistryErrorLarge,
+    PackageWarningLarge,
+    PackageOptionLarge,
+    PackageErrorLarge,
+    RestrictedErrorLarge
 }
 
 internal static class IconExtension

@@ -45,6 +45,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 InProjectPage.k_Id => new InProjectPage(m_PackageDatabase),
                 InProjectUpdatesPage.k_Id => new InProjectUpdatesPage(m_PackageDatabase),
                 InProjectNonCompliancePage.k_Id => new InProjectNonCompliancePage(m_PackageDatabase),
+                InProjectErrorsAndWarningsPage.k_Id => new InProjectErrorsAndWarningsPage(m_PackageDatabase),
                 BuiltInPage.k_Id => new BuiltInPage(m_PackageDatabase),
                 MyRegistriesPage.k_Id => new MyRegistriesPage(m_PackageDatabase),
                 MyAssetsPage.k_Id => new MyAssetsPage(m_PackageDatabase, m_PackageManagerPrefs, m_UnityConnect, m_AssetStoreClient),

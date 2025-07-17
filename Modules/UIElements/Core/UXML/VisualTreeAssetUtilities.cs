@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Pool;
@@ -12,35 +12,6 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class VisualTreeAssetUtilities
     {
-        public static UxmlAsset GetParentAsset(this VisualTreeAsset vta, UxmlAsset asset)
-        {
-            var parentId = asset.parentId;
-
-            var parentIndex = vta.visualElementAssets.FindIndex(ua => ua.id == parentId);
-            if (parentIndex >= 0)
-            {
-                return vta.visualElementAssets[parentIndex];
-            }
-
-            parentIndex = vta.templateAssets.FindIndex(ta => ta.id == parentId);
-            if (parentIndex >= 0)
-            {
-                return vta.templateAssets[parentIndex];
-            }
-
-            for (var entryIndex = 0; entryIndex < vta.uxmlObjectEntries.Count; ++entryIndex)
-            {
-                var uxmlAssets = vta.uxmlObjectEntries[entryIndex].uxmlObjectAssets;
-                parentIndex = uxmlAssets.FindIndex(ua => ua.id == parentId);
-                if (parentIndex >= 0)
-                {
-                    return uxmlAssets[parentIndex];
-                }
-            }
-
-            return null;
-        }
-
         public static IEnumerable<string> EnumerateEnclosingNamespaces(string fullTypeName)
         {
             var startIndex = fullTypeName.Length - 1;
@@ -69,7 +40,7 @@ namespace UnityEngine.UIElements
                     if (string.Compare(namespaceDefinition.prefix, prefix, StringComparison.Ordinal) == 0)
                         return namespaceDefinition;
                 }
-                current = vta.GetParentAsset(current);
+                current = current.parentAsset;
             }
             return UxmlNamespaceDefinition.Empty;
         }
@@ -82,7 +53,7 @@ namespace UnityEngine.UIElements
                 while (current != null)
                 {
                     namespaceDefinitions.AddRange(current.namespaceDefinitions);
-                    current = vta.GetParentAsset(current);
+                    current = current.parentAsset;
                 }
             }
 
@@ -109,7 +80,7 @@ namespace UnityEngine.UIElements
             while (current != null)
             {
                 definitions.InsertRange(0, current.namespaceDefinitions);
-                current = vta.GetParentAsset(current);
+                current = current.parentAsset;
             }
         }
     }

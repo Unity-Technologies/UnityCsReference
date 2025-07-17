@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -20,14 +22,16 @@ namespace Unity.Hierarchy
     {
         internal static class BindingsMarshaller
         {
-            public static IntPtr ConvertToNative(HierarchyViewModel viewModel) => viewModel.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(HierarchyViewModel viewModel) => viewModel.m_Ptr;
         }
 
         IntPtr m_Ptr;
-        readonly Hierarchy m_Hierarchy;
-        readonly HierarchyFlattened m_HierarchyFlattened;
+        internal readonly Hierarchy m_Hierarchy;
+        internal readonly HierarchyFlattened m_HierarchyFlattened;
         IntPtr m_NodesPtr;
         int m_NodesCount;
+        IntPtr m_IndicesPtr;
+        int m_IndicesCount;
         int m_Version;
         readonly bool m_IsOwner;
 
@@ -42,7 +46,7 @@ namespace Unity.Hierarchy
         /// <remarks>
         /// The total does not include the <see cref="Hierarchy.Root"/> node.
         /// </remarks>
-        public int Count => m_NodesCount;
+        public int Count => m_IndicesCount;
 
         /// <summary>
         /// Whether the hierarchy view model is currently updating.
@@ -61,23 +65,37 @@ namespace Unity.Hierarchy
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
         /// <summary>
-        /// Accesses the <see cref="HierarchyFlattened"/>.
+        /// Whether the hierarchy view model is currently filtering nodes.
         /// </summary>
-        public HierarchyFlattened HierarchyFlattened => m_HierarchyFlattened;
+        /// <remarks>
+        /// This happens when there is a non empty <see cref="HierarchySearchQueryDescriptor"/> set.
+        /// </remarks>
+        public extern bool Filtering { [NativeMethod("Filtering", IsThreadSafe = true)] get; }
 
-        /// <summary>
-        /// Accesses the <see cref="Hierarchy"/>.
-        /// </summary>
-        public Hierarchy Hierarchy => m_Hierarchy;
+        unsafe internal HierarchyFlattenedNode* NodesPtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (HierarchyFlattenedNode*)m_NodesPtr;
+        }
 
-        /// <summary>
-        /// Gets the pointer to native memory for the nodes.
-        /// </summary>
-        internal unsafe int* NodesPtr => (int*)m_NodesPtr;
+        internal int NodesCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => m_NodesCount;
+        }
 
-        /// <summary>
-        /// Gets the version of this <see cref="HierarchyViewModel"/>.
-        /// </summary>
+        unsafe internal int* IndicesPtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (int*)m_IndicesPtr;
+        }
+
+        internal int IndicesCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => m_IndicesCount;
+        }
+
         internal int Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -117,11 +135,13 @@ namespace Unity.Hierarchy
         /// <param name="defaultFlags">The default flags used to initialize new nodes.</param>
         public HierarchyViewModel(HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags = HierarchyNodeFlags.None)
         {
-            m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchyFlattened, defaultFlags, out var nodesPtr, out var nodesCount, out var version);
-            m_Hierarchy = hierarchyFlattened.Hierarchy;
+            m_Ptr = Create(GCHandle.ToIntPtr(GCHandle.Alloc(this)), hierarchyFlattened, defaultFlags, out var nodesPtr, out var nodesCount, out var indicesPtr, out var indicesCount, out var version);
+            m_Hierarchy = hierarchyFlattened.m_Hierarchy;
             m_HierarchyFlattened = hierarchyFlattened;
             m_NodesPtr = nodesPtr;
             m_NodesCount = nodesCount;
+            m_IndicesPtr = indicesPtr;
+            m_IndicesCount = indicesCount;
             m_Version = version;
             m_IsOwner = true;
 
@@ -133,16 +153,20 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="nativePtr">The native pointer.</param>
         /// <param name="hierarchyFlattened">The flattened hierarchy that serves as the hierarchy model.</param>
-        /// <param name="nodesPtr">The pointer to the node data.</param>
-        /// <param name="nodesCount">The number of nodes in the buffer pointed to by <paramref name="nodesPtr"/>.</param>
-        /// <param name="version">The data version.</param>
-        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr nodesPtr, int nodesCount, int version)
+        /// <param name="nodesPtr">The native pointer to the nodes.</param>
+        /// <param name="nodesCount">The number of nodes.</param>
+        /// <param name="indicesPtr">The native pointer to the indices.</param>
+        /// <param name="indicesCount">The number of indices.</param>
+        /// <param name="version">The hierarchy view model version.</param>
+        HierarchyViewModel(IntPtr nativePtr, HierarchyFlattened hierarchyFlattened, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version)
         {
             m_Ptr = nativePtr;
-            m_Hierarchy = hierarchyFlattened.Hierarchy;
+            m_Hierarchy = hierarchyFlattened.m_Hierarchy;
             m_HierarchyFlattened = hierarchyFlattened;
             m_NodesPtr = nodesPtr;
             m_NodesCount = nodesCount;
+            m_IndicesPtr = indicesPtr;
+            m_IndicesCount = indicesCount;
             m_Version = version;
             m_IsOwner = false;
 
@@ -184,12 +208,17 @@ namespace Unity.Hierarchy
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             get
             {
-                if (index < 0 || index >= m_NodesCount)
+                if (index < 0 || index >= m_IndicesCount)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 unsafe
                 {
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[((int*)m_NodesPtr)[index]]);
+                    var nodeIndex = IndicesPtr[index];
+                    if (nodeIndex < 0 || nodeIndex >= m_NodesCount)
+                        throw new IndexOutOfRangeException(nameof(nodeIndex));
+
+                    ref readonly var flattenedNode = ref NodesPtr[nodeIndex];
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in flattenedNode);
                 }
             }
         }
@@ -209,6 +238,23 @@ namespace Unity.Hierarchy
         /// <returns><see langword="true"/> if the node is found, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool Contains(in HierarchyNode node);
+
+        /// <summary>
+        /// Sets the root of the hierarchy view model.
+        /// </summary>
+        /// <remarks>
+        /// This is purely visual and does not affect the underlying hierarchy data.
+        /// </remarks>
+        /// <param name="node">The hierarchy node.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void SetRoot(in HierarchyNode node);
+
+        /// <summary>
+        /// Gets the root node of the hierarchy view model.
+        /// </summary>
+        /// <returns>A hierarchy node.</returns>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern HierarchyNode GetRoot();
 
         /// <summary>
         /// Gets the parent of a hierarchy node.
@@ -243,6 +289,14 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
+        /// Gets the index of a hierarchy node in its parent's children list.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The node index, or -1 if invalid.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetChildIndex(in HierarchyNode node);
+
+        /// <summary>
         /// Determines the depth of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -269,8 +323,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="recurse">Whether or not to set the flags on all children recursively for that hierarchy node.</param>
-        public void SetFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false) => SetFlagsNode(in node, flags, recurse);
+        public void SetFlags(in HierarchyNode node, HierarchyNodeFlags flags) => SetFlagsNode(in node, flags);
 
         /// <summary>
         /// Sets the specified flags on the hierarchy nodes.
@@ -293,6 +346,22 @@ namespace Unity.Hierarchy
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The number of nodes that had their flags set.</returns>
         public int SetFlags(ReadOnlySpan<int> indices, HierarchyNodeFlags flags) => SetFlagsIndices(indices, flags);
+
+        /// <summary>
+        /// Sets the specified flags recursively on the hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void SetFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => SetFlagsRecursiveNode(in node, flags, direction);
+
+        /// <summary>
+        /// Sets the specified flags recursively on the hierarchy nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void SetFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => SetFlagsRecursiveNodes(nodes, flags, direction);
 
         /// <summary>
         /// Gets whether or not all of the specified flags are set on any hierarchy node.
@@ -397,8 +466,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="recurse">Whether or not to clear the flags on all children recursively for that hierarchy node.</param>
-        public void ClearFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false) => ClearFlagsNode(in node, flags, recurse);
+        public void ClearFlags(in HierarchyNode node, HierarchyNodeFlags flags) => ClearFlagsNode(in node, flags);
 
         /// <summary>
         /// Clears the specified flags on the hierarchy nodes.
@@ -423,6 +491,22 @@ namespace Unity.Hierarchy
         public int ClearFlags(ReadOnlySpan<int> indices, HierarchyNodeFlags flags) => ClearFlagsIndices(indices, flags);
 
         /// <summary>
+        /// Clears the specified flags recursively on the hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void ClearFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => ClearFlagsRecursiveNode(in node, flags, direction);
+
+        /// <summary>
+        /// Clears the specified flags recursively on the hierarchy nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void ClearFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => ClearFlagsRecursiveNodes(nodes, flags, direction);
+
+        /// <summary>
         /// Toggles the specified flags on all hierarchy nodes.
         /// </summary>
         /// <param name="flags">The hierarchy node flags.</param>
@@ -433,8 +517,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="flags">The hierarchy node flags.</param>
-        /// <param name="recurse">Whether or not to clear the flags on all children recursively for that hierarchy node.</param>
-        public void ToggleFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false) => ToggleFlagsNode(in node, flags, recurse);
+        public void ToggleFlags(in HierarchyNode node, HierarchyNodeFlags flags) => ToggleFlagsNode(in node, flags);
 
         /// <summary>
         /// Toggles the specified flags on the hierarchy nodes.
@@ -457,6 +540,34 @@ namespace Unity.Hierarchy
         /// <param name="flags">The hierarchy node flags.</param>
         /// <returns>The number of nodes that had their flags cleared.</returns>
         public int ToggleFlags(ReadOnlySpan<int> indices, HierarchyNodeFlags flags) => ToggleFlagsIndices(indices, flags);
+
+        /// <summary>
+        /// Toggles the specified flags recursively on the hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void ToggleFlagsRecursive(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => ToggleFlagsRecursiveNode(in node, flags, direction);
+
+        /// <summary>
+        /// Toggles the specified flags recursively on the hierarchy nodes.
+        /// </summary>
+        /// <param name="nodes">The hierarchy nodes.</param>
+        /// <param name="flags">The hierarchy node flags.</param>
+        /// <param name="direction">The direction of the recursion operation.</param>
+        public void ToggleFlagsRecursive(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction) => ToggleFlagsRecursiveNodes(nodes, flags, direction);
+
+        /// <summary>
+        /// Begins a batch of flags changes.
+        /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void BeginFlagsChange();
+
+        /// <summary>
+        /// Ends a batch of flags changes.
+        /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void EndFlagsChange();
 
         /// <summary>
         /// Gets all hierarchy nodes that have all of the specified flags set.
@@ -723,18 +834,20 @@ namespace Unity.Hierarchy
         public unsafe struct Enumerator
         {
             readonly HierarchyViewModel m_ViewModel;
-            readonly HierarchyFlattened m_HierarchyFlattened;
-            readonly int* m_NodesPtr;
+            readonly HierarchyFlattenedNode* m_NodesPtr;
             readonly int m_NodesCount;
+            readonly int* m_IndicesPtr;
+            readonly int m_IndicesCount;
             readonly int m_Version;
             int m_Index;
 
             internal Enumerator(HierarchyViewModel hierarchyViewModel)
             {
                 m_ViewModel = hierarchyViewModel;
-                m_HierarchyFlattened = hierarchyViewModel.HierarchyFlattened;
-                m_NodesPtr = (int*)hierarchyViewModel.m_NodesPtr;
-                m_NodesCount = hierarchyViewModel.Count;
+                m_NodesPtr = hierarchyViewModel.NodesPtr;
+                m_NodesCount = hierarchyViewModel.NodesCount;
+                m_IndicesPtr = hierarchyViewModel.IndicesPtr;
+                m_IndicesCount = hierarchyViewModel.IndicesCount;
                 m_Version = hierarchyViewModel.Version;
                 m_Index = -1;
             }
@@ -750,7 +863,9 @@ namespace Unity.Hierarchy
                     if (m_Version != m_ViewModel.m_Version)
                         throw new InvalidOperationException("HierarchyViewModel was modified.");
 
-                    return ref HierarchyFlattenedNode.GetNodeByRef(in m_HierarchyFlattened[m_NodesPtr[m_Index]]);
+                    var nodeIndex = m_IndicesPtr[m_Index];
+                    ref readonly var flattenedNode = ref m_NodesPtr[nodeIndex];
+                    return ref HierarchyFlattenedNode.GetNodeByRef(in flattenedNode);
                 }
             }
 
@@ -759,14 +874,94 @@ namespace Unity.Hierarchy
             /// </summary>
             /// <returns>Returns true if Current item is valid</returns>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public bool MoveNext() => ++m_Index < m_NodesCount;
+            public bool MoveNext() => ++m_Index < m_IndicesCount;
         }
+
+        // Currently required to feed UI Toolkit containers itemsSource property, which requires the collection to
+        // be an IList. We do not want HierarchyViewModel to be an IList, so we provide a read-only list wrapper.
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal class ReadOnlyList : IList
+        {
+            readonly HierarchyViewModel m_ViewModel;
+
+            internal ReadOnlyList(HierarchyViewModel viewModel)
+            {
+                m_ViewModel = viewModel;
+            }
+
+            public bool IsFixedSize => true;
+            public bool IsReadOnly => true;
+
+            public int Count
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_ViewModel.IsCreated ? m_ViewModel.Count : throw new NullReferenceException($"{nameof(HierarchyViewModel)} has been disposed.");
+            }
+
+            public object this[int index]
+            {
+                [MethodImpl(MethodImplOptions.AggressiveInlining)]
+                get => m_ViewModel.IsCreated ? m_ViewModel[index] : throw new NullReferenceException($"{nameof(HierarchyViewModel)} has been disposed.");
+                set => throw new NotSupportedException();
+            }
+
+            public bool Contains(object value)
+            {
+                if (value is HierarchyNode node)
+                {
+                    return m_ViewModel.IsCreated ?
+                        m_ViewModel.Contains(in node) :
+                        throw new NullReferenceException($"{nameof(HierarchyViewModel)} has been disposed.");
+                }
+                return false;
+            }
+
+            public int IndexOf(object value)
+            {
+                if (value is HierarchyNode node)
+                {
+                    return m_ViewModel.IsCreated ?
+                        m_ViewModel.IndexOf(in node) :
+                        throw new NullReferenceException($"{nameof(HierarchyViewModel)} has been disposed.");
+                }
+                return -1;
+            }
+
+            public void CopyTo(Array array, int index)
+            {
+                for (var i = index; i < m_ViewModel.Count; ++i)
+                    array.SetValue(m_ViewModel[i], i - index);
+            }
+
+            public Enumerator GetEnumerator() => new HierarchyViewModel.Enumerator(m_ViewModel);
+
+            int IList.Add(object value) => throw new NotSupportedException();
+            void IList.Clear() => throw new NotSupportedException();
+            void IList.Insert(int index, object value) => throw new NotSupportedException();
+            void IList.Remove(object value) => throw new NotSupportedException();
+            void IList.RemoveAt(int index) => throw new NotSupportedException();
+            void ICollection.CopyTo(Array array, int index) => throw new NotSupportedException();
+            IEnumerator IEnumerable.GetEnumerator() => throw new NotSupportedException();
+            bool ICollection.IsSynchronized => throw new NotImplementedException();
+            object ICollection.SyncRoot => throw new NotImplementedException();
+        }
+
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal ReadOnlyList AsReadOnlyList() => new ReadOnlyList(this);
+
+        [FreeFunction("HierarchyViewModelBindings::GetState", HasExplicitThis = true, IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal extern byte[] GetState();
+
+        [FreeFunction("HierarchyViewModelBindings::SetState", HasExplicitThis = true, IsThreadSafe = true)]
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal extern void SetState(ReadOnlySpan<byte> bytes);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static HierarchyViewModel FromIntPtr(IntPtr handlePtr) => handlePtr != IntPtr.Zero ? (HierarchyViewModel)GCHandle.FromIntPtr(handlePtr).Target : null;
 
         [FreeFunction("HierarchyViewModelBindings::Create", IsThreadSafe = true)]
-        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out int version);
+        static extern IntPtr Create(IntPtr handlePtr, HierarchyFlattened hierarchyFlattened, HierarchyNodeFlags defaultFlags, out IntPtr nodesPtr, out int nodesCount, out IntPtr indicesPtr, out int indicesCount, out int version);
 
         [FreeFunction("HierarchyViewModelBindings::Destroy", IsThreadSafe = true)]
         static extern void Destroy(IntPtr nativePtr);
@@ -775,10 +970,16 @@ namespace Unity.Hierarchy
         extern void SetFlagsAll(HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::SetFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern void SetFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
+        extern void SetFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::SetFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int SetFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsRecursiveNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void SetFlagsRecursiveNode(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
+
+        [FreeFunction("HierarchyViewModelBindings::SetFlagsRecursiveNodes", HasExplicitThis = true, IsThreadSafe = true)]
+        extern void SetFlagsRecursiveNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
 
         [FreeFunction("HierarchyViewModelBindings::SetFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int SetFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
@@ -811,7 +1012,7 @@ namespace Unity.Hierarchy
         extern void ClearFlagsAll(HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::ClearFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern void ClearFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
+        extern void ClearFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::ClearFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ClearFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
@@ -819,17 +1020,29 @@ namespace Unity.Hierarchy
         [FreeFunction("HierarchyViewModelBindings::ClearFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ClearFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
 
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsRecursiveNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void ClearFlagsRecursiveNode(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
+
+        [FreeFunction("HierarchyViewModelBindings::ClearFlagsRecursiveNodes", HasExplicitThis = true, IsThreadSafe = true)]
+        extern void ClearFlagsRecursiveNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
+
         [FreeFunction("HierarchyViewModelBindings::ToggleFlagsAll", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern void ToggleFlagsAll(HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::ToggleFlagsNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
-        extern void ToggleFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse = false);
+        extern void ToggleFlagsNode(in HierarchyNode node, HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::ToggleFlagsNodes", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ToggleFlagsNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags);
 
         [FreeFunction("HierarchyViewModelBindings::ToggleFlagsIndices", HasExplicitThis = true, IsThreadSafe = true)]
         extern int ToggleFlagsIndices(ReadOnlySpan<int> indices, HierarchyNodeFlags flags);
+
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsRecursiveNode", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
+        extern void ToggleFlagsRecursiveNode(in HierarchyNode node, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
+
+        [FreeFunction("HierarchyViewModelBindings::ToggleFlagsRecursiveNodes", HasExplicitThis = true, IsThreadSafe = true)]
+        extern void ToggleFlagsRecursiveNodes(ReadOnlySpan<HierarchyNode> nodes, HierarchyNodeFlags flags, HierarchyTraversalDirection direction);
 
         [FreeFunction("HierarchyViewModelBindings::GetNodesWithAllFlagsSpan", HasExplicitThis = true, IsThreadSafe = true, ThrowsException = true)]
         extern int GetNodesWithAllFlagsSpan(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes);
@@ -857,15 +1070,17 @@ namespace Unity.Hierarchy
 
         #region Called from native
         [RequiredByNativeCode]
-        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr nodesPtr, int nodesCount, int version) =>
-            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), nodesPtr, nodesCount, version)));
+        static IntPtr CreateHierarchyViewModel(IntPtr nativePtr, IntPtr flattenedPtr, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version) =>
+            GCHandle.ToIntPtr(GCHandle.Alloc(new HierarchyViewModel(nativePtr, HierarchyFlattened.FromIntPtr(flattenedPtr), nodesPtr, nodesCount, indicesPtr, indicesCount, version)));
 
         [RequiredByNativeCode]
-        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, int version)
+        static void UpdateHierarchyViewModel(IntPtr handlePtr, IntPtr nodesPtr, int nodesCount, IntPtr indicesPtr, int indicesCount, int version)
         {
             var viewModel = FromIntPtr(handlePtr);
             viewModel.m_NodesPtr = nodesPtr;
             viewModel.m_NodesCount = nodesCount;
+            viewModel.m_IndicesPtr = indicesPtr;
+            viewModel.m_IndicesCount = indicesCount;
             viewModel.m_Version = version;
         }
 
@@ -879,68 +1094,106 @@ namespace Unity.Hierarchy
         #endregion
 
         #region Obsolete public APIs to remove in 2024
-        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("The Hierarchy property will be removed in the future, remove its usage from your code.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Hierarchy Hierarchy => m_Hierarchy;
+
+        [Obsolete("The HierarchyFlattened property will be removed in the future, remove its usage from your code.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public HierarchyFlattened HierarchyFlattned => m_HierarchyFlattened;
+
+        [Obsolete("SetFlags(node, flags, recurse) with a bool parameter is obsolete, please use SetFlags(node, flags) or SetFlags(node, flags, direction) instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SetFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse)
+        {
+            if (recurse)
+                SetFlagsRecursiveNode(in node, flags, HierarchyTraversalDirection.Children);
+            else
+                SetFlagsNode(in node, flags);
+        }
+
+        [Obsolete("ClearFlags(node, flags, recurse) with a bool parameter is obsolete, please use ClearFlags(node, flags) or ClearFlags(node, flags, direction) instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void ClearFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse)
+        {
+            if (recurse)
+                ClearFlagsRecursiveNode(in node, flags, HierarchyTraversalDirection.Children);
+            else
+                ClearFlagsNode(in node, flags);
+        }
+
+        [Obsolete("ToggleFlags(node, flags, recurse) with a bool parameter is obsolete, please use ToggleFlags(node, flags) or ToggleFlags(node, flags, direction) instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void ToggleFlags(in HierarchyNode node, HierarchyNodeFlags flags, bool recurse)
+        {
+            if (recurse)
+                ToggleFlagsRecursiveNode(in node, flags, HierarchyTraversalDirection.Children);
+            else
+                ToggleFlagsNode(in node, flags);
+        }
+
+        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool HasFlags(HierarchyNodeFlags flags) => HasAllFlagsAny(flags);
 
-        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("HasFlags is obsolete, please use HasAllFlags or HasAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool HasFlags(in HierarchyNode node, HierarchyNodeFlags flags) => HasAllFlagsNode(in node, flags);
 
-        [Obsolete("HasFlagsCount is obsolete, please use HasAllFlagsCount or HasAnyFlagsCount instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("HasFlagsCount is obsolete, please use HasAllFlagsCount or HasAnyFlagsCount instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int HasFlagsCount(HierarchyNodeFlags flags) => HasAllFlagsCount(flags);
 
-        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool DoesNotHaveFlags(HierarchyNodeFlags flags) => DoesNotHaveAllFlagsAny(flags);
 
-        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("DoesNotHaveFlags is obsolete, please use DoesNotHaveAllFlags or DoesNotHaveAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public bool DoesNotHaveFlags(in HierarchyNode node, HierarchyNodeFlags flags) => DoesNotHaveAllFlagsNode(in node, flags);
 
-        [Obsolete("DoesNotHaveFlagsCount is obsolete, please use DoesNotHaveAllFlagsCount or DoesNotHaveAnyFlagsCount instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("DoesNotHaveFlagsCount is obsolete, please use DoesNotHaveAllFlagsCount or DoesNotHaveAnyFlagsCount instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int DoesNotHaveFlagsCount(HierarchyNodeFlags flags) => DoesNotHaveAllFlagsCount(flags);
 
-        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int GetNodesWithFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithAllFlagsSpan(flags, outNodes);
 
-        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetNodesWithFlags is obsolete, please use GetNodesWithAllFlags or GetNodesWithAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public HierarchyNode[] GetNodesWithFlags(HierarchyNodeFlags flags) => GetNodesWithAllFlags(flags);
 
-        [Obsolete("EnumerateNodesWithFlags is obsolete, please use EnumerateNodesWithAllFlags or EnumerateNodesWithAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("EnumerateNodesWithFlags is obsolete, please use EnumerateNodesWithAllFlags or EnumerateNodesWithAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public HierarchyViewNodesEnumerable EnumerateNodesWithFlags(HierarchyNodeFlags flags) => EnumerateNodesWithAllFlags(flags);
 
-        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int GetIndicesWithFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithAllFlagsSpan(flags, outIndices);
 
-        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetIndicesWithFlags is obsolete, please use GetIndicesWithAllFlags or GetIndicesWithAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int[] GetIndicesWithFlags(HierarchyNodeFlags flags) => GetIndicesWithAllFlags(flags);
 
-        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int GetNodesWithoutFlags(HierarchyNodeFlags flags, Span<HierarchyNode> outNodes) => GetNodesWithoutAllFlagsSpan(flags, outNodes);
 
-        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetNodesWithoutFlags is obsolete, please use GetNodesWithoutAllFlags or GetNodesWithoutAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public HierarchyNode[] GetNodesWithoutFlags(HierarchyNodeFlags flags) => GetNodesWithoutAllFlags(flags);
 
-        [Obsolete("EnumerateNodesWithoutFlags is obsolete, please use EnumerateNodesWithoutAllFlags or EnumerateNodesWithoutAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("EnumerateNodesWithoutFlags is obsolete, please use EnumerateNodesWithoutAllFlags or EnumerateNodesWithoutAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public HierarchyViewNodesEnumerable EnumerateNodesWithoutFlags(HierarchyNodeFlags flags) => EnumerateNodesWithoutAllFlags(flags);
 
-        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int GetIndicesWithoutFlags(HierarchyNodeFlags flags, Span<int> outIndices) => GetIndicesWithoutAllFlagsSpan(flags, outIndices);
 
-        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead", false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("GetIndicesWithoutFlags is obsolete, please use GetIndicesWithoutAllFlags or GetIndicesWithoutAnyFlags instead.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int[] GetIndicesWithoutFlags(HierarchyNodeFlags flags) => GetIndicesWithoutAllFlags(flags);
         #endregion
     }

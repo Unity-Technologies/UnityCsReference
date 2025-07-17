@@ -53,7 +53,7 @@ namespace UnityEditor
 
         AudioMixerChannelStripView.State m_ChannelStripViewState;
         AudioMixerChannelStripView m_ChannelStripView;
-        TreeViewState m_AudioGroupTreeState;
+        TreeViewState<EntityId> m_AudioGroupTreeState;
         AudioMixerGroupTreeView m_GroupTree;
         [SerializeField] TreeViewStateWithAssetUtility m_MixersTreeState; // Use SerializeField so it is stored in the layout file (persistant)
         AudioMixersTreeView m_MixersTree;
@@ -203,7 +203,7 @@ namespace UnityEditor
                 m_LayoutStripsOnRight.m_VerticalSplitter = SplitterState.FromAbsolute(new float[] { 60, 60, 60, 60 }, new float[] { 100, 85, 85, 85 }, null);
 
             if (m_AudioGroupTreeState == null)
-                m_AudioGroupTreeState = new TreeViewState();
+                m_AudioGroupTreeState = new TreeViewState<EntityId>();
             m_GroupTree = new AudioMixerGroupTreeView(this, m_AudioGroupTreeState);
 
             if (m_MixersTreeState == null)
@@ -258,7 +258,7 @@ namespace UnityEditor
             {
                 // Clear state that are serialized in the layout file that should not survive closing/starting Unity
                 m_MixersTreeState.OnAwake();
-                m_MixersTreeState.selectedIDs = new List<int>();
+                m_MixersTreeState.selectedIDs = new List<EntityId>();
             }
         }
 
@@ -776,7 +776,7 @@ namespace UnityEditor
         {
             UnityEngine.Object obj = userData as UnityEngine.Object;
             if (obj != null)
-                Selection.activeInstanceID = obj.GetInstanceID();
+                Selection.activeEntityId = obj.GetEntityId();
         }
     }
 }

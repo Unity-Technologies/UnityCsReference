@@ -126,6 +126,10 @@ namespace UnityEngine.UIElements
         /// </remarks>
         DisplayStyle display { get; }
         /// <summary>
+        /// Filter effects to apply to the element.
+        /// </summary>
+        IEnumerable<FilterFunction> filter { get; }
+        /// <summary>
         /// Initial main size of a flex item, on the main flex axis. The final layout might be smaller or larger, according to the flex shrinking and growing determined by the other flex properties.
         /// </summary>
         StyleFloat flexBasis { get; }

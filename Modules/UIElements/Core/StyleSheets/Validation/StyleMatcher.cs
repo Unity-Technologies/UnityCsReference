@@ -525,8 +525,10 @@ namespace UnityEngine.UIElements.StyleSheets
         }
 
         static readonly Regex s_HexColorRegex = new Regex(@"^#[a-fA-F0-9]{3}(?:[a-fA-F0-9]{3})?$", RegexOptions.Compiled);
-        static readonly Regex s_RgbRegex = new Regex(@"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$", RegexOptions.Compiled);
-        static readonly Regex s_RgbaRegex = new Regex(@"rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$", RegexOptions.Compiled);
+        static readonly Regex s_RgbRegex = new Regex(@"^rgb\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*\)$", RegexOptions.Compiled);
+        static readonly Regex s_RgbaRegex = new Regex(@"rgba\(\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*,\s*(\d+\.?\d*)\s*\)$", RegexOptions.Compiled);
+
+        
         protected override bool MatchColor()
         {
             var value = current;
@@ -585,7 +587,7 @@ namespace UnityEngine.UIElements.StyleSheets
             return match.Success;
         }
 
-        static readonly Regex s_FilterFunctionRegex = new Regex(@"^([a-zA-Z0-9\-]+)\([^\)]*\)$", RegexOptions.Compiled);
+        static readonly Regex s_FilterFunctionRegex = new Regex(@"^([a-zA-Z0-9\-]+)\(.*\)$", RegexOptions.Compiled);
         protected override bool MatchFilterFunction()
         {
             var value = current;

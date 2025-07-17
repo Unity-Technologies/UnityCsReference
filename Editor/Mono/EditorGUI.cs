@@ -527,7 +527,8 @@ namespace UnityEditor
 
             internal bool IsEditingControl(int id)
             {
-                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && GUIView.current.hasFocus;
+                bool hasFocus = GUIView.current != null ? GUIView.current.hasFocus : false;
+                return GUIUtility.keyboardControl == id && controlID == id && s_ActuallyEditing && hasFocus;
             }
 
             public virtual void BeginEditing(int id, string newText, Rect position, GUIStyle style, bool multiline, bool passwordField)
@@ -560,11 +561,13 @@ namespace UnityEditor
                     switch (property.propertyType)
                     {
                         case SerializedPropertyType.Integer:
+                            s_OriginalDoubleValues = null; // Be sure to unset the double values so we don't confuse ourselves as to which one is active.
                             s_OriginalLongValues = new long[property.serializedObject.targetObjectsCount];
                             property.allLongValues.CopyTo(s_OriginalLongValues, 0);
                             break;
 
                         case SerializedPropertyType.Float:
+                            s_OriginalLongValues = null; // Be sure to unset the int values so we don't confuse ourselves as to which one is active.
                             s_OriginalDoubleValues = new double[property.serializedObject.targetObjectsCount];
                             property.allDoubleValues.CopyTo(s_OriginalDoubleValues, 0);
                             break;
@@ -1678,12 +1681,17 @@ namespace UnityEditor
                         DragAndDropDelay delay = (DragAndDropDelay)GUIUtility.GetStateObject(typeof(DragAndDropDelay), id);
                         if (delay.CanStartDrag())
                         {
+                            var objects = new ReadOnlySpan<Object>(targetObjs);
+                            var ids = new EntityId[objects.Length];
+                            for(int i = 0; i < objects.Length; ++i)
+                                ids[i] = objects[i].GetEntityId();
+
                             GUIUtility.hotControl = 0;
                             DragAndDrop.PrepareStartDrag();
-                            DragAndDrop.objectReferences = targetObjs;
-                            DragAndDrop.StartDrag(targetObjs.Length > 1
+                            DragAndDrop.entityIds = ids;
+                            DragAndDrop.StartDrag(ids.Length > 1
                                 ? "<Multiple>"
-                                : ObjectNames.GetDragAndDropTitle(targetObjs[0]));
+                                : ObjectNames.GetDragAndDropTitle(objects[0]));
                         }
                         evt.Use();
                     }
@@ -2012,12 +2020,11 @@ namespace UnityEditor
                 this.style = style;
                 this.scrollPosition = scrollPosition;
 
+                position = IndentedRect(position);
                 float fullTextHeight = style.CalcHeight(GUIContent.Temp(text), position.width);
                 Rect viewRect = new Rect(0, 0, position.width, fullTextHeight);
 
                 oldScrollValue = style.contentOffset;
-
-                position = IndentedRect(position);
                 if (position.height < viewRect.height)
                 {
                     //Scroll bar position
@@ -2082,7 +2089,23 @@ namespace UnityEditor
 
                     RecycledTextEditor.s_AllowContextCutOrPaste = false;
                     if (sendEventToTextEditor)
+                    {
+                        bool isMouseDown = Event.current.rawType == EventType.MouseDown && Event.current.button == 0;
+                        bool isEditingControl = s_RecycledEditor.IsEditingControl(id);
+
                         DoTextField(s_RecycledEditor, id, position, text, style, string.Empty, out _, false, true, false);
+
+                        if (isMouseDown && Event.current.type == EventType.Used)
+                        {
+                            // We just took control over the Scrollable label
+                            if (!isEditingControl && s_RecycledEditor.IsEditingControl(id))
+                            {
+                                // Properly set the scroll offset as it was set to 0 in the editor.BeginEditing
+                                // Move the recycled Editor offset to match our scrollbar
+                                s_RecycledEditor.scrollOffset = scrollPosition;
+                            }
+                        }
+                    }
                 }
 
                 //Only update the out scrollPosition if the user has interacted with the TextArea (the current event was used)
@@ -3010,7 +3033,15 @@ namespace UnityEditor
             return f < 0.0f ? -result : result;
         }
 
-        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null, VisualElement element = null)
+        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
+        {
+            GUIUtility.CheckOnGUI();
+            bool enabled = GUI.enabled;
+            bool isShiftPressed = Event.current.shift;
+            return FillPropertyContextMenu(property, isShiftPressed, enabled, linkedProperty, menu);
+        }
+
+        internal static GenericMenu FillPropertyContextMenu(SerializedProperty property, bool isShiftPressed, bool isEnabled, SerializedProperty linkedProperty = null, GenericMenu menu = null, VisualElement element = null)
         {
             if (property == null)
                 return null;
@@ -3037,7 +3068,7 @@ namespace UnityEditor
 
             // FillPropertyContextMenu is now always called when a right click is done on a property.
             // However we don't want those menu to be added when the property is disabled.
-            if (GUI.enabled)
+            if (isEnabled)
             {
                 ScriptAttributeUtility.GetHandler(property).AddMenuItems(property, pm);
 
@@ -3154,7 +3185,7 @@ namespace UnityEditor
             // GUI but Paste should not).
             ClipboardContextMenu.SetupPropertyCopyPaste(propertyWithPath, menu: pm, evt: null);
 
-            if (GUI.enabled)
+            if (isEnabled)
             {
                 // If property is an element in an array, show duplicate and delete menu options
                 if (property.propertyPath.LastIndexOf(']') == property.propertyPath.Length - 1)
@@ -3249,10 +3280,15 @@ namespace UnityEditor
 
                             var listView = element?.GetFirstAncestorOfType<ListView>();
 
+                            // If we have a ReorderableList associated with this property and it uses onDeleteArrayElementCallback
+                            if (list != null && list.onDeleteArrayElementCallback != null)
+                            {
+                                list.onDeleteArrayElementCallback(list, parentArrayIndex);
+                            }
                             // If we have a ReorderableList associated with this property lets use list selection array
                             // and apply this action to all selected elements thus having better integration with
                             // ReorderableLists multi-selection features
-                            if (list != null && list.selectedIndices.Count > 0)
+                            else if (list != null && list.selectedIndices.Count > 0)
                             {
                                 foreach (var selected in list.selectedIndices.Reverse<int>())
                                 {
@@ -3306,7 +3342,7 @@ namespace UnityEditor
             // If shift is held down, show debug menu options
             // This menu is not excluded when the field is disabled
             // because it is nice to get information about the property even when it's disabled.
-            if (Event.current.shift)
+            if (isShiftPressed)
             {
                 if (pm.GetItemCount() > 0)
                     pm.AddSeparator("");
@@ -3333,7 +3369,7 @@ namespace UnityEditor
 
             // FillPropertyContextMenu is now always called when a right click is done on a property.
             // However we don't want those menu to be added when the property is disabled.
-            if (GUI.enabled)
+            if (isEnabled)
             {
                 if (EditorApplication.contextualPropertyMenu != null)
                 {
@@ -4569,7 +4605,7 @@ namespace UnityEditor
         {
             if (references.Length > 0)
             {
-                bool dragAssignment = DragAndDrop.objectReferences.Length > 0;
+                bool dragAssignment = DragAndDrop.entityIds.Length > 0;
                 bool isTextureRef = (references[0] != null && references[0] is Texture2D);
 
                 if ((objType == typeof(Sprite)) && isTextureRef && dragAssignment)
@@ -6930,7 +6966,15 @@ namespace UnityEditor
             // In inspector debug mode & when holding down alt. Show the property path of the property.
             if (Event.current.alt && property.serializedObject.inspectorMode != InspectorMode.Normal)
             {
-                s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                if (string.IsNullOrEmpty(label.text))
+                {
+                    s_PropertyFieldTempContent.tooltip = property.propertyPath;
+                }
+                else
+                {
+                    s_PropertyFieldTempContent.tooltip = s_PropertyFieldTempContent.text = property.propertyPath;
+                }
+
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
@@ -7908,14 +7952,14 @@ namespace UnityEditor
 
                         if (position.Contains(tempEvent.mousePosition) && GUI.enabled)
                         {
-                            Object[] references = DragAndDrop.objectReferences;
+                            var ids = new ReadOnlySpan<EntityId>(DragAndDrop.entityIds);
 
                             // Check each single object, so we can add multiple objects in a single drag.
-                            Object[] oArray = new Object[1];
+                            var oArray = new Object[1];
                             bool didAcceptDrag = false;
-                            foreach (Object o in references)
+                            foreach (var entityId in ids)
                             {
-                                oArray[0] = o;
+                                oArray[0] = EditorUtility.EntityIdToObject(entityId);
                                 Object validatedObject = ValidateObjectFieldAssignment(oArray, null, property, ObjectFieldValidatorOptions.None);
                                 if (validatedObject != null)
                                 {

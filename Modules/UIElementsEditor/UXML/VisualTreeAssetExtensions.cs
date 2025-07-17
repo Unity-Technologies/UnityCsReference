@@ -1,0 +1,80 @@
+// Unity C# reference source
+// Copyright (c) Unity Technologies. For terms of use, see
+// https://unity3d.com/legal/licenses/Unity_Reference_Only_License
+
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine.Bindings;
+using UnityEngine.UIElements;
+
+namespace UnityEditor.UIElements
+{
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    internal static class VisualTreeAssetExtensions
+    {
+        static readonly IComparer<VisualTreeAsset.UsingEntry> s_UsingEntryPathComparer = new UsingEntryPathComparer();
+
+        class UsingEntryPathComparer : IComparer<VisualTreeAsset.UsingEntry>
+        {
+            public int Compare(VisualTreeAsset.UsingEntry x, VisualTreeAsset.UsingEntry y)
+            {
+                return Comparer<string>.Default.Compare(x.path, y.path);
+            }
+        }
+
+        public static VisualElementAsset AddVisualElementAssetFromVisualElement(
+            this VisualTreeAsset vta, VisualElementAsset parent, VisualElement visualElement)
+        {
+            var fullTypeName = visualElement.GetUxmlFullTypeName();
+            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, fullTypeName);
+            var vea = new VisualElementAsset(fullTypeName, xmlns);
+
+            var overriddenAttributes = visualElement.GetOverriddenAttributes();
+            foreach (var attribute in overriddenAttributes)
+                vea.SetAttribute(attribute.Key, attribute.Value);
+
+            return vta.AddElementToDocument(vea, parent);
+        }
+
+        public static TemplateAsset AddTemplateInstance(
+            this VisualTreeAsset vta, VisualElementAsset parent, string path)
+        {
+            var templateName = vta.GetTemplateNameFromPath(path);
+            if (!vta.TemplateExists(templateName))
+            {
+                var resolvedAsset = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(path);
+                if (resolvedAsset)
+                {
+                    vta.RegisterTemplate(templateName, resolvedAsset);
+                }
+                else
+                {
+                    vta.RegisterTemplate(templateName, path);
+                }
+            }
+
+            var xmlns = vta.FindUxmlNamespaceDefinitionForTypeName(parent, TemplateAsset.UxmlInstanceTypeName);
+            var templateAsset = new TemplateAsset(templateName, xmlns);
+
+            templateAsset.SetAttribute("template", templateName);
+
+            return vta.AddElementToDocument(templateAsset, parent) as TemplateAsset;
+        }
+
+        public static string GetTemplateNameFromPath(this VisualTreeAsset vta, string path)
+        {
+            var usings = vta.usings;
+            if (usings != null && usings.Count > 0)
+            {
+                var lookingFor = new VisualTreeAsset.UsingEntry(null, path);
+                int index = usings.BinarySearch(lookingFor, s_UsingEntryPathComparer);
+                if (index >= 0 && usings[index].path == path)
+                {
+                    return usings[index].alias;
+                }
+            }
+
+            return Path.GetFileNameWithoutExtension(path);
+        }
+    }
+}

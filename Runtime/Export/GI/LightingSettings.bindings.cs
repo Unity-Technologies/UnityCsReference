@@ -103,6 +103,24 @@ namespace UnityEngine
             None = 2
         }
 
+        public enum LightmapPackingMode
+        {
+            // Use some reasonable default settings for packing.
+            Auto = 0,
+
+            // Let the user control settings used for packing.
+            Custom = 1,
+        }
+
+        public enum LightmapPackingMethod
+        {
+            // Pack using unity's default homegrown lightmap packer.
+            Unity = 0,
+
+            // Pack using the third-party XAtlas library.
+            XAtlas = 1,
+        }
+
         [NativeName("AutoGenerate")]
         [Obsolete("LightingSettings.autoGenerate is obsolete.", false)]
         public bool autoGenerate
@@ -306,6 +324,24 @@ namespace UnityEngine
         // During baking processes should the scene visibility toggle be respected for contributions
         [NativeName("RespectSceneVisibilityWhenBakingGI")]
         public extern bool respectSceneVisibilityWhenBakingGI { get; set; }
+
+        [NativeName("LightmapPackingMode")]
+        public extern LightmapPackingMode lightmapPackingMode { get; set; }
+
+        [NativeName("LightmapPackingMethod")]
+        public extern LightmapPackingMethod lightmapPackingMethod { get; set; }
+
+        [NativeName("XAtlasPackingAttempts")]
+        public extern int packingAttempts { get; set; }
+
+        [NativeName("XAtlasBruteForce")]
+        public extern bool bruteForcePacking { get; set; }
+
+        [NativeName("XAtlasBlockAlign")]
+        public extern bool blockAlignedPacking { get; set; }
+
+        [NativeName("XAtlasRepackUnderutilizedLightmaps")]
+        public extern bool repackUnderutilizedLightmaps { get; set; }
         #endregion
     }
 }

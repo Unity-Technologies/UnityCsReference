@@ -3,15 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Unity.Profiling;
-using UnityEngine.Pool;
 using Unity.Properties;
 using UnityEngine.Bindings;
 using UnityEngine.Internal;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -121,25 +123,25 @@ namespace UnityEngine.UIElements
                     new (nameof(showAlternatingRowBackgrounds), "show-alternating-row-backgrounds"),
                     new (nameof(reorderable), "reorderable"),
                     new (nameof(horizontalScrollingEnabled), "horizontal-scrolling"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
             [UxmlAttribute(obsoleteNames = new[] { "itemHeight", "item-height" })]
             [SerializeField, FixedItemHeightDecorator] float fixedItemHeight;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
             [SerializeField] CollectionVirtualizationMethod virtualizationMethod;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
-            [SerializeField] bool showBorder;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
             [SerializeField] SelectionType selectionType;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
             [SerializeField] AlternatingRowBackground showAlternatingRowBackgrounds;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
+            [SerializeField] bool showBorder;
             [SerializeField] bool reorderable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             [UxmlAttribute("horizontal-scrolling")]
             [SerializeField] bool horizontalScrollingEnabled;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags fixedItemHeight_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags virtualizationMethod_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showBorder_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags selectionType_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showAlternatingRowBackgrounds_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags reorderable_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollingEnabled_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -368,9 +370,9 @@ namespace UnityEngine.UIElements
 
         internal bool HasCanStartDrag() => canStartDrag != null;
 
-        internal bool RaiseCanStartDrag(ReusableCollectionItem item, IEnumerable<int> ids)
+        internal bool RaiseCanStartDrag(ReusableCollectionItem item, IEnumerable<int> ids, EventModifiers modifiers)
         {
-            return canStartDrag?.Invoke(new CanStartDragArgs(item?.rootElement, item?.id ?? BaseTreeView.invalidId, ids)) ?? true;
+            return canStartDrag?.Invoke(new CanStartDragArgs(item?.rootElement, item?.id ?? BaseTreeView.invalidId, ids, modifiers)) ?? true;
         }
 
         /// <summary>
@@ -560,12 +562,14 @@ namespace UnityEngine.UIElements
         /// </remarks>
         public IEnumerable<int> selectedIds => m_Selection.selectedIds;
 
+        internal ReadOnlySpan<int> selectedIndicesSpan => NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
+
         static readonly List<ReusableCollectionItem> k_EmptyItems = new();
         internal IEnumerable<ReusableCollectionItem> activeItems => m_VirtualizationController?.activeItems ?? k_EmptyItems;
 
         internal ScrollView scrollView
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
             get => m_ScrollView;
         }
 
@@ -573,7 +577,7 @@ namespace UnityEngine.UIElements
 
         internal CollectionVirtualizationController virtualizationController
         {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
             get => GetOrCreateVirtualizationController();
         }
 
@@ -916,7 +920,14 @@ namespace UnityEngine.UIElements
         private float m_LastHeight;
         internal float lastHeight => m_LastHeight;
 
-        private bool m_IsRangeSelectionDirectionUp;
+        enum RangeSelectionDirection
+        {
+            Up = -1,
+            None,
+            Down
+        }
+        private RangeSelectionDirection m_RangeSelectionDirection;
+
         private ListViewDragger m_Dragger;
 
         internal const float ItemHeightUnset = -1;
@@ -926,7 +937,8 @@ namespace UnityEngine.UIElements
         Action<int, int> m_ItemIndexChangedCallback;
         Action m_ItemsSourceChangedCallback;
 
-        internal IVisualElementScheduledItem m_RebuildScheduled;
+        private IVisualElementScheduledItem m_RebuildScheduled;
+        internal bool isRebuildScheduled => m_RebuildScheduled?.isActive == true;
 
         private protected virtual void CreateVirtualizationController()
         {
@@ -1110,6 +1122,15 @@ namespace UnityEngine.UIElements
         internal static readonly string backgroundFillUssClassName = ussClassName + "__background-fill";
 
         /// <summary>
+        /// Determine if we are currently processing a pointer down event.
+        /// </summary>
+        internal bool processingPointerDownEvent
+        {
+            [VisibleToOtherModules("UnityEngine.HierarchyModule")] get;
+            private set;
+        }
+
+        /// <summary>
         /// Creates a <see cref="BaseVerticalCollectionView"/> with all default properties.
         /// The <see cref="BaseVerticalCollectionView.itemsSource"/> must all be set for the BaseVerticalCollectionView to function properly.
         /// </summary>
@@ -1118,6 +1139,7 @@ namespace UnityEngine.UIElements
             AddToClassList(ussClassName);
 
             m_Selection = new Selection { selectedIds = m_SelectedIds };
+            m_RangeSelectionDirection = RangeSelectionDirection.None;
 
             selectionType = SelectionType.Single;
 
@@ -1508,6 +1530,7 @@ namespace UnityEngine.UIElements
                 }
                 else
                 {
+                    m_RangeSelectionDirection = RangeSelectionDirection.None;
                     selectedIndex = index;
                 }
 
@@ -1527,19 +1550,31 @@ namespace UnityEngine.UIElements
                     ScrollToItem(selectedIndex);
                     return true;
                 case KeyboardNavigationOperation.Previous:
-                    if (selectedIndex > 0)
+                {
+                    var index = (m_Selection.indexCount == 0 ? -1 : m_RangeSelectionDirection != RangeSelectionDirection.Down ? m_Selection.minIndex : m_Selection.maxIndex) - 1;
+                    if (index >= 0)
                     {
-                        HandleSelectionAndScroll(selectedIndex - 1);
+                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                            m_RangeSelectionDirection = RangeSelectionDirection.Up;
+
+                        HandleSelectionAndScroll(index);
                         return true;
                     }
                     break; // Allow focus to move outside the ListView
+                }
                 case KeyboardNavigationOperation.Next:
-                    if (selectedIndex + 1 < m_ViewController.itemsSource.Count)
+                {
+                    var index = (m_Selection.indexCount == 0 ? -1 : m_RangeSelectionDirection != RangeSelectionDirection.Up ? m_Selection.maxIndex : m_Selection.minIndex) + 1;
+                    if (index < m_ViewController.itemsSource.Count)
                     {
-                        HandleSelectionAndScroll(selectedIndex + 1);
+                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                            m_RangeSelectionDirection = RangeSelectionDirection.Down;
+
+                        HandleSelectionAndScroll(index);
                         return true;
                     }
                     break; // Allow focus to move outside the ListView
+                }
                 case KeyboardNavigationOperation.Begin:
                     HandleSelectionAndScroll(0);
                     return true;
@@ -1549,14 +1584,20 @@ namespace UnityEngine.UIElements
                 case KeyboardNavigationOperation.PageDown:
                     if (m_Selection.indexCount > 0)
                     {
-                        var selectionDown = m_IsRangeSelectionDirectionUp ? m_Selection.minIndex : m_Selection.maxIndex;
+                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                            m_RangeSelectionDirection = RangeSelectionDirection.Down;
+
+                        var selectionDown = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                         HandleSelectionAndScroll(Mathf.Min(viewController.itemsSource.Count - 1, selectionDown + (virtualizationController.visibleItemCount - 1)));
                     }
                     return true;
                 case KeyboardNavigationOperation.PageUp:
                     if (m_Selection.indexCount > 0)
                     {
-                        var selectionUp = m_IsRangeSelectionDirectionUp ? m_Selection.minIndex : m_Selection.maxIndex;
+                        if (m_RangeSelectionDirection == RangeSelectionDirection.None)
+                            m_RangeSelectionDirection = RangeSelectionDirection.Up;
+
+                        var selectionUp = m_RangeSelectionDirection == RangeSelectionDirection.Up ? m_Selection.minIndex : m_Selection.maxIndex;
                         HandleSelectionAndScroll(Mathf.Max(0, selectionUp - (virtualizationController.visibleItemCount - 1)));
                     }
                     return true;
@@ -1640,29 +1681,37 @@ namespace UnityEngine.UIElements
 
         private void ProcessPointerDown(IPointerEvent evt)
         {
-            if (!HasValidDataAndBindings())
-                return;
-
-            if (!evt.isPrimary)
-                return;
-
-            if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
-                return;
-
-            if (evt.pointerType != PointerType.mouse)
+            processingPointerDownEvent = true;
+            try
             {
-                m_TouchDownPosition = evt.position;
-                var pointerDownTimeStamp = (evt as PointerDownEvent)?.timestamp ?? 0;
-                m_PointerDownCount = pointerDownTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount + 1 : 1;
-                m_LastPointerDownTimeStamp = pointerDownTimeStamp;
-                return;
-            }
-            else
-            {
-                m_PointerDownCount = evt.clickCount;
-            }
+                if (!HasValidDataAndBindings())
+                    return;
 
-            DoSelect(evt.localPosition, evt.button, m_PointerDownCount, evt.actionKey, evt.shiftKey);
+                if (!evt.isPrimary)
+                    return;
+
+                if (evt.button is not ((int)MouseButton.LeftMouse or (int)MouseButton.RightMouse))
+                    return;
+
+                if (evt.pointerType != PointerType.mouse)
+                {
+                    m_TouchDownPosition = evt.position;
+                    var pointerDownTimeStamp = (evt as PointerDownEvent)?.timestamp ?? 0;
+                    m_PointerDownCount = pointerDownTimeStamp - m_LastPointerDownTimeStamp < Event.GetDoubleClickTime() ? m_PointerDownCount + 1 : 1;
+                    m_LastPointerDownTimeStamp = pointerDownTimeStamp;
+                    return;
+                }
+                else
+                {
+                    m_PointerDownCount = evt.clickCount;
+                }
+
+                DoSelect(evt.localPosition, evt.button, m_PointerDownCount, evt.actionKey, evt.shiftKey);
+            }
+            finally
+            {
+                processingPointerDownEvent = false;
+            }
         }
 
         private void ProcessPointerUp(IPointerEvent evt)
@@ -1713,8 +1762,9 @@ namespace UnityEngine.UIElements
             if (selectionType == SelectionType.None)
                 return;
 
-            var clickedItemId = viewController.GetIdForIndex(clickedIndex);
+            m_RangeSelectionDirection = RangeSelectionDirection.None;
 
+            var clickedItemId = viewController.GetIdForIndex(clickedIndex);
             switch (effectiveClickCount)
             {
                 case 1:
@@ -1788,25 +1838,42 @@ namespace UnityEngine.UIElements
 
         internal void DoRangeSelection(int rangeSelectionFinalIndex)
         {
-            var selectionOrigin = m_IsRangeSelectionDirectionUp ? m_Selection.maxIndex : m_Selection.minIndex;
+            if (rangeSelectionFinalIndex < 0 || rangeSelectionFinalIndex >= m_ViewController.itemsSource.Count)
+                return;
+
+            var min = m_Selection.minIndex;
+            var max = m_Selection.maxIndex;
+            switch (m_RangeSelectionDirection)
+            {
+                case RangeSelectionDirection.Up:
+                    min = rangeSelectionFinalIndex;
+                    break;
+
+                case RangeSelectionDirection.Down:
+                    max = rangeSelectionFinalIndex;
+                    break;
+
+                default:
+                    min = Mathf.Min(min, rangeSelectionFinalIndex);
+                    max = Mathf.Max(max, rangeSelectionFinalIndex);
+                    break;
+            }
+
+            // Reset direction if we're back to a single selection
+            if (min == max)
+                m_RangeSelectionDirection = RangeSelectionDirection.None;
+
+            var count = max - min + 1;
+            if (count <= 0)
+                return;
+
+            var newSelection = ArrayPool<int>.Shared.Rent(count);
+            for (var i = 0; i < count; ++i)
+                newSelection[i] = min + i;
 
             ClearSelectionWithoutValidation();
-
-            // Add range
-            var range = new List<int>();
-            m_IsRangeSelectionDirectionUp = rangeSelectionFinalIndex < selectionOrigin;
-            if (m_IsRangeSelectionDirectionUp)
-            {
-                for (var i = rangeSelectionFinalIndex; i <= selectionOrigin; i++)
-                    range.Add(i);
-            }
-            else
-            {
-                for (var i = rangeSelectionFinalIndex; i >= selectionOrigin; i--)
-                    range.Add(i);
-            }
-
-            AddToSelection(range);
+            AddToSelection(newSelection.AsSpan(0, count));
+            ArrayPool<int>.Shared.Return(newSelection);
         }
 
         private void ProcessSingleClick(int clickedIndex)
@@ -1850,12 +1917,12 @@ namespace UnityEngine.UIElements
         /// <param name="index">Item index.</param>
         public void AddToSelection(int index)
         {
-            AddToSelection(new[] { index });
+            AddToSelection(stackalloc int[] { index });
         }
 
-        internal void AddToSelection(IList<int> indexes)
+        internal void AddToSelection(ReadOnlySpan<int> indexes)
         {
-            if (!HasValidDataAndBindings() || indexes == null || indexes.Count == 0)
+            if (!HasValidDataAndBindings() || indexes.Length == 0)
                 return;
 
             foreach (var index in indexes)
@@ -1923,46 +1990,92 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            SetSelection(new[] { index });
+            SetSelection(stackalloc int[1] { index });
         }
 
         /// <summary>
         /// Sets a collection of selected items.
         /// </summary>
         /// <param name="indices">The collection of the indices of the items to be selected.</param>
-        public void SetSelection(IEnumerable<int> indices)
-        {
-            SetSelectionInternal(indices, true);
-        }
+        public void SetSelection(IEnumerable<int> indices) => SetSelectionInternal(indices, true);
+
+        internal void SetSelection(ReadOnlySpan<int> indices) => SetSelectionInternal(indices, true);
 
         /// <summary>
         /// Sets a collection of selected items without triggering a selection change callback.
         /// </summary>
         /// <param name="indices">The collection of items to be selected.</param>
-        public void SetSelectionWithoutNotify(IEnumerable<int> indices)
-        {
-            SetSelectionInternal(indices, false);
-        }
+        public void SetSelectionWithoutNotify(IEnumerable<int> indices) => SetSelectionInternal(indices, false);
+
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
+        internal void SetSelectionWithoutNotify(ReadOnlySpan<int> indices) => SetSelectionInternal(indices, false);
 
         internal void SetSelectionInternal(IEnumerable<int> indices, bool sendNotification)
         {
-            if (!HasValidDataAndBindings() || indices == null)
+            if (indices == null)
+                return;
+
+            var count = indices.Count();
+            if (count == 0)
+            {
+                SetSelectionInternal(stackalloc int[0], sendNotification);
+            }
+            else if (count < 16)
+            {
+                Span<int> ints = stackalloc int[count];
+                var i = 0;
+                foreach (var index in indices)
+                    ints[i++] = index;
+
+                SetSelectionInternal(ints, sendNotification);
+            }
+            else
+            {
+                // if indices collection is bigger than what can be safely stackalloc-ed, get a pooled array of the correct size
+                // using ArrayPool<byte> instead of <int> to allow arrays to be reused for any non blittable type
+                var buffer = ArrayPool<byte>.Shared.Rent(count * sizeof(int));
+                try
+                {
+                    var span = MemoryMarshal.Cast<byte, int>(buffer);
+                    var spanLength = 0;
+                    foreach (var index in indices)
+                    {
+                        span[spanLength++] = index;
+                    }
+                    span = span[..spanLength];
+
+                    SetSelectionInternal(span, sendNotification);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(buffer);
+                }
+            }
+        }
+
+        internal void SetSelectionInternal(ReadOnlySpan<int> indices, bool sendNotification)
+        {
+            if (!HasValidDataAndBindings())
                 return;
 
             if (MatchesExistingSelection(indices))
                 return;
 
+            m_RangeSelectionDirection = RangeSelectionDirection.None;
+
             var previousSelectedIndex = selectedIndex;
             ClearSelectionWithoutValidation();
 
             // If possible resize indices so we can better handle large selections. (UUM-74996)
-            if (indices is ICollection collection && m_Selection.capacity < collection.Count)
+            if (m_Selection.capacity < indices.Length)
             {
-                m_Selection.capacity = collection.Count;
+                m_Selection.capacity = indices.Length;
             }
 
             foreach (var index in indices)
+            {
                 AddToSelectionWithoutValidation(index);
+            }
 
             if (sendNotification)
             {
@@ -1974,36 +2087,13 @@ namespace UnityEngine.UIElements
             SaveViewData();
         }
 
-        private bool MatchesExistingSelection(IEnumerable<int> indices)
+        private bool MatchesExistingSelection(ReadOnlySpan<int> indices)
         {
-            var indicesCollection = indices as IList<int>;
-            List<int> pooled = null;
-            try
-            {
-                if (indicesCollection == null)
-                {
-                    pooled = ListPool<int>.Get();
-                    pooled.AddRange(indices);
-                    indicesCollection = pooled;
-                }
+            if (indices.Length != m_Selection.indexCount)
+                return false;
 
-                if (indicesCollection.Count != m_Selection.indexCount)
-                    return false;
-
-                for (var i = 0; i < indicesCollection.Count; ++i)
-                {
-                    // The order of the indices is important.
-                    if (indicesCollection[i] != m_Selection.indices[i])
-                        return false;
-                }
-
-                return true;
-            }
-            finally
-            {
-                if (pooled != null)
-                    ListPool<int>.Release(pooled);
-            }
+            var existingSelection = NoAllocHelpers.CreateReadOnlySpan(m_Selection.indices);
+            return existingSelection.SequenceEqual(indices);
         }
 
         private void NotifyOfSelectionChange()

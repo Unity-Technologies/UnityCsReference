@@ -11,8 +11,10 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Describes a <see cref="VisualElement"/> font.
     /// </summary>
+    [Serializable]
     public partial struct FontDefinition : IEquatable<FontDefinition>
     {
+        [SerializeField]
         private Font m_Font;
         /// <summary>
         /// Font to use to display text. You cannot set this and <see cref="FontDefinition.fontAsset"/> at the same time.
@@ -28,6 +30,7 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         private FontAsset m_FontAsset;
         /// <summary>
         /// SDF font to use to display text. You cannot set this and <see cref="FontDefinition.font"/> at the same time.

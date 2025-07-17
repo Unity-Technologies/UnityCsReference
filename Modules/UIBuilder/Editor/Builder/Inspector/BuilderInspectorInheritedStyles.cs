@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 using System.Text;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using System.Linq;
 
@@ -15,6 +17,7 @@ namespace Unity.UI.Builder
         public static readonly string classListContainerName = "class-list-container";
         public static readonly string addClassButtonName = "add-class-button";
         public static readonly string addClassFieldName = "add-class-field";
+        public static readonly string createClassButtonName = "create-class-button";
         public static readonly string inspectorInheritedStylesFoldoutName = "inspector-inherited-styles-foldout";
 
         // Used in tests
@@ -55,7 +58,7 @@ namespace Unity.UI.Builder
             m_AddClassField.RegisterCallback<KeyUpEvent>(OnAddClassFieldChange);
 
             m_AddClassButton = m_Inspector.Q<Button>(addClassButtonName);
-            m_CreateClassButton = m_Inspector.Q<Button>("create-class-button");
+            m_CreateClassButton = m_Inspector.Q<Button>(createClassButtonName);
 
             m_ClassPillTemplate = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/BuilderClassPill.uxml");
@@ -156,7 +159,7 @@ namespace Unity.UI.Builder
 
             // We actually want to get the notification back and refresh ourselves.
             m_Selection.NotifyOfHierarchyChange(null, currentVisualElement, BuilderHierarchyChangeType.ClassList);
-            m_Selection.NotifyOfStylingChange(null);
+            m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
         }
 
         StyleSheet GetOrCreateOrAddMainStyleSheet()
@@ -169,8 +172,8 @@ namespace Unity.UI.Builder
                     BuilderConstants.ExtractInlineStylesNoUSSDialogTitle,
                     BuilderConstants.ExtractInlineStylesNoUSSDialogMessage,
                     BuilderConstants.ExtractInlineStylesNoUSSDialogNewUSSOption,
-                    BuilderConstants.ExtractInlineStylesNoUSSDialogExistingUSSOption,
-                    BuilderConstants.DialogCancelOption);
+                    BuilderConstants.DialogCancelOption,
+                    BuilderConstants.ExtractInlineStylesNoUSSDialogExistingUSSOption);
 
                 switch (option)
                 {
@@ -240,7 +243,7 @@ namespace Unity.UI.Builder
 
             // We actually want to get the notification back and refresh ourselves.
             m_Selection.NotifyOfHierarchyChange(null);
-            m_Selection.NotifyOfStylingChange(null);
+            m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
 
             evt.StopPropagation();
         }
@@ -370,13 +373,11 @@ namespace Unity.UI.Builder
 
             var container = new VisualElement();
 
-            int ruleIndex = 0;
-            var options = new UssExportOptions();
-            var sb = new StringBuilder();
+            var ruleIndex = 0;
 
             foreach (var rule in m_MatchingSelectors.matchedRulesExtractor.selectedElementRules)
             {
-                var selectorStr = StyleSheetToUss.ToUssSelector(rule.matchRecord.complexSelector);
+                var selectorStr = BuilderStyleSheetExporter.GetSelectorString(rule.matchRecord.complexSelector);
 
                 StyleProperty[] props = rule.matchRecord.complexSelector.rule.properties;
                 var ruleFoldout = new PersistedFoldout()
@@ -404,10 +405,7 @@ namespace Unity.UI.Builder
 
                 for (int j = 0; j < props.Length; j++)
                 {
-                    sb.Length = 0;
-                    StyleSheetToUss.StylePropertyValueToString(rule.matchRecord.sheet, options, props[j], sb);
-                    string s = sb.ToString();
-
+                    var s = BuilderStyleSheetExporter.GetStylePropertyHandlesString(rule.matchRecord.sheet, props[j].values.AsSpan());
                     s = s?.ToLowerInvariant();
                     var textField = new TextField(props[j].name) { value = s };
                     textField.isReadOnly = true;

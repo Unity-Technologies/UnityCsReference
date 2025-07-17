@@ -25,6 +25,7 @@ namespace UnityEngine.UIElements
     {
         internal static readonly BindingId templateIdProperty = nameof(templateId);
         internal static readonly BindingId templateSourceProperty = nameof(templateSource);
+        internal const string k_ElementName = "Instance";
 
         [UnityEngine.Internal.ExcludeFromDocs, Serializable]
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
@@ -36,7 +37,7 @@ namespace UnityEngine.UIElements
                 {
                     new (nameof(template), "template"),
                     new (nameof(templateId), "template", null, "template"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

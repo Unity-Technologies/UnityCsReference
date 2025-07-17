@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
-    class DeleteShortcutProfileWindow : EditorWindow
+    class DeleteShortcutProfileWindow : PromptWindowBase
     {
         private TextElement m_HeaderTextElement;
         private TextElement m_MessageTextElement;
@@ -29,7 +29,7 @@ namespace UnityEditor.ShortcutManagement
                 $"Are you sure you want to delete the shortcut profile '{profileName}'?";
             deleteProfilePromptWindow.m_Action = action;
 
-            deleteProfilePromptWindow.ShowModal();
+            deleteProfilePromptWindow.ShowWindow();
         }
 
         void OnEnable()

@@ -8,6 +8,8 @@ using System.Linq;
 using UnityEngine;
 using System.Text.RegularExpressions;
 using UnityEditorInternal;
+using UnityEditor.SceneManagement;
+using Unity.Scripting.LifecycleManagement;
 
 namespace UnityEditor.Search.Providers
 {
@@ -71,8 +73,11 @@ namespace UnityEditor.Search.Providers
 
     class SceneQueryEngine : ObjectQueryEngine<GameObject>
     {
+        private static readonly GUID k_InvalidSceneGUID = new GUID(1, 0, 0, 0);
+        [NoAutoStaticsCleanup]
+        internal static string k_UntitledScene = "untitled";
         private List<SearchProposition> m_PropertyPrositions;
-
+        [NoAutoStaticsCleanup]
         static Regex SerializedPropertyRx = new Regex(@"#([\w\d\.\[\]]+)");
 
         public SceneQueryEngine(IEnumerable<GameObject> gameObjects)
@@ -90,6 +95,8 @@ namespace UnityEditor.Search.Providers
             m_QueryEngine.AddFilter(SerializedPropertyRx, OnPropertyFilter, StringComparison.OrdinalIgnoreCase);
             m_QueryEngine.AddFilter("overlap", GetOverlapCount);
             m_QueryEngine.SetDefaultFilter(DefaultFilterHandler);
+
+            m_QueryEngine.SetFilter<GUID>("scene", GetScene, new[] { "=" }).AddTypeParser(SceneTypeParser);
 
             m_QueryEngine.AddFiltersFromAttribute<SceneQueryEngineFilterAttribute, SceneQueryEngineParameterTransformerAttribute>();
         }
@@ -156,6 +163,59 @@ namespace UnityEditor.Search.Providers
             return go != null && go.activeInHierarchy;
         }
 
+        private bool GetScene(GameObject obj, QueryFilterOperator op, GUID sceneGuid)
+        {
+            return new GUID(obj.scene.guid) == sceneGuid;
+        }
+
+        private static ParseResult<GUID> SceneTypeParser(string sceneFilterValue)
+        {
+            string scenePath = null;
+            if (sceneFilterValue.EndsWith(".unity"))
+            {
+                var scenePossiblePath = FileUtil.GetPhysicalPath(sceneFilterValue);
+                if (System.IO.File.Exists(scenePossiblePath))
+                {
+                    scenePath = scenePossiblePath;
+                }
+            }
+            else if (sceneFilterValue.Equals(k_UntitledScene, StringComparison.InvariantCultureIgnoreCase) || sceneFilterValue == "")
+            {
+                scenePath = "";
+            }
+
+            var stage = StageUtility.GetCurrentStage();
+            if (stage is not MainStage)
+            {
+                for (int i = 0, c = stage.sceneCount; i < c; ++i)
+                {
+                    var scene = stage.GetSceneAt(i);
+                    if (scene.name.Equals(sceneFilterValue, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return new ParseResult<GUID>(true, new GUID(scene.guid));
+                    }
+                }
+            }
+            else
+            {
+                for (var i = 0; i < EditorSceneManager.sceneCount; ++i)
+                {
+                    var scene = EditorSceneManager.GetSceneAt(i);
+                    if (scenePath != null)
+                    {
+                        if (scene.path.Equals(scenePath, StringComparison.InvariantCultureIgnoreCase))
+                            return new ParseResult<GUID>(true, new GUID(scene.guid));
+                    }
+                    else if (scene.name.Equals(sceneFilterValue, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return new ParseResult<GUID>(true, new GUID(scene.guid));
+                    }
+                }
+            }
+
+            return new ParseResult<GUID>(false, SceneQueryEngine.k_InvalidSceneGUID);
+        }
+
         static bool OnPrefabFilter(GameObject go, QueryFilterOperator op, PrefabFilter value)
         {
             if (!PrefabUtility.IsPartOfAnyPrefab(go))
@@ -209,7 +269,7 @@ namespace UnityEditor.Search.Providers
                 case FilterOperatorType.Equal:
                     if (instanceId == goId)
                         return true;
-                    return EditorUtility.InstanceIDToObject(instanceId) is Component c && c.gameObject == go;
+                    return EditorUtility.EntityIdToObject(instanceId) is Component c && c.gameObject == go;
 
                 case FilterOperatorType.NotEqual: return instanceId != goId;
                 case FilterOperatorType.Greater: return instanceId > goId;

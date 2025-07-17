@@ -18,7 +18,7 @@ namespace Unity.UI.Builder
             var absoluteIslandContainer = new VisualElement();
             absoluteIslandContainer.name = "unity-absolute-island";
             documentRootElement.Add(absoluteIslandContainer);
-            BuilderAssetUtilities.AddElementToAsset(paneWindow.document, absoluteIslandContainer);
+            BuilderAssetUtilities.AddElementToAsset(paneWindow.document.visualTreeAsset, absoluteIslandContainer);
 
             bool isTop = localMousePosition.y < documentRootElement.resolvedStyle.height / 2;
             bool isBottom = !isTop;

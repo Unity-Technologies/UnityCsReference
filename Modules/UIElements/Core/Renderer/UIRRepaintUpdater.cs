@@ -17,6 +17,7 @@ namespace UnityEngine.UIElements
         /// </summary>
         bool forceGammaRendering { get; set; }
         uint vertexBudget { get; set; }
+        TextureSlotCount textureSlotCount { get; set; }
         void Reset();
         void Render();
     }
@@ -63,6 +64,14 @@ namespace UnityEngine.UIElements
                 m_VertexBudget = value;
                 DestroyRenderChain();
             }
+        }
+
+        TextureSlotCount m_TextureSlotCount = TextureSlotCount.Eight;
+
+        public TextureSlotCount textureSlotCount
+        {
+            get => m_TextureSlotCount;
+            set => m_TextureSlotCount = value;
         }
 
         public bool drawStats { get; set; }
@@ -127,6 +136,7 @@ namespace UnityEngine.UIElements
             // Apply these debug values every frame because the render chain may have been recreated.
             renderTreeManager.drawStats = drawStats;
             renderTreeManager.device.breakBatches = breakBatches;
+            renderTreeManager.textureSlotCount = textureSlotCount;
         }
 
         public void Render()

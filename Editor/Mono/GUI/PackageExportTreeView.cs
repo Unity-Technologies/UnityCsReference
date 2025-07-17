@@ -12,6 +12,13 @@ using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
 
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
+
 namespace UnityEditor
 {
     internal class PackageExportTreeView

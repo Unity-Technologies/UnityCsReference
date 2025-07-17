@@ -56,7 +56,15 @@ namespace Unity.UI.Builder
             // already inserted in the hierarchy. The index we get from the arguments
             // is actually incorrect (off by one) because it will count the
             // preview element.
-            index = m_DragPreviewLastParent.IndexOf(m_TargetElementToReparent);
+            index = newParent.IndexOf(m_TargetElementToReparent);
+            for (var i = index - 1; i >= 0; --i)
+            {
+                var child = newParent[i];
+                // Ignore children that are not part of a visual tree asset.
+                if (child.GetProperty(VisualTreeAsset.LinkedVEAInTemplatePropertyName) == null ||
+                    !child.IsPartOfActiveVisualTreeAsset(viewport.paneWindow.document))
+                    --index;
+            }
 
             bool undo = true;
             foreach (var elementToReparent in m_ElementsToReparent)
@@ -83,10 +91,8 @@ namespace Unity.UI.Builder
                 undo = false;
             }
 
-            BuilderAssetUtilities.SortElementsByTheirVisualElementInAsset(newParent);
-
             selection.NotifyOfHierarchyChange(null);
-            selection.NotifyOfStylingChange(null);
+            selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
             selection.ForceReselection(null);
         }
 

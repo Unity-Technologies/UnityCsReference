@@ -143,7 +143,7 @@ namespace UnityEngine
         {
             var style = GUIStyle.none;
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, position, textWithWhitespace, Color.white);
-            m_TextHandle.AddTextInfoToPermanentCache();
+            m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextSelecting = new TextSelectingUtilities(m_TextHandle);
             m_TextEditing = new TextEditingUtilities(m_TextSelecting, m_TextHandle, m_Content.text);
             m_Content.OnTextChanged += OnContentTextChangedHandle;
@@ -180,8 +180,9 @@ namespace UnityEngine
 
         public bool HasClickedOnLink(Vector2 mousePosition, out string linkData)
         {
+            var localMousePosition = mousePosition + scrollOffset;
             linkData = "";
-            var intersectingLink = m_TextHandle.FindIntersectingLink(mousePosition - new Vector2(position.x, position.y));
+            var intersectingLink = m_TextHandle.FindIntersectingLink(localMousePosition - new Vector2(position.x, position.y));
             if (intersectingLink < 0)
                 return false;
 
@@ -196,8 +197,9 @@ namespace UnityEngine
 
         public bool HasClickedOnHREF(Vector2 mousePosition, out string href)
         {
+            var localMousePosition = mousePosition + scrollOffset;
             href = "";
-            var intersectingLink = m_TextHandle.FindIntersectingLink(mousePosition - new Vector2(position.x, position.y));
+            var intersectingLink = m_TextHandle.FindIntersectingLink(localMousePosition - new Vector2(position.x, position.y));
             if (intersectingLink < 0)
                 return false;
 
@@ -416,7 +418,7 @@ namespace UnityEngine
         internal void UpdateTextHandle()
         {
             m_TextHandle = IMGUITextHandle.GetTextHandle(style, style.padding.Remove(position), textWithWhitespace, Color.white);
-            m_TextHandle.AddTextInfoToPermanentCache();
+            m_TextHandle.AddToPermanentCacheAndGenerateMesh();
             m_TextEditing.textHandle = m_TextHandle;
             m_TextSelecting.textHandle = m_TextHandle;
         }
@@ -555,7 +557,10 @@ namespace UnityEngine
 
         internal Rect[] GetHyperlinksRect()
         {
-            return style.GetHyperlinkRects(m_TextHandle, localPosition);
+            var rects = style.GetHyperlinkRects(m_TextHandle, localPosition);
+            for (int i = 0; i < rects.Length; ++i)
+                rects[i].position -= scrollOffset;
+            return rects;
         }
 
         public bool Paste() => m_TextEditing.Paste();

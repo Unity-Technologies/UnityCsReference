@@ -6,6 +6,8 @@ using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
+using TreeViewGUI = UnityEditor.IMGUI.Controls.TreeViewGUI<int>;
+
 
 namespace UnityEditor
 {
@@ -57,7 +59,10 @@ namespace UnityEditor
         {
             // Clear parent object for the prefab stage if one was set
             if (stage is PrefabStage)
-                SceneHierarchy.SetDefaultParentForSession(stage.GetSceneAt(stage.sceneCount - 1).guid, 0);
+            {
+                var scene = stage.GetSceneAt(stage.sceneCount - 1);
+                scene.defaultParent = EntityId.None;
+            }
 
             stage.SaveHierarchyState(m_SceneHierarchyWindow);
         }

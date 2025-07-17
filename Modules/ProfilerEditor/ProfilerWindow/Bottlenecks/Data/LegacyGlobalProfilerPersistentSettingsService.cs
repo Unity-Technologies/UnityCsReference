@@ -12,6 +12,7 @@ namespace Unity.Profiling.Editor
     class LegacyGlobalProfilerPersistentSettingsService : IProfilerPersistentSettingsService
     {
         const string k_PersistentSettingKey_BottlenecksViewVisible = "bottlenecks-view-visible";
+        const string k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType = "bottlenecks-details-view__selected-summary-type";
 
         public LegacyGlobalProfilerPersistentSettingsService()
         {
@@ -36,6 +37,12 @@ namespace Unity.Profiling.Editor
         }
 
         public int MaximumFrameCount => ProfilerUserSettings.frameCount;
+
+        public int BottleneckDetailsViewSelectedSummaryType
+        {
+            get => EditorPrefs.GetInt(k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType, 0);
+            set => EditorPrefs.SetInt(k_PersistentSettingKey_BottleneckDetailsViewSelectedSummaryType, value);
+        }
 
         public void Dispose()
         {

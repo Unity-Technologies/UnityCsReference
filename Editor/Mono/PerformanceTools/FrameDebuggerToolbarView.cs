@@ -98,11 +98,17 @@ namespace UnityEditorInternal.FrameDebuggerInternal
 
             GUI.enabled = newLimit > 1;
             if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.s_PrevFrame, EditorStyles.toolbarButton))
+            {
+                GUI.FocusControl(string.Empty);
                 frameDebuggerWindow.ChangeFrameEventLimit(newLimit - 1);
+            }
 
             GUI.enabled = newLimit < FrameDebuggerUtility.count;
             if (GUILayout.Button(FrameDebuggerStyles.TopToolbar.s_NextFrame, EditorStyles.toolbarButtonRight))
+            {
+                GUI.FocusControl(string.Empty);
                 frameDebuggerWindow.ChangeFrameEventLimit(newLimit + 1);
+            }    
 
             // If we had last event selected, and something changed in the scene so that
             // number of events is different - then try to keep the last event selected.

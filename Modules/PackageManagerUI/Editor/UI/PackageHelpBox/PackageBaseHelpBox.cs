@@ -4,7 +4,7 @@
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal abstract class PackageBaseHelpBox : HelpBoxWithOptionalReadMore
+    internal abstract class PackageBaseHelpBox : ExtendedHelpBox
     {
         public abstract void Refresh(IPackageVersion version);
     }

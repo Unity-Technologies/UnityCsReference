@@ -65,12 +65,12 @@ namespace UnityEngine.UIElements
             if (selected)
             {
                 rootElement.AddToClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
-                rootElement.pseudoStates |= PseudoStates.Checked;
+                rootElement.SetCheckedPseudoState(true);
             }
             else
             {
                 rootElement.RemoveFromClassList(BaseVerticalCollectionView.itemSelectedVariantUssClassName);
-                rootElement.pseudoStates &= ~PseudoStates.Checked;
+                rootElement.SetCheckedPseudoState(false);
             }
         }
 

@@ -3,10 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
-using System.Linq;
-using System;
 
 namespace UnityEditorInternal
 {
@@ -56,20 +53,6 @@ namespace UnityEditorInternal
                     }
                     return true;
                 }
-                return false;
-            }
-        }
-
-        public bool isEditable
-        {
-            get
-            {
-                if (m_Curves.Length > 0)
-                {
-                    bool isReadOnly = Array.Exists(m_Curves, curve => !curve.animationIsEditable);
-                    return !isReadOnly;
-                }
-
                 return false;
             }
         }

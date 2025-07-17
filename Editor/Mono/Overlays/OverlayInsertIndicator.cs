@@ -8,6 +8,13 @@ namespace UnityEditor.Overlays
 {
     class OverlayInsertIndicator : VisualElement
     {
+        public enum InsertIndicatorStyle
+        {
+            Normal,
+            Toolbar,
+            DynamicPanel
+        }
+
         const string k_ClassName = "unity-overlay-insert-indicator";
         const string k_VerticalState = k_ClassName + "--vertical";
         const string k_Horizontal = k_ClassName + "--horizontal";
@@ -15,6 +22,7 @@ namespace UnityEditor.Overlays
         const string k_MarkerClass = k_ClassName + "__marker";
         const string k_FirstVisibleClass = k_ClassName + "--first-visible";
         const string k_InToolbarClass = k_ClassName + "--in-toolbar";
+        const string k_InDynamicPanelClass = k_ClassName + "--in-dynamic-panel";
 
         readonly VisualElement m_Visual;
         readonly VisualElement m_Marker;
@@ -59,14 +67,16 @@ namespace UnityEditor.Overlays
             m_Visual.style.display = DisplayStyle.Flex;
         }
 
-        public void Setup(bool vertical, bool inToolbar, bool firstVisible)
+        public void Setup(bool vertical, InsertIndicatorStyle insertIndicatorStyle, bool firstVisible)
         {
             style.width = StyleKeyword.Null;
             style.height = StyleKeyword.Null;
+            style.alignSelf = StyleKeyword.Null;
             EnableInClassList(k_VerticalState, vertical);
             EnableInClassList(k_Horizontal, !vertical);
             EnableInClassList(k_FirstVisibleClass, firstVisible);
-            m_Visual.EnableInClassList(k_InToolbarClass, inToolbar);
+            m_Visual.EnableInClassList(k_InToolbarClass, insertIndicatorStyle == InsertIndicatorStyle.Toolbar);
+            m_Visual.EnableInClassList(k_InDynamicPanelClass, insertIndicatorStyle == InsertIndicatorStyle.DynamicPanel);
         }
     }
 }

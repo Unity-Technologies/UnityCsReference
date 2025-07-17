@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
-    internal enum FeatureState
+    internal enum FeatureDependencyState
     {
         None,
         Info,
@@ -20,7 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public IPackageVersion packageVersion { get; }
         public string packageName { get; }
 
-        public FeatureDependencyItem(IPackageVersion featureVersion, IPackageVersion featureDependencyVersion, FeatureState state = FeatureState.None)
+        public FeatureDependencyItem(IPackageVersion featureVersion, IPackageVersion featureDependencyVersion, FeatureDependencyState state = FeatureDependencyState.None)
         {
             packageVersion = featureDependencyVersion;
             packageName = featureDependencyVersion.package.uniqueId;
@@ -30,7 +30,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             Add(m_Name);
 
             m_State = new VisualElement { name = "versionState" };
-            if (state == FeatureState.Customized && featureVersion.isInstalled)
+            if (state == FeatureDependencyState.Customized && featureVersion.isInstalled)
             {
                 m_State.AddToClassList(state.ToString().ToLower());
                 m_State.tooltip = L10n.Tr("This package has been manually customized");
@@ -81,25 +81,25 @@ namespace UnityEditor.PackageManager.UI.Internal
             cache = new VisualElementCache(root);
         }
 
-        public FeatureState GetFeatureState(IPackageVersion version)
+        public FeatureDependencyState GetFeatureDependencyState(IPackageVersion version)
         {
             if (version == null)
-                return FeatureState.None;
+                return FeatureDependencyState.None;
 
             var package = version.package;
             var installedVersion = package?.versions.installed;
             if (installedVersion == null)
-                return FeatureState.None;
+                return FeatureDependencyState.None;
 
             var recommendedVersionExistsButNotInstalled = package.versions.recommended?.isInstalled == false;
             // User manually decide to install a different version
             if ((installedVersion.isDirectDependency && recommendedVersionExistsButNotInstalled) || installedVersion.HasTag(PackageTag.InDevelopment))
-                return FeatureState.Customized;
+                return FeatureDependencyState.Customized;
             // The installed version is changed by the SAT solver, not overridden by user
             if (recommendedVersionExistsButNotInstalled)
-                return FeatureState.Info;
+                return FeatureDependencyState.Info;
 
-            return FeatureState.None;
+            return FeatureDependencyState.None;
         }
 
         public override bool IsValid(IPackageVersion version)
@@ -124,9 +124,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             {
                 var dependencyPackage = m_PackageDatabase.GetPackage(dependency.name);
                 var packageVersion = dependencyPackage?.versions.recommended ?? dependencyPackage?.versions.primary;
-                var featureState = GetFeatureState(packageVersion);
+                var featureDependencyState = GetFeatureDependencyState(packageVersion);
 
-                var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureState) : new FeatureDependencyItem(dependency.name);
+                var item = packageVersion != null ? new FeatureDependencyItem(version, packageVersion, featureDependencyState) : new FeatureDependencyItem(dependency.name);
                 item.OnLeftClick(() =>
                 {
                     OnDependencyItemClicked(packageVersion, dependency.name);
@@ -181,18 +181,18 @@ namespace UnityEditor.PackageManager.UI.Internal
             var installedPackageVersion = version.package?.versions.installed;
             dependencyVersion.value = installedPackageVersion != null && installedPackageVersion.versionString != version?.versionString ? string.Format(L10n.Tr("Version {0} (Installed {1})"), version.versionString, installedPackageVersion.versionString) : string.Format(L10n.Tr("Version {0}"), version.versionString);
 
-            var featureState = GetFeatureState(version);
+            var featureDependencyState = GetFeatureDependencyState(version);
             versionState.ClearClassList();
-            if (featureState == FeatureState.Info)
+            if (featureDependencyState == FeatureDependencyState.Info)
             {
-                versionState.AddToClassList(featureState.ToString().ToLower());
+                versionState.AddToClassList(featureDependencyState.ToString().ToLower());
                 versionState.tooltip = string.Format(L10n.Tr("Using version {0} because at least one other package or feature depends on it"), installedPackageVersion.versionString);
             }
 
             var pageId = version.isDirectDependency ? InProjectPage.k_Id : UnityRegistryPage.k_Id;
             dependencyLink.clickable.clicked += () => PackageManagerWindow.OpenAndSelectPackage(version.name, pageId);
 
-            UIUtils.SetElementDisplay(dependencyInfoBox, featureState == FeatureState.Customized);
+            UIUtils.SetElementDisplay(dependencyInfoBox, featureDependencyState == FeatureDependencyState.Customized);
             if (installedPackageVersion?.HasTag(PackageTag.Custom) ?? false)
             {
                 dependencyInfoBox.readMoreUrl= $"https://docs.unity3d.com/{m_Application.shortUnityVersion}/Documentation/Manual/fs-details.html";
@@ -220,7 +220,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private SelectableLabel dependencyVersion => cache.Get<SelectableLabel>("featureDependencyVersion");
         private Label versionState => cache.Get<Label>("versionState");
         private SelectableLabel dependencyDesc => cache.Get<SelectableLabel>("featureDependencyDesc");
-        private HelpBoxWithOptionalReadMore dependencyInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("featureDependencyInfoBox");
+        private ExtendedHelpBox dependencyInfoBox => cache.Get<ExtendedHelpBox>("featureDependencyInfoBox");
         private VisualElement fillerLeftContainer => cache.Get<VisualElement>("fillerLeftContainer");
         private Button dependencyLink => cache.Get<Button>("featureDependencyLink");
     }

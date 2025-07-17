@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Properties;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
@@ -12,21 +13,23 @@ namespace UnityEngine.UIElements
     /// The filter parameter declaration for a <see cref="FilterFunctionDefinition"/>.
     /// </summary>
     [Serializable]
-    internal struct FilterParameterDeclaration
+
+    public struct FilterParameterDeclaration
     {
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private string m_Name;
 
         /// <summary>
         /// The parameter name, used for display in the UI Builder.
         /// </summary>
+        [CreateProperty]
         public string name
         {
             get => m_Name;
             set => m_Name = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private FilterParameter m_InterpolationDefaultValue;
 
         /// <summary>
@@ -35,11 +38,14 @@ namespace UnityEngine.UIElements
         /// <remarks>
         /// Example: Transition from source filter "blur(2px)" to destination "blur(2px) invert(80%)" would
         /// insert a default "invert(0%)" filter in the source declaration.
-        /// </remarks>  
+        /// </remarks>
+        [CreateProperty]
         public FilterParameter interpolationDefaultValue {
             get => m_InterpolationDefaultValue;
             set => m_InterpolationDefaultValue = value;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
 
         internal FilterParameter defaultValue;
     }
@@ -48,31 +54,34 @@ namespace UnityEngine.UIElements
     /// Represents a filter function definition that holds the parameters and effects of a filter.
     /// </summary>
     [Serializable]
-    internal sealed class FilterFunctionDefinition : ScriptableObject
+    public sealed class FilterFunctionDefinition : ScriptableObject
     {
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private string m_FilterName;
 
         /// <summary>The name of the filter function used for display.</summary>
+        [CreateProperty]
         public string filterName {
             get => m_FilterName;
             set => m_FilterName = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private FilterParameterDeclaration[] m_Parameters;
 
         /// <summary>The description of the function parameters.</summary>
         /// <remarks>A maximum of 4 parameters is supported. Extra parameters will be ignored.</remarks>
+        [CreateProperty]
         public FilterParameterDeclaration[] parameters {
             get => m_Parameters;
             set => m_Parameters = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private PostProcessingPass[] m_Passes;
 
         /// <summary>The post-processing effects applied by the filter function.</summary>
+        [CreateProperty]
         public PostProcessingPass[] passes {
             get => m_Passes;
             set => m_Passes = value;
@@ -83,21 +92,23 @@ namespace UnityEngine.UIElements
     /// Represents a binding of a parameter index to a post-processing material property.
     /// </summary>
     [Serializable]
-    internal struct ParameterBinding
+    public struct ParameterBinding
     {
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private int m_Index;
 
         /// <summary>The index of the parameter in the filter function.</summary>
+        [CreateProperty]
         public int index {
             get => m_Index;
             set => m_Index = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private string m_Name;
 
         /// <summary>The name of the material property.</summary>
+        [CreateProperty]
         public string name {
             get => m_Name;
             set => m_Name = value;
@@ -109,30 +120,33 @@ namespace UnityEngine.UIElements
     /// This is used as part of a <see cref="FilterFunctionDefinition"/>.
     /// </summary>
     [Serializable]
-    internal struct PostProcessingPass
+    public struct PostProcessingPass
     {
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private Material m_Material;
 
         /// <summary>The material to use for the effect.</summary>
+        [CreateProperty]
         public Material material {
             get => m_Material;
             set => m_Material = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private int m_PassIndex;
 
         /// <summary>The pass index to use in the material.</summary>
+        [CreateProperty]
         public int passIndex {
             get => m_PassIndex;
             set => m_PassIndex = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private ParameterBinding[] m_ParameterBindings;
 
         /// <summary>The parameter bindings for the effect.</summary>
+        [CreateProperty]
         public ParameterBinding[] parameterBindings {
             get => m_ParameterBindings;
             set => m_ParameterBindings = value;
@@ -148,11 +162,12 @@ namespace UnityEngine.UIElements
             set => m_ReadMargins = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private PostProcessingMargins m_WriteMargins;
 
         /// <summary>The extra margins, in points, required for the effect to write to destination texture.</summary>
         /// <remarks>If the <see cref="computeRequiredWriteMarginsCallback"/> callback is defined, this value is ignored.</remarks>
+        [CreateProperty]
         public PostProcessingMargins writeMargins {
             get => m_WriteMargins;
             set => m_WriteMargins = value;
@@ -162,13 +177,19 @@ namespace UnityEngine.UIElements
         /// <param name="mpb">The property block to fill from the callback.</param>
         /// <param name="func">The input filter function value.</param>
         public delegate void PrepareMaterialPropertyBlockDelegate(MaterialPropertyBlock mpb, FilterFunction func);
+
+        /// <summary>The optional callback to prepare the material property block for the effect.</summary>
         public PrepareMaterialPropertyBlockDelegate prepareMaterialPropertyBlockCallback { get; set; }
 
         /// <summary>The optional callback to compute the required read and write margins for the effect.</summary>
         /// <param name="func">The filter function value.</param>
         /// <returns>The required margins for that effect for that <see cref="FilterFunction"/>.</returns>
         public delegate PostProcessingMargins ComputeRequiredMarginsDelegate(FilterFunction func);
+
+        /// <summary>The optional callback to compute the required read margins for the effect.</summary>
         public ComputeRequiredMarginsDelegate computeRequiredReadMarginsCallback { get; set; }
+
+        /// <summary>The optional callback to compute the required write margins for the effect.</summary>
         public ComputeRequiredMarginsDelegate computeRequiredWriteMarginsCallback { get; set; }
     }
 
@@ -176,39 +197,43 @@ namespace UnityEngine.UIElements
     /// The post-processing margins required by a <see cref="FilterFunction"/>.
     /// </summary>
     [Serializable]
-    internal struct PostProcessingMargins
+    public struct PostProcessingMargins
     {
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private float m_Left;
 
         /// <summary>The left margin value.</summary>
+        [CreateProperty]
         public float left {
             get => m_Left;
             set => m_Left = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private float m_Top;
 
         /// <summary>The top margin value.</summary>
+        [CreateProperty]
         public float top {
             get => m_Top;
             set => m_Top = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private float m_Right;
 
         /// <summary>The right margin value.</summary>
+        [CreateProperty]
         public float right {
             get => m_Right;
             set => m_Right = value;
         }
 
-        [SerializeField]
+        [SerializeField, DontCreateProperty]
         private float m_Bottom;
 
         /// <summary>The bottom margin value.</summary>
+        [CreateProperty]
         public float bottom {
             get => m_Bottom;
             set => m_Bottom = value;

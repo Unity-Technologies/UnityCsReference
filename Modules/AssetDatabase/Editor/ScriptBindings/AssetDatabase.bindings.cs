@@ -116,7 +116,7 @@ namespace UnityEditor
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabase.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabaseUtility.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/ScriptBindings/AssetDatabase.bindings.h")]
-    [NativeHeader("Runtime/Core/PreventExecutionInState.h")]
+    [NativeHeader("NativeKernel/Core/PreventExecutionInState.h")]
     [NativeHeader("Modules/AssetDatabase/Editor/Public/AssetDatabasePreventExecution.h")]
     [NativeHeader("Editor/Src/PackageUtility.h")]
     [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
@@ -142,37 +142,52 @@ namespace UnityEditor
         // asset folders marked immutable are not modified by the asset database
         extern public static bool TryGetAssetFolderInfo(string path, out bool rootFolder, out bool immutable);
 
-        public static bool Contains(Object obj) { return Contains(obj.GetInstanceID()); }
-        extern public static bool Contains(int instanceID);
+        public static bool Contains(Object obj) { return Contains(obj.GetEntityId()); }
+        extern public static bool Contains(EntityId entityId);
+
+        [System.Obsolete(@"Please use Contains(EntityId) with the EntityId type instead.", false)]
+        public static bool Contains(int instanceID) => Contains((EntityId)instanceID);
 
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.CreateFolder() was called as part of running an import in a worker process.")]
         extern public static string CreateFolder(string parentFolder, string newFolderName);
 
-        public static bool IsMainAsset(Object obj) { return IsMainAsset(obj.GetInstanceID()); }
+        public static bool IsMainAsset(Object obj) { return IsMainAsset(obj.GetEntityId()); }
         [FreeFunction("AssetDatabase::IsMainAsset")]
-        extern public static bool IsMainAsset(int instanceID);
+        extern public static bool IsMainAsset(EntityId entityId);
 
-        public static bool IsSubAsset(Object obj) { return IsSubAsset(obj.GetInstanceID()); }
+        [System.Obsolete(@"Please use IsMainAsset(EntityId) with the EntityId type instead.", false)]
+        public static bool IsMainAsset(int instanceID) => IsMainAsset((EntityId)instanceID);
+
+        public static bool IsSubAsset(Object obj) { return IsSubAsset(obj.GetEntityId()); }
         [FreeFunction("AssetDatabase::IsSubAsset")]
-        extern public static bool IsSubAsset(int instanceID);
+        extern public static bool IsSubAsset(EntityId entityId);
+
+        [System.Obsolete(@"Please use IsSubAsset(EntityId) with the EntityId type instead.", false)]
+        public static bool IsSubAsset(int instanceID) => IsSubAsset((EntityId)instanceID);
 
         public static bool IsForeignAsset(Object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException("obj is null");
-            return IsForeignAsset(obj.GetInstanceID());
+            return IsForeignAsset(obj.GetEntityId());
         }
 
-        extern public static bool IsForeignAsset(int instanceID);
+        extern public static bool IsForeignAsset(EntityId entityId);
+
+        [System.Obsolete(@"Please use IsForeignAsset(EntityId) with the EntityId type instead.", false)]
+        public static bool IsForeignAsset(int instanceID) => IsForeignAsset((EntityId)instanceID);
 
         public static bool IsNativeAsset(Object obj)
         {
             if (obj == null)
                 throw new ArgumentNullException("obj is null");
-            return IsNativeAsset(obj.GetInstanceID());
+            return IsNativeAsset(obj.GetEntityId());
         }
 
-        extern public static bool IsNativeAsset(int instanceID);
+        extern public static bool IsNativeAsset(EntityId entityId);
+
+        [System.Obsolete(@"Please use IsNativeAsset(EntityId) with the EntityId type instead.", false)]
+        public static bool IsNativeAsset(int instanceID) => IsNativeAsset((EntityId)instanceID);
 
         [NativeThrows]
         extern public static int GetScriptableObjectsWithMissingScriptCount(string assetPath);
@@ -309,17 +324,28 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kImportingInWorkerProcess, PreventExecutionSeverity.PreventExecution_ManagedException, "AssetDatabase.AddObjectToAsset() was called as part of running an import in a worker process.")]
         extern private static void AddObjectToAsset_Obj([NotNull] Object newAsset, [NotNull] Object sameAssetFile);
 
-        extern static internal void AddInstanceIDToAssetWithRandomFileId(int instanceIDToAdd, Object assetObject, bool hide);
+        [System.Obsolete(@"Please use AddInstanceIDToAssetWithRandomFileId instead.", false)]
+        static internal void AddInstanceIDToAssetWithRandomFileId(int instanceIDToAdd, Object assetObject, bool hide) => AddEntityIdToAssetWithRandomFileId(instanceIDToAdd, assetObject, hide);
+        extern static internal void AddEntityIdToAssetWithRandomFileId(EntityId entityIdToAdd, Object assetObject, bool hide);
+
         [NativeThrows]
         extern public static void SetMainObject([NotNull] Object mainObject, string assetPath);
         extern public static string GetAssetPath(Object assetObject);
 
-        public static string GetAssetPath(int instanceID) { return GetAssetPathFromInstanceID(instanceID); }
-        [FreeFunction("::GetAssetPathFromInstanceID")]
-        extern private static string GetAssetPathFromInstanceID(int instanceID);
+        [System.Obsolete(@"Please use GetAssetPath(EntityId) with the EntityId parameter type instead.", false)]
+        public static string GetAssetPath(int instanceID) { return GetAssetPathFromEntityId(instanceID); }
+        public static string GetAssetPath(EntityId entityId) { return GetAssetPathFromEntityId(entityId); }
 
-        extern internal static int GetMainAssetInstanceID(string assetPath);
-        extern internal static int GetMainAssetOrInProgressProxyInstanceID(string assetPath);
+        [FreeFunction("::GetAssetPathFromEntityId")]
+        extern private static string GetAssetPathFromEntityId(EntityId entityId);
+
+        [System.Obsolete(@"Please use GetMainAssetEntityId instead.", false)]
+        internal static int GetMainAssetInstanceID(string assetPath) => GetMainAssetEntityId(assetPath);
+        [System.Obsolete(@"Please use GetMainAssetOrInProgressProxyEntityId instead.", false)]
+        internal static int GetMainAssetOrInProgressProxyInstanceID(string assetPath) => GetMainAssetOrInProgressProxyEntityId(assetPath);
+
+        extern internal static EntityId GetMainAssetEntityId(string assetPath);
+        extern internal static EntityId GetMainAssetOrInProgressProxyEntityId(string assetPath);
 
         [FreeFunction("::GetAssetOrScenePath")]
         extern public static string GetAssetOrScenePath(Object assetObject);
@@ -340,7 +366,16 @@ namespace UnityEditor
         {
             return (T)LoadAssetAtPath(assetPath, typeof(T));
         }
+        [NativeThrows]
+        [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
+        [PreventExecutionInState(AssetDatabasePreventExecution.kDomainBackup, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while domain backup is running, as this will change the underlying state.")]
+        extern public static Object LoadAssetByGUID(GUID assetGUID, Type type);
 
+        public static T LoadAssetByGUID<T>(GUID assetGUID) where T : Object
+        {
+            return (T)LoadAssetByGUID(assetGUID, typeof(T));
+        }
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern public static Object LoadMainAssetAtPath(string assetPath);
 
@@ -348,9 +383,10 @@ namespace UnityEditor
         [PreventExecutionInState(AssetDatabasePreventExecution.kGatheringDependenciesFromSourceFile, PreventExecutionSeverity.PreventExecution_ManagedException, "Assets may not be loaded while dependencies are being gathered, as these assets may not have been imported yet.")]
         extern internal static Object LoadMainAssetAtGUID(GUID assetGUID);
 
-        [FreeFunction("AssetDatabase::InstanceIDsToGUIDs")]
-        extern internal static void InstanceIDsToGUIDs(IntPtr instanceIDsPtr, IntPtr guidsPtr, int len);
+        [FreeFunction("AssetDatabase::EntityIdsToGUIDs")]
+        extern internal static void EntityIdsToGUIDs(IntPtr entityIdsPtr, IntPtr guidsPtr, int len);
 
+        [System.Obsolete(@"Please use EntityIDsToGUIDs() instead.", false)]
         public unsafe static void InstanceIDsToGUIDs(NativeArray<int> instanceIDs, NativeArray<GUID> guidsOut)
         {
             if (!instanceIDs.IsCreated)
@@ -362,11 +398,31 @@ namespace UnityEditor
             if (instanceIDs.Length != guidsOut.Length)
                 throw new ArgumentException("instanceIDs and guidsOut size mismatch!");
 
-            InstanceIDsToGUIDs((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), instanceIDs.Length);
+            // This obsolete method is only valid so long as EntityId is still 4 bytes (size of int)
+            Debug.Assert(sizeof(int) == sizeof(EntityId));
+
+            EntityIdsToGUIDs((IntPtr)instanceIDs.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), instanceIDs.Length);
         }
 
-        [FreeFunction("AssetDatabase::ReserveMonoScriptInstanceID")]
-        extern internal static int ReserveMonoScriptInstanceID(GUID guid);
+        public unsafe static void EntityIdsToGUIDs(NativeArray<EntityId> entityIds, NativeArray<GUID> guidsOut)
+        {
+            if (!entityIds.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(entityIds));
+
+            if (!guidsOut.IsCreated)
+                throw new ArgumentException("NativeArray is uninitialized", nameof(guidsOut));
+
+            if (entityIds.Length != guidsOut.Length)
+                throw new ArgumentException("entityIds and guidsOut size mismatch!");
+
+            EntityIdsToGUIDs((IntPtr)entityIds.GetUnsafeReadOnlyPtr(), (IntPtr)guidsOut.GetUnsafePtr(), entityIds.Length);
+        }
+
+        [FreeFunction("AssetDatabase::ReserveMonoScriptEntityId")]
+        extern internal static EntityId ReserveMonoScriptEntityId(GUID guid);
+
+        [System.Obsolete(@"Please use ReserveMonoScriptEntityId() instead.", false)]
+        internal static int ReserveMonoScriptInstanceID(GUID guid) => ReserveMonoScriptEntityId(guid);
 
         extern public static System.Type GetMainAssetTypeAtPath(string assetPath);
 
@@ -390,12 +446,25 @@ namespace UnityEditor
         extern public static void Refresh([uei.DefaultValue("ImportAssetOptions.Default")] ImportAssetOptions options);
 
         [FreeFunction("::CanOpenAssetInEditor")]
-        extern public static bool CanOpenAssetInEditor(int instanceID);
+        extern public static bool CanOpenAssetInEditor(EntityId entityId);
+        [System.Obsolete(@"Please use CanOpenAssetInEditor(EntityId) with the EntityId parameter type instead.", false)]
+        public static bool CanOpenAssetInEditor(int instanceID) => CanOpenAssetInEditor((EntityId)instanceID);
 
-        [uei.ExcludeFromDocs] public static bool OpenAsset(int instanceID) { return OpenAsset(instanceID, -1); }
-        public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset(instanceID, lineNumber, -1); }
+        [uei.ExcludeFromDocs] public static bool OpenAsset(EntityId entityId) { return OpenAsset(entityId, -1, -1); }
+
+        [System.Obsolete(@"Please use OpenAsset(EntityId) with the EntityId parameter type instead.", false)]
+        [uei.ExcludeFromDocs] public static bool OpenAsset(int instanceID) { return OpenAsset((EntityId)instanceID, -1, -1); }
+
+        public static bool OpenAsset(EntityId entityId, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset(entityId, lineNumber, -1); }
+
+        [System.Obsolete(@"Please use OpenAsset(EntityId, int) with the EntityId parameter type instead.", false)]
+        public static bool OpenAsset(int instanceID, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset((EntityId)instanceID, lineNumber, -1); }
+
         [FreeFunction("::OpenAsset")]
-        extern public static bool OpenAsset(int instanceID, int lineNumber, int columnNumber);
+        extern public static bool OpenAsset(EntityId entityId, int lineNumber, int columnNumber);
+
+        [System.Obsolete(@"Please use OpenAsset(EntityId, int, int) with the EntityId parameter type instead.", false)]
+        public static bool OpenAsset(int instanceID, int lineNumber, int columnNumber) => OpenAsset((EntityId)instanceID, lineNumber, columnNumber);
 
         [uei.ExcludeFromDocs] public static bool OpenAsset(Object target) { return OpenAsset(target, -1); }
         public static bool OpenAsset(Object target, [uei.DefaultValue("-1")] int lineNumber) { return OpenAsset(target, lineNumber, -1); }
@@ -403,7 +472,7 @@ namespace UnityEditor
         static public bool OpenAsset(Object target, int lineNumber, int columnNumber)
         {
             if (target)
-                return OpenAsset(target.GetInstanceID(), lineNumber, columnNumber);
+                return OpenAsset(target.GetEntityId(), lineNumber, columnNumber);
             else
                 return false;
         }
@@ -493,7 +562,7 @@ namespace UnityEditor
             string guidString;
             long localID;
 
-            if (TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guidString, out localID))
+            if (TryGetGUIDAndLocalFileIdentifier(obj.GetEntityId(), out guidString, out localID))
                 SaveAssetIfDirty(new GUID(guidString));
         }
 
@@ -775,13 +844,14 @@ namespace UnityEditor
         extern internal static System.Type GetTypeFromVisibleGUIDAndLocalFileIdentifier(GUID guid, long localId);
 
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
-        extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
+        extern private static bool GetGUIDAndLocalIdentifierInFile(EntityId entityId, out GUID outGuid, out long outLocalId);
 
         public static bool TryGetGUIDAndLocalFileIdentifier(Object obj, out string guid, out long localId)
         {
-            return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
+            return TryGetGUIDAndLocalFileIdentifier(obj.GetEntityId(), out guid, out localId);
         }
 
+        [System.Obsolete(@"Please use TryGetGUIDAndLocalFileIdentifier(EntityId, out string, out long) with the EntityId type instead.", false)]
         public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out long localId)
         {
             GUID uguid;
@@ -790,9 +860,17 @@ namespace UnityEditor
             return res;
         }
 
+        public static bool TryGetGUIDAndLocalFileIdentifier(EntityId entityId, out string guid, out long localId)
+        {
+            GUID uguid;
+            bool res = GetGUIDAndLocalIdentifierInFile(entityId, out uguid, out localId);
+            guid = uguid.ToString();
+            return res;
+        }
+
         public static bool TryGetGUIDAndLocalFileIdentifier<T>(LazyLoadReference<T> assetRef, out string guid, out long localId) where T : UnityEngine.Object
         {
-            return TryGetGUIDAndLocalFileIdentifier(assetRef.instanceID, out guid, out localId);
+            return TryGetGUIDAndLocalFileIdentifier((EntityId)assetRef.instanceID, out guid, out localId);
         }
 
         public static void ForceReserializeAssets()

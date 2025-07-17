@@ -164,7 +164,7 @@ namespace Unity.UI.Builder
             ClearUndo();
             ClearBackup();
 
-            var restoredStyleSheet = StyleSheetUtilities.CreateInstance();
+            var restoredStyleSheet = StyleSheetUtility.CreateInstanceWithHideFlags();
             var ussImporter = new BuilderStyleSheetImporter();
             ussImporter.Import(restoredStyleSheet, ussPreview);
             m_BackupStyleSheet = styleSheet.DeepCopy();

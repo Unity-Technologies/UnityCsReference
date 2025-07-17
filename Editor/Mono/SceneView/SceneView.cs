@@ -245,11 +245,11 @@ namespace UnityEditor
         {
             Transform parentObject = null;
             var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
-            string activeSceneGUID = prefabStage != null ? prefabStage.scene.guid : EditorSceneManager.GetActiveScene().guid;
-            int id = SceneHierarchy.GetDefaultParentForSession(activeSceneGUID);
-            if (id != 0)
+            var activeScene = prefabStage != null ? prefabStage.scene : EditorSceneManager.GetActiveScene();
+            var id = activeScene.defaultParent;
+            if (id != EntityId.None)
             {
-                var objectFromInstanceID = EditorUtility.InstanceIDToObject(id) as GameObject;
+                var objectFromInstanceID = EditorUtility.EntityIdToObject(id) as GameObject;
                 parentObject = objectFromInstanceID?.gameObject?.transform;
             }
 
@@ -2602,6 +2602,7 @@ namespace UnityEditor
             sceneViewGrids.UpdateGridColor();
 
             Color origColor = GUI.color;
+            var origLabelWidth = EditorGUIUtility.labelWidth;
             Rect origCameraRect = m_Camera.rect;
             Rect windowSpaceCameraRect = cameraViewport;
 
@@ -2781,6 +2782,9 @@ namespace UnityEditor
 
             GUI.EndGroup();
             GUI.color = origColor;
+
+            // Reset label width (UUM-110450)
+            EditorGUIUtility.labelWidth = origLabelWidth;
 
             EndWindows();
 
@@ -3638,13 +3642,13 @@ namespace UnityEditor
             m_DragEditorCache = null;
         }
 
-        bool CallEditorDragFunctions(IList<Object> dragAndDropObjects)
+        bool CallEditorDragFunctions(IList<EntityId> dragAndDropEntityIds)
         {
             Event evt = Event.current;
 
             SpriteUtility.OnSceneDrag(this);
 
-            if (evt.type == EventType.Used || dragAndDropObjects.Count == 0) return true;
+            if (evt.type == EventType.Used || dragAndDropEntityIds.Count == 0) return true;
 
             if (m_DragEditorCache == null)
                 m_DragEditorCache = new EditorCache(EditorFeatures.OnSceneDrag);
@@ -3653,27 +3657,27 @@ namespace UnityEditor
 
             // We iterate through dragged items backwards to preserve the alphabetical order
             // of GameObjects when they are created in hierarchy once drag is performed
-            for (int i = dragAndDropObjects.Count - 1; i >= 0; i--)
+            for (int i = dragAndDropEntityIds.Count - 1; i >= 0; i--)
             {
-                if (dragAndDropObjects[i] == null)
+                if (dragAndDropEntityIds[i] == null)
                     continue;
 
-                EditorWrapper w = m_DragEditorCache[dragAndDropObjects[i]];
+                EditorWrapper w = m_DragEditorCache[InternalEditorUtility.GetObjectFromInstanceID(dragAndDropEntityIds[i])];
 
                 if (w == null)
                 {
                     allHandled = false;
                     continue;
                 }
-                w.OnSceneDrag(this, dragAndDropObjects.Count - 1 - i);
+                w.OnSceneDrag(this, dragAndDropEntityIds.Count - 1 - i);
             }
 
             return allHandled;
         }
 
-        internal static bool CanDoDrag(ICollection<Object> objects)
+        internal static bool CanDoDrag(ICollection<EntityId> entityIds)
         {
-            if (objects.Count < 2) return true;
+            if (entityIds.Count < 2) return true;
 
             int gameObjectCount = 0;
             int assetCount = 0;
@@ -3688,8 +3692,9 @@ namespace UnityEditor
             // where we can handle it in a way that benefit the user. For example multiple skybox
             // materials doesn't make sense and dropping multiple materials onto geometry will only
             // drop the first material on the hovered material entry.
-            foreach (Object obj in objects)
+            foreach (var entityId in entityIds)
             {
+                var obj = InternalEditorUtility.GetObjectFromInstanceID(entityId);
                 if (obj.GetType() == typeof(GameObject))
                 {
                     gameObjectCount++;
@@ -3711,7 +3716,7 @@ namespace UnityEditor
 
         internal void HandleDragging(Event evt)
         {
-            Object[] dragAndDropObjects = DragAndDrop.objectReferences;
+            var dragAndDropIds = DragAndDrop.entityIds;
 
             switch (evt.type)
             {
@@ -3723,7 +3728,7 @@ namespace UnityEditor
                         return;
                     }
 
-                    if (!CanDoDrag(dragAndDropObjects))
+                    if (!CanDoDrag(dragAndDropIds))
                     {
                         DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
                         return;
@@ -3747,7 +3752,7 @@ namespace UnityEditor
                     var allObjectsHandled = false;
                     if (!dropHandled)
                     {
-                        allObjectsHandled = CallEditorDragFunctions(dragAndDropObjects);
+                        allObjectsHandled = CallEditorDragFunctions(dragAndDropIds);
                     }
 
                     if (evt.type == EventType.Used || allObjectsHandled)
@@ -3772,7 +3777,7 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.DragExited:
-                    CallEditorDragFunctions(dragAndDropObjects);
+                    CallEditorDragFunctions(dragAndDropIds);
                     CleanupEditorDragFunctions();
                     break;
             }

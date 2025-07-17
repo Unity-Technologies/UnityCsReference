@@ -45,15 +45,15 @@ namespace UnityEngine.UIElements
                     new (nameof(columnName), "column-name"),
                     new (nameof(columnIndex), "column-index"),
                     new (nameof(direction), "direction"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
             [SerializeField] string columnName;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnName_UxmlAttributeFlags;
             [SerializeField] int columnIndex;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnIndex_UxmlAttributeFlags;
             [SerializeField] SortDirection direction;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnName_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags columnIndex_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
             #pragma warning restore 649
 

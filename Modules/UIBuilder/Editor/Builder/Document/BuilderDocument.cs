@@ -324,7 +324,11 @@ namespace Unity.UI.Builder
         //
 
         public bool SaveUnsavedChanges(string manualUxmlPath = null, bool isSaveAs = false)
-            => activeOpenUXMLFile.SaveNewDocument(null, isSaveAs, out var needsFullRefresh, manualUxmlPath);
+        {
+            var documentRootElement = primaryViewportWindow.documentRootElement;
+            return activeOpenUXMLFile.SaveNewDocument(documentRootElement, isSaveAs, out var needsFullRefresh,
+                manualUxmlPath);
+        }
 
         public bool SaveNewDocument(
             VisualElement documentRootElement, bool isSaveAs,
@@ -444,9 +448,8 @@ namespace Unity.UI.Builder
         public void AddSubDocument(TemplateAsset vea = null)
         {
             var newUXMLFile = new BuilderDocumentOpenUXML();
-            var templateAssetIndex = activeOpenUXMLFile.visualTreeAsset.templateAssets.IndexOf(vea);
 
-            newUXMLFile.openSubDocumentParentSourceTemplateAssetIndex = templateAssetIndex;
+            newUXMLFile.templateAsset = vea;
             newUXMLFile.openSubDocumentParentIndex = m_ActiveOpenUXMLFileIndex;
 
             m_OpenUXMLFiles.Add(newUXMLFile);

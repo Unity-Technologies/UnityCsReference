@@ -48,10 +48,14 @@ namespace UnityEditor
         static class Content
         {
             public static readonly string classicWarning = EditorGUIUtility.TrTextContent("You have changed the active physics SDK integration. For the change to take effect please restart the Editor.").text;
-            public static readonly string classicFallbackWarning = EditorGUIUtility.TrTextContent($"{classicWarning} \nNote: Setting this value to 'None' will cause all physics APIs and Components to no longer work.").text;
+            public static readonly string classicFallbackWarning = EditorGUIUtility.TrTextContent($"{classicWarning} \nNote: Setting this value to NONE will cause all physics APIs and Components to no longer work. Coincidentally setting this value to NONE is required for the Physics module to be automatically stripped when 'Strip Engine Code' is enabled.").text;
+            public static readonly string autoSyncTransformsWarning = EditorGUIUtility.TrTextContent("This option has been deprecated and is for legacy support only. It can result in extremely poor performance when ON. For this reason, it defaults to being OFF.").text;
+            public static readonly string reuseCollisionCallbacksWarning = EditorGUIUtility.TrTextContent("This option boosts performance when ON. With it OFF it can result in poor performance due to GC pressure. For this reason, it defaults to being ON.").text;
 
-            public static readonly string classicDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's GameObject API. {dropDownTooltipBase}").text;
+
+            public static readonly string classicDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's GameObject API. {dropDownTooltipBase}. \nPlease note that only by setting this property to NONE can the Physics module by automatically stripped.").text;
             public static readonly string entitiesDropDownTooltip = EditorGUIUtility.TrTextContent($"The current physics SDK integration used by Unity's Entities API. {dropDownTooltipBase}").text;
+            
             const string dropDownTooltipBase = "Changing this value to another SDK integration has the potential to change the behavior of your physics Components. \nTweaking your physics simulation might be necessary due to behavior differences between different physics SDKs.";
         }
 
@@ -199,34 +203,26 @@ namespace UnityEditor
             var horizontalLabel = userData.sideLabels[userData.gridX];
             var verticalLabel = userData.topLabels[(userData.topLabels.childCount - 1) - userData.gridY];
 
-            //both side and top labels have the same number of active labels
-            //but only top labels has the exact number of children as it is being generated.
-            int totalLabelsPerside = userData.topLabels.childCount;
-
             //horizontal bar
             var horizontalBox = new Box();
             horizontalBox.AddToClassList("project-settings___physics__highlight-box");
             horizontalBox.style.height = horizontalLabel.resolvedStyle.height;
-            horizontalBox.style.width =
-                horizontalLabel.resolvedStyle.width + (totalLabelsPerside - userData.gridX) * (toggle.resolvedStyle.width + toggle.resolvedStyle.marginLeft + toggle.resolvedStyle.marginRight);
+            //we compute the width of the horizontal line by using the label width + grabbing the current toggle's parent as it is by default on grid X
+            horizontalBox.style.width = horizontalLabel.resolvedStyle.width + toggle.parent.resolvedStyle.width; 
 
             //absolute pos calculate for horizontal bar
-            horizontalBox.style.left = userData.sideLabels.resolvedStyle.width - horizontalLabel.resolvedStyle.width;
-            horizontalBox.style.top = userData.topLabels.resolvedStyle.width
-            + ((horizontalLabel.resolvedStyle.height) * userData.gridX) + horizontalLabel.resolvedStyle.paddingTop;
-
+            horizontalBox.style.left = horizontalLabel.resolvedStyle.left;
+            horizontalBox.style.top = userData.topLabels.resolvedStyle.width + horizontalLabel.resolvedStyle.top;
 
             //vertical bar
             var verticalBox = new Box();
             verticalBox.AddToClassList("project-settings___physics__highlight-box");
             verticalBox.style.width = verticalLabel.resolvedStyle.height;
-            verticalBox.style.height =
-                verticalLabel.resolvedStyle.width +
-                horizontalLabel.resolvedStyle.paddingRight +
-                (totalLabelsPerside - userData.gridY) * (toggle.resolvedStyle.height + toggle.resolvedStyle.marginTop + toggle.resolvedStyle.marginBottom);
+            //we compute the height of the vertical bar by taking the label width + going up the hierarchy of toggle lines and finding the toggle line that matches our gridY
+            verticalBox.style.height = verticalLabel.resolvedStyle.width + toggle.parent.parent[userData.gridY].resolvedStyle.width;
 
-            //absolute pos calculate for vertical bar
-            verticalBox.style.left = userData.sideLabels.resolvedStyle.width + verticalLabel.resolvedStyle.height * userData.gridY;
+            //absolute pos calculate for vertical bar, we use the .top (normally we would use .right but the label is rotated 90 deg so we need to account for that rotation) of the vertical label as part of the offset.
+            verticalBox.style.left = userData.sideLabels.resolvedStyle.width + userData.topLabels.resolvedStyle.height - verticalLabel.resolvedStyle.top - verticalLabel.resolvedStyle.height;
             verticalBox.style.top = userData.topLabels.resolvedStyle.width - verticalLabel.resolvedStyle.width;
 
             userData.overlay.Add(horizontalBox);
@@ -460,8 +456,34 @@ namespace UnityEditor
             tab.Add(new PropertyField(serializedObject.FindProperty("m_QueriesHitTriggers")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_EnableAdaptiveForce")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_SimulationMode")));
-            tab.Add(new PropertyField(serializedObject.FindProperty("m_AutoSyncTransforms")));
-            tab.Add(new PropertyField(serializedObject.FindProperty("m_ReuseCollisionCallbacks")));
+
+            var autoSyncTransformProp = serializedObject.FindProperty("m_AutoSyncTransforms");
+            var legacyAutosyncTransforms = new PropertyField(autoSyncTransformProp);
+            var autoSyncTransformsWarningBox = new HelpBox(Content.autoSyncTransformsWarning, HelpBoxMessageType.Warning);
+            autoSyncTransformsWarningBox.style.display = autoSyncTransformProp.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+
+            legacyAutosyncTransforms.RegisterValueChangeCallback((evt) =>
+            {
+                autoSyncTransformsWarningBox.style.display = autoSyncTransformProp.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            tab.Add(legacyAutosyncTransforms);
+            tab.Add(autoSyncTransformsWarningBox);
+
+            var reuseCollisionCallbacksProp = serializedObject.FindProperty("m_ReuseCollisionCallbacks");
+            var legacyReuseCollisionCallbacks = new PropertyField(reuseCollisionCallbacksProp);
+            var reuseCollisionCallbacksWarningBox = new HelpBox(Content.reuseCollisionCallbacksWarning, HelpBoxMessageType.Warning);
+            reuseCollisionCallbacksWarningBox.style.display = !autoSyncTransformProp.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+
+            legacyReuseCollisionCallbacks.RegisterValueChangeCallback((evt) =>
+            {
+                reuseCollisionCallbacksWarningBox.style.display = !reuseCollisionCallbacksProp.boolValue ? DisplayStyle.Flex : DisplayStyle.None;
+            });
+
+            tab.Add(legacyReuseCollisionCallbacks);
+            tab.Add(reuseCollisionCallbacksWarningBox);
+
+
             tab.Add(new PropertyField(serializedObject.FindProperty("m_InvokeCollisionCallbacks")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_GenerateOnTriggerStayEvents")));
             tab.Add(new PropertyField(serializedObject.FindProperty("m_ContactPairsMode")));

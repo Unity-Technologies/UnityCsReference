@@ -298,7 +298,10 @@ namespace UnityEngine.UIElements
                 if (collection.TryGetBindingData(evt.property, out var bindingData) &&
                     target.TryGetBinding(evt.property, out var current) &&
                     bindingData.binding == current)
-                    m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(new ChangesFromUI(bindingData));
+                {
+                    if (!m_Panel.dataBindingManager.m_IgnoreUIChangesData.ShouldIgnoreChange(target, current, evt.property))
+                        m_Panel.dataBindingManager.m_DetectedChangesFromUI.Add(new ChangesFromUI(bindingData));
+                }
             }
 
             public void StopTrackingBinding(VisualElement element, BindingData binding)
@@ -529,11 +532,18 @@ namespace UnityEngine.UIElements
                 if (null == dataSource)
                     return;
 
-                m_SourcesToRemove.Remove(dataSource);
+                // If the data source was scheduled to be removed, then the callbacks have already
+                // been removed, so we should force them to be added.
+                var shouldRegisterChangeTracking = m_SourcesToRemove.Remove(dataSource);
 
                 if (!m_SourceInfos.TryGetValue(dataSource, out var info))
                 {
                     m_SourceInfos[dataSource] = info = GetPooledSourceInfo();
+                    shouldRegisterChangeTracking = true;
+                }
+
+                if (shouldRegisterChangeTracking)
+                {
                     if (dataSource is INotifyBindablePropertyChanged notifier)
                         notifier.propertyChanged += m_Handler;
 
@@ -774,6 +784,7 @@ namespace UnityEngine.UIElements
         readonly HierarchyDataSourceTracker m_DataSourceTracker;
         readonly HierarchyBindingTracker m_BindingsTracker;
         readonly List<ChangesFromUI> m_DetectedChangesFromUI;
+        private IgnoreUIChangesData m_IgnoreUIChangesData;
 
         internal DataBindingManager(BaseVisualElementPanel panel)
         {
@@ -884,6 +895,52 @@ namespace UnityEngine.UIElements
         internal IEnumerable<VisualElement> GetUnorderedBoundElements()
         {
             return m_BindingsTracker.GetUnorderedBoundElements();
+        }
+
+        struct IgnoreUIChangesData
+        {
+            public VisualElement element;
+            public Binding binding;
+            public BindingId bindingId;
+
+            public bool ShouldIgnoreChange(VisualElement ve, Binding b, BindingId id)
+            {
+                return this.element == ve &&
+                       this.binding == b &&
+                       this.bindingId == id;
+            }
+        }
+
+        public struct IgnoreUIChangesScope : IDisposable
+        {
+            private IgnoreUIChangesData m_ScopeData;
+            private DataBindingManager manager;
+
+            internal IgnoreUIChangesScope(
+                DataBindingManager manager,
+                VisualElement target,
+                BindingId bindingId,
+                Binding binding)
+            {
+                this.manager = manager;
+                m_ScopeData = this.manager.m_IgnoreUIChangesData;
+                this.manager.m_IgnoreUIChangesData = new IgnoreUIChangesData
+                {
+                    element = target,
+                    binding = binding,
+                    bindingId = bindingId
+                };
+            }
+
+            public void Dispose()
+            {
+                manager.m_IgnoreUIChangesData = m_ScopeData;
+            }
+        }
+
+        public IgnoreUIChangesScope IgnoreChangesScope(VisualElement target, BindingId bindingId, Binding binding)
+        {
+            return new IgnoreUIChangesScope(this, target, bindingId, binding);
         }
 
         internal List<ChangesFromUI> GetChangedDetectedFromUI()

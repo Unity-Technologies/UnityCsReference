@@ -20,12 +20,12 @@ namespace UnityEditor
             public GUIContent s_MaxRecursionDepthText = EditorGUIUtility.TrTextContent("Max. Recursion Depth", "Limit on ray recursion for the Ray Tracing pipeline. This is defined in the shader by using max_recursion_depth pragma(e.g. \"#pragma max_recursion_depth 5\"). Applications should pick a limit that is as low as absolutely necessary. A value of 1 means that only primary rays can be cast.");
             public GUIContent s_PlatformList = EditorGUIUtility.TrTextContent("Platforms:");
             public GUIContent s_NotSupported = EditorGUIUtility.TrTextContent("Ray Tracing Shader not supported! No graphics APIs with Ray Tracing support found in the graphics APIs list or the importing process failed.");
-            public GUIContent s_Index = EditorGUIUtility.TrTextContent("Index");
             public GUIContent s_Name = EditorGUIUtility.TrTextContent("Name");
             public GUIContent s_PayloadSize = EditorGUIUtility.TrTextContent("Payload Size (Bytes)");
             public GUIContent s_ParamSize = EditorGUIUtility.TrTextContent("Param. Size (Bytes)");
             public GUIContent s_RayGenShaderNames = EditorGUIUtility.TrTextContent("Ray Generation Shaders", "The list of all ray generation shaders in the shader file. Only one ray generation shader can be executed at a time.");
             public GUIContent s_MissShaderNames = EditorGUIUtility.TrTextContent("Miss Shaders", "The list of all miss shaders in the shader file. The index of the miss shader to execute is specified when calling TraceRay HLSL function.");
+            public GUIContent s_DefaultHitGroupShaderNames = EditorGUIUtility.TrTextContent("Default Hit Shaders", "The list of all hit shaders in the shader file.");
             public GUIContent s_CallableShaderNames = EditorGUIUtility.TrTextContent("Callable Shaders", "The list of all callable shaders in the shader file. The index of the callable shader to execute is specified when calling CallShader HLSL function.");
             public GUIStyle s_LabelStyle = new GUIStyle(EditorStyles.boldLabel);
             public Styles()
@@ -71,6 +71,58 @@ namespace UnityEditor
             m_MaxRecursionDepth = serializedObject.FindProperty("m_MaxRecursionDepth");
         }
 
+        void ShowDefaultHitGroupShaderList(string closestHitShaderName, int closestHitRayPayloadSize, string anyHitShaderName, int anyHitRayPayloadSize, string intersectionShaderName)
+        {
+            GUIStyle messageStyle = "CN StatusInfo";
+
+            float lineHeight = messageStyle.CalcHeight(EditorGUIUtility.TempContent("ShaderName"), 100);
+
+            Rect rHeader = EditorGUILayout.GetControlRect(false, lineHeight);
+
+            Vector2 shaderNameColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_Name);
+            shaderNameColumnSize.x += 15;
+            GUI.Label(rHeader, styles.s_Name, EditorStyles.boldLabel);
+
+            Vector2 payloadColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_PayloadSize);
+
+            rHeader.xMin = rHeader.xMax - payloadColumnSize.x - 15;
+            GUI.Label(rHeader, styles.s_PayloadSize, EditorStyles.boldLabel);
+
+            GUILayout.BeginVertical(GUI.skin.box);
+
+            if (closestHitShaderName != "")
+            {
+                Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
+
+                GUI.Label(r, closestHitShaderName, EditorStyles.textArea);
+
+                r.xMin = r.xMax - payloadColumnSize.x - 10;
+                GUI.Label(r, closestHitRayPayloadSize.ToString(), EditorStyles.textArea);
+            }
+
+            if (anyHitShaderName != "")
+            {
+                Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
+
+                GUI.Label(r, anyHitShaderName, EditorStyles.textArea);
+
+                r.xMin = r.xMax - payloadColumnSize.x - 10;
+                GUI.Label(r, anyHitRayPayloadSize.ToString(), EditorStyles.textArea);
+            }
+
+            if (intersectionShaderName != "")
+            {
+                Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
+
+                GUI.Label(r, intersectionShaderName, EditorStyles.textArea);
+
+                r.xMin = r.xMax - payloadColumnSize.x - 10;
+                GUI.Label(r, "-", EditorStyles.textArea);
+            }
+
+            GUILayout.EndVertical();
+        }
+
         void ShowRayGenerationShaderList(string[] shaderNames)
         {
             GUILayout.BeginVertical(GUI.skin.box);
@@ -91,11 +143,6 @@ namespace UnityEditor
 
             Rect rHeader = EditorGUILayout.GetControlRect(false, lineHeight);
 
-            Vector2 indexColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_Index);
-            indexColumnSize.x += 15;
-            GUI.Label(rHeader, styles.s_Index, new GUIStyle(EditorStyles.boldLabel));
-
-            rHeader.xMin += indexColumnSize.x;
             GUI.Label(rHeader, styles.s_Name, EditorStyles.boldLabel);
 
             Vector2 payloadColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_PayloadSize);
@@ -109,9 +156,6 @@ namespace UnityEditor
             {
                 Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
 
-                GUI.Label(r, i.ToString(), EditorStyles.textArea);
-
-                r.xMin += indexColumnSize.x;
                 GUI.Label(r, missShaderNames[i], EditorStyles.textArea);
 
                 r.xMin = r.xMax - payloadColumnSize.x - 10;
@@ -129,11 +173,6 @@ namespace UnityEditor
 
             Rect rHeader = EditorGUILayout.GetControlRect(false, lineHeight);
 
-            Vector2 indexColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_Index);
-            indexColumnSize.x += 15;
-            GUI.Label(rHeader, styles.s_Index, EditorStyles.boldLabel);
-
-            rHeader.xMin += indexColumnSize.x;
             GUI.Label(rHeader, styles.s_Name, EditorStyles.boldLabel);
 
             Vector2 paramColumnSize = EditorStyles.boldLabel.CalcSize(styles.s_ParamSize);
@@ -147,9 +186,6 @@ namespace UnityEditor
             {
                 Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
 
-                GUI.Label(r, i.ToString(), EditorStyles.textArea);
-
-                r.xMin += indexColumnSize.x;
                 GUI.Label(r, callableShaderNames[i], EditorStyles.textArea);
 
                 r.xMin = r.xMax - paramColumnSize.x - 10;
@@ -178,11 +214,11 @@ namespace UnityEditor
             {
                 EditorGUILayout.Space();
 
-                EditorGUILayout.PropertyField(m_MaxRecursionDepth, styles.s_MaxRecursionDepthText);
-
                 int rayGenShaderCount = ShaderUtil.GetRayGenerationShaderCount(rts);
                 if (rayGenShaderCount > 0)
                 {
+                    EditorGUILayout.PropertyField(m_MaxRecursionDepth, styles.s_MaxRecursionDepthText);
+
                     GUILayout.Space(15.0f);
                     GUILayout.Label(styles.s_RayGenShaderNames, styles.s_LabelStyle);
 
@@ -227,6 +263,19 @@ namespace UnityEditor
                     }
 
                     ShowCallableShaderList(callableShaderNames, callableShaderParamsSize);
+                }
+
+                string closestHitShaderName = ShaderUtil.GetClosestHitShaderName(rts);
+                string anyHitShaderName = ShaderUtil.GetAnyHitShaderName(rts);
+                string intersectionShaderName = ShaderUtil.GetIntersectionShaderName(rts);
+
+                if (closestHitShaderName != "" || anyHitShaderName != "" || intersectionShaderName != "")
+                {
+                    GUILayout.Space(15.0f);
+
+                    GUILayout.Label(styles.s_DefaultHitGroupShaderNames, styles.s_LabelStyle);
+
+                    ShowDefaultHitGroupShaderList(closestHitShaderName, ShaderUtil.GetClosestHitShaderRayPayloadSize(rts), anyHitShaderName, ShaderUtil.GetAnyHitShaderRayPayloadSize(rts), intersectionShaderName);
                 }
             }
             else

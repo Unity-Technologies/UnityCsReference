@@ -239,7 +239,7 @@ namespace UnityEngine.UIElements
                         return true;
                     }
 					
-                    using var scope = new UITKScope(false);
+                    using var scope = new UITKScope();
                     eventHandled = DoDispatch(panel);
 
                 }

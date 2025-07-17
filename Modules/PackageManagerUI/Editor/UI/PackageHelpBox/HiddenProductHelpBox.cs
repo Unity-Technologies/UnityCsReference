@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             text = L10n.Tr("This asset has been set to Hidden.");
             messageType = HelpBoxMessageType.Info;
+            analyticsId = "hidden-product-help-box";
         }
 
         public override void Refresh(IPackageVersion version)

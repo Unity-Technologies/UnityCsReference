@@ -4,61 +4,46 @@
 
 using System;
 using UnityEditor;
-using UnityEditor.PackageManager.UI;
-using UnityEditor.Profiling.Analytics;
-using UnityEditorInternal;
-using UnityEngine;
+using UnityEditor.Profiling;
+using UnityEditor.UIElements;
+using UnityEditorInternal.Profiling;
 using UnityEngine.UIElements;
-using UnityEngine.UIElements.Experimental;
+using static Unity.Profiling.Editor.UI.TopMarkersModel;
 
 namespace Unity.Profiling.Editor.UI
 {
-    class BottlenecksDetailsViewController : ViewController
+    /*  The BottlenecksDetailsViewController has two responsibilities:
+     *      1. Allow a user to switch between the 'capture' summary and the 'selection' summary.
+     *          - This is achieved by embedding the relevant child view controller in response to a switch.
+     *          - When 'Capture' is selected, a RangeSummaryViewController is embedded and configured to show the whole capture.
+     *          - When 'Selection' is selected, a SelectionSummaryViewController is embedded and configured with the current selection range. Note that it is this SelectionSummaryViewController that is responsible for displaying either a RangeSummaryViewController or a FrameSummaryViewController, depending on if the selection is a range or a single frame.
+     *      2. Handle and respond to Profiler window interactions. These are:
+     *          - When Profiler data is cleared or loaded, ensure the child view controllers are reloaded now or when next displayed.
+     *          - When Profiler data is recording, ensure the child view controllers are reloaded once recording stops (via a timer).
+                - When a new selection is made in the Profiler window, ensure the SelectionSummaryViewController is reloaded now or when next displayed.
+     */
+    class BottlenecksDetailsViewController : ViewController, SummaryViewController.IResponder
     {
-        const string k_UxmlResourceName = "BottlenecksDetailsView.uxml";
-        const string k_UssClass_Dark = "bottlenecks-details-view__dark";
-        const string k_UssClass_Light = "bottlenecks-details-view__light";
-        const string k_UxmlIdentifier_CpuLabel = "bottlenecks-details-view__cpu-name-label";
-        const string k_UxmlIdentifier_GpuLabel = "bottlenecks-details-view__gpu-name-label";
-        const string k_UxmlIdentifier_CpuBar = "bottlenecks-details-view__cpu-duration-bar";
-        const string k_UxmlIdentifier_GpuBar = "bottlenecks-details-view__gpu-duration-bar";
-        const string k_UxmlIdentifier_CpuDurationLabel = "bottlenecks-details-view__cpu-duration-label";
-        const string k_UxmlIdentifier_GpuDurationLabel = "bottlenecks-details-view__gpu-duration-label";
-        const string k_UxmlIdentifier_TargetFrameDurationIndicator = "bottlenecks-details-view__target-frame-duration-indicator";
-        const string k_UxmlIdentifier_TargetFrameDurationIndicatorLabel = "bottlenecks-details-view__target-frame-duration-indicator__label";
-        const string k_UxmlIdentifier_TargetFrameDurationInstructionLabel = "bottlenecks-details-view__target-frame-duration-instruction-label";
-        const string k_UxmlIdentifier_DescriptionLabel = "bottlenecks-details-view__description-label";
-        const string k_UxmlIdentifier_NoDataLabel = "bottlenecks-details-view__no-data-label";
-        const string k_UssClass_DurationBarFillHighlighted = "bottlenecks-details-view__chart-bar__fill-highlighted";
-        const string k_UssClass_LinkCursor = "link-cursor";
-        const string k_LinkDescription_OpenCpuTimeline = "Open CPU Timeline";
-        const string k_LinkDescription_OpenProfileAnalyzer = "Open Profile Analyzer";
-        const string k_LinkDescription_OpenFrameDebugger = "Open Frame Debugger";
-        const string k_LinkDescription_OpenGpuProfilerDocumentation = "Open GPU Profiler Documentation";
-
-        static readonly string k_CpuActiveTimeTooltip = L10n.Tr("CPU Active Time is the duration within the frame that the CPU was doing work for.\n\nThis is computed by taking the longest thread duration between the main thread and the render thread, and subtracting the time that thread spent waiting, including waiting for 'present' and 'target FPS'.\n\nIt is possible for this duration to be longer than the 'CPU Time' value shown in the CPU Usage module's Timeline view when the Render Thread took longer than the Main Thread. This is because the Timeline view displays the beginning and end of the frame on the main thread.");
-        static readonly string k_GpuTimeTooltip = L10n.Tr("GPU Time is the duration between when the GPU was sent its first command for the frame and when the GPU completed its work for that frame.");
-        static readonly string k_TargetFrameDurationInstruction = $"The target frame time can be changed via the dropdown in the Highlights chart.";
-        static readonly string k_NoValueText = L10n.Tr("No Value");
-
         // Model.
         readonly IProfilerCaptureDataService m_DataService;
         readonly IProfilerPersistentSettingsService m_SettingsService;
         readonly ProfilerWindow m_ProfilerWindow;
-        BottlenecksDetailsViewModel m_Model;
+        SummaryType m_SelectedSummaryType;
+        ViewController m_SelectedViewController;
+        bool m_CaptureSummaryRequiresReload;
+        bool m_SelectionSummaryRequiresReload;
+        double m_TimeOfLastNewProfilerFrame;
+        bool m_IsWaitingForNoNewFramesToReloadData;
 
         // View.
-        Label m_CpuLabel;
-        Label m_GpuLabel;
-        VisualElement m_CpuBar;
-        VisualElement m_GpuBar;
-        Label m_CpuDurationLabel;
-        Label m_GpuDurationLabel;
-        VisualElement m_TargetFrameDurationIndicator;
-        Label m_TargetFrameDurationIndicatorLabel;
-        Label m_TargetFrameDurationInstructionLabel;
-        Label m_DescriptionLabel;
-        Label m_NoDataLabel;
+        ToolbarMenu m_SummaryTypeMenu;
+        Label m_TitleLabel;
+        VisualElement m_ContentContainer;
+        Label m_RecordingLabel;
+
+        // Children.
+        RangeSummaryViewController m_CaptureSummaryViewController;
+        SelectionSummaryViewController m_SelectionSummaryViewController;
 
         public BottlenecksDetailsViewController(
             IProfilerCaptureDataService dataService,
@@ -68,18 +53,24 @@ namespace Unity.Profiling.Editor.UI
             m_DataService = dataService;
             m_SettingsService = settingsService;
             m_ProfilerWindow = profilerWindow;
+            m_SelectedSummaryType = SummaryType.None;
+            m_CaptureSummaryRequiresReload = true;
+            m_SelectionSummaryRequiresReload = true;
 
-            m_DataService.NewDataLoadedOrCleared += OnNewDataLoadedOrCleared;
-            m_SettingsService.TargetFrameDurationChanged += OnTargetFrameDurationChanged;
+            m_DataService.DataCleared += OnProfilerDataClearedOrLoaded;
+            m_DataService.DataLoaded += OnProfilerDataClearedOrLoaded;
+            m_DataService.NewFrameRecorded += OnNewProfilerFrameRecorded;
             m_ProfilerWindow.SelectedFrameIndexChanged += OnNewFrameIndexSelectedInProfilerWindow;
         }
 
         protected override VisualElement LoadView()
         {
-            var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml(k_UxmlResourceName);
+            var view = ViewControllerUtility.LoadVisualTreeFromBuiltInUxml("BottlenecksDetailsView.uxml");
             if (view == null)
                 throw new InvalidViewDefinedInUxmlException();
 
+            const string k_UssClass_Dark = "bottlenecks-details-view__dark";
+            const string k_UssClass_Light = "bottlenecks-details-view__light";
             var themeUssClass = (EditorGUIUtility.isProSkin) ? k_UssClass_Dark : k_UssClass_Light;
             view.AddToClassList(themeUssClass);
 
@@ -92,25 +83,37 @@ namespace Unity.Profiling.Editor.UI
         {
             base.ViewLoaded();
 
-            UpdateTargetFrameDurationIndicatorLabel();
+            // Configure menu.
+            m_SummaryTypeMenu.menu.AppendAction("Capture", (action) => { ShowSummary(SummaryType.Capture); });
+            m_SummaryTypeMenu.menu.AppendAction("Selection", (action) => { ShowSummary(SummaryType.Selection); });
 
-            m_CpuLabel.tooltip = k_CpuActiveTimeTooltip;
-            m_GpuLabel.tooltip = k_GpuTimeTooltip;
-            m_CpuBar.RegisterCallback<ClickEvent>(OnCpuBarClicked);
-            m_CpuBar.tooltip = $"Click to inspect this frame in the CPU module's Timeline view.";
-            m_GpuBar.RegisterCallback<ClickEvent>(OnGpuBarClicked);
-            m_GpuBar.tooltip = $"Click to open the Frame Debugger.";
+            // Embed child view controllers.
+            m_CaptureSummaryViewController = new RangeSummaryViewController(
+                   m_DataService,
+                   m_SettingsService,
+                   m_ProfilerWindow,
+                   responder: this,
+                   true);
+            AddChild(m_CaptureSummaryViewController);
 
-            m_TargetFrameDurationInstructionLabel.text = k_TargetFrameDurationInstruction;
+            m_SelectionSummaryViewController = new SelectionSummaryViewController(
+                   m_DataService,
+                   m_SettingsService,
+                   m_ProfilerWindow,
+                   responder: this);
+            AddChild(m_SelectionSummaryViewController);
 
-            m_DescriptionLabel.RegisterCallback<PointerDownLinkTagEvent>(OnDescriptionLabelLinkSelected);
-            m_DescriptionLabel.RegisterCallback<PointerOverLinkTagEvent>(OnLabelLinkPointerOver);
-            m_DescriptionLabel.RegisterCallback<PointerOutLinkTagEvent>(OnLabelLinkPointerOut);
+            m_RecordingLabel.text = "Recording...";
+            SetRecordingLabelVisible(false);
 
-            m_NoDataLabel.text = L10n.Tr("There is no data available for the selected frame.");
-            UIUtility.SetElementDisplay(m_NoDataLabel, false);
+            var selectedSummaryType = (SummaryType)m_SettingsService.BottleneckDetailsViewSelectedSummaryType;
+            if (selectedSummaryType == SummaryType.None)
+            {
+                // Display 'Capture' summary by default.
+                selectedSummaryType = SummaryType.Capture;
+            }
 
-            View.RegisterCallback<GeometryChangedEvent>(ViewPerformedInitialLayout);
+            ShowSummary(selectedSummaryType);
         }
 
         protected override void Dispose(bool disposing)
@@ -118,8 +121,9 @@ namespace Unity.Profiling.Editor.UI
             if (disposing)
             {
                 m_ProfilerWindow.SelectedFrameIndexChanged -= OnNewFrameIndexSelectedInProfilerWindow;
-                m_SettingsService.TargetFrameDurationChanged -= OnTargetFrameDurationChanged;
-                m_DataService.NewDataLoadedOrCleared -= OnNewDataLoadedOrCleared;
+                m_DataService.NewFrameRecorded -= OnNewProfilerFrameRecorded;
+                m_DataService.DataLoaded -= OnProfilerDataClearedOrLoaded;
+                m_DataService.DataCleared -= OnProfilerDataClearedOrLoaded;
             }
 
             base.Dispose(disposing);
@@ -127,172 +131,283 @@ namespace Unity.Profiling.Editor.UI
 
         void GatherReferencesInView(VisualElement view)
         {
-            m_CpuLabel = view.Q<Label>(k_UxmlIdentifier_CpuLabel);
-            m_GpuLabel = view.Q<Label>(k_UxmlIdentifier_GpuLabel);
-            m_CpuBar = view.Q<VisualElement>(k_UxmlIdentifier_CpuBar);
-            m_GpuBar = view.Q<VisualElement>(k_UxmlIdentifier_GpuBar);
-            m_CpuDurationLabel = view.Q<Label>(k_UxmlIdentifier_CpuDurationLabel);
-            m_GpuDurationLabel = view.Q<Label>(k_UxmlIdentifier_GpuDurationLabel);
-            m_TargetFrameDurationIndicator  = view.Q<VisualElement>(k_UxmlIdentifier_TargetFrameDurationIndicator);
-            m_TargetFrameDurationIndicatorLabel  = view.Q<Label>(k_UxmlIdentifier_TargetFrameDurationIndicatorLabel);
-            m_TargetFrameDurationInstructionLabel  = view.Q<Label>(k_UxmlIdentifier_TargetFrameDurationInstructionLabel);
-            m_DescriptionLabel = view.Q<Label>(k_UxmlIdentifier_DescriptionLabel);
-            m_NoDataLabel = view.Q<Label>(k_UxmlIdentifier_NoDataLabel);
+            m_SummaryTypeMenu = view.Q<ToolbarMenu>("bottlenecks-details-view__summary-type-menu");
+            m_TitleLabel = view.Q<Label>("bottlenecks-details-view__title-label");
+            m_ContentContainer = view.Q<VisualElement>("bottlenecks-details-view__content");
+            m_RecordingLabel = view.Q<Label>("bottlenecks-details-view__recording-label");
         }
 
-        void ViewPerformedInitialLayout(GeometryChangedEvent evt)
+        void OnProfilerDataClearedOrLoaded()
         {
-            View.UnregisterCallback<GeometryChangedEvent>(ViewPerformedInitialLayout);
-            ReloadData();
-        }
-
-        void OnNewDataLoadedOrCleared()
-        {
-            if (!IsViewLoaded)
+            if (IsViewLoaded == false)
                 return;
 
+            // Profiler data has changed. Cancel any in-flight builders.
+            CancelReloadDataIfNecessary();
+
+            // Profiler data being cleared or loaded stops the Profiler recording
+            // process. Therefore, cancel the pending data reload for new profiler
+            // frames, if necessary, and reload data now.
+            if (m_IsWaitingForNoNewFramesToReloadData)
+            {
+                m_IsWaitingForNoNewFramesToReloadData = false;
+                SetRecordingLabelVisible(false);
+            }
+
             ReloadData();
         }
 
-        void OnNewFrameIndexSelectedInProfilerWindow(long selectedFrameIndexLong)
+        void OnNewProfilerFrameRecorded(int connectionId, int newFrameIndex)
         {
-            if (!IsViewLoaded)
+            if (IsViewLoaded == false)
                 return;
 
-            ReloadData();
+            // Profiler data has changed. Cancel any in-flight builders.
+            CancelReloadDataIfNecessary();
+
+            // Record the time at which we received this new profiler frame.
+            m_TimeOfLastNewProfilerFrame = UnityEngine.Time.realtimeSinceStartupAsDouble;
+
+            // If not already, start a timer to reload data when we stop receiving
+            // new Profiler frames.
+            if (m_IsWaitingForNoNewFramesToReloadData == false)
+            {
+                m_IsWaitingForNoNewFramesToReloadData = true;
+                SetRecordingLabelVisible(true);
+
+                const float k_ReloadDelayS = 1f;
+                View.schedule.Execute(() =>
+                {
+                    var now = UnityEngine.Time.realtimeSinceStartupAsDouble;
+                    if (now >= m_TimeOfLastNewProfilerFrame + k_ReloadDelayS)
+                    {
+                        m_IsWaitingForNoNewFramesToReloadData = false;
+                        SetRecordingLabelVisible(false);
+                        ReloadData();
+                    }
+                }).Until(() =>
+                {
+                    return m_IsWaitingForNoNewFramesToReloadData == false;
+                });
+            }
+        }
+
+        void OnNewFrameIndexSelectedInProfilerWindow(long _)
+        {
+            if (IsViewLoaded == false)
+                return;
+
+            // If there is a pending data reload, do not respond to a change in
+            // selection. Data will be reloaded when recording stops.
+            if (m_IsWaitingForNoNewFramesToReloadData)
+                return;
+
+            // If the selection summary is not the active view, ensure it will be
+            // reloaded on its next appearance and switch to it. Otherwise, just
+            // reload the already displayed selection summary.
+            if (m_SelectedSummaryType != SummaryType.Selection)
+            {
+                m_SelectionSummaryRequiresReload = true;
+                ShowSummary(SummaryType.Selection);
+            }
+            else
+            {
+                ReloadSelectionSummary();
+            }
         }
 
         void ReloadData()
         {
-            // A value of -1 appears to be how the Profiler signifies 'current frame selected', so pick the last frame index.
-            var selectedFrameIndex = Convert.ToInt32(m_ProfilerWindow.selectedFrameIndex);
-            if (selectedFrameIndex == -1)
-                selectedFrameIndex = m_DataService.FirstFrameIndex + m_DataService.FrameCount - 1;
+            // Reload the active summary view and ensure the other is reloaded the
+            // next time.
+            var selectedSummaryType = m_SelectedSummaryType;
+            m_CaptureSummaryRequiresReload = true;
+            m_SelectionSummaryRequiresReload = true;
+            ReloadDataForSummaryIfNecessary(selectedSummaryType);
+        }
 
-            var targetFrameDurationNs = m_SettingsService.TargetFrameDurationNs;
-            var modelBuilder = new BottlenecksDetailsViewModelBuilder(m_DataService);
-            m_Model = modelBuilder.Build(selectedFrameIndex, targetFrameDurationNs);
+        void ShowSummary(SummaryType type)
+        {
+            if (type == SummaryType.None)
+                throw new ArgumentException("Invalid summary type selected.");
 
-            var hasInvalidModel = m_Model == null;
-            UIUtility.SetElementDisplay(m_NoDataLabel, hasInvalidModel);
-            if (hasInvalidModel)
+            if (type == m_SelectedSummaryType)
                 return;
 
-            var largestDurationNs =
-                Math.Max(m_Model.CpuDurationNs,
-                    Math.Max(m_Model.GpuDurationNs, m_Model.TargetFrameDurationNs));
+            SwitchToolbarTextForSummary(type);
+            SwitchContentViewForSummary(type);
+            ReloadDataForSummaryIfNecessary(type);
+            m_SelectedSummaryType = type;
 
-            var normalizedTargetFrameDuration = (float)m_Model.TargetFrameDurationNs / largestDurationNs;
-            m_TargetFrameDurationIndicator.style.width = new Length(normalizedTargetFrameDuration * 100f, LengthUnit.Percent);
-
-            ConfigureBar(
-                m_CpuBar,
-                m_CpuDurationLabel,
-                m_Model.CpuDurationNs,
-                largestDurationNs,
-                m_Model.TargetFrameDurationNs);
-            ConfigureBar(
-                m_GpuBar,
-                m_GpuDurationLabel,
-                m_Model.GpuDurationNs,
-                largestDurationNs,
-                m_Model.TargetFrameDurationNs);
-
-            m_DescriptionLabel.text = m_Model.LocalizedBottleneckDescription;
+            // Preserve selection choice across view lifecycle.
+            m_SettingsService.BottleneckDetailsViewSelectedSummaryType = (int)type;
         }
 
-        void OnTargetFrameDurationChanged()
+        void SwitchToolbarTextForSummary(SummaryType type)
         {
-            UpdateTargetFrameDurationIndicatorLabel();
-            ReloadData();
-        }
+            if (type == SummaryType.None)
+                throw new ArgumentException("Invalid summary type.");
 
-        void UpdateTargetFrameDurationIndicatorLabel()
-        {
-            var targetFrameDuration = TimeFormatterUtility.FormatTimeNsToMs(m_SettingsService.TargetFrameDurationNs);
-            var targetFramesPerSecond = Mathf.RoundToInt(1e9f / m_SettingsService.TargetFrameDurationNs);
-            m_TargetFrameDurationIndicatorLabel.text = $"Target Frame Time\n{targetFrameDuration}\n<b>({targetFramesPerSecond} FPS)</b>";
-        }
-
-        void ConfigureBar(
-            VisualElement bar,
-            Label barLabel,
-            UInt64 barDurationNs,
-            UInt64 largestDurationNs,
-            UInt64 targetFrameDurationNs)
-        {
-            var barDurationNormalized = (float)barDurationNs / largestDurationNs;
-            bar.style.width = new StyleLength(new Length(barDurationNormalized * 100f, LengthUnit.Percent));
-            barLabel.text = (barDurationNs == 0) ? k_NoValueText : TimeFormatterUtility.FormatTimeNsToMs(barDurationNs);
-            if (barDurationNs > targetFrameDurationNs)
-                bar.AddToClassList(k_UssClass_DurationBarFillHighlighted);
-            else
-                bar.RemoveFromClassList(k_UssClass_DurationBarFillHighlighted);
-        }
-
-        void OnCpuBarClicked(ClickEvent evt)
-        {
-            ProcessModelLink(BottlenecksDetailsViewModel.k_DescriptionLinkId_CpuTimeline);
-        }
-
-        void OnGpuBarClicked(ClickEvent evt)
-        {
-            ProcessModelLink(BottlenecksDetailsViewModel.k_DescriptionLinkId_FrameDebugger);
-        }
-
-        void OnDescriptionLabelLinkSelected(PointerDownLinkTagEvent evt)
-        {
-            var linkId = int.Parse(evt.linkID);
-            ProcessModelLink(linkId);
-        }
-
-        void OnLabelLinkPointerOver(PointerOverLinkTagEvent evt)
-        {
-            ((VisualElement)evt.target).AddToClassList(k_UssClass_LinkCursor);
-        }
-
-        void OnLabelLinkPointerOut(PointerOutLinkTagEvent evt)
-        {
-            ((VisualElement)evt.target).RemoveFromClassList(k_UssClass_LinkCursor);
-        }
-
-        void ProcessModelLink(int linkId)
-        {
-            string linkDescription = string.Empty;
-            switch (linkId)
+            m_TitleLabel.text = type switch
             {
-                case BottlenecksDetailsViewModel.k_DescriptionLinkId_CpuTimeline:
-                    // Open the CPU Module.
-                    var cpuModule = m_ProfilerWindow.GetProfilerModule<UnityEditorInternal.Profiling.CPUProfilerModule>(UnityEngine.Profiling.ProfilerArea.CPU);
-                    m_ProfilerWindow.selectedModule = cpuModule;
-                    cpuModule.ViewType = ProfilerViewType.Timeline;
-                    linkDescription = k_LinkDescription_OpenCpuTimeline;
-                    break;
+                SummaryType.Capture => "Capture Highlights",
+                SummaryType.Selection => "Selection Highlights",
+                _ => throw new NotImplementedException(),
+            };
 
-                case BottlenecksDetailsViewModel.k_DescriptionLinkId_ProfileAnalyzer:
-                    // Open Profile Analyzer in the Package Manager.
-                    PackageManagerWindow.OpenAndSelectPackage("Profile Analyzer");
-                    linkDescription = k_LinkDescription_OpenProfileAnalyzer;
-                    break;
+            m_SummaryTypeMenu.text = type switch
+            {
+                SummaryType.Capture => "Show highlights for: Capture",
+                SummaryType.Selection => "Show highlights for: Selection",
+                _ => throw new NotImplementedException(),
+            };
+        }
 
-                case BottlenecksDetailsViewModel.k_DescriptionLinkId_FrameDebugger:
-                    // Open Frame Debugger.
-                    FrameDebuggerWindow.OpenWindow();
-                    linkDescription = k_LinkDescription_OpenFrameDebugger;
-                    break;
+        void SwitchContentViewForSummary(SummaryType type)
+        {
+            ViewController fromViewController = m_SelectedViewController;
+            ViewController toViewController = type switch
+            {
+                SummaryType.Capture => m_CaptureSummaryViewController,
+                SummaryType.Selection => m_SelectionSummaryViewController,
+                _ => throw new NotImplementedException(),
+            };
 
-                case BottlenecksDetailsViewModel.k_DescriptionLinkId_GpuProfilerDocumentation:
-                    // Open Third party profiling tools documentation page.
-                    Application.OpenURL("https://docs.unity3d.com/Manual/performance-profiling-tools.html");
-                    linkDescription = k_LinkDescription_OpenGpuProfilerDocumentation;
+            UnityEngine.Debug.Assert(toViewController != fromViewController);
+
+            // Load the 'to' view controller's if being displayed for the first time.
+            if (toViewController.IsViewLoaded == false)
+                m_ContentContainer.Add(toViewController.View);
+
+            // Make the 'to' view controller's view visible.
+            UIUtility.SetElementDisplay(toViewController.View, true);
+
+            // Hide the 'from' view controller's view, if it exists (i.e. if it's not the first selection).
+            if (fromViewController != null)
+                UIUtility.SetElementDisplay(fromViewController.View, false);
+
+            // Update the selected view controller.
+            m_SelectedViewController = toViewController;
+        }
+
+        void ReloadDataForSummaryIfNecessary(SummaryType type)
+        {
+            switch (type)
+            {
+                case SummaryType.Capture:
+                {
+                    if (m_CaptureSummaryRequiresReload)
+                        ReloadCaptureSummary();
                     break;
+                }
+
+                case SummaryType.Selection:
+                {
+                    if (m_SelectionSummaryRequiresReload)
+                        ReloadSelectionSummary();
+                    break;
+                }
 
                 default:
                     break;
             }
+        }
 
-            if (!string.IsNullOrEmpty(linkDescription))
-                ProfilerWindowAnalytics.SendBottleneckLinkSelectedEvent(linkDescription);
+        void ReloadCaptureSummary()
+        {
+            m_CaptureSummaryViewController.ReloadData(Range.All);
+            m_CaptureSummaryRequiresReload = false;
+        }
+
+        void ReloadSelectionSummary()
+        {
+            var selectedFrameRange = GetProfilerWindowSelectionRange();
+            m_SelectionSummaryViewController.ReloadData(selectedFrameRange);
+            m_SelectionSummaryRequiresReload = false;
+        }
+
+        void CancelReloadDataIfNecessary()
+        {
+            // Instruct both of our child view controllers to cancel any in-flight builders.
+            m_CaptureSummaryViewController.CancelReloadDataIfNecessary();
+            m_SelectionSummaryViewController.CancelReloadDataIfNecessary();
+        }
+
+        Range GetProfilerWindowSelectionRange()
+        {
+            var selectedFrameRange = m_ProfilerWindow.SelectedFrameRange;
+            if (selectedFrameRange.HasValue == false)
+            {
+                var frameCount = m_DataService.FrameCount;
+                if (frameCount > 0)
+                {
+                    // The Profiler Window uses a frame index of -1 to signify both 'no selection'
+                    // as well as 'current frame selected'. In this case, the new SelectedFrameRange
+                    // will be null. When this is null, we use the last frame index to match the
+                    // existing 'current frame selected' behaviour.
+                    var exclusiveLastFrameIndex = m_DataService.FirstFrameIndex + frameCount;
+                    selectedFrameRange = new Range(exclusiveLastFrameIndex - 1, exclusiveLastFrameIndex);
+                }
+                else
+                {
+                    // No profiler data; return a zero length range.
+                    selectedFrameRange = new Range(0, 0);
+                }
+            }
+
+            return selectedFrameRange.Value;
+        }
+
+        void SetRecordingLabelVisible(bool visible)
+        {
+            UIUtility.SetElementDisplay(m_RecordingLabel, visible);
+            UIUtility.SetElementDisplay(m_ContentContainer, !visible);
+        }
+
+        void SummaryViewController.IResponder.OnTopMarkerSelected(Marker marker, TopMarkersViewController.Action action)
+        {
+            switch (action)
+            {
+                case TopMarkersViewController.Action.ChangeSelectedFrame:
+                {
+                    var selectedFrameIndex = m_ProfilerWindow.selectedFrameIndex;
+                    var isFrameAlreadySelectedInProfiler = marker.FrameIndex == selectedFrameIndex;
+                    m_ProfilerWindow.selectedFrameIndex = marker.FrameIndex;
+                    if (isFrameAlreadySelectedInProfiler)
+                    {
+                        // If this frame is already selected in the Profiler window, invoke
+                        // the OnNewFrameIndexSelectedInProfilerWindow callback manually.
+                        OnNewFrameIndexSelectedInProfilerWindow(selectedFrameIndex);
+                    }
+                    break;
+                }
+
+                case TopMarkersViewController.Action.SwitchToCpuModule:
+                {
+                    // We don't use the ProfilerTimeSampleSelection API here because:
+                    //  1. We don't have a specific marker instance to highlight; there could be multiple in the frame.
+                    //  2. We need to store/lookup more marker data than we currently do to use the API, including threadGroupName, threadName, and rawSampleIndex.
+                    var cpuModule = m_ProfilerWindow.GetProfilerModuleByType<CPUProfilerModule>();
+                    m_ProfilerWindow.selectedModule = cpuModule;
+
+                    var showFullScriptingMethodNames = cpuModule.ViewOptions.HasFlag(
+                        CPUOrGPUProfilerModule.ProfilerViewFilteringOptions.ShowFullScriptingMethodNames);
+                    cpuModule.sampleNameSearchFilter = marker.GetFormattedMarkerName(showFullScriptingMethodNames);
+                    cpuModule.focusedThreadIndex = marker.ThreadIndex;
+                    cpuModule.ViewType = UnityEditorInternal.ProfilerViewType.Hierarchy;
+                    break;
+                }
+
+                default:
+                    throw new ArgumentOutOfRangeException("Unknown action type.");
+            }
+        }
+
+        enum SummaryType
+        {
+            None,
+            Capture,
+            Selection
         }
     }
 }

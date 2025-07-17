@@ -55,13 +55,13 @@ namespace UnityEngine.UIElements
         internal Vector2 ATGRoundedSizes { get; set; }
 
 
-        internal static Func<int, FontAsset, FontAsset> GetBlurryFontAssetMapping;
-        internal static Func<int, bool> CanGenerateFallbackFontAssets;
+        internal static Func<int, FontAsset, bool, FontAsset> GetBlurryFontAssetMapping;
+        internal static Func<int, bool, bool> CanGenerateFallbackFontAssets;
         internal TextEventHandler m_TextEventHandler;
 
         protected TextElement m_TextElement;
 
-        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height)
+        public Vector2 ComputeTextSize(in RenderedText textToMeasure, float width, float height, float? fontsize = null)
         {
             var scale = GetPixelsPerPoint();
             width = Mathf.Round(width * scale);
@@ -69,11 +69,11 @@ namespace UnityEngine.UIElements
 
             if (TextUtilities.IsAdvancedTextEnabledForElement(m_TextElement))
             {
-                ComputeNativeTextSize(textToMeasure, width, height);
+                ComputeNativeTextSize(textToMeasure, width, height, fontsize);
             }
             else
             {
-                ConvertUssToTextGenerationSettings(populateScreenRect:false);
+                ConvertUssToTextGenerationSettings(populateScreenRect:false, fontsize);
                 settings.renderedText = textToMeasure;
                 settings.screenRect = new Rect(0, 0, width, height);
                 UpdatePreferredValues(settings);
@@ -83,11 +83,19 @@ namespace UnityEngine.UIElements
 
         public void ComputeSettingsAndUpdate()
         {
-            UpdateMesh();
+            if (useAdvancedText)
+            {
+                UpdateNative();
+                UpdateATGTextEventHandler();
+            }
+            else
+            {
+                UpdateMesh();
 
-            HandleATag();
-            HandleLinkTag();
-            HandleLinkAndATagCallbacks();
+                HandleATag();
+                HandleLinkTag();
+                HandleLinkAndATagCallbacks();
+            }
         }
 
         public void HandleATag()
@@ -115,24 +123,23 @@ namespace UnityEngine.UIElements
                 AddTextInfoToTemporaryCache(hashCode);
             else
             {
-                RemoveTextInfoFromTemporaryCache();
+                RemoveFromTemporaryCache();
                 UpdateWithHash(hashCode);
             }
         }
 
-        public override void AddTextInfoToPermanentCache()
+        public override void AddToPermanentCacheAndGenerateMesh()
         {
             if (useAdvancedText)
             {
-                if (textGenerationInfo == IntPtr.Zero)
-                    textGenerationInfo = TextGenerationInfo.Create();
+                CacheTextGenerationInfo();
                 UpdateNative();
                 UpdateATGTextEventHandler();
                 return;
             }
 
             if (ConvertUssToTextGenerationSettings(populateScreenRect: true))
-                base.AddTextInfoToPermanentCache();
+                base.AddToPermanentCacheAndGenerateMesh();
         }
 
         TextOverflowMode GetTextOverflowMode()
@@ -154,10 +161,14 @@ namespace UnityEngine.UIElements
             return TextOverflowMode.Overflow;
         }
 
-        internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect)
+        internal virtual bool ConvertUssToTextGenerationSettings(bool populateScreenRect, float? fontsize = null)
         {
             var style = m_TextElement.computedStyle;
             var tgs = settings;
+
+            if (style.unityTextAutoSize != TextAutoSize.None())
+                Debug.LogWarning("TextAutoSize is not supported with the Standard TextGenerator. Please use Advanced Text Generation instead.");
+
             tgs.text = string.Empty;
             tgs.isIMGUI = false;
             tgs.textSettings = TextUtilities.GetTextSettingsFrom(m_TextElement);
@@ -175,35 +186,33 @@ namespace UnityEngine.UIElements
 
             var uiScale = GetPixelsPerPoint();
             //this rounding should be moved to the resolved style so user could get the result...
-            tgs.fontSize = (int)Math.Round(((style.fontSize.value * uiScale)), MidpointRounding.AwayFromZero);
+            var effectiveFontSize = fontsize ?? style.fontSize.value;
+            tgs.fontSize = (int)Math.Round(((effectiveFontSize * uiScale)), MidpointRounding.AwayFromZero);
 
             tgs.fontStyle = TextGeneratorUtilities.LegacyStyleToNewStyle(style.unityFontStyleAndWeight);
-            
+
             // When we render in bitmap mode, we need provide proper coordinates to textCore so that the alignment is done properly
-            // The output of freetype is in pixels corrdinate on screen, unlike UIToolkit. 
+            // The output of freetype is in pixels corrdinate on screen, unlike UIToolkit.
             var shouldRenderBitmap = TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeBitmap() && style.unityEditorTextRenderingMode == EditorTextRenderingMode.Bitmap && tgs.fontAsset.IsEditorFont;
             if (shouldRenderBitmap)
             {
-                
+
                 // ScalePixelsPerPoint is invalid if the VisualElement is not in a panel
-                FontAsset fa = GetBlurryFontAssetMapping( tgs.fontSize, tgs.fontAsset);
+                FontAsset fa = GetBlurryFontAssetMapping(tgs.fontSize, tgs.fontAsset, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
 
                 // Fallbacks also need to be generated on the Main Thread
-                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize);
+                var canGenerateFallbacks = CanGenerateFallbackFontAssets(tgs.fontSize, TextCore.Text.TextGenerationSettings.IsEditorTextRenderingModeRaster());
                 if (!canGenerateFallbacks || !fa)
                     return false;
 
 
                 tgs.fontAsset = fa;
-               
-            }
 
-            tgs.material = tgs.fontAsset.material;
+            }
 
             tgs.textAlignment = TextGeneratorUtilities.LegacyAlignmentToNewAlignment(style.unityTextAlign);
 
             tgs.textWrappingMode = style.whiteSpace.toTextWrappingMode();
-            tgs.wordWrappingRatio = 0.4f;
             tgs.richText = m_TextElement.enableRichText;
             tgs.overflowMode = GetTextOverflowMode();
             tgs.characterSpacing = style.letterSpacing.value;
@@ -214,11 +223,9 @@ namespace UnityEngine.UIElements
             tgs.shouldConvertToLinearSpace = false;
             tgs.parseControlCharacters = m_TextElement.parseEscapeSequences;
             tgs.isRightToLeft = m_TextElement.localLanguageDirection == LanguageDirection.RTL;
-            tgs.inverseYAxis = true;
-            tgs.fontFeatures = m_ActiveFontFeatures;
             tgs.emojiFallbackSupport = m_TextElement.emojiFallbackSupport;
 
-
+            settings.pixelsPerPoint = uiScale;
             if (populateScreenRect)
             {
                 var size = m_TextElement.contentRect.size;
@@ -232,7 +239,7 @@ namespace UnityEngine.UIElements
                 {
                     //the size has changed, we need to discard previous measurement
                     RoundedWidth = size.x;
-                    MeasuredWidth = null; 
+                    MeasuredWidth = null;
                     LastPixelPerPoint = uiScale;
                 }
 
@@ -308,8 +315,8 @@ namespace UnityEngine.UIElements
             }
             else if (!wasAdvancedTextEnabledForElement && usesATG)
             {
-                s_PermanentCache.RemoveTextInfoFromCache(this);
-                s_TemporaryCache.RemoveTextInfoFromCache(this);
+                s_PermanentCache.RemoveFromCache(this);
+                s_TemporaryCache.RemoveFromCache(this);
                 m_TextEventHandler?.OnDestroy();
                 m_TextEventHandler = null;
                 m_ATGTextEventHandler = new ATGTextEventHandler(m_TextElement);
@@ -327,7 +334,7 @@ namespace UnityEngine.UIElements
             if (string.IsNullOrEmpty(m_TextElement.text)) // impossible to differentiate between an empty string and a fully truncated string.
                 return true;
 
-            return m_IsEllided;
+            return m_IsElided;
         }
     }
 }

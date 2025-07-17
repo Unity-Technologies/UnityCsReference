@@ -143,11 +143,11 @@ namespace Unity.UI.Builder
                     {
                         var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                         if (handle.handle.valueType == StyleValueType.Keyword)
-                            transition.property = new UIStyleValue<string>(handle.AsKeyword());
+                            transition.property = new UIStyleValue<string>(handle.sheet.ReadKeyword(handle.handle));
                         else if (handle.handle.valueType == StyleValueType.Enum)
-                            transition.property = handle.AsEnum();
+                            transition.property = handle.sheet.ReadEnum(handle.handle);
                         else if (handle.handle.valueType == StyleValueType.String)
-                            transition.property = handle.AsString();
+                            transition.property = handle.sheet.ReadString(handle.handle);
                         // Error, use default value
                         else
                             transition.property = BuilderTransition.IgnoredProperty;
@@ -179,11 +179,11 @@ namespace Unity.UI.Builder
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
-                        transition.duration = new UIStyleValue<TimeValue>(handle.AsKeyword());
+                        transition.duration = new UIStyleValue<TimeValue>(handle.sheet.ReadKeyword(handle.handle));
                     else if (handle.handle.valueType == StyleValueType.Dimension)
-                        transition.duration = handle.AsDimension().ToTime();
+                        transition.duration = handle.sheet.ReadTimeValue(handle.handle);
                     else if (handle.handle.valueType == StyleValueType.Float)
-                        transition.duration = new TimeValue(handle.AsFloat());
+                        transition.duration = new TimeValue(handle.sheet.ReadFloat(handle.handle));
                     // Error, use default value
                     else
                         transition.duration = BuilderTransition.DefaultDuration;
@@ -213,8 +213,8 @@ namespace Unity.UI.Builder
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
-                        transition.timingFunction = new UIStyleValue<EasingFunction>(handle.AsKeyword());
-                    else if (handle.handle.valueType == StyleValueType.Enum && StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, handle.AsEnum(), out var value))
+                        transition.timingFunction = new UIStyleValue<EasingFunction>(handle.sheet.ReadKeyword(handle.handle));
+                    else if (handle.handle.valueType == StyleValueType.Enum && StylePropertyUtil.TryGetEnumIntValue(StyleEnumType.EasingMode, handle.sheet.ReadEnum(handle.handle), out var value))
                         transition.timingFunction = new EasingFunction((EasingMode)value);
                     // Error, use default value
                     else
@@ -245,11 +245,11 @@ namespace Unity.UI.Builder
                 {
                     var handle = manipulator.GetValueContextAtIndex(i % valueCount);
                     if (handle.handle.valueType == StyleValueType.Keyword)
-                        transition.delay = new UIStyleValue<TimeValue>(handle.AsKeyword());
+                        transition.delay = new UIStyleValue<TimeValue>(handle.sheet.ReadKeyword(handle.handle));
                     else if (handle.handle.valueType == StyleValueType.Dimension)
-                        transition.delay = handle.AsDimension().ToTime();
+                        transition.delay = handle.sheet.ReadTimeValue(handle.handle);
                     else if (handle.handle.valueType == StyleValueType.Float)
-                        transition.delay = new TimeValue(handle.AsFloat());
+                        transition.delay = new TimeValue(handle.sheet.ReadFloat(handle.handle));
                     // Error, use default value
                     else
                         transition.delay = BuilderTransition.DefaultDelay;
@@ -317,65 +317,35 @@ namespace Unity.UI.Builder
 
         static void UnpackTransitionProperty(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, int maxCount)
         {
-            if (null == manipulator.styleProperty || manipulator.GetValuesCount() != computedData.Count)
-                TransferTransitionComputedData(manipulator, computedData, StyleValueType.Enum);
-
-            for (var i = computedData.Count; i < maxCount; ++i)
-            {
-                manipulator.AddValue(BuilderTransition.IgnoredProperty, StyleValueType.Enum);
-            }
-        }
-
-        static void TransferTransitionComputedData(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, StyleValueType valueType)
-        {
             manipulator.ClearValues();
-            foreach (var value in computedData)
+            for (var i = 0; i < maxCount; ++i)
             {
-                manipulator.AddValue(value.ToString(), valueType);
+                if (i < computedData.Count)
+                    manipulator.AddStylePropertyName(computedData[i]);
+                else
+                    manipulator.AddEnumAsString(BuilderTransition.IgnoredProperty);
             }
         }
 
         static  void UnpackTransitionDurationOrDelay(StylePropertyManipulator manipulator, List<TimeValue> computedData, int maxCount)
         {
-            if (null == manipulator.styleProperty || manipulator.GetValuesCount() != computedData.Count)
-                TransferTransitionComputedData(manipulator, computedData, StyleValueType.Dimension);
-
-            for (var i = computedData.Count; i < maxCount; ++i)
-            {
-                manipulator.AddValue(computedData[i%computedData.Count].ToDimension(), StyleValueType.Dimension);
-            }
-        }
-
-        static void TransferTransitionComputedData(StylePropertyManipulator manipulator, List<TimeValue> computedData, StyleValueType valueType)
-        {
             manipulator.ClearValues();
-            foreach (var value in computedData)
+            for (var i = 0; i < maxCount; ++i)
             {
-                manipulator.AddValue(value.ToDimension(), valueType);
+                manipulator.AddTimeValue(computedData[i%computedData.Count]);
             }
         }
 
         static void UnpackTransitionTimingFunction(StylePropertyManipulator manipulator, List<EasingFunction> computedData, int maxCount)
         {
-            if (null == manipulator.styleProperty || manipulator.GetValuesCount() != computedData.Count)
-                TransferTransitionComputedData(manipulator, computedData, StyleValueType.Enum);
-
-            for (var i = computedData.Count; i < maxCount; ++i)
-            {
-                manipulator.AddValue(computedData[i%computedData.Count].mode, StyleValueType.Enum);
-            }
-        }
-
-        static void TransferTransitionComputedData(StylePropertyManipulator manipulator, List<EasingFunction> computedData, StyleValueType valueType)
-        {
             manipulator.ClearValues();
-            foreach (var value in computedData)
+            for (var i = 0; i < maxCount; ++i)
             {
-                manipulator.AddValue(value.mode, valueType);
+                manipulator.AddEasingFunction(computedData[i%computedData.Count]);
             }
         }
 
-        static bool OnTransitionStringChanged(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, UIStyleValue<string> property, int index, int maxCount)
+        static bool OnTransitionPropertyChanged(StylePropertyManipulator manipulator, List<StylePropertyName> computedData, UIStyleValue<string> property, int index, int maxCount)
         {
             UnpackTransitionProperty(manipulator, computedData, maxCount);
 
@@ -384,7 +354,7 @@ namespace Unity.UI.Builder
             {
                 requiresRefresh = true;
                 manipulator.ClearValues();
-                manipulator.AddValue(property.keyword, StyleValueType.Keyword);
+                manipulator.AddKeyword(property.keyword);
             }
             else
             {
@@ -394,7 +364,7 @@ namespace Unity.UI.Builder
                     var valueCount = manipulator.GetValuesCount();
                     manipulator.ClearValues();
                     for (var i = 0; i < valueCount; ++i)
-                        manipulator.AddValue(BuilderTransition.IgnoredProperty, StyleValueType.Enum);
+                        manipulator.AddEnumAsString(BuilderTransition.IgnoredProperty);
                 }
                 manipulator.SetValueAtIndex(index, property.value, StyleValueType.Enum);
             }
@@ -411,7 +381,7 @@ namespace Unity.UI.Builder
             {
                 requiresRefresh = true;
                 manipulator.ClearValues();
-                manipulator.AddValue(value.keyword, StyleValueType.Keyword);
+                manipulator.AddKeyword(value.keyword);
             }
             else
             {
@@ -421,7 +391,7 @@ namespace Unity.UI.Builder
                     var valueCount = manipulator.GetValuesCount();
                     manipulator.ClearValues();
                     for (var i = 0; i < valueCount; ++i)
-                        manipulator.AddValue(BuilderTransition.DefaultDuration.ToDimension(), StyleValueType.Dimension);
+                        manipulator.AddTimeValue(BuilderTransition.DefaultDuration);
                 }
 
                 manipulator.SetValueAtIndex(index, value.value.ToDimension(), StyleValueType.Dimension);
@@ -439,7 +409,7 @@ namespace Unity.UI.Builder
             {
                 requiresRefresh = true;
                 manipulator.ClearValues();
-                manipulator.AddValue(uiValue.keyword, StyleValueType.Keyword);
+                manipulator.AddKeyword(uiValue.keyword);
             }
             else
             {
@@ -449,7 +419,7 @@ namespace Unity.UI.Builder
                     var valueCount = manipulator.GetValuesCount();
                     manipulator.ClearValues();
                     for (var i = 0; i < valueCount; ++i)
-                        manipulator.AddValue(BuilderTransition.DefaultTimingFunction.mode, StyleValueType.Enum);
+                        manipulator.AddEasingFunction(BuilderTransition.DefaultTimingFunction);
                 }
                 manipulator.SetValueAtIndex(index, uiValue.value.mode, StyleValueType.Enum);
             }
@@ -477,7 +447,7 @@ namespace Unity.UI.Builder
 
             if ((changeType & TransitionChangeType.Property) == TransitionChangeType.Property)
             {
-                if (OnTransitionStringChanged(setData.transitionProperty, computedData.transitionProperty, transition.property, index, maxCount))
+                if (OnTransitionPropertyChanged(setData.transitionProperty, computedData.transitionProperty, transition.property, index, maxCount))
                     requiresRefresh = true;
                 else
                 {
@@ -568,8 +538,7 @@ namespace Unity.UI.Builder
                         setData.transitionProperty.SetValueAtIndex(0, BuilderTransition.IgnoredProperty,
                             StyleValueType.Enum);
 
-                    setData.transitionProperty.AddValue(BuilderTransition.IgnoredProperty,
-                        StyleValueType.Enum);
+                    setData.transitionProperty.AddEnumAsString(BuilderTransition.IgnoredProperty);
                 }
             }
 
@@ -589,8 +558,7 @@ namespace Unity.UI.Builder
                         setData.transitionDuration.SetValueAtIndex(0,
                             BuilderTransition.DefaultDuration.ToDimension(), StyleValueType.Dimension);
 
-                    setData.transitionDuration.AddValue(BuilderTransition.DefaultDuration.ToDimension(),
-                        StyleValueType.Dimension);
+                    setData.transitionDuration.AddTimeValue(BuilderTransition.DefaultDuration);
                 }
             }
 
@@ -610,7 +578,7 @@ namespace Unity.UI.Builder
                         setData.transitionTimingFunction.SetValueAtIndex(0, EasingMode.Ease,
                             StyleValueType.Enum);
 
-                    setData.transitionTimingFunction.AddValue(EasingMode.Ease, StyleValueType.Enum);
+                    setData.transitionTimingFunction.AddEasingFunction(EasingMode.Ease);
                 }
             }
 
@@ -630,8 +598,7 @@ namespace Unity.UI.Builder
                         setData.transitionDelay.SetValueAtIndex(0,
                             BuilderTransition.DefaultDelay.ToDimension(), StyleValueType.Dimension);
 
-                    setData.transitionDelay.AddValue(BuilderTransition.DefaultDelay.ToDimension(),
-                        StyleValueType.Dimension);
+                    setData.transitionDelay.AddTimeValue(BuilderTransition.DefaultDelay);
                 }
             }
 

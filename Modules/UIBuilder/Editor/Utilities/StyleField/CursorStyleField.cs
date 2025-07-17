@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-﻿using System;
+using System;
 using System.Diagnostics;
 using JetBrains.Annotations;
 using UnityEditor.UIElements;
@@ -16,12 +16,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     internal class CursorStyleField : BaseField<Cursor>
     {
-        public class CursorConverter : UxmlAttributeConverter<Cursor>
-        {
-            public override Cursor FromString(string value) => throw new NotImplementedException();
-            public override string ToString(Cursor value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<Cursor>.UxmlSerializedData
         {

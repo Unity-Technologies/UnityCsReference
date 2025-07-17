@@ -15,9 +15,10 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
+
 namespace UnityEditor
 {
-    internal class GameObjectTreeViewGUI : TreeViewGUI
+    internal class GameObjectTreeViewGUI : TreeViewGUI<EntityId>
     {
         enum GameObjectColorType
         {
@@ -67,48 +68,6 @@ namespace UnityEditor
 
         internal event Action<bool, int, string, string> renameEnded;
 
-        private static Dictionary<string, int> s_ActiveParentObjectPerSceneGUID;
-
-        internal static void UpdateActiveParentObjectValuesForScene(string sceneGUID, int instanceID)
-        {
-            if (instanceID == 0)
-                s_ActiveParentObjectPerSceneGUID.Remove(sceneGUID);
-            else
-                s_ActiveParentObjectPerSceneGUID[sceneGUID] = instanceID;
-        }
-
-        internal void GetActiveParentObjectValuesFromSessionInfo()
-        {
-            for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
-                var key = SceneManager.GetSceneAt(i).guid;
-                var id = SceneHierarchy.GetDefaultParentForSession(SceneManager.GetSceneAt(i).guid);
-                if (id != 0)
-                    s_ActiveParentObjectPerSceneGUID.Add(key, id);
-            }
-        }
-
-        static bool DetectSceneGuidMismatchInActiveParentState(KeyValuePair<string, int> activeParentObject)
-        {
-            var go = EditorUtility.InstanceIDToObject(activeParentObject.Value) as GameObject;
-            if (go != null && go.scene.guid != activeParentObject.Key)
-            {
-                SceneHierarchy.SetDefaultParentForSession(activeParentObject.Key, 0);
-                return true;
-            }
-
-            return false;
-        }
-
-        internal static void RemoveInvalidActiveParentObjects()
-        {
-            var itemsToRemove = s_ActiveParentObjectPerSceneGUID.Where(activeParent => DetectSceneGuidMismatchInActiveParentState(activeParent)).ToArray();
-            foreach (var itemToRemove in itemsToRemove)
-            {
-                SceneHierarchy.UpdateSessionStateInfoAndActiveParentObjectValuesForScene(itemToRemove.Key, 0);
-            }
-        }
-
         GameObjectTreeViewDataSource dataSource
         {
             get { return (GameObjectTreeViewDataSource)m_TreeView.data; }
@@ -119,7 +78,7 @@ namespace UnityEditor
             get { return !string.IsNullOrEmpty(dataSource.searchString); }
         }
 
-        public GameObjectTreeViewGUI(TreeViewController treeView, bool useHorizontalScroll)
+        public GameObjectTreeViewGUI(TreeViewController<EntityId> treeView, bool useHorizontalScroll)
             : base(treeView, useHorizontalScroll)
         {
             k_TopRowMargin = 0f;
@@ -140,9 +99,6 @@ namespace UnityEditor
             {
                 k_BaseIndent += indentWidth;// Add an extra indent to match GameObjects under a SceneHeader as this makes room for additional UI.
             }
-
-            s_ActiveParentObjectPerSceneGUID = new Dictionary<string, int>();
-            GetActiveParentObjectValuesFromSessionInfo();
 
             m_HierarchyPrefabToAssetPathMap = new Dictionary<int, string>();
             m_HierarchyPrefabToAssetIDMap = new Dictionary<int, Asset[]>();
@@ -270,7 +226,7 @@ namespace UnityEditor
             }
         }
 
-        void DoStickyHeaderItemFoldout(Rect rect, TreeViewItem item)
+        void DoStickyHeaderItemFoldout(Rect rect, TreeViewItem<EntityId> item)
         {
             Rect foldoutRect = new Rect(rect.x + GetFoldoutIndent(item), Mathf.Round(rect.y + customFoldoutYOffset), foldoutStyleWidth, k_LineHeight);
             var expanded = m_TreeView.data.IsExpanded(item);
@@ -337,7 +293,7 @@ namespace UnityEditor
         //-------------------
         // Create and Rename GameObject section
 
-        override public bool BeginRename(TreeViewItem item, float delay)
+        override public bool BeginRename(TreeViewItem<EntityId> item, float delay)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem == null)
@@ -373,7 +329,7 @@ namespace UnityEditor
             }
         }
 
-        override protected void DrawItemBackground(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        override protected void DrawItemBackground(Rect rect, int row, TreeViewItem<EntityId> item, bool selected, bool focused)
         {
             var goItem = (GameObjectTreeViewItem)item;
             if (goItem.isSceneHeader)
@@ -407,7 +363,7 @@ namespace UnityEditor
 
         float m_ContentRectRight;
 
-        override protected void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)
+        override protected void DoItemGUI(Rect rect, int row, TreeViewItem<EntityId> item, bool selected, bool focused, bool useBoldFont)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem == null)
@@ -467,7 +423,7 @@ namespace UnityEditor
             return gos.ToArray();
         }
 
-        protected override void OnAdditionalGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused)
+        protected override void OnAdditionalGUI(Rect rect, int row, TreeViewItem<EntityId> item, bool selected, bool focused)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
             if (goItem == null)
@@ -535,8 +491,7 @@ namespace UnityEditor
 
             buttonRect = new Rect(rect.xMax - optionsButtonWidth - margin, rect.y + (rect.height - optionsButtonHeight) * 0.5f, optionsButtonWidth, rect.height);
 
-            if (Event.current.type == EventType.Repaint)
-                GameObjectStyles.optionsButtonStyle.Draw(buttonRect, false, false, false, false);
+            GUI.Label(buttonRect, GUIContent.none, GameObjectStyles.optionsButtonStyle);
 
             // We want larger click area than the button icon
             buttonRect.y = rect.y;
@@ -582,7 +537,7 @@ namespace UnityEditor
             }
         }
 
-        internal override Texture GetIconForSelectedItem(TreeViewItem item)
+        internal override Texture GetIconForSelectedItem(TreeViewItem<EntityId> item)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
 
@@ -639,44 +594,10 @@ namespace UnityEditor
 
         void SetPrefabModeButtonVisibility(GameObjectTreeViewItem item)
         {
-            item.showPrefabModeButton = false;
-
-            GameObject go = item.objectPPTR as GameObject;
-
-            if (go == null)
-                return;
-
-            if (!PrefabUtility.IsPartOfAnyPrefab(go))
-                return;
-
-            if (!PrefabUtility.IsAnyPrefabInstanceRoot(go))
-                return;
-
-            // Don't show button if prefab asset is missing
-            if (PrefabUtility.GetPrefabInstanceStatus(go) == PrefabInstanceStatus.Connected)
-            {
-                var source = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
-                if (source == null)
-                    return;
-
-                // Don't show buttons for model prefabs but allow buttons for other immutables
-                if (PrefabUtility.IsPartOfModelPrefab(source))
-                    return;
-            }
-            else if (PrefabUtility.GetPrefabInstanceHandle(go) == null)
-                return;
-            else
-            {
-                var assetPath = PrefabUtility.GetAssetPathOfSourcePrefab(go);
-                var broken = AssetDatabase.LoadMainAssetAtPath(assetPath) as BrokenPrefabAsset;
-                if (broken == null || !broken.isPrefabFileValid)
-                    return;
-            }
-
-            item.showPrefabModeButton = true;
+            item.showPrefabModeButton = PrefabUtility.ShowPrefabModeButton(item.objectPPTR as GameObject);
         }
 
-        protected override void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused,
+        protected override void OnContentGUI(Rect rect, int row, TreeViewItem<EntityId> item, string label, bool selected, bool focused,
             bool useBoldFont, bool isPinging)
         {
             GameObjectTreeViewItem goItem = item as GameObjectTreeViewItem;
@@ -745,8 +666,9 @@ namespace UnityEditor
                     lineStyle = (renderDisabled) ? GameObjectStyles.disabledBrokenPrefabLabel : GameObjectStyles.brokenPrefabLabel;
             }
 
-            var sceneGUID = s_ActiveParentObjectPerSceneGUID.FirstOrDefault(x => x.Value == goItem.id).Key;
-            if (!string.IsNullOrEmpty(sceneGUID) && (EditorSceneManager.GetActiveScene().guid == sceneGUID || PrefabStageUtility.GetCurrentPrefabStage() != null))
+            var scene = goItem.scene;
+            var entityId = scene.defaultParent;
+            if (entityId != EntityId.None && (EditorSceneManager.GetActiveScene().guid == scene.guid || PrefabStageUtility.GetCurrentPrefabStage() != null))
             {
                 lineStyle = Styles.lineBoldStyle;
             }
@@ -840,7 +762,7 @@ namespace UnityEditor
                 GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? PrefabStageUtility.GetPrefabButtonContent(instanceID) : GUIContent.none;
                 if (GUI.Button(buttonRect, content, GameObjectStyles.rightArrow))
                 {
-                    GameObject go = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+                    GameObject go = EditorUtility.EntityIdToObject(instanceID) as GameObject;
                     string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
                     if (string.IsNullOrWhiteSpace(assetPath)) //In case its a broken prefab
                         assetPath = PrefabUtility.GetAssetPathOfSourcePrefab(go);

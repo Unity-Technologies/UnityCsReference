@@ -38,8 +38,8 @@ namespace UnityEngine.UIElements.StyleSheets
         {
             var result = new StyleValidationResult() {status = StyleValidationStatus.Ok};
 
-            // Bypass custom styles
-            if (name.StartsWith("--"))
+            // Bypass custom styles and variables
+            if (name.StartsWith("--") || value.StartsWith("--"))
                 return result;
 
             string syntax;

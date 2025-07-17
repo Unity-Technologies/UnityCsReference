@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -105,12 +106,11 @@ namespace Unity.UI.Builder
                         item.itemAssetField.SetValueWithoutNotify(asset);
                         break;
                     case StyleValueType.Dimension:
-                        var dimensionText = StyleSheetToUss.ValueHandleToUssString(styleSheet, new UssExportOptions(), "",
-                            listItem);
+                        var dimensionText = BuilderStyleSheetExporter.GetStylePropertyHandleString(styleSheet, m_VariablesItemsSource[i].values.AsSpan(), 0);
                         item.itemDimensionField.SetValueWithoutNotify(string.Join(" ", dimensionText));
                         break;
                     case StyleValueType.Function:
-                        var functionText = StyleSheetToUss.ValueHandleToUssString(styleSheet, new UssExportOptions(), "", m_VariablesItemsSource[i].values[2]);
+                        var functionText = styleSheet.ReadVariable(m_VariablesItemsSource[i].values[2]);
                         item.itemValueField.SetValueWithoutNotify(string.Join(" ", functionText?.Trim('"')));
                         item.itemValueField.enabledSelf = false;
                         break;
@@ -119,10 +119,11 @@ namespace Unity.UI.Builder
                         item.itemFloatField.SetValueWithoutNotify(floatText);
                         break;
                     case StyleValueType.String:
-                    case StyleValueType.Enum:
+                        var enumText = styleSheet.ReadEnum(listItem);
+                        item.itemValueField.SetValueWithoutNotify(string.Join(" ", enumText?.Trim('"')));
+                        break;
                     default:
-                        var valueText = StyleSheetToUss.ValueHandleToUssString(styleSheet, new UssExportOptions(), "",
-                            listItem);
+                        var valueText = BuilderStyleSheetExporter.GetStylePropertyHandleString(styleSheet, m_VariablesItemsSource[i].values.AsSpan(), 0);
                         item.itemValueField.SetValueWithoutNotify(string.Join(" ", valueText?.Trim('"')));
                         break;
                 }
@@ -236,26 +237,30 @@ namespace Unity.UI.Builder
 
             var name = GenerateDefaultName();
 
+            var property = styleSheet.AddProperty(currentVisualElement.GetStyleComplexSelector(), name);
+
             switch (type)
             {
-                case (StyleValueType.Float):
-                case (StyleValueType.String):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), type, name, GetTextFieldDefaultValue(type));
+                case StyleValueType.Float:
+                    property.SetFloat(styleSheet, 0.0f);
                     break;
-                case (StyleValueType.Enum):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), type, name, "auto");
+                case StyleValueType.String:
+                    property.SetString(styleSheet, "String");
                     break;
-                case (StyleValueType.Keyword):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), type, name, StyleKeyword.Auto.ToString());
+                case StyleValueType.Enum:
+                    property.SetEnumAsString(styleSheet, "auto");
                     break;
-                case (StyleValueType.Color):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), name, Color.black);
+                case StyleValueType.Keyword:
+                    property.SetKeyword(styleSheet, StyleKeyword.Auto);
                     break;
-                case (StyleValueType.AssetReference):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), name, new Object());
+                case StyleValueType.Color:
+                    property.SetColor(styleSheet, Color.black);
                     break;
-                case (StyleValueType.Dimension):
-                    styleSheet.AddVariable(currentVisualElement.GetStyleComplexSelector(), name, new Dimension(0, Dimension.Unit.Pixel));
+                case StyleValueType.AssetReference:
+                    property.SetAssetReference(styleSheet, new Object());
+                    break;
+                case StyleValueType.Dimension:
+                    property.SetDimension(styleSheet, new Dimension(0, Dimension.Unit.Pixel));
                     break;
             }
 
@@ -420,15 +425,13 @@ namespace Unity.UI.Builder
             switch (styleProperty.values[0].valueType)
             {
                 case StyleValueType.String:
-                    styleSheet.SetValue(styleProperty.values[0], newValue);
+                    styleSheet.WriteString(ref styleProperty.values[0], newValue);
                     break;
                 case StyleValueType.Enum:
-                    styleSheet.SetValue(styleProperty.values[0], newValue);
+                    styleSheet.WriteEnumAsString(ref styleProperty.values[0], newValue);
                     break;
                 case StyleValueType.Keyword:
-                    var styleValue = styleProperty.values[0];
-                    styleValue.valueIndex = (int)Enum.Parse<StyleValueKeyword>(evt.newValue);
-                    styleProperty.values[0] = styleValue;
+                    styleSheet.WriteKeyword(ref styleProperty.values[0], Enum.Parse<StyleValueKeyword>(evt.newValue));
                     break;
             }
 
@@ -443,7 +446,7 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            styleSheet.SetValue(styleProperty.values[0], evt.newValue);
+            styleSheet.WriteFloat(ref styleProperty.values[0], evt.newValue);
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             m_Selection.NotifyOfStylingChange();
@@ -458,7 +461,7 @@ namespace Unity.UI.Builder
 
             if (evt.currentTarget is USSVariablesStyleField { isKeyword: false } field)
             {
-                styleSheet.SetValue(styleProperty.values[0], new Dimension(float.Parse(field.value), field.unit));
+                styleSheet.WriteDimension(ref styleProperty.values[0], new Dimension(float.Parse(field.value), field.unit));
             }
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
@@ -480,31 +483,29 @@ namespace Unity.UI.Builder
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
             Enum.TryParse<StyleValueType>(newType, out var type);
-            styleProperty.values[0].valueType = type;
-            styleSheet.RemoveValue(styleProperty, styleProperty.values[0]);
 
             switch (type)
             {
-                case (StyleValueType.Float):
-                    styleSheet.AddValue(styleProperty, float.Parse(GetTextFieldDefaultValue(type)));
+                case StyleValueType.Float:
+                    styleProperty.SetFloat(styleSheet, float.Parse(GetTextFieldDefaultValue(type)));
                     break;
-                case (StyleValueType.Color):
-                    styleSheet.AddValue(styleProperty, Color.black);
+                case StyleValueType.Color:
+                    styleProperty.SetColor(styleSheet, Color.black);
                     break;
-                case (StyleValueType.AssetReference):
-                    styleSheet.AddValue(styleProperty, new Object());
+                case StyleValueType.AssetReference:
+                    styleProperty.SetAssetReference(styleSheet, new Object());
                     break;
                 case (StyleValueType.Dimension):
-                    styleSheet.AddValue(styleProperty, new Dimension(0, Dimension.Unit.Pixel));
+                    styleProperty.SetDimension(styleSheet, new Dimension(0, Dimension.Unit.Pixel));
                     break;
                 case (StyleValueType.Keyword):
-                    styleSheet.AddValue(styleProperty, StyleValueKeyword.Auto);
+                    styleProperty.SetKeyword(styleSheet, StyleValueKeyword.Auto);
                     break;
                 case (StyleValueType.String):
-                    styleSheet.AddValue(styleProperty, GetTextFieldDefaultValue(type));
+                    styleProperty.SetString(styleSheet, GetTextFieldDefaultValue(type));
                     break;
                 case (StyleValueType.Enum):
-                    styleSheet.AddValue(styleProperty, (Enum)StyleValueKeyword.Auto);
+                    styleProperty.SetEnum(styleSheet, (Enum)StyleValueKeyword.Auto);
                     break;
             }
 
@@ -519,7 +520,7 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            styleSheet.SetValue(styleProperty.values[0], evt.newValue);
+            styleSheet.WriteColor(ref styleProperty.values[0], evt.newValue);
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             m_Selection.NotifyOfStylingChange();
@@ -532,7 +533,7 @@ namespace Unity.UI.Builder
 
             Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeUIStyleValueUndoMessage);
 
-            styleSheet.SetValue(styleProperty.values[0], evt.newValue);
+            styleSheet.WriteAssetReference(ref styleProperty.values[0], evt.newValue);
 
             m_Inspector.panel.visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             m_Selection.NotifyOfStylingChange();

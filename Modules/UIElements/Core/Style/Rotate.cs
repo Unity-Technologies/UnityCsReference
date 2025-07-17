@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Provides rotation information for visual elements that rotates around the <see cref="TransformOrigin"/>. Positive values represent clockwise rotation.
     /// </summary>
+    [Serializable]
     public partial struct Rotate : IEquatable<Rotate>
     {
         /// <summary>
@@ -79,8 +80,11 @@ namespace UnityEngine.UIElements
             set => m_Axis = value;
         }
 
+        [SerializeField]
         private Angle m_Angle;
+        [SerializeField]
         private Vector3 m_Axis;
+        [SerializeField]
         private bool m_IsNone;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

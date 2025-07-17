@@ -207,6 +207,10 @@ namespace UnityEditor
 
         public virtual bool DrawHeader(Rect rect, GUIContent label)
         {
+            // The header's background (in the style) prevents the header from being clipped for unknown reason
+            if (!GUIClip.visibleRect.Overlaps(rect))
+                return foldout;
+
             // When displaying prefab overrides, the whole UI is disabled, but we still need to be able to expand the modules to see the settings - this doesn't modify the asset
             bool wasEnabled = GUI.enabled;
             GUI.enabled = true;

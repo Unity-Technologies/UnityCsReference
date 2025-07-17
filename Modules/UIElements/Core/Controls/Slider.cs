@@ -45,21 +45,21 @@ namespace UnityEngine.UIElements
                     new(nameof(showInputField), "show-input-field"),
                     new(nameof(direction), "direction"),
                     new(nameof(inverted), "inverted"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
             [SerializeField] float lowValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
             [SerializeField] float highValue;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
             [SerializeField] float pageSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pageSize_UxmlAttributeFlags;
-            [SerializeField] bool showInputField;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showInputField_UxmlAttributeFlags;
             [SerializeField] SliderDirection direction;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
+            [SerializeField] bool showInputField;
             [SerializeField] bool inverted;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags lowValue_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags highValue_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags pageSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showInputField_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags direction_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags inverted_UxmlAttributeFlags;
             #pragma warning restore 649
 

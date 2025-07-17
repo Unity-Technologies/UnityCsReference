@@ -35,16 +35,16 @@ namespace UnityEngine.UIElements
                     new(nameof(label), "label"),
                     new(nameof(iconImageReference), "icon-image"),
                     new(nameof(closeable), "closeable"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
             [SerializeField, MultilineTextField] string label;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
             [ImageFieldValueDecorator]
             [SerializeField, UxmlAttribute("icon-image"), UxmlAttributeBindingPath(nameof(iconImage))] Object iconImageReference;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
             [SerializeField] bool closeable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags label_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags iconImageReference_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags closeable_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -428,7 +428,7 @@ namespace UnityEngine.UIElements
         {
             if (evt.currentTarget is VisualElement element && !string.IsNullOrEmpty(tooltip))
             {
-                evt.rect = element.GetTooltipRect();
+                evt.rect = element.worldBound;
                 evt.tooltip = tooltip;
                 evt.StopImmediatePropagation();
             }
@@ -482,8 +482,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void SetActive()
         {
-            m_TabHeader.pseudoStates |= PseudoStates.Checked;
-            pseudoStates |= PseudoStates.Checked;
+            m_TabHeader.SetCheckedPseudoState(true);
+            SetCheckedPseudoState(true);
         }
 
         /// <summary>
@@ -491,8 +491,8 @@ namespace UnityEngine.UIElements
         /// </summary>
         internal void SetInactive()
         {
-            m_TabHeader.pseudoStates &= ~PseudoStates.Checked;
-            pseudoStates &= ~PseudoStates.Checked;
+            m_TabHeader.SetCheckedPseudoState(false);
+            SetCheckedPseudoState(false);
         }
 
         void OnTabClicked(PointerDownEvent _)

@@ -41,7 +41,7 @@ namespace UnityEngine.UIElements
                     new (nameof(bindingMode), "binding-mode"),
                     new (nameof(sourceToUiConvertersString), "source-to-ui-converters"),
                     new (nameof(uiToSourceConvertersString), "ui-to-source-converters"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

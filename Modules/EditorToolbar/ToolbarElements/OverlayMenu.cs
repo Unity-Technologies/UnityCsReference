@@ -21,12 +21,29 @@ namespace UnityEditor.Overlays
             m_TargetWindow = targetWindow;
             createMenuCallback = DropdownUtility.CreateDropdown;
             SetValueWithoutNotify(m_TargetWindow.overlayCanvas.lastAppliedPresetName);
-            
+            RegisterCallback<AttachToPanelEvent>(OnAttachedToPanel);
+            RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
+        }
+
+        void OnAttachedToPanel(AttachToPanelEvent evt)
+        {
+            m_TargetWindow.overlayCanvas.afterOverlaysInitialized += RefreshPresetDisplayValue;
+        }
+
+        void OnDetachFromPanel(DetachFromPanelEvent evt)
+        {
+            if (m_TargetWindow is not null && m_TargetWindow.overlayCanvas is not null)
+                m_TargetWindow.overlayCanvas.afterOverlaysInitialized -= RefreshPresetDisplayValue;
+        }
+
+        void RefreshPresetDisplayValue()
+        {
+            SetValueWithoutNotify(GetValueToDisplay());
         }
 
         internal override void AddMenuItems(IGenericMenu menu)
         {
-            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow);
+            OverlayPresetManager.GenerateMenu(menu, "", m_TargetWindow, new DefaultOverlayPreset());
         }
 
         internal override string GetValueToDisplay()
@@ -121,7 +138,8 @@ namespace UnityEditor.Overlays
         }
 
         ScrollView m_ListRoot;
-        Toggle m_Toggle;
+        Toggle m_EnableOverlaysToggle;
+        Toggle m_DynamicPanelBehaviorToggle;
         OverlayPresetDropdown m_Dropdown;
         Toolbar m_Toolbar;
         const string k_ShowOverlayMenuShortcut = "Overlays/Show Overlay Menu";
@@ -189,7 +207,7 @@ namespace UnityEditor.Overlays
 
         void OnOverlayEnabledChanged(bool visibility)
         {
-            m_Toggle?.SetValueWithoutNotify(visibility);
+            m_EnableOverlaysToggle?.SetValueWithoutNotify(visibility);
             m_Dropdown?.SetEnabled(visibility);
         }
 
@@ -220,16 +238,28 @@ namespace UnityEditor.Overlays
         {
             VisualElement content = new VisualElement();
             content.style.minWidth = 160;
+            content.style.maxWidth = 300;
             m_Toolbar = null;
 
             if (isPopup)
             {
-                content.Add(m_Toggle = new Toggle(L10n.Tr("Enable Overlays")) { name = "overlay-toggle" });
-                m_Toggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
+                content.Add(m_EnableOverlaysToggle = new Toggle(L10n.Tr("Enable Overlays")) { name = "overlay-toggle" });
+                m_EnableOverlaysToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
                 {
                     canvas.overlaysEnabled = evt.newValue;
                 });
-                m_Toggle.SetValueWithoutNotify(canvas.overlaysEnabled);
+                m_EnableOverlaysToggle.SetValueWithoutNotify(canvas.overlaysEnabled);
+
+                content.Add(m_DynamicPanelBehaviorToggle = new Toggle(L10n.Tr("Displace Window")) { name = "overlay-toggle" });
+                m_DynamicPanelBehaviorToggle.tooltip = "This toggle determines whether panels docked as full-height dynamic panels " +
+                    "will be drawn on top of the window or displace the window content.";
+                m_DynamicPanelBehaviorToggle.RegisterCallback<ChangeEvent<bool>>((evt) =>
+                {
+                    canvas.dynamicPanelBehavior = evt.newValue ? OverlayCanvas.DynamicPanelBehavior.DisplaceWindow : OverlayCanvas.DynamicPanelBehavior.None;
+                });
+
+                var displaceWindow = canvas.dynamicPanelBehavior == OverlayCanvas.DynamicPanelBehavior.DisplaceWindow;
+                m_DynamicPanelBehaviorToggle.SetValueWithoutNotify(displaceWindow);
             }
 
             content.Add(m_Dropdown = new OverlayPresetDropdown(canvas.containerWindow));

@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
-using System.Collections.Generic;
 
 namespace UnityEditor.Build.Profile;
 
@@ -30,9 +29,9 @@ internal class BuildProfilePackageAddInfo
 
     [SerializeField]
     public string profileGuid = string.Empty;
-    [SerializeField]
+    [field: SerializeField]
     public string[] packagesToAdd { get; set; } = Array.Empty<string>();
-    [SerializeField]
+    [field: SerializeField]
     public int preconfiguredSettingsVariant { get; set; } = preconfiguredSettingsVariantNotSet;
 
     public Action OnPackageAddProgress;
@@ -47,6 +46,8 @@ internal class BuildProfilePackageAddInfo
         {
             m_PackageAddRequest = PackageManager.Client.AddAndRemove(packagesToAdd);
             m_PackageAddRequest.progressUpdated += HandlePackageAddProgress;
+            EditorApplication.update -= HandlePackageRequestCompleted;
+            EditorApplication.update += HandlePackageRequestCompleted;
         }
         else if (preconfiguredSettingsVariant != preconfiguredSettingsVariantNotSet)
         {
@@ -129,8 +130,16 @@ internal class BuildProfilePackageAddInfo
 
         m_PackageAddProgressInfo = info;
         OnPackageAddProgress?.Invoke();
-        if (done)
+    }
+
+    void HandlePackageRequestCompleted()
+    {
+        if (m_PackageAddRequest != null && m_PackageAddRequest.IsCompleted)
         {
+            EditorApplication.update -= HandlePackageRequestCompleted;
+            if (m_PackageAddRequest.Status >= PackageManager.StatusCode.Failure)
+                Debug.LogError(m_PackageAddRequest.Error.message);
+
             m_PackageAddRequest = null;
             packagesToAdd = Array.Empty<string>();
             OnPackageAddComplete?.Invoke();

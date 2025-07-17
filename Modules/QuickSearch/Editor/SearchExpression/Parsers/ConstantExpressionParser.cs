@@ -65,7 +65,11 @@ namespace UnityEditor.Search
             for (int i = 1; i < text.length - 2; ++i)
                 if (ParserUtils.IsQuote(text[i]))
                     return null;
-            return new SearchExpression(SearchExpressionType.Text, outerText, text.Substring(1, text.length - 2), ConstantEvaluator);
+
+            if (args.HasOption(SearchExpressionParserFlags.KeepStringQuotes))
+                return new SearchExpression(SearchExpressionType.Text, outerText, text, ConstantEvaluator);
+            else
+                return new SearchExpression(SearchExpressionType.Text, outerText, text.Substring(1, text.length - 2), ConstantEvaluator);
         }
 
         [SearchExpressionParser("keyword", BuiltinParserPriority.Keyword)]

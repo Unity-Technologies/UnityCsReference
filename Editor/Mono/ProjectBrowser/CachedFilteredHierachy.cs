@@ -14,7 +14,7 @@ namespace UnityEditor
     {
         public class FilterResult
         {
-            public int instanceID;
+            public EntityId entityId;
             public string name;
             public bool hasChildren;
             public int colorCode;
@@ -23,6 +23,8 @@ namespace UnityEditor
             public IconDrawStyle iconDrawStyle;
             public bool isFolder;
             public HierarchyType type;
+            public GUID assetGUID;
+            public string guid{ get { return assetGUID.ToString(); } }
             public Texture2D icon
             {
                 get
@@ -34,7 +36,7 @@ namespace UnityEditor
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
                             // at the same time so don't keep a reference in m_Icon here
-                            string path = instanceID == 0 ? null : AssetDatabase.GetAssetPath(instanceID);
+                            string path = entityId == 0 ? null : AssetDatabase.GetAssetPath(entityId);
 
                             if (path != null)
                                 // Finding icon based on only file extension fails in several ways, and a different approach have to be found.
@@ -47,14 +49,14 @@ namespace UnityEditor
                                 // itself to work correctly and universally. for e.g. uxml files from within GetCachedIcon without relying on FindIconForFile.
                                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
 
-                            path = string.IsNullOrEmpty(m_Guid) ? null : AssetDatabase.GUIDToAssetPath(m_Guid);
+                            path = assetGUID.Empty() ? null : AssetDatabase.GUIDToAssetPath(assetGUID);
                             if (path != null)
                                 return UnityEditorInternal.InternalEditorUtility.FindIconForFile(path);
                         }
                         else if (type == HierarchyType.GameObjects)
                         {
                             // GameObject thumbnail can be set to m_Icon since its an actual icon which means we have a limited set of them
-                            Object go = EditorUtility.InstanceIDToObject(instanceID);
+                            Object go = EditorUtility.EntityIdToObject(entityId);
                             m_Icon = AssetPreview.GetMiniThumbnail(go);
                         }
                         else
@@ -70,26 +72,6 @@ namespace UnityEditor
                 }
             }
             private Texture2D m_Icon;
-
-            internal string m_Guid;
-
-            public string guid
-            {
-                get
-                {
-                    if (type == HierarchyType.Assets)
-                    {
-                        if (instanceID != 0 && string.IsNullOrEmpty(m_Guid))
-                        {
-                            string path = AssetDatabase.GetAssetPath(instanceID);
-                            if (path != null)
-                                m_Guid = AssetDatabase.AssetPathToGUID(path);
-                        }
-                        return m_Guid;
-                    }
-                    return null;
-                }
-            }
         }
 
         SearchFilter m_SearchFilter = new SearchFilter();
@@ -151,7 +133,7 @@ namespace UnityEditor
                 {
                     var rootPath = "Assets";
 
-                    var path = AssetDatabase.GetAssetPath(instanceIDs[i]);
+                    var path = AssetDatabase.GetAssetPath((EntityId)instanceIDs[i]);
                     var packageInfo = PackageManager.PackageInfo.FindForAssetPath(path);
                     // Find the right rootPath if folderPath is part of a package
                     if (packageInfo != null)
@@ -166,7 +148,7 @@ namespace UnityEditor
             }
             else
             {
-                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                var property = new HierarchyIterator(m_HierarchyType, false);
                 property.Reset();
 
                 System.Array.Resize(ref m_Results, instanceIDs.Length);
@@ -194,7 +176,7 @@ namespace UnityEditor
             }
             else
             {
-                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                var property = new HierarchyIterator(m_HierarchyType, false);
                 property.Reset();
 
                 System.Array.Resize(ref m_Results, instanceIDs.Length);
@@ -216,11 +198,11 @@ namespace UnityEditor
             {
                 var rootPath = rootPaths[i];
                 var nbIds = idCounts[i];
-                HierarchyProperty property = new HierarchyProperty(rootPath, false);
+                var property = new HierarchyIterator(rootPath, false);
                 var propertiesFound = 0;
                 while (property.Next(null) && propertiesFound < nbIds)
                 {
-                    var instanceId = property.GetInstanceIDIfImported();
+                    var instanceId = property.GetEntityIdIfImported();
                     if (instanceIdsSet.Contains(instanceId))
                     {
                         ++propertiesFound;
@@ -231,12 +213,12 @@ namespace UnityEditor
             }
         }
 
-        void CopyPropertyData(ref FilterResult result, HierarchyProperty property)
+        void CopyPropertyData(ref FilterResult result, HierarchyIterator property)
         {
             if (result == null)
                 result = new FilterResult();
 
-            result.instanceID = property.GetInstanceIDIfImported();
+            result.entityId = property.GetEntityIdIfImported();
             result.name = property.name;
             result.hasChildren = property.hasChildren;
             result.colorCode = property.colorCode;
@@ -256,7 +238,10 @@ namespace UnityEditor
                 result.icon = null;
 
             if (m_HierarchyType == HierarchyType.Assets)
-                result.m_Guid = property.guid;
+            {
+                result.assetGUID = property.assetGUID;
+            }
+
         }
 
         void SearchAllAssets(SearchFilter.SearchArea area)
@@ -280,13 +265,13 @@ namespace UnityEditor
             }
             else if (m_HierarchyType == HierarchyType.GameObjects)
             {
-                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                var property = new HierarchyIterator(m_HierarchyType, false);
                 m_SearchSessionHandler.BeginSession(() =>
                 {
                     return new SearchService.SceneSearchContext
                     {
                         searchFilter = m_SearchFilter,
-                        rootProperty = property,
+                        rootIterator = property,
                         requiredTypeNames = m_SearchFilter.classNames,
                         requiredTypes = searchFilter.classNames.Select(name => TypeCache.GetTypesDerivedFrom<Object>().FirstOrDefault(t => name == t.FullName || name == t.Name))
                     };
@@ -343,12 +328,12 @@ namespace UnityEditor
             foreach (string folderPath in baseFolders)
             {
                 // Ensure we do not have a filter when finding folder
-                HierarchyProperty property = new HierarchyProperty(folderPath);
+                var property = new HierarchyIterator(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 // Set filter after we found the folder
                 int folderDepth = property.depth;
-                int[] expanded = null; // enter all children of folder
+                EntityId[] expanded = null; // enter all children of folder
                 while (property.NextWithDepthCheck(expanded, folderDepth + 1))
                 {
                     FilterResult result = new FilterResult();
@@ -364,7 +349,7 @@ namespace UnityEditor
             // We are not concerned with assets being added multiple times as we only show the contents
             // of each selected folder. This is an issue when searching recursively into child folders.
             List<FilterResult> list = new List<FilterResult>();
-            HierarchyProperty property;
+            HierarchyIterator property;
             foreach (string folderPath in m_SearchFilter.folders)
             {
                 if (folderPath == PackageManager.Folders.GetPackagesPath())
@@ -372,8 +357,8 @@ namespace UnityEditor
                     var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(m_SearchFilter.skipHidden);
                     foreach (var package in packages)
                     {
-                        var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
-                        property = new HierarchyProperty(package.assetPath);
+                        var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(package.assetPath);
+                        property = new HierarchyIterator(package.assetPath);
                         if (property.Find(packageFolderInstanceId, null))
                         {
                             FilterResult result = new FilterResult();
@@ -388,12 +373,12 @@ namespace UnityEditor
                 if (m_SearchFilter.skipHidden && !PackageManagerUtilityInternal.IsPathInVisiblePackage(folderPath))
                     continue;
 
-                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
-                property = new HierarchyProperty(folderPath);
+                int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(folderPath);
+                property = new HierarchyIterator(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 int folderDepth = property.depth;
-                int[] expanded = { folderInstanceID };
+                EntityId[] expanded = { folderInstanceID };
                 Dictionary<string , List<FilterResult>> subAssets = new Dictionary<string, List<FilterResult>>();
                 List<FilterResult> parentAssets = new List<FilterResult>();
                 while (property.Next(expanded))
@@ -412,7 +397,7 @@ namespace UnityEditor
                         List<FilterResult>  subAssetList = new List<FilterResult>();
                         subAssets.Add(result.guid, subAssetList);
                         System.Array.Resize(ref expanded, expanded.Length + 1);
-                        expanded[expanded.Length - 1] = property.instanceID;
+                        expanded[expanded.Length - 1] = property.entityId;
                     }
                     else
                     {
@@ -499,14 +484,14 @@ namespace UnityEditor
                 // Reset visible flags if filter string is empty (see BaseHiearchyProperty::SetSearchFilter)
                 if (m_HierarchyType == HierarchyType.GameObjects)
                 {
-                    HierarchyProperty gameObjects = new HierarchyProperty(HierarchyType.GameObjects, false);
+                    var gameObjects = new HierarchyIterator(HierarchyType.GameObjects, false);
                     gameObjects.SetSearchFilter(m_SearchFilter);
                     m_SearchSessionHandler.EndSession();
                 }
             }
         }
 
-        public void RefreshVisibleItems(List<int> expandedInstanceIDs)
+        public void RefreshVisibleItems(List<EntityId> expandedInstanceIDs)
         {
             bool isSearching = m_SearchFilter.IsSearching();
             List<FilterResult> visibleItems = new List<FilterResult>();
@@ -515,7 +500,7 @@ namespace UnityEditor
                 visibleItems.Add(m_Results[i]);
                 if (m_Results[i].isMainRepresentation && m_Results[i].hasChildren && !m_Results[i].isFolder)
                 {
-                    bool isParentExpanded = expandedInstanceIDs.IndexOf(m_Results[i].instanceID) >= 0;
+                    bool isParentExpanded = expandedInstanceIDs.IndexOf(m_Results[i].entityId) >= 0;
                     bool addSubItems = isParentExpanded || isSearching;
                     int numSubItems = AddSubItemsOfMainRepresentation(i, addSubItems ? visibleItems : null);
                     i += numSubItems;
@@ -529,13 +514,13 @@ namespace UnityEditor
         {
             for (int i = 0; i < m_Results.Length; ++i)
             {
-                if (m_Results[i].instanceID == mainAssetInstanceID)
+                if (m_Results[i].entityId == mainAssetInstanceID)
                 {
                     List<int> subAssetInstanceIDs = new List<int>();
                     int index = i + 1; // Start after the main representation
                     while (index < m_Results.Length && !m_Results[index].isMainRepresentation)
                     {
-                        subAssetInstanceIDs.Add(m_Results[index].instanceID);
+                        subAssetInstanceIDs.Add(m_Results[index].entityId);
                         index++;
                     }
                     return subAssetInstanceIDs;
@@ -560,20 +545,20 @@ namespace UnityEditor
         }
     }
 
-    internal class FilteredHierarchyProperty : IHierarchyProperty
+    internal class FilteredHierarchyIterator : IHierarchyIterator
     {
         FilteredHierarchy m_Hierarchy;
         int m_Position = -1;
 
-        public static IHierarchyProperty CreateHierarchyPropertyForFilter(FilteredHierarchy filteredHierarchy)
+        public static IHierarchyIterator CreateHierarchyIteratorForFilter(FilteredHierarchy filteredHierarchy)
         {
             if (filteredHierarchy.searchFilter.GetState() != SearchFilter.State.EmptySearchFilter)
-                return new FilteredHierarchyProperty(filteredHierarchy);
+                return new FilteredHierarchyIterator(filteredHierarchy);
             else
-                return new HierarchyProperty(filteredHierarchy.hierarchyType, false);
+                return new HierarchyIterator(filteredHierarchy.hierarchyType, false);
         }
 
-        public FilteredHierarchyProperty(FilteredHierarchy filter)
+        public FilteredHierarchyIterator(FilteredHierarchy filter)
         {
             m_Hierarchy = filter;
         }
@@ -583,20 +568,20 @@ namespace UnityEditor
             m_Position = -1;
         }
 
-        public int instanceID
+        public EntityId entityId
         {
             get
             {
-                var id = m_Hierarchy.results[m_Position].instanceID;
+                var id = m_Hierarchy.results[m_Position].entityId;
                 if (id == 0)
-                    m_Hierarchy.results[m_Position].instanceID = AssetDatabase.GetMainAssetInstanceID(guid);
-                return m_Hierarchy.results[m_Position].instanceID;
+                    m_Hierarchy.results[m_Position].entityId = AssetDatabase.GetMainAssetEntityId(guid);
+                return m_Hierarchy.results[m_Position].entityId;
             }
         }
 
         public Object pptrValue
         {
-            get { return EditorUtility.InstanceIDToObject(instanceID); }
+            get { return EditorUtility.EntityIdToObject(entityId); }
         }
 
         public string name
@@ -649,14 +634,19 @@ namespace UnityEditor
             get { return m_Hierarchy.results[m_Position].colorCode; }
         }
 
-        public bool IsExpanded(int[] expanded)
+        public bool IsExpanded(EntityId[] expanded)
         {
             return false;
         }
 
         public string guid
         {
-            get { return m_Hierarchy.results[m_Position].guid; }
+            get { return assetGUID.ToString(); }
+        }
+
+        public GUID assetGUID
+        {
+            get { return m_Hierarchy.results[m_Position].assetGUID; }
         }
 
         public bool isValid
@@ -669,19 +659,19 @@ namespace UnityEditor
             get { return m_Hierarchy.results[m_Position].icon; }
         }
 
-        public bool Next(int[] expanded)
+        public bool Next(EntityId[] expanded)
         {
             m_Position++;
             return m_Position < m_Hierarchy.results.Length;
         }
 
-        public bool NextWithDepthCheck(int[] expanded, int minDepth)
+        public bool NextWithDepthCheck(EntityId[] expanded, int minDepth)
         {
             // Depth check does not make sense for filtered properties as tree info is lost
             return Next(expanded);
         }
 
-        public bool Previous(int[] expanded)
+        public bool Previous(EntityId[] expanded)
         {
             m_Position--;
             return m_Position >= 0;
@@ -692,44 +682,44 @@ namespace UnityEditor
             return false;
         }
 
-        public int[] ancestors
+        public EntityId[] ancestors
         {
             get
             {
-                return new int[0];
+                return new EntityId[0];
             }
         }
 
-        public bool Find(int _instanceID, int[] expanded)
+        public bool Find(EntityId _EntityId, EntityId[] expanded)
         {
             Reset();
             while (Next(expanded))
             {
-                if (instanceID == _instanceID)
+                if (entityId == _EntityId)
                     return true;
             }
             return false;
         }
 
-        public int[] FindAllAncestors(int[] instanceIDs)
+        public EntityId[] FindAllAncestors(EntityId[] entityIds)
         {
-            return new int[0];
+            return new EntityId[0];
         }
 
-        public bool Skip(int count, int[] expanded)
+        public bool Skip(int count, EntityId[] expanded)
         {
             m_Position += count;
             return m_Position < m_Hierarchy.results.Length;
         }
 
-        public int CountRemaining(int[] expanded)
+        public int CountRemaining(EntityId[] expanded)
         {
             return m_Hierarchy.results.Length - m_Position - 1;
         }
 
-        public int GetInstanceIDIfImported()
+        public EntityId GetEntityIdIfImported()
         {
-            return m_Hierarchy.results[m_Position].instanceID;
+            return m_Hierarchy.results[m_Position].entityId;
         }
     }
 }

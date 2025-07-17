@@ -183,10 +183,13 @@ namespace UnityEditor
                 return "";
 
             var attrs = obj.GetType().GetCustomAttributes(typeof(HelpURLAttribute), true);
-            if (attrs.Length > 0)
+            for (int i = 0; i < attrs.Length; i++)
             {
-                var attr = (HelpURLAttribute)attrs[0];
+                var attr = (HelpURLAttribute)attrs[i];
                 var url = attr.URL;
+                if (string.IsNullOrEmpty(url))
+                    continue;
+                
                 if (!string.IsNullOrEmpty(attr.m_DispatchingFieldName))
                 {
                     var field = obj.GetType().GetField(attr.m_DispatchingFieldName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -325,6 +328,14 @@ namespace UnityEditor
             return false;
         }
 
+        // Object types whose help filename don't map directly to their type name can use `RegisterHelpFileName()` to
+        // register a custom help file name.
+        private static Dictionary<Type, string> m_ObjectTypeToHelpFileName = new Dictionary<Type, string>();
+        internal static bool RegisterHelpFileName(Type type, string fileName)
+        {
+            return m_ObjectTypeToHelpFileName.TryAdd(type, fileName);
+        }
+
         internal static string HelpFileNameForObject(Object obj)
         {
             if (obj.GetType().IsSubclassOf(typeof(MonoBehaviour)))
@@ -332,12 +343,17 @@ namespace UnityEditor
                 return $"script-{obj.GetType().Name}";
             }
 
+            // Check if the object type has a registered help file name.
+            if (m_ObjectTypeToHelpFileName.TryGetValue(obj.GetType(), out string helpFileName))
+            {
+                return helpFileName;
+            }
+
             return obj switch
             {
                 Terrain => "script-Terrain",
                 AudioMixerController or AudioMixerGroupController => "class-AudioMixer",
                 AudioImporter => "class-AudioClip", // UUM-96832: We don't have an entry in the manual for the audio importer.
-                VideoClipImporter => "class-VideoClip", // We don't have an entry in the manual for the video clip importer.
                 EditorSettings => "class-EditorManager",
                 SceneAsset => "CreatingScenes",
                 LightingDataAsset => "LightmapSnapshot",

@@ -176,6 +176,7 @@ namespace UnityEditor.UIElements
         private static void RegisterBuiltInTypes()
         {
             AbstractProgressBar.UxmlSerializedData.Register();
+            BackgroundField.UxmlSerializedData.Register();
             BaseBoolField.UxmlSerializedData.Register();
             BaseListView.UxmlSerializedData.Register();
             BaseTreeView.UxmlSerializedData.Register();
@@ -189,18 +190,23 @@ namespace UnityEditor.UIElements
             ColorField.UxmlSerializedData.Register();
             Column.UxmlSerializedData.Register();
             Columns.UxmlSerializedData.Register();
+            CursorField.UxmlSerializedData.Register();
             CurveField.UxmlSerializedData.Register();
             DataBinding.UxmlSerializedData.Register();
             DoubleField.UxmlSerializedData.Register();
             DropdownField.UxmlSerializedData.Register();
+            DropdownOptionListItem.UxmlSerializedData.Register();
             EnumField.UxmlSerializedData.Register();
             EnumFlagsField.UxmlSerializedData.Register();
             FloatField.UxmlSerializedData.Register();
             Foldout.UxmlSerializedData.Register();
+            FontDefinitionField.UxmlSerializedData.Register();
+            FontField.UxmlSerializedData.Register();
             GradientField.UxmlSerializedData.Register();
             GroupBox.UxmlSerializedData.Register();
             Hash128Field.UxmlSerializedData.Register();
             HelpBox.UxmlSerializedData.Register();
+            InspectorElement.UxmlSerializedData.Register();
             IntegerField.UxmlSerializedData.Register();
             LayerField.UxmlSerializedData.Register();
             LayerMaskField.UxmlSerializedData.Register();
@@ -230,11 +236,20 @@ namespace UnityEditor.UIElements
             TemplateContainer.UxmlSerializedData.Register();
             TextElement.UxmlSerializedData.Register();
             TextField.UxmlSerializedData.Register();
+            TextShadowField.UxmlSerializedData.Register();
             Toggle.UxmlSerializedData.Register();
             ToggleButtonGroup.UxmlSerializedData.Register();
+            Toolbar.UxmlSerializedData.Register();
+            ToolbarBreadcrumbs.UxmlSerializedData.Register();
+            ToolbarButton.UxmlSerializedData.Register();
+            ToolbarMenu.UxmlSerializedData.Register();
+            ToolbarPopupSearchField.UxmlSerializedData.Register();
             ToolbarSearchField.UxmlSerializedData.Register();
+            ToolbarSpacer.UxmlSerializedData.Register();
+            ToolbarToggle.UxmlSerializedData.Register();
             TreeView.UxmlSerializedData.Register();
             TwoPaneSplitView.UxmlSerializedData.Register();
+            UnityEventItem.UxmlSerializedData.Register();
             UnsignedIntegerField.UxmlSerializedData.Register();
             UnsignedLongField.UxmlSerializedData.Register();
             Vector2Field.UxmlSerializedData.Register();

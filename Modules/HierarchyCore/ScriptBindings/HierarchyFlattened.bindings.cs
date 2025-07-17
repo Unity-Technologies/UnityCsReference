@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
@@ -24,11 +25,11 @@ namespace Unity.Hierarchy
     {
         internal static class BindingsMarshaller
         {
-            public static IntPtr ConvertToNative(HierarchyFlattened hierarchyFlattened) => hierarchyFlattened.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(HierarchyFlattened hierarchyFlattened) => hierarchyFlattened.m_Ptr;
         }
 
         IntPtr m_Ptr;
-        readonly Hierarchy m_Hierarchy;
+        internal readonly Hierarchy m_Hierarchy;
         IntPtr m_NodesPtr;
         int m_NodesCount;
         int m_Version;
@@ -63,19 +64,18 @@ namespace Unity.Hierarchy
         /// </remarks>
         public extern bool UpdateNeeded { [NativeMethod("UpdateNeeded", IsThreadSafe = true)] get; }
 
-        /// <summary>
-        /// Accesses the hierarchy.
-        /// </summary>
-        public Hierarchy Hierarchy => m_Hierarchy;
+        internal unsafe HierarchyFlattenedNode* NodesPtr
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => (HierarchyFlattenedNode*)m_NodesPtr;
+        }
 
-        /// <summary>
-        /// Gets the pointer to native memory for the nodes.
-        /// </summary>
-        internal unsafe HierarchyFlattenedNode* NodesPtr => (HierarchyFlattenedNode*)m_NodesPtr;
+        internal int NodesCount
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get => m_NodesCount;
+        }
 
-        /// <summary>
-        /// Gets the version of this <see cref="HierarchyFlattened"/>.
-        /// </summary>
         internal int Version
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -215,6 +215,14 @@ namespace Unity.Hierarchy
         public extern int GetChildrenCountRecursive(in HierarchyNode node);
 
         /// <summary>
+        /// Gets the index of a hierarchy node in its parent's children list.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The node index, or -1 if invalid.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetChildIndex(in HierarchyNode node);
+
+        /// <summary>
         /// Determines the depth of a node.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
@@ -314,6 +322,12 @@ namespace Unity.Hierarchy
             hierarchyFlattened.m_NodesCount = nodesCount;
             hierarchyFlattened.m_Version = version;
         }
+        #endregion
+
+        #region Obsolete public APIs to remove in 2024
+        [Obsolete("The Hierarchy property will be removed in the future, remove its usage from your code.", false)]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public Hierarchy Hierarchy => m_Hierarchy;
         #endregion
     }
 }

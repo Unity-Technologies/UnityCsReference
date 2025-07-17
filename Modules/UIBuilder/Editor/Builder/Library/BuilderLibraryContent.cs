@@ -264,7 +264,8 @@ namespace Unity.UI.Builder
                     () => new VisualElement(),
                     (inVta, inParent, ve) =>
                     {
-                        var vea = inVta.AddElement(inParent, ve);
+                        var vea = inVta.AddVisualElementAssetFromVisualElement(inParent, ve);
+                        inVta.SetAssetAttributes(vea, ve);
 
                         const int visualElementStyled = (int)BuilderLibrary.DefaultVisualElementType.Styled;
                         if (EditorPrefs.GetInt(BuilderConstants.LibraryDefaultVisualElementType, visualElementStyled) == visualElementStyled)

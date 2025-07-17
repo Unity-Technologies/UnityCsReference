@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using UnityEditor.StyleSheets;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -44,7 +46,7 @@ namespace Unity.UI.Builder
         protected override string ExplorerGetDraggedPillText(VisualElement targetElement)
         {
             return targetElement.IsSelector()
-                ? StyleSheetToUss.ToUssSelector(targetElement.GetStyleComplexSelector())
+                ? BuilderStyleSheetExporter.GetSelectorString(targetElement.GetStyleComplexSelector())
                 : targetElement.GetStyleSheet().name + BuilderConstants.UssExtension;
         }
 
@@ -75,12 +77,14 @@ namespace Unity.UI.Builder
                 BuilderSharedStyles.MoveSelectorBetweenStyleSheets(
                     oldStyleSheetElement, newStyleSheetElement, selectorElementToReparent, undo);
 
+                paneWindow.commandHandler.UpdateStyleSheetUssPreview(oldStyleSheetElement.GetStyleSheet());
+                paneWindow.commandHandler.UpdateStyleSheetUssPreview(newStyleSheetElement.GetStyleSheet());
+
                 undo = false;
             }
 
             BuilderSharedStyles.MatchSelectorElementOrderInAsset(newStyleSheetElement, undo);
 
-            selection.NotifyOfHierarchyChange();
             selection.NotifyOfStylingChange(null);
             selection.ForceReselection();
         }
@@ -108,6 +112,10 @@ namespace Unity.UI.Builder
                     return false;
 
             if (!element.IsStyleSheet()) // Can only parent selectors under a StyleSheet.
+                return false;
+
+            // Cannot reparent stylesheets
+            if (element.IsStyleSheet() && m_TargetElementToReparent.IsStyleSheet())
                 return false;
 
             // Check if USS is part of active document.

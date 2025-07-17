@@ -6,11 +6,13 @@ using System;
 using System.Linq;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.SceneManagement;
 using UnityEngine.Video;
 
 namespace UnityEditor
 {
+    [VisibleToOtherModules]
     static class GOCreationCommands
     {
         internal enum PlacementMode
@@ -75,6 +77,7 @@ namespace UnityEditor
             return new Vector3((float)Math.Round(pivot.x, 5), (float)Math.Round(pivot.y, 5), (float)Math.Round(pivot.z, 5));
         }
 
+        [VisibleToOtherModules("UnityEditor.TextRenderingModule")]
         internal static void Place(GameObject go, GameObject parent, bool ignoreSceneViewPosition = true, bool alignWithSceneCamera = false)
         {
             Transform defaultObjectTransform = SceneView.GetDefaultParentObjectIfSet();
@@ -165,12 +168,12 @@ namespace UnityEditor
         {
             Transform[] selected = Selection.transforms;
             GameObject defaultParentObject = SceneView.GetDefaultParentObjectIfSet()?.gameObject;
-            string defaultParentObjectSceneGUID = defaultParentObject?.scene.guid;
+            var defaultParentObjectScene = defaultParentObject != null ? defaultParentObject.scene : default;
 
             // Clear default parent object so we could always reparent and move the new parent to the scene we need
             if (defaultParentObject != null)
             {
-                SceneHierarchy.ClearDefaultParentObject(defaultParentObjectSceneGUID);
+                SceneHierarchy.ClearDefaultParentObject(defaultParentObjectScene);
             }
 
             // If selected object is a prefab, get the its root object
@@ -246,10 +249,10 @@ namespace UnityEditor
                     }
                 }
 
-                SceneHierarchyWindow.lastInteractedHierarchyWindow.SetExpanded(go.GetInstanceID(), true);
+                SceneHierarchyWindow.lastInteractedHierarchyWindow?.SetExpanded(go.GetInstanceID(), true);
 
                 // Ensure empty parent after reparenting jumps into rename mode if needed UUM-15042
-                if (SceneHierarchyWindow.s_EnterRenameModeForNewGO)
+                if (HierarchyPreferences.RenameNewObjects)
                 {
                     SceneHierarchyWindow.FrameAndRenameNewGameObject();
                 }
@@ -258,7 +261,7 @@ namespace UnityEditor
             // Set back default parent object if we have one
             if (defaultParentObject != null)
             {
-                SceneHierarchy.UpdateSessionStateInfoAndActiveParentObjectValuesForScene(defaultParentObjectSceneGUID, defaultParentObject.GetInstanceID());
+                defaultParentObjectScene.defaultParent = defaultParentObject.GetEntityId();
             }
         }
 

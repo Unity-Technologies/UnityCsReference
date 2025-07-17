@@ -15,12 +15,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class RotateStyleField : BaseField<Rotate>
     {
-        public class BuilderRotateConverter : UxmlAttributeConverter<Rotate>
-        {
-            public override Rotate FromString(string value) => throw new NotImplementedException();
-            public override string ToString(Rotate value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<Rotate>.UxmlSerializedData
         {

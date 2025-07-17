@@ -38,7 +38,7 @@ internal abstract class UpdateActionBase : PackageAction
     {
         var installedVersion = version?.package.versions?.installed;
         var targetVersion = GetUpdateTarget(version);
-        if (installedVersion != null && !installedVersion.isDirectDependency && installedVersion != targetVersion)
+        if (installedVersion is { isDirectDependency: false } && installedVersion != targetVersion)
         {
             var featureSetDependents = m_PackageDatabase.GetFeaturesThatUseThisPackage(installedVersion);
             // if the installed version is being used by a Feature Set show the more specific
@@ -59,50 +59,12 @@ internal abstract class UpdateActionBase : PackageAction
             }
         }
 
-        IPackage[] packageToUninstall = null;
-        if (targetVersion.HasTag(PackageTag.Feature))
-        {
-            var customizedDependencies = m_PackageDatabase.GetCustomizedDependencies(targetVersion, true);
-            if (customizedDependencies != null && customizedDependencies.Length > 0)
+        if (!m_OperationDispatcher.Install(targetVersion))
+            return false;
 
-            {
-                var packageNameAndVersionsBuilder = new StringBuilder();
-                foreach (var package in customizedDependencies)
-                    packageNameAndVersionsBuilder.Append("\n\u2022 ").Append($"{package.displayName} - {package.versions.recommended.version}");
-                var packageNameAndVersions = packageNameAndVersionsBuilder.ToString();
-
-                var title = string.Format(L10n.Tr("Updating {0}"), version.GetDescriptor());
-                var message = customizedDependencies.Length == 1
-                    ? string.Format(
-                        L10n.Tr("This {0} includes a package version that is different from what's already installed. Would you like to reset the following package to the required version?\n\u2022 {1}"),
-                        version.GetDescriptor(), packageNameAndVersions)
-                    : string.Format(
-                        L10n.Tr("This {0} includes package versions that are different from what are already installed. Would you like to reset the following packages to the required versions?\n\u2022 {1}"),
-                        version.GetDescriptor(), packageNameAndVersions);
-
-                var result = m_Application.DisplayDialogComplex("installAndReset", title, message, L10n.Tr("Install and Reset"), L10n.Tr("Cancel"), L10n.Tr("Install Only"));
-                if (result == 1) // Cancel
-                    return false;
-                if (result == 0) // Install and reset
-                    packageToUninstall = customizedDependencies;
-            }
-        }
-
-        if (packageToUninstall != null && packageToUninstall.Length > 0)
-        {
-            m_OperationDispatcher.InstallAndResetDependencies(targetVersion, packageToUninstall);
-            PackageManagerWindowAnalytics.SendEvent("installAndReset", targetVersion);
-        }
-        else
-        {
-            if (!m_OperationDispatcher.Install(targetVersion))
-                return false;
-
-            var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
-            var eventName = $"installUpdate{installRecommended}";
-            PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion);
-        }
-
+        var installRecommended = version.package.versions.recommended == targetVersion ? "Recommended" : "NonRecommended";
+        var eventName = $"installUpdate{installRecommended}";
+        PackageManagerWindowAnalytics.SendEvent(eventName, targetVersion);
         return true;
     }
 

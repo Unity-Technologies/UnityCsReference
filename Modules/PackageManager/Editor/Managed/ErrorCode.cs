@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager
         InvalidParameter,
         Conflict,
         AggregateError,
+        ConnectionError,
         // NOTE: Error code success from the C++ API is not defined here
         // since we never create errors for successful requests
     }

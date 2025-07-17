@@ -73,6 +73,10 @@ namespace Unity.UI.Builder
                         {
                             m_StyleFields.BindStyleField(styleRow, styleField as FoldoutColorField);
                         }
+                        else if (styleField is FilterStyleField filterStyleField)
+                        {
+                            m_StyleFields.BindStyleField(styleRow, filterStyleField);
+                        }
                         else if (styleField is TransitionsListView transitionsListView)
                         {
                             GenerateTransitionPropertiesContent();
@@ -193,6 +197,10 @@ namespace Unity.UI.Builder
                     if (styleField is FoldoutField)
                     {
                         m_StyleFields.RefreshStyleField(styleField as FoldoutField);
+                    }
+                    else if (styleField is FilterStyleField filterStyleField)
+                    {
+                        m_StyleFields.RefreshStyleField(filterStyleField);
                     }
                     else if (styleField is TransitionsListView transitionsListView)
                     {

@@ -20,6 +20,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string k_AddNewRegistryDraft = L10n.Tr("Add New Registry Draft");
         private string k_RemoveRegistry = L10n.Tr("Remove registry");
         private string k_RegistrySelectionChange = L10n.Tr("Registry Selection Change");
+        private string k_RestrictedRegistry = L10n.Tr("Restricted Registry");
 
         [Serializable]
         internal new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -38,6 +39,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IApplicationProxy m_ApplicationProxy;
         private IUpmCache m_UpmCache;
         private IUpmRegistryClient m_UpmRegistryClient;
+        private ICustomDisplayDialog m_CustomDisplayDialog;
         private void ResolveDependencies()
         {
             var container = ServicesContainer.instance;
@@ -46,6 +48,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_ApplicationProxy = container.Resolve<IApplicationProxy>();
             m_UpmCache = container.Resolve<IUpmCache>();
             m_UpmRegistryClient = container.Resolve<IUpmRegistryClient>();
+            m_CustomDisplayDialog = container.Resolve<ICustomDisplayDialog>();
         }
 
         public ScopedRegistriesSettings()
@@ -209,13 +212,17 @@ namespace UnityEditor.PackageManager.UI.Internal
                {
                    if (registryInfo.compliance.status == RegistryComplianceStatus.NonCompliant)
                    {
-                       var violation = registryInfo.compliance.violations[0];
-                       if (m_ApplicationProxy.DisplayDialog("nonCompliantRegistry",
-                           L10n.Tr("Restricted registry"),
-                           string.Format(L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"), violation.message),
-                           L10n.Tr("Read More"), L10n.Tr("Close")))
-                           m_ApplicationProxy.OpenURL(violation.readMoreLink);
-
+                       var displayDialogArgs = new CustomDisplayDialogArgs(k_RestrictedRegistry, idForAnalytics: "nonCompliantRegistry")
+                       {
+                           headerIcon = Icon.RegistryErrorLarge,
+                           headerMainText = registryInfo.name,
+                           headerInfoBoxIcon = Icon.Error,
+                           headerInfoBoxText = k_RestrictedRegistry,
+                           bodyText = registryInfo.compliance.violations[0]?.message,
+                           readMoreUrl = registryInfo.compliance.violations[0]?.readMoreLink,
+                           readMoreClickedAnalyticsId = "restricted-registry-read-more-clicked"
+                       };
+                       m_CustomDisplayDialog.Show(displayDialogArgs);
                        return;
                    }
 
@@ -478,9 +485,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             var violation = draft.original.compliance.violations[0];
-            scopedRegistryNonCompliantErrorBox.text = string.Format(
-                L10n.Tr("The provider must revise this registry to comply with Unity's Terms of Service. Contact the provider for further assistance. {0}"),
-                violation.message);
+            scopedRegistryNonCompliantErrorBox.text = violation.message;
             scopedRegistryNonCompliantErrorBox.readMoreUrl = violation.readMoreLink;
         }
 
@@ -489,9 +494,9 @@ namespace UnityEditor.PackageManager.UI.Internal
         // Disallow editing existing registries defined in User or Global UPM configuration files for now
         private bool canEditSelectedRegistry =>  draft.original is null || draft.original.configSource == ConfigSource.Project;
 
-        private HelpBoxWithOptionalReadMore scopedRegistriesInfoBox => cache.Get<HelpBoxWithOptionalReadMore>("scopedRegistriesInfoBox");
+        private ExtendedHelpBox scopedRegistriesInfoBox => cache.Get<ExtendedHelpBox>("scopedRegistriesInfoBox");
         private HelpBox scopedRegistryErrorBox => cache.Get<HelpBox>("scopedRegistryErrorBox");
-        internal HelpBoxWithOptionalReadMore scopedRegistryNonCompliantErrorBox => cache.Get<HelpBoxWithOptionalReadMore>("scopedRegistryNonCompliantErrorBox");
+        internal ExtendedHelpBox scopedRegistryNonCompliantErrorBox => cache.Get<ExtendedHelpBox>("scopedRegistryNonCompliantErrorBox");
         internal VisualElement registriesList => cache.Get<VisualElement>("registriesList");
         internal VisualElement registriesRightContainer => cache.Get<VisualElement>("registriesRightContainer");
         internal TextField registryNameTextField => cache.Get<TextField>("registryNameTextField");

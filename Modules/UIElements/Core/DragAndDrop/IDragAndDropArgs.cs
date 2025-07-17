@@ -22,6 +22,7 @@ namespace UnityEngine.UIElements
         public int childIndex { get; set; }
         public DragAndDropPosition dragAndDropPosition { get; set;  }
         public DragAndDropData dragAndDropData { get; set; }
+        public EventModifiers modifiers { get; internal set; }
     }
 
     /// <summary>

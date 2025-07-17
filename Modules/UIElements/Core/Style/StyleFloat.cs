@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a float or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleFloat : IStyleValue<float>, IEquatable<StyleFloat>
     {
         /// <summary>
@@ -53,7 +54,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private float m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

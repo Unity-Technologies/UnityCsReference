@@ -54,11 +54,19 @@ namespace UnityEditor
             public static readonly GUIContent editorFont = EditorGUIUtility.TrTextContent("Editor Font");
             public static readonly GUIContent editorTextRenderingMode = EditorGUIUtility.TrTextContent("Editor Default Text Rendering Mode");
             public static readonly GUIContent editorTextSharpness = EditorGUIUtility.TrTextContent("Editor Text Sharpness");
+            public static readonly GUIContent editorTextGeneration = EditorGUIUtility.TrTextContent("Editor Text Generator Type");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Theme");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Light"), EditorGUIUtility.TrTextContent("Dark") };
+            public static readonly GUIContent useNewHierarchy = EditorGUIUtility.TrTextContent("Use new Hierarchy window");
             public static readonly GUIContent hierarchyHeader = EditorGUIUtility.TrTextContent("Hierarchy window");
-            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.");
+            public static readonly GUIContent newHierarchyHeader = EditorGUIUtility.TrTextContent("New Hierarchy");
+            public static readonly GUIContent renameNewObjects = EditorGUIUtility.TrTextContent("Rename new objects");
             public static readonly GUIContent defaultPrefabMode = EditorGUIUtility.TrTextContent("Default Prefab Mode", "This mode will be used when opening Prefab Mode from a Prefab instance in the Hierarchy.");
+            public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alphanumeric Sorting", "If enabled then you can choose between Transform sorting and Alphabetical sorting in the Hierarchy.");
+            public static readonly GUIContent syncSearchInSceneView = EditorGUIUtility.TrTextContent("Synchronize search in Scene View");
+            public static readonly GUIContent queryBuilder = EditorGUIUtility.TrTextContent("Enable Query Builder", "When enabled, the search field will use auto-completion and group queries as pills. When disabled, the search field will be in plain text mode.");
+            public static readonly GUIContent alternatingRowBackground = EditorGUIUtility.TrTextContent("Enable Alternating Row Background", "When enabled, even and odd rows will have different background colors.");
+            public static readonly GUIContent nameColumnStretchable = EditorGUIUtility.TrTextContent("Auto stretch Name Column", "When enabled, the name column will automatically stretch to take as much space as possible.");
             public static readonly GUIContent applicationFrameThrottling = EditorGUIUtility.TrTextContent("Frame Throttling (milliseconds)", "The number of milliseconds the Editor can idle between frames.");
             public static readonly GUIContent inputMaxProcessTime = EditorGUIUtility.TrTextContent("Input Throttling (milliseconds)", "The maximum number of milliseconds the Editor will take to process user inputs.");
             public static readonly GUIContent interactionMode = EditorGUIUtility.TrTextContent("Interaction Mode", "Specifies how long the Editor can idle before it updates.");
@@ -89,10 +97,10 @@ namespace UnityEditor
             public static readonly GUIContent enableExtendedLogging = EditorGUIUtility.TrTextContent("Timestamp Editor log entries", "Adds timestamp and thread Id to Editor.log messages.");
             public static readonly GUIContent enableShortcutHelperBar = EditorGUIUtility.TrTextContent("Enable Shortcut Helper Bar", "Enables the Shortcut Helper Bar in the status bar at the bottom of the main Unity Editor window.");
             public static readonly GUIContent enablePlayModeTooltips = EditorGUIUtility.TrTextContent("Enable PlayMode Tooltips", "Enables tooltips in the editor while in play mode.");
+            public static readonly GUIContent resetAllDialogBoxes = EditorGUIUtility.TrTextContent("\"Don't ask me again\" checkboxes", "Dialog boxes that can be opted out by checking a \"Don't ask me again\" checkbox.");
             public static readonly GUIContent showSecondaryWindowsInTaskbar = EditorGUIUtility.TrTextContent("Show All Windows in Taskbar",
                 @"Enabling this setting allows undocked windows to be minimized in the OS taskbar.
 By default, Windows will combine these under a single taskbar item.");
-
             public static readonly GUIContent useProjectPathInTitle = EditorGUIUtility.TrTextContent("Use Project Path in Window Title", "If enabled the Project's name is replaced in the main window title with the Project's path on disk.");
         }
 
@@ -210,8 +218,8 @@ By default, Windows will combine these under a single taskbar item.");
 
         EditorTextRenderingMode m_EditorTextRenderingMode = EditorTextRenderingMode.SDF;
         private float m_EditorTextSharpness = 0.0f;
+        TextGeneratorType m_EditorTextGeneratorType = TextGeneratorType.Standard;
         private bool m_AllowAlphaNumericHierarchy = false;
-        private PrefabStage.Mode m_DefaultPrefabModeFromHierarchy = PrefabStage.Mode.InContext;
         private GOCreationCommands.PlacementMode m_CreatePlacementMode = GOCreationCommands.PlacementMode.SceneIntersection;
         private float m_ProgressDialogDelay = 3.0f;
         private bool m_GraphSnapping;
@@ -557,16 +565,27 @@ By default, Windows will combine these under a single taskbar item.");
             if (EditorGUI.EndChangeCheck())
             {
                 EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
-                EditorTextSettings.currentEditorTextRenderingMode = m_EditorTextRenderingMode;
-                EditorApplication.UpdateEditorTextRenderingMode(m_EditorTextRenderingMode);
+                EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
 
                 // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
                 //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
                 EditorUtility.RequestScriptReload();
             }
 
-            if (m_EditorTextRenderingMode == EditorTextRenderingMode.SDF)
+            if (EditorTextSettings.GetEditorTextRenderingMode() == EditorTextRenderingMode.SDF)
                 m_EditorTextSharpness = EditorGUILayout.Slider(GeneralProperties.editorTextSharpness, m_EditorTextSharpness, -0.5f, 1.0f);
+
+            EditorGUI.BeginChangeCheck();
+            m_EditorTextGeneratorType = (TextGeneratorType)EditorGUILayout.EnumPopup(GeneralProperties.editorTextGeneration, m_EditorTextGeneratorType);
+            if (EditorGUI.EndChangeCheck())
+            {
+                EditorPrefs.SetInt("EditorTextGeneratorType", (int)m_EditorTextGeneratorType);
+                EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
+
+                // Force a domain reload to get arround caching issue (changing to bitmap might change the sizes that the code is not expecting to change)
+                //EditorApplication.RequestRepaintAllTexts(VersionChangeType.Layout | VersionChangeType.Repaint);
+                EditorUtility.RequestScriptReload();
+            }
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
@@ -635,11 +654,20 @@ By default, Windows will combine these under a single taskbar item.");
             EditorGUILayout.Space();
 
             GUILayout.Label(GeneralProperties.hierarchyHeader, EditorStyles.boldLabel);
-
             EditorGUI.indentLevel++;
+            HierarchyPreferences.DefaultPrefabModeFromHierarchy = (PrefabStage.Mode)EditorGUILayout.EnumPopup(GeneralProperties.defaultPrefabMode, HierarchyPreferences.DefaultPrefabModeFromHierarchy);
+            HierarchyPreferences.RenameNewObjects.value = EditorGUILayout.Toggle(GeneralProperties.renameNewObjects, HierarchyPreferences.RenameNewObjects);
+            EditorGUI.BeginDisabled(HierarchyPreferences.UseNewHierarchy);
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
             m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
-            m_DefaultPrefabModeFromHierarchy = (PrefabStage.Mode)EditorGUILayout.EnumPopup(GeneralProperties.defaultPrefabMode, m_DefaultPrefabModeFromHierarchy);
+            EditorGUI.EndDisabled();
+
+            GUILayout.Label(GeneralProperties.newHierarchyHeader);
+            HierarchyPreferences.UseNewHierarchy.value = EditorGUILayout.Toggle(GeneralProperties.useNewHierarchy, HierarchyPreferences.UseNewHierarchy);
+            EditorGUI.BeginDisabled(!HierarchyPreferences.UseNewHierarchy);
+            HierarchyPreferences.AlternatingRowBackground.value = EditorGUILayout.Toggle(GeneralProperties.alternatingRowBackground, HierarchyPreferences.AlternatingRowBackground);
+            HierarchyPreferences.UseQueryBuilder.value = EditorGUILayout.Toggle(GeneralProperties.queryBuilder, HierarchyPreferences.UseQueryBuilder);
+            EditorGUI.EndDisabled();
             EditorGUI.indentLevel--;
 
             EditorGUILayout.Space();
@@ -657,6 +685,15 @@ By default, Windows will combine these under a single taskbar item.");
                 if (m_TaskbarBehaviorChangedThisSession)
                 {
                     EditorGUILayout.HelpBox(ExternalProperties.changingThisSettingRequiresRestart.text, MessageType.Warning);
+                }
+            }
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                EditorGUILayout.LabelField(GeneralProperties.resetAllDialogBoxes, GUILayout.Width(EditorGUIUtility.labelWidth));
+                if (GUILayout.Button(L10n.Tr("Reset to defaults")))
+                {
+                    EditorDialog.ResetAllOptOuts();
                 }
             }
 
@@ -1237,11 +1274,12 @@ By default, Windows will combine these under a single taskbar item.");
 
             EditorPrefs.SetInt("EditorTextRenderingMode", (int)m_EditorTextRenderingMode);
             EditorPrefs.SetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", m_EditorTextSharpness);
-            EditorTextSettings.currentEditorTextRenderingMode = m_EditorTextRenderingMode;
+            EditorPrefs.SetInt("EditorTextGeneratorType", (int)m_EditorTextGeneratorType);
+            EditorTextSettings.SetEditorTextRenderingMode(m_EditorTextRenderingMode);
+            EditorTextSettings.SetEditorTextGeneratorType(m_EditorTextGeneratorType);
             EditorApplication.RequestRepaintAllTexts(VersionChangeType.Repaint);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
-            EditorPrefs.SetInt("DefaultPrefabModeFromHierarchy", (int)m_DefaultPrefabModeFromHierarchy);
 
             EditorPrefs.SetFloat("EditorBusyProgressDialogDelay", m_ProgressDialogDelay);
             GOCreationCommands.s_PlacementMode = m_CreatePlacementMode;
@@ -1330,10 +1368,10 @@ By default, Windows will combine these under a single taskbar item.");
             m_EnableCompilerMessagesLocalization = EditorPrefs.GetBool("Editor.kEnableCompilerMessagesLocalization", false);
             m_EditorTextRenderingMode = (EditorTextRenderingMode)EditorPrefs.GetInt("EditorTextRenderingMode", (int)EditorTextRenderingMode.SDF);
             m_EditorTextSharpness = EditorPrefs.GetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", 0.0f);
+            m_EditorTextGeneratorType = (TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorType", (int)TextGeneratorType.Standard);
             EditorTextSettings.SetCurrentEditorSharpness(m_EditorTextSharpness);
 
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
-            m_DefaultPrefabModeFromHierarchy = GetDefaultPrefabModeForHierarchy();
             m_ProgressDialogDelay = EditorPrefs.GetFloat("EditorBusyProgressDialogDelay", 3.0f);
 
             m_CreatePlacementMode = GOCreationCommands.s_PlacementMode;
@@ -1542,8 +1580,6 @@ By default, Windows will combine these under a single taskbar item.");
         }
 
         internal static PrefabStage.Mode GetDefaultPrefabModeForHierarchy()
-        {
-            return (PrefabStage.Mode)EditorPrefs.GetInt("DefaultPrefabModeFromHierarchy", (int)PrefabStage.Mode.InContext);
-        }
+            => HierarchyPreferences.DefaultPrefabModeFromHierarchy;
     }
 }

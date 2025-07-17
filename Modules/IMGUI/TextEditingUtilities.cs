@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using UnityEngine.TextCore.Text;
 
 namespace UnityEngine
@@ -185,23 +186,129 @@ namespace UnityEngine
             cursorIndex = selectIndex = m_CursorIndexSavedState;
             m_CursorIndexSavedState = -1;
         }
-
-        [VisibleToOtherModules]
         internal bool HandleKeyEvent(Event e)
         {
-            RestoreCursorState();
-            InitKeyActions();
-            EventModifiers m = e.modifiers;
-            e.modifiers &= ~EventModifiers.CapsLock;
-            if (s_KeyEditOps.ContainsKey(e))
+            return HandleKeyEvent(e.keyCode, e.modifiers);
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
+        {
+            var op = TextEditOpFromEnum(key, modifiers, (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX));
+            if (op.HasValue)
             {
-                TextEditOp op = (TextEditOp)s_KeyEditOps[e];
-                PerformOperation(op);
-                e.modifiers = m;
+                PerformOperation(op.Value);
                 return true;
             }
-            e.modifiers = m;
             return false;
+        }
+
+        //Used for tests
+        internal record struct KeyEvent(KeyCode key, EventModifiers modifiers);
+
+        //Used for tests
+        internal static readonly List<(KeyEvent keyEvent, TextEditOp operation)> s_GlobalKeyMappings = new()
+        {
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.FunctionKey), TextEditOp.MoveLeft),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.FunctionKey), TextEditOp.MoveRight),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.FunctionKey), TextEditOp.MoveUp),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.FunctionKey), TextEditOp.MoveDown),
+            (new KeyEvent(KeyCode.Delete, EventModifiers.FunctionKey), TextEditOp.Delete),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.FunctionKey), TextEditOp.Backspace),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.Shift | EventModifiers.FunctionKey), TextEditOp.Backspace)
+        };
+
+        //Used for tests
+        internal static readonly List<(KeyEvent keyEvent, TextEditOp operation)> s_MacKeyMappings = new()
+        {
+            // Keyboard mappings for mac
+            // TODO     MapKey ("home"):return TextEditOp.
+            // ;
+            // TODO     MapKey ("end"):return TextEditOp.ScrollEnd;
+            // TODO     MapKey ("page up"):return TextEditOp.ScrollPageUp;
+            // TODO     MapKey ("page down"):return TextEditOp.ScrollPageDown;
+            // TODO     MapKey ("page up"):return TextEditOp.ScrollPageUp;
+            // TODO     MapKey ("page down"):return TextEditOp.ScrollPageDown;
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineStart),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineEnd),
+            // TODO     MapKey ("^up"):return TextEditOp.ScrollPageUp;
+            // TODO     MapKey ("^down"):return TextEditOp.ScrollPageDown;
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.MoveWordLeft),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.MoveWordRight),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.MoveParagraphBackward),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.MoveParagraphForward),
+
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineStart),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineEnd),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveTextStart),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveTextEnd),
+
+            (new KeyEvent(KeyCode.X, EventModifiers.Command), TextEditOp.Cut),
+            (new KeyEvent(KeyCode.V, EventModifiers.Command), TextEditOp.Paste),
+
+            // emacs-like keybindings
+            (new KeyEvent(KeyCode.D, EventModifiers.Control), TextEditOp.Delete),
+            (new KeyEvent(KeyCode.H, EventModifiers.Control), TextEditOp.Backspace),
+            (new KeyEvent(KeyCode.B, EventModifiers.Control), TextEditOp.MoveLeft),
+            (new KeyEvent(KeyCode.F, EventModifiers.Control), TextEditOp.MoveRight),
+            (new KeyEvent(KeyCode.A, EventModifiers.Control), TextEditOp.MoveLineStart),
+            (new KeyEvent(KeyCode.E, EventModifiers.Control), TextEditOp.MoveLineEnd),
+
+            (new KeyEvent(KeyCode.Delete, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.DeleteWordForward),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.Alt | EventModifiers.FunctionKey), TextEditOp.DeleteWordBack),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.DeleteLineBack)
+        };
+
+        internal static readonly List<(KeyEvent keyEvent, TextEditOp operation)> s_WindowsLinuxKeyMappings = new()
+        {
+            (new KeyEvent(KeyCode.Home, EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineStart),
+            (new KeyEvent(KeyCode.End, EventModifiers.FunctionKey), TextEditOp.MoveGraphicalLineEnd),
+            // TODO     MapKey ("page up"):return TextEditOp.MovePageUp;
+            // TODO     MapKey ("page down"):return TextEditOp.MovePageDown;
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveWordLeft),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveWordRight),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveParagraphBackward),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.MoveParagraphForward),
+
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveToEndOfPreviousWord),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveToStartOfNextWord),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveParagraphBackward),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.MoveParagraphForward),
+
+            // TODO         MapKey ("#page up"):return TextEditOp.SelectPageUp;
+            // TODO         MapKey ("#page down"):return TextEditOp.SelectPageDown;
+
+            (new KeyEvent(KeyCode.Delete, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.DeleteWordForward),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.Control | EventModifiers.FunctionKey), TextEditOp.DeleteWordBack),
+            (new KeyEvent(KeyCode.Backspace, EventModifiers.Command | EventModifiers.FunctionKey), TextEditOp.DeleteLineBack),
+
+            (new KeyEvent(KeyCode.X, EventModifiers.Control), TextEditOp.Cut),
+            (new KeyEvent(KeyCode.V, EventModifiers.Control), TextEditOp.Paste),
+            (new KeyEvent(KeyCode.Delete, EventModifiers.Shift | EventModifiers.FunctionKey), TextEditOp.Cut),
+            (new KeyEvent(KeyCode.Insert, EventModifiers.Shift | EventModifiers.FunctionKey), TextEditOp.Paste)
+
+        };
+
+        //Used for tests
+        internal static TextEditOp? TextEditOpFromEnum(KeyCode key, EventModifiers modifiers, bool IsMacOsFamily)
+        {
+            //Capslock is always ignored for actions
+            modifiers &= ~EventModifiers.CapsLock;
+
+            var keyEvent = new KeyEvent(key, modifiers);
+            foreach (var mapping in s_GlobalKeyMappings)
+            {
+                if (mapping.keyEvent == keyEvent) 
+                    return mapping.operation;
+            }
+
+            foreach (var mapping in IsMacOsFamily? s_MacKeyMappings : s_WindowsLinuxKeyMappings)
+            {
+                if (mapping.keyEvent == keyEvent)
+                    return mapping.operation;
+            }
+
+            return null;
         }
 
         void PerformOperation(TextEditOp operation)
@@ -243,101 +350,6 @@ namespace UnityEngine
                 default:
                     Debug.Log("Unimplemented: " + operation);
                     break;
-            }
-        }
-
-
-        static void MapKey(string key, TextEditOp action)
-        {
-            s_KeyEditOps[Event.KeyboardEvent(key)] = action;
-        }
-
-        static Dictionary<Event, TextEditOp> s_KeyEditOps;
-        /// Set up a platform independent keyboard->Edit action map. This varies depending on whether we are on mac or windows.
-        void InitKeyActions()
-        {
-            if (s_KeyEditOps != null)
-                return;
-            s_KeyEditOps = new Dictionary<Event, TextEditOp>();
-
-            // key mappings shared by the platforms
-            MapKey("left", TextEditOp.MoveLeft);
-            MapKey("right", TextEditOp.MoveRight);
-            MapKey("up", TextEditOp.MoveUp);
-            MapKey("down", TextEditOp.MoveDown);
-
-            MapKey("delete", TextEditOp.Delete);
-            MapKey("backspace", TextEditOp.Backspace);
-            MapKey("#backspace", TextEditOp.Backspace);
-
-            // OSX is the special case for input shortcuts
-            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-            {
-                // Keyboard mappings for mac
-                // TODO     MapKey ("home", TextEditOp.ScrollStart);
-                // TODO     MapKey ("end", TextEditOp.ScrollEnd);
-                // TODO     MapKey ("page up", TextEditOp.ScrollPageUp);
-                // TODO     MapKey ("page down", TextEditOp.ScrollPageDown);
-
-                MapKey("^left", TextEditOp.MoveGraphicalLineStart);
-                MapKey("^right", TextEditOp.MoveGraphicalLineEnd);
-                // TODO     MapKey ("^up", TextEditOp.ScrollPageUp);
-                // TODO     MapKey ("^down", TextEditOp.ScrollPageDown);
-
-                MapKey("&left", TextEditOp.MoveWordLeft);
-                MapKey("&right", TextEditOp.MoveWordRight);
-                MapKey("&up", TextEditOp.MoveParagraphBackward);
-                MapKey("&down", TextEditOp.MoveParagraphForward);
-
-                MapKey("%left", TextEditOp.MoveGraphicalLineStart);
-                MapKey("%right", TextEditOp.MoveGraphicalLineEnd);
-                MapKey("%up", TextEditOp.MoveTextStart);
-                MapKey("%down", TextEditOp.MoveTextEnd);
-
-                MapKey("%x", TextEditOp.Cut);
-                MapKey("%v", TextEditOp.Paste);
-
-                // emacs-like keybindings
-                MapKey("^d", TextEditOp.Delete);
-                MapKey("^h", TextEditOp.Backspace);
-                MapKey("^b", TextEditOp.MoveLeft);
-                MapKey("^f", TextEditOp.MoveRight);
-                MapKey("^a", TextEditOp.MoveLineStart);
-                MapKey("^e", TextEditOp.MoveLineEnd);
-
-                MapKey("&delete", TextEditOp.DeleteWordForward);
-                MapKey("&backspace", TextEditOp.DeleteWordBack);
-                MapKey("%backspace", TextEditOp.DeleteLineBack);
-            }
-            else
-            {
-                // Windows/Linux keymappings
-                MapKey("home", TextEditOp.MoveGraphicalLineStart);
-                MapKey("end", TextEditOp.MoveGraphicalLineEnd);
-                // TODO     MapKey ("page up", TextEditOp.MovePageUp);
-                // TODO     MapKey ("page down", TextEditOp.MovePageDown);
-
-                MapKey("%left", TextEditOp.MoveWordLeft);
-                MapKey("%right", TextEditOp.MoveWordRight);
-                MapKey("%up", TextEditOp.MoveParagraphBackward);
-                MapKey("%down", TextEditOp.MoveParagraphForward);
-
-                MapKey("^left", TextEditOp.MoveToEndOfPreviousWord);
-                MapKey("^right", TextEditOp.MoveToStartOfNextWord);
-                MapKey("^up", TextEditOp.MoveParagraphBackward);
-                MapKey("^down", TextEditOp.MoveParagraphForward);
-
-                // TODO         MapKey ("#page up", TextEditOp.SelectPageUp);
-                // TODO         MapKey ("#page down", TextEditOp.SelectPageDown);
-
-                MapKey("^delete", TextEditOp.DeleteWordForward);
-                MapKey("^backspace", TextEditOp.DeleteWordBack);
-                MapKey("%backspace", TextEditOp.DeleteLineBack);
-
-                MapKey("^x", TextEditOp.Cut);
-                MapKey("^v", TextEditOp.Paste);
-                MapKey("#delete", TextEditOp.Cut);
-                MapKey("#insert", TextEditOp.Paste);
             }
         }
 

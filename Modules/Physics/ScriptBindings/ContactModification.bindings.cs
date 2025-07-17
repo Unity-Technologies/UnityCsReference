@@ -61,19 +61,19 @@ namespace UnityEngine
         private int numContacts;
         private IntPtr contacts;
 
-        [FreeFunction("Physics::PhysxCompatibility::TranslateTriangleIndex", true)]
+        [FreeFunction("Physics::PhysXGeometryExtension::TranslateTriangleIndex", true)]
         extern internal static uint TranslateTriangleIndex(IntPtr shapePtr, uint rawIndex);
 
-        [FreeFunction("Physics::PhysxCompatibility::ResolveShapeToInstanceID", true)]
+        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveShapeToInstanceID", true)]
         extern internal static int ResolveShapeToInstanceID(IntPtr shapePtr);
 
-        [FreeFunction("Physics::PhysxCompatibility::ResolveActorToInstanceID", true)]
+        [FreeFunction("Physics::PhysXContactModificationExtension::ResolveActorToInstanceID", true)]
         extern internal static int ResolveActorToInstanceID(IntPtr actorPtr);
 
-        [FreeFunction("Physics::PhysxCompatibility::GetActorLinearVelocity", true)]
+        [FreeFunction("Physics::PhysXContactModificationExtension::GetActorLinearVelocity", true)]
         extern internal static Vector3 GetActorLinearVelocity(IntPtr actorPtr);
 
-        [FreeFunction("Physics::PhysxCompatibility::GetActorAngularVelocity", true)]
+        [FreeFunction("Physics::PhysXContactModificationExtension::GetActorAngularVelocity", true)]
         extern internal static Vector3 GetActorAngularVelocity(IntPtr actorPtr);
 
         public int colliderInstanceID => ResolveShapeToInstanceID(shape);

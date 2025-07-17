@@ -545,7 +545,10 @@ namespace UnityEditor.U2D
                 // Reinit the platform setting view
                 m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(IsTargetMaster());
             }
-            m_ScriptablePacker.objectReferenceValue = EditorGUILayout.ObjectField(styles.packerLabel, m_ScriptablePacker.objectReferenceValue, typeof(UnityEditor.U2D.ScriptablePacker), false);
+            if (IsTargetMaster())
+            {
+                m_ScriptablePacker.objectReferenceValue = EditorGUILayout.ObjectField(styles.packerLabel, m_ScriptablePacker.objectReferenceValue, typeof(UnityEditor.U2D.ScriptablePacker), false);
+            }
             if (atlasType == AtlasType.Variant)
             {
                 EditorGUI.BeginChangeCheck();

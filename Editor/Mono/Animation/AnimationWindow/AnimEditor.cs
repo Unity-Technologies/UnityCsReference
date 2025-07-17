@@ -5,20 +5,11 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
-using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
+using UnityEditor.AnimationWindowBuiltin;
 
 namespace UnityEditor
 {
-    internal enum WrapModeFixed
-    {
-        Default = (int)WrapMode.Default,
-        Once = (int)WrapMode.Once,
-        Loop = (int)WrapMode.Loop,
-        ClampForever = (int)WrapMode.ClampForever,
-        PingPong = (int)WrapMode.PingPong
-    }
-
     [Serializable]
     class AnimEditor : ScriptableObject
     {
@@ -33,7 +24,7 @@ namespace UnityEditor
         [SerializeReference] private CurveEditor m_CurveEditor;
         [SerializeField] private AnimationWindowHierarchy m_Hierarchy;
         [SerializeField] private AnimationWindowClipPopup m_ClipPopup;
-        [SerializeField] private AnimationEventTimeLine m_Events;
+        [SerializeField] private UnityEditor.AnimationWindowBuiltin.AnimationEventTimeLine m_Events;
         [SerializeField] private AnimEditorOverlay m_Overlay;
         [SerializeField] private EditorWindow m_OwnerWindow;
 
@@ -43,10 +34,6 @@ namespace UnityEditor
 
         private float hierarchyWidth { get { return m_HorizontalSplitter.realSizes[0]; } }
         private float contentWidth { get { return m_HorizontalSplitter.realSizes[1]; } }
-
-        internal static PrefColor kEulerXColor = new PrefColor("Animation/EulerX", 1.0f, 0.0f, 1.0f, 1.0f);
-        internal static PrefColor kEulerYColor = new PrefColor("Animation/EulerY", 1.0f, 1.0f, 0.0f, 1.0f);
-        internal static PrefColor kEulerZColor = new PrefColor("Animation/EulerZ", 0.0f, 1.0f, 1.0f, 1.0f);
 
         static private Color s_SelectionRangeColorLight = new Color32(255, 255, 255, 90);
         static private Color s_SelectionRangeColorDark = new Color32(200, 200, 200, 40);
@@ -126,39 +113,13 @@ namespace UnityEditor
 
         public AnimationWindowState state { get { return m_State; } }
 
-        public AnimationWindowSelectionItem selection
+        public IAnimationWindowSelectionItem selection
         {
-            get
-            {
-                return m_State.selection;
-            }
-
-            set
-            {
-                m_State.selection = value;
-            }
+            get => m_State.selection;
+            set => m_State.selection = value;
         }
 
-        public IAnimationWindowController controlInterface
-        {
-            get
-            {
-                return state.controlInterface;
-            }
-        }
-
-        public IAnimationWindowController overrideControlInterface
-        {
-            get
-            {
-                return state.overrideControlInterface;
-            }
-
-            set
-            {
-                state.overrideControlInterface = value;
-            }
-        }
+        public IAnimationWindowController controller => state.controller;
 
         private bool triggerFraming
         {
@@ -182,8 +143,7 @@ namespace UnityEditor
             m_OwnerWindow = parent;
             m_Position = position;
 
-            if (!m_Initialized)
-                Initialize();
+            Initialize();
 
             m_State.OnGUI();
 
@@ -222,7 +182,8 @@ namespace UnityEditor
                 AddEventButtonOnGUI();
                 GUILayout.EndHorizontal();
 
-                HierarchyOnGUI();
+                Rect hierarchyLayoutRect = GUILayoutUtility.GetRect(hierarchyWidth, hierarchyWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
+                HierarchyOnGUI(hierarchyLayoutRect);
 
                 // Bottom row of controls
                 using (new GUILayout.HorizontalScope(AnimationWindowStyles.toolbarBottom))
@@ -244,6 +205,12 @@ namespace UnityEditor
                 MainContentOnGUI(contentLayoutRect);
                 TimeRulerOnGUI(timerulerRect);
                 EventLineOnGUI(eventsRect);
+
+                using (new GUILayout.HorizontalScope(AnimationWindowStyles.toolbarBottom))
+                {
+                    ApplyRevertOnGUI();
+                }
+
                 GUILayout.EndVertical();
 
                 SplitterGUILayout.EndHorizontalSplit();
@@ -262,7 +229,7 @@ namespace UnityEditor
             }
         }
 
-        void MainContentOnGUI(Rect contentLayoutRect)
+        internal void MainContentOnGUI(Rect contentLayoutRect)
         {
             //  Bail out if the hierarchy in animator is optimized.
             if (m_State.animatorIsOptimized)
@@ -336,7 +303,7 @@ namespace UnityEditor
                 return;
 
             Rect contentRectNoSliders = new Rect(contentRect.xMin, contentRect.yMin, contentRect.width - kSliderThickness, contentRect.height - kSliderThickness);
-            Rect overlayRectNoSliders = new Rect(hierarchyWidth - 1, 0f, contentWidth - kSliderThickness, m_Position.height - kSliderThickness);
+            Rect overlayRectNoSliders = new Rect(hierarchyWidth - 1, 0f, contentWidth - kSliderThickness, contentRect.yMax - kSliderThickness);
 
             GUI.BeginGroup(overlayRectNoSliders);
 
@@ -366,6 +333,7 @@ namespace UnityEditor
             {
                 m_State = new AnimationWindowState();
                 m_State.animEditor = this;
+                m_State.selection = new FallbackSelectionItem();
 
                 InitializeHorizontalSplitter();
                 InitializeClipSelection();
@@ -466,7 +434,7 @@ namespace UnityEditor
 
             if (animatableObject)
             {
-                var missingObjects = (!m_State.activeRootGameObject && !m_State.activeAnimationClip) ? AnimationWindowStyles.animatorAndAnimationClip.text : AnimationWindowStyles.animationClip.text;
+                var missingObjects = (selection.rootGameObject == null && selection.clip == null) ? AnimationWindowStyles.animatorAndAnimationClip.text : AnimationWindowStyles.animationClip.text;
 
                 string txt = String.Format(AnimationWindowStyles.formatIsMissing.text, m_State.activeGameObject.name, missingObjects);
 
@@ -474,7 +442,7 @@ namespace UnityEditor
                 const float buttonHeight = 20f;
                 const float buttonPadding = 3f;
 
-                GUIContent textContent = GUIContent.Temp(txt);
+                GUIContent textContent = EditorGUIUtility.TempContent(txt);
                 Vector2 textSize = GUI.skin.label.CalcSize(textContent);
                 Rect labelRect = new Rect(positionWithoutScrollBar.width * .5f - textSize.x * .5f, positionWithoutScrollBar.height * .5f - textSize.y * .5f, textSize.x, textSize.y);
                 GUI.Label(labelRect, textContent);
@@ -483,11 +451,8 @@ namespace UnityEditor
 
                 if (GUI.Button(buttonRect, AnimationWindowStyles.create))
                 {
-                    if (AnimationWindowUtility.InitializeGameobjectForAnimation(m_State.activeGameObject))
-                    {
-                        Component animationPlayer = AnimationWindowUtility.GetClosestAnimationPlayerComponentInParents(m_State.activeGameObject.transform);
-                        m_State.activeAnimationClip = AnimationUtility.GetAnimationClips(animationPlayer.gameObject)[0];
-                    }
+                    if (selection.InitializeSelection())
+                        AnimationWindowUtility.ControllerChanged();
 
                     //  Layout has changed, bail out now.
                     EditorGUIUtility.ExitGUI();
@@ -511,7 +476,7 @@ namespace UnityEditor
             eventsRect.width -= kSliderThickness;
             GUI.Label(eventsRect, GUIContent.none, AnimationWindowStyles.eventBackground);
 
-            using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
+            using (new EditorGUI.DisabledScope(selection.isReadOnly))
             {
                 m_Events.EventLineGUI(eventsRect, m_State);
             }
@@ -534,11 +499,30 @@ namespace UnityEditor
             }
         }
 
-        private void HierarchyOnGUI()
+        private void ApplyRevertOnGUI()
         {
-            Rect hierarchyLayoutRect = GUILayoutUtility.GetRect(hierarchyWidth, hierarchyWidth, 0f, float.MaxValue, GUILayout.ExpandHeight(true));
+            if (!selection?.isImported ?? true)
+                return;
 
-            if (!m_State.showReadOnly && !m_State.selection.animationIsEditable)
+            GUILayout.FlexibleSpace();
+            using (new EditorGUI.DisabledScope(!m_State.selection?.hasUnsavedChanges ?? true))
+            {
+                if (GUILayout.Button(AnimationWindowStyles.discardChanges, AnimationWindowStyles.miniToolbarButton, GUILayout.Width(kToggleButtonWidth)))
+                {
+                    m_State.ClearSelections();
+                    m_State.selection?.DiscardChanges();
+                }
+
+                if (GUILayout.Button(AnimationWindowStyles.applyChanges, AnimationWindowStyles.miniToolbarButton, GUILayout.Width(kToggleButtonWidth)))
+                {
+                    m_State.selection?.SaveChanges();
+                }
+            }
+        }
+
+        internal void HierarchyOnGUI(Rect hierarchyLayoutRect)
+        {
+            if (!m_State.showReadOnly && m_State.selection.isReadOnly)
             {
                 Vector2 labelSize = GUI.skin.label.CalcSize(AnimationWindowStyles.readOnlyPropertiesLabel);
 
@@ -571,7 +555,7 @@ namespace UnityEditor
             if (!m_State.showFrameRate)
                 return;
 
-            using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
+            using (new EditorGUI.DisabledScope(selection.isReadOnly))
             {
                 GUILayout.Label(AnimationWindowStyles.samples, EditorStyles.toolbarLabel);
 
@@ -590,7 +574,7 @@ namespace UnityEditor
             m_ClipPopup.OnGUI();
         }
 
-        private void DopeSheetOnGUI(Rect position)
+        internal void DopeSheetOnGUI(Rect position)
         {
             Rect noVerticalSliderRect = new Rect(position.xMin, position.yMin, position.width - kSliderThickness, position.height);
 
@@ -629,7 +613,7 @@ namespace UnityEditor
                 Repaint();
         }
 
-        private void CurveEditorOnGUI(Rect position)
+        internal void CurveEditorOnGUI(Rect position)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -663,7 +647,7 @@ namespace UnityEditor
             m_CurveEditor.EndViewGUI();
         }
 
-        private void TimeRulerOnGUI(Rect timeRulerRect)
+        internal void TimeRulerOnGUI(Rect timeRulerRect)
         {
             Rect timeRulerRectNoScrollbar = new Rect(timeRulerRect.xMin, timeRulerRect.yMin, timeRulerRect.width - kSliderThickness, timeRulerRect.height);
             Rect timeRulerBackgroundRect = timeRulerRectNoScrollbar;
@@ -697,7 +681,7 @@ namespace UnityEditor
 
             menu.AddItem(EditorGUIUtility.TextContent("Show Sample Rate"), m_State.showFrameRate, () => m_State.showFrameRate = !m_State.showFrameRate);
 
-            bool isAnimatable = selection != null && selection.animationIsEditable;
+            bool isAnimatable = !selection?.isReadOnly ?? false;
 
             GenericMenu.MenuFunction2 nullMenuFunction2 = null;
 
@@ -763,16 +747,21 @@ namespace UnityEditor
 
         private void AddEventButtonOnGUI()
         {
-            using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
+            // TODO. This is hardcoded to work with animation clips.
+            // Events are not edited like this in Motion.
+            if (selection.clip is not UnityEditor.AnimationWindowBuiltin.AnimationWindowClip clip)
+                return;
+
+            using (new EditorGUI.DisabledScope(selection.isReadOnly))
             {
                 if (GUILayout.Button(AnimationWindowStyles.addEventContent, AnimationWindowStyles.animClipToolbarButton))
-                    m_Events.AddEvent(m_State.currentTime, selection.rootGameObject, selection.animationClip);
+                    m_Events.AddEvent(m_State.currentTime, selection.rootGameObject, clip.animationClip);
             }
         }
 
         private void AddKeyframeButtonOnGUI()
         {
-            bool canAddKey = selection.animationIsEditable && m_State.filteredCurves.Count != 0;
+            bool canAddKey = !selection.isReadOnly && m_State.filteredCurves.Count != 0;
             using (new EditorGUI.DisabledScope(!canAddKey))
             {
                 if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, AnimationWindowStyles.animClipToolbarButton))
@@ -854,146 +843,12 @@ namespace UnityEditor
                 if (GUILayout.Toggle(true, AnimationWindowStyles.sequencerLinkContent, EditorStyles.toolbarButton) == false)
                 {
                     m_State.linkedWithSequencer = false;
-                    m_State.selection = null;
-                    m_State.overrideControlInterface = null;
+                    m_State.selection = new FallbackSelectionItem();
 
                     // Layout has changed, bail out now.
                     EditorGUIUtility.ExitGUI();
                 }
             }
-        }
-
-        static void ExecuteShortcut(ShortcutArguments args, Action<AnimEditor> exp)
-        {
-            var animationWindow = (AnimationWindow)args.context;
-            var animEditor = animationWindow.animEditor;
-
-            if (EditorWindow.focusedWindow != animationWindow)
-                return;
-
-            if (animEditor.stateDisabled || animEditor.state.animatorIsOptimized)
-                return;
-
-            exp(animEditor);
-
-            animEditor.Repaint();
-        }
-
-        static void ExecuteShortcut(ShortcutArguments args, Action<AnimationWindowState> exp)
-        {
-            ExecuteShortcut(args, animEditor => exp(animEditor.state));
-        }
-
-        [FormerlyPrefKeyAs("Animation/Show Curves", "c")]
-        [Shortcut("Animation/Show Curves", typeof(AnimationWindow), KeyCode.C)]
-        static void ShowCurves(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, animEditor => { animEditor.SwitchBetweenCurvesAndDopesheet(); });
-        }
-
-        [FormerlyPrefKeyAs("Animation/Play Animation", " ")]
-        [Shortcut("Animation/Play Animation", typeof(AnimationWindow), KeyCode.Space)]
-        static void TogglePlayAnimation(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state =>
-            {
-                state.playing = !state.playing;
-            });
-        }
-
-        [FormerlyPrefKeyAs("Animation/Next Frame", ".")]
-        [Shortcut("Animation/Next Frame", typeof(AnimationWindow), KeyCode.Period)]
-        static void NextFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToNextFrame());
-        }
-
-        [FormerlyPrefKeyAs("Animation/Previous Frame", ",")]
-        [Shortcut("Animation/Previous Frame", typeof(AnimationWindow), KeyCode.Comma)]
-        static void PreviousFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToPreviousFrame());
-        }
-
-        [FormerlyPrefKeyAs("Animation/Previous Keyframe", "&,")]
-        [Shortcut("Animation/Previous Keyframe", typeof(AnimationWindow), KeyCode.Comma, ShortcutModifiers.Alt)]
-        static void PreviousKeyFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToPreviousKeyframe());
-        }
-
-        [FormerlyPrefKeyAs("Animation/Next Keyframe", "&.")]
-        [Shortcut("Animation/Next Keyframe", typeof(AnimationWindow), KeyCode.Period, ShortcutModifiers.Alt)]
-        static void NextKeyFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToNextKeyframe());
-        }
-
-        [FormerlyPrefKeyAs("Animation/First Keyframe", "#,")]
-        [Shortcut("Animation/First Keyframe", typeof(AnimationWindow), KeyCode.Comma, ShortcutModifiers.Shift)]
-        static void FirstKeyFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToFirstKeyframe());
-        }
-
-        [FormerlyPrefKeyAs("Animation/Last Keyframe", "#.")]
-        [Shortcut("Animation/Last Keyframe", typeof(AnimationWindow), KeyCode.Period, ShortcutModifiers.Shift)]
-        static void LastKeyFrame(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, state => state.GoToLastKeyframe());
-        }
-
-        [FormerlyPrefKeyAs("Animation/Key Selected", "k")]
-        [Shortcut("Animation/Key Selected", null, KeyCode.K)]
-        static void KeySelected(ShortcutArguments args)
-        {
-            AnimationWindow animationWindow = AnimationWindow.GetAllAnimationWindows().Find(aw => (aw.state.previewing || aw == EditorWindow.focusedWindow));
-            if (animationWindow == null)
-                return;
-
-            var animEditor = animationWindow.animEditor;
-
-            animEditor.SaveCurveEditorKeySelection();
-            AnimationWindowUtility.AddSelectedKeyframes(animEditor.m_State, AnimationKeyTime.Frame(animEditor.state.currentFrame, animEditor.state.frameRate));
-            animEditor.state.ClearCandidates();
-            animEditor.UpdateSelectedKeysToCurveEditor();
-
-            animEditor.Repaint();
-        }
-
-        [FormerlyPrefKeyAs("Animation/Key Modified", "#k")]
-        [Shortcut("Animation/Key Modified", null, KeyCode.K, ShortcutModifiers.Shift)]
-        static void KeyModified(ShortcutArguments args)
-        {
-            AnimationWindow animationWindow = AnimationWindow.GetAllAnimationWindows().Find(aw => (aw.state.previewing || aw == EditorWindow.focusedWindow));
-            if (animationWindow == null)
-                return;
-
-            var animEditor = animationWindow.animEditor;
-
-            animEditor.SaveCurveEditorKeySelection();
-            animEditor.state.ProcessCandidates();
-            animEditor.UpdateSelectedKeysToCurveEditor();
-
-            animEditor.Repaint();
-        }
-
-        [Shortcut("Animation/Toggle Ripple", typeof(AnimationWindow), KeyCode.Alpha2, ShortcutModifiers.Shift)]
-        static void ToggleRipple(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, animEditor => { animEditor.state.rippleTime = !animEditor.state.rippleTime; });
-        }
-
-        [ClutchShortcut("Animation/Ripple (Clutch)", typeof(AnimationWindow), KeyCode.Alpha2)]
-        static void ClutchRipple(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, animEditor => { animEditor.state.rippleTimeClutch = args.stage == ShortcutStage.Begin; });
-        }
-
-        [Shortcut("Animation/Frame All", typeof(AnimationWindow), KeyCode.A)]
-        static void FrameAll(ShortcutArguments args)
-        {
-            ExecuteShortcut(args, animEditor => { animEditor.triggerFraming = true; });
         }
 
         private void PlayButtonOnGUI()
@@ -1047,9 +902,11 @@ namespace UnityEditor
             GUI.color = backupColor;
         }
 
-        private void SwitchBetweenCurvesAndDopesheet()
+        internal void FrameClipDelayed() => triggerFraming = true;
+
+        internal void SwitchBetweenCurvesAndDopesheet()
         {
-            if (!m_State.showCurveEditor)
+            if (!state.showCurveEditor)
             {
                 SwitchToCurveEditor();
             }
@@ -1075,6 +932,16 @@ namespace UnityEditor
             UpdateSelectedKeysFromCurveEditor();
             AnimationWindowUtility.SyncTimeArea(m_CurveEditor, m_DopeSheet);
             m_State.timeArea = m_DopeSheet;
+        }
+
+        internal void CreateKeyframesAtCurrentTime()
+        {
+            SaveCurveEditorKeySelection();
+            AnimationWindowUtility.AddSelectedKeyframes(m_State, AnimationKeyTime.Frame(m_State.currentFrame, m_State.frameRate));
+            m_State.ClearCandidates();
+            UpdateSelectedKeysToCurveEditor();
+
+            Repaint();
         }
 
         private void RenderSelectionOverlay(Rect rect)
@@ -1136,9 +1003,9 @@ namespace UnityEditor
             m_HorizontalSplitter.realSizes[1] = (int)Mathf.Max(Mathf.Min(m_Position.width - m_HorizontalSplitter.realSizes[0], m_HorizontalSplitter.realSizes[1]), 0);
 
             // Synchronize frame rate
-            if (selection.animationClip != null)
+            if (selection.clip?.isValid ?? false)
             {
-                m_State.frameRate = selection.animationClip.frameRate;
+                m_State.frameRate = selection.clip.frameRate;
             }
             else
             {
@@ -1146,61 +1013,30 @@ namespace UnityEditor
             }
         }
 
-        struct ChangedCurvesPerClip
-        {
-            public List<EditorCurveBinding> bindings;
-            public List<AnimationCurve> curves;
-        }
-
         // Curve editor changes curves, but we are in charge of saving them into the clip
         private void SaveChangedCurvesFromCurveEditor()
         {
             m_State.SaveKeySelection(AnimationWindowState.kEditCurveUndoLabel);
 
-            var curvesToUpdate = new Dictionary<AnimationClip, ChangedCurvesPerClip>();
-            var changedCurves = new ChangedCurvesPerClip();
+            var clip = m_State.selection.clip;
+            if (clip == null)
+                return;
 
-            for (int i = 0; i < m_CurveEditor.animationCurves.Length; ++i)
+            var curvesToUpdate = new HashSet<CurveWrapper>();
+
+            foreach (var curveWrapper in m_CurveEditor.animationCurves)
             {
-                CurveWrapper curveWrapper = m_CurveEditor.animationCurves[i];
                 if (curveWrapper.changed)
                 {
                     if (!curveWrapper.animationIsEditable)
-                        Debug.LogError("Curve is not editable and shouldn't be saved.");
+                        throw new ArgumentException("Curve is not editable and shouldn't be saved.");
 
-                    if (curveWrapper.animationClip != null)
-                    {
-                        if (curvesToUpdate.TryGetValue(curveWrapper.animationClip, out changedCurves))
-                        {
-                            changedCurves.bindings.Add(curveWrapper.binding);
-                            changedCurves.curves.Add(curveWrapper.curve.length > 0 ? curveWrapper.curve : null);
-                        }
-                        else
-                        {
-                            changedCurves.bindings = new List<EditorCurveBinding>();
-                            changedCurves.curves = new List<AnimationCurve>();
-
-                            changedCurves.bindings.Add(curveWrapper.binding);
-                            changedCurves.curves.Add(curveWrapper.curve.length > 0 ? curveWrapper.curve : null);
-
-                            curvesToUpdate.Add(curveWrapper.animationClip, changedCurves);
-                        }
-                    }
-
-                    curveWrapper.changed = false;
+                    curvesToUpdate.Add(curveWrapper);
                 }
             }
 
-            if (curvesToUpdate.Count > 0)
-            {
-                foreach (var kvp in curvesToUpdate)
-                {
-                    Undo.RegisterCompleteObjectUndo(kvp.Key, AnimationWindowState.kEditCurveUndoLabel);
-                    AnimationWindowUtility.SaveCurves(kvp.Key, kvp.Value.bindings, kvp.Value.curves);
-                }
-
-                m_State.ResampleAnimation();
-            }
+            clip.SaveCurves(curvesToUpdate, AnimationWindowState.kEditCurveUndoLabel);
+            m_State.ResampleAnimation();
         }
 
         // We sync keyframe selection from curve editor to AnimationWindowState
@@ -1216,7 +1052,7 @@ namespace UnityEditor
         }
 
         // We sync keyframe selection from AnimationWindowState to curve editor
-        private void UpdateSelectedKeysToCurveEditor()
+        internal void UpdateSelectedKeysToCurveEditor()
         {
             UpdateCurveEditorData();
 
@@ -1231,7 +1067,7 @@ namespace UnityEditor
             m_CurveEditor.EndRangeSelection();
         }
 
-        private void SaveCurveEditorKeySelection()
+        internal void SaveCurveEditorKeySelection()
         {
             // Synchronize current selection in curve editor and save selection snapshot in undo redo.
             if (m_State.showCurveEditor)
@@ -1262,7 +1098,7 @@ namespace UnityEditor
             if (type != EventType.ValidateCommand && type != EventType.ExecuteCommand)
                 return;
 
-            if (evt.commandName == EventCommandNames.Copy)
+            if (evt.commandName == "Copy")
             {
                 // If events timeline has selected events right now then bail out; copying of
                 // these will get processed later by AnimationEventTimeLine.
@@ -1277,14 +1113,14 @@ namespace UnityEditor
                 }
                 evt.Use();
             }
-            else if (evt.commandName == EventCommandNames.Paste)
+            else if (evt.commandName == "Paste")
             {
                 if (type == EventType.ExecuteCommand)
                 {
                     // If clipboard contains events right now then paste those.
-                    if (AnimationWindowEventsClipboard.CanPaste())
+                    if (m_Events.CanPaste())
                     {
-                        m_Events.PasteEvents(m_State.activeRootGameObject, m_State.activeAnimationClip, m_State.currentTime);
+                        m_Events.PasteEvents(selection.rootGameObject, selection.clip, m_State.currentTime);
                     }
                     else
                     {
@@ -1312,8 +1148,11 @@ namespace UnityEditor
         }
 
         // Called just-in-time by OnGUI
-        private void Initialize()
+        internal void Initialize()
         {
+            if (m_Initialized)
+                return;
+
             AnimationWindowStyles.Initialize();
             InitializeHierarchy();
 
@@ -1355,7 +1194,7 @@ namespace UnityEditor
         // Called once during initialization of m_State
         private void InitializeEvents()
         {
-            m_Events = new AnimationEventTimeLine(m_OwnerWindow);
+            m_Events = new AnimationWindowBuiltin.AnimationEventTimeLine(m_OwnerWindow);
         }
 
         // Called once during initialization of m_State
@@ -1418,6 +1257,53 @@ namespace UnityEditor
 
             m_State.onStartLiveEdit += OnStartLiveEdit;
             m_State.onEndLiveEdit += OnEndLiveEdit;
+        }
+
+        internal bool DisplayUnsavedChangesDialogIfNecessary()
+        {
+            if (!selection?.hasUnsavedChanges ?? true)
+                return true;
+
+            var title = m_OwnerWindow.titleContent.text;
+            var saveMessage = m_OwnerWindow.saveChangesMessage;
+
+            const int kSave = 0;
+            const int kCancel = 1;
+            const int kRevert = 2;
+
+            var option = EditorUtility.DisplayDialogComplex((string.IsNullOrEmpty(title) ? "" : (title + " - ")) + L10n.Tr("Unsaved Changes Detected"),
+                saveMessage,
+                L10n.Tr("Save"),
+                L10n.Tr("Cancel"),
+                L10n.Tr("Revert"));
+
+            try
+            {
+                switch (option)
+                {
+                    case kSave:
+                        selection?.SaveChanges();
+                        break;
+                    case kRevert:
+                        selection?.DiscardChanges();
+                        break;
+                    case kCancel:
+                        break;
+                    default:
+                        Debug.LogError("Unrecognized option.");
+                        break;
+                }
+
+                return option != kCancel;
+            }
+            catch (Exception ex)
+            {
+                EditorUtility.DisplayDialog(L10n.Tr("Save Changes Failed"),
+                    ex.Message,
+                    L10n.Tr("OK"));
+
+                return false;
+            }
         }
     }
 }

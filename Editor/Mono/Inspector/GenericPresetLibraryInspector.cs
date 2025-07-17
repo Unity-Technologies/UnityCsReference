@@ -34,7 +34,7 @@ namespace UnityEditor
             m_Header = header;
             m_EditButtonClickedCallback = editButtonClicked;
 
-            string assetPath = AssetDatabase.GetAssetPath(m_Target.GetInstanceID());
+            string assetPath = AssetDatabase.GetAssetPath(m_Target.GetEntityId());
             string extension = Path.GetExtension(assetPath);
             if (!string.IsNullOrEmpty(extension))
                 extension = extension.TrimStart('.');
@@ -64,7 +64,7 @@ namespace UnityEditor
                 s_EditButtonStyle.margin.top = 7;
             }
 
-            string assetPath = AssetDatabase.GetAssetPath(m_Target.GetInstanceID());
+            string assetPath = AssetDatabase.GetAssetPath(m_Target.GetEntityId());
             string libraryPath = Path.ChangeExtension(assetPath, null);
             bool isInAnEditorFolder = libraryPath.Contains("/Editor/");
 

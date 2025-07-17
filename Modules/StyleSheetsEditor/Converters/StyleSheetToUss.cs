@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text;
 using UnityEngine;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements;
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 
@@ -121,6 +122,7 @@ namespace UnityEditor.StyleSheets
         }
     }
 
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleSheetToUss
     {
         static void AddComment(StringBuilder sb, string comment, string indent = "")

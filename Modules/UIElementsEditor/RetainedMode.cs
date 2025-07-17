@@ -29,7 +29,6 @@ namespace UnityEditor
             Panel.initEditorUpdaterFunc = EditorPanel.InitEditorUpdater;
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
             StylePropertyReader.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
-            Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
             BindingExtensions.bindingImpl = new DefaultSerializedObjectBindingImplementation();
             EditorWindowBackendManager.defaultWindowBackend = (model) => model is IEditorWindowModel ? new DefaultEditorWindowBackend() :  new DefaultWindowBackend();
         }

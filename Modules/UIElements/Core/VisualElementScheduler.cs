@@ -72,29 +72,29 @@ namespace UnityEngine.UIElements
     /// <remarks>
     /// You can use the scheduler to create animations, update the UI, or create tasks that require a delay or repeated action.
     /// </remarks>
-    /// <remarks>  
+    /// <remarks>
     /// To schedule an action, use the <see cref="IVisualElementScheduler.Execute"/> method. The scheduler runs the action at the next frame.
     /// </remarks>
-    /// <remarks>  
+    /// <remarks>
     /// A <see cref="VisualElement"/> associates with the scheduler, which you can access through the <see cref="VisualElement.schedule"/> property.
     /// It returns an <see cref="IVisualElementScheduledItem"/> interface that provides methods to schedule the action.
     /// </remarks>
-    /// <remarks>  
-    /// For example, you can delay running of the action with the <see cref="IVisualElementScheduledItem.StartingIn"/> method. 
+    /// <remarks>
+    /// For example, you can delay running of the action with the <see cref="IVisualElementScheduledItem.StartingIn"/> method.
     /// You can also specify a condition to unschedule the action with the <see cref="IVisualElementScheduledItem.Until"/> method.
     /// </remarks>
-    /// <remarks>  
+    /// <remarks>
     /// To repeat the action at a specified interval, use the <see cref="IVisualElementScheduledItem.Every"/> method.
     /// To remove the scheduler, use the <see cref="IVisualElementScheduledItem.Pause"/> method.
     /// </remarks>
     /// <remarks>
-    /// The scheduler is active only when the VisualElement is attached to a panel. Detaching the VisualElement from the panel 
+    /// The scheduler is active only when the VisualElement is attached to a panel. Detaching the VisualElement from the panel
     /// pauses the scheduler, and reattaching it resumes the scheduler.
     /// </remarks>
     /// <example>
     /// <code lang="cs">
     /// <![CDATA[
-    /// // This example uses the scheduler to animate the title logo by changing its background image 
+    /// // This example uses the scheduler to animate the title logo by changing its background image
     /// // to the next frame every 200 milliseconds.
     /// int m_CurrentTitleLogoFrame = 0;
     /// public List<Texture2D> m_TitleLogoFrames = new List<Texture2D>();
@@ -117,14 +117,14 @@ namespace UnityEngine.UIElements
     /// <![CDATA[
     /// // This example uses the scheduler to animate the scaling of a VisualElement.
     /// IVisualElementScheduledItem m_AnimationScheduler = null;
-    /// 
+    ///
     /// public void DoScale()
     /// {
     /// // Scale the VisualElement.
-    /// }  
-    /// 
+    /// }
+    ///
     /// m_AnimationScheduler = this.schedule.Execute(DoScale).Every(1).StartingIn(0);
-    /// 
+    ///
     /// // Stop the animation
     /// m_AnimationScheduler.Pause();
     /// ]]>
@@ -171,7 +171,7 @@ namespace UnityEngine.UIElements
             private readonly EventCallback<AttachToPanelEvent> m_OnAttachToPanelCallback;
             private readonly EventCallback<DetachFromPanelEvent> m_OnDetachFromPanelCallback;
 
-            protected BaseVisualElementScheduledItem(VisualElement handler)
+            protected BaseVisualElementScheduledItem(VisualElement handler) :  base(handler.TimeSinceStartupMs())
             {
                 element = handler;
                 m_OnAttachToPanelCallback = OnElementAttachToPanelCallback;
@@ -298,7 +298,7 @@ namespace UnityEngine.UIElements
                 {
                     Resume();
                 }
-                ResetStartTime();
+                ResetStartTime(element.TimeSinceStartupMs());
                 StartingIn(delayMs);
             }
 
@@ -307,7 +307,7 @@ namespace UnityEngine.UIElements
                 if (!isScheduled)
                 {
                     isScheduled = true;
-                    ResetStartTime();
+                    ResetStartTime(element.TimeSinceStartupMs());
                     element.elementPanel.scheduler.Schedule(this);
                 }
             }

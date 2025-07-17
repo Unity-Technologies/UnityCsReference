@@ -38,7 +38,7 @@ namespace Unity.UI.Builder
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(showOptions), "show-options")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

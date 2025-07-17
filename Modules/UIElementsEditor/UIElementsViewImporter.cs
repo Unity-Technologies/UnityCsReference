@@ -25,7 +25,7 @@ namespace UnityEditor.UIElements
     // Make sure UXML is imported after assets than can be addressed in USS
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     [HelpURL("UIE-VisualTree-landing")]
-    [ScriptedImporter(version: 21, ext: "uxml", importQueueOffset: 1102)]
+    [ScriptedImporter(version: 23, ext: "uxml", importQueueOffset: 1102)]
     [ExcludeFromPreset]
     internal class UIElementsViewImporter : ScriptedImporter
     {
@@ -286,7 +286,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            LoadXmlRoot(doc, vta);
+            LoadXmlRoot(doc, vta, true);
             TryCreateInlineStyleSheet(vta);
         }
 
@@ -315,8 +315,11 @@ namespace UnityEditor.UIElements
             {
                 // in case of errors preventing the creation of the inline stylesheet,
                 // reset rule indices
-                foreach (var asset in vta.visualElementAssets)
-                    asset.ruleIndex = -1;
+                foreach (var asset in vta.DepthFirstTraversal())
+                {
+                    if (asset is VisualElementAsset vea)
+                        vea.ruleIndex = -1;
+                }
                 return;
             }
 
@@ -332,7 +335,7 @@ namespace UnityEditor.UIElements
             vta.contentHash = contentHash.GetHashCode();
         }
 
-        void LoadXmlRoot(XDocument doc, VisualTreeAsset vta)
+        void LoadXmlRoot(XDocument doc, VisualTreeAsset vta, bool generateRandomId = false)
         {
             XElement elt = doc.Root;
 
@@ -349,7 +352,7 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            LoadXml(elt, null, vta, 0);
+            LoadXml(elt, null, vta, 0, generateRandomId);
             SyncVisualTreeAssetSerializedData(vta);
         }
 
@@ -360,12 +363,13 @@ namespace UnityEditor.UIElements
             // Setup dependencies
             if (m_Context != null)
             {
-                var veaCount = vta.visualElementAssets?.Count ?? 0;
-                for (var i = 1; i < veaCount; i++)
+                foreach (var asset in vta.DepthFirstTraversal())
                 {
-                    var vea = vta.visualElementAssets[i];
-                    var dependencyKeyName = UxmlCodeDependencies.instance.FormatSerializedDependencyKeyName(vea.fullTypeName);
-                    m_Context.DependsOnCustomDependency(dependencyKeyName);
+                    if (asset is VisualElementAsset vea)
+                    {
+                        var dependencyKeyName = UxmlCodeDependencies.instance.FormatSerializedDependencyKeyName(vea.fullTypeName);
+                        m_Context.DependsOnCustomDependency(dependencyKeyName);
+                    }
                 }
             }
         }
@@ -639,7 +643,7 @@ namespace UnityEditor.UIElements
             }
         }
 
-        void LoadXml(XElement elt, UxmlAsset parent, VisualTreeAsset vta, int orderInDocument)
+        void LoadXml(XElement elt, UxmlAsset parent, VisualTreeAsset vta, int orderInDocument, bool generateRandomId = false)
         {
             var uxmlAsset = ResolveType(elt, parent, vta);
             if (uxmlAsset == null)
@@ -648,34 +652,71 @@ namespace UnityEditor.UIElements
             }
 
             int parentHash;
+            // Not a direct cast because it can fail.
+            var uObjectAsset = uxmlAsset as UxmlObjectAsset;
             if (parent == null)
             {
-                uxmlAsset.parentId = 0;
+                if (uObjectAsset != null)
+                    uObjectAsset.parentId = 0;
                 parentHash = vta.contentHash;
             }
             else
             {
-                uxmlAsset.parentId = parent.id;
+                if (uObjectAsset != null)
+                    uObjectAsset.parentId = parent.id;
                 parentHash = parent.id;
             }
 
-            if (!EnsureValidUxmlObjectChild(elt, uxmlAsset, vta))
+            if (!EnsureValidUxmlObjectChild(elt, uxmlAsset, vta, parent))
                 return;
 
             // id includes the parent id, meaning it's dependent on the whole direct hierarchy
-            uxmlAsset.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
-            uxmlAsset.orderInDocument = orderInDocument;
-
-            ParseAttributes(elt, uxmlAsset, vta, parent);
+            if (generateRandomId)
+            {
+                uxmlAsset.id = vta.GetNextUxmlAssetId(parent?.id ?? 0);
+            }
+            else
+            {
+                // id includes the parent id, meaning it's dependent on the whole direct hierarchy
+                uxmlAsset.id = (vta.GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash;
+            }
 
             var templateAsset = uxmlAsset as TemplateAsset;
             var vea = uxmlAsset as VisualElementAsset;
             if (templateAsset != null)
-                vta.templateAssets.Add(templateAsset);
+            {
+                if (null == parent)
+                {
+                    vta.visualTree.Add(templateAsset);
+                }
+                else
+                {
+                    parent.Add(templateAsset);
+                }
+            }
             else if (uxmlAsset is UxmlObjectAsset uxmlObjectAsset)
-                vta.RegisterUxmlObject(uxmlObjectAsset);
+            {
+                parent?.Add(uxmlObjectAsset);
+            }
             else
-                vta.visualElementAssets.Add(vea);
+            {
+                if (parent is VisualElementAsset veaParent)
+                {
+                    veaParent.Add(vea);
+                }
+                else
+                {
+                    if (vea?.isRoot ?? false)
+                    {
+                        vta.SetRootAsset(vea);
+                    }
+                    else
+                    {
+                        vta.visualTree.Add(vea);
+                    }
+                }
+            }
+            ParseAttributes(elt, uxmlAsset, vta, parent);
 
             if (elt.HasElements)
             {
@@ -892,13 +933,13 @@ namespace UnityEditor.UIElements
                     return null;
                 }
 
-                return new TemplateAsset(templateName, fullName, xmlns);
+                return new TemplateAsset(templateName, xmlns);
             }
 
             return new VisualElementAsset(fullName, xmlns);
         }
 
-        bool EnsureValidUxmlObjectChild(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta)
+        bool EnsureValidUxmlObjectChild(XElement elt, UxmlAsset uxmlAsset, VisualTreeAsset vta, UxmlAsset parent)
         {
             if (uxmlAsset is UxmlObjectAsset)
             {
@@ -914,14 +955,10 @@ namespace UnityEditor.UIElements
             }
 
             // Other types can't be child of a UxmlObject.
-            if (vta.uxmlObjectIds != null)
+            if (parent is UxmlObjectAsset)
             {
-                var isUxmlObjectChild = vta.uxmlObjectIds.Contains(uxmlAsset.parentId);
-                if (isUxmlObjectChild)
-                {
-                    LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, uxmlAsset.fullTypeName, elt);
-                    return false;
-                }
+                LogError(vta, ImportErrorType.Semantic, ImportErrorCode.InvalidUxmlObjectChild, uxmlAsset.fullTypeName, elt);
+                return false;
             }
 
             return true;
@@ -1063,7 +1100,6 @@ namespace UnityEditor.UIElements
                     switch (attrName)
                     {
                         case k_ClassAttr:
-                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
                             vea.classes = xattr.Value.Split(' ');
                             continue;
                         case "content-container":
@@ -1102,26 +1138,26 @@ namespace UnityEditor.UIElements
                             templateAsset.AddSlotUsage(xattr.Value, vea.id);
                             continue;
                         case k_StyleAttr:
-                            vea.SetAttribute(xattr.Name.LocalName, xattr.Value);
-                            ExCSS.StyleSheet parsed = new Parser().Parse("* { " + xattr.Value + " }");
-                            if (parsed.Errors.Count != 0)
+                            var parser = new UnityStylesheetParser();
+                            var parsed = parser.Parse("* { " + xattr.Value + " }");
+                            if (parser.errors.Count != 0)
                             {
                                 LogWarning(
                                     vta,
                                     ImportErrorType.Semantic,
                                     ImportErrorCode.InvalidCssInStyleAttribute,
-                                    parsed.Errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
+                                    parser.errors.Aggregate("", (s, error) => s + error.ToString() + "\n"),
                                     xattr);
                                 continue;
                             }
 
-                            if (parsed.StyleRules.Count != 1)
+                            if (parsed.StyleRules.Count() != 1)
                             {
                                 LogWarning(
                                     vta,
                                     ImportErrorType.Semantic,
                                     ImportErrorCode.InvalidCssInStyleAttribute,
-                                    "Expected one style rule, found " + parsed.StyleRules.Count,
+                                    "Expected one style rule, found " + parsed.StyleRules.Count(),
                                     xattr);
                                 continue;
                             }
@@ -1131,10 +1167,10 @@ namespace UnityEditor.UIElements
                             // it's then applied during tree cloning
                             m_Builder.BeginRule(-1);
                             m_CurrentLine = ((IXmlLineInfo) xattr).LineNumber;
-                            foreach (var prop in parsed.StyleRules[0].Declarations)
+                            foreach (var prop in parsed.StyleRules.First().Style.Declarations)
                             {
                                 m_Builder.BeginProperty(prop.Name);
-                                VisitValue(prop.Term);
+                                VisitValue(prop);
                                 m_Builder.EndProperty();
                             }
 

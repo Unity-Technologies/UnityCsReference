@@ -36,7 +36,7 @@ namespace UnityEditor
         SearchFilter m_SearchFilter;
         string m_SearchFilterString = "";
         Vector2 m_Scroll = Vector2.zero;
-        IEnumerator<HierarchyProperty> m_Enumerator = null;
+        IEnumerator<HierarchyIterator> m_Enumerator = null;
         const int k_MinIconSize = 20;
 
         static bool s_Open = false;
@@ -186,7 +186,7 @@ namespace UnityEditor
 
                 items.Add(new AncestorItem { assetPath = assetPath, overrideCount = -1 });
 
-                var instanceID = AssetDatabase.GetMainAssetInstanceID(assetPath);
+                var instanceID = AssetDatabase.GetMainAssetEntityId(assetPath);
                 currentGUID = PrefabUtility.GetVariantParentGUID(instanceID);
             }
 
@@ -466,7 +466,7 @@ namespace UnityEditor
                 var selection = m_ListArea.GetSelection()[0];
                 if (doubleClicked)
                 {
-                    Selection.SetActiveObjectWithContext(EditorUtility.InstanceIDToObject(selection), null);
+                    Selection.SetActiveObjectWithContext(EditorUtility.EntityIdToObject(selection), null);
                     Event.current.Use();
                     editorWindow.Close();
                     GUIUtility.ExitGUI();
@@ -481,7 +481,7 @@ namespace UnityEditor
             SearchFilterChanged();
         }
 
-        static IEnumerator<HierarchyProperty> FindInAllAssets(SearchFilter searchFilter)
+        static IEnumerator<HierarchyIterator> FindInAllAssets(SearchFilter searchFilter)
         {
             var rootPaths = new List<string>();
             rootPaths.Add("Assets");
@@ -493,7 +493,7 @@ namespace UnityEditor
 
             foreach (var rootPath in rootPaths)
             {
-                var property = new HierarchyProperty(rootPath, false);
+                var property = new HierarchyIterator(rootPath, false);
                 property.SetSearchFilter(searchFilter);
                 while (property.Next(null))
                     yield return property;
@@ -525,7 +525,7 @@ namespace UnityEditor
                     break;
                 }
 
-                var currentInstanceID = m_Enumerator.Current.instanceID;
+                var currentInstanceID = m_Enumerator.Current.entityId;
                 var variantParentGUID = PrefabUtility.GetVariantParentGUID(currentInstanceID);
                 if (variantParentGUID == m_TargetGUID)
                 {
@@ -572,15 +572,15 @@ namespace UnityEditor
                 {
                     GUIUtility.keyboardControl = GUIUtility.GetControlID(FocusType.Keyboard);
 
-                    var instanceID = AssetDatabase.GetMainAssetInstanceID(assetPath);
+                    var instanceID = AssetDatabase.GetMainAssetEntityId(assetPath);
                     EditorGUIUtility.PingObject(instanceID);
                     Event.current.Use();
                 }
                 // Double click changes selection to referenced object
                 else if (Event.current.clickCount == 2)
                 {
-                    var instanceID = AssetDatabase.GetMainAssetInstanceID(assetPath);
-                    Selection.activeInstanceID = instanceID;
+                    var instanceID = AssetDatabase.GetMainAssetEntityId(assetPath);
+                    Selection.activeEntityId = instanceID;
                     Event.current.Use();
                     editorWindow.Close();
                     GUIUtility.ExitGUI();

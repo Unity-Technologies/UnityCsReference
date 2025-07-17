@@ -14,6 +14,11 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class TemplateAsset : VisualElementAsset //<TemplateContainer>
     {
+        public static readonly string UxmlInstanceTypeName = "UnityEngine.UIElements.Instance";
+        internal const string k_AttributeOverrideElementNameAttributeName = "element-name";
+        internal const string k_DifferentTemplateWarning = $"{nameof(TemplateAsset)} previously linked to a different {nameof(VisualTreeAsset)}.";
+        internal const string k_LostTemplateError = $"{nameof(TemplateAsset)} previously had a template registration that was lost.";
+
         [SerializeField]
         private string m_TemplateAlias;
 
@@ -145,8 +150,8 @@ namespace UnityEngine.UIElements
             set { m_SlotUsages = value; }
         }
 
-        public TemplateAsset(string templateAlias, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
-            : base(fullTypeName, xmlNamespace)
+        public TemplateAsset(string templateAlias, UxmlNamespaceDefinition xmlNamespace = default)
+            : base(UxmlInstanceTypeName, xmlNamespace)
         {
             Assert.IsFalse(string.IsNullOrEmpty(templateAlias), "Template alias must not be null or empty");
             m_TemplateAlias = templateAlias;
@@ -157,6 +162,98 @@ namespace UnityEngine.UIElements
             if (m_SlotUsages == null)
                 m_SlotUsages = new List<VisualTreeAsset.SlotUsageEntry>();
             m_SlotUsages.Add(new VisualTreeAsset.SlotUsageEntry(slotName, resId));
+        }
+
+        public void SetAttributeOverride(string attributeName, string value, string[] pathToTemplateAsset)
+        {
+            if (pathToTemplateAsset == null)
+            {
+                Debug.LogError("Cannot set attribute override without a path to the template asset.");
+                return;
+            }
+
+            var overrideName = string.Join(" ", pathToTemplateAsset);
+
+            // See if the override already exists.
+            for (var i = 0; i < attributeOverrides.Count; ++i)
+            {
+                var over = attributeOverrides[i];
+
+                if (over.NamesPathMatchesElementNamesPath(pathToTemplateAsset) && over.m_AttributeName == attributeName)
+                {
+                    // If we have a more complex path, add a new override.
+                    if (over.m_ElementName != overrideName)
+                    {
+                        continue;
+                    }
+
+                    over.m_ElementName = overrideName;
+                    over.m_AttributeName = attributeName;
+                    over.m_Value = value;
+
+                    attributeOverrides[i] = over;
+                    return;
+                }
+            }
+
+            // If the override does not exist, add it.
+            var attributeOverride = new AttributeOverride
+            {
+                m_ElementName = overrideName,
+                m_NamesPath = pathToTemplateAsset,
+                m_AttributeName = attributeName,
+                m_Value = value
+            };
+
+            attributeOverrides.Add(attributeOverride);
+        }
+
+        public void RemoveAttributeOverride(string attributeName, string[] pathToTemplateAsset)
+        {
+            // See if the override already exists.
+            for (int i = 0; i < attributeOverrides.Count; ++i)
+            {
+                var over = attributeOverrides[i];
+                if (over.NamesPathMatchesElementNamesPath(pathToTemplateAsset) && over.m_AttributeName == attributeName)
+                {
+                    attributeOverrides.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
+        private protected override void OnVisualTreeAssetChanged(VisualTreeAsset previousVta, VisualTreeAsset newVta)
+        {
+            base.OnVisualTreeAssetChanged(previousVta, newVta);
+
+            var targetAsset = previousVta?.ResolveTemplate(templateAlias);
+            previousVta?.TryUnregisterTemplate(templateAlias);
+
+            if (!newVta || newVta == null)
+                return;
+
+            var templateExistsInNewVta = newVta.TemplateExists(templateAlias);
+
+            // In this case, the same template alias is defined in both visual tree asset, but refers to a different
+            // asset, which means that during the next clone, the template will now generate a different hierarchy.
+            // We'll allow it, but we will log a warning to inform the users.
+            if (templateExistsInNewVta && newVta.ResolveTemplate(templateAlias) != targetAsset)
+            {
+                if (previousVta)
+                    Debug.LogWarning(k_DifferentTemplateWarning);
+                return;
+            }
+
+            // In this case, we previously had a template asset, but we lost the reference. We'll log this as an
+            // error, since we can
+            if (!targetAsset || targetAsset == null)
+            {
+                if (!templateExistsInNewVta)
+                    Debug.LogError(k_LostTemplateError);
+                return;
+            }
+
+            newVta.TryRegisterTemplate(templateAlias, targetAsset);
         }
     }
 }

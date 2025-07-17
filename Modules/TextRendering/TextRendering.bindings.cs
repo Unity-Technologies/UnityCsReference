@@ -367,6 +367,7 @@ namespace UnityEngine
             return str.Length * 4 + 4;
         }
 
+        [VisibleToOtherModules("UnityEditor.TextRenderingModule")]
         internal static extern Font GetDefault();
 
         public bool HasCharacter(char c)
@@ -380,6 +381,9 @@ namespace UnityEngine
         public static extern string[] GetPathsToOSFonts();
         [VisibleToOtherModules("UnityEngine.TextCoreTextEngineModule")]
         internal static extern string[] GetOSFallbacks();
+
+        [ThreadSafe][VisibleToOtherModules("UnityEngine.UIElementsModule", "UnityEditor.CoreModule")]
+        internal static extern bool IsFontSmoothingEnabled();
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);
         private static extern void Internal_CreateFontFromPath([Writable] Font self, string fontPath);

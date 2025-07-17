@@ -12,6 +12,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         {
             text = L10n.Tr("Unfortunately, this package is no longer available.");
             messageType = HelpBoxMessageType.Warning;
+            analyticsId = "disabled-package-help-box";
         }
 
         public override void Refresh(IPackageVersion version)

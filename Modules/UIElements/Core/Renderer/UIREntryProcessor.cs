@@ -279,7 +279,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.Immediate;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         cmd.callback = entry.immediateCallback;
                         AppendCommand(cmd);
                         break;
@@ -289,7 +288,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.ImmediateCull;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         cmd.callback = entry.immediateCallback;
                         AppendCommand(cmd);
                         break;
@@ -338,7 +336,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushScissor;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -347,7 +344,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopScissor;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -356,7 +352,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushView;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -365,7 +360,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopView;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -374,8 +368,7 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PushDefaultMaterial;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
-                        cmd.state.material = entry.material;
+                        cmd.material = entry.material;
                         AppendCommand(cmd);
                         break;
                     }
@@ -384,7 +377,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.PopDefaultMaterial;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail = m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -393,7 +385,6 @@ namespace UnityEngine.UIElements.UIR
                         var cmd = m_RenderTreeManager.AllocCommand();
                         cmd.type = CommandType.CutRenderChain;
                         cmd.owner = m_CurrentRenderData;
-                        cmd.isTail= m_IsTail;
                         AppendCommand(cmd);
                         break;
                     }
@@ -497,11 +488,12 @@ namespace UnityEngine.UIElements.UIR
                 if (entry.type == EntryType.DrawTextMesh)
                 {
                     // Set font atlas texture gradient scale
-                    cmd.state.sdfScale = entry.textScale;
-                    cmd.state.sharpness = entry.fontSharpness;
+                    cmd.sdfScale = entry.textScale;
+                    cmd.sharpness = entry.fontSharpness;
                 }
 
-                cmd.state.isPremultiplied = (entry.flags & EntryFlags.IsPremultiplied) != 0;
+                if ((entry.flags & EntryFlags.IsPremultiplied) != 0)
+                    cmd.flags |= CommandFlags.IsPremultiplied;
 
                 m_VertsFilled += entryVertexCount;
                 m_IndicesFilled += entryIndexCount;
@@ -549,12 +541,39 @@ namespace UnityEngine.UIElements.UIR
         {
             var cmd = m_RenderTreeManager.AllocCommand();
             cmd.type = CommandType.Draw;
-            cmd.state = new State { material = material, texture = texture, stencilRef = m_StencilRef };
+            cmd.material = material;
+            cmd.texture = texture;
+            cmd.stencilRef = m_StencilRef;
             cmd.mesh = mesh;
             cmd.indexOffset = indexOffset;
             cmd.indexCount = indexCount;
             cmd.owner = m_CurrentRenderData;
-            cmd.isTail = m_IsTail;
+
+            if ((m_CurrentRenderData.owner.renderHints & RenderHints.LargePixelCoverage) != 0)
+            {
+                switch(m_RenderType)
+                {
+                    case VertexFlags.IsSolid:
+                        cmd.flags |= CommandFlags.ForceRenderTypeSolid;
+                        break;
+                    case VertexFlags.IsText:
+                        cmd.flags |= CommandFlags.ForceRenderTypeText;
+                        break;
+                    case VertexFlags.IsTextured:
+                    case VertexFlags.IsDynamic:
+                        cmd.flags |= CommandFlags.ForceRenderTypeTextured;
+                        break;
+                    case VertexFlags.IsSvgGradients:
+                        cmd.flags |= CommandFlags.ForceRenderTypeSvgGradient;
+                        break;
+                    default:
+                        Debug.LogError($"Unknown Render Type '{m_RenderType}'");
+                        break;
+                }
+
+                cmd.flags |= CommandFlags.ForceSingleTextureSlot;
+            }
+
             return cmd;
         }
 

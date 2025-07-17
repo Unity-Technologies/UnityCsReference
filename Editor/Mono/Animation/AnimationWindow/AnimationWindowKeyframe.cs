@@ -2,20 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using UnityEngine;
-using UnityEditor;
+
+using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 
 namespace UnityEditorInternal
 {
-    internal class AnimationWindowKeyframe
+    class AnimationWindowKeyframe
     {
         public float            m_InTangent;
         public float            m_OutTangent;
         public float            m_InWeight;
         public float            m_OutWeight;
         public WeightedMode     m_WeightedMode;
-        public int              m_TangentMode;
+        public TangentMode      m_LeftTangentMode;
+        public TangentMode      m_RightTangentMode;
+        public bool             m_BrokenTangent;
         public int              m_TimeHash;
         int                     m_Hash;
 
@@ -71,6 +73,24 @@ namespace UnityEditorInternal
             set { m_WeightedMode = value; }
         }
 
+        public TangentMode leftTangentMode
+        {
+            get { return m_LeftTangentMode; }
+            set { m_LeftTangentMode = value; }
+        }
+
+        public TangentMode rightTangentMode
+        {
+            get { return m_RightTangentMode; }
+            set { m_RightTangentMode = value; }
+        }
+
+        public bool brokenTangent
+        {
+            get { return m_BrokenTangent; }
+            set { m_BrokenTangent = value; }
+        }
+
         public AnimationWindowCurve curve
         {
             get { return m_curve; }
@@ -98,38 +118,10 @@ namespace UnityEditorInternal
             this.m_InWeight = key.inWeight;
             this.m_OutWeight = key.outWeight;
             this.m_WeightedMode = key.weightedMode;
-            this.m_TangentMode = key.m_TangentMode;
+            this.m_LeftTangentMode = key.m_LeftTangentMode;
+            this.m_RightTangentMode = key.m_RightTangentMode;
+            this.m_BrokenTangent = key.m_BrokenTangent;
             this.m_curve = key.m_curve;
-        }
-
-        public AnimationWindowKeyframe(AnimationWindowCurve curve, Keyframe key)
-        {
-            this.time = key.time;
-
-            if (curve.isDiscreteCurve)
-            {
-                this.value = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertFloatToDiscreteInt(key.value);
-            }
-            else
-            {
-                this.value = key.value;
-            }
-
-            this.curve = curve;
-            this.m_InTangent = key.inTangent;
-            this.m_OutTangent = key.outTangent;
-            this.m_InWeight = key.inWeight;
-            this.m_OutWeight = key.outWeight;
-            this.m_WeightedMode = key.weightedMode;
-            this.m_TangentMode = key.tangentModeInternal;
-            this.m_curve = curve;
-        }
-
-        public AnimationWindowKeyframe(AnimationWindowCurve curve, ObjectReferenceKeyframe key)
-        {
-            this.time = key.time;
-            this.value = key.value;
-            this.curve = curve;
         }
 
         public int GetHash()
@@ -157,41 +149,6 @@ namespace UnityEditorInternal
                 }
             }
             return -1;
-        }
-
-        public Keyframe ToKeyframe()
-        {
-            float floatValue;
-            if (curve.isDiscreteCurve)
-            {
-                // case 1395978
-                // Negative int values converted to float create NaN values. Limiting discrete int values to only positive values
-                // until we rewrite the animation backend with dedicated int curves.
-                floatValue = UnityEngine.Animations.DiscreteEvaluationAttributeUtilities.ConvertDiscreteIntToFloat(Math.Max(Convert.ToInt32(value), 0));
-            }
-            else
-            {
-                floatValue = Convert.ToSingle(value);
-            }
-
-            var keyframe = new Keyframe(time, floatValue, inTangent, outTangent);
-
-            keyframe.tangentModeInternal = m_TangentMode;
-            keyframe.weightedMode = weightedMode;
-            keyframe.inWeight = inWeight;
-            keyframe.outWeight = outWeight;
-
-            return keyframe;
-        }
-
-        public ObjectReferenceKeyframe ToObjectReferenceKeyframe()
-        {
-            var keyframe = new ObjectReferenceKeyframe();
-
-            keyframe.time = time;
-            keyframe.value = (UnityEngine.Object)value;
-
-            return keyframe;
         }
     }
 }

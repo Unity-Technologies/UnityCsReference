@@ -7,19 +7,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEngine;
-using ParserStyleSheet = ExCSS.StyleSheet;
-using ParserStyleRule = ExCSS.StyleRule;
-using UnityStyleSheet = UnityEngine.UIElements.StyleSheet;
-using UnityEngine.UIElements;
-using UnityEngine.UIElements.StyleSheets;
 using ExCSS;
 using UnityEditor.AssetImporters;
-using UnityEditor.UIElements;
+using UnityEngine;
 using UnityEngine.Bindings;
-using UnityEngine.TextCore.Text;
-using Object = UnityEngine.Object;
+using UnityEngine.UIElements;
+using UnityEngine.UIElements.StyleSheets;
+using Color = UnityEngine.Color;
 using Debug = UnityEngine.Debug;
+using Object = UnityEngine.Object;
+using ParserStyleSheet = ExCSS.Stylesheet;
+using UnityStyleSheet = UnityEngine.UIElements.StyleSheet;
 
 namespace UnityEditor.UIElements.StyleSheets
 {
@@ -29,25 +27,40 @@ namespace UnityEditor.UIElements.StyleSheets
 
         internal static StyleSheetImportGlossary glossary => s_Glossary ?? (s_Glossary = new StyleSheetImportGlossary());
 
-        const string k_ResourcePathFunctionName = "resource";
-        const string k_VariableFunctionName = "var";
+        static readonly Dictionary<string, Dimension.Unit> s_UnitNameToDimensionUnit = new()
+        {
+            { UnitNames.Px, Dimension.Unit.Pixel },
+            { UnitNames.Percent, Dimension.Unit.Percent },
+            { UnitNames.S, Dimension.Unit.Second },
+            { UnitNames.Ms, Dimension.Unit.Millisecond },
+            { UnitNames.Deg, Dimension.Unit.Degree },
+            { UnitNames.Grad, Dimension.Unit.Gradian },
+            { UnitNames.Rad, Dimension.Unit.Radian },
+            { UnitNames.Turn, Dimension.Unit.Turn },
+        };
 
-        protected readonly UnityEditor.AssetImporters.AssetImportContext m_Context;
-        protected readonly Parser m_Parser;
+        static Dictionary<string, StyleValueKeyword> s_NameCache;
+
+        const string k_ResourcePathFunctionName = "resource";
+
+        protected readonly AssetImportContext m_Context;
+        protected readonly UnityStylesheetParser m_Parser;
         protected readonly StyleSheetBuilder m_Builder;
-        protected readonly StyleSheetImportErrors m_Errors;
+        internal readonly StyleSheetImportErrors m_Errors;
         protected readonly StyleValidator m_Validator;
         protected string m_AssetPath;
         protected int m_CurrentLine;
 
-        public StyleValueImporter(UnityEditor.AssetImporters.AssetImportContext context)
+        readonly StringBuilder m_StringBuilder = new StringBuilder();
+
+        public StyleValueImporter(AssetImportContext context)
         {
             if (context == null)
                 throw new System.ArgumentNullException(nameof(context));
 
             m_Context = context;
             m_AssetPath = context.assetPath;
-            m_Parser = new Parser();
+            m_Parser = new UnityStylesheetParser();
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors()
             {
@@ -60,10 +73,54 @@ namespace UnityEditor.UIElements.StyleSheets
         {
             m_Context = null;
             m_AssetPath = null;
-            m_Parser = new Parser();
+            m_Parser = new UnityStylesheetParser();
             m_Builder = new StyleSheetBuilder();
             m_Errors = new StyleSheetImportErrors();
             m_Validator = new StyleValidator();
+        }
+
+        static StyleValueImporter()
+        {
+            // Add custom psuedo class support to our validation
+            PseudoClassSelectorFactory.Selectors["selected"] = PseudoClassSelector.Create("selected");
+        }
+
+        /// <summary>
+        /// ExCSS StylesheetParser with error capturing.
+        /// </summary>
+        protected class UnityStylesheetParser : StylesheetParser
+        {
+            public readonly List<TokenizerError> errors = new List<TokenizerError>();
+
+            public UnityStylesheetParser() : base(
+                // So we can parse unknown rules and declarations, supports our variables etc.
+                includeUnknownRules: true,
+                includeUnknownDeclarations: true,
+                tolerateInvalidValues: true,
+
+                // Supports unknown psuedo class and psuedo element names
+                tolerateInvalidSelectors: true,
+
+                // Preserve duplicate properties. We may want to remove this support in the future.
+                preserveDuplicateProperties: true,
+
+                // We added this support
+                // Prevents ExCSS from expanding properties like "margin: 1px 2px" into "margin-top: 1px; margin-right: 2px; margin-bottom: 1px; margin-left: 2px"
+                expandShorthandProperties: false)
+            {
+                ErrorHandler = HandleError;
+            }
+
+            public override Stylesheet Parse(string content)
+            {
+                errors.Clear();
+                return base.Parse(content);
+            }
+
+            void HandleError(object sender, TokenizerError tokenizerError)
+            {
+                errors.Add(tokenizerError);
+            }
         }
 
         public bool disableValidation { get; set; }
@@ -192,7 +249,8 @@ namespace UnityEditor.UIElements.StyleSheets
                 }
 
                 if (clonedImages?.Count > 0)
-                    newScalableImages.Add(new ScalableImage() {
+                    newScalableImages.Add(new ScalableImage()
+                    {
                         normalImage = clonedImages[0] as Texture2D,
                         highResolutionImage = clonedImages[1] as Texture2D
                     });
@@ -248,11 +306,13 @@ namespace UnityEditor.UIElements.StyleSheets
                                 {
                                     scalableImageIndex = newScalableImages.Count;
                                     var highResClones = CloneAsset(highResTex);
-                                    newScalableImages.Add(new ScalableImage() {
+                                    newScalableImages.Add(new ScalableImage()
+                                    {
                                         normalImage = clonedAssets[0] as Texture2D,
                                         highResolutionImage = highResClones[0] as Texture2D
                                     });
-                                    scalableImagePaths[path] = new StoredAsset() {
+                                    scalableImagePaths[path] = new StoredAsset()
+                                    {
                                         si = newScalableImages[newScalableImages.Count - 1],
                                         index = scalableImageIndex
                                     };
@@ -353,7 +413,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 using (var so = new SerializedObject(font))
                 {
-                        var oldTex = so.FindProperty("m_Texture").objectReferenceValue;
+                    var oldTex = so.FindProperty("m_Texture").objectReferenceValue;
                     if (oldTex != null)
                     {
                         //Reuse the same texture if the reference was equal
@@ -375,37 +435,6 @@ namespace UnityEditor.UIElements.StyleSheets
             return clonedAssets;
         }
 
-        protected void VisitResourceFunction(GenericFunction funcTerm)
-        {
-            var argTerm = funcTerm.Arguments.FirstOrDefault() as PrimitiveTerm;
-            if (argTerm == null)
-            {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, funcTerm.Name, m_CurrentLine);
-                return;
-            }
-
-            string path = argTerm.Value as string;
-            m_Builder.AddValue(path, StyleValueType.ResourcePath);
-        }
-
-        protected void VisitCustomFilter(GenericFunction funcTerm)
-        {
-            if (funcTerm.Name == StyleValueFunctionExtension.k_NoneFilter)
-                m_Builder.AddValue(StyleValueFunction.NoneFilter);
-            else
-                m_Builder.AddValue(StyleValueFunction.CustomFilter);
-
-            m_Builder.AddValue(funcTerm.Arguments.Count(a => !(a is Whitespace)));
-            if (funcTerm.Arguments.Length > 0)
-            {
-                var pathTerm = funcTerm.Arguments[0] as PrimitiveTerm;
-                VisitUrlFunction(pathTerm);
-            }
-
-            for (int i = 1; i < funcTerm.Arguments.Length; ++i)
-                VisitValue(funcTerm.Arguments[i]);
-        }
-
         internal static (StyleSheetImportErrorCode, string) ConvertErrorCode(URIValidationResult result)
         {
             switch (result)
@@ -421,10 +450,8 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
-        protected void VisitUrlFunction(PrimitiveTerm term)
+        void VisitUrlFunction(string path)
         {
-            string path = (string)term.Value;
-
             var response = URIHelpers.ValidateAssetURL(assetPath, path);
 
             if (response.hasWarningMessage)
@@ -434,7 +461,7 @@ namespace UnityEditor.UIElements.StyleSheets
 
             if (response.result != URIValidationResult.OK)
             {
-                var(_, message) = ConvertErrorCode(response.result);
+                var (_, message) = ConvertErrorCode(response.result);
 
                 m_Builder.AddValue(path, StyleValueType.MissingAssetReference);
                 m_Errors.AddValidationWarning(string.Format(message, response.errorToken), m_CurrentLine);
@@ -522,7 +549,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         if (!allowed.Any())
                             return;
 
-                        Type assetType = assetToStore.GetType();
+                        var assetType = assetToStore.GetType();
 
                         // If none of the allowed types are compatible with the asset type, output a warning
                         if (!allowed.Any(t => t.IsAssignableFrom(assetType)))
@@ -540,7 +567,7 @@ namespace UnityEditor.UIElements.StyleSheets
                     // Asset is actually missing OR we couldn't load it for some reason; this should result in
                     // response.result != URIValidationResult.OK (above) but if assets are deleted while Unity is
                     // already open, we fall in here instead.
-                    var(_, message) = ConvertErrorCode(URIValidationResult.InvalidURIProjectAssetPath);
+                    var (_, message) = ConvertErrorCode(URIValidationResult.InvalidURIProjectAssetPath);
 
                     // In case of error, we still want to call AddValue, with parameters to indicate the problem, in order
                     // to keep the full layout from being discarded. We also add appropriate warnings to explain to the
@@ -551,102 +578,103 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
-        private bool ValidateFunction(GenericFunction term, out StyleValueFunction func)
+        bool ValidateFunction(FunctionToken functionToken, out StyleValueFunction func)
         {
             func = StyleValueFunction.Unknown;
-            if (term.Arguments.Length == 0)
+            if (functionToken.ArgumentTokens.Count() == 0)
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, string.Format(glossary.missingFunctionArgument, term.Name), m_CurrentLine);
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, string.Format(glossary.missingFunctionArgument, functionToken.Data), functionToken.Position.Line, functionToken.Position.Column);
                 return false;
             }
 
-            if (term.Name == k_VariableFunctionName)
+            if (functionToken.Data == StyleValueFunctionExtension.k_Var)
             {
                 func = StyleValueFunction.Var;
-                return ValidateVarFunction(term);
+                return ValidateVarFunction(functionToken);
             }
 
             try
             {
-                func = StyleValueFunctionExtension.FromUssString(term.Name);
+                func = StyleValueFunctionExtension.FromUssString(functionToken.Data);
             }
-            catch (System.Exception)
+            catch (Exception)
             {
                 var prop = m_Builder.currentProperty;
-                m_Errors.AddValidationWarning(string.Format(glossary.unknownFunction, term.Name, prop.name), prop.line);
+                m_Errors.AddValidationWarning(string.Format(glossary.unknownFunction, functionToken.Data, prop.name), functionToken.Position.Line, functionToken.Position.Column);
                 return false;
             }
 
             return true;
         }
 
-        private bool ValidateVarFunction(GenericFunction term)
+        bool ValidateVarFunction(FunctionToken functionToken)
         {
-            var argc = term.Arguments.Length;
-            var arg = term.Arguments[0];
-
             bool foundVar = false;
             bool foundComma = false;
-            for (int i = 0; i < argc; i++)
+
+            var args = functionToken.ArgumentTokens.ToList<Token>();
+            args.Trim();
+
+            for (int i = 0; i < args.Count; ++i)
             {
-                arg = term.Arguments[i];
-                if (arg.GetType() == typeof(Whitespace))
+                var arg = args[i];
+                if (arg.Type == TokenType.Whitespace)
                     continue;
 
-                // First arg is always a variable
                 if (!foundVar)
                 {
-                    var variableTerm = term.Arguments[i] as PrimitiveTerm;
-                    string varName = variableTerm?.Value as string;
+                    var varName = arg.ToValue();
                     if (string.IsNullOrEmpty(varName))
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.missingVariableName, m_CurrentLine);
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.missingVariableName, arg.Position.Line, arg.Position.Column);
                         return false;
                     }
                     if (!varName.StartsWith("--"))
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.missingVariablePrefix, varName), m_CurrentLine);
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.missingVariablePrefix, varName), arg.Position.Line, arg.Position.Column);
                         return false;
                     }
                     if (varName.Length < 3)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyVariableName, m_CurrentLine);
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyVariableName, arg.Position.Line, arg.Position.Column);
                         return false;
                     }
 
                     foundVar = true;
+                    continue;
                 }
-                else if (arg.GetType() == typeof(Comma))
+
+                if (arg.Type == TokenType.Comma)
                 {
                     if (foundComma)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.tooManyFunctionArguments, m_CurrentLine);
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.tooManyFunctionArguments, arg.Position.Line, arg.Position.Column);
                         return false;
                     }
 
                     foundComma = true;
 
                     ++i;
-                    if (i >= argc)
+                    if (i >= args.Count)
                     {
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyFunctionArgument, m_CurrentLine);
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, glossary.emptyFunctionArgument, arg.Position.Line, arg.Position.Column);
                         return false;
                     }
                 }
                 else if (!foundComma)
                 {
                     string token = "";
-                    while (arg.GetType() == typeof(Whitespace) && i + 1 < argc)
+                    while (arg.Type == TokenType.Whitespace && i + 1 < args.Count)
                     {
-                        arg = term.Arguments[++i];
+                        arg = args[++i];
                     }
 
-                    if (arg.GetType() != typeof(Whitespace))
+                    if (arg.Type != TokenType.Whitespace)
                     {
-                        token = arg.ToString();
+                        token = arg.Data;
                     }
 
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.unexpectedTokenInFunction, token), m_CurrentLine);
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidVarFunction, string.Format(glossary.unexpectedTokenInFunction, token), arg.Position.Line, arg.Position.Column);
                     return false;
                 }
             }
@@ -654,156 +682,260 @@ namespace UnityEditor.UIElements.StyleSheets
             return true;
         }
 
-        protected void VisitValue(Term term)
+        protected void VisitValue(Property property)
         {
-            var primitiveTerm = term as PrimitiveTerm;
-            var colorTerm = term as HtmlColor;
-            var funcTerm = term as GenericFunction;
-            var termList = term as TermList;
-            var commaTerm = term as Comma;
-            var wsTerm = term as Whitespace;
+            // First we need to determine if the tokens are actually one long string.
+            // Some deliminators such as dot(.) will cause it to be split into multiple strings.
+            if (IsTokenString(property.DeclaredValue.Original))
+            {
+                var generatedString = BuildStringFromTokens(property.DeclaredValue.Original);
+                if (!string.IsNullOrEmpty(generatedString))
+                {
+                    m_Builder.AddValue(generatedString, StyleValueType.String);
+                    return;
+                }
+            }
 
-            if (term == PrimitiveTerm.Inherit)
+            foreach (var t in property.DeclaredValue.Original)
             {
-                m_Builder.AddValue(StyleValueKeyword.Inherit);
-            }
-            else if (primitiveTerm != null)
-            {
-                string rawStr = term.ToString();
-
-                switch (primitiveTerm.PrimitiveType)
-                {
-                    case UnitType.Number:
-                        float? floatValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(floatValue.Value);
-                        break;
-                    case UnitType.Pixel:
-                        float? pixelValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(pixelValue.Value, Dimension.Unit.Pixel));
-                        break;
-                    case UnitType.Percentage:
-                        float? percentValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(percentValue.Value, Dimension.Unit.Percent));
-                        break;
-                    case UnitType.Second:
-                        float? secondValue = primitiveTerm.GetFloatValue(UnitType.Second);
-                        m_Builder.AddValue(new Dimension(secondValue.Value, Dimension.Unit.Second));
-                        break;
-                    case UnitType.Millisecond:
-                        float? msValue = primitiveTerm.GetFloatValue(UnitType.Millisecond);
-                        m_Builder.AddValue(new Dimension(msValue.Value, Dimension.Unit.Millisecond));
-                        break;
-                    case UnitType.Degree:
-                        float? degValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(degValue.Value, Dimension.Unit.Degree));
-                        break;
-                    case UnitType.Grad:
-                        float? gradValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(gradValue.Value, Dimension.Unit.Gradian));
-                        break;
-                    case UnitType.Radian:
-                        float? radValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(radValue.Value, Dimension.Unit.Radian));
-                        break;
-                    case UnitType.Turn:
-                        float? turnValue = primitiveTerm.GetFloatValue(UnitType.Pixel);
-                        m_Builder.AddValue(new Dimension(turnValue.Value, Dimension.Unit.Turn));
-                        break;
-                    case UnitType.Ident:
-                        StyleValueKeyword keyword;
-                        if (TryParseKeyword(rawStr, out keyword))
-                        {
-                            m_Builder.AddValue(keyword);
-                        }
-                        else if (rawStr.StartsWith("--"))
-                        {
-                            m_Builder.AddValue(rawStr, StyleValueType.Variable);
-                        }
-                        else
-                        {
-                            m_Builder.AddValue(rawStr, StyleValueType.Enum);
-                        }
-                        break;
-                    case UnitType.String:
-                        string unquotedStr = rawStr.Trim('\'', '\"');
-                        m_Builder.AddValue(unquotedStr, StyleValueType.String);
-                        break;
-                    case UnitType.Uri:
-                        VisitUrlFunction(primitiveTerm);
-                        break;
-                    default:
-                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, string.Format(glossary.unsupportedUnit, primitiveTerm.ToString()), m_CurrentLine);
-                        return;
-                }
-            }
-            else if (colorTerm != null)
-            {
-                var color = new Color((float)colorTerm.R / 255.0f, (float)colorTerm.G / 255.0f, (float)colorTerm.B / 255.0f, (float)colorTerm.A / 255.0f);
-                m_Builder.AddValue(color);
-            }
-            else if (funcTerm != null)
-            {
-                if (funcTerm.Name == k_ResourcePathFunctionName)
-                {
-                    VisitResourceFunction(funcTerm);
-                }
-                else if (funcTerm.Name == StyleValueFunctionExtension.k_NoneFilter || funcTerm.Name == StyleValueFunctionExtension.k_CustomFilter)
-                {
-                    VisitCustomFilter(funcTerm);
-                }
-                else
-                {
-                    StyleValueFunction func;
-                    if (!ValidateFunction(funcTerm, out func))
-                        return;
-
-                    m_Builder.AddValue(func);
-                    m_Builder.AddValue(funcTerm.Arguments.Count(a => !(a is Whitespace)));
-                    foreach (var arg in funcTerm.Arguments)
-                        VisitValue(arg);
-                }
-            }
-            else if (termList != null)
-            {
-                int valueCount = 0;
-                foreach (Term childTerm in termList)
-                {
-                    VisitValue(childTerm);
-                    ++valueCount;
-
-                    // Add separator
-                    if (valueCount < termList.Length)
-                    {
-                        var termSeparator = termList.GetSeparatorAt(valueCount - 1);
-                        switch (termSeparator)
-                        {
-                            case TermList.TermSeparator.Comma:
-                                m_Builder.AddCommaSeparator();
-                                break;
-                            case TermList.TermSeparator.Space:
-                            case TermList.TermSeparator.Colon:
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException(nameof(termSeparator));
-                        }
-                    }
-                }
-            }
-            else if (commaTerm != null)
-            {
-                m_Builder.AddCommaSeparator();
-            }
-            else if (wsTerm != null)
-            {
-                // skip
-            }
-            else
-            {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedTerm, string.Format(glossary.unsupportedTerm, term.GetType().Name), m_CurrentLine);
+                VisitToken(t);
             }
         }
 
-        static Dictionary<string, StyleValueKeyword> s_NameCache;
+        void VisitToken(Token token)
+        {
+            switch (token)
+            {
+                // Hex colors
+                case ColorToken colorToken:
+                    if (ColorUtility.TryParseHtmlString("#" + colorToken.Data, out var color))
+                        m_Builder.AddValue(color);
+                    else
+                        m_Errors.AddSyntaxError("Could not parse color token: " + colorToken.Data, colorToken.Position.Line, colorToken.Position.Column);
+                    break;
+
+                // Anything in the format func(args)
+                case FunctionToken functionToken:
+                    VisitFunctionToken(functionToken);
+                    break;
+
+                case KeywordToken keywordToken:
+                {
+                    // A keyword can be a color name such as "red"
+                    if (keywordToken.Type == TokenType.Ident)
+                    {
+                        if (TryParseKeyword(keywordToken.Data, out var keyword))
+                        {
+                            m_Builder.AddValue(keyword);
+                        }
+                        else if (keywordToken.Data.StartsWith("--"))
+                        {
+                            m_Builder.AddValue(keywordToken.Data, StyleValueType.Variable);
+                        }
+                        else
+                        {
+                            m_Builder.AddValue(keywordToken.Data, StyleValueType.Enum);
+                        }
+                    }
+                    else
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedTerm, string.Format(glossary.unsupportedTerm, keywordToken.Data, keywordToken.Type), keywordToken.Position.Line, keywordToken.Position.Column);
+                    }
+                    break;
+                }
+
+                case NumberToken numberToken:
+                    m_Builder.AddValue(numberToken.Value);
+                    break;
+
+                case StringToken stringToken:
+                    m_Builder.AddValue(stringToken.Data, StyleValueType.String);
+                    break;
+
+                case UnitToken unitToken:
+                    if (s_UnitNameToDimensionUnit.TryGetValue(unitToken.Unit, out var dimensionUnit))
+                    {
+                        m_Builder.AddValue(new Dimension(unitToken.Value, dimensionUnit));
+                    }
+                    else
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedUnit, string.Format(glossary.unsupportedUnit, unitToken.ToValue()), unitToken.Position.Line, unitToken.Position.Column);
+                    }
+                    break;
+
+                case UrlToken urlToken:
+                    VisitUrlFunction(urlToken.Data);
+                    break;
+
+                default:
+
+                    switch (token.Type)
+                    {
+                        case TokenType.Whitespace:
+                        case TokenType.Colon:
+                            // skip
+                            break;
+
+                        case TokenType.Comma:
+                            m_Builder.AddCommaSeparator();
+                            break;
+
+                        default:
+                            m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedTerm, string.Format(glossary.unsupportedTerm, token.Data, token.Type), token.Position.Line, token.Position.Column);
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        void VisitFunctionToken(FunctionToken functionToken)
+        {
+            switch (functionToken.Data)
+            {
+                case "rgb":
+                    if (TryCreateColorFromFunctionToken(functionToken, 3, out var colorRgb))
+                        m_Builder.AddValue(colorRgb);
+                    break;
+
+                case "rgba":
+                    if (TryCreateColorFromFunctionToken(functionToken, 4, out var colorRgba))
+                        m_Builder.AddValue(colorRgba);
+                    break;
+
+                case k_ResourcePathFunctionName:
+                    if (functionToken.ArgumentTokens.FirstOrDefault() is StringToken stringToken)
+                        m_Builder.AddValue(stringToken.Data, StyleValueType.ResourcePath);
+                    else
+                    {
+                        var generatedPath = BuildStringFromTokens(functionToken.ArgumentTokens);
+                        if (!string.IsNullOrEmpty(generatedPath))
+                        {
+                            m_Builder.AddValue(m_StringBuilder.ToString(), StyleValueType.ResourcePath);
+                            m_StringBuilder.Clear();
+                        }
+                        else
+                        {
+                            m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, functionToken.Data, functionToken.Position.Line, functionToken.Position.Column);
+                        }
+                    }
+                    break;
+
+                case StyleValueFunctionExtension.k_NoneFilter:
+                    m_Builder.AddValue(StyleValueFunction.NoneFilter);
+                    VisitCustomFilter(functionToken);
+                    break;
+
+                case StyleValueFunctionExtension.k_CustomFilter:
+                    m_Builder.AddValue(StyleValueFunction.CustomFilter);
+                    VisitCustomFilter(functionToken);
+                    break;
+
+                // env, var etc
+                default:
+                    if (ValidateFunction(functionToken, out var func))
+                    {
+                        m_Builder.AddValue(func);
+                        m_Builder.AddValue(functionToken.ArgumentTokens.Count(t => t.Type != TokenType.Whitespace));
+                        foreach (var token in functionToken.ArgumentTokens)
+                        {
+                            VisitToken(token);
+                        }
+                    }
+                    break;
+            }
+        }
+
+        bool IsTokenString(IEnumerable<Token> tokens)
+        {
+            if (tokens.Count() > 1)
+            {
+                foreach (var t in tokens)
+                {
+                    if (t.Type != TokenType.String &&
+                        t.Type != TokenType.Delim &&
+                        t.Type != TokenType.Ident)
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        string BuildStringFromTokens(IEnumerable<Token> tokens)
+        {
+            m_StringBuilder.Clear();
+            foreach (var token in tokens)
+            {
+                if (token.Type != TokenType.Whitespace)
+                    m_StringBuilder.Append(token.Data);
+            }
+            return m_StringBuilder.ToString();
+        }
+
+        void VisitCustomFilter(FunctionToken functionToken)
+        {
+            // Used typed ToList to prevent extenion method ToList from being used.
+            var args = functionToken.ArgumentTokens.ToList<Token>();
+
+            m_Builder.AddValue(args.Count(a => a.Type != TokenType.Whitespace));
+
+            // First arg is a url
+            if (args.Count > 0)
+            {
+                VisitUrlFunction(args[0].Data);
+            }
+
+            // Process remaining args
+            for (int i = 1; i < args.Count; ++i)
+                VisitToken(args[i]);
+        }
+
+        bool TryCreateColorFromFunctionToken(FunctionToken functionToken, int expectedChannels, out Color color)
+        {
+            // We expect colors in the form rgba(int, int, int, float) or rgba(float, float, float, float)
+
+            // Extract the channels as float values and determine if the rgb format is int or float
+            bool rgbIsInteger = true;
+
+            color = new Color(0, 0, 0, 1);
+            int channelsProcessed = 0;
+            foreach (var arg in functionToken.ArgumentTokens)
+            {
+                if (arg is NumberToken numberToken)
+                {
+                    color[channelsProcessed++] = numberToken.Value;
+
+                    // We have a decimal value and can be certain that rgb is in float format
+                    if (!numberToken.IsInteger && channelsProcessed != 4)
+                    {
+                        rgbIsInteger = false;
+                    }
+
+                   if (channelsProcessed == 4)
+                        break;
+                }
+            }
+
+            if (channelsProcessed != expectedChannels)
+            {
+                m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, string.Format(glossary.missingFunctionArgument, functionToken.Data), functionToken.Position.Line, functionToken.Position.Column);
+                return false;
+            }
+
+            // Convert valuues
+            if (rgbIsInteger)
+            {
+                // Convert to float
+                for (int i = 0; i < Mathf.Min(3, expectedChannels); ++i)
+                {
+                    color[i] /= 255.0f;
+                }
+            }
+
+            return true;
+        }
 
         static bool TryParseKeyword(string rawStr, out StyleValueKeyword value)
         {
@@ -822,7 +954,7 @@ namespace UnityEditor.UIElements.StyleSheets
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class StyleSheetImporterImpl : StyleValueImporter
     {
-        static readonly Parser s_Parser = new Parser();
+        static readonly StylesheetParser s_Parser = new StylesheetParser();
         static readonly HashSet<string> s_StyleSheetsWithCircularImportDependencies = new HashSet<string>();
         static readonly HashSet<string> s_StyleSheetsUnsortedDependencies = new HashSet<string>();
         static readonly List<string> s_StyleSheetProjectRelativeImportPaths = new List<string>();
@@ -854,13 +986,11 @@ namespace UnityEditor.UIElements.StyleSheets
                 return;
 
             var styleSheet = s_Parser.Parse(contents);
-            var importDirectivesCount = styleSheet.ImportDirectives.Count;
 
             s_StyleSheetProjectRelativeImportPaths.Clear();
-            for (var i = 0; i < importDirectivesCount; ++i)
+            foreach (var import in styleSheet.ImportRules)
             {
-                var importedPath = styleSheet.ImportDirectives[i].Href;
-                var importResult = URIHelpers.ValidAssetURL(assetPath, importedPath, out _, out var projectRelativePath);
+                var importResult = URIHelpers.ValidAssetURL(assetPath, import.Href, out _, out var projectRelativePath);
                 if (importResult == URIValidationResult.OK)
                 {
                     if (!s_StyleSheetProjectRelativeImportPaths.Contains(projectRelativePath))
@@ -911,8 +1041,8 @@ namespace UnityEditor.UIElements.StyleSheets
 
         public void Import(UnityStyleSheet asset, string contents)
         {
-            ParserStyleSheet styleSheet = m_Parser.Parse(contents);
-            ImportParserStyleSheet(asset, styleSheet);
+            var styleSheet = m_Parser.Parse(contents);
+            ImportParserStyleSheet(asset, styleSheet, m_Parser.errors);
 
             var h = new Hash128();
             byte[] b = Encoding.UTF8.GetBytes(contents);
@@ -923,15 +1053,27 @@ namespace UnityEditor.UIElements.StyleSheets
             asset.contentHash = h.GetHashCode();
         }
 
-        protected void ImportParserStyleSheet(UnityStyleSheet asset, ParserStyleSheet styleSheet)
+        void AddUssParserError(TokenizerError error)
+        {
+            // Currntly ExCSS 4.3 has the same info in error.Message, we will try to add more detail:
+            var code = (ParseError)error.Code;
+            string errorMessage = error.Message;
+            if (code == ParseError.InvalidBlockStart)
+                errorMessage = "Invalid block start, no selector found before the opening curly bracket.";
+
+            var errorMsg = $"{(ParseError)error.Code} : {errorMessage}";
+            m_Errors.AddSyntaxError(string.Format(glossary.ussParsingError, errorMsg), error.Position.Line, error.Position.Column);
+        }
+
+        protected void ImportParserStyleSheet(UnityStyleSheet asset, ParserStyleSheet styleSheet, List<TokenizerError> errors)
         {
             m_Errors.assetPath = assetPath;
 
-            if (styleSheet.Errors.Count > 0)
+            if (errors.Count > 0)
             {
-                foreach (StylesheetParseError error in styleSheet.Errors)
+                foreach (var error in errors)
                 {
-                    m_Errors.AddSyntaxError(string.Format(glossary.ussParsingError, error.Message), error.Line);
+                    AddUssParserError(error);
                 }
             }
             else
@@ -953,11 +1095,12 @@ namespace UnityEditor.UIElements.StyleSheets
 
                 if (!s_StyleSheetsWithCircularImportDependencies.Contains(assetPath))
                 {
-                    var importDirectivesCount = styleSheet.ImportDirectives.Count;
+                    var importRules = styleSheet.ImportRules.ToList();
+                    var importDirectivesCount = importRules.Count;
                     asset.imports = new UnityStyleSheet.ImportStruct[importDirectivesCount];
                     for (int i = 0; i < importDirectivesCount; ++i)
                     {
-                        var importedPath = styleSheet.ImportDirectives[i].Href;
+                        var importedPath = importRules[i].Href;
 
                         var response = URIHelpers.ValidateAssetURL(assetPath, importedPath);
                         var importResult = response.result;
@@ -972,7 +1115,7 @@ namespace UnityEditor.UIElements.StyleSheets
                         UnityStyleSheet importedStyleSheet = null;
                         if (importResult != URIValidationResult.OK)
                         {
-                            var(code, message) = ConvertErrorCode(importResult);
+                            var (code, message) = ConvertErrorCode(importResult);
                             m_Errors.AddSemanticWarning(code, string.Format(message, errorToken), m_CurrentLine);
                         }
                         else
@@ -996,8 +1139,12 @@ namespace UnityEditor.UIElements.StyleSheets
                         asset.imports[i] = new UnityStyleSheet.ImportStruct
                         {
                             styleSheet = importedStyleSheet,
-                            mediaQueries = styleSheet.ImportDirectives[i].Media.ToArray()
+                            mediaQueries = new string[importRules[i].Media.Length]
                         };
+                        for (int j = 0; j < importRules[i].Media.Length; ++j)
+                        {
+                            asset.imports[i].mediaQueries[j] = importRules[i].Media[j];
+                        }
                     }
 
                     if (importDirectivesCount > 0)
@@ -1029,7 +1176,7 @@ namespace UnityEditor.UIElements.StyleSheets
             if (!disableValidation)
             {
                 var name = property.Name;
-                var value = property.Term.ToString();
+                var value = property.Value;
                 var result = m_Validator.ValidateProperty(name, value);
                 if (!result.success)
                 {
@@ -1037,32 +1184,42 @@ namespace UnityEditor.UIElements.StyleSheets
                     if (!string.IsNullOrEmpty(result.hint))
                         msg = $"{msg} -> {result.hint}";
 
-                    m_Errors.AddValidationWarning(msg, property.Line);
+                    m_Errors.AddValidationWarning(msg, GetPropertyLine(property));
                 }
             }
         }
 
+        int GetPropertyLine(Property property)
+        {
+            // Property doesnt seem to have a position. StylesheetText is always null.
+            // Grab it from the first token
+            return property.DeclaredValue.Original[0].Position.Line;
+        }
+
         void VisitSheet(ParserStyleSheet styleSheet)
         {
-            foreach (ParserStyleRule rule in styleSheet.StyleRules)
+            foreach (var rule in styleSheet.StyleRules)
             {
-                m_Builder.BeginRule(rule.Line);
+                m_Builder.BeginRule(rule.StylesheetText.Range.Start.Line);
 
-                m_CurrentLine = rule.Line;
+                m_CurrentLine = rule.StylesheetText.Range.Start.Line;
 
                 // Note: we must rely on recursion to correctly handle parser types here
-                VisitBaseSelector(rule.Selector);
+                 VisitBaseSelector(rule.Selector);
 
-                foreach (Property property in rule.Declarations)
+                foreach (var property in rule.Style.Declarations)
                 {
-                    m_CurrentLine = property.Line;
+                    // Property doesnt seem to have a position. StylesheetText is always null.
+                    // Grab it from the first token
+                    var propertyLine = GetPropertyLine(property);
+                    m_CurrentLine = propertyLine;
 
                     ValidateProperty(property);
 
-                    m_Builder.BeginProperty(property.Name, property.Line);
+                    m_Builder.BeginProperty(property.Name, propertyLine);
 
                     // Note: we must rely on recursion to correctly handle parser types here
-                    VisitValue(property.Term);
+                    VisitValue(property);
 
                     m_Builder.EndProperty();
                 }
@@ -1071,54 +1228,152 @@ namespace UnityEditor.UIElements.StyleSheets
             }
         }
 
-        void VisitBaseSelector(BaseSelector selector)
+        void VisitBaseSelector(ISelector selector)
         {
-            var selectorList = selector as AggregateSelectorList;
-            if (selectorList != null)
+            switch (selector)
             {
-                VisitSelectorList(selectorList);
-                return;
-            }
+                case AllSelector allSelector:
+                    VisitSelectorParts(new[] { StyleSelectorPart.CreateWildCard() }, allSelector);
+                    break;
 
-            var complexSelector = selector as ComplexSelector;
-            if (complexSelector != null)
-            {
-                VisitComplexSelector(complexSelector);
-                return;
-            }
+                case ClassSelector classSelector:
+                    VisitSelectorParts(new[] { StyleSelectorPart.CreateClass(classSelector.Class) }, classSelector);
+                    break;
 
-            var simpleSelector = selector as SimpleSelector;
-            if (simpleSelector != null)
-            {
-                VisitSimpleSelector(simpleSelector.ToString());
+                case ComplexSelector complexSelector:
+                    VisitComplexSelector(complexSelector);
+                    break;
+
+                case CompoundSelector compoundSelector:
+                    if (TryExtractSelectorsParts(compoundSelector, out var compoundParts))
+                        VisitSelectorParts(compoundParts, compoundSelector);
+                    break;
+
+                case IdSelector idSelector:
+                    VisitSelectorParts(new[] { StyleSelectorPart.CreateId(idSelector.Id) }, idSelector);
+                    break;
+
+                case ListSelector listSelector:
+                    foreach (var s in listSelector)
+                    {
+                        VisitBaseSelector(s);
+                    }
+                    break;
+
+                case PseudoClassSelector pseudoClassSelector:
+                    ValidatePsuedoClassName(pseudoClassSelector.Class, pseudoClassSelector.Text);
+                    VisitSelectorParts(new[] { StyleSelectorPart.CreatePseudoClass(pseudoClassSelector.Class) }, pseudoClassSelector);
+                    break;
+
+                case TypeSelector typeSelector:
+                    VisitSelectorParts(new[] { StyleSelectorPart.CreateType(typeSelector.Name) }, typeSelector);
+                    break;
+
+                case UnknownSelector unknownSelector:
+                    VisitUnknownSelector(unknownSelector);
+                    break;
+
+                default:
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, $"{selector.GetType().Name}: `{selector.Text}`"), m_CurrentLine);
+                    break;
             }
         }
 
-        void VisitSelectorList(AggregateSelectorList selectorList)
+        void ValidatePsuedoClassName(string name, string selector)
         {
-            // OR selectors, just create an entry for each of them
-            if (selectorList.Delimiter == ",")
+            // We produce a warning but we still let the selector pass. We may want to change this into an error in the future.
+            if (!disableValidation && !PseudoClassSelectorFactory.Selectors.ContainsKey(name))
             {
-                foreach (BaseSelector selector in selectorList)
+                m_Errors.AddValidationWarning(string.Format(glossary.unknownPsuedoClass, name, selector), m_CurrentLine);
+            }
+        }
+
+        void VisitUnknownSelector(UnknownSelector unknownSelector)
+        {
+            // We try to handle some of the non-standard selectors here.
+            var selectorText = unknownSelector.Text;
+
+            // We do not support class selectors that start with a digit, it is invalid css. Here we provide a better error message to explain why. (UUM-102246)
+            if (selectorText.StartsWith(".") && selectorText.Length > 1)
+            {
+                // Check the name doesnt start with a digit
+                if (char.IsDigit(selectorText[1]) ||
+                    selectorText.Length >= 2 && selectorText[1] == '-' && char.IsDigit(selectorText[2]))
                 {
-                    VisitBaseSelector(selector);
+                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.selectorStartsWithDigitFormat, unknownSelector.Text), m_CurrentLine);
+                    return;
                 }
             }
-            // Work around a strange parser issue where sometimes simple selectors
-            // are wrapped inside SelectorList with no delimiter
-            else if (selectorList.Delimiter == string.Empty)
+
+            m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedSelectorFormat, string.Format(glossary.unsupportedSelectorFormat, unknownSelector.Text), m_CurrentLine);
+        }
+
+        void VisitSelectorParts(StyleSelectorPart[] parts, ISelector selector)
+        {
+            int specificity = CSSSpec.GetSelectorSpecificity(parts);
+            if (specificity == 0)
             {
-                VisitSimpleSelector(selectorList.ToString());
+                m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + selector.Text), m_CurrentLine);
+                return;
             }
-            else
+
+            using (m_Builder.BeginComplexSelector(specificity))
             {
-                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidSelectorListDelimiter, string.Format(glossary.invalidSelectorListDelimiter, selectorList.Delimiter), m_CurrentLine);
+                m_Builder.AddSimpleSelector(parts, StyleSelectorRelationship.None);
             }
+        }
+
+        bool TryExtractSelectorsParts(Selectors selectors, out StyleSelectorPart[] parts)
+        {
+            parts = new StyleSelectorPart[selectors.Length];
+            for (int i = 0; i < selectors.Length; ++i)
+            {
+                switch (selectors[i])
+                {
+                    case AllSelector allSelector:
+                        parts[i] = StyleSelectorPart.CreateWildCard();
+                        break;
+
+                    case IdSelector idSelector:
+                        parts[i] = StyleSelectorPart.CreateId(idSelector.Id);
+                        break;
+
+                    case ClassSelector classSelector:
+                        parts[i] = StyleSelectorPart.CreateClass(classSelector.Class);
+                        break;
+
+                    case PseudoClassSelector pseudoClassSelector:
+                    {
+                        // Check for is() and has() which we dont support
+                        if (pseudoClassSelector.Class.Contains("("))
+                        {
+                            m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selectors.Text), m_CurrentLine);
+                            return false;
+                        }
+                        else
+                            parts[i] = StyleSelectorPart.CreatePseudoClass(pseudoClassSelector.Class);
+                        break;
+                    }
+
+                    case TypeSelector typeSelector:
+                        parts[i] = StyleSelectorPart.CreateType(typeSelector.Name);
+                        break;
+
+                    case FirstChildSelector firstChildSelector:
+                        parts[i] = new StyleSelectorPart { type = StyleSelectorType.RecursivePseudoClass };
+                        break;
+
+                    default:
+                        parts[i] = new StyleSelectorPart { type = StyleSelectorType.Unknown };
+                        break;
+                }
+            }
+            return true;
         }
 
         void VisitComplexSelector(ComplexSelector complexSelector)
         {
-            int fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelector.ToString());
+            int fullSpecificity = CSSSpec.GetSelectorSpecificity(complexSelector.Text);
 
             if (fullSpecificity == 0)
             {
@@ -1129,12 +1384,14 @@ namespace UnityEditor.UIElements.StyleSheets
             using (m_Builder.BeginComplexSelector(fullSpecificity))
             {
                 StyleSelectorRelationship relationShip = StyleSelectorRelationship.None;
-
+                var lastSelectorIndex = complexSelector.Length - 1;
+                int currentSelectorIndex = -1;
                 foreach (CombinatorSelector selector in complexSelector)
                 {
+                    currentSelectorIndex++;
                     StyleSelectorPart[] parts;
 
-                    string simpleSelector = ExtractSimpleSelector(selector.Selector);
+                    string simpleSelector = selector.Selector.Text;
 
                     if (string.IsNullOrEmpty(simpleSelector))
                     {
@@ -1147,17 +1404,17 @@ namespace UnityEditor.UIElements.StyleSheets
                         m_Builder.AddSimpleSelector(parts, relationShip);
 
                         // Read relation for next element
-                        switch (selector.Delimiter)
+                        if (currentSelectorIndex != lastSelectorIndex)
                         {
-                            case Combinator.Child:
+                            if (selector.Delimiter == Combinators.Child)
                                 relationShip = StyleSelectorRelationship.Child;
-                                break;
-                            case Combinator.Descendent:
+                            else if (selector.Delimiter == Combinators.Descendent)
                                 relationShip = StyleSelectorRelationship.Descendent;
-                                break;
-                            default:
-                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidComplexSelectorDelimiter, string.Format(glossary.invalidComplexSelectorDelimiter, complexSelector), m_CurrentLine);
+                            else
+                            {
+                                m_Errors.AddSemanticError(StyleSheetImportErrorCode.InvalidComplexSelectorDelimiter, string.Format(glossary.invalidComplexSelectorDelimiter, complexSelector.Text), m_CurrentLine);
                                 return;
+                            }
                         }
                     }
                     else
@@ -1166,47 +1423,6 @@ namespace UnityEditor.UIElements.StyleSheets
                     }
                 }
             }
-        }
-
-        void VisitSimpleSelector(string selector)
-        {
-            StyleSelectorPart[] parts;
-            if (CheckSimpleSelector(selector, out parts))
-            {
-                int specificity = CSSSpec.GetSelectorSpecificity(parts);
-
-                if (specificity == 0)
-                {
-                    m_Errors.AddInternalError(string.Format(glossary.internalError, "Failed to calculate selector specificity " + selector), m_CurrentLine);
-                    return;
-                }
-
-                using (m_Builder.BeginComplexSelector(specificity))
-                {
-                    m_Builder.AddSimpleSelector(parts, StyleSelectorRelationship.None);
-                }
-            }
-        }
-
-        string ExtractSimpleSelector(BaseSelector selector)
-        {
-            SimpleSelector simpleSelector = selector as SimpleSelector;
-
-            if (simpleSelector != null)
-            {
-                return selector.ToString();
-            }
-
-            AggregateSelectorList selectorList = selector as AggregateSelectorList;
-
-            // Work around a strange parser issue where sometimes simple selectors
-            // are wrapped inside SelectorList with no delimiter
-            if (selectorList != null && selectorList.Delimiter == string.Empty)
-            {
-                return selectorList.ToString();
-            }
-
-            return string.Empty;
         }
 
         bool CheckSimpleSelector(string selector, out StyleSelectorPart[] parts)
@@ -1226,6 +1442,19 @@ namespace UnityEditor.UIElements.StyleSheets
                 m_Errors.AddSemanticError(StyleSheetImportErrorCode.RecursiveSelectorDetected, string.Format(glossary.unsupportedSelectorFormat, selector), m_CurrentLine);
                 return false;
             }
+
+            if (!disableValidation)
+            {
+                foreach (var p in parts)
+                {
+                    if (p.type == StyleSelectorType.PseudoClass)
+                    {
+                        // We allow them but produce a warning.
+                        ValidatePsuedoClassName(p.value, selector);
+                    }
+                }
+            }
+
             return true;
         }
     }

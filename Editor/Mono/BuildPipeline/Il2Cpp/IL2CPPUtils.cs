@@ -386,7 +386,7 @@ namespace UnityEditorInternal
 
             isDevelopmentLocation = false;
             return Path.GetFullPath(Path.Combine(
-                EditorApplication.applicationContentsPath,
+                EditorApplication.applicationScriptingPath,
                 "il2cpp"));
         }
 

@@ -328,9 +328,6 @@ namespace UnityEditorInternal.Profiling
                 {
                     switch (m_MemoryModule.m_MemoryProfilerPackageStage)
                     {
-                        case PackageStage.Experimental:
-                            m_UIState.InstallPackageButton.text = Styles.experimentalPackageHint.text;
-                            break;
                         case PackageStage.PreviewOrReleased:
                             m_UIState.InstallPackageButton.text = Styles.packageInstallSuggestionButton.text;
                             break;
@@ -347,9 +344,6 @@ namespace UnityEditorInternal.Profiling
             {
                 switch (m_MemoryModule.m_MemoryProfilerPackageStage)
                 {
-                    case PackageStage.Experimental:
-                        Application.OpenURL(Styles.memoryProfilerPackageDocumentatinURL);
-                        break;
                     case PackageStage.PreviewOrReleased:
                         UnityEditor.PackageManager.Client.Add(m_MemoryModule.m_MemoryProfilerPackageName);
                         break;
@@ -464,8 +458,6 @@ namespace UnityEditorInternal.Profiling
             public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
             public static readonly GUIContent takeSample = EditorGUIUtility.TrTextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!");
             public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
-            public const string memoryProfilerPackageDocumentatinURL = "https://docs.unity3d.com/Packages/com.unity.memoryprofiler@latest/";
-            public static readonly GUIContent experimentalPackageHint = EditorGUIUtility.TrTextContent("See more details with the experimental Memory Profiler Package.");
             public static readonly string packageInstallSuggestion = L10n.Tr("Install Memory Profiler Package{0}");
             public static readonly string packageInstallSuggestionVersionPart = L10n.Tr(" (Version {0})");
             public static GUIContent packageInstallSuggestionButton = new GUIContent(string.Format(packageInstallSuggestion, ""));
@@ -515,12 +507,11 @@ namespace UnityEditorInternal.Profiling
 
         enum PackageStage
         {
-            Experimental,
             PreviewOrReleased,
             Installed,
         }
 
-        PackageStage m_MemoryProfilerPackageStage = PackageStage.Experimental;
+        PackageStage m_MemoryProfilerPackageStage = PackageStage.PreviewOrReleased;
         UnityEditor.PackageManager.Requests.SearchRequest m_MemoryProfilerSearchRequest = null;
         string m_MemoryProfilerPackageName = "com.unity.memoryprofiler";
 

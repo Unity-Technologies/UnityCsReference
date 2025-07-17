@@ -231,7 +231,7 @@ namespace UnityEngine.UIElements.UIR
             renderData.firstTailCommand = renderData.lastTailCommand = null;
         }
 
-        static void InjectCommandInBetween(RenderTreeManager renderTreeManager, RenderChainCommand cmd, RenderChainCommand prev, RenderChainCommand next)
+        static void InjectCommandInBetween(RenderChainCommand cmd, bool isHeadCommand, RenderChainCommand prev, RenderChainCommand next)
         {
             if (prev != null)
             {
@@ -245,7 +245,7 @@ namespace UnityEngine.UIElements.UIR
             }
             var renderData = cmd.owner;
 
-            if (!cmd.isTail)
+            if (isHeadCommand)
             {
                 if (renderData.firstHeadCommand == null || renderData.firstHeadCommand == next)
                     renderData.firstHeadCommand = cmd;
@@ -283,7 +283,7 @@ namespace UnityEngine.UIElements.UIR
                     if (renderData.firstHeadCommand == null)
                     {
                         FindHeadCommandInsertionPoint(renderData, out var cmdPrev, out var cmdNext);
-                        InjectCommandInBetween(renderTreeManager, cmd, cmdPrev, cmdNext);
+                        InjectCommandInBetween(cmd, true, cmdPrev, cmdNext);
                     }
                     else
                     {
@@ -293,7 +293,7 @@ namespace UnityEngine.UIElements.UIR
                         var lastHeadCommand = renderData.lastHeadCommand; // InjectCommandInBetween assumes we are adding the last command, witch is not the case now. Backup the value to restore after.
                         Debug.Assert(lastHeadCommand != null);
                         renderData.firstHeadCommand = null; // will be replaced in InjectCommandInBetween
-                        InjectCommandInBetween(renderTreeManager, cmd, prev, next);
+                        InjectCommandInBetween(cmd, true, prev, next);
                         renderData.lastHeadCommand = lastHeadCommand;
                     }
                 }
@@ -302,13 +302,12 @@ namespace UnityEngine.UIElements.UIR
                 {
                     var cmd = renderTreeManager.AllocCommand();
                     cmd.type = CommandType.EndDisable;
-                    cmd.isTail = true;
                     cmd.owner = renderData;
 
                     if (renderData.lastTailCommand == null)
                     {
                         FindTailCommandInsertionPoint(renderData, out var cmdPrev, out var cmdNext);
-                        InjectCommandInBetween(renderTreeManager, cmd, cmdPrev, cmdNext);
+                        InjectCommandInBetween(cmd, false, cmdPrev, cmdNext);
                     }
                     else
                     {
@@ -316,7 +315,7 @@ namespace UnityEngine.UIElements.UIR
                         var prev = renderData.lastTailCommand;
                         var next = renderData.lastTailCommand.next;
                         Debug.Assert(renderData.firstTailCommand != null);
-                        InjectCommandInBetween(renderTreeManager, cmd, prev, next);
+                        InjectCommandInBetween(cmd, false, prev, next);
                     }
                 }
             }

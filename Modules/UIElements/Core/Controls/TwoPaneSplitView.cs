@@ -43,7 +43,7 @@ namespace UnityEngine.UIElements
                     new(nameof(fixedPaneIndex), "fixed-pane-index"),
                     new(nameof(fixedPaneInitialDimension), "fixed-pane-initial-dimension"),
                     new(nameof(orientation), "orientation"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

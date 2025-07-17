@@ -215,12 +215,14 @@ namespace UnityEditor.Experimental.GraphView
 
         private void OnCreate()
         {
-            var template = m_ListOfTemplates.selectedIndex != -1 ? (GraphViewTemplateDescriptor)m_ListOfTemplates.selectedItem : m_SelectedTemplate;
-            m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(template.assetGuid);
-            m_AssetCreationCallback?.Invoke(m_LastSelectedTemplatePath);
-            Close();
-            m_TemplateHelper.RaiseTemplateUsed(template);
-            m_AssetCreationCallback = null;
+            if (m_ListOfTemplates.selectedItem is GraphViewTemplateDescriptor template)
+            {
+                m_LastSelectedTemplatePath = AssetDatabase.GUIDToAssetPath(template.assetGuid);
+                m_AssetCreationCallback?.Invoke(m_LastSelectedTemplatePath);
+                Close();
+                m_TemplateHelper.RaiseTemplateUsed(template);
+                m_AssetCreationCallback = null;
+            }
         }
 
         private bool TryFindSample(string sampleName, out Sample sample)
@@ -308,10 +310,10 @@ namespace UnityEditor.Experimental.GraphView
                     m_LastSelectedIndex = m_ListOfTemplates.selectedIndex;
                     // Maybe set a placeholder screenshot when null
                     m_DetailsScreenshot.image = template.thumbnail;
-                }
 
-                // We expect only one item to be selected
-                return;
+                    // We expect only one item to be selected
+                    return;
+                }
             }
 
             // Reach here when the selection is empty

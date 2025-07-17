@@ -270,6 +270,32 @@ namespace UnityEngine.UIElements
             set => UIPainter2D.SetMiterLimit(m_Handle, value);
         }
 
+        /// <summary>
+        /// The dash pattern to use when drawing paths using <see cref="Stroke"/>.
+        /// </summary>
+
+        public ReadOnlySpan<float> dashPattern
+        {
+            set => UIPainter2D.SetDashPattern(m_Handle, value);
+        }
+
+        /// <summary>
+        /// The dash pattern to use when drawing paths using <see cref="Stroke"/>.
+        /// </summary>
+        public void SetDashPattern(float dash, float gap)
+        {
+            UIPainter2D.SetDashGapPattern(m_Handle, dash, gap);
+        }
+
+        /// <summary>
+        /// The offset to the first dash to use when drawing paths using <see cref="Stroke"/>.
+        /// </summary>
+        public float dashOffset
+        {
+            get => UIPainter2D.GetDashOffset(m_Handle);
+            set => UIPainter2D.SetDashOffset(m_Handle, value);
+        }
+
         internal static bool isPainterActive { get; set; }
         private bool ValidateState()
         {
@@ -397,7 +423,7 @@ namespace UnityEngine.UIElements
 
                 if (isDetached)
                 {
-                    var meshData = UIPainter2D.Stroke(m_Handle);
+                    var meshData = UIPainter2D.Stroke(m_Handle, true);
 
                     if (meshData.vertexCount == 0)
                         return;
@@ -417,7 +443,8 @@ namespace UnityEngine.UIElements
                     // Take a snapshot for the job system
                     m_Ctx.InsertUnsafeMeshGenerationNode(out var unsafeNode);
                     int snapshotIndex = UIPainter2D.TakeStrokeSnapshot(m_Handle);
-                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex });                }
+                    m_JobSnapshots.Add(new Painter2DJobData() { node = unsafeNode, snapshotIndex = snapshotIndex });
+                }
             }
         }
 

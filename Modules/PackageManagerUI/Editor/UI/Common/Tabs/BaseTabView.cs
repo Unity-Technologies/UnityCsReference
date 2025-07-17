@@ -71,9 +71,8 @@ namespace UnityEditor.PackageManager.UI.Internal
 
         protected void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            // do not re-calculate unless there's been at least one pixel worth of change
             if (Math.Abs(evt.oldRect.width - evt.newRect.width) >= 1)
-                CalculateTabHeaderDropdown(evt.newRect.width - 13f); // account for scroll bar width
+                CalculateTabHeaderDropdown();
         }
 
         protected float GetTotalWidthForTabHeader(string tabId)
@@ -139,7 +138,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         }
 
         // use HashSet since if selected ID is in the middle of tabs, order can't be preserved anyway- and since order is known internally through m_ValidTabIds, use HashSet for fast lookup
-        public static HashSet<string> CalculateDropdownTabIds(float windowWidth, string selectedTabId, float dropdownButtonWidth, List<(string tabId, float tabEstimatedWidth)> tabIdsAndAssociatedWidths)
+        public static HashSet<string> CalculateDropdownTabIds(float windowWidth, string selectedTabId, float dropdownButtonWidth, IReadOnlyList<(string tabId, float tabEstimatedWidth)> tabIdsAndAssociatedWidths)
         {
             var dropdownTabIds = new HashSet<string>();
 
@@ -170,13 +169,9 @@ namespace UnityEditor.PackageManager.UI.Internal
             return dropdownTabIds;
         }
 
-        protected void CalculateTabHeaderDropdown(float newWidth)
+        protected void CalculateTabHeaderDropdown()
         {
-            var tabIdsAndAssociatedWidths = m_ValidTabIds.Select(t =>
-            {
-                return (t, GetTotalWidthForTabHeader(t));
-            }).ToList();
-
+            var tabIdsAndAssociatedWidths = m_ValidTabIds.Select(t => (t, GetTotalWidthForTabHeader(t))).ToArray();
             var dropdownTabIds = CalculateDropdownTabIds(rect.width, m_SelectedTabId, k_DropdownButtonWidth, tabIdsAndAssociatedWidths);
             ReconstructTabHeaderDropdown(dropdownTabIds);
         }

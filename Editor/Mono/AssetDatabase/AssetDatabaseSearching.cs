@@ -19,7 +19,11 @@ namespace UnityEditor
             return FindAssets(filter, null);
         }
 
-        public static string[] FindAssets(string filter, string[] searchInFolders)
+        public static GUID[] FindAssetGUIDs(string filter)
+        {
+            return FindAssetGUIDs(filter, null);
+        }
+        private static SearchFilter CreateSearchFilter(string filter, string[] searchInFolders)
         {
             var searchFilter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
             SearchUtility.ParseSearchString(filter, searchFilter);
@@ -29,23 +33,36 @@ namespace UnityEditor
                 searchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
             }
 
+            return searchFilter;
+        }
+        public static string[] FindAssets(string filter, string[] searchInFolders)
+        {
+            var searchFilter = CreateSearchFilter(filter, searchInFolders);
             return FindAssets(searchFilter);
         }
-
+        public static GUID[] FindAssetGUIDs(string filter, string[] searchInFolders)
+        {
+            var searchFilter = CreateSearchFilter(filter, searchInFolders);
+            return FindAssetGUIDs(searchFilter);
+        }
         internal static string[] FindAssets(SearchFilter searchFilter)
         {
             return FindAllAssets(searchFilter).Select(property => property.guid).Distinct().ToArray();
         }
+        internal static GUID[] FindAssetGUIDs(SearchFilter searchFilter)
+        {
+            return FindAllAssets(searchFilter).Select(property => property.assetGUID).Distinct().ToArray();
+        }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal static IEnumerable<HierarchyProperty> FindAllAssets(SearchFilter searchFilter)
+        internal static IEnumerable<HierarchyIterator> FindAllAssets(SearchFilter searchFilter)
         {
             var enumerator = EnumerateAllAssets(searchFilter);
             while (enumerator.MoveNext())
                 yield return enumerator.Current;
         }
 
-        internal static IEnumerator<HierarchyProperty> EnumerateAllAssets(SearchFilter searchFilter)
+        internal static IEnumerator<HierarchyIterator> EnumerateAllAssets(SearchFilter searchFilter)
         {
             if (searchFilter.folders != null && searchFilter.folders.Length > 0 && searchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
                 return FindInFolders(searchFilter, p => p);
@@ -53,7 +70,7 @@ namespace UnityEditor
             return FindEverywhere(searchFilter, p => p);
         }
 
-        private static IEnumerator<T> FindInFolders<T>(SearchFilter searchFilter, Func<HierarchyProperty,  T> selector)
+        private static IEnumerator<T> FindInFolders<T>(SearchFilter searchFilter, Func<HierarchyIterator,  T> selector)
         {
             var folders = new List<string>();
             folders.AddRange(searchFilter.folders);
@@ -67,11 +84,11 @@ namespace UnityEditor
                 }
             }
 
-            HierarchyProperty propertyWithFilter = null;
+            HierarchyIterator propertyWithFilter = null;
             foreach (var folderPath in folders)
             {
                 var sanitizedFolderPath = folderPath.ConvertSeparatorsToUnity().TrimTrailingSlashes();
-                var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(sanitizedFolderPath);
+                var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(sanitizedFolderPath);
                 var rootPath = "Assets";
 
                 // Find the right rootPath if folderPath is part of a package
@@ -84,7 +101,7 @@ namespace UnityEditor
                 }
 
                 // Set empty filter to ensure we search all assets to find folder
-                var property = new HierarchyProperty(rootPath);
+                var property = new HierarchyIterator(rootPath);
                 property.SetSearchFilter(new SearchFilter());
                 if (property.Find(folderInstanceID, null))
                 {
@@ -98,7 +115,7 @@ namespace UnityEditor
                     }
 
                     int folderDepth = property.depth;
-                    int[] expanded = null; // enter all children of folder
+                    EntityId[] expanded = null; // enter all children of folder
                     while (property.NextWithDepthCheck(expanded, folderDepth + 1))
                     {
                         yield return selector(property);
@@ -111,7 +128,7 @@ namespace UnityEditor
             }
         }
 
-        private static IEnumerator<T> FindEverywhere<T>(SearchFilter searchFilter, Func<HierarchyProperty, T> selector)
+        private static IEnumerator<T> FindEverywhere<T>(SearchFilter searchFilter, Func<HierarchyIterator, T> selector)
         {
             var rootPaths = new List<string>();
             if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
@@ -129,10 +146,10 @@ namespace UnityEditor
                 }
             }
 
-            HierarchyProperty lastProperty = null;
+            HierarchyIterator lastProperty = null;
             foreach (var rootPath in rootPaths)
             {
-                var property = new HierarchyProperty(rootPath);
+                var property = new HierarchyIterator(rootPath);
                 if (lastProperty != null)
                     property.CopySearchFilterFrom(lastProperty);
                 else

@@ -268,6 +268,13 @@ namespace UnityEngine.Rendering
             *lightmapper = 1; // Progressive CPU
         }
 
+        [RequiredByNativeCode]
+        internal static unsafe void IsRotatingReflectionProbesSupported(IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = (active.reflectionProbeModes & ReflectionProbeModes.Rotation) > 0;
+        }
+
         [Obsolete("terrainDetailUnsupported is deprecated.")]
         public bool terrainDetailUnsupported
         {

@@ -15,6 +15,7 @@ using UnityEditor.Build;
 using UnityEditor.Build.Player;
 using UnityEditor.Build.Reporting;
 using UnityEditor.CrashReporting;
+using UnityEditor.InsightsEditor;
 using UnityEditor.Scripting;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
@@ -374,11 +375,11 @@ namespace UnityEditor.Modules
         static string GetUsymtoolPath()
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
-                return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "macosx", "usymtool");
+                return Paths.Combine(EditorApplication.applicationToolsPath, "usymtool");
             if (Application.platform == RuntimePlatform.LinuxEditor)
-                return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool");
+                return Paths.Combine(EditorApplication.applicationToolsPath, "usymtool");
 
-            return Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool.exe");
+            return Paths.Combine(EditorApplication.applicationToolsPath, "usymtool.exe");
         }
 
         static bool IsNewInputSystemEnabled()
@@ -431,6 +432,7 @@ namespace UnityEditor.Modules
             {
                 EnableAnalytics = UnityEngine.Analytics.Analytics.enabled,
                 EnableCrashReporting = UnityEditor.CrashReporting.CrashReportingSettings.canUploadReports,
+                EnableInsights = EngineDiagnostics.EngineDiagnosticsSettings.enabled,
                 EnablePerformanceReporting = UnityEngine.Analytics.PerformanceReporting.enabled,
                 EnableUnityConnect = UnityEngine.Connect.UnityConnectSettings.enabled,
             },
@@ -452,7 +454,7 @@ namespace UnityEditor.Modules
                 : absoluteInstallationPath.ToString();
         }
 
-        protected string GetDataFolderFor(BuildPostProcessArgs args) => $"Library/PlayerDataCache/{BuildPipeline.GetSessionIdForBuildTarget(args.target, args.subtarget)}/Data";
+        protected string GetDataFolderFor(BuildPostProcessArgs args) => $"{BuildPipeline.GetDataCacheForBuildTarget(args.target, args.subtarget)}/Data";
 
         protected ScriptingBackend GetScriptingBackend(BuildPostProcessArgs args)
         {
@@ -482,7 +484,7 @@ namespace UnityEditor.Modules
         RunnableProgram MakePlayerBuildProgram(BuildPostProcessArgs args)
         {
             var buildProgramAssembly = new NPath($"{args.playerPackage}/{GetPlatformNameForBuildProgram(args)}PlayerBuildProgram.exe");
-            NPath buildPipelineFolder = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline";
+            NPath buildPipelineFolder = EditorApplication.applicationBuildPipelinePath;
             NPath beePlatformFolder = $"{args.playerPackage}/Bee";
             var searchPaths = $"{beePlatformFolder}{Path.PathSeparator}";
             if (IL2CPPUtils.UsingDevelopmentBuild())

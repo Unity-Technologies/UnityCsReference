@@ -61,5 +61,19 @@ namespace UnityEngine.UIElements
 
             return false;
         }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal static HashSet<TResult> UniqueSelect<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult> selector)
+        {
+            var list = new HashSet<TResult>();
+            foreach (var item in source)
+            {
+                var selected = selector(item);
+                if (selected != null)
+                    list.Add(selector(item));
+            }
+
+            return list;
+        }
     }
 }

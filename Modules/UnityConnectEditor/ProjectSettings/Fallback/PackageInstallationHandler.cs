@@ -93,8 +93,11 @@ namespace UnityEditor.Connect.Fallback
 
         public bool AcceptedInstallingNewPackage()
         {
-            return !m_InstallingNewPackage && EditorUtility.DisplayDialog(GetInstallDialogTitle(), GetInstallDialogMessage(),
-                L10n.Tr(PackageInstallationText.Yes), L10n.Tr(PackageInstallationText.No));
+            return !m_InstallingNewPackage && EditorDialog.DisplayDecisionDialog(
+                titleText: GetInstallDialogTitle(),
+                messageText: GetInstallDialogMessage(),
+                yesButtonText: L10n.Tr(PackageInstallationText.Yes),
+                noButtonText: L10n.Tr(PackageInstallationText.No));
         }
 
         string GetInstallDialogTitle()

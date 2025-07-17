@@ -1578,7 +1578,7 @@ namespace UnityEditor
             UpdateCamera(desiredPercentage, group);
             SceneView.lastActiveSceneView.ClearSearchFilter();
             SceneView.lastActiveSceneView.SetSceneViewFilteringForLODGroups(true);
-            HierarchyProperty.FilterSingleSceneObject(group.gameObject.GetInstanceID(), false);
+            HierarchyIterator.FilterSingleSceneObject(group.gameObject.GetInstanceID(), false);
             SceneView.RepaintAll();
         }
 
@@ -1600,7 +1600,7 @@ namespace UnityEditor
             SceneView.lastActiveSceneView.ClearSearchFilter();
             // Clearing the search filter of a SceneView will not actually reset the visibility values
             // of the GameObjects in the scene so we have to explicitly do that  (case 770915).
-            HierarchyProperty.ClearSceneObjectsFilter();
+            HierarchyIterator.ClearSceneObjectsFilter();
         }
 
         //Code to be able to send percentages to this gameobjects lightmap scale

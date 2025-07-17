@@ -41,6 +41,12 @@ namespace UnityEngine.UIElements
         public static extern float GetMiterLimit(IntPtr handle);
         public static extern void SetMiterLimit(IntPtr handle, float value);
 
+        public static extern void SetDashPattern(IntPtr handle, ReadOnlySpan<float> value);
+        public static extern void SetDashGapPattern(IntPtr handle, float dash, float gap);
+
+        public static extern float GetDashOffset(IntPtr handle);
+        public static extern void SetDashOffset(IntPtr handle, float value);
+
         public static extern void BeginPath(IntPtr handle);
         public static extern void MoveTo(IntPtr handle, Vector2 pos);
         public static extern void LineTo(IntPtr handle, Vector2 pos);
@@ -52,7 +58,7 @@ namespace UnityEngine.UIElements
 
         public static extern Rect GetBBox(IntPtr handle);
 
-        public static extern MeshWriteDataInterface Stroke(IntPtr handle);
+        public static extern MeshWriteDataInterface Stroke(IntPtr handle, bool isDetached);
         public static extern MeshWriteDataInterface Fill(IntPtr handle, FillRule fillRule);
 
         public static extern int TakeStrokeSnapshot(IntPtr handle);

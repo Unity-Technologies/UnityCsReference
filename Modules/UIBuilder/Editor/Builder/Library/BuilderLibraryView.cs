@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 using UnityEngine.UIElements;
 using TreeViewItem = UnityEngine.UIElements.TreeViewItemData<Unity.UI.Builder.BuilderLibraryTreeItem>;
 
@@ -67,47 +65,13 @@ namespace Unity.UI.Builder
 
         internal void AddItemToTheDocument(BuilderLibraryTreeItem item)
         {
-            // If this is the uxml file entry of the currently open file, don't allow
-            // the user to instantiate it (infinite recursion) or re-open it.
-            var listOfOpenDocuments = m_PaneWindow.document.openUXMLFiles;
-            bool isCurrentDocumentOpen = listOfOpenDocuments.Any(doc => doc.uxmlFileName == item.name);
+            var builder = m_PaneWindow as Builder;
+            var activeVTARootElement = builder.GetActiveRootElement();
 
-            if (isCurrentDocumentOpen)
-                return;
-
-            if (m_PaneWindow.document.WillCauseCircularDependency(item.sourceAsset))
-            {
-                BuilderDialogsUtility.DisplayDialog(BuilderConstants.InvalidWouldCauseCircularDependencyMessage,
-                    BuilderConstants.InvalidWouldCauseCircularDependencyMessageDescription, BuilderConstants.DialogOkOption);
-                return;
-            }
-
-            var newElement = item.makeVisualElementCallback?.Invoke();
-            if (newElement == null)
-                return;
-
-            if (item.makeElementAssetCallback != null && newElement is TemplateContainer tempContainer)
-            {
-                if (!BuilderAssetUtilities.ValidateAsset(item.sourceAsset, item.sourceAssetPath))
-                    return;
-            }
-
-            var activeVTARootElement = m_DocumentRootElement.Query().Where(e => e.GetVisualTreeAsset() == m_PaneWindow.document.visualTreeAsset).First();
             if (activeVTARootElement == null)
-            {
-                Debug.LogError("UI Builder has a bug. Could not find document root element for currently active open UXML document.");
                 return;
-            }
-            activeVTARootElement.Add(newElement);
 
-            if (item.makeElementAssetCallback == null)
-                BuilderAssetUtilities.AddElementToAsset(m_PaneWindow.document, newElement);
-            else
-                BuilderAssetUtilities.AddElementToAsset(
-                    m_PaneWindow.document, newElement, item.makeElementAssetCallback);
-
-            m_Selection.NotifyOfHierarchyChange();
-            m_Selection.Select(null, newElement);
+            BuilderLibraryUtility.InsertElementToDocument(m_PaneWindow.document, m_PaneWindow.primarySelection, item, activeVTARootElement);
         }
 
         void OnItemMouseEnter(MouseEnterEvent evt)
@@ -121,6 +85,13 @@ namespace Unity.UI.Builder
             var sample = libraryTreeItem.makeVisualElementCallback?.Invoke();
             if (sample == null)
                 return;
+
+            var panel = m_TooltipPreview.panel as BaseVisualElementPanel;
+            var styleUpdater = panel.GetUpdater(VisualTreeUpdatePhase.Styles) as VisualTreeStyleUpdater;
+            if (styleUpdater.traversal is BuilderVisualTreeStyleUpdaterTraversal updaterTraversal)
+            {
+                updaterTraversal.previewDocument = m_TooltipPreview;
+            }
 
             m_TooltipPreview.Add(sample);
             m_TooltipPreview.Show();

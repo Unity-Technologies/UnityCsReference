@@ -43,6 +43,18 @@ namespace UnityEngineInternal.Input
     [StructLayout(LayoutKind.Explicit, Size = structSize, Pack = 1)]
     internal struct NativeInputEvent
     {
+        /// <summary>
+        /// Defines the packing alignment used when inserting <code>NativeInputEvent</code>
+        /// data into a <see cref="NativeInputEventBuffer"/>.
+        /// </summary>
+        /// <remarks>
+        /// Currently this constant is 4 (this may be subject to change), which currently 
+        /// implies that <see cref="NativeInputEvent.time"/> will not be aligned on an 8-byte
+        /// boundary (natural alignment) if <code>NativeInputEvent</code> is referenced from
+        /// within a <code>NativeInputEventBuffer</code> via unsafe code. 
+        /// </remarks>
+        public const int alignment = 4;
+
         public const int structSize = 20;
 
         [FieldOffset(0)] public NativeInputEventType type;

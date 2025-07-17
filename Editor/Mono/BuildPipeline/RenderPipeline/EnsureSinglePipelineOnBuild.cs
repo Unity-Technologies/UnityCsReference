@@ -13,7 +13,7 @@ namespace UnityEditor.Build.Rendering
 
         public void OnPreprocessBuild(BuildReport report)
         {
-            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString();
+            var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(EditorUserBuildSettings.activeBuildTarget);
             if (!QualitySettings.SamePipelineAssetsForPlatform(buildTargetGroupName))
                 throw new BuildFailedException($"The current build target has assets in its associated Quality levels and Graphics Settings that belong to different render pipelines. Please check your settings.");
         }

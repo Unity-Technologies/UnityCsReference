@@ -8,6 +8,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Unity.Profiling;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 using Object = System.Object;
@@ -233,11 +234,14 @@ namespace UnityEditor.UIElements
 
             if (!m_AssetToTrackerMap.TryGetValue(asset, out var trackers))
             {
+                using var _ = ListPool<UxmlAsset>.Get(out var list);
+                list.AddRange(asset.DepthFirstTraversal());
+
                 trackers = new VisualTreeAssetToTrackMappingEntry()
                 {
                     m_LastDirtyCount = dirtyCount,
-                    m_LastElementCount = asset.visualElementAssets.Count,
-                    m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Length > 0 ? asset.inlineSheet.rules.Sum(r => r.properties.Length) : 0,
+                    m_LastElementCount = list.Count,
+                    m_LastInlinePropertiesCount = asset.inlineSheet?.rules?.Sum(r => r.properties.Length) ?? 0,
                     m_LastAttributePropertiesDirtyCount = asset.GetAttributePropertiesDirtyCount(),
                     m_Trackers = new HashSet<ILiveReloadAssetTracker<VisualTreeAsset>>()
                 };
@@ -347,7 +351,7 @@ namespace UnityEditor.UIElements
 
             if (EditorApplication.isPlaying)
             {
-                long currentTimeMs = Panel.TimeSinceStartupMs();
+                long currentTimeMs = panel.TimeSinceStartupMs();
 
                 if (currentTimeMs < m_LastUpdateTimeMs + kMinUpdateDelayMs)
                 {
@@ -387,7 +391,9 @@ namespace UnityEditor.UIElements
                 // We keep a trace of the number of elements to minimize the cost of LiveReload on Layout/Style changes.
                 // We also keep a trace of the number of inline rules, we need to recreate UI when they are added/removed.
                 // Same goes for attribute changes, we need to re-Init elements that changed, so we recreate UI to simplify things.
-                var elementCount = trackedAsset.visualElementAssets.Count;
+                using var _ = ListPool<UxmlAsset>.Get(out var list);
+                list.AddRange(trackedAsset.DepthFirstTraversal());
+                var elementCount = list.Count;
                 var inlinePropertiesCount = trackedAsset.inlineSheet.rules.Sum(r => r.properties.Length);
                 var attributePropertiesDirtyCount = trackedAsset.GetAttributePropertiesDirtyCount();
 

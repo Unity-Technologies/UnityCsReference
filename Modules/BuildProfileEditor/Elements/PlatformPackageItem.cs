@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.UIElements;
+using PlatformPackageList = UnityEditor.BuildTargetDiscovery.PlatformPackageList;
 
 namespace UnityEditor.Build.Profile
 {
@@ -15,9 +16,11 @@ namespace UnityEditor.Build.Profile
         const string k_Uxml = "BuildProfile/UXML/PlatformPackageItemElement.uxml";
 
         readonly Toggle m_ShouldInstallToggle;
-        readonly Label m_Text;
+        readonly Label m_DisplayName;
         readonly Label m_RequiredIndicator;
         readonly Label m_InstalledIndicator;
+        readonly Label m_Description;
+        readonly Label m_Publisher;
         PlatformPackageEntry m_Entry;
 
         internal PlatformPackageItem()
@@ -33,21 +36,32 @@ namespace UnityEditor.Build.Profile
                 if (m_Entry != null)
                     m_Entry.shouldInstalled = evt.newValue;
             });
-            m_Text = this.Q<Label>("package-list-label-name");
+            m_DisplayName = this.Q<Label>("package-list-label-name");
             m_RequiredIndicator = this.Q<Label>("package-list-label-required");
             m_RequiredIndicator.text = TrText.required;
             m_InstalledIndicator = this.Q<Label>("package-list-label-installed");
             m_InstalledIndicator.tooltip = TrText.packageInstalled;
+            m_Description = this.Q<Label>("package-list-description");
+            m_Publisher = this.Q<Label>("package-list-publisher");
         }
 
         internal void Set(PlatformPackageEntry entry)
         {
             m_Entry = entry;
-            m_Text.text = entry.packageName;
+            m_DisplayName.text = string.IsNullOrEmpty(entry.displayName) ? entry.qualifiedName : entry.displayName;
             SetInstalledIndicator(entry.isInstalled);
             SetRequiredIndicator(entry.required);
             m_ShouldInstallToggle.SetValueWithoutNotify(entry.shouldInstalled || entry.isInstalled);
             m_ShouldInstallToggle.SetEnabled(!entry.required && !entry.isInstalled);
+            m_Description.text = entry.description;
+
+            if (string.IsNullOrEmpty(entry.publisher))
+                m_Publisher.Hide();
+            else
+            {
+                m_Publisher.text = string.Format(TrText.publisherLabel, entry.publisher);
+                m_Publisher.Show();
+            }
         }
 
         internal void SetShouldInstallToggle(bool selection)
@@ -75,22 +89,24 @@ namespace UnityEditor.Build.Profile
                 m_RequiredIndicator.Hide();
         }
 
-        public static PlatformPackageEntry[] CreateItemSource(string[] requiredPackages, string[] recommendedPackages)
+        public static PlatformPackageEntry[] CreateItemSource(PlatformPackageList packageList)
         {
+            var requiredPackages = packageList.requiredPackages;
+            var recommendedPackages = packageList.recommendedPackages;
             var result = new PlatformPackageEntry[requiredPackages.Length + recommendedPackages.Length];
 
             for (int index = 0; index < requiredPackages.Length; index++)
             {
-                var packageName = requiredPackages[index];
-                result[index] = new PlatformPackageEntry(packageName, true, true,
-                    PackageManager.PackageInfo.IsPackageRegistered(packageName));
+                var package = requiredPackages[index];
+                result[index] = new PlatformPackageEntry(package, true, true,
+                    PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName));
             }
 
             for (int index = 0; index < recommendedPackages.Length; index++)
             {
-                var packageName = recommendedPackages[index];
-                bool isPackageInstalled = PackageManager.PackageInfo.IsPackageRegistered(packageName);
-                result[index + requiredPackages.Length] = new PlatformPackageEntry(packageName, isPackageInstalled, false, isPackageInstalled);
+                var package = recommendedPackages[index];
+                bool isPackageInstalled = PackageManager.PackageInfo.IsPackageRegistered(package.qualifiedName);
+                result[index + requiredPackages.Length] = new PlatformPackageEntry(package, isPackageInstalled, false, isPackageInstalled);
             }
 
             return result;

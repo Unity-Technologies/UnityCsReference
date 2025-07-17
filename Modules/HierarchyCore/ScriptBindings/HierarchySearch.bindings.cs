@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Unity.Scripting.LifecycleManagement;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -58,6 +59,7 @@ namespace Unity.Hierarchy
     public struct HierarchySearchFilter
     {
         static readonly char[] s_WhiteSpaces = { ' ', '\t', '\n' };
+        [NoAutoStaticsCleanup]
         static readonly HierarchySearchFilter s_Invalid;
 
         /// <summary>
@@ -204,9 +206,14 @@ namespace Unity.Hierarchy
     [RequiredByNativeCode, StructLayout(LayoutKind.Sequential), Serializable]
     public sealed class HierarchySearchQueryDescriptor
     {
+        [NoAutoStaticsCleanup]
         static readonly HashSet<string> s_SystemFilters = new HashSet<string>(new[] { "nodetype", "strict" });
+        [NoAutoStaticsCleanup]
         static readonly HierarchySearchQueryDescriptor s_Empty = new HierarchySearchQueryDescriptor();
+        [NoAutoStaticsCleanup]
         static readonly HierarchySearchQueryDescriptor s_InvalidQuery = new HierarchySearchQueryDescriptor() { Invalid = true };
+
+        string m_Query;
 
         /// <summary>
         /// The default empty query.
@@ -221,17 +228,17 @@ namespace Unity.Hierarchy
         /// <summary>
         /// The filters used by the hierarchy. Filters are in this form: `[filterName][operator][filterValue]`. For example: `nodetype:gameobject`. These filters are global to all NodeHandlers.
         /// </summary>
-        public HierarchySearchFilter[] SystemFilters { get; set; }
+        public HierarchySearchFilter[] SystemFilters { get; private set; }
 
         /// <summary>
         /// User-defined filters. Filters are in this form `[filterName][operator][filterValue]`. For example: `t:Light`. Each of these filters can be used by a NodeHandler to filter according to domain-specific characteristics.
         /// </summary>
-        public HierarchySearchFilter[] Filters { get; set; }
+        public HierarchySearchFilter[] Filters { get; private set; }
 
         /// <summary>
         /// All textual values. For example: "cube"
         /// </summary>
-        public string[] TextValues { get; set; }
+        public string[] TextValues { get; private set; }
 
         /// <summary>
         /// Whether the query is evaluated strictly. This means that if any filters are invalid, then the whole query is invalid.
@@ -259,6 +266,22 @@ namespace Unity.Hierarchy
         public bool IsSystemOnlyQuery => SystemFilters.Length > 0 && Filters.Length == 0 && TextValues.Length == 0;
 
         /// <summary>
+        /// Get the query built from all the filter and text values.
+        /// </summary>
+        public string Query
+        {
+            get
+            {
+                if (m_Query == null ||
+                    (m_Query == "" && (SystemFilters.Length > 0 || TextValues.Length > 0 || Filters.Length > 0)))
+                {
+                    m_Query = BuildQuery();
+                }
+                return m_Query;
+            }
+        }
+
+        /// <summary>
         /// The constructor for a query.
         /// </summary>
         /// <param name="filters">List of user filters</param>
@@ -283,6 +306,7 @@ namespace Unity.Hierarchy
             Invalid = false;
             Strict = !strictFilter.IsValid || strictFilter.Value == "true";
         }
+
         /// <summary>
         /// Copy constructor for a Query.
         /// </summary>
@@ -305,7 +329,7 @@ namespace Unity.Hierarchy
         /// <returns>return a text query.</returns>
         public override string ToString()
         {
-            return BuildQuery();
+            return Query;
         }
 
         [VisibleToOtherModules("UnityEditor.HierarchyModule")]

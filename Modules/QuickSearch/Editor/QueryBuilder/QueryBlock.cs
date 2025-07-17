@@ -61,10 +61,7 @@ namespace UnityEditor.Search
             set
             {
                 m_Selected = value;
-                if (m_Selected)
-                    pseudoStates |= PseudoStates.Checked;
-                else
-                    pseudoStates &= ~PseudoStates.Checked;
+                SetCheckedPseudoState(m_Selected);
                 UpdateBackgroundColor();
             }
         }
@@ -146,15 +143,17 @@ namespace UnityEditor.Search
         }
 
         internal virtual void AddContextualMenuItems(GenericMenu menu) {}
+        internal virtual string FormatUIValue(string originalValue)
+        {
+            return originalValue;
+        }
 
         private bool OpenEditor(Event evt, in Rect rect)
         {
             if (editor == null)
             {
-                editor = OpenEditor(rect);
-                if (editor != null)
+                if (OpenEditorAndUpdateStyles(rect))
                 {
-                    UpdateOpenEditorStyles(opened: true);
                     evt?.Use();
                     return true;
                 }
@@ -164,6 +163,18 @@ namespace UnityEditor.Search
                 editor.window.Close();
                 editor = null;
                 UpdateOpenEditorStyles(opened: false);
+            }
+
+            return false;
+        }
+
+        internal bool OpenEditorAndUpdateStyles(in Rect rect)
+        {
+            editor = OpenEditor(rect);
+            if (editor != null)
+            {
+                UpdateOpenEditorStyles(opened: true);
+                return true;
             }
 
             return false;
@@ -181,7 +192,7 @@ namespace UnityEditor.Search
             UpdateOpenEditorStyles(opened: false);
         }
 
-        private void UpdateOpenEditorStyles(bool opened = false)
+        internal void UpdateOpenEditorStyles(bool opened = false)
         {
             if (opened)
             {
@@ -205,11 +216,7 @@ namespace UnityEditor.Search
 
         internal string EscapeLiteralString(in string sv)
         {
-            if (string.IsNullOrEmpty(sv))
-                return "\"\"";
-            if (explicitQuotes || value.IndexOfAny(new[] { ' ', '/', '*' }) != -1)
-                return '"' + sv + '"';
-            return sv;
+            return SearchUtils.EscapeLiteralString(sv, explicitQuotes);
         }
 
         internal void SetOperator(in string op)
@@ -270,7 +277,7 @@ namespace UnityEditor.Search
                 AddLabel(container, name);
                 AddSeparator(container);
             }
-            AddLabel(container, value);
+            AddLabel(container, FormatUIValue(value));
 
             if (!@readonly)
                 AddOpenEditorArrow(container);

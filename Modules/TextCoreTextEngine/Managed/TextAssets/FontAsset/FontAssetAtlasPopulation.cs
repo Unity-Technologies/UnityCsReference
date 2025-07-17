@@ -181,7 +181,7 @@ namespace UnityEngine.TextCore.Text
 
             for (int i = 0; i < unicodeCount; i++)
             {
-                uint unicode = unicodes[i];
+                uint unicode = FontAssetUtilities.GetCodePoint(unicodes, ref i);
 
                 // Check if character is already contained in the character table.
                 if (characterLookupDictionary.ContainsKey(unicode))

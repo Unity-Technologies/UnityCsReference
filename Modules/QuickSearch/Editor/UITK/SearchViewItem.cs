@@ -134,7 +134,7 @@ namespace UnityEditor.Search
 
             m_Label.text = null;
             m_Thumbnail.image = null;
-            m_FavoriteButton.pseudoStates &= ~PseudoStates.Active;
+            m_FavoriteButton.SetActivePseudoState(false);
             if (m_BindedItem != null)
             {
                 m_BindedItem = null;
@@ -314,12 +314,12 @@ namespace UnityEditor.Search
             if (SearchSettings.searchItemFavorites.Contains(m_BindedItem.id))
             {
                 m_FavoriteButton.tooltip = searchFavoriteOnButtonTooltip;
-                m_FavoriteButton.pseudoStates |= PseudoStates.Active;
+                m_FavoriteButton.SetActivePseudoState(true);
             }
             else
             {
                 m_FavoriteButton.tooltip = searchFavoriteButtonTooltip;
-                m_FavoriteButton.pseudoStates &= ~PseudoStates.Active;
+                m_FavoriteButton.SetActivePseudoState(false);
             }
         }
 

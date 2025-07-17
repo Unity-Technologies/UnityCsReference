@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEditor.Scripting.ScriptCompilation;
-using UnityEditor.Experimental.Licensing;
 
 namespace UnityEditor.PackageManager.UI.Internal
 {
@@ -79,13 +78,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual RegistryType availableRegistry => RegistryType.None;
 
         // Currently we don't consider Upm Packages with EntitlementLicensingModel.AssetStore as having entitlements,
-        // and it is only used right now to check if a package is from Asset Store. This is also to be consistent with
-        // other Asset Store packages (as in, if Upm Packages on Asset Store are considered with entitlements, then every
-        // package from Asset Store should be considered to have entitlements).
-        public bool hasEntitlements => entitlements != null &&
-                (entitlements.licensingModel == EntitlementLicensingModel.Enterprise
-                || entitlements.status == EntitlementStatus.NotGranted
-                || entitlements.status == EntitlementStatus.Granted);
+        // and it is only used right now to check if a package is from the Asset Store. This is also to be consistent with
+        // other Asset Store packages (as in, if Upm Packages on the Asset Store are considered with entitlements, then every
+        // package from the Asset Store should be considered to have entitlements).
+        public bool hasEntitlements => entitlements != null && (entitlements.licensingModel == EntitlementLicensingModel.Enterprise);
 
         public virtual bool hasEntitlementsError => false;
 
@@ -94,6 +90,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public virtual IEnumerable<SemVersion> supportedVersions => Enumerable.Empty<SemVersion>();
         public virtual SemVersion? supportedVersion => null;
         public virtual string deprecationMessage => null;
+        public virtual SignatureInfo signatureInfo => null;
 
         public abstract string uniqueId { get; }
         public abstract string packageId { get; }

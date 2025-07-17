@@ -36,4 +36,25 @@ readonly struct LayoutConfig
     public ref float PointScaleFactor => ref m_Access.GetConfigData(m_Handle).PointScaleFactor;
 
     public ref bool ShouldLog => ref m_Access.GetConfigData(m_Handle).ShouldLog;
+
+
+    /// <summary>
+    /// Gets or sets the custom measure function for this config.
+    /// </summary>
+    public LayoutMeasureFunction Measure
+    {
+        get => m_Access.GetMeasureFunction(m_Handle);
+        set => m_Access.SetMeasureFunction(m_Handle, value);
+    }
+
+
+    /// <summary>
+    /// Gets or sets the custom baseline function for this config.
+    /// </summary>
+    public LayoutBaselineFunction Baseline
+    {
+        get => m_Access.GetBaselineFunction(m_Handle);
+        set => m_Access.SetBaselineFunction(m_Handle, value);
+    }
+
 }

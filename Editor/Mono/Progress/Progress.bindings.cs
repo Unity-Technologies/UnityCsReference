@@ -18,7 +18,9 @@ namespace UnityEditor
     {
         const string k_NativeHeader = "Editor/Src/AsyncProgress/Progress.h";
 
-        // Keep in sync with Editor\src\Progress.h
+        // Keep everything in sync with Editor\src\Progress.h
+        internal const int InvalidProgressId = -1;
+
         [NativeType(Header = k_NativeHeader)]
         public enum Status
         {

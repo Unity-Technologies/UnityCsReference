@@ -260,7 +260,7 @@ namespace Unity.Hierarchy
             {
                 fixed (void* initValuePtr = &m_InitValue)
                 {
-                    UnsafeUtility.MemCpyReplicate(m_Ptr, initValuePtr, UnsafeUtility.SizeOf<Pair>(), m_Capacity);
+                    UnsafeUtility.MemCpyReplicate(m_Ptr, initValuePtr, sizeof(Pair), m_Capacity);
                 }
             }
             m_Count = 0;
@@ -271,7 +271,7 @@ namespace Unity.Hierarchy
             if (capacity < 0)
                 throw new ArgumentException($"capacity [{capacity}] cannot be negative");
 
-            var sizeOf = UnsafeUtility.SizeOf<Pair>();
+            var sizeOf = sizeof(Pair);
             var alignOf = UnsafeUtility.AlignOf<Pair>();
             if (m_Ptr == null)
             {

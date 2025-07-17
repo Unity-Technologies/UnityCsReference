@@ -11,18 +11,14 @@ using Unity.Properties;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Bindings;
 using UnityEngine.UIElements.StyleSheets;
 using UnityEngine.UIElements;
-using Cursor = UnityEngine.UIElements.Cursor;
-using UnityEngine.UIElements.Layout;
 
 namespace UnityEditor.UIElements.Debugger
 {
     internal class StylesDebugger : VisualElement
     {
         private DebuggerSelection m_DebuggerSelection;
-        private ScrollView m_ScrollView;
         private BoxModelView m_BoxModelView;
         private StylePropertyDebugger m_StylePropertyDebugger;
         private IMGUIContainer m_MatchingRulesContainer;
@@ -42,7 +38,6 @@ namespace UnityEditor.UIElements.Debugger
                 m_SelectedElement = value;
 
                 m_BoxModelView.selectedElement = m_SelectedElement;
-                m_SelectedElementUxml = null;
                 m_ClassList = null;
 
                 this.Query<IMGUIContainer>().ForEach( i => i.IncrementVersion(VersionChangeType.Layout));
@@ -67,9 +62,6 @@ namespace UnityEditor.UIElements.Debugger
             m_PanelDebug = m_DebuggerSelection.panelDebug;
             selectedElement = m_DebuggerSelection.element;
 
-            m_ScrollView = new ScrollView();
-            m_ScrollView.StretchToParentSize();
-
             Foldout layoutInfo = new() { text = "Layout", viewDataKey = "layoutInfo"};
             layoutInfo.contentContainer.style.flexDirection = FlexDirection.Row;
             layoutInfo.contentContainer.style.flexWrap = Wrap.Wrap;
@@ -79,34 +71,23 @@ namespace UnityEditor.UIElements.Debugger
             m_BoxModelView = new BoxModelView();
             layoutInfo.Add(m_BoxModelView);
             layoutInfo.Add(new IMGUIContainer(DrawLayoutInfo) { style = { flexShrink = 0, minWidth = 420 } });
-            m_ScrollView.Add(layoutInfo);
+            Add(layoutInfo);
 
-            m_ScrollView.Add(m_MatchingRulesContainer = new IMGUIContainer(DrawMatchingRules));
+            Add(m_MatchingRulesContainer = new IMGUIContainer(DrawMatchingRules));
 
-            m_ScrollView.Add(new IMGUIContainer(DrawProperties));
+            Add(new IMGUIContainer(DrawProperties));
 
             Foldout StylesInfo = new() { text = "Styles", viewDataKey = "StylesInfo" };
             m_StylePropertyDebugger = new StylePropertyDebugger(selectedElement);
             StylesInfo.Add(m_StylePropertyDebugger);
-            m_ScrollView.Add(StylesInfo);
-
-            m_ScrollView.Add(new IMGUIContainer(DrawUxmlDump));
-
-            Add(m_ScrollView);
+            Add(StylesInfo);
         }
 
         // ---
 
         private HashSet<int> m_CurFoldout = new HashSet<int>();
 
-        private string m_DumpId = "dump";
-        private bool m_UxmlDumpExpanded;
-        private bool m_UxmlDumpStyleFields;
-        private bool m_NewLineOnAttributes;
-        private bool m_AutoNameElements;
-
         private VisualElement m_SelectedElement;
-
 
         public void RefreshStylePropertyDebugger()
         {
@@ -118,45 +99,7 @@ namespace UnityEditor.UIElements.Debugger
             m_BoxModelView.Refresh(mgc);
         }
 
-
-        private void DrawUxmlDump()
-        {
-            if (m_SelectedElement == null)
-                return;
-
-            VisualElement selectedElement = m_SelectedElement;
-            m_UxmlDumpExpanded = EditorGUILayout.Foldout(m_UxmlDumpExpanded, Styles.uxmlContent);
-            if (m_UxmlDumpExpanded)
-            {
-                EditorGUI.BeginChangeCheck();
-                m_DumpId = EditorGUILayout.TextField("Template id", m_DumpId);
-                m_UxmlDumpStyleFields = EditorGUILayout.Toggle("Include style fields", m_UxmlDumpStyleFields);
-                m_NewLineOnAttributes = EditorGUILayout.Toggle("Line breaks on attributes", m_NewLineOnAttributes);
-                m_AutoNameElements = EditorGUILayout.Toggle("Auto name elements", m_AutoNameElements);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    m_SelectedElementUxml = null;
-                }
-                if (m_SelectedElementUxml == null)
-                {
-                    UxmlExporter.ExportOptions options = UxmlExporter.ExportOptions.None;
-
-                    if (m_UxmlDumpStyleFields)
-                        options = UxmlExporter.ExportOptions.StyleFields;
-
-                    if (m_NewLineOnAttributes)
-                        options |= UxmlExporter.ExportOptions.NewLineOnAttributes;
-                    if (m_AutoNameElements)
-                        options |= UxmlExporter.ExportOptions.AutoNameElements;
-
-                    m_SelectedElementUxml = UxmlExporter.Dump(selectedElement, m_DumpId ?? "template", options);
-                }
-                EditorGUILayout.TextArea(m_SelectedElementUxml);
-            }
-        }
-
         private MatchedRulesExtractor m_MatchedRulesExtractor = new (AssetDatabase.GetAssetPath);
-        private string m_SelectedElementUxml;
         private ReorderableList m_ClassList;
         private string m_NewClass;
 
@@ -190,7 +133,6 @@ namespace UnityEditor.UIElements.Debugger
             EditorGUILayout.LabelField(Styles.elementStylesContent, Styles.KInspectorTitle);
 
             m_SelectedElement.name = EditorGUILayout.TextField("Name", m_SelectedElement.name);
-            EditorGUILayout.LabelField("Debug Id", m_SelectedElement.controlid.ToString());
             m_SelectedElement.tooltip = EditorGUILayout.TextField("Tooltip", m_SelectedElement.tooltip);
             var textElement = m_SelectedElement as TextElement;
             if (textElement != null)
@@ -264,19 +206,6 @@ namespace UnityEditor.UIElements.Debugger
                 }
             }
             EditorGUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            var displayDescription = string.Empty;
-            if (m_SelectedElement.hasInlineStyle && m_SelectedElement.inlineStyleAccess.IsValueSet(StylePropertyId.Display))
-            {
-                displayDescription = "inline";
-            }
-            var chosenStyle = (DisplayStyle)EditorGUILayout.EnumPopup("Display", m_SelectedElement.resolvedStyle.display);
-            EditorGUILayout.LabelField(displayDescription);
-            if (chosenStyle != m_SelectedElement.resolvedStyle.display)
-                m_SelectedElement.style.display = chosenStyle;
-            GUILayout.EndHorizontal();
-
 
 
             if (m_ClassList == null)

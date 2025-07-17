@@ -9,13 +9,14 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 
+
 namespace UnityEditor
 {
     // Used for type check
-    class SearchFilterTreeItem : TreeViewItem
+    class SearchFilterTreeItem : TreeViewItem<EntityId>
     {
         bool m_IsFolder;
-        public SearchFilterTreeItem(int id, int depth, TreeViewItem parent, string displayName, bool isFolder)
+        public SearchFilterTreeItem(EntityId id, int depth, TreeViewItem<EntityId> parent, string displayName, bool isFolder)
             : base(id, depth, parent, displayName)
         {
             m_IsFolder = isFolder;
@@ -35,7 +36,7 @@ namespace UnityEditor
         Texture2D k_FavoriteFilterIcon = EditorGUIUtility.FindTexture("Search Icon");
         bool m_IsCreatingSavedFilter = false;
 
-        public ProjectBrowserColumnOneTreeViewGUI(TreeViewController treeView) : base(treeView)
+        public ProjectBrowserColumnOneTreeViewGUI(TreeViewController<EntityId> treeView) : base(treeView)
         {
         }
 
@@ -58,12 +59,12 @@ namespace UnityEditor
             return new Rect(0, GetTopPixelOfRow(row, rows), rowWidth, k_LineHeight);
         }
 
-        float GetTopPixelOfRow(int row, IList<TreeViewItem> rows)
+        float GetTopPixelOfRow(int row, IList<TreeViewItem<EntityId>> rows)
         {
             float topPixel = row * k_LineHeight;
 
             // Assumes Saved filter are second root
-            TreeViewItem item = rows[row];
+            var item = rows[row];
             ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(item.id);
             if (type == ProjectBrowser.ItemType.Asset)
                 topPixel += k_DistBetweenRootTypes;
@@ -71,7 +72,7 @@ namespace UnityEditor
             return topPixel;
         }
 
-        override public int GetNumRowsOnPageUpDown(TreeViewItem fromItem, bool pageUp, float heightOfTreeView)
+        override public int GetNumRowsOnPageUpDown(TreeViewItem<EntityId> fromItem, bool pageUp, float heightOfTreeView)
         {
             return (int)Mathf.Floor(heightOfTreeView / k_LineHeight) - 1; // -1 is fast fix for space between roots
         }
@@ -96,18 +97,18 @@ namespace UnityEditor
         // ------------------
         // Row Gui section
 
-        override public void OnRowGUI(Rect rowRect, TreeViewItem item, int row, bool selected, bool focused)
+        override public void OnRowGUI(Rect rowRect, TreeViewItem<EntityId> item, int row, bool selected, bool focused)
         {
             bool useBoldFont = IsVisibleRootNode(item);
             DoItemGUI(rowRect, row, item, selected, focused, useBoldFont);
         }
 
-        bool IsVisibleRootNode(TreeViewItem item)
+        bool IsVisibleRootNode(TreeViewItem<EntityId> item)
         {
             return (m_TreeView.data as ProjectBrowserColumnOneTreeViewDataSource).IsVisibleRootNode(item);
         }
 
-        protected override Texture GetIconForItem(TreeViewItem item)
+        protected override Texture GetIconForItem(TreeViewItem<EntityId> item)
         {
             if (item != null && item.icon != null)
             {
@@ -159,7 +160,7 @@ namespace UnityEditor
 
         override protected void RenameEnded()
         {
-            int instanceID = GetRenameOverlay().userData;
+            var instanceID = GetRenameOverlay().userData;
             ProjectBrowser.ItemType type = ProjectBrowser.GetItemType(instanceID);
 
             if (m_IsCreatingSavedFilter)
@@ -199,14 +200,14 @@ namespace UnityEditor
     //------------------------------------------------
     // DataSource section
 
-    internal class ProjectBrowserColumnOneTreeViewDataSource : LazyTreeViewDataSource
+    internal class ProjectBrowserColumnOneTreeViewDataSource : LazyTreeViewDataSource<EntityId>
     {
         static string kProjectBrowserString = "ProjectBrowser";
         static Texture2D s_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
         public bool skipHiddenPackages { get; set; }
 
-        public ProjectBrowserColumnOneTreeViewDataSource(TreeViewController treeView, bool skipHidden) : base(treeView)
+        public ProjectBrowserColumnOneTreeViewDataSource(TreeViewController<EntityId> treeView, bool skipHidden) : base(treeView)
         {
             showRootItem = false;
             rootIsCollapsable = false;
@@ -214,28 +215,28 @@ namespace UnityEditor
             SavedSearchFilters.AddChangeListener(ReloadData); // We reload on change
         }
 
-        public override bool IsExpandable(TreeViewItem item)
+        public override bool IsExpandable(TreeViewItem<EntityId> item)
         {
             return item.hasChildren && (item != m_RootItem || rootIsCollapsable);
         }
 
-        public override bool CanBeMultiSelected(TreeViewItem item)
+        public override bool CanBeMultiSelected(TreeViewItem<EntityId> item)
         {
             return ProjectBrowser.GetItemType(item.id) != ProjectBrowser.ItemType.SavedFilter;
         }
 
-        public override bool CanBeParent(TreeViewItem item)
+        public override bool CanBeParent(TreeViewItem<EntityId> item)
         {
             return !(item is SearchFilterTreeItem) || SavedSearchFilters.AllowsHierarchy();
         }
 
-        public bool IsVisibleRootNode(TreeViewItem item)
+        public bool IsVisibleRootNode(TreeViewItem<EntityId> item)
         {
             // The main root Item is invisible the next level is visible root items
             return (item.parent != null && item.parent.parent == null);
         }
 
-        public override bool IsRenamingItemAllowed(TreeViewItem item)
+        public override bool IsRenamingItemAllowed(TreeViewItem<EntityId> item)
         {
             // The 'Assets' root and 'Filters' roots are not allowed to be renamed
             if (IsVisibleRootNode(item))
@@ -255,21 +256,21 @@ namespace UnityEditor
         public override void FetchData()
         {
             bool firstInitialize = !isInitialized;
-            m_RootItem = new TreeViewItem(0, 0, null, "Invisible Root Item");
+            m_RootItem = new TreeViewItem<EntityId>(0, 0, null, "Invisible Root Item");
             SetExpanded(m_RootItem, true); // ensure always visible
 
             // We want three roots: Favorites, Assets, and Packages
-            List<TreeViewItem> visibleRoots = new List<TreeViewItem>();
+            var visibleRoots = new List<TreeViewItem<EntityId>>();
 
             // Favorites root
-            TreeViewItem savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
+            var savedFiltersRootItem = SavedSearchFilters.ConvertToTreeView();
             visibleRoots.Add(savedFiltersRootItem);
 
             // Assets root
-            int assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+            EntityId assetsFolderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId("Assets");
             int depth = 0;
             string displayName = "Assets";
-            AssetsTreeViewDataSource.RootTreeItem assetRootItem = new AssetsTreeViewDataSource.RootTreeItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
+            AssetsTreeViewDataSource.RootTreeItem assetRootItem = new AssetsTreeViewDataSource.RootTreeItem(assetsFolderEntityId, depth, m_RootItem, displayName);
             assetRootItem.icon = s_FolderIcon;
             visibleRoots.Add(assetRootItem);
 
@@ -284,7 +285,7 @@ namespace UnityEditor
             // Set global expanded state for roots from EditorPrefs (must be before building the rows)
             if (firstInitialize)
             {
-                foreach (TreeViewItem item in m_RootItem.children)
+                foreach (var item in m_RootItem.children)
                 {
                     bool expanded = EditorPrefs.GetBool(kProjectBrowserString + item.displayName, true);
                     SetExpanded(item, expanded);
@@ -293,7 +294,7 @@ namespace UnityEditor
 
             // Build rows
             //-----------
-            m_Rows = new List<TreeViewItem>(100);
+            m_Rows = new List<TreeViewItem<EntityId>>(100);
 
             // Favorites
             savedFiltersRootItem.parent = m_RootItem;
@@ -320,10 +321,10 @@ namespace UnityEditor
                 depth++;
                 foreach (var package in packages)
                 {
-                    var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                    var packageFolderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(package.assetPath);
 
                     displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
-                    AssetsTreeViewDataSource.PackageTreeItem packageItem = new AssetsTreeViewDataSource.PackageTreeItem(packageFolderInstanceId, depth, packagesRootItem, displayName);
+                    AssetsTreeViewDataSource.PackageTreeItem packageItem = new AssetsTreeViewDataSource.PackageTreeItem(packageFolderEntityId, depth, packagesRootItem, displayName);
                     packageItem.icon = s_FolderIcon;
                     packagesRootItem.AddChild(packageItem);
                     m_Rows.Add(packageItem);
@@ -339,17 +340,17 @@ namespace UnityEditor
             m_NeedRefreshRows = false;
         }
 
-        static bool HasSubFolders(IHierarchyProperty property)
+        static bool HasSubFolders(IHierarchyIterator property)
         {
             var path = AssetDatabase.GUIDToAssetPath(property.guid);
             var subFolders = AssetDatabase.GetSubFolders(path);
             return subFolders.Length > 0;
         }
 
-        private void ReadAssetDatabase(string assetFolderRootPath, TreeViewItem parent, int baseDepth, IList<TreeViewItem> allRows)
+        private void ReadAssetDatabase(string assetFolderRootPath, TreeViewItem<EntityId> parent, int baseDepth, IList<TreeViewItem<EntityId>> allRows)
         {
             // Read from Assets directory
-            IHierarchyProperty property = new HierarchyProperty(assetFolderRootPath);
+            var property = new HierarchyIterator(assetFolderRootPath);
             property.Reset();
 
             if (!IsExpanded(parent))
@@ -361,13 +362,13 @@ namespace UnityEditor
 
             Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
 
-            List<TreeViewItem> allFolders = new List<TreeViewItem>();
+            var allFolders = new List<TreeViewItem<EntityId>>();
             var expandedIDs = m_TreeView.state.expandedIDs.ToArray();
             while (property.Next(expandedIDs))
             {
                 if (property.isFolder)
                 {
-                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.GetInstanceIDIfImported(), baseDepth + property.depth, null, property.name);
+                    AssetsTreeViewDataSource.FolderTreeItem folderItem = new AssetsTreeViewDataSource.FolderTreeItem(property.guid, !property.hasChildren, property.GetEntityIdIfImported(), baseDepth + property.depth, null, property.name);
                     folderItem.icon = folderIcon;
                     allFolders.Add(folderItem);
                     allRows.Add(folderItem);
@@ -385,16 +386,16 @@ namespace UnityEditor
             }
 
             // Fix references
-            TreeViewUtility.SetChildParentReferences(allFolders, parent);
+            TreeViewUtility<EntityId>.SetChildParentReferences(allFolders, parent);
         }
 
-        public override void SetExpandedWithChildren(int id, bool expand)
+        public override void SetExpandedWithChildren(EntityId id, bool expand)
         {
             base.SetExpandedWithChildren(id, expand);
             PersistExpandedState(id, expand);
         }
 
-        public override bool SetExpanded(int id, bool expand)
+        public override bool SetExpanded(EntityId id, bool expand)
         {
             if (base.SetExpanded(id, expand))
             {
@@ -404,21 +405,21 @@ namespace UnityEditor
             return false;
         }
 
-        void PersistExpandedState(int id, bool expand)
+        void PersistExpandedState(EntityId id, bool expand)
         {
             // Persist expanded state for ProjectBrowsers
-            InternalEditorUtility.expandedProjectWindowItems = expandedIDs.ToArray();
+            InternalEditorUtility.expandedProjectWindowItemIds = expandedIDs.ToArray();
 
             if (m_RootItem.hasChildren)
             {
                 // Set global expanded state of roots (Assets folder and Favorites root)
-                foreach (TreeViewItem item in m_RootItem.children)
+                foreach (var item in m_RootItem.children)
                     if (item.id == id)
                         EditorPrefs.SetBool(kProjectBrowserString + item.displayName, expand);
             }
         }
 
-        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
+        protected override void GetParentsAbove(EntityId id, HashSet<EntityId> parentsAbove)
         {
             if (SavedSearchFilters.IsSavedFilter(id))
             {
@@ -433,16 +434,16 @@ namespace UnityEditor
             }
         }
 
-        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
+        protected override void GetParentsBelow(EntityId id, HashSet<EntityId> parentsBelow)
         {
             var extra = GetParentsBelow(id);
             parentsBelow.UnionWith(extra);
         }
 
-        private HashSet<int> GetParentsBelow(int id)
+        private HashSet<EntityId> GetParentsBelow(EntityId id)
         {
             // Add all children expanded ids to hashset
-            HashSet<int> parentsBelow = new HashSet<int>();
+            var parentsBelow = new HashSet<EntityId>();
 
             // Check if packages instance
             if (id == ProjectBrowser.kPackagesFolderInstanceId)
@@ -451,23 +452,23 @@ namespace UnityEditor
                 var packages = PackageManagerUtilityInternal.GetAllVisiblePackages(skipHiddenPackages);
                 foreach (var package in packages)
                 {
-                    var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
-                    parentsBelow.UnionWith(GetParentsBelow(packageFolderInstanceId));
+                    var packageFolderEntityId = AssetDatabase.GetMainAssetOrInProgressProxyEntityId(package.assetPath);
+                    parentsBelow.UnionWith(GetParentsBelow(packageFolderEntityId));
                 }
                 return parentsBelow;
             }
 
             var path = AssetDatabase.GetAssetPath(id);
-            IHierarchyProperty search = new HierarchyProperty(path);
+            var search = new HierarchyIterator(path);
             if (search.Find(id, null))
             {
                 parentsBelow.Add(id);
 
                 int depth = search.depth;
-                while (search.Next(null) && search.depth > depth)
+                while (search.Next(default(EntityId[])) && search.depth > depth)
                 {
                     if (search.isFolder && search.hasChildren)
-                        parentsBelow.Add(search.instanceID);
+                        parentsBelow.Add(search.entityId);
                 }
             }
             return parentsBelow;
@@ -476,11 +477,11 @@ namespace UnityEditor
 
     internal class ProjectBrowserColumnOneTreeViewDragging : AssetsTreeViewDragging
     {
-        public ProjectBrowserColumnOneTreeViewDragging(TreeViewController treeView) : base(treeView)
+        public ProjectBrowserColumnOneTreeViewDragging(TreeViewController<EntityId> treeView) : base(treeView)
         {
         }
 
-        public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
+        public override void StartDrag(TreeViewItem<EntityId> draggedItem, List<EntityId> draggedItemIDs)
         {
             if (SavedSearchFilters.IsSavedFilter(draggedItem.id))
             {
@@ -492,7 +493,7 @@ namespace UnityEditor
             ProjectWindowUtil.StartDrag(draggedItem.id, draggedItemIDs);
         }
 
-        public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
+        public override DragAndDropVisualMode DoDrag(TreeViewItem<EntityId> parentItem, TreeViewItem<EntityId> targetItem, bool perform, DropPosition dropPos)
         {
             if (targetItem == null)
                 return DragAndDropVisualMode.None;
@@ -502,7 +503,7 @@ namespace UnityEditor
             // Dragging saved filter
             if (savedFilterData != null)
             {
-                int instanceID = (int)savedFilterData;
+                var instanceID = (EntityId)savedFilterData;
                 if (targetItem is SearchFilterTreeItem && parentItem is SearchFilterTreeItem)// && targetItem.id != draggedInstanceID && parentItem.id != draggedInstanceID)
                 {
                     bool validMove = SavedSearchFilters.CanMoveSavedFilter(instanceID, parentItem.id, targetItem.id, dropPos == DropPosition.Below);
@@ -530,7 +531,7 @@ namespace UnityEditor
                             Object[] objs = DragAndDrop.objectReferences;
                             if (objs.Length > 0)
                             {
-                                string path = AssetDatabase.GetAssetPath(objs[0].GetInstanceID());
+                                string path = AssetDatabase.GetAssetPath(objs[0].GetEntityId());
                                 if (!string.IsNullOrEmpty(path))
                                 {
                                     // TODO: Fix with new AssetDatabase API when it is ready (GetName)
@@ -540,13 +541,13 @@ namespace UnityEditor
                                     bool addAsChild = targetItem == parentItem;
 
                                     float previewSize = ProjectBrowserColumnOneTreeViewGUI.GetListAreaGridSize();
-                                    int instanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
+                                    EntityId instanceID = SavedSearchFilters.AddSavedFilterAfterInstanceID(folderName, searchFilter, previewSize, targetItem.id, addAsChild);
                                     m_TreeView.SetSelection(new[] { instanceID }, false);
                                     m_TreeView.NotifyListenersThatSelectionChanged();
                                 }
                                 else
                                 {
-                                    Debug.Log("Could not get asset path from id " + objs[0].GetInstanceID());
+                                    Debug.Log("Could not get asset path from id " + objs[0].GetEntityId());
                                 }
                             }
                         }

@@ -156,8 +156,8 @@ namespace UnityEngine
         // VisionOS
         VisionOS = 50,
 
-        ReservedCFE = 51,
-        
+        Switch2 = 51,
+
         // Kepler
         KeplerArm64 = 52,
         KeplerX64 = 53,

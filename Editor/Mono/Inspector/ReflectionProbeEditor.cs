@@ -382,8 +382,8 @@ namespace UnityEditor
                         UpdateOldLocalSpace();
                         break;
                 }
-                if (Toolbar.get != null)
-                    Toolbar.get.Repaint();
+                if (Toolbar.instance != null)
+                    Toolbar.instance.Repaint();
             }
 
             GUILayout.FlexibleSpace();
@@ -761,8 +761,8 @@ namespace UnityEditor
                 Color oldColor = Gizmos.color;
                 Gizmos.color = kGizmoReflectionProbe;
 
-                Gizmos.matrix = GetLocalSpace(reflectionProbe);
-                Gizmos.DrawCube(reflectionProbe.center, -1f * reflectionProbe.size);
+                Gizmos.matrix = Matrix4x4.Translate(reflectionProbe.center) * GetLocalSpace(reflectionProbe);
+                Gizmos.DrawCube(Vector3.zero, -1f * reflectionProbe.size);
                 Gizmos.matrix = Matrix4x4.identity;
                 Gizmos.color = oldColor;
             }
@@ -777,8 +777,8 @@ namespace UnityEditor
             Color oldColor = Gizmos.color;
             Gizmos.color = reflectionProbe.isActiveAndEnabled ? kGizmoReflectionProbe : kGizmoReflectionProbeDisabled;
 
-            Gizmos.matrix = GetLocalSpace(reflectionProbe);
-            Gizmos.DrawWireCube(reflectionProbe.center, reflectionProbe.size);
+            Gizmos.matrix = Matrix4x4.Translate(reflectionProbe.center) * GetLocalSpace(reflectionProbe);
+            Gizmos.DrawWireCube(Vector3.zero, reflectionProbe.size);
             Gizmos.matrix = Matrix4x4.identity;
             Gizmos.color = oldColor;
         }
@@ -860,9 +860,9 @@ namespace UnityEditor
             // here we only want to show the box editing handles when needed.
             ReflectionProbe p = (ReflectionProbe)target;
 
-            using (new Handles.DrawingScope(GetLocalSpace(p)))
+            using (new Handles.DrawingScope(Matrix4x4.Translate(p.center) * GetLocalSpace(p)))
             {
-                m_BoundsHandle.center = p.center;
+                m_BoundsHandle.center = Vector3.zero;
                 m_BoundsHandle.size = p.size;
 
                 EditorGUI.BeginChangeCheck();

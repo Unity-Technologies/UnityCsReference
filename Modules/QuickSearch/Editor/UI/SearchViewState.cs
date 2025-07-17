@@ -134,7 +134,6 @@ namespace UnityEditor.Search
         public bool hasWindowSize => position.width > 0f && position.height > 0;
         public Vector2 windowSize => hasWindowSize ? position.size : defaultSize;
 
-
         [SerializeField] bool m_ContextUseExplicitProvidersAsNormalProviders;
 
         public SearchContext context
@@ -153,6 +152,9 @@ namespace UnityEditor.Search
         }
 
         internal bool hasContext => m_Context != null;
+
+        [SerializeField] internal SearchQueryTreeConfig queryTreeConfig;
+        [SerializeField] internal SearchWindowCustomPanelConfig customPanelConfig;
 
         public string text
         {
@@ -307,9 +309,15 @@ namespace UnityEditor.Search
             providerIds = searchContext?.GetProviders().Select(p => p.id).ToArray() ?? state.providerIds.ToArray();
 
             if (tableConfig != null && state.tableConfig?.columns?.Length > 0)
-                tableConfig.columns = state.tableConfig?.columns.ToArray();
+            {
+                tableConfig.Assign(state.tableConfig);
+            }
             else
+            {
                 tableConfig = state.tableConfig?.Clone();
+            }
+
+            customPanelConfig = state.customPanelConfig;
 
             if (this == state)
                 return;

@@ -124,12 +124,10 @@ namespace UnityEngine.Tilemaps
             var oldTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(oldTilesPtr, count, Allocator.Invalid);
             var newTilesIds = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<int>(newTilesPtr, count, Allocator.Invalid);
             var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
-            var ash1 = AtomicSafetyHandle.Create();
-            var ash2 = AtomicSafetyHandle.Create();
-            var ash3 = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref oldTilesIds, ash1);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref newTilesIds, ash2);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<Vector3Int>(ref positions, ash3);
+            var ash = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref oldTilesIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<int>(ref newTilesIds, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle<Vector3Int>(ref positions, ash);
 
             for (int i = 0; i < count; ++i)
             {
@@ -152,9 +150,7 @@ namespace UnityEngine.Tilemaps
             tilemap.m_RefreshPos.Dispose();
             tilemap.m_AddToList = false;
 
-            AtomicSafetyHandle.Release(ash1);
-            AtomicSafetyHandle.Release(ash2);
-            AtomicSafetyHandle.Release(ash3);
+            AtomicSafetyHandle.Release(ash);
         }
 
         [RequiredByNativeCode]
@@ -168,12 +164,10 @@ namespace UnityEngine.Tilemaps
             var positions = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3Int>(positionsPtr, count, Allocator.Invalid);
             var tileDataArray = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<TileData>(outTileDataPtr, count, Allocator.Invalid);
 
-            var ash1 = AtomicSafetyHandle.Create();
-            var ash2 = AtomicSafetyHandle.Create();
-            var ash3 = AtomicSafetyHandle.Create();
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tiles, ash1);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash2);
-            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileDataArray, ash3);
+            var ash = AtomicSafetyHandle.Create();
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tiles, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref positions, ash);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref tileDataArray, ash);
 
             for (int i = 0; i < count; ++i)
             {
@@ -186,9 +180,7 @@ namespace UnityEngine.Tilemaps
                 }
             }
 
-            AtomicSafetyHandle.Release(ash1);
-            AtomicSafetyHandle.Release(ash2);
-            AtomicSafetyHandle.Release(ash3);
+            AtomicSafetyHandle.Release(ash);
         }
     }
 }

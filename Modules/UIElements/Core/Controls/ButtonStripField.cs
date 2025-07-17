@@ -132,10 +132,7 @@ namespace UnityEngine.UIElements
         {
             for (int i = 0; i < m_Buttons.Count; ++i)
             {
-                if (i == value)
-                    m_Buttons[i].pseudoStates |= PseudoStates.Checked;
-                else
-                    m_Buttons[i].pseudoStates &= ~PseudoStates.Checked;
+                m_Buttons[i].SetCheckedPseudoState(i == value);
             }
         }
     }

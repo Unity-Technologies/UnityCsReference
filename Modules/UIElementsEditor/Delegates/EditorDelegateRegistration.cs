@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.SceneManagement;
 using UnityEditor.TextCore.Text;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
@@ -28,15 +29,19 @@ namespace UnityEditor.UIElements
             PanelSettings.GetOrCreateDefaultTheme = PanelSettingsCreator.GetFirstThemeOrCreateDefaultTheme;
             PanelSettings.GetGameViewResolution = (int display) =>
                 {
+                    // For events to work properly with multiple GameView on the same display, we need to prioritize the focused window
+                    var mainPlayModeView = PlayModeView.GetMainPlayModeView();
+                    if (mainPlayModeView?.targetDisplay == display)
+                        return mainPlayModeView.targetSize;
+
                     foreach (var playModeView in PlayModeView.GetAllPlayModeViewWindows())
                     {
                         if (playModeView.targetDisplay == display)
                             return playModeView.targetSize;
                     }
-                    return new(Display.main.renderingWidth, Display.main.renderingHeight);
+                    return null;
                 };
             PanelSettings.SetPanelSettingsAssetDirty = EditorUtility.SetDirty;
-            PanelSettings.IsAdvancedTextEnabled = () => UIToolkitProjectSettings.enableAdvancedText;
             PanelSettings.s_AssignICUData += SetICUDataAsset;
 
             DropdownUtility.MakeDropdownFunc = CreateGenericOSMenu;
@@ -50,6 +55,9 @@ namespace UnityEditor.UIElements
                 if (stateChange == PlayModeStateChange.ExitingPlayMode)
                     UIElementsRuntimeUtility.OnExitingPlayMode();
             };
+
+            PanelInputConfiguration.IsPartOfPrefabAsset = gameObject =>
+                PrefabStageUtility.GetCurrentPrefabStage() != null;
         }
 
         private static GenericOSMenu CreateGenericOSMenu()
@@ -88,7 +96,7 @@ namespace UnityEditor.UIElements
                     target.MarkDirty();
                 }
             }
-            else if( target.m_ICUDataAsset != null)
+            else if (target.m_ICUDataAsset != null)
             {
                 target.m_ICUDataAsset = null;
                 target.MarkDirty();

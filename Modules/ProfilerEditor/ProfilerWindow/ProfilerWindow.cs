@@ -250,6 +250,11 @@ namespace UnityEditor
             }
         }
 
+        // At the time of writing, this is only used by the Highlights module to support range
+        // selection. Over time, users of selectedFrameIndex can be migrated to support a
+        // range selection before updating the public API.
+        internal Range? SelectedFrameRange { get; set; }
+
         // these properties act as a redirect to ProfilerDriver for now.
         // Once the Profiler Window isn't so tightly coupled to the ProfilerDriver singleton anymore, they will relate just the data stream displayed in this instance.
         public long firstAvailableFrameIndex => ProfilerDriver.firstFrameIndex;
@@ -859,7 +864,7 @@ namespace UnityEditor
             if (EditorUtility.DisplayDialog("Profiler (Standalone Process)",
                 "The Standalone Profiler launches the Profiler window in a separate process from the Editor. " +
                 "This means that the performance of the Editor does not affect profiling data, and the Profiler does not affect the performance of the Editor. " +
-                "It takes around 3-4 seconds to launch.", "OK", DialogOptOutDecisionType.ForThisMachine, "UseOutOfProcessProfiler"))
+                "It takes around 3-4 seconds to launch.", "OK", DialogOptOutDecisionType.ForThisUser, "UseOutOfProcessProfiler"))
             {
                 ProfilerRoleProvider.LaunchProfilerProcess();
             }
@@ -960,8 +965,28 @@ namespace UnityEditor
 
         string PickFrameLabel()
         {
-            var lastFrame = (ProfilerDriver.lastFrameIndex + 1);
-            return ((m_CurrentFrame == FrameDataView.invalidOrCurrentFrameIndex) ? lastFrame : m_CurrentFrame + 1) + " / " + lastFrame;
+            // Frames incides are incremented by 1 for display purposes.
+            var lastFrameForDisplay = (ProfilerDriver.lastFrameIndex + 1);
+            if (SelectedFrameRange.HasValue)
+            {
+                var selectedFrameRange = SelectedFrameRange.Value;
+                var startFrameForDisplay = selectedFrameRange.Start.Value + 1;
+                var isSingleFrame = (selectedFrameRange.End.Value - selectedFrameRange.Start.Value) == 1;
+                if (isSingleFrame)
+                {
+                    return $"{startFrameForDisplay} / {lastFrameForDisplay}";
+                }
+                else
+                {
+                    // A C# Range's end value is exclusive, so we don't need to add one for display.
+                    var endFrameForDisplay = selectedFrameRange.End.Value;
+                    return $"{startFrameForDisplay}–{endFrameForDisplay} / {lastFrameForDisplay}";
+                }
+            }
+            else
+            {
+                return $"{lastFrameForDisplay} / {lastFrameForDisplay}";
+            }
         }
 
         void PrevFrame()
@@ -1351,8 +1376,19 @@ namespace UnityEditor
 
         void SetCurrentFrameDontPause(int frame)
         {
-            m_CurrentFrame = frame;
-            InvokeSelectedFrameIndexChangedEventIfNecessary(frame);
+            Range? frameRange = null;
+            if (frame != FrameDataView.invalidOrCurrentFrameIndex)
+                frameRange = new Range(frame, frame + 1);
+            SetCurrentFrameRangeDontPause(frameRange);
+        }
+
+        void SetCurrentFrameRangeDontPause(Range? frameRange)
+        {
+            // 'Frame index' API uses the start of the range.
+            m_CurrentFrame = (frameRange.HasValue) ? frameRange.Value.Start.Value : FrameDataView.invalidOrCurrentFrameIndex;
+
+            SelectedFrameRange = frameRange;
+            InvokeSelectedFrameIndexChangedEventIfNecessary(m_CurrentFrame);
         }
 
         void SetCurrentFrame(int frame)
@@ -1552,6 +1588,11 @@ namespace UnityEditor
                 var cpuModule = this.GetProfilerModuleByType<CPUProfilerModule>();
                 cpuModule.Update();
             }
+        }
+
+        internal bool IsBottleneckViewVisible()
+        {
+            return (m_BottlenecksDetailsViewController != null);
         }
 
         void ProfilerModulesDropdownWindow.IResponder.OnConfigureModules()
@@ -1947,7 +1988,7 @@ namespace UnityEditor
             return null;
         }
 
-        void BottlenecksChartViewController.IResponder.ChartViewSelectedFrameIndex(int frameIndex)
+        void BottlenecksChartViewController.IResponder.ChartViewSelectedFrameRange(Range? frameRange)
         {
             // Create the bottleneck details view if necessary.
             if (m_BottlenecksDetailsViewController == null)
@@ -1958,26 +1999,26 @@ namespace UnityEditor
 
                 ProfilerWindowAnalytics.SwitchActiveView("Highlights");
 
-                // If the Bottleneck module was not already selected, do not change frame. We have been told to do this
-                // due to the poor UX of the Profiler window and the inability to easily select a frame when using high
-                // frame counts.
-                frameIndex = -1;
+                // If the Bottleneck module was not already selected, do not change frame. This matches
+                // existing behaviour to help with switching modules without changing frame.
+                return;
             }
 
-            if (frameIndex < 0)
-                return;
-
-            selectedFrameIndex = frameIndex;
+            SetCurrentFrameRangeDontPause(frameRange);
         }
 
-        // TODO Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
-        int m_LastReportedSelectedFrameIndex;
+        // Ideally we wouldn't need this method. However, the current IMGUI tangle means setting the current frame can occur an unpredictable number of times per frame. We want to ensure we only invoke this event once for the selected frame. Fully transitioning to UIToolkit (especially on the toolbar) should simplify this.
+        Range? m_LastReportedSelectedFrameRange;
         void InvokeSelectedFrameIndexChangedEventIfNecessary(int newFrame)
         {
-            if (newFrame != m_LastReportedSelectedFrameIndex)
+            // The selected frame range can change without the selected index changing; for example, when the start of the range is the same and the legacy 'frame index' API selects the start of the range. This is why the last reported range is tracked, rather than the last reported index, even though the index is what is actually passed to the API. This allow us to support the existing 'frame index' API without changing its behaviour, whilst supporting range select internally as we migrate more modules to it.
+            var selectionWasCleared = (SelectedFrameRange == null) && (m_LastReportedSelectedFrameRange != null);
+            var selectionWasChanged = (SelectedFrameRange != null) && (SelectedFrameRange.Equals(m_LastReportedSelectedFrameRange) == false);
+            var hasNewData = newFrame != m_CurrentFrame;
+            if (selectionWasCleared || selectionWasChanged || hasNewData)
             {
                 SelectedFrameIndexChanged?.Invoke(selectedFrameIndex);
-                m_LastReportedSelectedFrameIndex = newFrame;
+                m_LastReportedSelectedFrameRange = SelectedFrameRange;
             }
         }
 

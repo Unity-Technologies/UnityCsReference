@@ -78,7 +78,7 @@ namespace Unity.UI.Builder
 
         public VisualElement CreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
         {
-            var fieldLabel = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
+            var fieldLabel = StyleSheetUtility.ConvertDashToHuman(attribute.name);
             var field = InstantiateField(attributeOwner, attributeUxmlOwner, attribute);
 
             field.label = fieldLabel;

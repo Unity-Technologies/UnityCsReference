@@ -69,7 +69,7 @@ namespace UnityEngine
         extern public float maxAngularVelocity { get; set; }
         extern public float maxLinearVelocity { get; set; }
         extern public void MovePosition(Vector3 position);
-        extern public void MoveRotation(Quaternion rot);
+        extern public void MoveRotation(Quaternion rotation);
         extern public void Move(Vector3 position, Quaternion rotation);
         extern public void Sleep();
         extern public bool IsSleeping();

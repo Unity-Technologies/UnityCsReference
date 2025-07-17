@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
             if (attribute.name.Equals("fixed-item-height") &&
                      attributeOwner is BaseVerticalCollectionView)
             {
-                var uiField = new IntegerField(BuilderNameUtilities.ConvertDashToHuman(attribute.name));
+                var uiField = new IntegerField(StyleSheetUtility.ConvertDashToHuman(attribute.name));
                 uiField.isDelayed = true;
                 uiField.RegisterCallback<InputEvent>(OnFixedHeightValueChangedImmediately);
                 uiField.labelElement.RegisterCallback<PointerMoveEvent>(OnFixedHeightValueChangedImmediately);

@@ -16,8 +16,8 @@ namespace Unity.UI.Builder
         public string[] bindingPathArray => m_BindingPathArray;
         internal abstract void UpdateUnitFromFields();
     }
-    
-    class BoxModelElement<TValueType, TControl> : BoxModel 
+
+    class BoxModelElement<TValueType, TControl> : BoxModel
         where TControl : BaseField<TValueType>, new()
     {
         static readonly string k_MixedUnitLabel = "mixed";
@@ -27,7 +27,7 @@ namespace Unity.UI.Builder
         static readonly string k_ColorfieldClassName = k_BoxModelClassName + "__colorfield";
         static readonly string k_TitleClassName = k_BoxModelClassName + "__title";
         static readonly string k_CenterClassName = k_BoxModelClassName + "__center";
-        
+
         private Label m_Title;
         private VisualElement m_Center;
         private VisualElement m_CenterContent;
@@ -42,7 +42,8 @@ namespace Unity.UI.Builder
         private bool m_NeedsUnit;
 
         public VisualElement background => m_BackgroundElement;
-        
+        public List<BaseField<TValueType>> fields => m_Fields;
+
         public bool needsUnit
         {
             get => m_NeedsUnit;
@@ -50,10 +51,10 @@ namespace Unity.UI.Builder
             {
                 if (m_NeedsUnit == value)
                     return;
-            
+
                 m_NeedsUnit = value;
                 if (!m_NeedsUnit) return;
-                
+
                 m_Title = new Label(GetUnitFromFields());
                 m_Title.AddToClassList(k_TitleClassName);
                 m_Title.AddToClassList(boxType.ToString().ToLowerInvariant());
@@ -66,7 +67,7 @@ namespace Unity.UI.Builder
             VisualElement leftFieldContainer, VisualElement rightFieldContainer)
         {
             this.boxType = boxType;
-            
+
             m_CenterContent = content;
             m_CenterContent.AddToClassList(k_CenterContentClassName);
 
@@ -74,11 +75,11 @@ namespace Unity.UI.Builder
             m_BottomField = new TControl();
             m_RightField = new TControl();
             m_LeftField = new TControl();
-            
-            m_Fields = new List<BaseField<TValueType>>() { m_TopField, m_BottomField, m_RightField, m_LeftField };
-      
-            foreach (var field in m_Fields) 
-            { 
+
+            m_Fields = new List<BaseField<TValueType>>() { m_TopField, m_RightField, m_BottomField, m_LeftField };
+
+            foreach (var field in m_Fields)
+            {
                 if (typeof(TValueType) == typeof(string))
                     field.AddToClassList(k_TextfieldClassName);
                 else if (typeof(TValueType) == typeof(Color))
@@ -86,18 +87,18 @@ namespace Unity.UI.Builder
             }
 
             SetBindingPaths();
-            
+
             leftFieldContainer.Add(m_LeftField);
             rightFieldContainer.Add(m_RightField);
             topFieldContainer.Add(m_TopField);
             bottomFieldContainer.Add(m_BottomField);
-            
+
             m_Center = new VisualElement();
             m_Center.AddToClassList(k_CenterClassName);
             m_Center.AddToClassList(BuilderConstants.InspectorCompositeStyleRowElementClassName);
             m_Center.Add(m_CenterContent);
             Add(m_Center);
-            
+
             this.needsUnit = needsUnit;
         }
 
@@ -106,7 +107,7 @@ namespace Unity.UI.Builder
             switch (boxType)
             {
                 case BoxType.Margin:
-                    m_BindingPathArray = new[] { StylePropertyId.MarginLeft.UssName(), StylePropertyId.MarginRight.UssName(), 
+                    m_BindingPathArray = new[] { StylePropertyId.MarginLeft.UssName(), StylePropertyId.MarginRight.UssName(),
                         StylePropertyId.MarginTop.UssName(), StylePropertyId.MarginBottom.UssName() };
                     m_LeftField.bindingPath = StylePropertyId.MarginLeft.UssName();
                     m_RightField.bindingPath = StylePropertyId.MarginRight.UssName();
@@ -115,9 +116,9 @@ namespace Unity.UI.Builder
                     break;
                 case BoxType.BorderColor:
                     // to show the width and radius unit in the color box
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(), 
+                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
                         StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(), 
+                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
                         StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
                     };
                     m_LeftField.bindingPath = StylePropertyId.BorderLeftColor.UssName();
@@ -126,7 +127,7 @@ namespace Unity.UI.Builder
                     m_BottomField.bindingPath = StylePropertyId.BorderBottomColor.UssName();
                     break;
                 case BoxType.Padding:
-                    m_BindingPathArray = new[] { StylePropertyId.PaddingLeft.UssName(), StylePropertyId.PaddingRight.UssName(), 
+                    m_BindingPathArray = new[] { StylePropertyId.PaddingLeft.UssName(), StylePropertyId.PaddingRight.UssName(),
                         StylePropertyId.PaddingTop.UssName(), StylePropertyId.PaddingBottom.UssName() };
                     m_LeftField.bindingPath = StylePropertyId.PaddingLeft.UssName();
                     m_RightField.bindingPath = StylePropertyId.PaddingRight.UssName();
@@ -134,9 +135,9 @@ namespace Unity.UI.Builder
                     m_BottomField.bindingPath = StylePropertyId.PaddingBottom.UssName();
                     break;
                 case BoxType.BorderWidth:
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(), 
+                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
                         StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(), 
+                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
                         StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
                     };
                     m_LeftField.bindingPath = StylePropertyId.BorderLeftWidth.UssName();
@@ -145,9 +146,9 @@ namespace Unity.UI.Builder
                     m_BottomField.bindingPath = StylePropertyId.BorderBottomWidth.UssName();
                     break;
                 case BoxType.BorderRadius:
-                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(), 
+                    m_BindingPathArray = new[] { StylePropertyId.BorderLeftWidth.UssName(), StylePropertyId.BorderRightWidth.UssName(),
                         StylePropertyId.BorderTopWidth.UssName(), StylePropertyId.BorderBottomWidth.UssName(),
-                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(), 
+                        StylePropertyId.BorderTopLeftRadius.UssName(), StylePropertyId.BorderTopRightRadius.UssName(),
                         StylePropertyId.BorderBottomLeftRadius.UssName(), StylePropertyId.BorderBottomRightRadius.UssName()
                     };
                     m_LeftField.bindingPath = StylePropertyId.BorderBottomLeftRadius.UssName();
@@ -159,23 +160,23 @@ namespace Unity.UI.Builder
         }
 
         public BoxType boxType { get; private set; }
-        
+
         internal override void UpdateUnitFromFields()
         {
             if (!needsUnit)
                 return;
-            
+
             var unit = GetUnitFromFields();
-            
+
             m_Title.text = unit;
-            
+
             foreach (var boxModelStyleField in m_Fields.Select(field => field as BoxModelStyleField))
             {
                 if (boxModelStyleField != null)
                     boxModelStyleField.showUnit = unit == k_MixedUnitLabel;
             }
         }
-        
+
         string GetUnitFromFields()
         {
             if (!needsUnit)
@@ -196,7 +197,7 @@ namespace Unity.UI.Builder
 
                 prevPath = path;
             }
-            
+
             if (!singleUnit)
                 return k_MixedUnitLabel;
 
@@ -217,7 +218,7 @@ namespace Unity.UI.Builder
             var cSharpStyleName = BuilderNameUtilities.ConvertUssNameToStyleName(styleName);
             var styleProperty = BuilderInspectorStyleFields.GetLastStyleProperty(inspector.currentRule, cSharpStyleName);
 
-            if (styleProperty == null || styleProperty.IsVariable())
+            if (styleProperty == null || styleProperty.ContainsVariable())
             {
                 var val = StyleDebug.GetComputedStyleValue(inspector.currentVisualElement.computedStyle, styleName);
                 var lengthUnit = BuilderInspectorStyleFields.GetComputedStyleLengthUnit(val);
@@ -233,7 +234,7 @@ namespace Unity.UI.Builder
                 var dimension = inspector.styleSheet.ReadDimension(styleValue);
                 return dimension.unit;
             }
-            
+
             return Dimension.Unit.Unitless;
         }
 

@@ -2,11 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace Unity.UI.Builder
 {
@@ -142,29 +144,42 @@ namespace Unity.UI.Builder
                 return;
 
             // TODO: Add validation
-            CreateNewSelector(document.activeStyleSheet, evt.selectorStr);
+
+            var sheet = m_PaneWindow.document.firstStyleSheet;
+
+            if (sheet == null && !TryCreateNewUSSAsset(out sheet))
+                return;
+
+            CreateNewSelector(sheet, evt.selectorStr);
         }
 
-        void CreateNewSelector(StyleSheet styleSheet, string selectorStr)
+        /// <summary>
+        /// Tries to create a new USS asset and assign it to the current document.
+        /// </summary>
+        /// <param name="sheet">The created style sheet</param>
+        /// <returns>Returns true if the creation succeeded and false otherwise</returns>
+        public bool TryCreateNewUSSAsset(out StyleSheet sheet)
+        {
+            sheet = null;
+            if (BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_PaneWindow))
+            {
+                // The EditorWindow will no longer have Focus after we show the
+                // Save dialog, so we need to manually refocus it.
+                var p = (EditorPanel) panel;
+                if (p.ownerObject is HostView view && view)
+                {
+                    view.Focus();
+                }
+                sheet = m_PaneWindow.document.firstStyleSheet;
+            }
+            return sheet != null;
+        }
+
+        public bool CreateNewSelector(StyleSheet styleSheet, string selectorStr)
         {
             if (styleSheet == null)
             {
-                if (BuilderStyleSheetsUtilities.CreateNewUSSAsset(m_PaneWindow))
-                {
-                    styleSheet = m_PaneWindow.document.firstStyleSheet;
-
-                    // The EditorWindow will no longer have Focus after we show the
-                    // Save dialog, so we need to manually refocus it.
-                    var p = (EditorPanel) panel;
-                    if (p.ownerObject is HostView view && view)
-                    {
-                        view.Focus();
-                    }
-                }
-                else
-                {
-                    return;
-                }
+                throw new ArgumentException("StyleSheet cannot be null");
             }
 
             var newSelectorStr = selectorStr.Trim();
@@ -181,13 +196,13 @@ namespace Unity.UI.Builder
             }
 
             if (string.IsNullOrEmpty(newSelectorStr))
-                return;
+                return false;
 
             if (newSelectorStr.Length == 1 && (
                 newSelectorStr.StartsWith(BuilderConstants.UssSelectorClassNameSymbol)
                 || newSelectorStr.StartsWith("-")
                 || newSelectorStr.StartsWith("_")))
-                return;
+                return false;
 
             if (!BuilderNameUtilities.styleSelectorRegex.IsMatch(newSelectorStr))
             {
@@ -197,19 +212,18 @@ namespace Unity.UI.Builder
                     m_NewSelectorField.value = selectorStr;
                     m_NewSelectorField.SelectAll();
                 });
-                return;
+                return false;
             }
 
             var selectorContainerElement = m_Viewport.styleSelectorElementContainer;
             if (!SelectorUtility.TryCreateSelector(newSelectorStr, out var complexSelector, out var error))
             {
                 Builder.ShowWarning(error);
-                return;
+                return false;
             }
 
             var newComplexSelector = BuilderSharedStyles.CreateNewSelector(selectorContainerElement, styleSheet, complexSelector);
 
-            m_Selection.NotifyOfHierarchyChange();
             m_Selection.NotifyOfStylingChange();
 
             // Try to select newly created selector.
@@ -218,6 +232,7 @@ namespace Unity.UI.Builder
                     (e) => e.GetStyleComplexSelector() == newComplexSelector);
             if (newSelectorElement != null)
                 m_Selection.Select(null, newSelectorElement);
+            return true;
         }
 
         void SetUpAddUSSMenu()
@@ -299,8 +314,13 @@ namespace Unity.UI.Builder
         public override void HierarchyChanged(VisualElement element, BuilderHierarchyChangeType changeType)
         {
             base.HierarchyChanged(element, changeType);
-            m_ElementHierarchyView.hasUssChanges = true;
             UpdateNewSelectorFieldEnabledStateFromDocument();
+        }
+
+        public override void StylingChanged(List<string> styles, BuilderStylingChangeType changeType)
+        {
+            base.StylingChanged(styles, changeType);
+
             UpdateSubtitleFromActiveUSS();
 
             // Show empty state if no stylesheet loaded
@@ -312,16 +332,22 @@ namespace Unity.UI.Builder
                 m_ElementHierarchyView.container.Add(m_EmptyStyleSheetsPaneLabel);
                 m_EmptyStyleSheetsPaneLabel.SendToBack();
             }
-            else
+            else if (m_EmptyStyleSheetsPaneLabel.parent == m_ElementHierarchyView.container)
             {
-                if (m_EmptyStyleSheetsPaneLabel.parent != m_ElementHierarchyView.container)
-                    return;
-
                 // Revert inline style changes to default
                 m_ElementHierarchyView.container.style.justifyContent = Justify.FlexStart;
                 elementHierarchyView.treeView.style.flexGrow = 1;
                 m_EmptyStyleSheetsPaneLabel.style.display = DisplayStyle.None;
                 m_EmptyStyleSheetsPaneLabel.RemoveFromHierarchy();
+            }
+
+            var selectionIsStyles = m_Selection.selectionType is BuilderSelectionType.StyleSheet
+                or BuilderSelectionType.StyleSelector or BuilderSelectionType.ParentStyleSelector or BuilderSelectionType.Nothing; // Nothing has to be included for delete operations
+            var inlineStyleChange = styles != null && !selectionIsStyles;
+            if (changeType == BuilderStylingChangeType.Default && !inlineStyleChange)
+            {
+                elementHierarchyView.hasUnsavedChanges = m_Selection.hasUnsavedChanges;
+                UpdateHierarchyAndSelection(m_Selection.hasUnsavedChanges);
             }
         }
 

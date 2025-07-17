@@ -64,6 +64,13 @@ namespace UnityEngine.UIElements
                 treeDataController.ConvertTreeViewItemDataToHierarchy(items, (node) => CreateNode(node), (id, node) => UpdateIdToNodeDictionary(id, node));
                 UpdateHierarchy();
 
+                // We want to expand all nodes on creation when autoExpand is turned on.
+                if (baseTreeView.autoExpand)
+                {
+                    m_HierarchyViewModel.SetFlags(HierarchyNodeFlags.Expanded);
+                    UpdateHierarchy();
+                }
+
                 // We want to sync the expanded state(s) if there's a viewDataKey
                 if (IsViewDataKeyEnabled())
                     OnViewDataReadyUpdateNodes();

@@ -1121,9 +1121,31 @@ namespace UnityEditor
         // this exists to pass picking parameters to hybrid renderer. these fields are only valid within the scope of
         // the PickObject method
         static List<PickingObject> s_PickingInclude, s_PickingExclude;
-        static List<int> s_RendererIncludeBuffer = new List<int>(), s_EntityIncludeBuffer = new List<int>();
-        static List<int> s_RendererExcludeBuffer = new List<int>(), s_EntityExcludeBuffer = new List<int>();
+        static List<EntityId> s_RendererIncludeBuffer = new List<EntityId>(), s_EntityIncludeBuffer = new List<EntityId>();
+        static List<EntityId> s_RendererExcludeBuffer = new List<EntityId>(), s_EntityExcludeBuffer = new List<EntityId>();
 
+        public static PickingIncludeExcludeEntityIdList GetPickingIncludeExcludeEntityIdList(Allocator allocator = Allocator.Persistent)
+        {
+            s_RendererIncludeBuffer.Clear();
+            s_RendererExcludeBuffer.Clear();
+            s_EntityIncludeBuffer.Clear();
+            s_EntityExcludeBuffer.Clear();
+            GetPickingIds(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            GetPickingIds(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
+            return new PickingIncludeExcludeEntityIdList(s_RendererIncludeBuffer, s_RendererExcludeBuffer, s_EntityIncludeBuffer, s_EntityExcludeBuffer, allocator);
+        }
+
+        public static PickingIncludeExcludeEntityIdList GetSelectionOutlineIncludeExcludeEntityIdList(Allocator allocator = Allocator.Persistent)
+        {
+            s_RendererIncludeBuffer.Clear();
+            s_RendererExcludeBuffer.Clear();
+            s_EntityIncludeBuffer.Clear();
+            s_EntityExcludeBuffer.Clear();
+            GetPickingIds(Selection.objects, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
+            return new PickingIncludeExcludeEntityIdList(s_RendererIncludeBuffer, null, s_EntityIncludeBuffer, null, allocator);
+        }
+
+        [Obsolete("Use GetPickingIncludeExcludeEntityIdList instead. This method will be removed in a future version.")]
         public static PickingIncludeExcludeList GetPickingIncludeExcludeList(Allocator allocator = Allocator.Persistent)
         {
             s_RendererIncludeBuffer.Clear();
@@ -1132,9 +1154,10 @@ namespace UnityEditor
             s_EntityExcludeBuffer.Clear();
             GetPickingIds(s_PickingInclude, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
             GetPickingIds(s_PickingExclude, s_RendererExcludeBuffer, s_EntityExcludeBuffer);
-            return new PickingIncludeExcludeList(s_RendererIncludeBuffer, s_RendererExcludeBuffer, s_EntityIncludeBuffer, s_EntityExcludeBuffer, allocator);
+            return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), s_RendererExcludeBuffer.ToIntList(), s_EntityIncludeBuffer.ToIntList(), s_EntityExcludeBuffer.ToIntList(), allocator);
         }
 
+        [Obsolete("Use GetSelectionOutlineIncludeExcludeEntityIdList instead. This method will be removed in a future version.")]
         public static PickingIncludeExcludeList GetSelectionOutlineIncludeExcludeList(Allocator allocator = Allocator.Persistent)
         {
             s_RendererIncludeBuffer.Clear();
@@ -1142,7 +1165,7 @@ namespace UnityEditor
             s_EntityIncludeBuffer.Clear();
             s_EntityExcludeBuffer.Clear();
             GetPickingIds(Selection.objects, s_RendererIncludeBuffer, s_EntityIncludeBuffer);
-            return new PickingIncludeExcludeList(s_RendererIncludeBuffer, null, s_EntityIncludeBuffer, null, allocator);
+            return new PickingIncludeExcludeList(s_RendererIncludeBuffer.ToIntList(), null, s_EntityIncludeBuffer.ToIntList(), null, allocator);
         }
 
         internal static PickingObject PickObject(Vector2 guiPosition,
@@ -1202,7 +1225,7 @@ namespace UnityEditor
                     else
                     {
                         int instanceID = (int)pickingID;
-                        pickedObject = EditorUtility.InstanceIDToObject(instanceID);
+                        pickedObject = EditorUtility.EntityIdToObject(instanceID);
                     }
 
                     picked = new PickingObject(pickedObject, materialIndex);
@@ -1258,7 +1281,7 @@ namespace UnityEditor
             return picked;
         }
 
-        static void GetPickingIds(List<PickingObject> objects, List<int> ren, List<int> ent)
+        static void GetPickingIds(List<PickingObject> objects, List<EntityId> ren, List<EntityId> ent)
         {
             if (objects == null)
                 return;
@@ -1278,7 +1301,7 @@ namespace UnityEditor
             }
         }
 
-        static void GetPickingIds(UnityEngine.Object[] objects, List<int> ren, List<int> ent)
+        static void GetPickingIds(UnityEngine.Object[] objects, List<EntityId> ren, List<EntityId> ent)
         {
             if (objects == null)
                 return;
@@ -1298,7 +1321,40 @@ namespace UnityEditor
             }
         }
 
-        public static event Func<UnityEngine.Object, IEnumerable<int>> getEntitiesForAuthoringObject = default;
+        public static event Func<UnityEngine.Object, IEnumerable<EntityId>> getEntityIdsForAuthoringObject = default;
+
+        [Obsolete]
+        static Dictionary<Func<UnityEngine.Object, IEnumerable<int>>, Func<UnityEngine.Object, IEnumerable<EntityId>> > legacygetEntityIdsForAuthoringObjectLookup = new();
+
+        [Obsolete("Use getEntityIdsForAuthoringObject instead. This event will be removed in a future version.")]
+        public static event Func<UnityEngine.Object, IEnumerable<int>> getEntitiesForAuthoringObject
+        {
+            add
+            {
+                Func<UnityEngine.Object, IEnumerable<EntityId>>  convertedDelegate = o =>
+                {
+                    var entities = value?.Invoke(o);
+                    if (entities == null)
+                        return Array.Empty<EntityId>();
+
+                    Debug.Assert(UnsafeUtility.SizeOf<EntityId>() == sizeof(int), "EntityId and int must be the same size for this to work");
+                    var instanceIds = new List<EntityId>();
+                    foreach (var entity in entities)
+                        instanceIds.Add(entity);
+                    return instanceIds;
+                };
+                legacygetEntityIdsForAuthoringObjectLookup[value] = convertedDelegate;
+                getEntityIdsForAuthoringObject += convertedDelegate;
+            }
+            remove
+            {
+                if (legacygetEntityIdsForAuthoringObjectLookup.TryGetValue(value, out var convertedDelegate))
+                {
+                    getEntityIdsForAuthoringObject -= convertedDelegate;
+                    legacygetEntityIdsForAuthoringObjectLookup.Remove(value);
+                }
+            }
+        }
 
         public static event Func<int, UnityEngine.Object> getAuthoringObjectForEntity = default;
 
@@ -1319,17 +1375,17 @@ namespace UnityEditor
             return null;
         }
 
-        static int GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<int> entities)
+        static int GetEntitiesForAuthoringObject(UnityEngine.Object authoring, List<EntityId> entities)
         {
             int numEntities = 0;
-            var delegates = getEntitiesForAuthoringObject?.GetInvocationList();
+            var delegates = getEntityIdsForAuthoringObject?.GetInvocationList();
 
             if (delegates == null)
                 return 0;
 
             foreach (var del in delegates)
             {
-                foreach (var ent in ((Func<UnityEngine.Object, IEnumerable<int>>)del)(authoring))
+                foreach (var ent in ((Func<UnityEngine.Object, IEnumerable<EntityId>>)del)(authoring))
                 {
                     entities.Add(ent);
                     ++numEntities;

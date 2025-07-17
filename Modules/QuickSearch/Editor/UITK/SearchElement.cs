@@ -21,17 +21,24 @@ namespace UnityEditor.Search
         public const string BuilderRefreshed = "search-builder-refreshed";
         public const string FilterToggled = "search-filter-toggled";
         public const string ExecuteSearchQuery = "execute-search-query";
+        public const string SearchQueryExecuted = "search-query-executed";
         public const string SearchQueryItemCountUpdated = "search-query-item-count-updated";
         public const string SaveUserQuery = "search-save-user-query";
         public const string SaveProjectQuery = "search-save-project-query";
         public const string UserQueryAdded = "search-user-query-added";
+        public const string UserQueryChanged = "search-user-query-changed";
         public const string UserQueryRemoved = "search-user-query-removed";
         public const string ProjectQueryAdded = "search-project-query-added";
+        public const string ProjectQueryChanged = "search-project-query-changed";
         public const string ProjectQueryRemoved = "search-project-query-removed";
+
+        public const string PostProcessProjectQueryAdded = "post-process-search-project-query-added";
+        public const string PostProcessProjectQueryMoved = "post-process-search-project-query-moved";
+        public const string PostProcessProjectQueryRemoved = "post-process-search-project-query-removed";
+
         public const string ProjectQueryListChanged = "search-project-query-list-changed";
         public const string ActiveQueryChanged = "search-active-query-changed";
         public const string SaveActiveSearchQuery = "search-save-active-search-query";
-        public const string SearchQueryChanged = "search-query-changed";
         public const string TogglePackages = "search-toggle-packages";
         public const string ToggleWantsMore = "search-toggle-wants-more";
         public const string RefreshContent = "search-refresh-content";

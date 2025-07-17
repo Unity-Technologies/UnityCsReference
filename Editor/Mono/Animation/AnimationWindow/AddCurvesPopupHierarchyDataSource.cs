@@ -4,6 +4,8 @@
 
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using TreeViewController = UnityEditor.IMGUI.Controls.TreeViewController<int>;
+using TreeViewDataSource = UnityEditor.IMGUI.Controls.TreeViewDataSource<int>;
 
 namespace UnityEditorInternal
 {
@@ -28,7 +30,7 @@ namespace UnityEditorInternal
             if (AddCurvesPopup.s_State.selection.canAddCurves)
             {
                 var state = AddCurvesPopup.s_State;
-                AddBindingsToHierarchy(state.controlInterface.GetAnimatableBindings());
+                AddBindingsToHierarchy(state.selection.GetAnimatableBindings());
             }
 
             SetupRootNodeSettings();

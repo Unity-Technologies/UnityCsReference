@@ -39,6 +39,7 @@ namespace UnityEngine.UIElements
             internal static readonly BindingId bottomProperty = "resolvedStyle." + nameof(IResolvedStyle.bottom);
             internal static readonly BindingId colorProperty = "resolvedStyle." + nameof(IResolvedStyle.color);
             internal static readonly BindingId displayProperty = "resolvedStyle." + nameof(IResolvedStyle.display);
+            internal static readonly BindingId filterProperty = "resolvedStyle." + nameof(IResolvedStyle.filter);
             internal static readonly BindingId flexBasisProperty = "resolvedStyle." + nameof(IResolvedStyle.flexBasis);
             internal static readonly BindingId flexDirectionProperty = "resolvedStyle." + nameof(IResolvedStyle.flexDirection);
             internal static readonly BindingId flexGrowProperty = "resolvedStyle." + nameof(IResolvedStyle.flexGrow);

@@ -49,6 +49,7 @@ namespace Unity.UI.Builder
         BuilderHierarchy m_Hierarchy;
         BuilderStyleSheets m_StyleSheets;
         BuilderBindingsCache m_BindingsCache;
+        IVisualElementScheduledItem m_BindingsUpdateJob;
 
         TwoPaneSplitView m_MiddleSplitView;
 
@@ -61,8 +62,8 @@ namespace Unity.UI.Builder
         public BuilderCanvas canvas => m_Viewport.canvas;
         public BuilderInspector inspector => m_Inspector;
         public BuilderHierarchy hierarchy => m_Hierarchy;
+        public BuilderLibrary library => m_Library;
         public BuilderStyleSheets styleSheets => m_StyleSheets;
-
         internal override bool liveReloadPreferenceDefault => true;
         internal override BindingLogLevel defaultBindingLogLevel => BindingLogLevel.None;
 
@@ -225,6 +226,17 @@ namespace Unity.UI.Builder
 
             OnEnableAfterAllSerialization();
             closing += m_UnregisterBuilderLibraryContentProcessors;
+            m_BindingsUpdateJob = root.schedule.Execute(UpdateBingings).Every(0);
+        }
+
+        public VisualElement GetActiveRootElement()
+        {
+            var activeVTARootElement = documentRootElement.Query().Where(e => e.GetVisualTreeAsset() == document.visualTreeAsset).First();
+            if (activeVTARootElement == null)
+            {
+                Debug.LogError("UI Builder has a bug. Could not find document root element for currently active open UXML document.");
+            }
+            return activeVTARootElement;
         }
 
         private void SaveOnKeyDownEvent(KeyDownEvent evt)
@@ -289,6 +301,15 @@ namespace Unity.UI.Builder
             return m_Toolbar.LoadDocument(asset, unloadAllSubdocuments);
         }
 
+        /// <summary>
+        /// Forces a new document to be created event when the current document has unsaved changes.
+        /// </summary>
+        /// <returns>Return true if the document was successfully created</returns>
+        public bool ForceNewDocument()
+        {
+            return NewDocument(false);
+        }
+
         public override bool NewDocument(bool checkForUnsavedChanges = true, bool unloadAllSubdocuments = true)
         {
             return m_Toolbar.NewDocument(checkForUnsavedChanges, unloadAllSubdocuments);
@@ -328,7 +349,7 @@ namespace Unity.UI.Builder
         {
             base.OnEnable();
 
-            minSize = new Vector2(200, 200);
+            minSize = new Vector2(972, 400);
             SetTitleContent(BuilderConstants.BuilderWindowTitle, BuilderConstants.BuilderWindowIcon);
 
             if (rootVisualElement.panel != null)
@@ -358,7 +379,16 @@ namespace Unity.UI.Builder
             m_Inspector.Dispose();
         }
 
-        private void Update()
+        // Used by the tests as a workaround. This is because the new UI Toolkit Test Framework does not support
+        // IVisualElementScheduledItem.Every properly: scheduled task created with Every() stop executing after
+        // the TearDown of the first run test.
+        public void RestartBindingsUpdateJob()
+        {
+            m_BindingsUpdateJob.Pause();
+            m_BindingsUpdateJob.Resume();
+        }
+
+        void UpdateBingings()
         {
             UpdateBindingsCache();
             m_Inspector.UpdateBoundFields();
@@ -378,7 +408,7 @@ namespace Unity.UI.Builder
         [OnOpenAsset(0)]
         public static bool OnOpenAsset(int instanceID, int line)
         {
-            var asset = EditorUtility.InstanceIDToObject(instanceID) as VisualTreeAsset;
+            var asset = EditorUtility.EntityIdToObject(instanceID) as VisualTreeAsset;
             if (asset == null)
                 return false;
 

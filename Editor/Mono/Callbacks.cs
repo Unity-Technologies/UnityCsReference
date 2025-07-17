@@ -7,6 +7,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 using System;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -104,6 +105,15 @@ namespace UnityEditor
 
             [RequiredSignature]
             static bool SignatureLineColumn(int instanceID, int line, int column) { throw new InvalidOperationException(); }
+
+            [RequiredSignature]
+            static bool Signature(EntityId entityId) { throw new InvalidOperationException(); }
+
+            [RequiredSignature]
+            static bool SignatureLine(EntityId entityId, int line) { throw new InvalidOperationException(); }
+
+            [RequiredSignature]
+            static bool SignatureLineColumn(EntityId entityId, int line, int column) { throw new InvalidOperationException(); }
         }
     }
 }

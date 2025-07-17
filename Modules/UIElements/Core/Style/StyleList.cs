@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// Style value that can be either a list or a <see cref="StyleKeyword"/>.
     /// </summary>
     /// <typeparam name="T">List type.</typeparam>
+    [Serializable]
     public struct StyleList<T> : IStyleValue<List<T>>, IEquatable<StyleList<T>>
     {
         /// <summary>
@@ -56,7 +57,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private StyleKeyword m_Keyword;
+        [SerializeField]
         private List<T> m_Value;
 
         /// <undoc/>

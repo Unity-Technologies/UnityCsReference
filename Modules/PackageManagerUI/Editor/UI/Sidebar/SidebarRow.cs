@@ -23,8 +23,7 @@ internal class SidebarRow : VisualElement
         this.pageId = pageId;
 
         m_RowIcon = new VisualElement();
-        m_RowIcon.classList.Add(k_SidebarIconClassName);
-        m_RowIcon.classList.Add(icon.ClassName());
+        UpdateIcon(icon);
         Add(m_RowIcon);
         m_RowTitle = new Label { text = rowTitle };
         m_RowTitle.classList.Add(k_SidebarTitleClassName);
@@ -36,5 +35,15 @@ internal class SidebarRow : VisualElement
     public void SetSelected(bool select)
     {
         EnableInClassList(k_SelectedClassName, select);
+    }
+
+    public void UpdateIcon(Icon icon)
+    {
+        if (m_RowIcon.ClassListContains(icon.ClassName()))
+            return;
+
+        m_RowIcon.ClearClassList();
+        m_RowIcon.classList.Add(k_SidebarIconClassName);
+        m_RowIcon.classList.Add(icon.ClassName());
     }
 }

@@ -124,7 +124,7 @@ namespace UnityEngine.UIElements
                 formatString = UINumericFieldsUtils.k_IntFieldFormatString;
             }
 
-            protected override string allowedCharacters => UINumericFieldsUtils.k_AllowedCharactersForInt;
+            protected override string allowedCharacters => parentIntegerField.supportExpressions ? UINumericFieldsUtils.k_AllowedCharactersForInt : UINumericFieldsUtils.k_AllowedCharactersForInt_NoExpressions;
 
             public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
             {

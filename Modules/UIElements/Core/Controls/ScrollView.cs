@@ -145,40 +145,40 @@ namespace UnityEngine.UIElements
                     new (nameof(scrollDecelerationRate), "scroll-deceleration-rate"),
                     new (nameof(elasticity), "elasticity"),
                     new (nameof(elasticAnimationIntervalMs), "elastic-animation-interval-ms"),
-                });
+                }, false);
             }
 
-            #pragma warning disable 649
+#pragma warning disable 649
+            [SerializeField] long elasticAnimationIntervalMs;
             [SerializeField] ScrollViewMode mode;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
             [SerializeField] NestedInteractionKind nestedInteractionKind;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
-            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
-            [SerializeField] bool showHorizontal;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
-            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
-            [SerializeField] bool showVertical;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
             [SerializeField] ScrollerVisibility horizontalScrollerVisibility;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
             [SerializeField] ScrollerVisibility verticalScrollerVisibility;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
             [SerializeField] float horizontalPageSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
             [SerializeField] float verticalPageSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
             [SerializeField] float mouseWheelScrollSize;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
             [UxmlAttribute("touch-scroll-type")]
             [SerializeField] TouchScrollBehavior touchScrollBehavior;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
             [SerializeField] float scrollDecelerationRate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
             [SerializeField] float elasticity;
+            [UxmlAttribute("show-horizontal-scroller"), HideInInspector]
+            [SerializeField] bool showHorizontal;
+            [UxmlAttribute("show-vertical-scroller"), HideInInspector]
+            [SerializeField] bool showVertical;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mode_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags nestedInteractionKind_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showHorizontal_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags showVertical_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalScrollerVisibility_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags horizontalPageSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags verticalPageSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags mouseWheelScrollSize_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags touchScrollBehavior_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags scrollDecelerationRate_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticity_UxmlAttributeFlags;
-            [SerializeField] long elasticAnimationIntervalMs;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags elasticAnimationIntervalMs_UxmlAttributeFlags;
-            #pragma warning restore 649
+#pragma warning restore 649
 
             public override object CreateInstance() => new ScrollView();
 
@@ -191,7 +191,7 @@ namespace UnityEngine.UIElements
                     e.mode = mode;
 
                 // Remove once showHorizontal and showVertical are fully deprecated.
-                #pragma warning disable 618
+#pragma warning disable 618
                 if (ShouldWriteAttributeValue(horizontalScrollerVisibility_UxmlAttributeFlags))
                     e.horizontalScrollerVisibility = horizontalScrollerVisibility;
                 else if (ShouldWriteAttributeValue(showHorizontal_UxmlAttributeFlags))
@@ -201,7 +201,7 @@ namespace UnityEngine.UIElements
                     e.verticalScrollerVisibility = verticalScrollerVisibility;
                 else if (ShouldWriteAttributeValue(showVertical_UxmlAttributeFlags))
                     e.showVertical = showVertical;
-                #pragma warning restore 618
+#pragma warning restore 618
 
                 if (ShouldWriteAttributeValue(nestedInteractionKind_UxmlAttributeFlags))
                     e.nestedInteractionKind = nestedInteractionKind;
@@ -226,7 +226,7 @@ namespace UnityEngine.UIElements
         /// Instantiates a <see cref="ScrollView"/> using the data read from a UXML file.
         /// </summary>
         [Obsolete("UxmlFactory is deprecated and will be removed. Use UxmlElementAttribute instead.", false)]
-        public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ScrollView, UxmlTraits> { }
 
         /// <summary>
         /// Defines <see cref="UxmlTraits"/> for the <see cref="ScrollView"/>.
@@ -247,7 +247,7 @@ namespace UnityEngine.UIElements
             { name = "show-vertical-scroller" };
 
             UxmlEnumAttributeDescription<ScrollerVisibility> m_HorizontalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
-            { name = "horizontal-scroller-visibility"};
+            { name = "horizontal-scroller-visibility" };
 
             UxmlEnumAttributeDescription<ScrollerVisibility> m_VerticalScrollerVisibility = new UxmlEnumAttributeDescription<ScrollerVisibility>
             { name = "vertical-scroller-visibility" };
@@ -599,7 +599,7 @@ namespace UnityEngine.UIElements
         [CreateProperty]
         public float elasticity
         {
-            get { return m_Elasticity;}
+            get { return m_Elasticity; }
             set
             {
                 var previous = m_Elasticity;
@@ -888,8 +888,13 @@ namespace UnityEngine.UIElements
         /// </summary>
         public Scroller horizontalScroller { get; }
         /// <summary>
-        /// Vertical Scrollbar.
+        /// Gets the vertical scrollbar for the scroll view.
         /// </summary>
+        /// <remarks>
+        /// The <c>verticalScroller</c> property provides access to the vertical scrollbar of the <see cref="ScrollView"/>. 
+        /// You can use it to control or monitor vertical scrolling, such as setting the scroll value, scrolling by a page, 
+        /// or handling scroll events. Refer to [[wiki:ScrollView documentation|UIE-uxml-element-ScrollView]] for example usage and additional details.
+        /// </remarks>
         public Scroller verticalScroller { get; }
 
         private VisualElement m_ContentContainer;
@@ -985,7 +990,7 @@ namespace UnityEngine.UIElements
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ScrollView() : this(ScrollViewMode.Vertical) {}
+        public ScrollView() : this(ScrollViewMode.Vertical) { }
 
         /// <summary>
         /// Constructor.
@@ -999,7 +1004,7 @@ namespace UnityEngine.UIElements
 
             hierarchy.Add(m_ContentAndVerticalScrollContainer);
 
-            contentViewport = new VisualElement() {name = "unity-content-viewport"};
+            contentViewport = new VisualElement() { name = "unity-content-viewport" };
             contentViewport.AddToClassList(viewportUssClassName);
             contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             contentViewport.pickingMode = PickingMode.Ignore;
@@ -1008,7 +1013,7 @@ namespace UnityEngine.UIElements
             m_ContentAndVerticalScrollContainer.RegisterCallback<DetachFromPanelEvent>(OnDetachFromPanel);
             m_ContentAndVerticalScrollContainer.Add(contentViewport);
 
-            m_ContentContainer = new VisualElement() {name = "unity-content-container"};
+            m_ContentContainer = new VisualElement() { name = "unity-content-container" };
             // Content container overflow is set to scroll which clip but we need to disable clipping in this case
             // or else absolute elements might not be shown. The viewport is in charge of clipping.
             // See case 1247583
@@ -1083,6 +1088,8 @@ namespace UnityEngine.UIElements
             m_CapturedTargetPointerMoveCallback = OnPointerMove;
             m_CapturedTargetPointerUpCallback = OnPointerUp;
             scrollOffset = Vector2.zero;
+
+            m_ContentContainer.receivesHierarchyGeometryChangedEvents = true;
         }
 
         private ScrollViewMode m_Mode;
@@ -1901,7 +1908,7 @@ namespace UnityEngine.UIElements
 
         void ReadSingleLineHeight()
         {
-            var currentParent = (VisualElement) this;
+            var currentParent = (VisualElement)this;
             while (currentParent != null)
             {
                 if (currentParent.computedStyle.customProperties != null &&

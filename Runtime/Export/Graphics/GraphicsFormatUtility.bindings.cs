@@ -350,8 +350,10 @@ namespace UnityEngine
                 }
 
                 [FreeFunction(IsThreadSafe = true)]
+                [Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release", false)]
                 extern public static bool IsPVRTCFormat(GraphicsFormat format);
 
+                [Obsolete("Texture compression format PVRTC has been deprecated and will be removed in a future release", false)]
                 public static bool IsPVRTCFormat(TextureFormat format)
                 {
                     return IsPVRTCFormat(GetGraphicsFormat(format, false));

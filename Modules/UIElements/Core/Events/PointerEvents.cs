@@ -1415,6 +1415,11 @@ namespace UnityEngine.UIElements
 
         protected internal override void PreDispatch(IPanel panel)
         {
+            if (panel is Panel p)
+            {
+                p.contextualMenuManager?.BeforePointerDown();
+            }
+
             base.PreDispatch(panel);
         }
 
@@ -1636,6 +1641,11 @@ namespace UnityEngine.UIElements
                 basePanel?.ClearCachedElementUnderPointer(pointerId, this);
             }
 
+            if (panel is Panel p)
+            {
+                p.contextualMenuManager?.AfterPointerUp();
+            }
+
             base.PostDispatch(panel);
 
             panel.ActivateCompatibilityMouseEvents(pointerId);
@@ -1708,6 +1718,11 @@ namespace UnityEngine.UIElements
             if (pointerType == PointerType.tracked)
             {
                 PointerDeviceState.RemoveTrackedState(pointerId);
+            }
+
+            if (panel is Panel p)
+            {
+                p.contextualMenuManager?.AfterPointerUp();
             }
 
             base.PostDispatch(panel);

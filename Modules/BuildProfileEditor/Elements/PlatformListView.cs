@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEditor.Build.Profile.Handlers;
 using UnityEngine;
@@ -132,13 +133,28 @@ namespace UnityEditor.Build.Profile.Elements
                 else
                     editableBuildProfileLabel.SetActiveIndicator(false);
 
-                if (!BuildProfileContext.IsClassicPlatformProfile(profile))
-                {
-                    editableBuildProfileLabel.tooltip = AssetDatabase.GetAssetPath(profile);
-                }
+                element.RegisterCallback<PointerEnterEvent, BuildProfile>(PointerEntersBuildProfileElement, profile);
             };
             m_BuildProfilesListView.selectionChanged += m_Parent.OnCustomProfileSelected;
             m_BuildProfilesListView.unbindItem = UnbindItem;
+
+            // Check if we need to select a recently enabled platform
+            string lastEnabledPlatformGUID = EditorPrefs.GetString("LastEnabledPlatformGUID", "");
+            if (!string.IsNullOrEmpty(lastEnabledPlatformGUID))
+            {
+                m_PlatformListView.RegisterCallback<GeometryChangedEvent>(SelectLastEnabledPlatformOnGeometryChange);
+            }
+        }
+
+        private static void PointerEntersBuildProfileElement(PointerEnterEvent evt, BuildProfile profile)
+        {
+            if (evt.currentTarget is not BuildProfileListEditableLabel buildProfileLabel)
+                return;
+
+            var tooltipMessage = BuildProfileContext.IsClassicPlatformProfile(profile)
+                ? string.Empty
+                : AssetDatabase.GetAssetPath(profile);
+            buildProfileLabel.tooltip = tooltipMessage;
         }
 
         internal void ClearPlatformSelection() => m_PlatformListView.ClearSelection();
@@ -239,6 +255,80 @@ namespace UnityEditor.Build.Profile.Elements
 
             // Disabled warning message. See PLAT-12653.
             //Debug.LogWarning("[BuildProfile] Active profile not found in build profile window data source.");
+        }
+
+        /// <summary>
+        /// This is used as a callback for the GeometryChangedEvent to select the last enabled platform
+        /// via the "Enable Platform" button available on specific platforms. Requires the LastEnabledPlatformGUID
+        /// to be set in the EditorPrefs. This callback is intended for the classic platforms list. 
+        /// </summary>
+        private void SelectLastEnabledPlatformOnGeometryChange(GeometryChangedEvent evt)
+        {
+            // Check to make sure it's not a custom profile, as it'd end up selecting the classic platform instead.
+            if (m_PlatformListView.selectedIndex < 0 && m_BuildProfilesListView.selectedIndex >= 0)
+            {
+                EditorPrefs.DeleteKey("LastEnabledPlatformGUID");
+                m_PlatformListView.UnregisterCallback<GeometryChangedEvent>(SelectLastEnabledPlatformOnGeometryChange);
+                return;
+            }
+
+            string lastEnabledPlatformGUID = EditorPrefs.GetString("LastEnabledPlatformGUID", "");
+            if (!string.IsNullOrEmpty(lastEnabledPlatformGUID))
+            {
+                GUID platformId = new GUID(lastEnabledPlatformGUID);
+
+                // To avoid duplicate processing
+                EditorPrefs.DeleteKey("LastEnabledPlatformGUID");
+                m_PlatformListView.UnregisterCallback<GeometryChangedEvent>(SelectLastEnabledPlatformOnGeometryChange);
+
+                // Select the platform by GUID after the layout is updated
+                TrySelectInstalledClassicPlatformByGUID(platformId);
+            }
+        }
+
+        /// <summary>
+        /// Selects a given installed, classic platform by its GUID. This selection is similar to the user
+        /// selection of clicking on a platform in the list view. It does not change the active build profile.
+        /// </summary>
+        private void TrySelectInstalledClassicPlatformByGUID(GUID platformId)
+        {
+            string guidString = platformId.ToString();
+
+            var items = m_DataSource.classicPlatforms;
+            if (items != null)
+            {
+                for (int i = 0; i < items.Count; i++)
+                {
+                    // Compare the GUID strings
+                    if (CompareBuildProfileWithGuid(items[i], guidString))
+                    {
+                        SelectInstalledPlatform(i);
+                        return;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Compares a Build Profile platformGuid with a GUID string.
+        /// </summary>
+        /// <returns>true if the ID is the same, false if not or unknown.</returns>
+        private bool CompareBuildProfileWithGuid(BuildProfile item, string guidString)
+        {
+            string itemGuidString;
+
+            if (item != null)
+            {
+                itemGuidString = item.platformGuid.ToString();
+            }
+            else
+            {
+                // Fallback to avoid null references for future cases
+                return false;
+            }
+
+            // Do an exact string comparison on the GUIDs
+            return string.Equals(itemGuidString, guidString, System.StringComparison.Ordinal);
         }
 
         bool TrySelectClassicPlatform()

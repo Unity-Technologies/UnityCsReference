@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.UIElements.Layout;
+using static UnityEngine.UIElements.IMGUIContainer;
 
 namespace UnityEngine.UIElements
 {
@@ -220,6 +221,19 @@ namespace UnityEngine.UIElements
         ///
         /// </remarks>
         DynamicColor = 1 << 3,
+        /// <summary>
+        /// Optimizes rendering of a <see cref="VisualElement"/> that is subject to have post-processing effects (filters) applied to it.
+        /// </summary>
+        DynamicPostProcessing = 1 << 4,
+        /// <summary>
+        /// Optimizes rendering of a <see cref="VisuaElement"/> that covers a large pixel area on screen.
+        /// </summary>
+        /// <remarks>
+        /// The renderer will break the batch and render this element using a specialized shader.
+        /// Breaking a batch decreases CPU performance but the specialized shader achieves better GPU performance. Set this usage hint on large
+        /// VisualElements that have a significant impact on GPU performance.
+        /// </remarks>
+        LargePixelCoverage = 1 << 5,
     }
 
     //keep in sync with RenderHints in C++ (Modules/UIElements/RenderHints.h)
@@ -234,17 +248,19 @@ namespace UnityEngine.UIElements
         MaskContainer = 1 << 3, // Use to prevent the next nested masks from modifying the stencil ref
         DynamicColor = 1 << 4, // Use to store the color in shaderInfo storage
         DynamicPostProcessing = 1 << 5, // Use to force the creation of a nested render tree
+        LargePixelCoverage = 1 << 6, // Strip unused shader branches
 
         // Whenever we change a render hint, we also set a dirty flag to indicate that it has changed
         // This way, we don't need an additional field to store pending changes
-        DirtyOffset = 6,
+        DirtyOffset = 7,
         DirtyGroupTransform = GroupTransform << DirtyOffset,
         DirtyBoneTransform = BoneTransform << DirtyOffset,
         DirtyClipWithScissors = ClipWithScissors << DirtyOffset,
         DirtyMaskContainer = MaskContainer << DirtyOffset,
         DirtyDynamicColor = DynamicColor << DirtyOffset,
         DirtyDynamicPostProcessing = DynamicPostProcessing << DirtyOffset,
-        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor | DirtyDynamicPostProcessing,
+        DirtyLargePixelCoverage = LargePixelCoverage << DirtyOffset,
+        DirtyAll = DirtyGroupTransform | DirtyBoneTransform | DirtyClipWithScissors | DirtyMaskContainer | DirtyDynamicColor | DirtyDynamicPostProcessing | DirtyLargePixelCoverage,
     }
 
     struct PanelClearSettings
@@ -456,6 +472,7 @@ namespace UnityEngine.UIElements
             // m_VisualPanel.SetOwner(this);
 
             layoutConfig = LayoutManager.SharedManager.CreateConfig();
+            layoutConfig.Measure = VisualElement.Measure;
 
             m_UIElementsBridge = new RuntimeUIElementsBridge();
         }
@@ -502,8 +519,7 @@ namespace UnityEngine.UIElements
         public abstract void UpdateAnimations();
         public abstract void UpdateBindings();
         public abstract void UpdateDataBinding();
-		/////
-
+        public abstract void UpdateAuthoring();
         public abstract void ApplyStyles();
 
         public abstract void UpdateAssetTrackers();
@@ -613,11 +629,15 @@ namespace UnityEngine.UIElements
 
         internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
         {
+            using var scope = new UITKScope();
             Debug.Assert(dispatcher != null, "dispatcher != null");
+            e.AssignTimeStamp(TimeSinceStartupMs());
             dispatcher?.Dispatch(e, this, dispatchMode);
         }
 
-        internal abstract IScheduler scheduler { get; }
+        TimerEventScheduler m_Scheduler;
+        internal TimerEventScheduler scheduler { get => m_Scheduler??= new TimerEventScheduler(this); }
+
 
         internal abstract IStylePropertyAnimationSystem styleAnimationSystem
         {
@@ -626,6 +646,51 @@ namespace UnityEngine.UIElements
             set;
         }
         public abstract ContextType contextType { get; }
+
+        private TimeFunction m_TimeSinceStartupFunc;
+
+        internal TimeFunction TimeSinceStartupFunc
+        {
+            get => m_TimeSinceStartupFunc;
+            set
+            {
+                if (m_TimeSinceStartupFunc != value)
+                {
+                    double timeBefore = TimeSinceStartupSeconds();
+                    m_TimeSinceStartupFunc = value;
+                    double timeAfter =  TimeSinceStartupSeconds();
+
+                    ApplyTimeAdjustment(timeBefore, timeAfter);
+                }
+            }
+        }
+
+        public long TimeSinceStartupMs()
+        {
+            return (long)(TimeSinceStartupSeconds() * 1000.0);
+        }
+
+#pragma warning disable 618
+        public double TimeSinceStartupSeconds()
+        {
+            if (Panel.TimeSinceStartup != null)
+            {
+                return Panel.TimeSinceStartup() / 1000.0;
+            }
+
+            return TimeSinceStartupFunc?.Invoke() ?? DefaultTimeSinceStartup();
+        }
+#pragma warning restore 618
+
+        internal static double DefaultTimeSinceStartup() => (Time.realtimeSinceStartupAsDouble);
+
+        // This method should be used manually when the injected time value is reduced or reset to 0
+        internal virtual void ApplyTimeAdjustment(double currentTimeBefore, double currentTimeAfter)
+        {
+            scheduler.AdjustCurrentTime(currentTimeBefore, currentTimeAfter);
+
+            // Known issue/unsupported: we currently do not fix animation timing
+        }
 
         public VisualElement Pick(Vector2 point) => Pick(point, PointerId.mousePointerId);
         public abstract VisualElement Pick(Vector2 point, int pointerId);
@@ -655,7 +720,7 @@ namespace UnityEngine.UIElements
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, triggerEvent);
         }
 
-        internal void SetTopElementUnderPointer(VisualElement element, int pointerId, Vector2 position)
+        internal void SetTopElementUnderPointer(int pointerId, VisualElement element, Vector2 position)
         {
             m_TopElementUnderPointers.SetElementUnderPointer(element, pointerId, position);
         }
@@ -776,6 +841,18 @@ namespace UnityEngine.UIElements
         public IPanelDebug panelDebug { get; set; }
         public ILiveReloadSystem liveReloadSystem { get; set; }
 
+        public void RegisterChangeProcessor(IVisualElementChangeProcessor processor)
+        {
+            var updater = GetUpdater(VisualTreeUpdatePhase.Authoring) as VisualTreeAuthoringUpdater;
+            updater?.RegisterProcessor(processor);
+        }
+
+        public void UnregisterChangeProcessor(IVisualElementChangeProcessor processor)
+        {
+            var updater = GetUpdater(VisualTreeUpdatePhase.Authoring) as VisualTreeAuthoringUpdater;
+            updater?.UnregisterProcessor(processor);
+        }
+
         public virtual void Render() => panelRenderer.Render();
 
         internal virtual IGenericMenu CreateMenu() => new GenericDropdownMenu();
@@ -788,7 +865,9 @@ namespace UnityEngine.UIElements
     internal delegate Object LoadResourceFunction(string pathName, System.Type type, float dpiScaling);
 
     // Strategy to fetch real time since startup in the context of Editor or Runtime
+    // Old method signature, use TimeFunction instead
     internal delegate long TimeMsFunction();
+    internal delegate double TimeFunction();
 
     // Getting the view data dictionary relies on the Editor window.
     internal delegate ISerializableJsonDictionary GetViewDataDictionary();
@@ -924,18 +1003,6 @@ namespace UnityEngine.UIElements
         }
 
         public sealed override EventDispatcher dispatcher { get; set; }
-
-        TimerEventScheduler m_Scheduler;
-
-        public TimerEventScheduler timerEventScheduler
-        {
-            get { return m_Scheduler ?? (m_Scheduler = new TimerEventScheduler()); }
-        }
-
-        internal override IScheduler scheduler
-        {
-            get { return timerEventScheduler; }
-        }
 
         // TODO: Refactor tests to avoid relying on this and remove internal access
         internal  VisualTreeUpdater visualTreeUpdater
@@ -1095,6 +1162,7 @@ namespace UnityEngine.UIElements
             m_MarkerPanelChangeReceiver = new ProfilerMarker($"{panelName}.ExecutePanelChangeReceiverCallback");
         }
 
+        [Obsolete("Use the non-static TimeSinceStartupFunc instead")]
         internal static TimeMsFunction TimeSinceStartup { get; set; }
 
         public override int IMGUIContainersCount { get; set; }
@@ -1149,7 +1217,7 @@ namespace UnityEngine.UIElements
             // Required!
             visualTree.SetPanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
-            styleAnimationSystem = new StylePropertyAnimationSystem();
+            styleAnimationSystem = new StylePropertyAnimationSystem(this);
 
             CreateMarkers();
 
@@ -1170,16 +1238,6 @@ namespace UnityEngine.UIElements
             }
 
             base.Dispose(disposing);
-        }
-
-        public static long TimeSinceStartupMs()
-        {
-            return TimeSinceStartup?.Invoke() ?? DefaultTimeSinceStartupMs();
-        }
-
-        internal static long DefaultTimeSinceStartupMs()
-        {
-            return (long)(Time.realtimeSinceStartup * 1000.0f);
         }
 
         // For tests only.
@@ -1287,6 +1345,7 @@ namespace UnityEngine.UIElements
 
         public override void ValidateLayout()
         {
+            using var scope = new UITKScope();
             // Reentrancy proofing: ValidateLayout() could be in the code path of updaters.
             // Actual case: TransformClip update phase recomputes elements under mouse, which does a pick, which validates layout.
             // Updaters use version numbers for early exit, but it may happen that an updater invalidates a subsequent updater.
@@ -1321,17 +1380,23 @@ namespace UnityEngine.UIElements
 
         public override void TickSchedulingUpdaters()
         {
+            using var scope = new UITKScope();
             using var _ = m_MarkerTickScheduledActions.Auto();
             // Dispatch all timer update messages to each scheduled item
-            timerEventScheduler.UpdateScheduledEvents(); //This entire thing should become an updater
+            scheduler.UpdateScheduledEvents(); //This entire thing should become an updater
             ValidateFocus();
 
             UpdateAssetTrackers();
+            ValidateFocus();
             UpdateBindings();
             UpdateDataBinding();
             UpdateAnimations();
         }
 
+        public override void UpdateAuthoring()
+        {
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Authoring);
+        }
 
         public override void ApplyStyles()
         {
@@ -1347,11 +1412,11 @@ namespace UnityEngine.UIElements
         {
             //Here we don't want to update animation and bindings which are ticked by the scheduler
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.ViewData);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);  //To be removed
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Repaint);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Authoring);
         }
 
         internal void UpdateWithoutRepaint()
@@ -1361,9 +1426,10 @@ namespace UnityEngine.UIElements
             // while it attempts to throttle the inspector elements creation
             // Here we only need to execute any binding requests + basic layout
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);  //To be removed
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.DataBinding);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Authoring);
         }
 
         public override void DirtyStyleSheets()
@@ -1396,6 +1462,7 @@ namespace UnityEngine.UIElements
 
         public override void Repaint(Event e)
         {
+            using var scope = new UITKScope();
             m_RepaintVersion = version;
 
             repaintData.repaintEvent = e;
@@ -1415,6 +1482,7 @@ namespace UnityEngine.UIElements
 
         public override void Render()
         {
+            using var scope = new UITKScope();
             m_MarkerRender.Begin();
             base.Render();
             m_MarkerRender.End();

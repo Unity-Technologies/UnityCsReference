@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="FontDefinition"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleFontDefinition : IStyleValue<FontDefinition>, IEquatable<StyleFontDefinition>
     {
         /// <summary>
@@ -98,7 +99,9 @@ namespace UnityEngine.UIElements
             m_Value = sfd.value;
         }
 
+        [SerializeField]
         private StyleKeyword m_Keyword;
+        [SerializeField]
         private FontDefinition m_Value;
 
         /// <undoc/>

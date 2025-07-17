@@ -3,10 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
-using UnityEditor;
 using UnityEditor.ShortcutManagement;
-using System.Linq;
+using UnityEngine;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 

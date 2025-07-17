@@ -10,6 +10,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Style value that can be either a <see cref="TextShadow"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleTextShadow : IStyleValue<TextShadow>, IEquatable<StyleTextShadow>
     {
         /// <summary>
@@ -54,7 +55,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private StyleKeyword m_Keyword;
+        [SerializeField]
         private TextShadow m_Value;
 
         /// <undoc/>

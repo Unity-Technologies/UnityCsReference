@@ -282,7 +282,7 @@ namespace UnityEditor
             PrefabUtility.InstantiateDraggedPrefabUpon(droppedUponGameObject, prefabAssetRoot);
             var newChildren = GetNewChildren(droppedUponGameObject, childInstanceIDs);
             if (newChildren != null && newChildren.Count > 0)
-                Selection.instanceIDs = newChildren.ToArray();
+                Selection.entityIds = newChildren.ToArray().ToEntityIdArray();
 
             Undo.IncrementCurrentGroup();
         }

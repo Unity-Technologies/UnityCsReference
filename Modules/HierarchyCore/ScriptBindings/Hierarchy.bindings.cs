@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
@@ -23,7 +24,7 @@ namespace Unity.Hierarchy
     {
         internal static class BindingsMarshaller
         {
-            public static IntPtr ConvertToNative(Hierarchy hierarchy) => hierarchy.m_Ptr;
+            public static IntPtr ConvertToUnmanaged(Hierarchy hierarchy) => hierarchy.m_Ptr;
         }
 
         IntPtr m_Ptr;
@@ -245,6 +246,9 @@ namespace Unity.Hierarchy
         /// <returns>An array of hierarchy nodes.</returns>
         public HierarchyNode[] Add(in HierarchyNode parent, int count)
         {
+            if (count < 0)
+                throw new ArgumentException($"{nameof(count)} must be positive, but was {count}");
+
             var nodes = new HierarchyNode[count];
             AddNodeSpan(in parent, nodes);
             return nodes;
@@ -308,10 +312,10 @@ namespace Unity.Hierarchy
         public extern HierarchyNode GetChild(in HierarchyNode node, int index);
 
         /// <summary>
-        /// Gets the index of a child node in the parent's children list.
+        /// Gets the index of a hierarchy node in its parent's children list.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <returns></returns>
+        /// <returns>The node index, or -1 if invalid.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern int GetChildIndex(in HierarchyNode node);
 
@@ -358,7 +362,7 @@ namespace Unity.Hierarchy
         /// Sets the sort index of a hierarchy node.
         /// </summary>
         /// <remarks>
-        /// After setting sort indexes, you must call <see cref="SortChildren"/> on the parent node to sort the child nodes.
+        /// After setting sort indexes, you must call <see cref="SortChildren(in HierarchyNode)"/> or <see cref="SortChildrenRecursive"/> on the parent node to sort the child nodes.
         /// </remarks>
         /// <param name="node">The hierarchy node.</param>
         /// <param name="sortIndex">The sort index.</param>
@@ -377,9 +381,15 @@ namespace Unity.Hierarchy
         /// Sorts the child nodes of a hierarchy node according to their sort index.
         /// </summary>
         /// <param name="node">The hierarchy node.</param>
-        /// <param name="recurse">Whether to sort the child nodes recursively.</param>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
-        public extern void SortChildren(in HierarchyNode node, bool recurse = false);
+        public extern void SortChildren(in HierarchyNode node);
+
+        /// <summary>
+        /// Sorts the child nodes of a hierarchy node according to their sort index.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void SortChildrenRecursive(in HierarchyNode node);
 
         /// <summary>
         /// Gets whether the child nodes of a hierarchy node need to be sorted.
@@ -388,6 +398,13 @@ namespace Unity.Hierarchy
         /// <returns><see langword="true"/> if the child nodes of a hierarchy node need to be sorted, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
         public extern bool DoesChildrenNeedsSorting(in HierarchyNode node);
+
+        /// <summary>
+        /// Marks a hierarchy node as requiring sorting of its children in the next sorting operation.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern void SetChildrenNeedsSorting(in HierarchyNode node);
 
         /// <summary>
         /// Creates an unmanaged property with a specified name.
@@ -455,20 +472,34 @@ namespace Unity.Hierarchy
         public extern string GetPath(in HierarchyNode node);
 
         /// <summary>
-        /// Updates the hierarchy and requests that every registered hierarchy node type handler integrates their changes into the hierarchy.
+        /// Gets the hash code for the specified hierarchy node.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <returns>The node hash code.</returns>
+        [NativeMethod(IsThreadSafe = true, ThrowsException = true)]
+        public extern int GetHashCode(in HierarchyNode node);
+
+        /// <summary>
+        /// Force an update of the hierarchy, even if no changes are pending.
+        /// </summary>
+        [NativeMethod(IsThreadSafe = true)]
+        public extern void SetDirty();
+
+        /// <summary>
+        /// Updates the hierarchy, executing all pending changes in the command list.
         /// </summary>
         [NativeMethod(IsThreadSafe = true)]
         public extern void Update();
 
         /// <summary>
-        /// Updates the hierarchy incrementally.
+        /// Updates the hierarchy incrementally, executing one pending change in the command list.
         /// </summary>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
         [NativeMethod(IsThreadSafe = true)]
         public extern bool UpdateIncremental();
 
         /// <summary>
-        /// Incrementally updates the hierarchy until a time limit is reached.
+        /// Updates the hierarchy incrementally, executing pending changes in the command list until a time limit is reached.
         /// </summary>
         /// <param name="milliseconds">The time period in milliseconds.</param>
         /// <returns><see langword="true"/> if additional invocations are needed to complete the update, <see langword="false"/> otherwise.</returns>
@@ -551,12 +582,14 @@ namespace Unity.Hierarchy
         /// </remarks>
         /// <returns>The hierarchy node type handler instance for that type.</returns>
         [Obsolete("RegisterNodeTypeHandler has been renamed GetOrCreateNodeTypeHandler (UnityUpgradable) -> GetOrCreateNodeTypeHandler<T>()")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public T RegisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase => (T)HierarchyNodeTypeHandlerBase.FromIntPtr(GetOrCreateNodeTypeHandler(typeof(T)));
 
         /// <summary>
         /// Removes a hierarchy node type handler from this hierarchy.
         /// </summary>
         [Obsolete("UnregisterNodeTypeHandler no longer has any effect and will be removed in a future release.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void UnregisterNodeTypeHandler<T>() where T : HierarchyNodeTypeHandlerBase { }
 
         /// <summary>
@@ -564,6 +597,7 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <returns>Number of node type handlers.</returns>
         [Obsolete("GetAllNodeTypeHandlersBaseCount is obsolete, please use EnumerateNodeTypeHandlersBase instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public int GetAllNodeTypeHandlersBaseCount() => GetNodeTypeHandlersBaseCount();
 
         /// <summary>
@@ -571,11 +605,27 @@ namespace Unity.Hierarchy
         /// </summary>
         /// <param name="handlers">The list of node type handlers to populate.</param>
         [Obsolete("GetAllNodeTypeHandlersBase is obsolete, please use EnumerateNodeTypeHandlersBase instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
         public void GetAllNodeTypeHandlersBase(List<HierarchyNodeTypeHandlerBase> handlers)
         {
             handlers.Clear();
             foreach (var handler in EnumerateNodeTypeHandlersBase())
                 handlers.Add(handler);
+        }
+
+        /// <summary>
+        /// Sorts the child nodes of a hierarchy node according to their sort index.
+        /// </summary>
+        /// <param name="node">The hierarchy node.</param>
+        /// <param name="recurse">Whether to sort the child nodes recursively.</param>
+        [Obsolete("SortChildren(node, recurse) with a bool parameter is obsolete, please use SortChildren(node) or SortChildrenRecursive(node) instead.")]
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        public void SortChildren(in HierarchyNode node, bool recurse)
+        {
+            if (recurse)
+                SortChildrenRecursive(in node);
+            else
+                SortChildren(in node);
         }
         #endregion
     }

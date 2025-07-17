@@ -62,7 +62,7 @@ namespace UnityEngine.UIElements
                 {
                     new (nameof(label), "label"),
                     new (nameof(value), "value"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

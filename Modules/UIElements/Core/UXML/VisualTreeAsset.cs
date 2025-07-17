@@ -15,6 +15,11 @@ namespace UnityEngine.UIElements
     ///
     /// **Note**: You can't generate a `VisualTreeAsset` from raw UXML at runtime.
     /// </summary>
+    /// <example>
+    /// The following example loads a VisualTreeAsset from a UXML file in a custom Editor script.
+    /// <code source="../../Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/VisualTreeAssetExample.cs" />
+    /// </example>
+
     [HelpURL("UIE-VisualTree-landing")]
     [Serializable]
     public class VisualTreeAsset : ScriptableObject
@@ -22,6 +27,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static string LinkedVEAInTemplatePropertyName = "--unity-linked-vea-in-template";
         internal static string NoRegisteredFactoryErrorMessage = "Element '{0}' is missing a UxmlElementAttribute and has no registered factory method. Please ensure that you have the correct namespace imported.";
+        internal const string TemplateAliasExistsError = $"{nameof(VisualTreeAsset)}: could not register a template alias for asset `{{0}}`, alias is already defined for asset '{{1}}'";
 
         [SerializeField]
         bool m_ImportedWithErrors;
@@ -33,6 +39,14 @@ namespace UnityEngine.UIElements
         {
             get { return m_ImportedWithErrors; }
             internal set { m_ImportedWithErrors = value; }
+        }
+
+        [SerializeField]
+        bool m_HasEditorElements;
+        internal bool hasEditorElements
+        {
+            get { return m_HasEditorElements; }
+            set { m_HasEditorElements = value; }
         }
 
         [SerializeField]
@@ -63,19 +77,7 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal int GetNextChildSerialNumber()
         {
-            int n = m_VisualElementAssets?.Count ?? 0;
-            n += m_TemplateAssets?.Count ?? 0;
-
-            if (m_UxmlObjectEntries != null)
-            {
-                n += m_UxmlObjectEntries.Count;
-                foreach (var entry in m_UxmlObjectEntries)
-                {
-                    if (entry.uxmlObjectAssets != null)
-                        n += entry.uxmlObjectAssets.Count;
-                }
-            }
-            return n;
+            return DepthFirstTraversal().GetCount();
         }
 
         private static readonly Dictionary<string, VisualElement> s_TemporarySlotInsertionPoints = new Dictionary<string, VisualElement>();
@@ -113,7 +115,7 @@ namespace UnityEngine.UIElements
         {
             public int Compare(UsingEntry x, UsingEntry y)
             {
-                return String.CompareOrdinal(x.alias, y.alias);
+                return string.CompareOrdinal(x.alias, y.alias);
             }
         }
 
@@ -137,33 +139,6 @@ namespace UnityEngine.UIElements
                 this.slotName = slotName;
                 this.assetId = assetId;
             }
-        }
-
-        [Serializable]
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal struct UxmlObjectEntry
-        {
-            [SerializeField] public int parentId;
-            [SerializeField] public List<UxmlObjectAsset> uxmlObjectAssets;
-
-            public UxmlObjectEntry(int parentId, List<UxmlObjectAsset> uxmlObjectAssets)
-            {
-                this.parentId = parentId;
-                this.uxmlObjectAssets = uxmlObjectAssets;
-            }
-
-            public UxmlObjectAsset GetField(string fieldName)
-            {
-                foreach (var asset in uxmlObjectAssets)
-                {
-                    if (asset.isField && asset.fullTypeName == fieldName)
-                        return asset;
-                }
-
-                return null;
-            }
-
-            public override string ToString() => $"UxmlObjectEntry parent:{parentId} ({uxmlObjectAssets?.Count})";
         }
 
         [Serializable]
@@ -245,7 +220,49 @@ namespace UnityEngine.UIElements
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         [SerializeField] internal StyleSheet inlineSheet;
 
-        [SerializeField] internal List<VisualElementAsset> m_VisualElementAssets = new List<VisualElementAsset>();
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal StyleSheet GetOrCreateInlineStyleSheet()
+        {
+            if (inlineSheet == null)
+                inlineSheet = StyleSheetUtility.CreateInstanceWithHideFlags();
+            return inlineSheet;
+        }
+
+        [SerializeReference] private VisualElementAsset m_VisualTree;
+
+        internal VisualElementAsset visualTreeNoAlloc
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get
+            {
+                return m_VisualTree;
+            }
+        }
+
+        internal VisualElementAsset visualTree
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get
+            {
+                if (m_VisualTree != null)
+                {
+                    return m_VisualTree;
+                }
+                var root = new VisualElementAsset("UnityEngine.UIElements.UXML");
+                SetRootAsset(root);
+
+                return root;
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetRootAsset(VisualElementAsset root)
+        {
+            if (null != m_VisualTree)
+                throw new InvalidOperationException("Trying to set a root asset, but it already exists");
+            m_VisualTree = root;
+            root.SetVisualTreeAsset(this);
+        }
 
         /// <summary>
         /// The stylesheets used by this VisualTreeAsset.
@@ -254,10 +271,15 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                HashSet<StyleSheet> sent = new HashSet<StyleSheet>();
+                using var setHandle = HashSetPool<StyleSheet>.Get(out var sent);
+                using var _ = ListPool<UxmlAsset>.Get(out var list);
+                list.AddRange(DepthFirstTraversal());
 
-                foreach (var vea in m_VisualElementAssets)
+                foreach (var asset in list)
                 {
+                    if (asset is not VisualElementAsset vea)
+                        continue;
+
                     if (vea.hasStylesheets)
                     {
                         foreach (var stylesheet in vea.stylesheets)
@@ -287,88 +309,53 @@ namespace UnityEngine.UIElements
             }
         }
 
-        [SerializeField] internal List<TemplateAsset> m_TemplateAssets = new List<TemplateAsset>();
-        [SerializeField] private List<UxmlObjectEntry> m_UxmlObjectEntries = new List<UxmlObjectEntry>();
-        [SerializeField] private List<int> m_UxmlObjectIds = new List<int>();
-
-        internal List<VisualElementAsset> visualElementAssets
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get => m_VisualElementAssets;
-        }
-
-        internal List<TemplateAsset> templateAssets
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get => m_TemplateAssets;
-        }
-
-        internal List<UxmlObjectEntry> uxmlObjectEntries
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get => m_UxmlObjectEntries;
-        }
-
-        internal List<int> uxmlObjectIds
-        {
-            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-            get => m_UxmlObjectIds;
-        }
-
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal void RemoveElementAndDependencies(VisualElementAsset asset)
         {
             if (asset == null)
                 return;
 
-            m_VisualElementAssets.Remove(asset);
-            RemoveUxmlObjectEntryDependencies(asset.id);
-        }
-
-        // Called when parsing Uxml
-        internal void RegisterUxmlObject(UxmlObjectAsset uxmlObjectAsset)
-        {
-            var entry = GetUxmlObjectEntry(uxmlObjectAsset.parentId);
-
-            if (entry.uxmlObjectAssets != null)
+            if (null == asset.parentAsset)
             {
-                entry.uxmlObjectAssets.Add(uxmlObjectAsset);
+                // Removing the root
+                if (asset == m_VisualTree)
+                {
+                    m_VisualTree = null;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Trying to remove an asset that is not part of this VisualTreeAsset");
+                }
             }
             else
             {
-                m_UxmlObjectEntries.Add(new UxmlObjectEntry(uxmlObjectAsset.parentId, new List<UxmlObjectAsset> { uxmlObjectAsset }));
-                m_UxmlObjectIds.Add(uxmlObjectAsset.id);
+                asset.parentAsset.Remove(asset);
             }
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal UxmlObjectAsset AddUxmlObject(UxmlAsset parent, string fieldUxmlName, string fullTypeName, UxmlNamespaceDefinition xmlNamespace = default)
         {
-            var entry = GetUxmlObjectEntry(parent.id);
-            if (entry.uxmlObjectAssets == null)
-            {
-                entry = new UxmlObjectEntry(parent.id, new List<UxmlObjectAsset>());
-                m_UxmlObjectEntries.Add(entry);
-            }
-
             if (string.IsNullOrEmpty(fieldUxmlName))
             {
-                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace);
-                newAsset.parentId = parent.id;
-                newAsset.id = GetNextUxmlAssetId(parent.id);
-                m_UxmlObjectIds.Add(newAsset.id);
-                entry.uxmlObjectAssets.Add(newAsset);
+                var newAsset = new UxmlObjectAsset(fullTypeName, false, xmlNamespace)
+                {
+                    parentId = parent.id,
+                    id = GetNextUxmlAssetId(parent.id)
+                };
+
+                parent.Add(newAsset);
+
                 return newAsset;
             }
 
-            var fieldAsset = entry.GetField(fieldUxmlName);
+            var fieldAsset = parent.GetField(fieldUxmlName);
             if (fieldAsset == null)
             {
                 fieldAsset = new UxmlObjectAsset(fieldUxmlName, true, xmlNamespace);
-                entry.uxmlObjectAssets.Add(fieldAsset);
+                parent.Add(fieldAsset);
                 fieldAsset.parentId = parent.id;
-                fieldAsset.id = GetNextUxmlAssetId(parent.id);
-                m_UxmlObjectIds.Add(fieldAsset.id);
+                fieldAsset.id = GetNextUxmlAssetId(parent.parentAsset?.id ?? 0);
             }
 
             return AddUxmlObject(fieldAsset, null, fullTypeName, xmlNamespace);
@@ -381,144 +368,17 @@ namespace UnityEngine.UIElements
             return (GetNextChildSerialNumber() + 585386304) * -1521134295 + parentId + guid;
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void RemoveUxmlObject(int id, bool onlyIfIsField = false)
+        private void Awake__Internal()
         {
-            for (var i = 0; i < m_UxmlObjectEntries.Count; ++i)
-            {
-                var entry = m_UxmlObjectEntries[i];
-                for (var j = 0; j < entry.uxmlObjectAssets.Count; ++j)
-                {
-                    var asset = entry.uxmlObjectAssets[j];
-                    if (asset.id == id)
-                    {
-                        if (onlyIfIsField && !asset.isField)
-                            return;
-
-                        entry.uxmlObjectAssets.RemoveAt(j);
-
-                        RemoveUxmlObjectEntryDependencies(asset.id);
-
-                        // Remove parent field if empty
-                        if (entry.uxmlObjectAssets.Count == 0)
-                        {
-                            var index = m_UxmlObjectEntries.IndexOf(entry);
-                            m_UxmlObjectEntries.RemoveAt(index);
-                            m_UxmlObjectIds.RemoveAt(index);
-
-                            RemoveUxmlObject(entry.parentId, true);
-                        }
-                        return;
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Removes UxmlObjectEntry instances with the same parent indicated by the specified parentId.
-        /// </summary>
-        /// <param name="parentId">The ID of the parent asset.</param>
-        void RemoveUxmlObjectEntryDependencies(int parentId)
-        {
-            if (m_UxmlObjectEntries.Count == 0)
-                return;
-
-            // Find direct children
-            var uxmlObjectRoots = ListPool<UxmlObjectEntry>.Get();
-            foreach (var child in m_UxmlObjectEntries)
-            {
-                if (parentId == child.parentId)
-                {
-                    uxmlObjectRoots.Add(child);
-                }
-            }
-
-            foreach (var entry in uxmlObjectRoots)
-            {
-                var index = m_UxmlObjectEntries.IndexOf(entry);
-                m_UxmlObjectEntries.RemoveAt(index);
-                m_UxmlObjectIds.RemoveAt(index);
-
-                foreach (var asset in entry.uxmlObjectAssets)
-                {
-                    RemoveUxmlObjectEntryDependencies(asset.id);
-                }
-            }
-
-            ListPool<UxmlObjectEntry>.Release(uxmlObjectRoots);
+            SetupReferences();
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void CollectUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> foundEntries)
+        internal void SetupReferences()
         {
-            if (parent == null)
-                return;
-
-            foreach (var e in m_UxmlObjectEntries)
+            foreach (var asset in DepthFirstTraversal())
             {
-                if (e.parentId == parent.id)
-                {
-                    if (!string.IsNullOrEmpty(fieldName))
-                    {
-                        var fieldAsset = e.GetField(fieldName);
-                        if (fieldAsset != null)
-                        {
-                            CollectUxmlObjectAssets(fieldAsset, null, foundEntries);
-                        }
-                    }
-                    else
-                    {
-                        foreach (var asset in e.uxmlObjectAssets)
-                        {
-                            if (!asset.isField)
-                                foundEntries.Add(asset);
-                        }
-                    }
-                    return;
-                }
-            }
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void SetUxmlObjectAssets(UxmlAsset parent, string fieldName, List<UxmlObjectAsset> entries)
-        {
-            foreach (var e in m_UxmlObjectEntries)
-            {
-                if (e.parentId == parent.id)
-                {
-                    if (!string.IsNullOrEmpty(fieldName))
-                    {
-                        var fieldAsset = e.GetField(fieldName);
-                        if (fieldAsset != null)
-                        {
-                            SetUxmlObjectAssets(fieldAsset, null, entries);
-                        }
-                    }
-                    else
-                    {
-                        // Remove all non-field assets
-                        for (int i = e.uxmlObjectAssets.Count - 1; i >= 0; --i)
-                        {
-                            if (!e.uxmlObjectAssets[i].isField)
-                            {
-                                e.uxmlObjectAssets.RemoveAt(i);
-                            }
-                        }
-
-                        e.uxmlObjectAssets.AddRange(entries);
-
-                        // Remove parent field if empty
-                        if (e.uxmlObjectAssets.Count == 0)
-                        {
-                            var index = m_UxmlObjectEntries.IndexOf(e);
-                            m_UxmlObjectEntries.RemoveAt(index);
-                            m_UxmlObjectIds.RemoveAt(index);
-
-                            RemoveUxmlObject(e.parentId, true);
-                        }
-                    }
-                    return;
-                }
+                asset.SetVisualTreeAssetWithOutNotify(this);
             }
         }
 
@@ -528,13 +388,14 @@ namespace UnityEngine.UIElements
         {
             if (asset is UxmlAsset ua)
             {
-                var entry = GetUxmlObjectEntry(ua.id);
+                using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
+                ua.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
 
-                if (entry.uxmlObjectAssets != null)
+                if (uxmlObjectAssets != null)
                 {
                     List<T> uxmlObjects = null;
 
-                    foreach (var uxmlObjectAsset in entry.uxmlObjectAssets)
+                    foreach (var uxmlObjectAsset in uxmlObjectAssets)
                     {
                         var factory = GetUxmlObjectFactory(uxmlObjectAsset);
 
@@ -608,23 +469,6 @@ namespace UnityEngine.UIElements
             }
 
             return null;
-        }
-
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal UxmlObjectEntry GetUxmlObjectEntry(int id)
-        {
-            if (m_UxmlObjectEntries != null)
-            {
-                foreach (var e in m_UxmlObjectEntries)
-                {
-                    if (e.parentId == id)
-                    {
-                        return e;
-                    }
-                }
-            }
-
-            return default;
         }
 
         #pragma warning disable CS0618 // Type or member is obsolete
@@ -758,104 +602,66 @@ namespace UnityEngine.UIElements
             if (target == null)
                 throw new ArgumentNullException(nameof(target));
 
-            if ((visualElementAssets == null || visualElementAssets.Count <= 0) &&
-                (templateAssets == null || templateAssets.Count <= 0))
+            // The top most element should be a root element.
+            if (null == m_VisualTree)
                 return;
 
-            Dictionary<int, List<VisualElementAsset>> idToChildren = new Dictionary<int, List<VisualElementAsset>>();
-            int eltcount = visualElementAssets == null ? 0 : visualElementAssets.Count;
-            int tplcount = templateAssets == null ? 0 : templateAssets.Count;
-            for (int i = 0; i < eltcount + tplcount; i++)
-            {
-                VisualElementAsset asset = i < eltcount ? visualElementAssets[i] : templateAssets[i - eltcount];
-                List<VisualElementAsset> children;
-                if (!idToChildren.TryGetValue(asset.parentId, out children))
-                {
-                    children = new List<VisualElementAsset>();
-                    idToChildren[asset.parentId] = children;
-                }
-
-                children.Add(asset);
-            }
-
-            List<VisualElementAsset> rootAssets;
-
-            // Tree root have a parentId == 0
-            idToChildren.TryGetValue(0, out rootAssets);
-            if (rootAssets == null || rootAssets.Count == 0)
-            {
-                return;
-            }
-
-            Debug.Assert(rootAssets.Count == 1);
-
-            var root = rootAssets[0];
+            var root = m_VisualTree;
             AssignClassListFromAssetToElement(root, target);
             AssignStyleSheetFromAssetToElement(root, target);
 
-            // Get the first-level elements. These will be instantiated and added to target.
-            rootAssets.Clear();
-            idToChildren.TryGetValue(root.id, out rootAssets);
-
-            if (rootAssets == null || rootAssets.Count == 0)
+            for (var i = 0; i < root.childCount; ++i)
             {
-                return;
-            }
-
-            rootAssets.Sort(CompareForOrder);
-            foreach (var rootElement in rootAssets)
-            {
-                Assert.IsNotNull(rootElement);
+                // Assumes m_VisualElementAssets only contain VisualElementAsset.
+                var child = root[i] as VisualElementAsset;
 
                 var isTemplate = false;
-                if (rootElement is TemplateAsset)
+                if (child is TemplateAsset)
                 {
-                    cc.veaIdsPath.Add(rootElement.id);
+                    cc.veaIdsPath.Add(child.id);
                     isTemplate = true;
                 }
 
                 var newCc = new CreationContext(cc.slotInsertionPoints, cc.attributeOverrides, cc.serializedDataOverrides,
                     this, target, cc.veaIdsPath, null);
-                var rootVe = CloneSetupRecursively(rootElement, idToChildren,
-                    newCc);
+
+                var childElement = CloneSetupRecursively(child, newCc);
 
                 if (isTemplate)
                 {
-                    cc.veaIdsPath.Remove(rootElement.id);
+                    cc.veaIdsPath.Remove(child.id);
                 }
 
-                if (rootVe == null)
-                    continue;
-                // Save reference to the visualElementAsset so elements can be reinitialized when
-                // we set their attributes in the editor
-                rootVe.SetProperty(LinkedVEAInTemplatePropertyName, rootElement);
-
-                // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
-                // tracked for live reloading on changes, and also accessible for users that need to keep track
-                // of their cloned VisualTreeAssets.
-                rootVe.visualTreeAssetSource = this;
-
-                // if contentContainer == this, the shadow and the logical hierarchy are identical
-                // otherwise, if there is a CC, we want to insert in the shadow
-                target.hierarchy.Add(rootVe);
+                if (null != childElement)
+                {
+                    // if contentContainer == this, the shadow and the logical hierarchy are identical
+                    // otherwise, if there is a CC, we want to insert in the shadow
+                    target.hierarchy.Add(childElement);
+                }
             }
         }
 
-        private VisualElement CloneSetupRecursively(VisualElementAsset root,
-            Dictionary<int, List<VisualElementAsset>> idToChildren, CreationContext context)
+        private VisualElement CloneSetupRecursively(VisualElementAsset asset, CreationContext context)
         {
-            if (root.skipClone)
+            if (asset.skipClone)
                 return null;
 
-            var ve = Create(root, context);
+            var ve = Create(asset, context);
 
             if (ve == null)
-            {
                 return null;
-            }
+
+            // Save reference to the visualElementAsset so elements can be reinitialized when
+            // we set their attributes in the editor
+            ve.SetProperty(LinkedVEAInTemplatePropertyName, asset);
+
+            // Save reference to the VisualTreeAsset itself on the containing VisualElement so it can be
+            // tracked for live reloading on changes, and also accessible for users that need to keep track
+            // of their cloned VisualTreeAssets.
+            ve.visualTreeAssetSource = this;
 
             // context.target is the created templateContainer
-            if (root.id == context.visualTreeAsset.contentContainerId)
+            if (asset.id == context.visualTreeAsset.contentContainerId)
             {
                 if (context.target is TemplateContainer tc)
                     tc.SetContentContainer(ve);
@@ -865,87 +671,79 @@ namespace UnityEngine.UIElements
             }
 
             // if the current element had a slot-name attribute, put it in the resulting slot mapping
-            string slotName;
-            if (context.slotInsertionPoints != null && TryGetSlotInsertionPoint(root.id, out slotName))
+            if (context.slotInsertionPoints != null && TryGetSlotInsertionPoint(asset.id, out var slotName))
             {
                 context.slotInsertionPoints.Add(slotName, ve);
             }
 
-            if (root.ruleIndex != -1)
+            if (asset.ruleIndex != -1)
             {
                 if (inlineSheet == null)
                     Debug.LogWarning("VisualElementAsset has a RuleIndex but no inlineStyleSheet");
                 else
                 {
-                    StyleRule r = inlineSheet.rules[root.ruleIndex];
-                    ve.SetInlineRule(inlineSheet, r);
+                    var rule = inlineSheet.rules[asset.ruleIndex];
+                    ve.SetInlineRule(inlineSheet, rule);
                 }
             }
 
-            var templateAsset = root as TemplateAsset;
-            List<VisualElementAsset> children;
-            if (idToChildren.TryGetValue(root.id, out children))
+            var templateAsset = asset as TemplateAsset;
+
+            for (var i = 0; i < asset.childCount; ++i)
             {
-                children.Sort(CompareForOrder);
+                var childVea = asset[i] as VisualElementAsset;
 
-                foreach (VisualElementAsset childVea in children)
+                // It can be a UxmlObjectAsset. We only want to clone VisualElementAssets
+                if (childVea == null)
                 {
-                    var isTemplate = false;
-                    if (childVea is TemplateAsset)
+                    continue;
+                }
+
+                var isTemplate = false;
+                if (childVea is TemplateAsset)
+                {
+                    context.veaIdsPath.Add(childVea.id);
+                    isTemplate = true;
+                }
+
+                var childVe = CloneSetupRecursively(childVea, context);
+
+                if (isTemplate)
+                {
+                    context.veaIdsPath.Remove(childVea.id);
+                }
+
+                if (childVe == null)
+                    continue;
+
+                childVe.visualTreeAssetSource = this;
+
+                // Save reference to the visualElementAsset so elements can be reinitialized when
+                // we set their attributes in the editor
+                childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
+
+                var index = templateAsset?.slotUsages?.FindIndex(u => u.assetId == childVea.id) ?? -1;
+                if (index != -1)
+                {
+                    VisualElement parentSlot;
+                    var key = templateAsset.slotUsages[index].slotName;
+                    Assert.IsFalse(string.IsNullOrEmpty(key),
+                        "a lost name should not be null or empty, this probably points to an importer or serialization bug");
+                    if (context.slotInsertionPoints == null ||
+                        !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
                     {
-                        context.veaIdsPath.Add(childVea.id);
-                        isTemplate = true;
-                    }
-
-                    // this will fill the slotInsertionPoints mapping
-                    var childVe = CloneSetupRecursively(childVea, idToChildren, context);
-
-                    if (isTemplate)
-                    {
-                        context.veaIdsPath.Remove(childVea.id);
-                    }
-
-                    if (childVe == null)
-                        continue;
-                    childVe.visualTreeAssetSource = this;
-
-                    // Save reference to the visualElementAsset so elements can be reinitialized when
-                    // we set their attributes in the editor
-                    childVe.SetProperty(LinkedVEAInTemplatePropertyName, childVea);
-
-                    // if the parent is not a template asset, just add the child to whatever hierarchy we currently have
-                    // if ve is a scrollView (with contentViewport as contentContainer), this will go to the right place
-                    if (templateAsset == null)
-                    {
-                        ve.Add(childVe);
-                        continue;
-                    }
-
-                    int index = templateAsset.slotUsages == null
-                        ? -1
-                        : templateAsset.slotUsages.FindIndex(u => u.assetId == childVea.id);
-                    if (index != -1)
-                    {
-                        VisualElement parentSlot;
-                        string key = templateAsset.slotUsages[index].slotName;
-                        Assert.IsFalse(String.IsNullOrEmpty(key),
-                            "a lost name should not be null or empty, this probably points to an importer or serialization bug");
-                        if (context.slotInsertionPoints == null ||
-                            !context.slotInsertionPoints.TryGetValue(key, out parentSlot))
-                        {
-                            Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
-                                context.slotInsertionPoints == null
+                        Debug.LogErrorFormat("Slot '{0}' was not found. Existing slots: {1}", key,
+                            context.slotInsertionPoints == null
                                 ? String.Empty
                                 : String.Join(", ",
                                     System.Linq.Enumerable.ToArray(context.slotInsertionPoints.Keys)));
-                            ve.Add(childVe);
-                        }
-                        else
-                            parentSlot.Add(childVe);
+                        ve.Add(childVe);
                     }
                     else
-                        ve.Add(childVe);
+                        parentSlot.Add(childVe);
                 }
+                else
+                    ve.Add(childVe);
             }
 
             if (templateAsset != null && context.slotInsertionPoints != null)
@@ -953,8 +751,6 @@ namespace UnityEngine.UIElements
 
             return ve;
         }
-
-        internal static int CompareForOrder(VisualElementAsset a, VisualElementAsset b) => a.orderInDocument.CompareTo(b.orderInDocument);
 
         internal bool SlotDefinitionExists(string slotName)
         {
@@ -995,20 +791,24 @@ namespace UnityEngine.UIElements
 
         void FindElementsByName(string visualElementName, List<VisualElementAsset> results)
         {
-            foreach (var visualElementAsset in visualElementAssets)
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(DepthFirstTraversal());
+            foreach (var asset in list)
             {
-                if (visualElementAsset.TryGetAttributeValue("name", out string value))
+                if (asset is not VisualElementAsset visualElementAsset)
+                    continue;
+
+                if (asset is TemplateAsset templateAsset)
+                {
+                    FindElementsByNameInTemplate(templateAsset, visualElementName, results);
+                }
+                else if (visualElementAsset.TryGetAttributeValue("name", out string value))
                 {
                     if (value == visualElementName)
                     {
                         results.Add(visualElementAsset);
                     }
                 }
-            }
-
-            foreach (var templateAsset in templateAssets)
-            {
-                FindElementsByNameInTemplate(templateAsset, visualElementName, results);
             }
         }
 
@@ -1082,12 +882,51 @@ namespace UnityEngine.UIElements
             InsertUsingEntry(new UsingEntry(templateName, asset));
         }
 
-        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal void UnregisterTemplate(VisualTreeAsset asset)
+        internal bool TryRegisterTemplate(string templateName, VisualTreeAsset asset)
         {
-            // Find the entry and remove it
-            var entry = m_Usings.Find(e => e.asset.Equals(asset));
+            if (!asset || asset == null)
+                throw new ArgumentNullException(nameof(asset));
+
+            if (TemplateExists(templateName))
+            {
+                if (TryGetUsingEntry(templateName, out var entry) && asset == entry.asset)
+                    return false;
+
+                Debug.LogWarningFormat(TemplateAliasExistsError, asset, entry.asset);
+                return false;
+            }
+
+            RegisterTemplate(templateName, asset);
+            return true;
+        }
+
+        internal bool TryUnregisterTemplate(string templateName)
+        {
+            using var _ = ListPool<TemplateAsset>.Get(out var otherTemplates);
+            otherTemplates.AddRange(DepthFirstTraversalOfType<TemplateAsset>());
+
+            // If the template alias in not in use.
+            if (!TryGetUsingEntry(templateName, out var entry))
+                return false;
+
+            // If there are no template nodes, it is safe to remove.
+            if (otherTemplates.Count == 0)
+            {
+                RemoveUsingEntry(entry);
+                return true;
+            }
+
+            foreach (var otherTemplate in otherTemplates)
+            {
+                if (string.CompareOrdinal(templateName, otherTemplate.templateAlias) == 0)
+                {
+                    return false;
+                }
+            }
+
+            // If no other template nodes are linking it, it is safe to remove.
             RemoveUsingEntry(entry);
+            return true;
         }
 
         private void InsertUsingEntry(UsingEntry entry)
@@ -1099,7 +938,6 @@ namespace UnityEngine.UIElements
 
             m_Usings.Insert(i, entry);
         }
-
 
         #pragma warning disable CS0618 // Type or member is obsolete
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
@@ -1209,7 +1047,9 @@ namespace UnityEngine.UIElements
         internal int GetAttributePropertiesDirtyCount()
         {
             var dirtyCount = 0;
-            foreach (var vea in visualElementAssets)
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(DepthFirstTraversal());
+            foreach (var vea in list)
             {
                 dirtyCount += vea.GetPropertiesDirtyCount();
             }
@@ -1219,16 +1059,186 @@ namespace UnityEngine.UIElements
 
         internal void ExtractUsedUxmlQualifiedNames(HashSet<string> names)
         {
-            foreach (var asset in m_VisualElementAssets)
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(DepthFirstTraversal());
+
+            foreach (var asset in list)
             {
+                if (asset is not VisualElementAsset)
+                    continue;
                 names.Add(asset.fullTypeName);
             }
         }
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-        internal VisualElementAsset GetRootUxmlElement()
+        internal IEnumerable<UxmlAsset> DepthFirstTraversal()
         {
-            return visualElementAssets?.Count > 0 ? visualElementAssets[0] : null;
+            if (null == m_VisualTree)
+                return Array.Empty<UxmlAsset>();
+            return DepthFirstTraversal(m_VisualTree);
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal IEnumerable<T> DepthFirstTraversalOfType<T>()
+        {
+            var elements = DepthFirstTraversal();
+
+            foreach (var element in elements)
+            {
+                if (element is T tElement)
+                {
+                    yield return tElement;
+                }
+            }
+        }
+
+        internal IEnumerable<UxmlAsset> DepthFirstTraversal(UxmlAsset asset)
+        {
+            yield return asset;
+
+            for (var i = 0; i < asset.childCount; ++i)
+            {
+                foreach (var child in DepthFirstTraversal(asset[i]))
+                {
+                    yield return child;
+                }
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int DepthFirstTraversalIndexOf(UxmlAsset uxmlAsset)
+        {
+            var index = 0;
+            var assets = DepthFirstTraversal();
+
+            foreach (var asset in assets)
+            {
+                if (asset == uxmlAsset)
+                    return index;
+                index++;
+            }
+
+            return -1;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal int GenerateNewId(VisualElementAsset vea)
+        {
+            int parentHash;
+            if (!vea.HasParent())
+                parentHash = GetHashCode();
+            else
+                parentHash = vea.parentAsset.id;
+
+            var guid = System.Guid.NewGuid().GetHashCode();
+
+            return (GetNextChildSerialNumber() + 585386304) * -1521134295 + parentHash + guid;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal VisualElementAsset AddElementToDocument(VisualElementAsset vea, VisualElementAsset parent)
+        {
+            var actualParent = parent ?? visualTree;
+            actualParent.Add(vea);
+
+            // Only init id the first time as needed.
+            if (vea.id == 0)
+                vea.id = GenerateNewId(vea);
+
+            return vea;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal VisualElementAsset ReparentElementInDocument(VisualElementAsset vea, VisualElementAsset newParent, int index = -1)
+        {
+            var actualParent = newParent ?? visualTree;
+            var actualIndex = index == -1 ? actualParent.childCount : index;
+
+            actualParent.Insert(actualIndex, vea);
+
+            // Only init id the first time as needed.
+            if (vea.id == 0)
+                vea.id = GenerateNewId(vea);
+
+            // HACK: We clear ALL stylesheets here if element is no longer at root.
+            // this is fine as long as we only support one uss but when we support more
+            // we need to make sure we only remove the stylesheets that make sense to remove.
+            // See: https://unity3d.atlassian.net/browse/UIT-469
+            if (vea.isRoot)
+            {
+                vea.stylesheetPaths.Clear();
+                vea.stylesheets.Clear();
+            }
+
+            return vea;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void Swallow(VisualElementAsset parent, VisualTreeAsset other)
+        {
+            using var _ = ListPool<UxmlAsset>.Get(out var list);
+            list.AddRange(other.DepthFirstTraversal());
+            var actualParent = parent ?? visualTree;
+
+            list.Clear();
+
+            for (var i = 0; i < other.visualTree.childCount; ++i)
+            {
+                list.Add(other.visualTree[i]);
+            }
+
+            for (var i = 0; i < list.Count; ++i)
+            {
+                var child = list[i];
+                actualParent.Add(child);
+            }
+        }
+
+        internal static void SwallowStyleRule(VisualTreeAsset previous, VisualTreeAsset next, VisualElementAsset vea)
+        {
+            if (vea.ruleIndex < 0)
+                return;
+
+            var toStyleSheet = next.GetOrCreateInlineStyleSheet();
+            var fromStyleSheet = previous.inlineSheet;
+
+            var fromRule = fromStyleSheet.rules[vea.ruleIndex];
+
+            // Add rule to StyleSheet.
+            var rules = toStyleSheet.rules;
+            var index = rules.Length;
+
+            var toRule = new StyleRule
+            {
+                properties = new StyleProperty[fromRule.properties.Length],
+                customPropertiesCount = fromRule.customPropertiesCount
+            };
+            Unity.Collections.CollectionExtensions.AddToArray(ref rules, toRule);
+
+
+            // Add property values to sheet.
+            for (var i = 0; i < fromRule.properties.Length; ++i)
+            {
+                var fromProperty = fromRule.properties[i];
+                var toProperty = new StyleProperty
+                {
+                    name = fromProperty.name,
+                    requireVariableResolve = fromProperty.requireVariableResolve,
+                    isCustomProperty = fromProperty.isCustomProperty
+                };
+                StyleSheetUtility.TransferStylePropertyHandles(fromStyleSheet, fromProperty, toStyleSheet, toProperty);
+                toRule.properties[i] = toProperty;
+            }
+            vea.ruleIndex = index;
+            toStyleSheet.rules = rules;
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal VisualElementAsset AddElementOfType(VisualElementAsset parent, string fullTypeName)
+        {
+            var xmlns = VisualTreeAssetUtilities.FindUxmlNamespaceDefinitionForTypeName(this, parent, fullTypeName);
+            var vea = new VisualElementAsset(fullTypeName, xmlns);
+            return AddElementToDocument(vea, parent);
         }
     }
 
@@ -1310,6 +1320,7 @@ namespace UnityEngine.UIElements
             : this(slotInsertionPoints, null, null, null)
         { }
 
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal CreationContext(
             Dictionary<string, VisualElement> slotInsertionPoints,
             List<AttributeOverrideRange> attributeOverrides)

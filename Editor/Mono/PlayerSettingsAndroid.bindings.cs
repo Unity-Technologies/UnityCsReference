@@ -150,6 +150,22 @@ namespace UnityEditor
         DontShow = -1,
     }
 
+    // https://developer.android.com/guide/topics/manifest/application-element#appCategory
+    // Matches enum in EditorOnlyPlayerSettings.h.
+    internal enum AndroidAppCategory
+    {
+        Accessibility = 1,
+        Audio = 2,
+        Game = 3,
+        Image = 4,
+        Maps = 5,
+        News = 6,
+        Productivity = 7,
+        Social = 8,
+        Video = 9,
+        Other = 99,
+    }
+
     // Gamepad support level for Android TV
     public enum AndroidGamepadSupportLevel
     {
@@ -384,7 +400,68 @@ namespace UnityEditor
             public static extern bool androidTVCompatibility { get; set; }
 
             // Android TV - is it a game or a regular app
-            public static extern bool androidIsGame { get; set; }
+            [Obsolete("androidIsGame has been deprecated. Please use appCategory instead.", false)]
+            public static bool androidIsGame
+            {
+                get
+                {
+                    if (!useAndroidAppCategory)
+                        return false;
+
+                    if (GetAndroidAppCategory() == AndroidAppCategory.Game)
+                        return true;
+
+                    if (GetAndroidAppCategory() == AndroidAppCategory.Other)
+                    {
+                        string otherValue = androidAppCategoryOther.Trim();
+                        return string.Equals(otherValue, AndroidAppCategory.Game.ToString(), StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    return false;
+                }
+                set
+                {
+                    useAndroidAppCategory = value;
+                    if (value)
+                        SetAndroidAppCategory(AndroidAppCategory.Game);
+                }
+            }
+
+            internal static extern bool useAndroidAppCategory { get; set; }
+            internal static extern string androidAppCategoryOther { get; set; }
+            internal static extern AndroidAppCategory GetAndroidAppCategory();
+            internal static extern void SetAndroidAppCategory(AndroidAppCategory value);
+
+            public static string appCategory
+            {
+                get
+                {
+                    if (!useAndroidAppCategory)
+                        return "";
+
+                    return (GetAndroidAppCategory() == AndroidAppCategory.Other)
+                        ? androidAppCategoryOther
+                        : GetAndroidAppCategory().ToString().ToLowerInvariant();
+                }
+                set
+                {
+                    useAndroidAppCategory = !string.IsNullOrWhiteSpace(value);
+
+                    if (!useAndroidAppCategory)
+                        return;
+
+                    if (Enum.TryParse(value.Trim(), ignoreCase: true, out AndroidAppCategory parsed))
+                    {
+                        SetAndroidAppCategory(parsed);
+                        androidAppCategoryOther = "";
+                    }
+                    else
+                    {
+                        SetAndroidAppCategory(AndroidAppCategory.Other);
+                        androidAppCategoryOther = value;
+                    }
+                }
+            }
 
             // Google Tango mixed reality support
             public static extern bool ARCoreEnabled { get; set; }
@@ -423,6 +500,14 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidTargetArchitectures")]
                 get;
                 [NativeMethod("SetAndroidTargetArchitectures")]
+                set;
+            }
+
+            internal static extern AndroidArchitecture allowedArchitectures
+            {
+                [NativeMethod("GetAndroidAllowedArchitectures")]
+                get;
+                [NativeMethod("SetAndroidAllowedArchitectures")]
                 set;
             }
 

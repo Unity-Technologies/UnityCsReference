@@ -5,8 +5,10 @@
 using JetBrains.Annotations;
 using Object = UnityEngine.Object;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using UnityEditor.PackageManager;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
@@ -50,6 +52,9 @@ namespace Unity.UI.Builder
 
         string m_2DSpriteEditorButtonTooltip = k_2DSpriteEditorButtonTooltip_NotInstalled;
 
+        bool m_SupportsImage;
+        bool m_SupportsFont;
+
         public AssetReferenceStyleField() : this(null, true, true) {}
 
         public AssetReferenceStyleField(string label, bool supportImage, bool supportFont) : base(label)
@@ -63,7 +68,10 @@ namespace Unity.UI.Builder
 
             Add(fieldContainer);
 
-            if (supportImage)
+            m_SupportsImage = supportImage;
+            m_SupportsFont = supportFont;
+
+            if (m_SupportsImage)
             {
                 AddType(typeof(Texture2D), "Texture");
                 AddType(typeof(RenderTexture), "Render Texture");
@@ -85,12 +93,26 @@ namespace Unity.UI.Builder
 
                 AddType(typeof(Sprite), "Sprite");
                 AddType(typeof(VectorImage), "Vector");
+
+                objectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>
+                {
+                    typeof(Texture2D),
+                    typeof(RenderTexture),
+                    typeof(Sprite),
+                    typeof(VectorImage)
+                });
             }
 
-            if (supportFont)
+            if (m_SupportsFont)
             {
                 AddType(typeof(FontAsset), "Font Asset");
                 AddType(typeof(Font), "Font");
+
+                objectField.objectFieldDisplay.RegisterDefaultDragAndDrop(new List<Type>
+                {
+                    typeof(Font),
+                    typeof(FontAsset)
+                });
             }
         }
 

@@ -369,8 +369,9 @@ namespace UnityEditor.UIElements
 
                 //we make sure styles have been applied
                 UIElementsEditorUtility.AddDefaultEditorStyleSheets(rootElement);
-                if (EditorTextSettings.currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
-                    rootElement.style.unityEditorTextRenderingMode = new StyleEnum<EditorTextRenderingMode>(EditorTextRenderingMode.Bitmap);
+                rootElement.style.unityEditorTextRenderingMode = EditorTextSettings.GetEditorTextRenderingMode();
+
+                rootElement.style.unityTextGenerator = new StyleEnum<TextGeneratorType>(EditorTextSettings.GetEditorTextGeneratorType());
 
                 rootElement.SetProperty(k_InitializedWindowPropertyName, true);
 

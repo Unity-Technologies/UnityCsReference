@@ -3,44 +3,48 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Collections.Generic;
+using UnityEngine.Bindings;
 using UnityEngine.TextCore.LowLevel;
 
 namespace UnityEngine.TextCore.Text;
 #nullable enable
 
+
+[VisibleToOtherModules("UnityEditor.CoreModule", "UnityEngine.UIElementsModule")]
 internal class FontAssetFactory
 {
-    internal const GlyphRenderMode k_DefaultEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
+    internal const GlyphRenderMode k_SmoothEditorBitmapGlyphRenderMode = GlyphRenderMode.SMOOTH_HINTED;
+    internal const GlyphRenderMode k_RasterEditorBitmapGlyphRenderMode = GlyphRenderMode.RASTER_HINTED;
     static readonly HashSet<FontAsset> visitedFontAssets = new();
 
-    public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, int fontSize)
+    public static FontAsset? CloneFontAssetWithBitmapRendering(FontAsset baseFontAsset, int fontSize, bool isRaster)
     {
         visitedFontAssets.Clear();
-        return CloneFontAssetWithBitmapRenderingInternal(baseFontAsset, fontSize);
+        return CloneFontAssetWithBitmapRenderingInternal(baseFontAsset, fontSize, isRaster);
     }
 
-    static FontAsset? CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, int fontSize)
+    static FontAsset? CloneFontAssetWithBitmapRenderingInternal(FontAsset baseFontAsset, int fontSize, bool isRaster)
     {
         visitedFontAssets.Add(baseFontAsset);
-        FontAsset? resultFontAsset = CloneFontAssetWithBitmapSettings(baseFontAsset, fontSize);
+        FontAsset? resultFontAsset = CloneFontAssetWithBitmapSettings(baseFontAsset, fontSize, isRaster);
 
         if (resultFontAsset != null)
         {
-            ProcessFontWeights(resultFontAsset, baseFontAsset, fontSize);
-            ProcessFallbackFonts(resultFontAsset, baseFontAsset, fontSize);
+            ProcessFontWeights(resultFontAsset, baseFontAsset, fontSize, isRaster);
+            ProcessFallbackFonts(resultFontAsset, baseFontAsset, fontSize, isRaster);
         }
 
         return resultFontAsset;
     }
 
-    static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, int size)
+    static FontAsset? CloneFontAssetWithBitmapSettings(FontAsset source, int size, bool isRaster)
     {
         bool shouldInstantiate = source.atlasRenderMode != GlyphRenderMode.SDFAA || !source.IsEditorFont || source.sourceFontFile == null;
         FontAsset? newFontAsset;
 
         if (source.atlasPopulationMode == AtlasPopulationMode.DynamicOS)
         {
-            newFontAsset = FontAsset.CreateFontAsset(source.faceInfo.familyName, source.faceInfo.styleName, size, 6, k_DefaultEditorBitmapGlyphRenderMode);
+            newFontAsset = FontAsset.CreateFontAsset(source.faceInfo.familyName, source.faceInfo.styleName, size, 6, isRaster ? k_RasterEditorBitmapGlyphRenderMode : k_SmoothEditorBitmapGlyphRenderMode);
             if(newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
         }
         else if (shouldInstantiate) // Color Glyph or Empty Container
@@ -56,30 +60,30 @@ internal class FontAssetFactory
         }
         else
         {
-            newFontAsset = FontAsset.CreateFontAsset(source.sourceFontFile, size, 6, k_DefaultEditorBitmapGlyphRenderMode, source.atlasWidth, source.atlasHeight);
+            newFontAsset = FontAsset.CreateFontAsset(source.sourceFontFile, size, 6, isRaster ? k_RasterEditorBitmapGlyphRenderMode : k_SmoothEditorBitmapGlyphRenderMode, source.atlasWidth, source.atlasHeight);
             if (newFontAsset != null) SetupFontAssetForBitmapSettings(newFontAsset);
         }
 
         return newFontAsset;
     }
 
-    static void ProcessFontWeights(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize)
+    static void ProcessFontWeights(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize, bool isRaster)
     {
         for (int i = 0; i < baseFontAsset.fontWeightTable.Length; i++)
         {
             var fontWeight = baseFontAsset.fontWeightTable[i];
             if (fontWeight.regularTypeface != null)
             {
-                resultFontAsset.fontWeightTable[i].regularTypeface = CloneFontAssetWithBitmapSettings(fontWeight.regularTypeface, fontSize);
+                resultFontAsset.fontWeightTable[i].regularTypeface = CloneFontAssetWithBitmapSettings(fontWeight.regularTypeface, fontSize, isRaster);
             }
             if (fontWeight.italicTypeface != null)
             {
-                resultFontAsset.fontWeightTable[i].italicTypeface = CloneFontAssetWithBitmapSettings(fontWeight.italicTypeface, fontSize);
+                resultFontAsset.fontWeightTable[i].italicTypeface = CloneFontAssetWithBitmapSettings(fontWeight.italicTypeface, fontSize, isRaster);
             }
         }
     }
 
-    static void ProcessFallbackFonts(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize)
+    static void ProcessFallbackFonts(FontAsset resultFontAsset, FontAsset baseFontAsset, int fontSize, bool isRaster)
     {
         if (baseFontAsset.fallbackFontAssetTable == null)
             return;
@@ -90,7 +94,7 @@ internal class FontAssetFactory
             {
                 visitedFontAssets.Add(fallbackFontAsset);
                 resultFontAsset.fallbackFontAssetTable ??= new List<FontAsset>();
-                var newFallbackFontAsset = CloneFontAssetWithBitmapRenderingInternal(fallbackFontAsset, fontSize);
+                var newFallbackFontAsset = CloneFontAssetWithBitmapRenderingInternal(fallbackFontAsset, fontSize, isRaster);
                 if (newFallbackFontAsset)
                     resultFontAsset.fallbackFontAssetTable.Add(newFallbackFontAsset);
             }
@@ -104,7 +108,7 @@ internal class FontAssetFactory
 
         FontAsset? fontAsset = null;
 
-        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+        fontAsset = FontAsset.CreateFontAsset(font, 90, 9, GlyphRenderMode.DEFAULT, 1024, 1024, AtlasPopulationMode.Dynamic, true);
 
         if (fontAsset != null)
             SetupFontAssetSettings(fontAsset);

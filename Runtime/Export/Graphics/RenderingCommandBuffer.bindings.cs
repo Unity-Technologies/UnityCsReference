@@ -849,10 +849,13 @@ namespace UnityEngine.Rendering
         extern private void EnableMaterialKeyword(Material material, LocalKeyword keyword);
         [FreeFunction("RenderingCommandBuffer_Bindings::EnableComputeKeyword", HasExplicitThis = true)]
         extern private void EnableComputeKeyword(ComputeShader computeShader, LocalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::EnableRayTracingKeyword", HasExplicitThis = true)]
+        extern private void EnableRayTracingKeyword(RayTracingShader rayTracingShader, LocalKeyword keyword);
 
         public void EnableKeyword(in GlobalKeyword keyword) { EnableGlobalKeyword(keyword); }
         public void EnableKeyword(Material material, in LocalKeyword keyword) { EnableMaterialKeyword(material, keyword); }
         public void EnableKeyword(ComputeShader computeShader, in LocalKeyword keyword) { EnableComputeKeyword(computeShader, keyword); }
+        public void EnableKeyword(RayTracingShader rayTracingShader, in LocalKeyword keyword) { EnableRayTracingKeyword(rayTracingShader, keyword); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::DisableShaderKeyword", HasExplicitThis = true)]
         extern public void DisableShaderKeyword(string keyword);
@@ -863,10 +866,13 @@ namespace UnityEngine.Rendering
         extern private void DisableMaterialKeyword(Material material, LocalKeyword keyword);
         [FreeFunction("RenderingCommandBuffer_Bindings::DisableComputeKeyword", HasExplicitThis = true)]
         extern private void DisableComputeKeyword(ComputeShader computeShader, LocalKeyword keyword);
+        [FreeFunction("RenderingCommandBuffer_Bindings::DisableRayTracingKeyword", HasExplicitThis = true)]
+        extern private void DisableRayTracingKeyword(RayTracingShader rayTracingShader, LocalKeyword keyword);
 
         public void DisableKeyword(in GlobalKeyword keyword) { DisableGlobalKeyword(keyword); }
         public void DisableKeyword(Material material, in LocalKeyword keyword) { DisableMaterialKeyword(material, keyword); }
         public void DisableKeyword(ComputeShader computeShader, in LocalKeyword keyword) { DisableComputeKeyword(computeShader, keyword); }
+        public void DisableKeyword(RayTracingShader rayTracingShader, in LocalKeyword keyword) { DisableRayTracingKeyword(rayTracingShader, keyword); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetShaderKeyword", HasExplicitThis = true)]
         extern private void SetGlobalKeyword(GlobalKeyword keyword, bool value);
@@ -874,10 +880,13 @@ namespace UnityEngine.Rendering
         extern private void SetMaterialKeyword(Material material, LocalKeyword keyword, bool value);
         [FreeFunction("RenderingCommandBuffer_Bindings::SetComputeKeyword", HasExplicitThis = true)]
         extern private void SetComputeKeyword(ComputeShader computeShader, LocalKeyword keyword, bool value);
+        [FreeFunction("RenderingCommandBuffer_Bindings::SetRayTracingKeyword", HasExplicitThis = true)]
+        extern private void SetRayTracingKeyword(RayTracingShader rayTracingShader, LocalKeyword keyword, bool value);
 
         public void SetKeyword(in GlobalKeyword keyword, bool value) { SetGlobalKeyword(keyword, value); }
         public void SetKeyword(Material material, in LocalKeyword keyword, bool value) { SetMaterialKeyword(material, keyword, value); }
         public void SetKeyword(ComputeShader computeShader, in LocalKeyword keyword, bool value) { SetComputeKeyword(computeShader, keyword, value); }
+        public void SetKeyword(RayTracingShader rayTracingShader, in LocalKeyword keyword, bool value) { SetRayTracingKeyword(rayTracingShader, keyword, value); }
 
         [FreeFunction("RenderingCommandBuffer_Bindings::SetViewMatrix", HasExplicitThis = true, ThrowsException = true)]
         extern public void SetViewMatrix(Matrix4x4 view);

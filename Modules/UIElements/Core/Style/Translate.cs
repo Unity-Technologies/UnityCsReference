@@ -11,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a translation of the object. Percentage values in X and Y are relative to the width and height of the visual element where the style value is applied.
     /// </summary>
+    [Serializable]
     public partial struct Translate : IEquatable<Translate>
     {
         /// <undoc/>
@@ -79,9 +80,14 @@ namespace UnityEngine.UIElements
             get => m_Z;
             set => m_Z = value;
         }
+
+        [SerializeField]
         private Length m_X;
+        [SerializeField]
         private Length m_Y;
+        [SerializeField]
         private float m_Z;
+        [SerializeField]
         private bool m_isNone;
 
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

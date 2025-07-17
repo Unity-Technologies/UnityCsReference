@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
                     new (nameof(index), "index"),
                     new (nameof(choices), "choices"),
                     new (nameof(valueOverride), "value"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649

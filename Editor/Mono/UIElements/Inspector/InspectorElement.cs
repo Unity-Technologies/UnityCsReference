@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using Unity.Profiling;
 using UnityEditor.Profiling;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 using Object = UnityEngine.Object;
 
@@ -108,6 +110,12 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : BindableElement.UxmlSerializedData
         {
             public override object CreateInstance() => new InspectorElement();
+
+            [System.Diagnostics.Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
+            }
         }
 
         /// <summary>
@@ -540,15 +548,45 @@ namespace UnityEditor.UIElements
         }
 
         /// <summary>
-        /// Adds default inspector property fields under a container VisualElement
+        /// Adds default inspector property fields under a container VisualElement.
         /// </summary>
         /// <param name="container">The parent VisualElement</param>
         /// <param name="serializedObject">The SerializedObject to inspect</param>
         /// <param name="editor">The editor currently used</param>
-        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, Editor editor)
+        /// <example>
+        /// The following example shows how to fill a container with default inspector fields.
+        /// For a complete example, refer to [[wiki:ui-systems/create-default-inspector|Create a default Inspector]].
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/InspectorElement_Example.cs"/>
+        /// </example>
+        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, Editor editor) => FillDefaultInspector(container, serializedObject, editor, Array.Empty<string>());
+
+        /// <summary>
+        /// Adds default inspector property fields under a container VisualElement.
+        /// </summary>
+        /// <param name="container">The parent VisualElement.</param>
+        /// <param name="serializedObject">The SerializedObject to inspect.</param>
+        /// <param name="editor">The Editor currently used.</param>
+        /// <param name="propertiesToExclude">Properties to exclude when populating the Inspector. Properties with name matching <see cref="SerializedProperty.name"/> are skipped.</param>
+        /// <example>
+        /// The following example shows how to fill a container with default Inspector fields.
+        /// For a complete example, refer to [[wiki:ui-systems/create-default-inspector|Create a default Inspector]].
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/InspectorElement_Example.cs"/>
+        /// </example>
+        /// <example>
+        /// The following example shows how to fill a container with default Inspector fields, excluding a specific property that is displayed as a Slider.
+        /// <code source="../../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/InspectorElement_ExampleExclude.cs"/>
+        /// </example>
+        public static void FillDefaultInspector(VisualElement container, SerializedObject serializedObject, Editor editor, params string[] propertiesToExclude)
         {
             if (serializedObject == null)
                 return;
+
+            HashSet<string> propertiesToExcludeHash = null;
+            if (propertiesToExclude?.Length > 0)
+            {
+                propertiesToExcludeHash = HashSetPool<string>.Get();
+                propertiesToExcludeHash.UnionWith(propertiesToExclude);
+            }
 
             bool isPartOfPrefabInstance = editor != null && GenericInspector.IsAnyMonoBehaviourTargetPartOfPrefabInstance(editor);
 
@@ -557,6 +595,9 @@ namespace UnityEditor.UIElements
             {
                 do
                 {
+                    if (propertiesToExcludeHash?.Contains(property.name) == true)
+                        continue;
+
                     var field = new PropertyField(property)
                     {
                         name = "PropertyField:" + property.propertyPath
@@ -576,7 +617,7 @@ namespace UnityEditor.UIElements
                 while (property.NextVisible(false));
             }
 
-            if (serializedObject.targetObject == null)
+            if (serializedObject.targetObject == null && propertiesToExcludeHash?.Contains("m_Script") != true)
             {
                 var scriptProperty = serializedObject.FindProperty("m_Script");
 
@@ -594,6 +635,9 @@ namespace UnityEditor.UIElements
                     container.Add(noScriptErrorContainer);
                 }
             }
+
+            if (propertiesToExcludeHash != null)
+                HashSetPool<string>.Release(propertiesToExcludeHash);
         }
 
         VisualElement CreateInspectorElementUsingUIToolkit(Editor targetEditor)

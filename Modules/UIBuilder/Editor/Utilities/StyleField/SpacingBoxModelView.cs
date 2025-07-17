@@ -50,6 +50,7 @@ namespace Unity.UI.Builder
         private VisualElement m_CenterSpacer = new VisualElement();
 
         private BuilderInspector m_Inspector;
+        private bool m_IsActivelyDragging;
 
         [Serializable]
         public new class UxmlSerializedData : VisualElement.UxmlSerializedData
@@ -150,6 +151,8 @@ namespace Unity.UI.Builder
             m_Container.Add(m_Layer2);
             Add(m_Container);
 
+            RegisterCallback<MouseCaptureEvent>(OnMouseCapture);
+            RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOut);
             RegisterCallback<MouseOutEvent>(OnMouseOut);
             RegisterCallback<GeometryChangedEvent>(OnFirstDisplay);
             
@@ -183,17 +186,23 @@ namespace Unity.UI.Builder
             m_MarginBox.background.visible = boxType != BoxType.Margin;
             evt.StopPropagation();
         }
-        
+
         private void OnMouseOut(MouseOutEvent evt)
+        {
+            if (!m_IsActivelyDragging)
+                RemoveHoverStyle();
+            evt.StopPropagation();
+        }
+
+        private void RemoveHoverStyle()
         {
             m_MarginBox.background.visible = true;
             m_MarginBox.EnableInClassList(k_MouseOverClassName, false);
             m_BorderBox.EnableInClassList(k_MouseOverClassName, false);
             m_PaddingBox.EnableInClassList(k_MouseOverClassName, false);
             m_ContentBox.EnableInClassList(k_MouseOverClassName, false);
-            evt.StopPropagation();
         }
-        
+
         private void OnMouseEnter(MouseEnterEvent evt)
         {
             m_Inspector.highlightOverlayPainter.ClearOverlay();
@@ -203,9 +212,25 @@ namespace Unity.UI.Builder
         
         private void OnMouseLeave(MouseLeaveEvent evt)
         {
-            m_Inspector.highlightOverlayPainter.ClearOverlay();
+            if (!m_IsActivelyDragging)
+                m_Inspector.highlightOverlayPainter.ClearOverlay();
         }
-        
+
+        private void OnMouseCapture(MouseCaptureEvent evt)
+        {
+            m_IsActivelyDragging = true;
+        }
+
+        private void OnMouseCaptureOut(MouseCaptureOutEvent evt)
+        {
+            m_IsActivelyDragging = false;
+            if ((pseudoStates & PseudoStates.Hover) == 0)
+            {
+                m_Inspector.highlightOverlayPainter.ClearOverlay();
+                RemoveHoverStyle();
+            }
+        }
+
         void OnFirstDisplay(GeometryChangedEvent evt)
         {
             m_Inspector = GetFirstAncestorOfType<BuilderInspector>();

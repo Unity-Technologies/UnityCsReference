@@ -13,6 +13,7 @@ using Unity.Profiling.LowLevel;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Profiling;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Profiling
@@ -341,6 +342,9 @@ namespace UnityEditor.Profiling
 
         [NativeMethod(IsThreadSafe = true)]
         public extern double GetCounterValueAsDouble(int markerId);
+
+        [NativeMethod(IsThreadSafe = true)]
+        internal extern float GetLegacyStatisticValueAsFloat(ProfilerArea area, string name);
 
         [StructLayout(LayoutKind.Sequential)]
         [RequiredByNativeCode]

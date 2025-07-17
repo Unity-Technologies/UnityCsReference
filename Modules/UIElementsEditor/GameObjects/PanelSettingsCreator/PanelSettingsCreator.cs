@@ -74,5 +74,12 @@ namespace UnityEditor.UIElements
             settings.AssignICUData();
             ProjectWindowUtil.CreateAsset(settings, "New Panel Settings.asset");
         }
+
+        [MenuItem("Assets/Create/UI Toolkit/Filter Function Definition", priority = 703)]
+        static void CreateFilterFunctionDefinition()
+        {
+            var registry = ScriptableObject.CreateInstance<FilterFunctionDefinition>();
+            ProjectWindowUtil.CreateAsset(registry, "New Filter Function Definition.asset");
+        }
     }
 }

@@ -141,6 +141,7 @@ namespace UnityEngine.UIElements
         public VisualTreeAsset visualTreeAssetSource
         {
             get => m_VisualTreeAssetSource;
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
             internal set => m_VisualTreeAssetSource = value;
         }
 
@@ -183,6 +184,14 @@ namespace UnityEngine.UIElements
             child.m_LogicalParent = this;
         }
 
+        internal void Add(VisualElement child, bool ignoreContentContainer)
+        {
+            if (ignoreContentContainer)
+                hierarchy.Add(child);
+            else
+                Add(child);
+        }
+
         /// <summary>
         /// Insert an element into this element's contentContainer
         /// </summary>
@@ -203,6 +212,14 @@ namespace UnityEngine.UIElements
             }
 
             element.m_LogicalParent = this;
+        }
+
+        internal void Insert(int index, VisualElement element, bool ignoreContentContainer)
+        {
+            if (ignoreContentContainer)
+                hierarchy.Insert(index, element);
+            else
+                Insert(index, element);
         }
 
         /// <summary>
@@ -308,6 +325,13 @@ namespace UnityEngine.UIElements
             }
         }
 
+        internal int ChildCount(bool ignoreContentContainer)
+        {
+            if (ignoreContentContainer)
+                return hierarchy.childCount;
+            return childCount;
+        }
+
         /// <summary>
         /// Retrieves the child index of the specified VisualElement.
         /// </summary>
@@ -320,6 +344,13 @@ namespace UnityEngine.UIElements
                 return hierarchy.IndexOf(element);
             }
             return contentContainer?.IndexOf(element) ?? -1;
+        }
+
+        internal int IndexOf(VisualElement element, bool ignoreContentContainer)
+        {
+            if (ignoreContentContainer)
+                return hierarchy.IndexOf(element);
+            return IndexOf(element);
         }
 
         /// <summary>
@@ -537,7 +568,7 @@ namespace UnityEngine.UIElements
                     m_Owner.m_Children = VisualElementListPool.Get();
                 }
 
-                if (m_Owner.layoutNode.IsMeasureDefined)
+                if (m_Owner.layoutNode.UsesMeasure)
                 {
                     m_Owner.RemoveMeasureFunction();
                 }

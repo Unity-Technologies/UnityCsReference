@@ -5,6 +5,7 @@
 using System;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.UIElements.StyleSheets;
 
 namespace UnityEngine.UIElements
 {
@@ -26,6 +27,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a time value.
     /// </summary>
+    [Serializable]
     public partial struct TimeValue : IEquatable<TimeValue>
     {
         /// <summary>
@@ -85,7 +87,9 @@ namespace UnityEngine.UIElements
             m_Unit = unit;
         }
 
+        [SerializeField]
         private float m_Value;
+        [SerializeField]
         private TimeUnit m_Unit;
 
         /// <undoc/>
@@ -140,6 +144,62 @@ namespace UnityEngine.UIElements
                     break;
             }
             return $"{valueStr}{unitStr}";
+        }
+
+        internal static bool TryParseString(string str, out TimeValue timeValue)
+        {
+            timeValue = default;
+
+            if (string.IsNullOrEmpty(str))
+                return false;
+
+            var s = str.AsSpan().Trim();
+
+            // Find unit index
+            int digitEndIndex = 0;
+            int unitIndex = -1;
+            for (int i = 0; i < s.Length; i++)
+            {
+                var c = s[i];
+                if (char.IsNumber(c) || c == '.')
+                {
+                    ++digitEndIndex;
+                }
+                else if (char.IsLetter(c))
+                {
+                    unitIndex = i;
+                    break;
+                }
+                else
+                {
+                    // Invalid format
+                    return false;
+                }
+            }
+
+            var floatStr = s.Slice(0, digitEndIndex);
+            var unitStr = new ReadOnlySpan<char>();
+            if (unitIndex > 0)
+                unitStr = s.Slice(unitIndex, s.Length - unitIndex);
+            else
+                unitStr = "s";
+
+            // Note: ideally we would not specify NumberStyle settings, but there is no API that allows
+            // it while also defining which culture to use. The value used here is the right default for float
+            // (looking at source code from Mono & CoreCLR)
+            if (StylePropertyUtil.TryParseFloat(floatStr, out var v))
+                timeValue.value = v;
+
+            if (unitStr.Equals("ms", StringComparison.OrdinalIgnoreCase))
+            {
+                timeValue.unit = TimeUnit.Millisecond;
+            }
+            else if (unitStr.Equals("s", StringComparison.OrdinalIgnoreCase))
+            {
+                timeValue.unit = TimeUnit.Second;
+            }
+
+            return true;
         }
     }
 }

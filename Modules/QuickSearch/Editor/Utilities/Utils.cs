@@ -29,6 +29,7 @@ using UnityEditor.StyleSheets;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.Entities.Editor.Tests")]
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.ShaderVariant.Editor")]
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Unity.RenderPipelines.Universal.Editor")]
 
 namespace UnityEditor.Search
 {
@@ -227,7 +228,7 @@ namespace UnityEditor.Search
 
         public static int GetMainAssetInstanceID(string assetPath)
         {
-            return AssetDatabase.GetMainAssetInstanceID(assetPath);
+            return (int)AssetDatabase.GetMainAssetEntityId(assetPath);
         }
 
         internal static GUIContent GUIContentTemp(string text, string tooltip)
@@ -611,7 +612,7 @@ namespace UnityEditor.Search
 
         public static void PingAsset(string assetPath)
         {
-            EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetInstanceID(assetPath));
+            EditorGUIUtility.PingObject(AssetDatabase.GetMainAssetEntityId(assetPath));
         }
 
         internal static T ConvertValue<T>(string value)
@@ -824,56 +825,34 @@ namespace UnityEditor.Search
         internal const string k_FloatQueryFormatter = "G8";
         internal const string k_DoubleQueryFormatter = "G8";
 
-        // TODO Number: due to conversion from float to double, we need this epsilon. It is smaller than float epsilon for a reason.
-        internal const double k_DoubleEpsilon = 1E-7;
-        internal const float k_FloatEpsilon = 1E-8f;
+        // We use 5E-7 for halfway point, because unity rounds to the nearest 7 digits in the inspector.
+        internal const double k_DoubleEpsilon = 5E-7;
+        internal const float k_FloatEpsilon = 5E-7f;
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static float GetEpsilon(float a, float b)
         {
-            // TODO Number: Dynamic epsilon: float have 7 significant digits. If we want to be able to do proper float comparison we need a dynamic epsilon that scales.
             var max = Mathf.Max(Mathf.Abs(a), Mathf.Abs(b));
-            if (max < 1)
+            if (max == 0.0f)
                 return k_FloatEpsilon;
-            if (max < 10)
-                return 1E-7f;
-            if (max < 100)
-                return 1E-6f;
-            if (max < 1000)
-                return 1E-5f;
-            if (max < 10000)
-                return 1E-4f;
-            if (max < 100000)
-                return 1E-3f;
-            if (max < 1000000)
-                return 1E-2f;
-            if (max < 10000000)
-                return 1E-1f;
-            return k_FloatEpsilon;
+
+            var log = Mathf.Log10(max);
+            log = Mathf.Floor(log);
+            max = Mathf.Pow(10, log);
+            return max * k_FloatEpsilon;
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
         public static double GetEpsilon(double a, double b)
         {
-            // TODO Number: All our comparisons are against float converted to double. Use an epsilon that accomodates this conversion
             var max = Math.Max(Math.Abs(a), Math.Abs(b));
-            if (max < 1)
+            if (max == 0.0d)
                 return k_DoubleEpsilon;
-            if (max < 10)
-                return 1E-7;
-            if (max < 100)
-                return 1E-6;
-            if (max < 1000)
-                return 1E-5;
-            if (max < 10000)
-                return 1E-4;
-            if (max < 100000)
-                return 1E-3;
-            if (max < 1000000)
-                return 1E-2;
-            if (max < 10000000)
-                return 1E-1;
-            return k_DoubleEpsilon;
+
+            var log = Math.Log10(max);
+            log = Math.Floor(log);
+            max = Math.Pow(10, log);
+            return max * k_DoubleEpsilon;
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
@@ -1186,6 +1165,14 @@ namespace UnityEditor.Search
             return true;
         }
 
+        internal static bool TryParseRange(in object value, out PropertyRange range)
+        {
+            range = default;
+            if (value is not string s)
+                return false;
+            return TryParseRange(s, out range);
+        }
+
         public static bool TryParse<T>(string expression, out T result, bool supportNamedNumber = true)
         {
             expression = expression.Replace(',', '.');
@@ -1266,15 +1253,6 @@ namespace UnityEditor.Search
                 text = text.Substring(0, Math.Min(text.Length, maxLength) - 1) + "\u2026";
             }
             return text;
-        }
-
-        public static ulong GetHashCode64(this string strText)
-        {
-            if (string.IsNullOrEmpty(strText))
-                return 0;
-            var s1 = (ulong)strText.Substring(0, strText.Length / 2).GetHashCode();
-            var s2 = (ulong)strText.Substring(strText.Length / 2).GetHashCode();
-            return s1 << 32 | s2;
         }
 
         public static string RemoveInvalidCharsFromPath(string path, char repl = '/')
@@ -1559,6 +1537,35 @@ namespace UnityEditor.Search
                 shortcutBinding = ShortcutBinding.empty;
             }
             return shortcutBinding;
+        }
+
+        public static void EnumerateIndexedTypesAndInterfaces(Type objType, bool isPrefabDocument, Action<string, bool> onEnumeration)
+        {
+            if (objType != null)
+            {
+                var interfaceTypes = objType.GetInterfaces();
+                foreach (var interfaceType in interfaceTypes)
+                {
+                    var shortName = interfaceType.Name;
+                    onEnumeration(shortName, false);
+                    if (!string.IsNullOrEmpty(interfaceType.FullName) && interfaceType.FullName != shortName)
+                        onEnumeration(interfaceType.FullName, true);
+                }
+            }
+
+            while (objType != null && objType != typeof(UnityEngine.Object) && objType != typeof(MonoBehaviour) && objType != typeof(Behaviour))
+            {
+                if (isPrefabDocument && objType == typeof(GameObject))
+                    onEnumeration("prefab", true);
+                else if (objType == typeof(MonoScript))
+                    onEnumeration("script", true);
+
+                var shortName = objType.Name;
+                onEnumeration(shortName, false);
+                if (!string.IsNullOrEmpty(objType.FullName) && objType.FullName != shortName)
+                    onEnumeration(objType.FullName, true);
+                objType = objType.BaseType;
+            }
         }
     }
 

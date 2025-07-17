@@ -198,6 +198,9 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::GetPropertyNames", HasExplicitThis = true)]
         extern private string[] GetPropertyNamesImpl(int propertyType);
 
+        [FreeFunction("MaterialScripting::GetPropertyCount", HasExplicitThis = true)]
+        extern internal int GetPropertyCount();
+
         extern public int ComputeCRC();
 
         [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]

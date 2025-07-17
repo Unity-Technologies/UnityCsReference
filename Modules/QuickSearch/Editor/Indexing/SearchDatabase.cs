@@ -5,6 +5,7 @@
 //#define DEBUG_INDEXING
 //#define DEBUG_LOG_CHANGES
 //#define DEBUG_RESOLVING
+//#define INCREMENTAL_UPDATE_REPORT
 
 using System;
 using System.Collections.Concurrent;
@@ -13,6 +14,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using UnityEditor.Experimental;
+using UnityEditor.Profiling;
 using UnityEngine;
 
 namespace UnityEditor.Search
@@ -102,10 +104,15 @@ namespace UnityEditor.Search
 
             public override int GetHashCode()
             {
-                return (types ? (int)IndexingOptions.Types        : 0) |
-                    (properties ? (int)IndexingOptions.Properties   : 0) |
-                    (extended ? (int)IndexingOptions.Extended     : 0) |
-                    (dependencies ? (int)IndexingOptions.Dependencies : 0);
+                return GetHashCode(types, properties, extended, dependencies);
+            }
+
+            internal static int GetHashCode(bool types, bool properties, bool extended, bool dependencies)
+            {
+                return (types ? (int)IndexingOptions.Types : 0) |
+                       (properties ? (int)IndexingOptions.Properties : 0) |
+                       (extended ? (int)IndexingOptions.Extended : 0) |
+                       (dependencies ? (int)IndexingOptions.Dependencies : 0);
             }
         }
 
@@ -175,7 +182,7 @@ namespace UnityEditor.Search
         {
             get
             {
-                if (string.IsNullOrEmpty(settings.name))
+                if (settings == null || string.IsNullOrEmpty(settings.name))
                     return base.name;
                 return settings.name;
             }
@@ -253,12 +260,29 @@ namespace UnityEditor.Search
         [NonSerialized] private ConcurrentBag<AssetIndexChangeSet> m_UpdateQueue = new ConcurrentBag<AssetIndexChangeSet>();
         [NonSerialized] private ReaderWriterLockSlim m_ImmutableLock = new(LockRecursionPolicy.SupportsRecursion);
 
+        private int m_IndexingRequestTrackerId;
+        private int m_IncrementalIndexingRequestTrackerId;
+
         public ObjectIndexer index { get; internal set; }
         public bool loaded { get; private set; }
         public bool ready => this && loaded && index != null && index.IsReady() && LoadingState == LoadState.Complete;
         public bool updating => m_UpdateTasks > 0 || !loaded || m_CurrentResolveTask != null || !ready;
+
+        // TODO: It might be possible that m_UpdateQueue.Count == 0 while an incrementalUpdate task is still in the Dispatcher.
         public bool needsUpdate => !m_UpdateQueue.IsEmpty;
-        public string path => m_IndexSettingsPath ?? AssetDatabase.GetAssetPath(this);
+        public string path
+        {
+            get
+            {
+                if (m_IndexSettingsPath != null)
+                    return m_IndexSettingsPath;
+                var adbPath = AssetDatabase.GetAssetPath(this);
+                if (!string.IsNullOrEmpty(adbPath))
+                    return adbPath;
+                return defaultSearchDatabaseIndexPath;
+            }
+        }
+
         public LoadState LoadingState { get; private set; } = LoadState.Loading;
 
         internal enum AfterPlayModeUpdate
@@ -273,7 +297,7 @@ namespace UnityEditor.Search
         internal static event Action<SearchDatabase> indexLoaded;
         internal static List<SearchDatabase> s_DBs;
 
-        public static SearchDatabase Create(string settingsPath)
+        private static SearchDatabase Create(string settingsPath)
         {
             var db = CreateInstance<SearchDatabase>();
             db.hideFlags |= HideFlags.DontUnloadUnusedAsset | HideFlags.DontSaveInEditor;
@@ -291,6 +315,8 @@ namespace UnityEditor.Search
         {
             LoadingState = LoadState.Loading;
             loaded = false;
+
+            m_IndexingRequestTrackerId = EditorPerformanceTracker.StartTracker("SearchImporter.IndexingRequest");
 
             using var writeLockScope = new TryWriteLockScope(m_ImmutableLock);
             if (!writeLockScope.locked)
@@ -346,29 +372,34 @@ namespace UnityEditor.Search
             });
         }
 
+        public static SearchDatabase GetDefaultSearchDatabase()
+        {
+            return EnumerateAll().First();
+        }
+
         public static IEnumerable<SearchDatabase> EnumerateAll()
         {
             if (s_DBs == null || s_DBs.Count == 0)
             {
                 s_DBs = new List<SearchDatabase>();
+                var dbs = Resources.FindObjectsOfTypeAll<SearchDatabase>();
+                foreach (var db in dbs)
+                {
+                    if (db.path == defaultSearchDatabaseIndexPath)
+                    {
+                        s_DBs.Add(db);
+                        break;
+                    }
+                }
 
-                string searchDataFindAssetQuery = $"t:{nameof(SearchDatabase)}";
-                var dbPaths = AssetDatabase.FindAssets(searchDataFindAssetQuery).Select(AssetDatabase.GUIDToAssetPath)
-                    .OrderByDescending(p => Path.GetFileNameWithoutExtension(p));
-
-                s_DBs.AddRange(dbPaths
-                    .Select(path => AssetDatabase.LoadAssetAtPath<SearchDatabase>(path))
-                    .Where(db => db));
-
-                AddDefaultIndexDatabaseIfNeeded(s_DBs, defaultSearchDatabaseIndexPath);
-
-                SearchMonitor.contentRefreshed -= TrackAssetIndexChanges;
-                SearchMonitor.contentRefreshed += TrackAssetIndexChanges;
+                if (s_DBs.Count == 0)
+                {
+                    AddDefaultIndexDatabaseIfNeeded(s_DBs, defaultSearchDatabaseIndexPath);
+                }
             }
 
-            foreach (var g in s_DBs.Where(db => db).GroupBy(db => db.ready).OrderBy(g => !g.Key))
-                foreach (var db in g.OrderBy(db => db.settings.baseScore))
-                    yield return db;
+            // Force single index.
+            yield return s_DBs[0];
         }
 
         internal static void AddDefaultIndexDatabaseIfNeeded(List<SearchDatabase> dbs, string defaultSearchDatabasePath)
@@ -398,9 +429,6 @@ namespace UnityEditor.Search
 
         internal static void SetupDefaultIndexFirstUse(string defaultSearchDatabasePath)
         {
-            if (SearchSettings.onBoardingDoNotAskAgain || Utils.IsRunningTests())
-                return;
-
             if (EditorApplication.isPlayingOrWillChangePlaymode)
                 return;
 
@@ -414,59 +442,72 @@ namespace UnityEditor.Search
             SearchSettings.Save();
         }
 
-        private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
+        internal static bool SupportsExtendedIndexing(string assetPath)
         {
-            return paths.Where(u => u.EndsWith(".index", StringComparison.OrdinalIgnoreCase));
+            return assetPath.EndsWith(".prefab") || assetPath.EndsWith(".unity");
         }
 
-        private static void TrackAssetIndexChanges(string[] updated, string[] deleted, string[] moved)
+        internal static int GetImporterHashCode(Settings settings, string assetPath)
         {
-            if (s_DBs == null)
-                return;
+            var importerHashCode = SupportsExtendedIndexing(assetPath)
+                ? settings.options.GetHashCode()
+                // Note: When indexing asset that is NOT a scene or prefabs, be sure to always index without extended.
+                : Options.GetHashCode(settings.options.types, settings.options.properties, extended: false, settings.options.dependencies);
+            return importerHashCode;
+        }
 
-            bool updateViews = false;
-            foreach (var p in FilterIndexes(deleted))
+        internal static Type GetIndexImporterTypeForAsset(Settings settings, string assetPath)
+        {
+            var importerHashCode = GetImporterHashCode(settings, assetPath);
+            return SearchIndexEntryImporter.GetIndexImporterType(importerHashCode);
+        }
+
+        internal static string GetIndexTypeSuffix(Settings settings, string assetPath)
+        {
+            var importHashCode = assetPath == null ? settings.options.GetHashCode() : GetImporterHashCode(settings, assetPath);
+            return $"{importHashCode:X}.index".ToLowerInvariant();
+        }
+
+        internal static void ForceRebuildIndex(SearchDatabase db)
+        {
+            var settings = db.settings;
+            MakeIndexImporterDirty(settings.options.types, settings.options.properties, settings.options.extended, settings.options.dependencies);
+            if (settings.options.extended)
             {
-                var db = Find(p);
-                if (db)
-                {
-                    updateViews = s_DBs.Remove(db);
-                    Unload(db);
-                }
+                MakeIndexImporterDirty(settings.options.types, settings.options.properties, false, settings.options.dependencies);
             }
 
-            foreach (var p in FilterIndexes(updated))
-            {
-                var db = Find(p);
-                if (db)
-                    continue;
-                s_DBs.Add(AssetDatabase.LoadAssetAtPath<SearchDatabase>(p));
-                updateViews |= true;
-            }
+            AssetDatabase.Refresh();
+            SearchDatabase.ImportAsset(db.path, true);
+        }
 
-            foreach (var p in FilterIndexes(moved))
-            {
-                var db = Find(p);
-                if (db)
-                    continue;
-                s_DBs.Add(AssetDatabase.LoadAssetAtPath<SearchDatabase>(p));
-                updateViews |= true;
-            }
+        internal static void MakeIndexImporterDirty(bool types, bool properties, bool extended, bool dependencies)
+        {
+            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(Options.GetHashCode(types, properties, extended, dependencies));
+            var customDependencyName = SearchIndexEntryImporter.GetCustomDependencyName(indexImporterType);
+            AssetDatabaseAPI.RegisterCustomDependency(customDependencyName, Hash128.Parse(Guid.NewGuid().ToString("N")));
+        }
 
-            if (updateViews || s_DBs.RemoveAll(db => !db) > 0)
-            {
-                EditorApplication.delayCall -= SearchService.RefreshWindows;
-                EditorApplication.delayCall += SearchService.RefreshWindows;
-                Dispatcher.Emit(SearchEvent.SearchIndexesChanged, new SearchEventPayload(new HeadlessSearchViewState(), updated, deleted, moved));
-            }
-
-            Providers.FindProvider.Update(updated, deleted, moved);
+        private static IEnumerable<string> FilterIndexes(IEnumerable<string> paths)
+        {
+            return paths.Where(u => u == defaultSearchDatabaseIndexPath);
         }
 
         public static Settings LoadSettings(string settingsPath)
         {
             var settingsJSON = File.ReadAllText(settingsPath);
-            var indexSettings = JsonUtility.FromJson<Settings>(settingsJSON);
+            Settings indexSettings = null;
+            try
+            {
+                indexSettings = JsonUtility.FromJson<Settings>(settingsJSON);
+            }
+            finally
+            {
+                if (indexSettings == null)
+                {
+                    indexSettings = JsonUtility.FromJson<Settings>(SearchDatabaseTemplates.@default);
+                }
+            }
 
             indexSettings.source = settingsPath;
             indexSettings.guid = GetDbGuid(settingsPath);
@@ -478,6 +519,11 @@ namespace UnityEditor.Search
         }
 
         public static ObjectIndexer CreateIndexer(Settings settings, string settingsPath = null)
+        {
+            return CreateIndexer(settings, settingsPath, new SearchIndexEntryStorage());
+        }
+
+        public static ObjectIndexer CreateIndexer(Settings settings, string settingsPath, ISearchIndexerStorage storage)
         {
             // Fix the settings root if needed
             if (!String.IsNullOrEmpty(settingsPath))
@@ -495,7 +541,7 @@ namespace UnityEditor.Search
                     settings.options.extended = true;
             }
 
-            return new AssetIndexer(settings);
+            return new AssetIndexer(settings, storage);
         }
 
         public void Import(string settingsPath)
@@ -509,11 +555,16 @@ namespace UnityEditor.Search
 
         private static SearchDatabase Find(string path)
         {
-            return EnumerateAll().Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+            if (s_DBs == null)
+                return null;
+            return s_DBs.Where(db => string.Equals(db.path, path, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
         }
 
         public static SearchDatabase ImportAsset(string settingsPath, bool forceUpdate = false)
         {
+            if (settingsPath != defaultSearchDatabaseIndexPath)
+                return null;
+
             var currentDb = Find(settingsPath);
             if (currentDb)
                 currentDb.DeleteBackupIndex();
@@ -541,7 +592,6 @@ namespace UnityEditor.Search
                 DestroyImmediate(db);
         }
 
-
         internal void OnEnable()
         {
             EditorApplication.playModeStateChanged -= OnPlayModeChanged;
@@ -555,7 +605,6 @@ namespace UnityEditor.Search
                 LoadingState = LoadState.Error;
                 return;
             }
-
             // In the off chance we call OnEnable on an existing SearchDatabase.
             index?.Dispose();
             index = CreateIndexer(settings, path);
@@ -631,7 +680,8 @@ namespace UnityEditor.Search
                 loadTask.Report($"Loading {indexPath}...", -1);
                 var fileBytes = File.ReadAllBytes(indexPath);
 
-                var newIndex = new AssetIndexer(settings);
+                // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
+                var newIndex = new AssetIndexer(settings, new SearchIndexEntryStorage());
                 IncrementLoadBytes(fileBytes, loadTask, newIndex, $"Failed to load {indexPath}.");
             });
         }
@@ -665,14 +715,9 @@ namespace UnityEditor.Search
             });
         }
 
-        private string GetIndexTypeSuffix()
-        {
-            return $"{settings.options.GetHashCode():X}.index".ToLowerInvariant();
-        }
-
         internal ArtifactKey GetAssetArtifactKey(string assetPath)
         {
-            var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
+            var indexImporterType = GetIndexImporterTypeForAsset(settings, assetPath);
             var artifact = new IndexArtifact(assetPath, AssetDatabase.GUIDFromAssetPath(assetPath), indexImporterType);
             return artifact.key;
         }
@@ -680,7 +725,6 @@ namespace UnityEditor.Search
         private bool ResolveArtifactPaths(in IList<IndexArtifact> artifacts, out List<IndexArtifact> unresolvedArtifacts, Task task, ref int completed)
         {
             var inProductionCount = 0;
-            var artifactIndexSuffix = "." + GetIndexTypeSuffix();
 
             task.Report($"Resolving {artifacts.Count} artifacts...");
             unresolvedArtifacts = new List<IndexArtifact>((int)(artifacts.Count / 1.5f));
@@ -729,6 +773,7 @@ namespace UnityEditor.Search
                 }
                 else if (GetArtifactPaths(a.value, out var paths))
                 {
+                    var artifactIndexSuffix = "." + GetIndexTypeSuffix(settings, a.source);
                     a.path = paths.LastOrDefault(p => p.EndsWith(artifactIndexSuffix, StringComparison.Ordinal));
                     if (a.path == null)
                         ReportWarning(a, artifactIndexSuffix, paths);
@@ -806,7 +851,7 @@ namespace UnityEditor.Search
             return false;
         }
 
-        private double GetArtifactResolutionCheckDelay(int artifactCount)
+        private static double GetArtifactResolutionCheckDelay(int artifactCount)
         {
             if (UnityEditorInternal.InternalEditorUtility.isHumanControllingUs)
                 return Math.Max(0.5, Math.Min(artifactCount / 1000.0, 3.0));
@@ -819,7 +864,8 @@ namespace UnityEditor.Search
                 return;
 
             // Combine all search index artifacts into one large binary stream.
-            var combineIndexer = new SearchIndexer();
+            // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
+            var combineIndexer = new SearchIndexer(String.Empty, new SearchIndexEntryStorage());
             var indexName = settings.name.ToLowerInvariant();
             task.Report("Loading artifacts...", 0);
             var artifactDbs = EnumerateSearchArtifactsDirect(artifacts, task);
@@ -852,7 +898,8 @@ namespace UnityEditor.Search
                 if (a == null || a.path == null)
                     continue;
 
-                var si = new SearchIndexer(Path.GetFileName(a.source));
+                // Note about Storage: Since we are trying to read an index written on disk, assume it is SearchIndexEntryStorage
+                var si = new SearchIndexer(Path.GetFileName(a.source), new SearchIndexEntryStorage());
                 if (!si.ReadIndexFromDisk(a.path))
                     continue;
 
@@ -934,6 +981,12 @@ namespace UnityEditor.Search
                 return;
             }
 
+            if (m_IndexingRequestTrackerId != 0)
+            {
+                EditorPerformanceTracker.StopTracker(m_IndexingRequestTrackerId);
+            }
+            m_IndexingRequestTrackerId = 0;
+
             // Is it considered loaded if there are any pending updates?
             loaded = true;
             LoadingState = LoadState.Complete;
@@ -947,7 +1000,7 @@ namespace UnityEditor.Search
         {
             if (createDirectory && !Directory.Exists(k_QuickSearchLibraryPath))
                 Directory.CreateDirectory(k_QuickSearchLibraryPath);
-            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntryImporter.version}.{GetIndexTypeSuffix()}";
+            return $"{k_QuickSearchLibraryPath}/{settings.guid}.{SearchIndexEntryImporter.version}.{GetIndexTypeSuffix(settings, null)}";
         }
 
         internal void SaveIndex(string backupIndexPath = null)
@@ -1012,6 +1065,8 @@ namespace UnityEditor.Search
 
         private void OnPlayModeChanged(PlayModeStateChange playState)
         {
+            if (LoadingState == LoadState.Error)
+                return;
             if (playState == PlayModeStateChange.EnteredEditMode && afterPlayModeUpdate != AfterPlayModeUpdate.None)
             {
                 if (afterPlayModeUpdate.HasFlag(AfterPlayModeUpdate.Build))
@@ -1035,6 +1090,16 @@ namespace UnityEditor.Search
             if (changeset.empty)
                 return;
             IncrementalUpdate(changeset);
+        }
+
+        internal void SaveSettingsOptions(bool startIndexing)
+        {
+            var json = JsonUtility.ToJson(settings, true);
+            Utils.WriteTextFileToDisk(path, json);
+            if (startIndexing)
+            {
+                SearchDatabase.ImportAsset(path);
+            }
         }
 
         private void IncrementalUpdate(AssetIndexChangeSet changeset)
@@ -1069,10 +1134,21 @@ namespace UnityEditor.Search
             }
         }
 
+        private void StopIncrementalUpdateTracker()
+        {
+        }
+
+        private int StartIncrementalUpdateTracker()
+        {
+            return 0;
+        }
+
         private void ProcessIncrementalUpdate(AssetIndexChangeSet changeset)
         {
             var updates = CreateArtifacts(changeset.updated);
             var taskName = $"Updating {settings.name.ToLowerInvariant()} search index";
+
+            m_IncrementalIndexingRequestTrackerId = StartIncrementalUpdateTracker();
 
             Interlocked.Increment(ref m_UpdateTasks);
             m_CurrentUpdateTask = new Task("Update", taskName, (task, data) =>
@@ -1136,15 +1212,19 @@ namespace UnityEditor.Search
             ProcessIncrementalUpdates();
             SearchService.RefreshWindows();
             EmitDatabaseReady(this);
+            StopIncrementalUpdateTracker();
         }
 
         private IndexArtifact[] CreateArtifacts(in IList<string> assetPaths)
         {
             {
                 var artifacts = new IndexArtifact[assetPaths.Count];
-                var indexImporterType = SearchIndexEntryImporter.GetIndexImporterType(settings.options.GetHashCode());
+                
                 for (int i = 0; i < assetPaths.Count; ++i)
+                {
+                    var indexImporterType = GetIndexImporterTypeForAsset(settings, assetPaths[i]);
                     artifacts[i] = new IndexArtifact(assetPaths[i], AssetDatabase.GUIDFromAssetPath(assetPaths[i]), indexImporterType);
+                }
 
                 return artifacts;
             }
@@ -1159,6 +1239,7 @@ namespace UnityEditor.Search
 
             if (artifact.state == OnDemandState.Available)
             {
+                // Debug.LogFormat(LogType.Log, LogOption.None, null, $"   Available: {artifact.source}");
                 artifact.value = AssetDatabaseExperimental.LookupArtifact(artifact.key);
                 return true;
             }
@@ -1166,6 +1247,7 @@ namespace UnityEditor.Search
             if (artifact.timestamp == long.MaxValue)
             {
                 artifact.timestamp = DateTime.UtcNow.Ticks;
+                // Debug.LogFormat(LogType.Log, LogOption.None, null, $"ProduceArtifactAsync: {artifact.source}");
                 artifact.value = AssetDatabaseExperimental.ProduceArtifactAsync(artifact.key);
             }
             else

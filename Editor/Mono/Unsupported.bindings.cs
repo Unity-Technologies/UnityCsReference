@@ -121,7 +121,7 @@ namespace UnityEditor
             return SetOverrideLightingSettingsInternal(scene.handle);
         }
 
-        internal static extern bool SetOverrideLightingSettingsInternal(int sceneHandle);
+        internal static extern bool SetOverrideLightingSettingsInternal(SceneHandle sceneHandle);
 
 
         [NativeThrows]
@@ -144,11 +144,11 @@ namespace UnityEditor
 
         public static void PasteGameObjectsFromPasteboard()
         {
-            PasteGameObjectsFromPasteboard(null, 0, false);
+            PasteGameObjectsFromPasteboard(null, SceneHandle.None, false);
         }
 
         [FreeFunction]
-        internal static extern void PasteGameObjectsFromPasteboard(Transform parent, int customSceneHandle = 0, bool worldPositionStays = false);
+        internal static extern void PasteGameObjectsFromPasteboard(Transform parent, SceneHandle customSceneHandle, bool worldPositionStays = false);
 
         [FreeFunction("AssetDatabase::GetSingletonAsset")]
         public static extern UnityEngine.Object GetSerializedAssetInterfaceSingleton(string className);

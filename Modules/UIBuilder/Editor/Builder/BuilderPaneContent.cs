@@ -87,13 +87,13 @@ namespace Unity.UI.Builder
         void OnChildFocus(FocusEvent evt)
         {
             if (m_Pane != null)
-                m_Pane.pseudoStates = m_Pane.pseudoStates | PseudoStates.Focus;
+                m_Pane.pseudoStates |= PseudoStates.Focus;
         }
 
         void OnChildBlur(BlurEvent evt)
         {
             if (m_Pane != null)
-                m_Pane.pseudoStates = m_Pane.pseudoStates & ~PseudoStates.Focus;
+                m_Pane.pseudoStates &= ~PseudoStates.Focus;
         }
 
         void OnPaneFocus(FocusEvent evt)

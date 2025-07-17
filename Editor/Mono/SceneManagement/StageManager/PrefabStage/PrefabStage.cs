@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using Unity.Scripting.LifecycleManagement;
 using UnityEditor.Callbacks;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.SceneManagement;
 using UnityEngine.Scripting.APIUpdating;
+using TreeViewDragging = UnityEditor.IMGUI.Controls.TreeViewDragging<int>;
 
 namespace UnityEditor.SceneManagement
 {
@@ -62,7 +64,10 @@ namespace UnityEditor.SceneManagement
         public static event Action<GameObject> prefabSaved;
 
         internal static event Action<PrefabStage> prefabStageSavedAsNewPrefab;
-        internal static event Action<PrefabStage> prefabStageReloaded; // Used by tests.
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<PrefabStage> prefabStageReloading;
+        [AutoStaticsCleanupOnCodeReload]
+        internal static event Action<PrefabStage> prefabStageReloaded;
 
         internal static List<PrefabStage> m_AllPrefabStages = new List<PrefabStage>();
         static StateCache<PrefabStageHierarchyState> s_StateCache = new StateCache<PrefabStageHierarchyState>("Library/StateCache/PrefabStageHierarchy/");
@@ -1040,6 +1045,8 @@ namespace UnityEditor.SceneManagement
                 return;
             }
 
+            prefabStageReloading?.Invoke(this);
+
             var sceneHierarchyWindows = SceneHierarchyWindow.GetAllSceneHierarchyWindows();
             foreach (SceneHierarchyWindow sceneHierarchyWindow in sceneHierarchyWindows)
                 SaveHierarchyState(sceneHierarchyWindow);
@@ -1107,13 +1114,13 @@ namespace UnityEditor.SceneManagement
 
         internal override void OnFirstTimeOpenStageInSceneHierachyWindow(SceneHierarchyWindow sceneHierarchyWindow)
         {
-            var expandedIDs = new List<int>();
+            var expandedIDs = new List<EntityId>();
             AddParentsBelowButIgnoreNestedPrefabsRecursive(prefabContentsRoot.transform, expandedIDs);
             expandedIDs.Sort();
             sceneHierarchyWindow.sceneHierarchy.treeViewState.expandedIDs = expandedIDs;
         }
 
-        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<int> gameObjectInstanceIDs)
+        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<EntityId> gameObjectInstanceIDs)
         {
             gameObjectInstanceIDs.Add(transform.gameObject.GetInstanceID());
 
@@ -1128,14 +1135,14 @@ namespace UnityEditor.SceneManagement
             }
         }
 
-        static DragAndDropVisualMode PrefabModeDraggingHandler(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, TreeViewDragging.DropPosition dropPos, bool perform)
+        static DragAndDropVisualMode PrefabModeDraggingHandler(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, TreeViewDragging<EntityId>.DropPosition dropPos, bool perform)
         {
             var prefabStage = StageNavigationManager.instance.currentStage as PrefabStage;
             if (prefabStage == null)
                 throw new InvalidOperationException("PrefabModeDraggingHandler should only be called in Prefab Mode");
 
             // Disallow dropping as sibling to the prefab instance root (In Prefab Mode we only want to show one root).
-            if (parentItem != null && parentItem.parent == null && dropPos != TreeViewDragging.DropPosition.Upon)
+            if (parentItem != null && parentItem.parent == null && dropPos != TreeViewDragging<EntityId>.DropPosition.Upon)
                 return DragAndDropVisualMode.Rejected;
 
             // Disallow dragging scenes into the hierarchy when it is in Prefab Mode (we do not support multi-scenes for prefabs yet)
@@ -1642,7 +1649,7 @@ namespace UnityEditor.SceneManagement
 
                 if (showCancelButton)
                 {
-                    int option = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Rename File"), L10n.Tr("Use Old Name"), L10n.Tr("Cancel Save"));
+                    int option = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Rename File"), L10n.Tr("Cancel Save"), L10n.Tr("Use Old Name"));
                     switch (option)
                     {
                         // Rename prefab file
@@ -1650,11 +1657,11 @@ namespace UnityEditor.SceneManagement
                             RenamePrefabFileToMatchPrefabInstanceName();
                             return true;
                         // Rename the root GameObject to file name
-                        case 1:
+                        case 2:
                             RenameInstanceRootToMatchPrefabFile();
                             return true;
                         // Cancel saving
-                        case 2:
+                        case 1:
                             return false;
                     }
                 }
@@ -1718,19 +1725,19 @@ namespace UnityEditor.SceneManagement
             if (autoSave)
                 return Save();
 
-            int dialogResult = EditorUtility.DisplayDialogComplex("Prefab Has Been Modified", "Do you want to save the changes you made in Prefab Mode? Your changes will be lost if you don't save them.", "Save", "Discard Changes", "Cancel");
+            int dialogResult = EditorUtility.DisplayDialogComplex("Prefab Has Been Modified", "Do you want to save the changes you made in Prefab Mode? Your changes will be lost if you don't save them.", "Save", "Cancel", "Discard Changes");
             switch (dialogResult)
             {
                 case 0:
                     return Save(); // save changes and continue current operation
 
-                case 1:
+                case 2:
                     // The user have accepted to discard changes
                     if (hasUnsavedChanges && !m_IsAssetMissing)
                         ReloadStage();
                     return true; // continue current operation
 
-                case 2:
+                case 1:
                     return false; // cancel and discontinue current operation
 
                 default:
@@ -2218,12 +2225,12 @@ namespace UnityEditor.SceneManagement
         [OnOpenAsset]
         static bool OnOpenAsset(int instanceID, int line)
         {
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
+            string assetPath = AssetDatabase.GetAssetPath((EntityId)instanceID);
 
             if (assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
             {
                 // The 'line' parameter can be used for passing an instanceID of a prefab instance
-                GameObject instanceRoot = line == -1 ? null : EditorUtility.InstanceIDToObject(line) as GameObject;
+                GameObject instanceRoot = line == -1 ? null : EditorUtility.EntityIdToObject(line) as GameObject;
                 var prefabStageMode = instanceRoot != null ? PrefabStage.Mode.InContext : PrefabStage.Mode.InIsolation;
                 PrefabStageUtility.OpenPrefab(assetPath, instanceRoot, prefabStageMode, StageNavigationManager.Analytics.ChangeType.EnterViaAssetOpened);
                 return true;

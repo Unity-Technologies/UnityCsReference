@@ -67,6 +67,7 @@ internal class Sidebar : ScrollView
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectPage.k_Id));
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectUpdatesPage.k_Id), isIndented: true);
         CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectNonCompliancePage.k_Id), isIndented: true);
+        CreateAndAddSidebarRow(m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id), isIndented: true);
         CreateAndAddSeparator();
         CreateAndAddSidebarRow(m_PageManager.GetPage(UnityRegistryPage.k_Id));
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyAssetsPage.k_Id));
@@ -80,6 +81,7 @@ internal class Sidebar : ScrollView
         CreateAndAddSidebarRow(m_PageManager.GetPage(MyRegistriesPage.k_Id));
 
         UpdateComplianceRelatedRow();
+        UpdateErrorsAndWarningsRelatedRow();
         UpdateScopedRegistryRelatedRows();
     }
 
@@ -125,18 +127,36 @@ internal class Sidebar : ScrollView
             m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
     }
 
+    private void UpdateErrorsAndWarningsRelatedRow()
+    {
+        var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
+        var showErrorsAndWarningsPage = m_PackageDatabase.allPackages.AnyMatches(errorsAndWarningsPage.ShouldInclude);
+        var errorsAndWarningsRow = GetRow(InProjectErrorsAndWarningsPage.k_Id);
+
+        UIUtils.SetElementDisplay(errorsAndWarningsRow, showErrorsAndWarningsPage);
+
+        if (showErrorsAndWarningsPage)
+            errorsAndWarningsRow?.UpdateIcon(errorsAndWarningsPage.icon);
+        else if (m_PageManager.activePage == errorsAndWarningsPage)
+            m_PageManager.activePage = m_PageManager.GetPage(PageManager.k_DefaultPageId);
+    }
+
     private void OnPackageChanged(PackagesChangeArgs args)
     {
-        if (args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Concat(args.progressUpdated).All(p => p.compliance.status == PackageComplianceStatus.Compliant))
-            return;
-        UpdateComplianceRelatedRow();
+        var changedPackages = args.added.Concat(args.removed).Concat(args.updated).Concat(args.preUpdate).Concat(args.progressUpdated);
+
+        var errorsAndWarningsPage = m_PageManager.GetPage(InProjectErrorsAndWarningsPage.k_Id);
+        if (changedPackages.AnyMatches(p => errorsAndWarningsPage.ShouldInclude(p)))
+            UpdateErrorsAndWarningsRelatedRow();
+
+        var nonCompliancePage = m_PageManager.GetPage(InProjectNonCompliancePage.k_Id);
+        if (changedPackages.AnyMatches(p => nonCompliancePage.ShouldInclude(p)))
+            UpdateComplianceRelatedRow();
     }
 
     private void UpdateScopedRegistryRelatedRows()
     {
-        var scopedRegistryPages = m_SettingsProxy.scopedRegistries
-        .Where(r => r.compliance.status != RegistryComplianceStatus.NonCompliant)
-        .Select(r => m_PageManager.GetPage(r)).ToArray();
+        var scopedRegistryPages = m_SettingsProxy.scopedRegistries.Select(r => m_PageManager.GetPage(r)).ToArray();
 
         // We remove the rows from the hierarchy so we can add it back later with the right order
         foreach (var row in m_ScopedRegistryRows.Values)

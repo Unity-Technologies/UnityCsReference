@@ -3,15 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.VFX;
-using UnityEditor;
-using UnityEngine.Experimental.Rendering;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.VFX
@@ -33,10 +31,6 @@ namespace UnityEditor.VFX
     {
         public MotionVectorGenerationMode motionVectorGenerationMode;
         public ShadowCastingMode shadowCastingMode;
-        public RayTracingAccelerationStructure.RayTracingModeMask rayTracingMode;
-        public bool receiveShadows;
-        public ReflectionProbeUsage reflectionProbeUsage;
-        public LightProbeUsage lightProbeUsage;
     }
 
     [UsedByNativeCode]
@@ -73,6 +67,7 @@ namespace UnityEditor.VFX
     {
         public VFXLayoutElementDesc[] layout;
         public uint capacity;
+        public string debugName; // always there in editor
         public GraphicsBuffer.Target target;
         public uint size;
         public uint stride;
@@ -135,6 +130,7 @@ namespace UnityEditor.VFX
     {
         public VFXLayoutElementDesc[] layout;
         public uint capacity;
+        public string debugName;
         public uint stride;
         public VFXCPUBufferData initialData;
     }
@@ -156,37 +152,12 @@ namespace UnityEditor.VFX
         public VFXMappingTemporary[] temporaryBuffers;
         public VFXMapping[] values;
         public VFXMapping[] parameters;
-        private UnityObject processor;
+        public UnityObject processor;
         public uint instanceSplitIndex;
-        private int m_ShaderSourceIndex;
+        public int shaderSourceIndex;
         public UnityObject model;
         public bool usesMaterialVariant;
 
-        public UnityObject externalProcessor
-        {
-            get
-            {
-                return processor;
-            }
-            set
-            {
-                processor = value;
-                m_ShaderSourceIndex = -1;
-            }
-        }
-
-        public int shaderSourceIndex
-        {
-            get
-            {
-                return m_ShaderSourceIndex;
-            }
-            set
-            {
-                processor = null;
-                m_ShaderSourceIndex = value;
-            }
-        }
     }
 
     [UsedByNativeCode]
@@ -232,7 +203,7 @@ namespace UnityEditor.VFX
 
     internal class VFXExpressionObjectValueContainerDesc<T> : VFXExpressionValueContainerDesc
     {
-        public int instanceID = 0;
+        public EntityId entityId = 0;
     }
 
     [NativeType(CodegenOptions.Custom, "ScriptingVFXExpressionDesc")]
@@ -294,11 +265,11 @@ namespace UnityEditor.VFX
         public uint[] animationCurveValuesExpressions;
         public Gradient[] gradientValues;
         public uint[] gradientValuesExpressions;
-        public int[] textureValues;
+        public EntityId[] textureValues;
         public uint[] textureValuesExpressions;
-        public int[] meshValues;
+        public EntityId[] meshValues;
         public uint[] meshValuesExpressions;
-        public int[] skinnedMeshRendererValues;
+        public EntityId[] skinnedMeshRendererValues;
         public uint[] skinnedMeshRendererValuesExpressions;
         public bool[] boolValues;
         public uint[] boolValuesExpressions;
@@ -337,129 +308,186 @@ namespace UnityEditor.VFX
         //Must be kept in sync with C++
         public const int CurrentVersion = 1;
 
-        private static VFXExpressionValuesSheetInternal CreateValueSheet(VFXExpressionValueContainerDesc[] values)
+        //This intermediate struct is only used on U6 branch where marshalling of List isn't straighforward
+        struct VFXExpressionValuesSheetInternalListBased
         {
-            var internalSheet = new VFXExpressionValuesSheetInternal();
-            foreach (var group in values.GroupBy(o => o.GetType()))
+            public List<int> intValues;
+            public List<uint> intValuesExpressions;
+            public List<uint> uintValues;
+            public List<uint> uintValuesExpressions;
+            public List<float> floatValues;
+            public List<uint> floatValuesExpressions;
+            public List<Vector2> vector2Values;
+            public List<uint> vector2ValuesExpressions;
+            public List<Vector3> vector3Values;
+            public List<uint> vector3ValuesExpressions;
+            public List<Vector4> vector4Values;
+            public List<uint> vector4ValuesExpressions;
+            public List<Matrix4x4> matrix4x4Values;
+            public List<uint> matrix4x4ValuesExpressions;
+            public List<AnimationCurve> animationCurveValues;
+            public List<uint> animationCurveValuesExpressions;
+            public List<Gradient> gradientValues;
+            public List<uint> gradientValuesExpressions;
+            public List<EntityId> textureValues;
+            public List<uint> textureValuesExpressions;
+            public List<EntityId> meshValues;
+            public List<uint> meshValuesExpressions;
+            public List<EntityId> skinnedMeshRendererValues;
+            public List<uint> skinnedMeshRendererValuesExpressions;
+            public List<bool> boolValues;
+            public List<uint> boolValuesExpressions;
+
+            public static implicit operator VFXExpressionValuesSheetInternal(VFXExpressionValuesSheetInternalListBased source)
             {
-                if (group.Key == typeof(VFXExpressionValueContainerDesc<int>))
+                var internalSheet = new VFXExpressionValuesSheetInternal
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<int>>().ToArray();
-                    internalSheet.intValues = v.Select(o => o.value).ToArray();
-                    internalSheet.intValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
-                }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<UInt32>))
+                    intValues = source.intValues?.ToArray(),
+                    intValuesExpressions = source.intValuesExpressions?.ToArray(),
+                    uintValues = source.uintValues?.ToArray(),
+                    uintValuesExpressions = source.uintValuesExpressions?.ToArray(),
+                    floatValues = source.floatValues?.ToArray(),
+                    floatValuesExpressions = source.floatValuesExpressions?.ToArray(),
+                    vector2Values = source.vector2Values?.ToArray(),
+                    vector2ValuesExpressions = source.vector2ValuesExpressions?.ToArray(),
+                    vector3Values = source.vector3Values?.ToArray(),
+                    vector3ValuesExpressions = source.vector3ValuesExpressions?.ToArray(),
+                    vector4Values = source.vector4Values?.ToArray(),
+                    vector4ValuesExpressions = source.vector4ValuesExpressions?.ToArray(),
+                    matrix4x4Values = source.matrix4x4Values?.ToArray(),
+                    matrix4x4ValuesExpressions = source.matrix4x4ValuesExpressions?.ToArray(),
+                    animationCurveValues = source.animationCurveValues?.ToArray(),
+                    animationCurveValuesExpressions = source.animationCurveValuesExpressions?.ToArray(),
+                    gradientValues = source.gradientValues?.ToArray(),
+                    gradientValuesExpressions = source.gradientValuesExpressions?.ToArray(),
+                    textureValues = source.textureValues?.ToArray(),
+                    textureValuesExpressions = source.textureValuesExpressions?.ToArray(),
+                    meshValues = source.meshValues?.ToArray(),
+                    meshValuesExpressions = source.meshValuesExpressions?.ToArray(),
+                    skinnedMeshRendererValues = source.skinnedMeshRendererValues?.ToArray(),
+                    skinnedMeshRendererValuesExpressions = source.skinnedMeshRendererValuesExpressions?.ToArray(),
+                    boolValues = source.boolValues?.ToArray(),
+                    boolValuesExpressions = source.boolValuesExpressions?.ToArray()
+                };
+
+                return internalSheet;
+            }
+        }
+
+        public static VFXExpressionValuesSheetInternal CreateValueSheet(VFXExpressionValueContainerDesc[] values)
+        {
+            var internalSheet = new VFXExpressionValuesSheetInternalListBased();
+            if (values == null)
+                return internalSheet;
+
+            foreach (var value in values)
+            {
+                if (value is VFXExpressionValueContainerDesc<int> castedInt)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<UInt32>>().ToArray();
-                    internalSheet.uintValues = v.Select(o => o.value).ToArray();
-                    internalSheet.uintValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.intValues ??= new();
+                    internalSheet.intValuesExpressions ??= new();
+                    internalSheet.intValues.Add(castedInt.value);
+                    internalSheet.intValuesExpressions.Add(castedInt.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<float>))
+                else if (value is VFXExpressionValueContainerDesc<uint> castedUint)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<float>>().ToArray();
-                    internalSheet.floatValues = v.Select(o => o.value).ToArray();
-                    internalSheet.floatValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.uintValues ??= new();
+                    internalSheet.uintValuesExpressions ??= new();
+                    internalSheet.uintValues.Add(castedUint.value);
+                    internalSheet.uintValuesExpressions.Add(castedUint.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Vector2>))
+                else if (value is VFXExpressionValueContainerDesc<float> castedFloat)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Vector2>>().ToArray();
-                    internalSheet.vector2Values = v.Select(o => o.value).ToArray();
-                    internalSheet.vector2ValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.floatValues ??= new();
+                    internalSheet.floatValuesExpressions ??= new();
+                    internalSheet.floatValues.Add(castedFloat.value);
+                    internalSheet.floatValuesExpressions.Add(castedFloat.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Vector3>))
+                else if (value is VFXExpressionValueContainerDesc<Vector2> castedVector2)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Vector3>>().ToArray();
-                    internalSheet.vector3Values = v.Select(o => o.value).ToArray();
-                    internalSheet.vector3ValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.vector2Values ??= new();
+                    internalSheet.vector2ValuesExpressions ??= new();
+                    internalSheet.vector2Values.Add(castedVector2.value);
+                    internalSheet.vector2ValuesExpressions.Add(castedVector2.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Vector4>))
+                else if (value is VFXExpressionValueContainerDesc<Vector3> castedVector3)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Vector4>>().ToArray();
-                    internalSheet.vector4Values = v.Select(o => o.value).ToArray();
-                    internalSheet.vector4ValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.vector3Values ??= new();
+                    internalSheet.vector3ValuesExpressions ??= new();
+                    internalSheet.vector3Values.Add(castedVector3.value);
+                    internalSheet.vector3ValuesExpressions.Add(castedVector3.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Matrix4x4>))
+                else if (value is VFXExpressionValueContainerDesc<Vector4> castedVector4)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Matrix4x4>>().ToArray();
-                    internalSheet.matrix4x4Values = v.Select(o => o.value).ToArray();
-                    internalSheet.matrix4x4ValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.vector4Values ??= new();
+                    internalSheet.vector4ValuesExpressions ??= new();
+                    internalSheet.vector4Values.Add(castedVector4.value);
+                    internalSheet.vector4ValuesExpressions.Add(castedVector4.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<Texture>))
+                else if (value is VFXExpressionValueContainerDesc<Matrix4x4> castedMatrix4x4)
                 {
-                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<Texture>>().ToArray();
-                    internalSheet.textureValues = v.Select(o => o.instanceID).ToArray();
-                    internalSheet.textureValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.matrix4x4Values ??= new();
+                    internalSheet.matrix4x4ValuesExpressions ??= new();
+                    internalSheet.matrix4x4Values.Add(castedMatrix4x4.value);
+                    internalSheet.matrix4x4ValuesExpressions.Add(castedMatrix4x4.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<Mesh>))
+                else if (value is VFXExpressionObjectValueContainerDesc<Texture> castedTexture)
                 {
-                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<Mesh>>().ToArray();
-                    internalSheet.meshValues = v.Select(o => o.instanceID).ToArray();
-                    internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.textureValues ??= new();
+                    internalSheet.textureValuesExpressions ??= new();
+                    internalSheet.textureValues.Add(castedTexture.entityId);
+                    internalSheet.textureValuesExpressions.Add(castedTexture.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionObjectValueContainerDesc<SkinnedMeshRenderer>))
+                else if (value is VFXExpressionObjectValueContainerDesc<Mesh> castedMesh)
                 {
-                    var v = group.Cast<VFXExpressionObjectValueContainerDesc<SkinnedMeshRenderer>>().ToArray();
-                    internalSheet.skinnedMeshRendererValues = v.Select(o => o.instanceID).ToArray();
-                    internalSheet.skinnedMeshRendererValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.meshValues ??= new();
+                    internalSheet.meshValuesExpressions ??= new();
+                    internalSheet.meshValues.Add(castedMesh.entityId);
+                    internalSheet.meshValuesExpressions.Add(castedMesh.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Gradient>))
+                else if (value is VFXExpressionObjectValueContainerDesc<SkinnedMeshRenderer> castedSkinnedMeshRenderer)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Gradient>>().ToArray();
-                    internalSheet.gradientValues = v.Select(o => o.value).ToArray();
-                    internalSheet.gradientValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.skinnedMeshRendererValues ??= new();
+                    internalSheet.skinnedMeshRendererValuesExpressions ??= new();
+                    internalSheet.skinnedMeshRendererValues.Add(castedSkinnedMeshRenderer.entityId);
+                    internalSheet.skinnedMeshRendererValuesExpressions.Add(castedSkinnedMeshRenderer.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<AnimationCurve>))
+                else if (value is VFXExpressionValueContainerDesc<Gradient> castedGradient)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<AnimationCurve>>().ToArray();
-                    internalSheet.animationCurveValues = v.Select(o => o.value).ToArray();
-                    internalSheet.animationCurveValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.gradientValues ??= new();
+                    internalSheet.gradientValuesExpressions ??= new();
+                    internalSheet.gradientValues.Add(castedGradient.value);
+                    internalSheet.gradientValuesExpressions.Add(castedGradient.expressionIndex);
                 }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<bool>))
+                else if (value is VFXExpressionValueContainerDesc<AnimationCurve> castedAnimationCurve)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<bool>>().ToArray();
-                    internalSheet.boolValues = v.Select(o => o.value).ToArray();
-                    internalSheet.boolValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.animationCurveValues ??= new();
+                    internalSheet.animationCurveValuesExpressions ??= new();
+                    internalSheet.animationCurveValues.Add(castedAnimationCurve.value);
+                    internalSheet.animationCurveValuesExpressions.Add(castedAnimationCurve.expressionIndex);
                 }
-                //For backward compatibility, Obsoleted by compile on import PR
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Texture>))
+                else if (value is VFXExpressionValueContainerDesc<bool> castedBool)
                 {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Texture>>().ToArray();
-                    internalSheet.textureValues = v.Select(o => o.value != null ? o.value.GetInstanceID() : 0).ToArray();
-                    internalSheet.textureValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
+                    internalSheet.boolValues ??= new();
+                    internalSheet.boolValuesExpressions ??= new();
+                    internalSheet.boolValues.Add(castedBool.value);
+                    internalSheet.boolValuesExpressions.Add(castedBool.expressionIndex);
                 }
-                //For backward compatibility, Obsoleted by compile on import PR
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<Mesh>))
-                {
-                    var v = group.Cast<VFXExpressionValueContainerDesc<Mesh>>().ToArray();
-                    internalSheet.meshValues = v.Select(o => o.value != null ? o.value.GetInstanceID() : 0).ToArray();
-                    internalSheet.meshValuesExpressions = v.Select(o => o.expressionIndex).ToArray();
-                }
-                else if (group.Key == typeof(VFXExpressionValueContainerDesc<GraphicsBuffer>))
+                else if (value is VFXExpressionValueContainerDesc<GraphicsBuffer>)
                 {
                     //Nothing to do, graphicsBufferValues are always null, simply ignore
-                    //internalSheet.graphicsBufferValues = v.Select(o => null).ToArray();
-                    //internalSheet.graphicsBufferValuesExpressions = values.Select(o => o.expressionIndex).ToArray();
                 }
                 else
                 {
-                    throw new InvalidOperationException("Unknown VFXExpressionValueContainerDesc type : " + group.Key);
+                    throw new InvalidOperationException("Unknown VFXExpressionValueContainerDesc type : " + value.GetType());
                 }
             }
             return internalSheet;
         }
 
-        public void SetValueSheet(VFXExpressionValueContainerDesc[] values)
-        {
-            var sheet = CreateValueSheet(values);
-            SetValueSheet(sheet);
-        }
-
-        extern private void SetValueSheet(VFXExpressionValuesSheetInternal sheet);
-
         public extern VFXShaderSourceDesc[] shaderSources { get; set; }
 
-        public extern int GetShaderSourceCount();
-
+        [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceCount", ThrowsException = true, HasExplicitThis = true)] public extern int GetShaderSourceCount();
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSourceName", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSourceName(int index);
         [FreeFunction(Name = "VisualEffectResourceBindings::GetShaderSource", ThrowsException = true, HasExplicitThis = true)] public extern string GetShaderSource(int index);
 
@@ -479,6 +507,7 @@ namespace UnityEditor.VFX
             ShadowCastingMode shadowCastingMode,
             MotionVectorGenerationMode motionVectorGenerationMode,
             VFXInstancingDisabledReason instancingDisabledReason,
+            VFXCompilationMode compilationMode,
             uint version = defaultVersion)
         {
             var internalSheet = new VFXExpressionSheetInternal();
@@ -487,7 +516,7 @@ namespace UnityEditor.VFX
             internalSheet.exposed = sheet.exposed;
             internalSheet.values = CreateValueSheet(sheet.values);
 
-            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, instancingDisabledReason, version);
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, gpuBufferDesc, temporaryBufferDesc, cpuBufferDesc, shaderSourceDesc, shadowCastingMode, motionVectorGenerationMode, instancingDisabledReason, compilationMode, version);
         }
 
 
@@ -502,6 +531,7 @@ namespace UnityEditor.VFX
             ShadowCastingMode shadowCastingMode,
             MotionVectorGenerationMode motionVectorGenerationMode,
             VFXInstancingDisabledReason instancingDisabledReason,
+            VFXCompilationMode compilationMode,
             uint version);
 
         extern public VFXRendererSettings rendererSettings { get; set; }

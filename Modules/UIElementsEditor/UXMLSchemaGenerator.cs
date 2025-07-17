@@ -83,7 +83,7 @@ namespace UnityEditor.UIElements
                     action.filecontent = it.Current;
 
                     ProjectWindowUtil.EndNameEditAction(action, 0, fileName, null, true);
-                    Selection.activeObject = EditorUtility.InstanceIDToObject(0);
+                    Selection.activeObject = EditorUtility.EntityIdToObject(0);
                 }
             }
 

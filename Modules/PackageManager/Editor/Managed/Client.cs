@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEditor.PackageManager.Requests;
+using UnityEngine;
 
 namespace UnityEditor.PackageManager
 {
@@ -179,7 +180,7 @@ namespace UnityEditor.PackageManager
             return new SetCacheRootRequest(operationId, status);
         }
 
-        [System.Obsolete("ResetToEditorDefaults is deprecated and will be removed in a later version.", false)]
+        [Obsolete("ResetToEditorDefaults is deprecated and will be removed in a later version.", false)]
         public static ResetToEditorDefaultsRequest ResetToEditorDefaults()
         {
             long operationId;
@@ -195,8 +196,27 @@ namespace UnityEditor.PackageManager
             if (string.IsNullOrWhiteSpace(targetFolder))
                 throw new ArgumentException("Target folder cannot be null, empty or whitespace", nameof(targetFolder));
 
+            return SendPackRequest(packageFolder, targetFolder);
+        }
+
+        internal static PackRequest Pack(string packageFolder, string targetFolder, string ownerOrgId)
+        {
+            if (string.IsNullOrWhiteSpace(packageFolder))
+                throw new ArgumentException("Package folder cannot be null, empty or whitespace", nameof(packageFolder));
+
+            if (string.IsNullOrWhiteSpace(targetFolder))
+                throw new ArgumentException("Target folder cannot be null, empty or whitespace", nameof(targetFolder));
+
+            if (string.IsNullOrWhiteSpace(ownerOrgId))
+                throw new ArgumentException("Owner organization ID cannot be null, empty or whitespace", nameof(targetFolder));
+
+            return SendPackRequest(packageFolder, targetFolder, ownerOrgId);
+        }
+
+        private static PackRequest SendPackRequest(string packageFolder, string targetFolder, string ownerOrgId = "")
+        {
             long operationId;
-            var status = Pack(out operationId, packageFolder, targetFolder);
+            var status = Pack(out operationId, packageFolder, targetFolder, ownerOrgId);
             return new PackRequest(operationId, status);
         }
 

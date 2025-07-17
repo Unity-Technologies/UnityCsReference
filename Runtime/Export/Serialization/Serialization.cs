@@ -11,6 +11,7 @@ using System;
 namespace UnityEngine
 {
     [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
     public sealed partial class SerializeField : Attribute
     {
     }

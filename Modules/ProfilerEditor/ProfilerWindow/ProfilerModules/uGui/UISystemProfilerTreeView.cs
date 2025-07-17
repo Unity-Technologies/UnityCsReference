@@ -10,6 +10,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEditor.Profiling;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -180,13 +183,13 @@ namespace UnityEditor
                 var canvasRow = row as CanvasTreeViewItem;
                 if (canvasRow == null)
                     continue;
-                Canvas canvas = EditorUtility.InstanceIDToObject(canvasRow.info.objectInstanceId) as Canvas;
+                Canvas canvas = EditorUtility.EntityIdToObject(canvasRow.info.objectInstanceId) as Canvas;
                 if (canvas == null || canvas.gameObject == null)
                     continue;
                 instanceIds.Add(canvas.gameObject.GetInstanceID());
             }
             if (instanceIds.Count > 0)
-                Selection.instanceIDs = instanceIds.ToArray();
+                Selection.entityIds = instanceIds.ToArray().ToEntityIdArray();
         }
 
         private void SetupRows(TreeViewItem item, IList<TreeViewItem> rows)
@@ -244,7 +247,7 @@ namespace UnityEditor
                                 if (i != 0)
                                     sb.Append(", ");
                                 int iid = batchItem.instanceIDs[i];
-                                var o = EditorUtility.InstanceIDToObject(iid);
+                                var o = EditorUtility.EntityIdToObject(iid);
                                 if (o == null)
                                     sb.Append(iid);
                                 else

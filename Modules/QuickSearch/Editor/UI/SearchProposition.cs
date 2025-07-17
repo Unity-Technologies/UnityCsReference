@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Search
 {
@@ -75,7 +76,7 @@ namespace UnityEditor.Search
         public static bool HasAll(this SearchPropositionFlags flags, SearchPropositionFlags all) => (flags & all) == all;
     }
 
-    [Flags]
+    [Flags, NativeHeader("Modules/QuickSearch/SearchPropositionGenerationOptions.h")]
     enum SearchPropositionGenerationOptions
     {
         None = 0,

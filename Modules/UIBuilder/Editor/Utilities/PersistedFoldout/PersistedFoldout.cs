@@ -21,7 +21,7 @@ namespace Unity.UI.Builder
                 {
                     new(nameof(text), "text"),
                     new (nameof(value), "value")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

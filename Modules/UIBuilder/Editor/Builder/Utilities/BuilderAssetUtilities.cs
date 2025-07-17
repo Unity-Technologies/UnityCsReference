@@ -230,7 +230,7 @@ namespace Unity.UI.Builder
                 return leftOrder.CompareTo(rightOrder);
             });
 
-            var rootElement = openUXMLFile.visualTreeAsset.GetRootUxmlElement();
+            var rootElement = openUXMLFile.visualTreeAsset.visualTreeNoAlloc;
             if (rootElement != null && rootElement.stylesheets != null)
             {
                 rootElement.stylesheets.Sort((left, right) =>
@@ -243,10 +243,10 @@ namespace Unity.UI.Builder
         }
 
         public static VisualElementAsset AddElementToAsset(
-            BuilderDocument document, VisualElement ve, int index = -1)
+            VisualTreeAsset visualTreeAsset, VisualElement ve, int index = -1)
         {
             Undo.RegisterCompleteObjectUndo(
-                document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+                visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
 
             var veParent = ve.parent;
             VisualElementAsset veaParent = null;
@@ -257,7 +257,7 @@ namespace Unity.UI.Builder
              want to use our parent's VisualElementAsset, as that belongs to our parent document.
              So instead, we just use no parent, indicating that we are adding this new element
              to the root of our document.*/
-            if (veParent != null && veParent.GetVisualTreeAsset() != document.visualTreeAsset)
+            if (veParent != null && veParent.GetVisualTreeAsset() != visualTreeAsset)
             {
                 // We must revisit this once we finalize how we want our container controls to work with accepting
                 // specific types of controls. For now we're only applying this for ToggleButtonGroup but other controls
@@ -269,25 +269,26 @@ namespace Unity.UI.Builder
             }
 
             if (veaParent == null)
-                veaParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
+                veaParent = visualTreeAsset.visualTree; // UXML Root Element
 
-            var vea = document.visualTreeAsset.AddElement(veaParent, ve);
+            var vea = visualTreeAsset.AddVisualElementAssetFromVisualElement(veaParent, ve);
+            visualTreeAsset.SetAssetAttributes(vea, ve);
 
             if (index >= 0)
-                document.visualTreeAsset.ReparentElement(vea, veaParent, index);
+                visualTreeAsset.ReparentElementInDocument(vea, veaParent, index);
 
             return vea;
         }
 
         public static VisualElementAsset AddElementToAsset(
-            BuilderDocument document, VisualElement ve,
+            VisualTreeAsset visualTreeAsset, VisualElement ve,
             Func<VisualTreeAsset, VisualElementAsset, VisualElement, VisualElementAsset> makeVisualElementAsset,
             int index = -1, bool registerUndo = true)
         {
             if (registerUndo)
             {
                 Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
+                    visualTreeAsset, BuilderConstants.CreateUIElementUndoMessage);
             }
 
             var veParent = ve.parent;
@@ -299,50 +300,20 @@ namespace Unity.UI.Builder
              want to use our parent's VisualElementAsset, as that belongs to our parent document.
              So instead, we just use no parent, indicating that we are adding this new element
              to the root of our document.*/
-            if (veParent != null && veParent.GetVisualTreeAsset() != document.visualTreeAsset)
+            if (veParent != null && veParent.GetVisualTreeAsset() != visualTreeAsset)
                 veaParent = veParent.GetVisualElementAsset();
 
             if (veaParent == null)
-                veaParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
+                veaParent = visualTreeAsset.visualTree; // UXML Root Element
 
-            var vea = makeVisualElementAsset(document.visualTreeAsset, veaParent, ve);
+            var vea = makeVisualElementAsset(visualTreeAsset, veaParent, ve);
             ve.SetVisualElementAsset(vea);
-            ve.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, document.visualTreeAsset);
+            ve.SetProperty(BuilderConstants.ElementLinkedBelongingVisualTreeAssetVEPropertyName, visualTreeAsset);
 
             if (index >= 0)
-                document.visualTreeAsset.ReparentElement(vea, veaParent, index);
+                visualTreeAsset.ReparentElementInDocument(vea, veaParent, index);
 
             return vea;
-        }
-
-        public static void SortElementsByTheirVisualElementInAsset(VisualElement parentVE)
-        {
-            var parentVEA = parentVE.GetVisualElementAsset();
-            if (parentVEA == null)
-                return;
-
-            if (parentVE.childCount <= 1)
-                return;
-
-            var correctOrderForElementAssets = new List<VisualElementAsset>();
-            var correctOrdersInDocument = new List<int>();
-            foreach (var ve in parentVE.Children())
-            {
-                var vea = ve.GetVisualElementAsset();
-                if (vea == null)
-                    continue;
-
-                correctOrderForElementAssets.Add(vea);
-                correctOrdersInDocument.Add(vea.orderInDocument);
-            }
-
-            if (correctOrderForElementAssets.Count <= 1)
-                return;
-
-            correctOrdersInDocument.Sort();
-
-            for (int i = 0; i < correctOrderForElementAssets.Count; ++i)
-                correctOrderForElementAssets[i].orderInDocument = correctOrdersInDocument[i];
         }
 
         public static void ReparentElementInAsset(
@@ -357,13 +328,19 @@ namespace Unity.UI.Builder
                     document.visualTreeAsset, BuilderConstants.ReparentUIElementUndoMessage);
 
             VisualElementAsset veaNewParent = null;
-            if (newParent != null)
+            /* If the current parent element is linked to a VisualTreeAsset, it could mean
+             that our parent is the TemplateContainer belonging to our parent document and the
+             current open document is a sub-document opened in-place. In such a case, we don't
+             want to use our parent's VisualElementAsset, as that belongs to our parent document.
+             So instead, we just use no parent, indicating that we are adding this new element
+             to the root of our document.*/
+            if (newParent != null && newParent.GetVisualTreeAsset() != document.visualTreeAsset)
                 veaNewParent = newParent.GetVisualElementAsset();
 
             if (veaNewParent == null)
-                veaNewParent = document.visualTreeAsset.GetRootUxmlElement(); // UXML Root Element
+                veaNewParent = document.visualTreeAsset.visualTree; // UXML Root Element
 
-            document.visualTreeAsset.ReparentElement(veaToReparent, veaNewParent, index);
+            document.visualTreeAsset.ReparentElementInDocument(veaToReparent, veaNewParent, index);
         }
 
         public static void ApplyAttributeOverridesToTreeAsset(List<TemplateAsset.AttributeOverride> attributeOverrides, VisualTreeAsset visualTreeAsset)
@@ -389,7 +366,7 @@ namespace Unity.UI.Builder
 
             while (overwrittenElement.HasParent())
             {
-                var parent = vta.GetParentAsset(overwrittenElement);
+                var parent = overwrittenElement.parentAsset;
                 parent.TryGetAttributeValue(nameof(VisualElement.name), out var parentName);
 
                 if (!string.IsNullOrEmpty(parentName))
@@ -405,8 +382,10 @@ namespace Unity.UI.Builder
 
         public static void CopyAttributeOverridesToChildTemplateAssets(TemplateContainer parentTemplateContainer, List<TemplateAsset.AttributeOverride> attributeOverrides, VisualTreeAsset visualTreeAsset)
         {
-            foreach (var templateAsset in visualTreeAsset.templateAssets)
+            foreach (var uxmlAsset in visualTreeAsset.DepthFirstTraversal())
             {
+                if (uxmlAsset is not TemplateAsset templateAsset)
+                    continue;
                 var templateAssetVTA = visualTreeAsset.ResolveTemplate(templateAsset.templateAlias);
 
                 foreach (var attributeOverride in attributeOverrides)
@@ -448,25 +427,14 @@ namespace Unity.UI.Builder
                         if (pathToTemplateAsset != null && attributeOverride.NamesPathMatchesElementNamesPath(pathToParentTemplateContainer.Split()))
                         {
                             // Add attribute override to the template asset
-                            templateAsset.SetAttributeOverride(element, attributeOverride.m_AttributeName, attributeOverride.m_Value, pathToTemplateAsset.Split());
+                            templateAsset.SetAttributeOverride(attributeOverride.m_AttributeName, attributeOverride.m_Value, pathToTemplateAsset.Split());
                         }
                     });
                 }
             }
         }
 
-        public static void AddStyleSheetsFromTreeAsset(VisualElementAsset visualElementAsset, VisualTreeAsset visualTreeAsset)
-        {
-            foreach (var styleSheet in visualTreeAsset.stylesheets)
-            {
-                var styleSheetPath = AssetDatabase.GetAssetPath(styleSheet);
-
-                visualElementAsset.AddStyleSheet(styleSheet);
-                visualElementAsset.AddStyleSheetPath(styleSheetPath);
-            }
-        }
-
-        public static void DeleteElementFromAsset(BuilderDocument document, VisualElement ve, bool registerUndo = true)
+        public static void DeleteElementFromAsset(VisualTreeAsset visualTreeAsset, VisualElement ve, bool registerUndo = true)
         {
             var vea = ve.GetVisualElementAsset();
             if (vea == null)
@@ -475,15 +443,15 @@ namespace Unity.UI.Builder
             if (registerUndo)
             {
                 Undo.RegisterCompleteObjectUndo(
-                    document.visualTreeAsset, BuilderConstants.DeleteUIElementUndoMessage);
+                    visualTreeAsset, BuilderConstants.DeleteUIElementUndoMessage);
             }
 
             foreach (var child in ve.Children())
             {
-                DeleteElementFromAsset(document, child, false);
+                DeleteElementFromAsset(visualTreeAsset, child, false);
             }
 
-            document.visualTreeAsset.RemoveElement(ve);
+            visualTreeAsset.RemoveElementAndDependencies(vea);
         }
 
         public static void TransferAssetToAsset(
@@ -533,8 +501,8 @@ namespace Unity.UI.Builder
 
             // Need to add at least one dummy value because lots of code will die
             // if it encounters a style property with no values.
-            styleSheet.AddValue(
-                selectionProp, 42.0f, BuilderConstants.ChangeSelectionUndoMessage);
+            Undo.RegisterCompleteObjectUndo(styleSheet, BuilderConstants.ChangeSelectionUndoMessage);
+            selectionProp.SetFloat(styleSheet, 42.0f);
         }
 
         public static void AddElementToSelectionInAsset(BuilderDocument document, VisualElement ve)
@@ -558,8 +526,8 @@ namespace Unity.UI.Builder
                     document.visualTreeAsset, BuilderConstants.ChangeSelectionUndoMessage);
 
                 var vta = ve.GetVisualTreeAsset();
-                var vtaRoot = vta.GetRootUxmlElement();
-                var vea = vta.AddElement(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
+                var vtaRoot = vta.visualTree;
+                var vea = vta.AddElementOfType(vtaRoot, BuilderConstants.SelectedVisualTreeAssetSpecialElementTypeName);
                 // We don't want this element to be cloned.
                 vea.skipClone = true;
             }
@@ -703,7 +671,7 @@ namespace Unity.UI.Builder
         {
             var templateContainer = GetVisualElementRootTemplate(visualElement);
             var templateAsset = templateContainer?.GetVisualElementAsset() as TemplateAsset;
-            var pathToTemplateAsset = TemplateAssetExtensions.GetPathToTemplateAsset(visualElement, templateAsset).ToList();
+            var pathToTemplateAsset = templateAsset.GetPathToTemplateAsset(visualElement).ToList();
 
             return templateAsset?.attributeOverrides.Count(x => x.m_AttributeName == attributeName && x.NamesPathMatchesElementNamesPath(pathToTemplateAsset)) > 0;
         }

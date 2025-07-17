@@ -119,15 +119,7 @@ namespace UnityEditor.Experimental.GraphView
 
                 m_Selected = value;
 
-
-                if (m_Selected)
-                {
-                    pseudoStates |= PseudoStates.Checked;
-                }
-                else
-                {
-                    pseudoStates &= ~PseudoStates.Checked;
-                }
+                SetCheckedPseudoState(m_Selected);
             }
         }
 

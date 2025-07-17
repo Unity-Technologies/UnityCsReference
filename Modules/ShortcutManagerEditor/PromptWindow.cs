@@ -10,7 +10,7 @@ using UnityEngine.UIElements;
 
 namespace UnityEditor.ShortcutManagement
 {
-    class PromptWindow : EditorWindow
+    class PromptWindow : PromptWindowBase
     {
         Func<string, string> m_Validator;
         Action<string> m_Action;
@@ -44,7 +44,7 @@ namespace UnityEditor.ShortcutManagement
             promptWindow.m_TextField.Focus();
             promptWindow.UpdateValidation();
 
-            promptWindow.ShowModal();
+            promptWindow.ShowWindow();
         }
 
         void OnEnable()

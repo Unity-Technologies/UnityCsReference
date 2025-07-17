@@ -132,7 +132,7 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull] GameObject prefabRoot, int sceneHandle);
+        extern private static GameObject[] FindAllInstancesOfPrefab_internal([NotNull] GameObject prefabRoot, SceneHandle sceneHandle);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

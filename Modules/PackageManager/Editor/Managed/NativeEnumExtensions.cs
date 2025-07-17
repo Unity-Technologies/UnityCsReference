@@ -44,6 +44,8 @@ namespace UnityEditor.PackageManager
                     return ErrorCode.Conflict;
                 case NativeErrorCode.AggregateError:
                     return ErrorCode.AggregateError;
+                case NativeErrorCode.ConnectionError:
+                    return ErrorCode.ConnectionError;
             }
 
             throw new NotSupportedException(string.Format("Unknown native error code {0}",  errorCode));

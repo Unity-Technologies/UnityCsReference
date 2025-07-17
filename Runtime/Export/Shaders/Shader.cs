@@ -80,7 +80,21 @@ namespace UnityEngine
             }
         }
 
-        public static void SetGlobalInt(string name, int value)                 { SetGlobalFloatImpl(Shader.PropertyToID(name), (float)value); }
+        private static void ExtractGlobalPropertyNames(MaterialPropertyType type, List<string> names)
+        {
+            if (names == null)
+                throw new ArgumentNullException("names");
+            names.Clear();
+
+            int count = GetGlobalPropertyCountImpl((int)type);
+            if (count > 0)
+            {
+                NoAllocHelpers.EnsureListElemCount(names, count);
+                ExtractGlobalPropertyNamesImpl((int)type, (string[])NoAllocHelpers.ExtractArrayFromList(names));
+            }
+        }
+
+        public static void SetGlobalInt(string name, int value) { SetGlobalFloatImpl(Shader.PropertyToID(name), (float)value); }
         public static void SetGlobalInt(int nameID, int value)                  { SetGlobalFloatImpl(nameID, (float)value); }
 
         public static void SetGlobalFloat(string name, float value)             { SetGlobalFloatImpl(Shader.PropertyToID(name), value); }
@@ -155,6 +169,8 @@ namespace UnityEngine
         public static void GetGlobalVectorArray(int nameID, List<Vector4> values)    { ExtractGlobalVectorArray(nameID, values); }
         public static void GetGlobalMatrixArray(string name, List<Matrix4x4> values) { ExtractGlobalMatrixArray(Shader.PropertyToID(name), values); }
         public static void GetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { ExtractGlobalMatrixArray(nameID, values); }
+
+        internal static void GetGlobalPropertyNames(MaterialPropertyType type, List<string> names) { ExtractGlobalPropertyNames(type, names); }
 
         private Shader() {}
     }

@@ -10,6 +10,7 @@ using UnityEngine.TextCore.Text;
 using UnityEditor.Experimental;
 using UnityEngine.UIElements;
 using TextGenerationSettings = UnityEngine.TextCore.Text.TextGenerationSettings;
+using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
@@ -20,8 +21,7 @@ namespace UnityEditor
     internal class EditorTextSettings : TextSettings
     {
         static EditorTextSettings s_DefaultTextSettings;
-        static float s_CurrentEditorSharpness;
-        static bool s_CurrentEditorSharpnessLoadedOrSet;
+        static float? s_CurrentEditorSharpness;
 
         const string k_DefaultEmojisFallback = "UIPackageResources/FontAssets/Emojis/";
         const string k_Platform =
@@ -30,53 +30,83 @@ namespace UnityEditor
         [SerializeField]
         public BlurryTextCaching blurryTextCaching;
 
-        [SerializeField]
-        public static EditorTextRenderingMode currentEditorTextRenderingMode;
+        static EditorTextRenderingMode? currentEditorTextRenderingMode;
+        static TextGeneratorType? currentEditorTextGeneratorType = null;
+        static bool isEditorTextRenderingModeRaster;
 
         static EditorTextSettings()
         {
-            TextGenerationSettings.IsEditorTextRenderingModeBitmap = () => currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap;
+            TextGenerationSettings.IsEditorTextRenderingModeBitmap = () => GetEditorTextRenderingMode() == EditorTextRenderingMode.Bitmap;
+            TextGenerationSettings.IsEditorTextRenderingModeRaster = () => isEditorTextRenderingModeRaster;
             IMGUITextHandle.GetEditorTextSettings = () => defaultTextSettings;
             IMGUITextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
+            IMGUITextHandle.GetEditorTextGeneratorType = GetEditorTextGeneratorType;
             UITKTextHandle.GetBlurryFontAssetMapping = GetBlurryFontAssetMapping;
             UITKTextHandle.CanGenerateFallbackFontAssets = CanGenerateFallbackFontAssets;
         }
 
-        public static FontAsset GetBlurryFontAssetMapping(int pointSize, FontAsset ft)
+        internal static void SetEditorTextRenderingMode(EditorTextRenderingMode textRenderingMode)
+        {
+            currentEditorTextRenderingMode = textRenderingMode;
+            if (currentEditorTextRenderingMode == EditorTextRenderingMode.Bitmap)
+            {
+                // Inter does not support raster bitmap
+                isEditorTextRenderingModeRaster = !Font.IsFontSmoothingEnabled() && EditorResources.currentFontName != FontDef.k_Inter;
+            }
+        }
+        internal static EditorTextRenderingMode GetEditorTextRenderingMode()
+        {
+            if (currentEditorTextRenderingMode == null)
+            {
+                SetEditorTextRenderingMode((EditorTextRenderingMode)EditorPrefs.GetInt("EditorTextRenderingMode", (int)EditorTextRenderingMode.SDF));
+            }
+            return (EditorTextRenderingMode)currentEditorTextRenderingMode;
+        }
+
+        public static FontAsset GetBlurryFontAssetMapping(int pointSize, FontAsset ft, bool isRaster)
         {
             if (pointSize < k_MinSupportedPointSize || pointSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return ft;
 
             s_DefaultTextSettings.blurryTextCaching.InitializeLookups();
-            FontAsset fa = s_DefaultTextSettings.blurryTextCaching.Find(ft, pointSize);
+            FontAsset fa = s_DefaultTextSettings.blurryTextCaching.Find(ft, pointSize, isRaster);
             bool isMainThread = !JobsUtility.IsExecutingJob;
             if (fa == null && isMainThread)
             {
-                fa = FontAssetFactory.CloneFontAssetWithBitmapRendering(ft, pointSize);
-                s_DefaultTextSettings.blurryTextCaching.Add(ft, pointSize, fa);
+                fa = FontAssetFactory.CloneFontAssetWithBitmapRendering(ft, pointSize, isRaster);
+                s_DefaultTextSettings.blurryTextCaching.Add(ft, pointSize, isRaster, fa);
             }
 
             return fa;
         }
 
-        void OnEnable()
-        {
-            currentEditorTextRenderingMode = (EditorTextRenderingMode)EditorPrefs.GetInt("EditorTextRenderingMode", (int)EditorTextRenderingMode.SDF);
-        }
-
         internal static void SetCurrentEditorSharpness(float sharpness)
         {
             s_CurrentEditorSharpness = sharpness;
-            s_CurrentEditorSharpnessLoadedOrSet = true;
         }
 
+        [VisibleToOtherModules("UnityEditor.CoreModule", "UnityEngine.UIElementsModule")]
         internal override float GetEditorTextSharpness()
         {
-            if (!s_CurrentEditorSharpnessLoadedOrSet)
+            if (s_CurrentEditorSharpness == null)
             {
                 SetCurrentEditorSharpness(EditorPrefs.GetFloat($"EditorTextSharpness_{EditorResources.GetFont(FontDef.Style.Normal).name}", 0.0f));
             }
-            return s_CurrentEditorSharpness;
+            return (float)s_CurrentEditorSharpness;
+        }
+
+        internal static void SetEditorTextGeneratorType(TextGeneratorType type)
+        {
+            currentEditorTextGeneratorType = type;
+        }
+
+        internal static TextGeneratorType GetEditorTextGeneratorType()
+        {
+            if (currentEditorTextGeneratorType == null)
+            {
+                SetEditorTextGeneratorType((TextGeneratorType)EditorPrefs.GetInt("EditorTextGeneratorType", (int)TextGeneratorType.Standard));
+            }
+            return (TextGeneratorType)currentEditorTextGeneratorType;
         }
 
         internal override Font GetEditorFont()
@@ -138,38 +168,49 @@ namespace UnityEditor
         var interFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_InterFontConfig;
         FontAsset interRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(interFontConfig);
         EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, interRegularFontAsset, new[] { FontPaths.Inter.Regular });
+
+        var robotoMonoFontConfig = EditorFontAssetFactory.FontFamilyConfig.k_RobotoMonoFontConfig;
+        FontAsset robotoMonoRegularFontAsset = EditorFontAssetFactory.CreateFontFamilyAssets(robotoMonoFontConfig);
+        EditorFontAssetFactory.RegisterFontWithPaths(m_FontReferences, m_FontLookup, robotoMonoRegularFontAsset,
+            new[]
+            {
+                FontPaths.RobotoMono.Regular,
+                FontPaths.RobotoMono.Bold,
+                FontPaths.RobotoMono.Italic,
+                FontPaths.RobotoMono.BoldItalic
+            });
     }
 
         const int k_MinSupportedPointSize = 5;
         const int k_MaxSupportedPointSize = 19;
         const int k_MaxSupportedScaledPointSize = 3;
-        internal override List<FontAsset> GetFallbackFontAssets(int textPixelSize = -1)
+        internal override List<FontAsset> GetFallbackFontAssets(bool isRaster, int textPixelSize = -1)
         {
             if (currentEditorTextRenderingMode != EditorTextRenderingMode.Bitmap || textPixelSize < k_MinSupportedPointSize || textPixelSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return fallbackFontAssets;
 
-            return GetFallbackFontAssetsInternal(textPixelSize);
+            return GetFallbackFontAssetsInternal(textPixelSize, isRaster);
         }
 
-        static List<FontAsset> GetFallbackFontAssetsInternal(int textPixelSize)
+        static List<FontAsset> GetFallbackFontAssetsInternal(int textPixelSize, bool isRaster)
         {
             var editorTextSettings = defaultTextSettings;
             var localFallback = editorTextSettings.fallbackFontAssets[0];
             var globalFallback = editorTextSettings.fallbackFontAssets[1];
 
-            var localBitmapFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize);
-            var globalBitmapFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize);
+            var localBitmapFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize, isRaster);
+            var globalBitmapFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize, isRaster);
 
             if (localBitmapFallback == null)
             {
-                localBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(localFallback, textPixelSize);
-                editorTextSettings.blurryTextCaching.Add(localFallback, textPixelSize, localBitmapFallback);
+                localBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(localFallback, textPixelSize, isRaster);
+                editorTextSettings.blurryTextCaching.Add(localFallback, textPixelSize, isRaster, localBitmapFallback);
             }
 
             if (globalBitmapFallback == null)
             {
-                globalBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(globalFallback, textPixelSize);
-                editorTextSettings.blurryTextCaching.Add(globalFallback, textPixelSize, globalBitmapFallback);
+                globalBitmapFallback = FontAssetFactory.CloneFontAssetWithBitmapRendering(globalFallback, textPixelSize, isRaster);
+                editorTextSettings.blurryTextCaching.Add(globalFallback, textPixelSize, isRaster, globalBitmapFallback);
             }
 
             return new List<FontAsset>()
@@ -179,7 +220,7 @@ namespace UnityEditor
             };
         }
 
-        static bool CanGenerateFallbackFontAssets(int textPixelSize)
+        static bool CanGenerateFallbackFontAssets(int textPixelSize, bool isRaster)
         {
             if (textPixelSize < k_MinSupportedPointSize || textPixelSize >= k_MaxSupportedPointSize * k_MaxSupportedScaledPointSize)
                 return true;
@@ -189,15 +230,15 @@ namespace UnityEditor
             var localFallback = editorTextSettings.fallbackFontAssets[0];
             var globalFallback = editorTextSettings.fallbackFontAssets[1];
 
-            localFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize);
-            globalFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize);
+            localFallback = editorTextSettings.blurryTextCaching.Find(localFallback, textPixelSize, isRaster);
+            globalFallback = editorTextSettings.blurryTextCaching.Find(globalFallback, textPixelSize, isRaster);
 
             if (localFallback == null || globalFallback == null)
             {
                 if (!isMainThread)
                     return false;
 
-                GetFallbackFontAssetsInternal(textPixelSize);
+                GetFallbackFontAssetsInternal(textPixelSize, isRaster);
             }
 
             return true;
@@ -261,6 +302,14 @@ namespace UnityEditor
         public static class Inter
         {
             public const string Regular = "Fonts/Inter/Inter-Regular.ttf";
+        }
+
+        public static class RobotoMono
+        {
+            public const string Regular = "Fonts/RobotoMono/RobotoMono-Regular.ttf";
+            public const string Bold = "Fonts/RobotoMono/RobotoMono-Bold.ttf";
+            public const string Italic = "Fonts/RobotoMono/RobotoMono-Italic.ttf";
+            public const string BoldItalic = "Fonts/RobotoMono/RobotoMono-BoldItalic.ttf";
         }
     }
 }

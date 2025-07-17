@@ -375,6 +375,10 @@ namespace UnityEngine.UIElements
         /// If a valid texture was passed, then the <see cref="Vertex.uv"/> values should be used to map the texture to the geometry.
         /// </remarks>
         /// <remarks>
+        /// You can call `MeshGenerationContext.Allocate()` multiple times for the same element or context.
+        /// To optimize performance, minimize the number of calls whenever possible.
+        /// </remarks>
+        /// <remarks>
         /// SA: [[MeshWriteData]]
         /// </remarks>
         /// <example>
@@ -521,8 +525,6 @@ namespace UnityEngine.UIElements
                 throw new InvalidOperationException($"{nameof(Begin)} can only be called when there is no target set. Did you forget to call {nameof(End)}?");
             if (parentEntry == null)
                 throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry is null).");
-            if (parentEntry.firstChild != null)
-                throw new ArgumentException($"The state of the provided {nameof(MeshGenerationNode)} is invalid (entry isn't empty).");
             if (ve == null)
                 throw new ArgumentException(nameof(ve));
 
@@ -530,6 +532,7 @@ namespace UnityEngine.UIElements
             this.visualElement = ve;
             this.renderData = renderData;
             meshGenerator.currentElement = ve;
+
         }
 
         internal void End()

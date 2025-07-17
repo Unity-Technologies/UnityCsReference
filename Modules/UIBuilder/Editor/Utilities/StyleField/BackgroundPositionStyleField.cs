@@ -23,12 +23,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class BackgroundPositionStyleField : BaseField<BackgroundPosition>
     {
-        public class BackgroundPositionConverter : UxmlAttributeConverter<BackgroundPosition>
-        {
-            public override BackgroundPosition FromString(string value) => throw new NotImplementedException();
-            public override string ToString(BackgroundPosition value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<BackgroundPosition>.UxmlSerializedData
         {
@@ -39,7 +33,7 @@ namespace Unity.UI.Builder
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(mode), "mode")
-                });
+                }, true);
             }
 
             public override object CreateInstance() => new BackgroundPositionStyleField();

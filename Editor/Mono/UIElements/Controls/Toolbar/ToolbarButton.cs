@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.UIElements
@@ -26,6 +27,12 @@ namespace UnityEditor.UIElements
         public new class UxmlSerializedData : Button.UxmlSerializedData
         {
             public override object CreateInstance() => new ToolbarButton();
+
+            [Conditional("UNITY_EDITOR")]
+            public new static void Register()
+            {
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
+            }
         }
 
         /// <summary>

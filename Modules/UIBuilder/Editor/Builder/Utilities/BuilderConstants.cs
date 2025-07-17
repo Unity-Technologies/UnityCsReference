@@ -88,9 +88,6 @@ namespace Unity.UI.Builder
         public static readonly string Underscore = "_";
         public static readonly string TripleSpace = "   "; // Don't ask.
         public static readonly string SubtitlePrefix = " - ";
-        public const string WindowsNewlineChar = "\r\n";
-        public const string UnixNewlineChar = "\n";
-        public const string NewlineChar = UnixNewlineChar;
         public const string OpenBracket = "(";
         public const string CloseBracket = ")";
         public const string EllipsisText = "...";
@@ -203,9 +200,9 @@ namespace Unity.UI.Builder
         public static readonly string ContextMenuRemoveVariableMessage = "Remove variable";
         public static readonly string ContextMenuOpenSelectorInIDEMessage = "Open selector in IDE";
         public static readonly string ContextMenuGoToSelectorMessage = "Go to selector";
-        public static readonly string ContextMenuAddBindingMessage = "Add binding...";
-        public static readonly string ContextMenuEditBindingMessage = "Edit binding...";
-        public static readonly string ContextMenuRemoveBindingMessage = "Remove binding";
+        public static readonly string ContextMenuAddBindingMessage = "Add Binding...";
+        public static readonly string ContextMenuEditBindingMessage = "Edit Binding...";
+        public static readonly string ContextMenuRemoveBindingMessage = "Remove Binding";
         public static readonly string ContextMenuEditInlineValueMessage = "Edit inline value...";
         public static readonly string ContextMenuUnsetInlineValueMessage = "Unset inline value";
         public static readonly string ContextMenuExtractInlineValueMessage = "Extract Inlined Style to Selector";
@@ -241,9 +238,9 @@ namespace Unity.UI.Builder
         public static readonly string FieldStatusIndicatorFromSelectorTooltip = "Selector Value\n\nSelector: {0}\nSheet: {1}";
         public static readonly string FieldStatusIndicatorVariableTooltip = "Variable Value\n\nVariable: {0}\nSheet: {1}";
         public static readonly string FieldStatusIndicatorUnresolvedVariableTooltip = "Unresolved variable\n\nVariable or Sheet is missing.";
-        public static readonly string FieldStatusIndicatorResolvedBindingTooltip = "Resolved binding";
-        public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = "Unresolved binding\nEdit binding for more details.";
-        public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = "Unhandled binding (resolution pending)";
+        public static readonly string FieldStatusIndicatorResolvedBindingTooltip = "Resolved Binding";
+        public static readonly string FieldStatusIndicatorUnresolvedBindingTooltip = "Unresolved Binding\nEdit Binding for more details.";
+        public static readonly string FieldStatusIndicatorUnhandledBindingTooltip = "Unhandled Binding (resolution pending)";
 
         public static readonly string FieldValueBindingInfoTypeEnumUSSVariableDisplayString = "USS variable";
 
@@ -352,6 +349,7 @@ namespace Unity.UI.Builder
             {"-unity-slice-type", "Determines how the center and sides of a sprite are filled when slices are applied."},
             {"-unity-slice-top", "Size of the 9-slice's top edge when painting an element's background image."},
             {"-unity-text-align", "Horizontal and vertical text alignment in the element's box."},
+            { "-unity-text-auto-size", "Enable to override the set font size and dynamically scale text with Best Fit, using Min and Max font sizes to fit the container." },
             {"-unity-text-generator", "The Advanced Text Generator supports comprehensive Unicode and text shaping for various languages and scripts, including RTL languages, but some features are still under development."},
             {"-unity-text-outline", "Outline width and color of the text."},
             {"-unity-text-outline-color", "Outline color of the text."},
@@ -423,6 +421,10 @@ namespace Unity.UI.Builder
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}scale-and-crop", "Crops an image to fill the entire container while maintaining it's aspect ratio."},
                 {$"-unity-background-scale-mode{FieldTooltipDictionarySeparator}scale-to-fit", "Scales an image to fit the container while preserving its aspect ratio, may result in empty spaces on either side."},
                 {$"-unity-font-definition{FieldTooltipDictionarySeparator}", "Select a font or font asset."},
+                {$"-unity-text-auto-size{FieldTooltipDictionarySeparator}min",
+                    "Smallest font size allowed when scaling text"},
+                {$"-unity-text-auto-size{FieldTooltipDictionarySeparator}max",
+                    "Largest font size allowed when scaling text"},
                 {$"opacity{FieldTooltipDictionarySeparator}", "Drag the slider to specify the transparency of an element and of its children."},
                 {$"background-image{FieldTooltipDictionarySeparator}", "Select a background image to paint in the element's box."},
                 {$"rotate{FieldTooltipDictionarySeparator}", "Enter a rotation transformation value to apply to the the element."},
@@ -600,6 +602,12 @@ namespace Unity.UI.Builder
         public static readonly string SelectedStyleSheetSelectorName = "__unity_ui_builder_selected_stylesheet";
         public static readonly string SelectedVisualTreeAssetSpecialElementTypeName = typeof(UnityUIBuilderSelectionMarker).FullName;
 
+        internal static readonly string[] IgnoredAttributesWhenExporting = { SelectedVisualElementAssetAttributeName };
+        internal static readonly string[] IgnoredTypesWhenExporting = { SelectedVisualTreeAssetSpecialElementTypeName };
+        internal static readonly string[] IgnoredStylePropertiesWhenExporting = { SelectedStyleRulePropertyName };
+        internal static readonly string[] IgnoredSelectorsWhenExporting = { SelectedStyleSheetSelectorName };
+        internal static readonly string[] IgnoredSelectorPrefixesWhenExporting = { StyleSelectorElementName };
+
         //
         // Canvas
         //
@@ -775,17 +783,7 @@ namespace Unity.UI.Builder
         public static readonly string TssExtension = ".tss";
 
         // UXML
-        public static readonly string UxmlOpenTagSymbol = "<";
-        public static readonly string UxmlCloseTagSymbol = ">";
-        public static readonly string UxmlEndTagSymbol = " /" + UxmlCloseTagSymbol;
-        public static readonly string UxmlTemplateClassTag = "Template";
-        public static readonly string UxmlNameAttr = "name";
-        public static readonly string UxmlEngineNamespace = "UnityEngine.UIElements";
-        public static readonly string UxmlDefaultEngineNamespacePrefix = "ui";
-        public static readonly string UxmlEditorNamespace = "UnityEditor.UIElements";
-        public static readonly string UxmlDefaultEditorNamespacePrefix = "uie";
         public static readonly string UxmlTagTypeName = "UnityEngine.UIElements.UXML";
-        public static readonly string UxmlInstanceTypeName = "UnityEngine.UIElements.Instance";
 
         // USS
         public static readonly string UssSelectorNameSymbol = "#";
@@ -796,10 +794,13 @@ namespace Unity.UI.Builder
         public static readonly string USSVariableInvalidCharFiller = "-";
         public static readonly string USSVariableUIBuilderPrefix = "--unity_builder";
 
+        // Serialization
+        public static readonly string UxmlSerializedDataFieldName = "m_SerializedData";
+
         // Styles
         public static readonly string StylePropertyPathPrefix = "style.";
 
-        public static readonly List<string> SpecialSnowflakeLengthStyles = new List<string>()
+        public static readonly List<string> SpecialSnowflakeLengthStyles = new ()
         {
             "border-left-width",
             "border-right-width",
@@ -825,42 +826,9 @@ namespace Unity.UI.Builder
             "border-bottom-width"
         };
 
-        public static readonly Dictionary<string, string> SpecialEnumNamesCases = new Dictionary<string, string>
-        {
-            {"nowrap", "no-wrap"},
-            {"tabindex", "tab-index"}
-        };
-
         //
         // Complex Getters
         //
-
-        public static string newlineCharFromEditorSettings
-        {
-            get
-            {
-                string preferredLineEndings;
-                switch (EditorSettings.lineEndingsForNewScripts)
-                {
-                    case LineEndingsMode.OSNative:
-                        if (Application.platform == RuntimePlatform.WindowsEditor)
-                            preferredLineEndings = WindowsNewlineChar;
-                        else
-                            preferredLineEndings = UnixNewlineChar;
-                        break;
-                    case LineEndingsMode.Unix:
-                        preferredLineEndings = UnixNewlineChar;
-                        break;
-                    case LineEndingsMode.Windows:
-                        preferredLineEndings = WindowsNewlineChar;
-                        break;
-                    default:
-                        preferredLineEndings = UnixNewlineChar;
-                        break;
-                }
-                return preferredLineEndings;
-            }
-        }
 
         public static string builderDocumentDiskJsonFolderAbsolutePath
         {

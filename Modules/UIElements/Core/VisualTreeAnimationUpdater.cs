@@ -13,11 +13,6 @@ namespace UnityEngine.UIElements
 {
     internal class VisualElementAnimationSystem : BaseVisualTreeUpdater
     {
-        long CurrentTimeMs()
-        {
-            return Panel.TimeSinceStartupMs();
-        }
-
         HashSet<IValueAnimationUpdate> m_Animations = new HashSet<IValueAnimationUpdate>();
         List<IValueAnimationUpdate> m_IterationList = new List<IValueAnimationUpdate>();
 
@@ -63,10 +58,11 @@ namespace UnityEngine.UIElements
             m_IterationListDirty = true;
         }
 
-        long lastUpdate;
+        double lastUpdate;
         public override void Update()
         {
-            long now = Panel.TimeSinceStartupMs();
+            double now = panel.TimeSinceStartupSeconds();
+            long nowMs = (long) (now * 1000.0);
 
             if (m_IterationListDirty)
             {
@@ -78,7 +74,7 @@ namespace UnityEngine.UIElements
             {
                 foreach (var anim in m_IterationList)
                 {
-                    anim.Tick(now);
+                    anim.Tick(nowMs);
                 }
 
                 m_HasNewAnimations = false;
@@ -86,9 +82,10 @@ namespace UnityEngine.UIElements
             }
 
             var styleAnim = panel.styleAnimationSystem;
+
             using (stylePropertyAnimationProfilerMarker.Auto())
             {
-                styleAnim.Update();
+                styleAnim.Update(now);
             }
         }
 

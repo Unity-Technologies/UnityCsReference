@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Unity.Properties;
 using UnityEditorInternal;
@@ -26,6 +27,7 @@ namespace UnityEditor.UIElements
             public new static void Register()
             {
                 BaseField<AnimationCurve>.UxmlSerializedData.Register();
+                UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), Array.Empty<UxmlAttributeNames>(), true);
             }
 
             public override object CreateInstance() => new CurveField();
@@ -79,6 +81,9 @@ namespace UnityEditor.UIElements
         }
 
         private bool m_ValueNull;
+        // The CurveEditor will change the values in the arrays directly and will send commands to keep everything
+        // in sync. Here, we're using this flag to force the value to be set when it is technically the same.
+        private bool m_ForceSendEvent = false;
         private bool m_TextureDirty;
         private Texture2D m_Texture; // The curve rasterized in a texture
 
@@ -160,31 +165,13 @@ namespace UnityEditor.UIElements
 
         public override AnimationCurve value
         {
-            get
-            {
-                if (m_ValueNull) return null;
-
-                return CopyCurve(rawValue);
-            }
+            get => m_ValueNull ? null : CopyCurve(rawValue);
             set
             {
                 //I need to have total ownership of the curve, I won't be able to know if it is changed outside. so I'm duplicating it.
                 if (value != null || !m_ValueNull) // let's not reinitialize an initialized curve
                 {
-                    if (panel != null)
-                    {
-                        using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(rawValue, value))
-                        {
-                            evt.elementTarget = this;
-                            SetValueWithoutNotify(value);
-                            SendEvent(evt);
-                            NotifyPropertyChanged(valueProperty);
-                        }
-                    }
-                    else
-                    {
-                        SetValueWithoutNotify(value);
-                    }
+                    base.value = value;
                 }
             }
         }
@@ -346,8 +333,16 @@ namespace UnityEditor.UIElements
 
         void OnCurveChanged(AnimationCurve curve)
         {
-            CurveEditorWindow.curve = rawValue;
-            value = rawValue;
+            m_ForceSendEvent = true;
+            try
+            {
+                CurveEditorWindow.curve = rawValue;
+                value = rawValue;
+            }
+            finally
+            {
+                m_ForceSendEvent = false;
+            }
         }
 
         internal override void OnViewDataReady()
@@ -668,6 +663,32 @@ namespace UnityEditor.UIElements
 
                 Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
             }
+        }
+
+        internal override bool EqualsCurrentValue(AnimationCurve v)
+        {
+            if (m_ForceSendEvent)
+                return false;
+
+            if (v == null && m_ValueNull)
+                return true;
+
+            if (v == null ^ m_ValueNull)
+                return false;
+
+            if (rawValue.preWrapMode != v.preWrapMode ||
+                rawValue.postWrapMode != v.postWrapMode ||
+                rawValue.keys.Length != v.keys.Length)
+                return false;
+
+            for (var i = 0; i < rawValue.keys.Length; ++i)
+            {
+                var current = rawValue.keys[i];
+                var next = v.keys[i];
+                if (!EqualityComparer<Keyframe>.Default.Equals(current, next))
+                    return false;
+            }
+            return true;
         }
     }
 }

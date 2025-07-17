@@ -24,7 +24,7 @@ namespace UnityEditor.UIElements.ProjectSettings
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(label), "label")
-                });
+                }, true);
             }
 
             #pragma warning disable 649

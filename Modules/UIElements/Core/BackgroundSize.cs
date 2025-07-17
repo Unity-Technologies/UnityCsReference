@@ -12,6 +12,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> background-size style property <see cref="IStyle.BackgroundSize"/>.
     /// </summary>
+    [Serializable]
     public partial struct BackgroundSize : IEquatable<BackgroundSize>
     {
         /// <summary>
@@ -63,8 +64,11 @@ namespace UnityEngine.UIElements
             }
         }
 
+        [SerializeField]
         private BackgroundSizeType m_SizeType;
+        [SerializeField]
         private Length m_X;
+        [SerializeField]
         private Length m_Y;
 
         /// <summary>

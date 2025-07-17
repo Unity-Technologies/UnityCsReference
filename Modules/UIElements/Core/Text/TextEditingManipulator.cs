@@ -62,11 +62,11 @@ namespace UnityEngine.UIElements
 
             if (evt is BlurEvent)
             {
-                m_TextElement.uitkTextHandle.RemoveTextInfoFromPermanentCache();
+                m_TextElement.uitkTextHandle.RemoveFromPermanentCache();
             }
             else if ((evt is not PointerMoveEvent && evt is not MouseMoveEvent) || m_TextElement.selectingManipulator.isClicking)
             {
-                m_TextElement.uitkTextHandle.AddTextInfoToPermanentCache();
+                m_TextElement.uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
             }
 
             switch (evt)

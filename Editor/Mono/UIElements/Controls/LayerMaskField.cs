@@ -26,7 +26,7 @@ namespace UnityEditor.UIElements
                 {
                     new(nameof(layerMask), "value"),
                     new(nameof(layerChoices), "choices"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

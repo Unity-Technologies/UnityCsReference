@@ -2,24 +2,21 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
+using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.ShortcutManagement;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Hierarchy", useTypeNameAsIconName = true)]
-    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, ISearchableContainer
+    internal class SceneHierarchyWindow : SearchableEditorWindow, IHasCustomMenu, IPropertySourceOpener, IFramableContainer
     {
         public static SceneHierarchyWindow lastInteractedHierarchyWindow { get { return s_LastInteractedHierarchy; } }
         static SceneHierarchyWindow s_LastInteractedHierarchy;
         public static List<SceneHierarchyWindow> GetAllSceneHierarchyWindows() { return s_SceneHierarchyWindows; }
         static List<SceneHierarchyWindow> s_SceneHierarchyWindows = new List<SceneHierarchyWindow>();
-
-        internal static SavedBool s_EnterRenameModeForNewGO = new SavedBool("SceneHierarchyWindow.RenameNewObjects", true);
 
         static class Styles
         {
@@ -38,8 +35,6 @@ namespace UnityEditor
 
         bool showingStageHeader { get { return !(StageNavigationManager.instance.currentStage is MainStage); } }
 
-        public string searchText => m_SearchFilter;
-
         void Awake()
         {
             m_HierarchyType = HierarchyType.GameObjects;
@@ -57,6 +52,8 @@ namespace UnityEditor
         {
             base.OnEnable();
 
+            EditorApplication.frameAndRenameNewGameObject += FrameAndRenameNewGameObject;
+
             s_LastInteractedHierarchy = this;
             s_SceneHierarchyWindows.Add(this);
 
@@ -70,6 +67,8 @@ namespace UnityEditor
             wantsMouseEnterLeaveWindow = true;
 
             PrefabUtility.prefabInstanceModificationCacheCleared += OnPrefabInstanceModificationCacheCleared;
+
+            HierarchyPreferences.UseNewHierarchy.valueChanged += OnUseNewHierarchyChanged;
         }
 
         private void OnPrefabInstanceModificationCacheCleared()
@@ -81,13 +80,18 @@ namespace UnityEditor
         {
             base.OnDisable();
 
+            EditorApplication.frameAndRenameNewGameObject -= FrameAndRenameNewGameObject;
+
             s_SceneHierarchyWindows.Remove(this);
 
             m_SceneHierarchy.OnDisable();
             m_StageHandling.OnDisable();
 
             PrefabUtility.prefabInstanceModificationCacheCleared -= OnPrefabInstanceModificationCacheCleared;
+            HierarchyPreferences.UseNewHierarchy.valueChanged -= OnUseNewHierarchyChanged;
         }
+
+        void OnUseNewHierarchyChanged() => HierarchyPreferences.EnsureCorrectHierarchyIsInUse(this);
 
         internal override void ClickedSearchField()
         {
@@ -233,7 +237,7 @@ namespace UnityEditor
             {
                 if (evt.type == EventType.ExecuteCommand)
                 {
-                    FrameObject(Selection.activeInstanceID, false);
+                    FrameObject(Selection.activeEntityId, false);
                 }
                 evt.Use();
                 GUIUtility.ExitGUI();
@@ -247,7 +251,7 @@ namespace UnityEditor
         }
 
         // This method is being used by the EditorTests/TreeViewControl tests
-        internal int[] GetExpandedIDs()
+        internal EntityId[] GetExpandedIDs()
         {
             return m_SceneHierarchy.GetExpandedIDs();
         }
@@ -284,7 +288,7 @@ namespace UnityEditor
             m_SceneHierarchy.ExpandTreeViewItem(id, expand);
         }
 
-        public void FrameObject(int instanceID, bool ping)
+        public void FrameObject(EntityId instanceID, bool ping)
         {
             // To be able to frame the object we need to clear the search filter
             SetSearchFilter("", SearchableEditorWindow.SearchMode.All, true);
@@ -379,7 +383,7 @@ namespace UnityEditor
                 sceneHierarchy.treeView?.Frame(go.GetInstanceID(), true, false);
             }
 
-            if (s_EnterRenameModeForNewGO.value)
+            if (HierarchyPreferences.RenameNewObjects)
             {
                 sceneHierarchy.RenameNewGO();
             }
@@ -387,7 +391,7 @@ namespace UnityEditor
 
         internal static void SwitchEnterRenameModeForNewGO()
         {
-            s_EnterRenameModeForNewGO.value = !s_EnterRenameModeForNewGO.value;
+            HierarchyPreferences.RenameNewObjects.value = !HierarchyPreferences.RenameNewObjects;
         }
     }
 

@@ -2044,8 +2044,11 @@ namespace UnityEditor
         }
 
         internal bool unsafeMode {get; set; }
+
+        [VisibleToOtherModules("UnityEditor.TextRenderingModule")]
         internal bool isValid
         {
+            [VisibleToOtherModules]
             get
             {
                 // SerializedProperty should only be accessed while the SerializedObject that created them is still alive

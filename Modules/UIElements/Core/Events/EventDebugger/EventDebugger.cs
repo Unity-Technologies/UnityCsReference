@@ -375,8 +375,17 @@ namespace UnityEngine.UIElements.Experimental
 
         private IEnumerator DoReplayEvents(IEnumerable<EventDebuggerEventRecord> eventBases, Action<int, int> refreshList)
         {
+            BaseVisualElementPanel p = panel as BaseVisualElementPanel;
+
             var sortedEvents = eventBases.OrderBy(e => e.timestamp).ToList();
             var sortedEventsCount = sortedEvents.Count;
+
+            if (p == null)
+            {
+                p = panelDebug?.visualTree.elementPanel ?? null;
+            }
+
+            long CurrentTimeMs(BaseVisualElementPanel p) => p?.TimeSinceStartupMs() ?? 0;
 
             IEnumerator AwaitForNextEvent(int currentIndex)
             {
@@ -394,9 +403,9 @@ namespace UnityEngine.UIElements.Experimental
                     }
                     else
                     {
-                        var time = Panel.TimeSinceStartupMs();
+                        var time = CurrentTimeMs(p);
                         yield return null;
-                        var delta = Panel.TimeSinceStartupMs() - time;
+                        var delta = CurrentTimeMs(p) - time;
                         timeMs += delta * playbackSpeed;
                     }
                 }

@@ -40,7 +40,7 @@ namespace UnityEditor
 
         // ParticleSystemWindow Layout
         static readonly Vector2 k_MinEmitterAreaSize = new Vector2(125f, 100);
-        static readonly Vector2 k_MinCurveAreaSize = new Vector2(100, 100);
+        static readonly Vector2 k_MinCurveAreaSize = new Vector2(200, 100);
         float m_EmitterAreaWidth = 230;                                 // Only used in ParticleSystemWindow for horizontal layout
         float m_CurveEditorAreaHeight = 330;                            // Only used in ParticleSystemWindow for vertical layout
         Vector2 m_EmitterAreaScrollPos = Vector2.zero;
@@ -53,15 +53,15 @@ namespace UnityEditor
         {
             public GUIContent previewSpeed = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is also affected by the Time Scale setting in the Time Manager.");
             public GUIContent previewSpeedDisabled = EditorGUIUtility.TrTextContent("Playback Speed", "Playback Speed is locked to 0.0, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time");
-            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles");
+            public GUIContent previewTime = EditorGUIUtility.TrTextContent("Playback Time", "Playback Time since the Particle System has started");
+            public GUIContent particleCount = EditorGUIUtility.TrTextContent("Particles", "Particles count");
             public GUIContent subEmitterParticleCount = EditorGUIUtility.TrTextContent("Sub Emitter Particles");
-            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range");
-            public GUIContent play = EditorGUIUtility.TrTextContent("Play");
+            public GUIContent particleSpeeds = EditorGUIUtility.TrTextContent("Speed Range", "Start speed minimum and maximum values");
+            public GUIContent play = EditorGUIUtility.TrTextContent("Play", "Play Particle System");
             public GUIContent playDisabled = EditorGUIUtility.TrTextContent("Play", "Play is disabled, because the Time Scale in the Time Manager is set to 0.0.");
-            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop");
-            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause");
-            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart");
+            public GUIContent stop = EditorGUIUtility.TrTextContent("Stop", "Stop Particle System");
+            public GUIContent pause = EditorGUIUtility.TrTextContent("Pause", "Pause Particle System");
+            public GUIContent restart = EditorGUIUtility.TrTextContent("Restart", "Restart Particle System");
             public GUIContent addParticleSystem = EditorGUIUtility.TrTextContent("", "Create Particle System");
             public GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
             public GUIContent showOnlySelected = EditorGUIUtility.TrTextContent("Show Only Selected", "Hide all unselected Particle Systems in the current Effect.");
@@ -1009,10 +1009,10 @@ namespace UnityEditor
         private List<ParticleSystemUI> GetSelectedParticleSystemUIs()
         {
             List<ParticleSystemUI> result = new List<ParticleSystemUI>();
-            int[] selectedInstanceIDs = Selection.instanceIDs;
+            EntityId[] selectedEntityIds = Selection.entityIds;
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                if (selectedInstanceIDs.Contains(psUI.m_ParticleSystems[0].gameObject.GetInstanceID()))
+                if (selectedEntityIds.Contains(psUI.m_ParticleSystems[0].gameObject.GetEntityId()))
                     result.Add(psUI);
             }
             return result;
@@ -1286,7 +1286,7 @@ namespace UnityEditor
 
         internal void SetShowOnlySelectedMode(bool enabled)
         {
-            int[] selectedInstanceIDs = Selection.instanceIDs;
+            EntityId[] selectedEntityIds = Selection.entityIds;
 
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
@@ -1305,7 +1305,7 @@ namespace UnityEditor
                             if (psRenderer != null)
                             {
                                 if (enabled)
-                                    psRenderer.editorEnabled = selectedInstanceIDs.Contains(psRenderer.gameObject.GetInstanceID());
+                                    psRenderer.editorEnabled = selectedEntityIds.Contains(psRenderer.gameObject.GetEntityId());
                                 else
                                     psRenderer.editorEnabled = true;
                             }

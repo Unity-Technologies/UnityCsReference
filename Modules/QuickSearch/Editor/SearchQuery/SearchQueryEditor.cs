@@ -18,6 +18,7 @@ namespace UnityEditor.Search
         private SerializedProperty m_IsSearchTemplateProperty;
         private SerializedProperty m_IconProperty;
         private SerializedProperty m_ViewStateProperty;
+        private SerializedProperty m_ViewStateQueryProperty;
         private ScrollView m_InspectorScrollView;
         private VisualElement m_EditorContainer;
         private VisualElement m_HeaderElement;
@@ -41,6 +42,7 @@ namespace UnityEditor.Search
             m_IsSearchTemplateProperty = serializedObject.FindProperty("m_IsSearchTemplate");
             m_IconProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.icon));
             m_ViewStateProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.viewState));
+            m_ViewStateQueryProperty = serializedObject.FindProperty(nameof(SearchQueryAsset.viewStateQuery));
 
             var newViewState = new SearchViewState();
             newViewState.Assign(query.GetViewState());
@@ -84,6 +86,7 @@ namespace UnityEditor.Search
 
             m_HeaderElement.Add(searchTextElement);
             m_HeaderElement.Add(new UIElements.PropertyField(m_DescriptionProperty));
+            m_HeaderElement.Add(new UIElements.PropertyField(m_ViewStateQueryProperty));
 
             if (Unsupported.IsSourceBuild())
                 m_HeaderElement.Add(new UIElements.PropertyField(m_ViewStateProperty, "Debug View State") { });
@@ -190,7 +193,7 @@ namespace UnityEditor.Search
         public void OnDisable()
         {
             // Clear body to prevent accessing disposed properties.
-            m_Body.Clear();
+            m_Body?.Clear();
 
             m_ResultView?.Dispose();
             m_DescriptionProperty.Dispose();

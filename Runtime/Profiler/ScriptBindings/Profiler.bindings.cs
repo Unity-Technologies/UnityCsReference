@@ -35,12 +35,12 @@ namespace UnityEngine.Profiling
 
     [UsedByNativeCode]
     [MovedFrom("UnityEngine")]
-    [NativeHeader("Runtime/Allocator/MemoryManager.h")]
+    [NativeHeader("NativeKernel/Allocator/MemoryManager.h")]
     [NativeHeader("Runtime/Profiler/MemoryProfiler.h")]
     [NativeHeader("Runtime/Profiler/Profiler.h")]
     [NativeHeader("Runtime/Profiler/ScriptBindings/Profiler.bindings.h")]
     [NativeHeader("Runtime/ScriptingBackend/ScriptingApi.h")]
-    [NativeHeader("Runtime/Utilities/MemoryUtilities.h")]
+    [NativeHeader("NativeKernel/Utilities/MemoryUtilities.h")]
     public sealed class Profiler
     {
         internal const uint invalidProfilerArea = ~0u;

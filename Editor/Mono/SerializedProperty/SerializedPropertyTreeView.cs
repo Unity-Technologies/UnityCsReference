@@ -7,6 +7,10 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Profiling;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewUtility = UnityEditor.IMGUI.Controls.TreeViewUtility<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditor
 {
@@ -483,7 +487,7 @@ namespace UnityEditor
             if (m_bFilterSelection && m_ShowFilterGUI)
             {
                 if (m_SelectionFilter == null)
-                    m_SelectionFilter = Selection.instanceIDs;
+                    m_SelectionFilter = Selection.entityIds.ToIntArray();
                 tmprows = m_Items.Where((TreeViewItem item) => { return m_SelectionFilter.Contains(item.id); });
             }
             else
@@ -667,7 +671,7 @@ namespace UnityEditor
 
         protected override void SelectionChanged(IList<int> selectedIds)
         {
-            Selection.instanceIDs = selectedIds.ToArray();
+            Selection.entityIds = selectedIds.ToArray().ToEntityIdArray();
         }
 
         protected override void KeyEvent()

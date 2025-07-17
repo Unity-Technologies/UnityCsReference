@@ -93,6 +93,7 @@ namespace Unity.UI.Builder
         protected override bool StartDrag(VisualElement target, Vector2 mousePosition, VisualElement pill)
         {
             m_ElementsToReparent.Clear();
+            m_TargetElementToReparent = null;
 
             if (!selection.isEmpty)
             {
@@ -112,11 +113,16 @@ namespace Unity.UI.Builder
                     };
 
                     m_ElementsToReparent.Add(elementToReparent);
+
+                    m_TargetElementToReparent ??= selectedElement;
                 }
             }
 
-            // We still need a primary element that is "being dragged" for visualization purporses.
-            m_TargetElementToReparent = ExplorerGetDragPreviewFromTarget(target, mousePosition);
+            // We still need a primary element that is "being dragged" for visualization purposes.
+            if (m_TargetElementToReparent == null)
+            {
+                m_TargetElementToReparent = ExplorerGetDragPreviewFromTarget(target, mousePosition);
+            }
             if (m_TargetElementToReparent == null || !ExplorerCanStartDrag(m_TargetElementToReparent))
                 return false;
 
@@ -198,6 +204,7 @@ namespace Unity.UI.Builder
         protected override void EndDrag()
         {
             ResetDragPreviewElement();
+            m_ElementsToReparent.Clear();
         }
 
         protected override void FailAction(VisualElement target)

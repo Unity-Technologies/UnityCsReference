@@ -14,7 +14,7 @@ namespace UnityEditor.Search
         public static readonly string @default =
 @"{
     ""name"": ""Assets"",
-    ""roots"": [""Assets""],
+    ""roots"": [""Assets"", ""Packages""],
     ""includes"": [],
     ""excludes"": [""Assets/Temp/"", ""Assets/External/""],
     ""options"": {
@@ -98,6 +98,9 @@ namespace UnityEditor.Search
         {
             try
             {
+                if (ctx.assetPath != SearchDatabase.defaultSearchDatabaseIndexPath)
+                    return;
+
                 var db = ScriptableObject.CreateInstance<SearchDatabase>();
                 db.Import(ctx.assetPath);
                 ctx.AddObjectToAsset("index", db);
@@ -121,8 +124,16 @@ namespace UnityEditor.Search
                 return null;
 
             var dirPath = path;
-            var templateContent = settings ?? SearchDatabaseTemplates.all[template];
+            var indexFileName = string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(path) : name;
+            var indexPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dirPath, $"{indexFileName}.index")).Replace("\\", "/");
 
+            if (indexPath != SearchDatabase.defaultSearchDatabaseIndexPath)
+            {
+                Debug.LogError($"We can't create index in another location than: {SearchDatabase.defaultSearchDatabaseIndexPath}");
+                return null;
+            }
+
+            var templateContent = settings ?? SearchDatabaseTemplates.all[template];
             if (File.Exists(path))
             {
                 dirPath = Path.GetDirectoryName(path);
@@ -133,13 +144,10 @@ namespace UnityEditor.Search
             if (!Directory.Exists(dirPath))
                 Directory.CreateDirectory(dirPath);
 
-            var indexFileName = string.IsNullOrEmpty(name) ? Path.GetFileNameWithoutExtension(path) : name;
-            var indexPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dirPath, $"{indexFileName}.index")).Replace("\\", "/");
-
             SearchAnalytics.SendEvent(null, SearchAnalytics.GenericEventType.CreateIndexFromTemplate, template);
 
             Utils.WriteTextFileToDisk(indexPath, templateContent);
-            return SearchDatabase.ImportAsset(indexPath)?.path ?? indexPath;
+            return indexPath;
         }
 
         private static bool ValidateTemplateIndexCreation<T>() where T : UnityEngine.Object
@@ -160,37 +168,31 @@ namespace UnityEditor.Search
             return folderPath;
         }
 
-        [MenuItem("Assets/Create/Search/Assets Index", secondaryPriority = 3)]
         internal static void CreateIndexProject()
         {
             CreateTemplateIndex("Assets", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Assets Index", validate = true)]
         internal static bool CreateIndexProjectValidation()
         {
             return Directory.Exists(GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Prefabs Index", secondaryPriority = 4)]
         internal static void CreateIndexPrefab()
         {
             CreateTemplateIndex("Prefabs", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Prefabs Index", validate = true)]
         internal static bool CreateIndexPrefabValidation()
         {
             return ValidateTemplateIndexCreation<GameObject>();
         }
 
-        [MenuItem("Assets/Create/Search/Scenes Index", secondaryPriority = 5)]
         internal static void CreateIndexScene()
         {
             CreateTemplateIndex("Scenes", GetSelectionFolderPath());
         }
 
-        [MenuItem("Assets/Create/Search/Scenes Index", validate = true)]
         internal static bool CreateIndexSceneValidation()
         {
             return ValidateTemplateIndexCreation<SceneAsset>();

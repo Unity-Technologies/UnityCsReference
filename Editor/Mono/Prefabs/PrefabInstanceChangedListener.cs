@@ -96,11 +96,11 @@ namespace UnityEditor
 
         private static GameObject TryGetGameObject(int instanceId)
         {
-            Component comp = EditorUtility.InstanceIDToObject(instanceId) as Component;
+            Component comp = EditorUtility.EntityIdToObject(instanceId) as Component;
             if (comp)
                 return comp.gameObject;
 
-            return EditorUtility.InstanceIDToObject(instanceId) as GameObject;
+            return EditorUtility.EntityIdToObject(instanceId) as GameObject;
         }
 
         private static void OnGameObjectChanged(GameObject go)

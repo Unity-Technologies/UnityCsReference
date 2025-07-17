@@ -15,12 +15,12 @@ namespace UnityEditor.PackageManager.UI.Internal
         UpmError_Forbidden = ErrorCode.Forbidden,
         UpmError_InvalidParameter = ErrorCode.InvalidParameter,
         UpmError_Conflict = ErrorCode.Conflict,
+        UpmError_ConnectionError = ErrorCode.ConnectionError,
         #endregion
 
         // These are additional UPM errors that we need but are not returned
         // by the UPM server. These values might override the original code.
         UpmError_ServerNotRunning = 100,
-        UpmError_InvalidSignature,
         UpmError_UnsignedUnityPackage,
         UpmError_NotSignedIn,
         UpmError_NotAcquired,

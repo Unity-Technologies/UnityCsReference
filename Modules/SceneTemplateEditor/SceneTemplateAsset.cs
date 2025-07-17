@@ -71,7 +71,7 @@ namespace UnityEditor.SceneTemplate
                 return false;
             }
 
-            var scenePath = AssetDatabase.GetAssetPath(templateScene.GetInstanceID());
+            var scenePath = AssetDatabase.GetAssetPath(templateScene.GetEntityId());
             if (string.IsNullOrEmpty(scenePath))
             {
                 dependencies = new DependencyInfo[0];
@@ -178,7 +178,7 @@ namespace UnityEditor.SceneTemplate
         {
             if (!templateScene)
                 return null;
-            return AssetDatabase.GetAssetPath(templateScene.GetInstanceID());
+            return AssetDatabase.GetAssetPath(templateScene.GetEntityId());
         }
 
         [MenuItem("Assets/Create/Scene/Scene Template", priority = 2, secondaryPriority = 1)]

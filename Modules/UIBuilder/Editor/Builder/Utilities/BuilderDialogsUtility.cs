@@ -32,7 +32,11 @@ namespace Unity.UI.Builder
             if (cannotOpenDialogs)
                 return true;
 
-            return EditorUtility.DisplayDialog(title, message, ok, cancel);
+            return EditorDialog.DisplayDecisionDialog(
+                titleText: title,
+                messageText: message,
+                yesButtonText: ok,
+                noButtonText: cancel);
         }
 
         public static int DisplayDialogComplex(string title, string message, string ok, string cancel, string alt)
@@ -40,7 +44,24 @@ namespace Unity.UI.Builder
             if (cannotOpenDialogs)
                 return CannotOpenDisplayDialogComplexDefaultValue;
 
-            return EditorUtility.DisplayDialogComplex(title, message, ok, cancel, alt);
+            var result = EditorDialog.DisplayComplexDecisionDialog(
+                titleText: title,
+                messageText: message,
+                defaultButtonText: ok,
+                cancelButtonText: cancel,
+                altButtonText: alt);
+
+            switch (result)
+            {
+                case DialogResult.DefaultAction:
+                    return 0;
+                case DialogResult.Cancel:
+                    return 1;
+                case DialogResult.AlternateAction:
+                    return 2;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         public static string DisplayOpenFileDialog(string title, string directory, string extension)

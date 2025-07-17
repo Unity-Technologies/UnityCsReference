@@ -232,6 +232,15 @@ namespace UnityEngine.UIElements
             public override void SetValue(ref ResolvedStyleAccess container, DisplayStyle value) => throw new System.InvalidOperationException();
         }
 
+        class FilterProperty : ResolvedListProperty<FilterFunction>
+        {
+            public override string Name => nameof(IResolvedStyle.filter);
+            public override string ussName => "filter";
+            public override bool IsReadOnly => true;
+            public override IEnumerable<FilterFunction> GetValue(ref ResolvedStyleAccess container) => ((IResolvedStyle)container).filter;
+            public override void SetValue(ref ResolvedStyleAccess container, IEnumerable<FilterFunction> value) => throw new System.InvalidOperationException();
+        }
+
         class FlexBasisProperty : ResolvedStyleFloatProperty
         {
             public override string Name => nameof(IResolvedStyle.flexBasis);
@@ -738,8 +747,8 @@ namespace UnityEngine.UIElements
 
         public ResolvedStyleAccessPropertyBag()
         {
-            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(80);
-            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(240);
+            m_PropertiesList = new List<IProperty<ResolvedStyleAccess>>(81);
+            m_PropertiesHash = new Dictionary<string, IProperty<ResolvedStyleAccess>>(243);
             AddProperty(new AlignContentProperty());
             AddProperty(new AlignItemsProperty());
             AddProperty(new AlignSelfProperty());
@@ -764,6 +773,7 @@ namespace UnityEngine.UIElements
             AddProperty(new BottomProperty());
             AddProperty(new ColorProperty());
             AddProperty(new DisplayProperty());
+            AddProperty(new FilterProperty());
             AddProperty(new FlexBasisProperty());
             AddProperty(new FlexDirectionProperty());
             AddProperty(new FlexGrowProperty());

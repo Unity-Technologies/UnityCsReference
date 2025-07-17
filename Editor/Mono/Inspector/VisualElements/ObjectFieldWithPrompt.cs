@@ -33,7 +33,7 @@ namespace UnityEditor.UIElements
                     new (nameof(objectType), "type", typeof(Object)),
                     new (nameof(title), "title"),
                     new (nameof(message), "message"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

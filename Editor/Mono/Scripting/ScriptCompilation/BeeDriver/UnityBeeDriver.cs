@@ -23,8 +23,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 {
     static class UnityBeeDriver
     {
-        internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationContentsPath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
-        internal static readonly string BeeCacheToolExecutable = $"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/BeeLocalCacheTool{BeeScriptCompilation.ExecutableExtension}";
+        internal static readonly string BeeBackendExecutable = new NPath($"{EditorApplication.applicationBuildPipelinePath}/bee_backend{BeeScriptCompilation.ExecutableExtension}").ToString();
+        internal static readonly string BeeCacheToolExecutable = $"{EditorApplication.applicationBuildPipelinePath}/BeeLocalCacheTool{BeeScriptCompilation.ExecutableExtension}";
         internal static readonly string BeeCacheDirEnvVar = "BEE_CACHE_DIRECTORY";
         internal static string BeeCacheDir => Environment.GetEnvironmentVariable(BeeCacheDirEnvVar) ?? new NPath($"{OSUtil.GetDefaultCachePath()}/bee").ToString(SlashMode.Native);
 
@@ -182,6 +182,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 NetCoreRunPath = NetCoreRunProgram.NetCoreRunPath,
                 DotNetExe = NetCoreProgram.DotNetMuxerPath.ToString(),
                 EditorContentsPath = EditorApplication.applicationContentsPath,
+                EditorToolsPath = EditorApplication.applicationToolsPath,
+                EditorScriptingPath = EditorApplication.applicationScriptingPath,
+                EditorBuildPipelinePath = EditorApplication.applicationBuildPipelinePath,
                 Packages = GetPackageInfos(NPath.CurrentDirectory.ToString()),
                 UnityVersion = Application.unityVersion,
                 UnityVersionNumeric = new BeeBuildProgramCommon.Data.Version(Application.unityVersionVer, Application.unityVersionMaj, Application.unityVersionMin),

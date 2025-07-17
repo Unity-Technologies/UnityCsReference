@@ -193,7 +193,7 @@ namespace UnityEditor.Search.Providers
         {
             var info = GetInfo(item);
             if (info.gid.targetObjectId == 0)
-                return AssetDatabase.GetMainAssetInstanceID(GetInfo(item).source);
+                return AssetDatabase.GetMainAssetEntityId(GetInfo(item).source);
             return GlobalObjectId.GlobalObjectIdentifierToInstanceIDSlow(info.gid);
         }
 
@@ -587,6 +587,7 @@ namespace UnityEditor.Search.Providers
                     }
                 }
 
+                // Only wait until the index is ready to return data. Do not check if it is updating or needUpdate.
                 while (!db.ready)
                 {
                     if (!db || cancelToken.IsCancellationRequested || db.LoadingState == SearchDatabase.LoadState.Error || db.LoadingState == SearchDatabase.LoadState.Canceled)
@@ -870,7 +871,11 @@ namespace UnityEditor.Search.Providers
                 {
                     if (!SelectObjectbyId(info.gid))
                     {
-                        if (EditorUtility.DisplayDialog("Container scene is not opened", $"Do you want to open container scene {info.source}?", "Yes", "No"))
+                        if (EditorDialog.DisplayDecisionDialog(
+                            titleText: "Container scene is not opened",
+                            messageText: $"Do you want to open container scene {info.source}?",
+                            yesButtonText: default,
+                            noButtonText: default))
                             OpenItem(item);
                     }
                 };

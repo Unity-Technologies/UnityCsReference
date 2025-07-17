@@ -17,13 +17,13 @@ namespace UnityEngine.SceneManagement
             Unloading = 3
         }
 
-        internal Scene(int handle) { m_Handle = handle; }
+        internal Scene(SceneHandle handle) { m_Handle = handle; }
 
         [SerializeField]
         [HideInInspector]
-        private int m_Handle;
+        private SceneHandle m_Handle;
 
-        public int handle { get { return m_Handle; } }
+        public SceneHandle handle { get { return m_Handle; } }
 
         internal Scene.LoadingState loadingState
         {
@@ -82,6 +82,12 @@ namespace UnityEngine.SceneManagement
             set { SetIsSubScene(handle, value); }
         }
 
+        internal EntityId defaultParent
+        {
+            get => GetDefaultParent(handle);
+            set => SetDefaultParent(handle, value);
+        }
+
         public GameObject[] GetRootGameObjects()
         {
             var rootGameObjects = new List<GameObject>(rootCount);
@@ -121,7 +127,7 @@ namespace UnityEngine.SceneManagement
 
         public override int GetHashCode()
         {
-            return m_Handle;
+            return m_Handle.GetHashCode();
         }
 
         public override bool Equals(object other)

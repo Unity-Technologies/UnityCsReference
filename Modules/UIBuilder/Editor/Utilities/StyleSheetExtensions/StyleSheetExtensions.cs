@@ -2,16 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEditor.UIElements;
-using UnityEngine.Assertions;
 using UnityEngine.Pool;
-using UnityEngine.UIElements.StyleSheets;
 
 namespace Unity.UI.Builder
 {
@@ -30,7 +27,7 @@ namespace Unity.UI.Builder
             if (styleSheet == null)
                 return null;
 
-            var newStyleSheet = StyleSheetUtilities.CreateInstance();
+            var newStyleSheet = StyleSheetUtility.CreateInstanceWithHideFlags();
 
             styleSheet.DeepOverwrite(newStyleSheet);
 
@@ -69,25 +66,12 @@ namespace Unity.UI.Builder
             styleSheet.rules = styleSheet.rules;
         }
 
-        internal static List<string> GetSelectorStrings(this StyleSheet styleSheet)
-        {
-            var list = new List<string>();
-
-            foreach (var complexSelector in styleSheet.complexSelectors)
-            {
-                var str = StyleSheetToUss.ToUssSelector(complexSelector);
-                list.Add(str);
-            }
-
-            return list;
-        }
-
         internal static string GenerateUSS(this StyleSheet styleSheet)
         {
             string result = null;
             try
             {
-                result = StyleSheetToUss.ToUssString(styleSheet);
+                result = BuilderStyleSheetExporter.GetExportString(styleSheet);
             }
             catch (Exception ex)
             {
@@ -116,7 +100,7 @@ namespace Unity.UI.Builder
 
             foreach (var complexSelector in styleSheet.complexSelectors)
             {
-                var str = StyleSheetToUss.ToUssSelector(complexSelector);
+                var str = BuilderStyleSheetExporter.GetSelectorString(complexSelector);
 
                 if (str == selectorStr)
                     return complexSelector;
@@ -167,7 +151,7 @@ namespace Unity.UI.Builder
 
         public static StyleRule GetRule(this StyleSheet styleSheet, int index)
         {
-            if (styleSheet.rules.Count() <= index)
+            if (styleSheet.rules.Length <= index)
                 return null;
 
             return styleSheet.rules[index];
@@ -245,63 +229,6 @@ namespace Unity.UI.Builder
             StyleSheetUtility.TransferStylePropertyHandles(styleSheet, property, styleSheet, toProperty);
         }
 
-        public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, StyleValueType valueType, string variableName, string value)
-        {
-            var property = toStyleSheet.AddProperty(toSelector, variableName);
-
-            switch (valueType)
-            {
-                case StyleValueType.Float:
-                    toStyleSheet.AddValue(property, float.Parse(value));
-                    break;
-                case StyleValueType.Dimension:
-                    toStyleSheet.AddValue(property, new Dimension(float.Parse(value), Dimension.Unit.Pixel));
-                    break;
-                case StyleValueType.String:
-                    toStyleSheet.AddValue(property, value);
-                    break;
-                case StyleValueType.Variable:
-                    toStyleSheet.AddVariable(property, value);
-                    break;
-                case StyleValueType.Keyword:
-                    toStyleSheet.AddValue(property, (StyleValueKeyword)Enum.Parse(typeof(StyleValueKeyword), value));
-                    break;
-                case StyleValueType.Enum:
-                    toStyleSheet.AddValueAsEnum(property, value);
-                    break;
-            }
-
-            property.isCustomProperty = true;
-            toStyleSheet.SetTemporaryContentHash();
-        }
-
-        // Add color variable.
-        public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, Color value)
-        {
-            var property = toStyleSheet.AddProperty(toSelector, variableName);
-            toStyleSheet.AddValue(property, value);
-            property.isCustomProperty = true;
-            toStyleSheet.SetTemporaryContentHash();
-        }
-
-        // Add image variable.
-        public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, UnityEngine.Object value)
-        {
-            var property = toStyleSheet.AddProperty(toSelector, variableName);
-            toStyleSheet.AddValue(property, value);
-            property.isCustomProperty = true;
-            toStyleSheet.SetTemporaryContentHash();
-        }
-
-        // Add dimension variable.
-        public static void AddVariable(this StyleSheet toStyleSheet, StyleComplexSelector toSelector, string variableName, Dimension value)
-        {
-            var property = toStyleSheet.AddProperty(toSelector, variableName);
-            toStyleSheet.AddValue(property, value);
-            property.isCustomProperty = true;
-            toStyleSheet.SetTemporaryContentHash();
-        }
-
         public static bool IsSelected(this StyleSheet styleSheet)
         {
             var selector = styleSheet.FindSelector(BuilderConstants.SelectedStyleSheetSelectorName);
@@ -329,7 +256,7 @@ namespace Unity.UI.Builder
 
         public static StyleComplexSelector Swallow(this StyleSheet toStyleSheet, StyleSheet fromStyleSheet, StyleComplexSelector fromSelector)
         {
-            var toSelector = toStyleSheet.AddSelector(StyleSheetToUss.ToUssSelector(fromSelector));
+            var toSelector = toStyleSheet.AddSelector(BuilderStyleSheetExporter.GetSelectorString(fromSelector));
             if (toSelector == null)
                 return null;
 

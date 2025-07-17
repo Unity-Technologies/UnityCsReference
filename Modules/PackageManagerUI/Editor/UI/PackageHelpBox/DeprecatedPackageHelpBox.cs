@@ -11,6 +11,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         public DeprecatedPackageHelpBox()
         {
             messageType = HelpBoxMessageType.Warning;
+            analyticsId = "deprecated-package-help-box";
         }
 
         public override void Refresh(IPackageVersion version)

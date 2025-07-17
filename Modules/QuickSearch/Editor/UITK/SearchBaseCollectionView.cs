@@ -6,7 +6,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Pool;
 using UnityEngine.UIElements;
 
 namespace UnityEditor.Search
@@ -210,8 +212,11 @@ namespace UnityEditor.Search
 
         protected virtual void UpdateItemSize()
         {
-            m_ListView.fixedItemHeight = GetItemHeight();
-            m_ListView.Rebuild();
+            if (m_ListView.fixedItemHeight != GetItemHeight())
+            {
+                m_ListView.fixedItemHeight = GetItemHeight();
+                m_ListView.Rebuild();
+            }
         }
 
         protected virtual float GetItemHeight()
@@ -293,7 +298,7 @@ namespace UnityEditor.Search
                 {
                     if (!m_ListView.selectedIndices.Contains(nextSelectedIndex))
                     {
-                        var newSelection = new List<int>();
+                        using var pool = ListPool<int>.Get(out var newSelection);
                         if (nextSelectedIndex > currentIndex)
                         {
                             for (int i = currentIndex++; i <= nextSelectedIndex; ++i)
@@ -304,7 +309,7 @@ namespace UnityEditor.Search
                             for (int i = currentIndex--; i >= nextSelectedIndex; --i)
                                 newSelection.Add(i);
                         }
-                        m_ListView.AddToSelection(newSelection);
+                        m_ListView.AddToSelection(NoAllocHelpers.CreateReadOnlySpan(newSelection));
                     }
                     else
                     {

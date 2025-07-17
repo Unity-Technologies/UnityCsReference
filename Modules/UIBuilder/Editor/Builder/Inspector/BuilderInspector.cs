@@ -67,6 +67,10 @@ namespace Unity.UI.Builder
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
         VisualElement m_TextGeneratorStyle;
+        VisualElement m_TextAutoSizeStyle;
+
+        // Controllers
+        public UxmlBatchedChangesController batchedChangesController { get; }
 
         // Utilities
         BuilderInspectorMatchingSelectors m_MatchingSelectors;
@@ -83,6 +87,9 @@ namespace Unity.UI.Builder
         internal BuilderInspectorHeader headerSection => m_HeaderSection;
         // used for testing
         internal BuilderInspectorVariables variablesSection => m_VariablesSection;
+
+        // Actions
+        Action m_RefreshAttributesAction;
 
         // Sections
         BuilderInspectorCanvas m_CanvasSection;
@@ -161,7 +168,7 @@ namespace Unity.UI.Builder
                 if (BuilderSharedStyles.IsSelectorElement(currentVisualElement))
                     return currentVisualElement.GetClosestStyleSheet();
 
-                return visualTreeAsset.inlineSheet;
+                return visualTreeAsset.GetOrCreateInlineStyleSheet();
             }
         }
 
@@ -244,15 +251,20 @@ namespace Unity.UI.Builder
             m_Selection = selection;
             m_PaneWindow = paneWindow;
 
+            // Controllers
+            batchedChangesController = new UxmlBatchedChangesController(this);
+
             // Load Template
             var template = BuilderPackageUtilities.LoadAssetAtPath<VisualTreeAsset>(
                 BuilderConstants.UIBuilderPackagePath + "/Inspector/BuilderInspector.uxml");
             template.CloneTree(this);
 
             m_TextGeneratorStyle = this.Q<BuilderStyleRow>(null, "unity-text-generator");
+            m_TextAutoSizeStyle = this.Q<BuilderStyleRow>(null, "unity-text-auto-size");
 
             UIToolkitProjectSettings.onEnableAdvancedTextChanged += ChangeTextGeneratorStyleVisibility;
             m_TextGeneratorStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
+            m_TextAutoSizeStyle.style.display = UIToolkitProjectSettings.enableAdvancedText ? DisplayStyle.Flex : DisplayStyle.None;
 
             // Get the scroll view.
             // HACK: ScrollView is not capable of remembering a scroll position for content that changes often.
@@ -365,6 +377,8 @@ namespace Unity.UI.Builder
                 HelpBoxMessageType.Warning);
             helpBox.style.marginLeft = 0.0f;
             scaleModeWarningPlaceHolder.Add(helpBox);
+
+            m_RefreshAttributesAction = RefreshAttributesSection;
         }
 
         public void Dispose()
@@ -373,6 +387,7 @@ namespace Unity.UI.Builder
             m_AttributesSection.Dispose();
             m_HeaderSection.Dispose();
             m_PreviewWindow?.Close();
+            batchedChangesController.Dispose();
             UIToolkitProjectSettings.onEnableAdvancedTextChanged -= ChangeTextGeneratorStyleVisibility;
         }
 
@@ -782,6 +797,11 @@ namespace Unity.UI.Builder
                     var transitionsListView = field.GetFirstAncestorOfType<TransitionsListView>();
                     styleFields.RefreshStyleField(transitionsListView);
                 }
+                else if (id == StylePropertyId.Filter)
+                {
+                    var filterStyleField = field.GetFirstAncestorOfType<FilterStyleField>();
+                    styleFields.RefreshStyleField(filterStyleField);
+                }
                 else
                 {
                     var forceInlineIfBinding = IsInlineEditingEnabled(field) && cachedBinding != null && cachedBinding.property == boundFieldInlineValueBeingEditedName;
@@ -871,7 +891,7 @@ namespace Unity.UI.Builder
                     return;
 
                 // update the label to show that source is inherited
-                bindingAttributeTypeButtonGroup.label = string.Format(BuilderConstants.BuilderLabelWithInheritedLabelSuffix, BuilderNameUtilities.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource));
+                bindingAttributeTypeButtonGroup.label = string.Format(BuilderConstants.BuilderLabelWithInheritedLabelSuffix, StyleSheetUtility.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource));
 
                 if (!valueInfo.name.Equals(BuilderDataSourceAndPathView.k_BindingAttr_DataSource))
                     return;
@@ -890,7 +910,7 @@ namespace Unity.UI.Builder
             }
             else
             {
-                bindingAttributeTypeButtonGroup.label = BuilderNameUtilities.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource);
+                bindingAttributeTypeButtonGroup.label = StyleSheetUtility.ConvertDashToHuman(BuilderDataSourceAndPathView.k_BindingAttr_DataSource);
             }
         }
 
@@ -1084,7 +1104,7 @@ namespace Unity.UI.Builder
                 displayPath = displayPath.Substring(0, index);
             }
 
-            return string.Format(BuilderConstants.FieldStatusIndicatorFromSelectorTooltip, StyleSheetToUss.ToUssSelector(matchedRule.matchRecord.complexSelector), displayPath);
+            return string.Format(BuilderConstants.FieldStatusIndicatorFromSelectorTooltip, BuilderStyleSheetExporter.GetSelectorString(matchedRule.matchRecord.complexSelector), displayPath);
         }
 
         static string GetVariableTooltip(in VariableInfo info)
@@ -1239,7 +1259,7 @@ namespace Unity.UI.Builder
                     EnableSections(Section.NothingSelected);
                     m_ScrollView.contentContainer.style.flexGrow = 1;
                     m_ScrollView.contentContainer.style.justifyContent = Justify.Center;
-                    var hierarchyOrStyleSectionsNotEmpty = document.visualTreeAsset.visualElementAssets.Count > 1 ||
+                    var hierarchyOrStyleSectionsNotEmpty = document.visualTreeAsset.visualTree.childCount > 0 ||
                                                     document.activeStyleSheet != null;
                     if (!string.IsNullOrEmpty(document.activeOpenUXMLFile.uxmlPath) || hierarchyOrStyleSectionsNotEmpty)
                     {
@@ -1296,6 +1316,7 @@ namespace Unity.UI.Builder
 
             if (refreshAttributes)
             {
+                m_HeaderSection.Refresh();
                 RefreshAttributes();
             }
 
@@ -1321,9 +1342,6 @@ namespace Unity.UI.Builder
 
         void RefreshAttributes()
         {
-            // Reselect Icon, Type & Name in Header
-            m_HeaderSection.Refresh();
-
             if (m_AttributesSection.refreshScheduledItem != null)
             {
                 // Pause to stop it in case it's already running; and then restart it to execute it.
@@ -1332,8 +1350,13 @@ namespace Unity.UI.Builder
             }
             else
             {
-                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
+                m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(m_RefreshAttributesAction);
             }
+        }
+
+        void RefreshAttributesSection()
+        {
+            m_AttributesSection.Refresh();
         }
 
         public void OnAfterBuilderDeserialize()
@@ -1349,16 +1372,7 @@ namespace Unity.UI.Builder
 
             if ((changeType & BuilderHierarchyChangeType.Attributes) == BuilderHierarchyChangeType.Attributes)
             {
-                if (m_AttributesSection.refreshScheduledItem != null)
-                {
-                    // Pause to stop it in case it's already running; and then restart it to execute it.
-                    m_AttributesSection.refreshScheduledItem.Pause();
-                    m_AttributesSection.refreshScheduledItem.Resume();
-                }
-                else
-                {
-                    m_AttributesSection.refreshScheduledItem = m_AttributesSection.attributesContainer.schedule.Execute(() => m_AttributesSection.Refresh());
-                }
+                RefreshAttributes();
             }
         }
 
@@ -1402,7 +1416,8 @@ namespace Unity.UI.Builder
                     dimensionStyleField.dispatchMode = previousDispatchMode.Value;
             }
 
-            m_AttributesSection.ProcessBatchedChanges();
+            // Force submit the pending committed value changes
+            batchedChangesController.ProcessBatchedChanges();
         }
 
         public void SelectionChanged()
@@ -1448,6 +1463,7 @@ namespace Unity.UI.Builder
 
             if (IsElementSelected())
             {
+                m_HeaderSection.dataSourceAndPathView.SetAttributesOwner(visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
                 m_AttributesSection.SetAttributesOwner(visualTreeAsset, currentVisualElement, m_Selection.selectionType == BuilderSelectionType.ElementInTemplateInstance);
             }
             else
@@ -1460,6 +1476,7 @@ namespace Unity.UI.Builder
                 StyleSheetUtilities.AddFakeSelector(m_CurrentVisualElement);
                 // Need to delay the refresh of the inspector for selectors to ensure the variables are resolved
                 m_Selection.NotifyOfStylingChange(null, null, BuilderStylingChangeType.RefreshOnly);
+                m_HeaderSection.Refresh();
                 RefreshAttributes();
             }
             else
@@ -1571,6 +1588,13 @@ namespace Unity.UI.Builder
             }
         }
 
+        /// <summary>
+        /// Finds the field from the specified property path.
+        /// The property path can be a path to a style property or an attribute.
+        /// For example: FindFieldAtPath("style.width") or FindFieldAtPath("dataSource")
+        /// </summary>
+        /// <param name="propertyPath">The property path</param>
+        /// <returns>The field found or null</returns>
         public VisualElement FindFieldAtPath(string propertyPath)
         {
             const string k_StylePrefix = "style.";
@@ -1579,29 +1603,95 @@ namespace Unity.UI.Builder
             {
                 return FindStyleField(BuilderNameUtilities.ConvertStyleCSharpNameToUssName(propertyPath.Substring(k_StylePrefix.Length)));
             }
-            else
-            {
-                return FindAttributeField(attributeSection.GetRemapCSPropertyToAttributeName(propertyPath));
-            }
+
+            return FindAttributeField(attributeSection.GetRemapCSPropertyToAttributeName(propertyPath));
         }
 
-        public VisualElement FindAttributeField(string propName)
+        /// <summary>
+        /// Finds the field from the specified property path and throws an exception if not found.
+        /// The property path can be a path to a style property or an attribute.
+        /// For example: FindFieldAtPath("style.width") or FindFieldAtPath("dataSource")
+        /// </summary>
+        /// <param name="propertyPath">The property path</param>
+        /// <returns>The field found or null</returns>
+        public VisualElement MandatoryFindFieldAtPath(string propertyPath)
+        {
+            var field = FindFieldAtPath(propertyPath);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could not find field {propertyPath}");
+            }
+            return field;
+        }
+
+        /// <summary>
+        /// Finds the inspector attribute field from the specified property name.
+        /// </summary>
+        /// <param name="attributeName">The attribute name bound to the field to seek</param>
+        /// <returns>The attribute field found</returns>
+        public VisualElement FindAttributeField(string attributeName)
         {
             bool IsFieldElement(VisualElement ve)
             {
                 var attribute = ve.GetLinkedAttributeDescription();
-                return attribute?.name == propName;
+                return attribute?.name == attributeName;
             }
 
             VisualElement field;
-            if (propName is "data-source" or "data-source-type" or "data-source-path")
-                field = m_HeaderSection.m_DataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
+            if (attributeName is "data-source" or "data-source-type" or "data-source-path")
+                field = m_HeaderSection.dataSourceAndPathView.attributesContainer.Query().Where(IsFieldElement);
             else
                 field = attributeSection.root.Query().Where(IsFieldElement);
 
             return field;
         }
 
+        /// <summary>
+        /// Finds the inspector attribute field from the specified property name and throws an exception if not found.
+        /// </summary>
+        /// <param name="attributeName">The attribute name bound to the field to seek</param>
+        /// <returns>The attribute field found</returns>
+        public VisualElement MandatoryFindAttributeField(string attributeName)
+        {
+            var field = FindAttributeField(attributeName);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could not find attribute field {attributeName}");
+            }
+            return field;
+        }
+
+
+        /// <summary>
+        /// Finds the inspector attribute field from the specified property name.
+        /// </summary>
+        /// <param name="propertyName">The property name</param>
+        /// <typeparam name="T">The type of the inspector attribute field to seek</typeparam>
+        /// <returns>The attribute field found</returns>
+        public T FindAttributeField<T>(string propertyName) where T : VisualElement
+        {
+            var field = FindAttributeField(propertyName);
+            return field?.Q<T>();
+        }
+
+
+        /// <summary>
+        /// Finds the inspector attribute field from the specified property name and throws an exception if not found.
+        /// </summary>
+        /// <param name="propertyName">The property name bound to the field to seek</param>
+        /// <typeparam name="T">The type of inspector attribute field</typeparam>
+        /// <returns>The attribute field found</returns>
+        public T MandatoryFindAttributeField<T>(string propertyName) where T : VisualElement
+        {
+            var field = MandatoryFindAttributeField(propertyName);
+            return field?.Q<T>();
+        }
+
+        /// <summary>
+        /// Finds the inspector transtion style field from the specified style property path.
+        /// </summary>
+        /// <param name="fieldPath">The style property path</param>
+        /// <returns>The field found</returns>
         VisualElement FindTransitionField(string fieldPath)
         {
             var openBracketIndex = fieldPath.IndexOf('[');
@@ -1615,15 +1705,114 @@ namespace Unity.UI.Builder
             return transitionView.Q(fieldName);
         }
 
-        public VisualElement FindStyleField(string styleName)
+        /// <summary>
+        /// Finds the inspector transtion style field from the specified style property path and throws an exception if not found.
+        /// </summary>
+        /// <param name="fieldPath">The style property path</param>
+        /// <returns>The field found</returns>
+        VisualElement MandatoryFindTransitionField(string fieldPath)
         {
-            VisualElement field = null;
+            var field = FindTransitionField(fieldPath);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could not find transition field {fieldPath}");
+            }
+            return field;
+        }
+
+        /// <summary>
+        /// Finds the inspector style field from the specified style name.
+        /// </summary>
+        /// <param name="styleName">The style name bound to the field to seek</param>
+        /// <param name="expand">Whether to expand the parent foldouts</param>
+        /// <returns>The field found or null</returns>
+        public VisualElement FindStyleField(string styleName, bool expand = true)
+        {
+            VisualElement field;
 
             if (styleName.StartsWith("transitions"))
                 field = FindTransitionField(styleName);
             else
-                field = styleFields.m_StyleFields[styleName].First();
+            {
+                var fields = styleFields.m_StyleFields[styleName];
+                if (fields.Count > 1)
+                {
+                    // Skip the box model and fetch the desired field.
+                    field = fields.First(f => f is not BoxModel && string.IsNullOrEmpty(((BindableElement)f).bindingPath));
+                }
+                else
+                {
+                    field = fields.First();
+                }
+            }
+            if (expand)
+                ExpandParentFoldouts(field);
+            return field;
+        }
 
+        /// <summary>
+        /// Finds the inspector style field from the specified style name and throws an exception if not found.
+        /// </summary>
+        /// <param name="styleName">The style name bound to the field to seek</param>
+        /// <param name="expand">Whether to expand the parent foldouts</param>
+        /// <returns>The field found</returns>
+        public VisualElement MandatoryFindStyleField(string styleName, bool expand = true)
+        {
+            var field = FindStyleField(styleName, expand);
+            if (field == null)
+            {
+                throw new InvalidOperationException($"Could not find style field {styleName}");
+            }
+            return field;
+        }
+
+        /// <summary>
+        /// Expands all parent foldouts of the specified field.
+        /// </summary>
+        /// <param name="field">The field to expand</param>
+        public void ExpandParentFoldouts(VisualElement field)
+        {
+            var curParent = field.parent;
+
+            while (curParent != this)
+            {
+                if (curParent is Foldout foldout)
+                {
+                    foldout.value = true;
+                }
+                else if (curParent is PersistedFoldout persistedFoldout)
+                {
+                    persistedFoldout.value = true;
+                }
+                curParent = curParent.parent;
+            }
+        }
+
+        /// <summary>
+        /// Find the style field from the specified name and cast it to the specified type.
+        /// </summary>
+        /// <param name="styleName">The style name</param>
+        /// <param name="expand">Whether to expand the parent foldouts</param>
+        /// <typeparam name="T">The type of the field</typeparam>
+        /// <returns>The style field found</returns>
+        public T FindStyleField<T>(string styleName, bool expand = false) where T : VisualElement
+        {
+            return FindStyleField(styleName, expand) as T;
+        }
+
+        /// <summary>
+        /// Finds the model box style field from the specified name and cast it to the specified type.
+        /// </summary>
+        /// <param name="styleName">The style name</param>
+        /// <param name="expand">Whether to expand the parent foldouts</param>
+        /// <typeparam name="T">The type of the field</typeparam>
+        /// <returns>The style field found</returns>
+        public T FindBoxModelRelatedStyleField<T>(string styleName, bool expand = true) where T : BindableElement
+        {
+            var fields = styleFields.m_StyleFields[styleName];
+            var field = fields.OfType<T>().FirstOrDefault(s => string.IsNullOrEmpty(s.bindingPath));
+            if (expand)
+                ExpandParentFoldouts(field);
             return field;
         }
 
@@ -1755,6 +1944,7 @@ namespace Unity.UI.Builder
         void ChangeTextGeneratorStyleVisibility(bool show)
         {
             m_TextGeneratorStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
+            m_TextAutoSizeStyle.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         }
     }
 }

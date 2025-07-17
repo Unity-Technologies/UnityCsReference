@@ -49,6 +49,13 @@ namespace UnityEditor.Build.Profile
         public static readonly string revert = L10n.Tr("Revert");
         public static readonly string cancelButtonText = L10n.Tr("Cancel");
         public static readonly string continueButtonText = L10n.Tr("Continue");
+        public static readonly string addSettings = L10n.Tr("Add Settings");
+        public static readonly string reset = L10n.Tr("Reset");
+        public static readonly string remove = L10n.Tr("Remove");
+        public static readonly string resetSettings = L10n.Tr("Reset Settings");
+        public static readonly string removeSettings = L10n.Tr("Remove Settings");
+        public static readonly string resetMessage = L10n.Tr("Are you sure you want to reset these settings? This operation cannot be undone.");
+        public static readonly string removeMessage = L10n.Tr("Are you sure you want to remove these settings? This operation cannot be undone.");
         public static readonly GUIContent resetToGlobals = EditorGUIUtility.TrTextContent("Reset to Globals");
 
         // Build Profile Player Settings
@@ -105,8 +112,10 @@ namespace UnityEditor.Build.Profile
         public static readonly string active = L10n.Tr("Active");
         public static readonly string description = L10n.Tr("Description");
         public static readonly string packageInstalled = L10n.Tr("Package already installed.");
-        public static readonly string packagesHeader = L10n.Tr("Packages");
+        public static readonly string packageContainerTitle = L10n.Tr("Packages");
+        public static readonly string partnerPackageListTitle = L10n.Tr("Partner Packages");
         public static readonly string required = L10n.Tr("Required");
+        public static readonly string publisherLabel = L10n.Tr("Publisher: {0}");
         public static readonly string selectAll = L10n.Tr("Select All");
         public static readonly string deselectAll = L10n.Tr("Deselect All");
 

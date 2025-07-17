@@ -632,7 +632,7 @@ namespace UnityEditor
             foreach (var platform in m_ValidPlatforms)
             {
                 var buildTarget = BuildPipeline.GetBuildTargetByName(platform.namedBuildTarget.TargetName);
-                var buildTargetGroupName = BuildPipeline.GetBuildTargetGroup(buildTarget).ToString();
+                var buildTargetGroupName = BuildPipeline.GetBuildTargetGroupName(buildTarget);
 
                 if (!QualitySettings.SamePipelineAssetsForPlatform(buildTargetGroupName))
                     s_PlatformsWithDifferentRPAssets.Add(platform.title.ToString());

@@ -158,11 +158,10 @@ namespace Unity.UI.Builder
             var bindingAttribute = attributeName;
             attributesContainer.schedule.Execute(() =>
             {
-                UpdateAttribute(target, bindingAttribute);
-
                 if (target?.panel == null)
                     return;
 
+                UpdateAttribute(target, bindingAttribute);
                 UpdateFieldStatus(target);
             });
         }
@@ -378,7 +377,7 @@ namespace Unity.UI.Builder
             {
                 name = builderSerializedPropertyFieldName,
                 bindingPath = path,
-                label = BuilderNameUtilities.ConvertDashToHuman(attribute)
+                label = StyleSheetUtility.ConvertDashToHuman(attribute)
             };
             propertyField.Bind(m_CurrentElementSerializedObject);
 

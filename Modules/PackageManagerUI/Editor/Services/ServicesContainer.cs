@@ -162,6 +162,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             var delayedSelectionHandler = Register(new DelayedSelectionHandler(packageDatabase, pageManager, pageRefreshHandler, upmCache, settingsProxy));
 
             Register(new EditorAnalyticsProxy());
+            Register(new CustomDisplayDialog(applicationProxy, resourceLoader));
             Register(new ExtensionManager(packageManagerPrefs));
             Register(new PackageOperationDispatcher(assetStorePackageInstaller, assetStoreDownloadManager, upmClient));
             Register(new AssetStorePackageFactory(upmCache, unityConnectProxy, assetStoreCache, assetStoreDownloadManager, packageDatabase, fetchStatusTracker, backgroundFetchHandler));

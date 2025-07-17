@@ -115,35 +115,35 @@ namespace UnityEngine.UIElements
                     new (nameof(headerTemplate), "header-template"),
                     new (nameof(cellTemplate), "cell-template"),
                     new (nameof(bindingPath), "binding-path"),
-                });
+                }, false);
             }
 
             #pragma warning disable 649
-            [SerializeField] string name;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
-            [SerializeField] string title;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
-            [SerializeField] bool visible;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags visible_UxmlAttributeFlags;
-            [SerializeField] Length width;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags width_UxmlAttributeFlags;
-            [SerializeField] Length minWidth;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags minWidth_UxmlAttributeFlags;
-            [SerializeField] Length maxWidth;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxWidth_UxmlAttributeFlags;
-            [SerializeField] bool stretchable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchable_UxmlAttributeFlags;
-            [SerializeField] bool sortable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortable_UxmlAttributeFlags;
-            [SerializeField] bool optional;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags optional_UxmlAttributeFlags;
-            [SerializeField] bool resizable;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
             [SerializeField] VisualTreeAsset headerTemplate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTemplate_UxmlAttributeFlags;
             [SerializeField] VisualTreeAsset cellTemplate;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags cellTemplate_UxmlAttributeFlags;
+            [SerializeField] string name;
+            [SerializeField] string title;
             [SerializeField] string bindingPath;
+            [SerializeField] Length width;
+            [SerializeField] Length minWidth;
+            [SerializeField] Length maxWidth;
+            [SerializeField] bool visible;
+            [SerializeField] bool stretchable;
+            [SerializeField] bool sortable;
+            [SerializeField] bool optional;
+            [SerializeField] bool resizable;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags name_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags title_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags visible_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags width_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags minWidth_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags maxWidth_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags stretchable_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags sortable_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags optional_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags resizable_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags headerTemplate_UxmlAttributeFlags;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags cellTemplate_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags bindingPath_UxmlAttributeFlags;
             #pragma warning restore 649
 

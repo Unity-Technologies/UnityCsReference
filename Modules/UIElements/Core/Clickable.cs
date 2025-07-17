@@ -26,23 +26,7 @@ namespace UnityEngine.UIElements
         /// </remarks>
         /// <seealso cref="Clickable.clicked"/>
         /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// public VisualElement CreateButton()
-        /// {
-        ///     var button = new Button { text = "Press Me" };
-        ///     button.clickedWithEventInfo += (EventBase evt) =>
-        ///     {
-        ///         int clickCount = ((IPointerEvent)evt).clickCount;
-        ///         if (clickCount == 1)
-        ///             Debug.Log("Button was single-clicked.");
-        ///         else if (clickCount == 2)
-        ///             Debug.Log("Button was double-clicked.");
-        ///     };
-        ///     return button;
-        /// }
-        /// ]]>
-        /// </code>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/ButtonDoubleClickedExample.cs" />
         /// </example>
         public event Action<EventBase> clickedWithEventInfo;
 
@@ -75,19 +59,7 @@ namespace UnityEngine.UIElements
         /// <seealso cref="PointerDownEvent"/>
         /// <seealso cref="PointerCaptureEvent"/>
         /// <example>
-        /// <code>
-        /// <![CDATA[
-        /// public VisualElement CreateButton()
-        /// {
-        ///     var button = new Button { text = "Press Me" };
-        ///     button.clicked += () =>
-        ///     {
-        ///         Debug.Log("Button was pressed!");
-        ///     };
-        ///     return button;
-        /// }
-        /// ]]>
-        /// </code>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/Examples/Button_clicked.cs" />
         /// </example>
         public event Action clicked;
 
@@ -143,6 +115,9 @@ namespace UnityEngine.UIElements
         /// <param name="handler">The method to call when the clickable is clicked.</param>
         /// <param name="delay">Determines when the event begins. Value is defined in milliseconds. Applies if delay is greater than @@0@@.</param>
         /// <param name="interval">Determines the time delta between event repetition. Value is defined in milliseconds. Applies if interval is greater than @@0@@.</param>
+        /// <example>
+        /// <code source="../../../Modules/UIElements/Tests/UIElementsExamples/Assets/ui-toolkit-manual-code-examples/doc-examples/ClickableEditorWindow.cs" />
+        /// </example>
         public Clickable(Action handler, long delay, long interval) : this(handler)
         {
             m_Delay = delay;
@@ -188,11 +163,11 @@ namespace UnityEngine.UIElements
                 if (ContainsPointer(m_ActivePointerId) && (target.enabledInHierarchy || acceptClicksIfDisabled))
                 {
                     Invoke(null);
-                    target.pseudoStates |= PseudoStates.Active;
+                    target.SetActivePseudoState(true);
                 }
                 else
                 {
-                    target.pseudoStates &= ~PseudoStates.Active;
+                    target.SetActivePseudoState(false);
                 }
             }
         }
@@ -321,7 +296,7 @@ namespace UnityEngine.UIElements
 
         internal void SimulateSingleClick(EventBase evt, int delayMs = 100)
         {
-            target.pseudoStates |= PseudoStates.Active;
+            target.SetActivePseudoState(true);
             m_PendingActivePseudoStateReset = target.schedule.Execute(ResetActivePseudoState);
             m_PendingActivePseudoStateReset.ExecuteLater(delayMs);
             Invoke(evt);
@@ -331,7 +306,7 @@ namespace UnityEngine.UIElements
         {
             if (m_PendingActivePseudoStateReset == null)
                 return;
-            target.pseudoStates &= ~PseudoStates.Active;
+            target.SetActivePseudoState(false);
             m_PendingActivePseudoStateReset = null;
         }
 
@@ -365,7 +340,7 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            target.pseudoStates |= PseudoStates.Active;
+            target.SetActivePseudoState(true);
 
             evt.StopImmediatePropagation();
         }
@@ -379,11 +354,11 @@ namespace UnityEngine.UIElements
 
             if (ContainsPointer(m_ActivePointerId))
             {
-                target.pseudoStates |= PseudoStates.Active;
+                target.SetActivePseudoState(true);
             }
             else
             {
-                target.pseudoStates &= ~PseudoStates.Active;
+                target.SetActivePseudoState(false);
             }
 
             evt.StopPropagation();
@@ -400,7 +375,7 @@ namespace UnityEngine.UIElements
             if (!(evt is IPointerEvent))
                 target.panel.ProcessPointerCapture(pointerId);
 
-            target.pseudoStates &= ~PseudoStates.Active;
+            target.SetActivePseudoState(false);
 
             if (IsRepeatable())
             {
@@ -430,7 +405,7 @@ namespace UnityEngine.UIElements
             if (!(evt is IPointerEvent))
                 target.panel.ProcessPointerCapture(pointerId);
 
-            target.pseudoStates &= ~PseudoStates.Active;
+            target.SetActivePseudoState(false);
 
             if (IsRepeatable())
             {

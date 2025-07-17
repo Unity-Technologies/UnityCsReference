@@ -24,7 +24,7 @@ namespace UnityEditor.Experimental.GraphView
                 {
                     new(nameof(highlighted), "highlighted"),
                     new(nameof(text), "text"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

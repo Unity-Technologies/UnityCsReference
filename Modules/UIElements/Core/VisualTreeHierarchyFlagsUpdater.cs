@@ -31,7 +31,7 @@ namespace UnityEngine.UIElements
         protected const VersionChangeType AnythingChanged = ChildrenChanged | BoundingBoxChanged | VersionChanged;
 
         protected const VisualElementFlags BoundingBoxDirtyFlags =
-            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty;
+            VisualElementFlags.BoundingBoxDirty | VisualElementFlags.WorldBoundingBoxDirty | VisualElementFlags.BoundingBoxDirtiedSinceLastLayoutPass;
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {

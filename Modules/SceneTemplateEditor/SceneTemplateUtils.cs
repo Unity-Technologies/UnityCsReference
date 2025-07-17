@@ -80,7 +80,7 @@ namespace UnityEditor.SceneTemplate
 
         internal static IEnumerable<string> GetSceneTemplatePaths()
         {
-            return GetSceneTemplates().Select(asset => AssetDatabase.GetAssetPath(asset.GetInstanceID()));
+            return GetSceneTemplates().Select(asset => AssetDatabase.GetAssetPath(asset.GetEntityId()));
         }
 
         internal static IEnumerable<SceneTemplateAsset> GetSceneTemplates()
@@ -196,7 +196,7 @@ namespace UnityEditor.SceneTemplate
             // Check for real templateAssets:
             var sceneTemplateAssetInfos = GetSceneTemplates().Select(sceneTemplateAsset =>
             {
-                var templateAssetPath = AssetDatabase.GetAssetPath(sceneTemplateAsset.GetInstanceID());
+                var templateAssetPath = AssetDatabase.GetAssetPath(sceneTemplateAsset.GetEntityId());
                 return Tuple.Create(templateAssetPath, sceneTemplateAsset);
             })
                 .Where(templateData =>

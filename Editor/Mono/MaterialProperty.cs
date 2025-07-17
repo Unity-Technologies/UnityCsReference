@@ -31,12 +31,12 @@ namespace UnityEditor
         private int m_MixedValueMask;
 
         public Object[] targets { get { return m_Targets; } }
-        [Obsolete("The 'type' property is deprated. Please use 'propertyType' instead. (UnityUpgradable) -> propertyType", false)]
+        [Obsolete("The 'type' property is deprecated. Please use 'propertyType' instead. (UnityUpgradable) -> propertyType", false)]
         public PropType type { get { return (PropType)m_Type; } }
         public ShaderPropertyType propertyType { get { return m_Type; } }
         public string name { get { return m_Name; } }
         public string displayName { get { return m_DisplayName; } }
-        [Obsolete("The 'flags' property is deprated. Please use 'propertyFlags' instead. (UnityUpgradable) -> propertyFlags", false)]
+        [Obsolete("The 'flags' property is deprecated. Please use 'propertyFlags' instead. (UnityUpgradable) -> propertyFlags", false)]
         public PropFlags flags { get { return (PropFlags)m_Flags; } }
         public ShaderPropertyFlags propertyFlags { get { return m_Flags; } }
         public UnityEngine.Rendering.TextureDimension textureDimension { get { return m_TextureDimension; } }
@@ -485,6 +485,7 @@ namespace UnityEditor
                             target.RevertPropertyOverride(prop.name);
                         foreach (var prop in capturedSerializedProperties)
                             target.RevertPropertyOverride(prop);
+                        ShaderGUIUtility.ValidateMaterial(target);
                     }
                 });
             }
@@ -520,7 +521,10 @@ namespace UnityEditor
                                 Undo.RecordObjects(targets, "Revert all overrides of " + targetName);
 
                                 foreach (Material target in targets)
-                                target.RevertAllPropertyOverrides();
+                                {
+                                    target.RevertAllPropertyOverrides();
+                                    ShaderGUIUtility.ValidateMaterial(target);
+                                }
                                 });
                         break;
                     }

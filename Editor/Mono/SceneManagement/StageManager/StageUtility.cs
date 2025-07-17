@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -35,7 +36,7 @@ namespace UnityEditor.SceneManagement
                 return false;
 
             var scene = GetFocusedScene();
-            if (scene.handle == 0)
+            if (scene.handle == SceneHandle.None)
                 return true;
 
             return gameObject.scene == scene;
@@ -137,7 +138,7 @@ namespace UnityEditor.SceneManagement
 
         internal static void SetFocusedScene(Scene scene)
         {
-            SetFocusedSceneInternal(scene.IsValid() ? scene.handle : 0);
+            SetFocusedSceneInternal(scene.IsValid() ? scene.handle : SceneHandle.None);
         }
 
         internal static Scene GetFocusedScene()
@@ -153,6 +154,20 @@ namespace UnityEditor.SceneManagement
         internal static void CallAwakeFromLoadOnSubHierarchy(GameObject prefabInstanceRoot)
         {
             CallAwakeFromLoadOnSubHierarchyInternal(prefabInstanceRoot);
+        }
+
+        [RequiredByNativeCode]
+        internal static Scene[] GetCurrentStageScenes()
+        {
+            var currentStage = GetCurrentStage();
+            if (currentStage is MainStage)
+                return Array.Empty<Scene>();
+
+            var scenes = new Scene[currentStage.sceneCount];
+            for (int i = 0; i < currentStage.sceneCount; ++i)
+                scenes[i] = currentStage.GetSceneAt(i);
+
+            return scenes;
         }
     }
 }

@@ -35,7 +35,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(text), "text")
-                });
+                }, false);
             }
 
             #pragma warning disable 649
@@ -171,24 +171,16 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                visualInput.pseudoStates &= ~PseudoStates.Checked;
-                pseudoStates &= ~PseudoStates.Checked;
+                visualInput.SetCheckedPseudoState(false);
+                SetCheckedPseudoState(false);
                 m_CheckMark.AddToClassList(mixedValuesUssClassName);
             }
             else
             {
                 m_CheckMark.RemoveFromClassList(mixedValuesUssClassName);
 
-                if (value)
-                {
-                    visualInput.pseudoStates |= PseudoStates.Checked;
-                    pseudoStates |= PseudoStates.Checked;
-                }
-                else
-                {
-                    visualInput.pseudoStates &= ~PseudoStates.Checked;
-                    pseudoStates &= ~PseudoStates.Checked;
-                }
+                visualInput.SetCheckedPseudoState(value);
+                SetCheckedPseudoState(value);
             }
         }
     }

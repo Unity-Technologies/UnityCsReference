@@ -416,6 +416,13 @@ namespace UnityEngine
             int mipLevel,
             CubemapFace cubemapFace,
             int depthSlice);
+
+        extern public bool isProcessingRenderRequest
+        {
+            [NativeMethod("IsProcessingRenderRequest")]
+            get;
+        }
+
         [FreeFunction("CameraScripting::SetupCurrent")] extern public static void SetupCurrent(Camera cur);
         [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
 

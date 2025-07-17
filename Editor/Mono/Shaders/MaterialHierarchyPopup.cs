@@ -55,7 +55,7 @@ namespace UnityEditor
         readonly SearchFilter searchFilter;
         int[] results = null;
         string searchFilterString = "";
-        IEnumerator<HierarchyProperty> enumerator = null;
+        IEnumerator<HierarchyIterator> enumerator = null;
 
         public static class Colors
         {
@@ -462,7 +462,7 @@ namespace UnityEditor
                 GUIUtility.keyboardControl = GUIUtility.GetControlID(FocusType.Keyboard);
                 if (doubleClicked)
                 {
-                    Selection.SetActiveObjectWithContext(EditorUtility.InstanceIDToObject(selection), null);
+                    Selection.SetActiveObjectWithContext(EditorUtility.EntityIdToObject(selection), null);
                     Event.current.Use();
                     editorWindow.Close();
                     GUIUtility.ExitGUI();
@@ -477,7 +477,7 @@ namespace UnityEditor
             SearchFilterChanged();
         }
 
-        static IEnumerator<HierarchyProperty> FindInAllAssets(SearchFilter searchFilter)
+        static IEnumerator<HierarchyIterator> FindInAllAssets(SearchFilter searchFilter)
         {
             var rootPaths = new List<string>();
             rootPaths.Add("Assets");
@@ -489,7 +489,7 @@ namespace UnityEditor
 
             foreach (var rootPath in rootPaths)
             {
-                var property = new HierarchyProperty(rootPath, false);
+                var property = new HierarchyIterator(rootPath, false);
                 property.SetSearchFilter(searchFilter);
                 while (property.Next(null))
                     yield return property;
@@ -520,7 +520,7 @@ namespace UnityEditor
                     enumerator = null;
                     break;
                 }
-                var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(enumerator.Current.GetInstanceIDIfImported()) as Material;
+                var child = InternalEditorUtility.GetLoadedObjectFromInstanceID(enumerator.Current.GetEntityIdIfImported()) as Material;
                 if (!child)
                 {
                     // First check guid from file to avoid loading material in memory

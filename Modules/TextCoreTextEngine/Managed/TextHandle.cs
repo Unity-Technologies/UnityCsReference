@@ -12,17 +12,13 @@ using UnityEngine.Bindings;
 namespace UnityEngine.TextCore.Text
 {
     [DebuggerDisplay("{settings.text}")]
-    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
+    [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule", "UnityEditor.QuickSearchModule")] //Search uses GetCursorPositionFromStringIndexUsingLineHeight
     internal partial class TextHandle
     {
-        public TextHandle()
-        {
-        }
-
         ~TextHandle()
         {
-            RemoveTextInfoFromTemporaryCache();
-            RemoveTextInfoFromPermanentCache();
+            RemoveFromTemporaryCache();
+            RemoveFromPermanentCache();
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
@@ -38,7 +34,7 @@ namespace UnityEngine.TextCore.Text
 
             InitArray(ref s_Settings, () => new TextGenerationSettings());
             InitArray(ref s_Generators, () => new TextGenerator());
-            InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+            InitArray(ref s_TextInfosCommon, () => new TextInfo());
         }
 
         static TextGenerationSettings[] s_Settings;
@@ -74,7 +70,7 @@ namespace UnityEngine.TextCore.Text
             {
                 if (s_TextInfosCommon == null)
                 {
-                    InitArray(ref s_TextInfosCommon, () => new TextInfo(VertexDataLayout.VBO));
+                    InitArray(ref s_TextInfosCommon, () => new TextInfo());
                 }
                 return s_TextInfosCommon;
             }
@@ -143,11 +139,11 @@ namespace UnityEngine.TextCore.Text
         private Rect m_ScreenRect; //real pixel
         private float m_LineHeightDefault; //real pixel
         private bool m_IsPlaceholder;
-        protected bool m_IsEllided;
+        protected bool m_IsElided;
         [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
         internal IntPtr textGenerationInfo = IntPtr.Zero;
 
-        internal LinkedListNode<TextInfo> TextInfoNode { get; set; }
+        internal LinkedListNode<TextCacheEntry> TextInfoNode { get; set; }
         internal bool IsCachedPermanent { get; set; }
         internal bool IsCachedTemporary { get; set; }
 
@@ -166,7 +162,7 @@ namespace UnityEngine.TextCore.Text
             }
         }
 
-        public virtual void AddTextInfoToPermanentCache()
+        public virtual void AddToPermanentCacheAndGenerateMesh()
         {
             if (useAdvancedText)
             {
@@ -174,7 +170,7 @@ namespace UnityEngine.TextCore.Text
             }
             else
             {
-                s_PermanentCache.AddTextInfoToCache(this);
+                s_PermanentCache.AddToCache(this);
             }
         }
 
@@ -185,12 +181,12 @@ namespace UnityEngine.TextCore.Text
             s_TemporaryCache.AddTextInfoToCache(this, hashCode);
         }
 
-        public void RemoveTextInfoFromTemporaryCache()
+        public void RemoveFromTemporaryCache()
         {
-            s_TemporaryCache.RemoveTextInfoFromCache(this);
+            s_TemporaryCache.RemoveFromCache(this);
         }
 
-        public void RemoveTextInfoFromPermanentCache()
+        public void RemoveFromPermanentCache()
         {
             if (textGenerationInfo != IntPtr.Zero)
             {
@@ -199,9 +195,8 @@ namespace UnityEngine.TextCore.Text
             }
             else
             {
-                s_PermanentCache.RemoveTextInfoFromCache(this);
+                s_PermanentCache.RemoveFromCache(this);
             }
-
         }
 
         public static void UpdateCurrentFrame()
@@ -218,11 +213,13 @@ namespace UnityEngine.TextCore.Text
             [VisibleToOtherModules("UnityEngine.IMGUIModule", "UnityEngine.UIElementsModule")]
             get
             {
+                if (useAdvancedText)
+                    Debug.LogError("TextHandle.textInfo should not be used with Advanced Text, use textGenerationInfo instead.");
 
                 if (TextInfoNode == null)
                     return textInfoCommon;
                 else
-                    return TextInfoNode.Value;
+                    return TextInfoNode.Value.textInfo;
             }
         }
 
@@ -234,8 +231,6 @@ namespace UnityEngine.TextCore.Text
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int m_PreviousGenerationSettingsHash;
-
-        protected readonly internal static List<OTL_FeatureTag> m_ActiveFontFeatures = new List<OTL_FeatureTag>() { OTL_FeatureTag.kern };
 
         protected bool isDirty;
         public virtual void SetDirty()
@@ -297,7 +292,7 @@ namespace UnityEngine.TextCore.Text
             generator.GenerateText(settings, textInfo);
             m_PreviousGenerationSettingsHash = hashCode;
             isDirty = false;
-            m_IsEllided = generator.isTextTruncated;
+            m_IsElided = generator.isTextTruncated;
 
             return textInfo;
         }
@@ -337,12 +332,6 @@ namespace UnityEngine.TextCore.Text
             }
             renderedHeight = maxAscender - maxDescender;
 
-            // Adjust Preferred Width and Height to account for Margins.
-            renderedWidth += settings.margins.x > 0 ? settings.margins.x : 0;
-            renderedWidth += settings.margins.z > 0 ? settings.margins.z : 0;
-            renderedHeight += settings.margins.y > 0 ? settings.margins.y : 0;
-            renderedHeight += settings.margins.w > 0 ? settings.margins.w : 0;
-
             // Round Preferred Values to nearest 1/100.
             // The cast is now ok as we are working with real pixels values
             // The operation should also do nothing for bitmaps fonts as they are already aligned.
@@ -374,14 +363,14 @@ namespace UnityEngine.TextCore.Text
 
         public virtual Vector2 GetCursorPositionFromStringIndexUsingCharacterHeight(int index, bool inverseYAxis = true)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             var unscaled = useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingCharacterHeight(index, m_ScreenRect, m_LineHeightDefault, inverseYAxis);
             return PixelsToPoints(unscaled);
         }
 
         public Vector2 GetCursorPositionFromStringIndexUsingLineHeight(int index, bool useXAdvance = false, bool inverseYAxis = true)
         {
-            AddTextInfoToPermanentCache();
+            AddToPermanentCacheAndGenerateMesh();
             var unscaled =  useAdvancedText ? TextSelectionService.GetCursorPositionFromLogicalIndex(textGenerationInfo, index) : textInfo.GetCursorPositionFromStringIndexUsingLineHeight(index, m_ScreenRect, m_LineHeightDefault, useXAdvance, inverseYAxis);
             return PixelsToPoints(unscaled);
         }
@@ -683,5 +672,69 @@ namespace UnityEngine.TextCore.Text
         }
 
         internal virtual bool IsAdvancedTextEnabledForElement() { return false; }
+
+
+        //This method assumes the textInfo is populated
+        internal int GetTextElementCount()
+        {
+            if (useAdvancedText)
+            {
+                Debug.LogError("Cannot use GetTextElementCount while using Advanced Text");
+                return 0;
+            }
+
+            return textInfo.textElementInfo.Length;
+        }
+
+        internal readonly record struct GlyphMetricsForOverlay
+        {
+            public GlyphMetricsForOverlay(ref TextElementInfo textElementInfo, float pixelPerPoint)
+            {
+                float inversePPP = 1 / pixelPerPoint;
+                this.isVisible = textElementInfo.isVisible;
+                this.origin = textElementInfo.origin * inversePPP;
+                this.xAdvance = textElementInfo.xAdvance * inversePPP;
+                this.ascentline = textElementInfo.ascender * inversePPP;
+                this.baseline = textElementInfo.baseLine * inversePPP;
+                this.descentline = textElementInfo.descender * inversePPP;
+                this.topLeft = textElementInfo.topLeft * inversePPP;
+                this.bottomLeft = textElementInfo.bottomLeft * inversePPP;
+                this.topRight = textElementInfo.topRight * inversePPP;
+                this.bottomRight = textElementInfo.bottomRight * inversePPP;
+                this.scale = textElementInfo.scale;
+                this.lineNumber = textElementInfo.lineNumber;
+                this.fontCapLine = textElementInfo.fontAsset.faceInfo.capLine * inversePPP;
+                this.fontMeanLine = textElementInfo.fontAsset.faceInfo.meanLine * inversePPP;
+            }
+
+            readonly public bool isVisible;
+            readonly public float origin;
+            readonly public float xAdvance;
+            readonly public float ascentline;
+            readonly public float baseline;
+            readonly public float descentline;
+            readonly public Vector3 topLeft;
+            readonly public Vector3 bottomLeft;
+            readonly public Vector3 topRight;
+            readonly public Vector3 bottomRight;
+            readonly public float scale;
+            readonly public int lineNumber;
+            readonly public float fontCapLine;
+            readonly public float fontMeanLine;
+
+        }
+
+        //This method assumes the textInfo is populated
+        internal GlyphMetricsForOverlay GetScaledCharacterMetrics(int i)
+        {
+            // The goal of this method is to keep the concept of scaling inside the textHandle
+            // It will also serve in the future to handle conversion from the nativeTextInfo too.
+            if (useAdvancedText)
+            {
+                throw new InvalidOperationException("Cannot use GetScaledCharacterMetrics while using Advanced Text");
+            }
+            return new GlyphMetricsForOverlay(ref textInfo.textElementInfo[i], GetPixelsPerPoint());
+        }
     }
 }
+

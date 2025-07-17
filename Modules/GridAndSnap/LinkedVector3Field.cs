@@ -74,11 +74,7 @@ namespace UnityEditor.Snap
 
         void UpdateLinkedState()
         {
-            if (linked)
-                m_LinkedToggle.pseudoStates |= PseudoStates.Checked;
-            else
-                m_LinkedToggle.pseudoStates &= ~PseudoStates.Checked;
-
+            m_LinkedToggle.SetCheckedPseudoState(linked);
             m_YField.SetEnabled(!linked);
             m_ZField.SetEnabled(!linked);
         }

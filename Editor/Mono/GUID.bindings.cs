@@ -24,6 +24,14 @@ namespace UnityEditor
             TryParse(hexRepresentation, out this);
         }
 
+        public GUID(uint a, uint b, uint c, uint d)
+        {
+            m_Value0 = a;
+            m_Value1 = b;
+            m_Value2 = c;
+            m_Value3 = d;
+        }
+
         public static bool operator==(GUID x, GUID y)
         {
             return x.m_Value0 == y.m_Value0 && x.m_Value1 == y.m_Value1 && x.m_Value2 == y.m_Value2 && x.m_Value3 == y.m_Value3;

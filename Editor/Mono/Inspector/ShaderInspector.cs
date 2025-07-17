@@ -381,7 +381,7 @@ namespace UnityEditor
         private void ShowCompiledCodeButton(Shader s)
         {
             EditorGUILayout.BeginVertical();
-            ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetInstanceID())) as ShaderImporter;
+            ShaderImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(s.GetEntityId())) as ShaderImporter;
 
             s_PreprocessOnly = EditorGUILayout.Toggle(Styles.togglePreprocess, s_PreprocessOnly);
             if (s_PreprocessOnly)

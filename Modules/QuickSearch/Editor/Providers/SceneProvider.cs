@@ -36,9 +36,7 @@ namespace UnityEditor.Search.Providers
             showDetails = true;
             showDetailsOptions = ShowDetailsOptions.Inspector | ShowDetailsOptions.Actions | ShowDetailsOptions.Preview | ShowDetailsOptions.DefaultGroup;
 
-            isEnabledForContextualSearch = () =>
-                Utils.IsFocusedWindowTypeName("SceneView") ||
-                Utils.IsFocusedWindowTypeName("SceneHierarchyWindow");
+            isEnabledForContextualSearch = () => EditorWindow.focusedWindow is ISearchableContainer searchable && searchable.HierarchyType == HierarchyType.GameObjects;
 
             SearchMonitor.sceneChanged += InvalidateScene;
             SearchMonitor.documentsInvalidated += Refresh;
@@ -363,7 +361,7 @@ namespace UnityEditor.Search.Providers
 
         private static void FrameObjects(UnityEngine.Object[] objects)
         {
-            Selection.instanceIDs = objects.Select(o => o.GetHashCode()).ToArray();
+            Selection.entityIds = objects.Select(o => o.GetHashCode()).ToArray().ToEntityIdArray();
             if (SceneView.lastActiveSceneView != null)
                 SceneView.lastActiveSceneView.FrameSelected();
         }
@@ -395,6 +393,11 @@ namespace UnityEditor.Search.Providers
 
         private IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SearchContext context)
         {
+            return FetchQueryBuilderPropositions(queryEngine, context);
+        }
+
+        internal static IEnumerable<SearchProposition> FetchQueryBuilderPropositions(SceneQueryEngine engine, SearchContext context)
+        {
             foreach (var p in QueryAndOrBlock.BuiltInQueryBuilderPropositions())
                 yield return p;
 
@@ -410,15 +413,26 @@ namespace UnityEditor.Search.Providers
             foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QueryRenderingLayerBlock)))
                 yield return f;
 
-            foreach (var p in queryEngine.engine.GetPropositions())
+            foreach (var f in QueryListBlockAttribute.GetPropositions(typeof(QuerySceneFilterBlock)))
+                yield return f;
+
+            foreach (var p in engine.engine.GetPropositions())
                 yield return p;
 
             yield return new SearchProposition(category: "Options", "Fuzzy Matches", "+fuzzy",
                 "Use fuzzy search to match object names", priority: 0, moveCursor: TextCursorPlacement.MoveAutoComplete, icon: Icons.toggles,
                 color: QueryColors.toggle);
 
-            var sceneObjects = context.searchView?.results.Count > 0 && !context.searchInProgress ?
-                context.searchView.results.Select(r => r.ToObject()).Where(o => o) : SearchUtils.FetchGameObjects();
+            IEnumerable<UnityEngine.Object> sceneObjects;
+            if (context != null && context.searchView != null && context.searchView.results.Count > 0 && !context.searchInProgress)
+            {
+                sceneObjects = context.searchView.results.Select(r => r.ToObject()).Where(o => o);
+            }
+            else
+            {
+                sceneObjects = SearchUtils.FetchGameObjects();
+            }
+
             foreach (var p in SearchUtils.EnumeratePropertyPropositions(sceneObjects, IterateNonVisibleProperties))
                 yield return p;
         }

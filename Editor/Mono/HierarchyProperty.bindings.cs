@@ -12,7 +12,6 @@ using Object = UnityEngine.Object;
 using UnityEditor.SceneManagement;
 using UnityEditor.AssetImporters;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -35,46 +34,25 @@ namespace UnityEditor
         Texture = 1,
     }
 
-    interface IHierarchyProperty
-    {
-        void Reset();
-        int instanceID { get; }
-        Object pptrValue { get; }
-        string name { get; }
-        bool hasChildren { get; }
-        int depth { get; }
-        int row { get; }
-        int colorCode { get; }
-        string guid { get; }
-        Texture2D icon { get; }
-        bool isValid { get; }
-        bool isMainRepresentation { get; }
-        bool hasFullPreviewImage { get; }
-        IconDrawStyle iconDrawStyle { get; }
-        bool isFolder { get; }
-        GUID[] dynamicDependencies { get; }
-
-        bool IsExpanded(int[] expanded);
-        bool Next(int[] expanded);
-        bool NextWithDepthCheck(int[] expanded, int minDepth);
-        bool Previous(int[] expanded);
-        bool Parent();
-
-        int[] ancestors { get; }
-
-        bool Find(int instanceID, int[] expanded);
-        int[] FindAllAncestors(int[] instanceIDs);
-
-        bool Skip(int count, int[] expanded);
-        int CountRemaining(int[] expanded);
-        int GetInstanceIDIfImported();
-    }
-
     [NativeHeader("Editor/Src/Utility/HierarchyProperty.bindings.h")]
     [StructLayout(LayoutKind.Sequential)]
-    public sealed class HierarchyProperty : IHierarchyProperty
+    [Obsolete("HierarchyProperty is deprecated. Use HierarchyIterator instead.")]
+    public sealed class HierarchyProperty
     {
-        IntPtr m_Ptr;
+        internal static HierarchyProperty UnsafeCastFrom(HierarchyIterator iterator)
+        {
+            if (iterator == null)
+                throw new ArgumentNullException(nameof(iterator));
+            return new HierarchyProperty{m_Ptr = iterator.m_Ptr};
+        }
+
+        HierarchyProperty(){}//Don't use this constructor, use the other constructors instead.
+
+
+        /// <summary>
+        /// Pointer to the native HierarchyProperty object. Please don't use, only internal because we can then cast it to the old HierarchyProperty.
+        /// </summary>
+        internal IntPtr m_Ptr;
 
         public HierarchyProperty(HierarchyType hierarchyType)
             : this(hierarchyType, "Assets", true)
@@ -112,9 +90,14 @@ namespace UnityEditor
         }
 
         [FreeFunction("HierarchyPropertyBindings::SetCustomScenes", HasExplicitThis = true)]
-        public extern void SetCustomScenes([NotNull] int[] sceneHandles);
+        public extern void SetCustomScenes([NotNull] SceneHandle[] sceneHandles);
+
+        [Obsolete("SetCustomScenes(int[]) is deprecated. Use SetCustomScenes(SceneHandle[]) instead.")]
+        public void SetCustomScenes(int[] sceneHandles) => SetCustomScenes(sceneHandles?.ToSceneHandleArray() ?? Array.Empty<SceneHandle>());
+
         [FreeFunction("HierarchyPropertyBindings::SetSubScenes", HasExplicitThis = true)]
         public extern void SetSubScenes([NotNull] SceneHierarchyHooks.SubSceneInfo[] subScenes);
+
         public extern void Reset();
 
         [FreeFunction("HierarchyPropertyBindings::Internal_Destroy", IsThreadSafe = true)]
@@ -156,6 +139,7 @@ namespace UnityEditor
         public bool IsExpanded(int[] expanded) => IsExpanded_internal(expanded, expanded != null && expanded.Length == 0);
 
         public extern string guid { [FreeFunction("HierarchyPropertyBindings::GetGuid", HasExplicitThis = true)] get; }
+        public extern GUID assetGUID { [FreeFunction("HierarchyPropertyBindings::GetAssetGUID", HasExplicitThis = true)] get; }
         public extern bool alphaSorted { [NativeName("IsAlphaSorted")] get; set; }
         public extern bool showSceneHeaders { [NativeName("IsShowingSceneHeaders")] get; [NativeName("SetShowingSceneHeaders")] set; }
         public extern bool isSceneHeader { [NativeName("IsSceneHeader")] get; }
@@ -186,17 +170,10 @@ namespace UnityEditor
         private extern int CountRemaining_internal(int[] expanded, bool nonNullEmptyArray);
         public int CountRemaining(int[] expanded) => CountRemaining_internal(expanded, expanded != null && expanded.Length == 0);
 
-        public extern int GetInstanceIDIfImported();
+        internal extern EntityId GetEntityIdIfImported();
+        public int GetInstanceIDIfImported() => GetEntityIdIfImported();
 
         public extern Texture2D icon { [NativeName("GetCachedIcon")] get; }
-
-        [RequiredByNativeCode]
-        static void SetFilter(HierarchyProperty hierarchy, string filter)
-        {
-            SearchFilter search = new SearchFilter();
-            SearchUtility.ParseSearchString(filter, search);
-            hierarchy.SetSearchFilter(search);
-        }
 
         // Pre 4.0 interface (kept for backwards compability)
         public void SetSearchFilter(string searchString, int mode)
@@ -208,52 +185,19 @@ namespace UnityEditor
         // 4.0 interface (made internal for now)
         internal void SetSearchFilter(SearchFilter filter)
         {
-            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, new string[0], new string[0], filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex().ToArray(), filter.productIds, filter.anyWithAssetOrigin, filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
-        }
-
-        internal void CopySearchFilterFrom(HierarchyProperty other)
-        {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
-            CopySearchFilterImpl(other);
+            SetSearchFilterImpl(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, new string[0], new string[0], filter.referencingInstanceIDs, filter.sceneHandles, filter.GlobToRegex(), filter.productIds, filter.anyWithAssetOrigin, filter.showAllHits, filter.importLogFlags, filter.filterByTypeIntersection);
         }
 
         [FreeFunction("HierarchyPropertyBindings::SetSearchFilterImpl", HasExplicitThis = true)]
-        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags, bool filterByTypeIntersection);
-
-        [FreeFunction("HierarchyPropertyBindings::CopySearchFilterImpl", HasExplicitThis = true)]
-        extern void CopySearchFilterImpl(HierarchyProperty other);
+        extern void SetSearchFilterImpl(string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, SceneHandle[] sceneHandles, string[] regex, int[] productIds, bool anyWithAssetOrigin, bool showAllHits, ImportLogFlags importLogFlags, bool filterByTypeIntersection);
+      
+        [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObject")]
+        public static extern void FilterSingleSceneObject(int instanceID, bool otherVisibilityState);
 
         [FreeFunction("HierarchyPropertyBindings::FindAllAncestors", HasExplicitThis = true)]
         public extern int[] FindAllAncestors(int[] instanceIDs);
         [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilter")]
         public static extern void ClearSceneObjectsFilter();
-
-        internal static void ClearSceneObjectsFilterInScene(Scene[] scenes)
-        {
-            if (scenes == null)
-                throw new ArgumentNullException(nameof(scenes));
-            ClearSceneObjectsFilterInScene(scenes.Select(s => s.handle).ToArray());
-        }
-
-        [FreeFunction("HierarchyPropertyBindings::ClearSceneObjectsFilterInScene")]
-        internal static extern void ClearSceneObjectsFilterInScene([NotNull] int[] sceneHandles);
-
-        [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObject")]
-        public static extern void FilterSingleSceneObject(int instanceID, bool otherVisibilityState);
-
-        internal static void FilterSingleSceneObjectInScene(int instanceID, bool otherVisibilityState, Scene[] scenes)
-        {
-            if (scenes == null)
-                throw new ArgumentNullException(nameof(scenes));
-            FilterSingleSceneObjectInScene(instanceID, otherVisibilityState, scenes.Select(s => s.handle).ToArray());
-        }
-
-        [FreeFunction("HierarchyPropertyBindings::FilterSingleSceneObjectInScene")]
-        internal static extern void FilterSingleSceneObjectInScene(int instanceID, bool otherVisibilityState, [NotNull] int[] sceneHandles);
-
-        [FreeFunction("HierarchyPropertyBindings::SetFilteredVisibility", HasExplicitThis = true)]
-        internal extern void SetFilteredVisibility(bool visible);
 
         internal static class BindingsMarshaller
         {

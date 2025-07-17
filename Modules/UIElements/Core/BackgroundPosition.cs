@@ -13,6 +13,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> background-position style property <see cref="IStyle.BackgroundPosition"/>.
     /// </summary>
+    [Serializable]
     public partial struct BackgroundPosition : IEquatable<BackgroundPosition>
     {
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]

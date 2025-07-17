@@ -25,7 +25,7 @@ namespace UnityEngine.UIElements
     //
     // For example 2: A keydown with Textfocus in TextField C
     // result ==> Phase TrickleDown [ root, A], Phase Target [C], Phase BubbleUp [ A, root ]
-    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule", "UnityEngine.HierarchyModule")]
     enum DispatchMode
     {
         Default = Queued,
@@ -267,7 +267,7 @@ namespace UnityEngine.UIElements
                 Debug.LogErrorFormat("Ignoring event {0}: too many events dispatched recurively", evt);
                 return true;
             }
-            
+
             return false;
         }
 
@@ -407,7 +407,7 @@ namespace UnityEngine.UIElements
                         m_CurrentEvent = evt;
                         // Record the stack frame depth for later trimming the irrelevant part of the stack when logging recursive events.
                         // 0 mean no stack trace displayed
-                        m_DispatchStackFrame = m_GateDepth > k_MaxGateDepth - k_NumberOfEventsWithStackInfo ? new StackTrace().FrameCount : 0; 
+                        m_DispatchStackFrame = m_GateDepth > k_MaxGateDepth - k_NumberOfEventsWithStackInfo ? new StackTrace().FrameCount : 0;
                         evt.Dispatch(panel);
                     }
                     finally

@@ -97,6 +97,10 @@ namespace UnityEditor.PackageManager.UI.Internal
         private string m_DeprecationMessage;
         public override string deprecationMessage => m_DeprecationMessage ?? string.Empty;
 
+        [SerializeField]
+        private SignatureInfo m_SignatureInfo;
+        public override SignatureInfo signatureInfo => m_SignatureInfo;
+
         private UpmPackageVersion(string name, string versionString, RegistryType availableRegistry)
         {
             m_Name = name;
@@ -113,6 +117,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_IsFullyFetched = false,
                 m_IsInstalled =  false,
                 m_IsDirectDependency = false,
+                m_DisplayName = !string.IsNullOrEmpty(packageData.displayName) ? packageData.displayName : ExtractDisplayName(packageData.name)
             };
             packageVersion.UpdateTags(packageData);
             packageVersion.m_PackageId = FormatPackageId(packageVersion.m_Name, packageVersion.m_VersionString);
@@ -128,7 +133,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_IsInstalled = isInstalled,
                 m_IsDirectDependency = packageInfo.isDirectDependency,
                 m_VersionInManifest = isInstalled ? packageInfo.projectDependenciesEntry : string.Empty,
-                m_DisplayName = GetDisplayName(packageInfo),
+                m_DisplayName = !string.IsNullOrEmpty(packageInfo.displayName) ? packageInfo.displayName : ExtractDisplayName(packageInfo.name),
                 m_Category = packageInfo.category,
                 m_Entitlements = packageInfo.entitlements,
                 m_Dependencies = packageInfo.dependencies,
@@ -136,8 +141,10 @@ namespace UnityEditor.PackageManager.UI.Internal
                 m_ResolvedPath = packageInfo.resolvedPath,
                 m_DeprecationMessage = packageInfo.deprecationMessage,
                 m_Description = packageInfo.ExtractBuiltinDescription(out var result) ? result : packageInfo.description,
-                m_PublishedDateTicks = GetPublishDateTicks(packageInfo)
+                m_PublishedDateTicks = GetPublishDateTicks(packageInfo),
+                m_SignatureInfo = packageInfo.signature
             };
+
             packageVersion.UpdateTags(packageData, packageInfo);
             packageVersion.m_PackageId = packageVersion.HasTag(PackageTag.InstalledFromPath) ? packageInfo.packageId.Replace("\\", "/") : packageInfo.packageId;
             packageVersion.m_Author = packageVersion.HasTag(PackageTag.Unity) ? k_UnityAuthor : packageInfo.author?.name ?? string.Empty;
@@ -156,7 +163,7 @@ namespace UnityEditor.PackageManager.UI.Internal
                 return;
 
             // We only tag a package as `Unity` when it's directly installed from registry or built in. A package available on Unity registry can be installed
-            // through git or local file system but in those cases it is not considered a `Unity` package.
+            // through git or local file system, but in those cases it is not considered a `Unity` package.
             if (m_AvailableRegistry == RegistryType.UnityRegistry && packageInfo?.source != PackageSource.Unknown)
                 m_Tag |= PackageTag.Unity;
 
@@ -194,11 +201,6 @@ namespace UnityEditor.PackageManager.UI.Internal
             if (HasTag(PackageTag.BuiltIn))
                 return isFirstLetterCapitalized ? L10n.Tr("Built-in package") : L10n.Tr("built-in package");
             return isFirstLetterCapitalized ? L10n.Tr("Package") : L10n.Tr("package");
-        }
-
-        private static string GetDisplayName(PackageInfo info)
-        {
-            return !string.IsNullOrEmpty(info.displayName) ? info.displayName : ExtractDisplayName(info.name);
         }
 
         private static long GetPublishDateTicks(PackageInfo info)
@@ -245,11 +247,9 @@ namespace UnityEditor.PackageManager.UI.Internal
                     m_Errors.Add(new UIError(error));
             }
 
-            if (info.signature.status == SignatureStatus.Invalid)
-                m_Errors.Add(UIError.k_InvalidSignatureWarning);
-            else if (info.signature.status == SignatureStatus.Unsigned && name.StartsWith(k_UnityPrefix) &&
-                     (info.source == PackageSource.LocalTarball ||
-                      info.source == PackageSource.Registry && !info.registry.isDefault))
+            if (info.signature.status == SignatureStatus.Unsigned && name.StartsWith(k_UnityPrefix) &&
+                (info.source == PackageSource.LocalTarball ||
+                 info.source == PackageSource.Registry && !info.registry.isDefault))
                 // Flag Unsigned packages on a non-default registry and local tarballs
                 // when the name starts with "com.unity." to prevent dependency confusion
                 m_Errors.Add(UIError.k_UnsignedUnityPackageWarning);

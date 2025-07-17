@@ -40,6 +40,7 @@ namespace UnityEngineInternal.Video
     }
 
     [UsedByNativeCode]
+    [VisibleToOtherModules("UnityEditor.MediaModule")]
     internal enum VideoAlphaLayout
     {
         Native,
@@ -79,6 +80,7 @@ namespace UnityEngineInternal.Video
 
         extern public bool CanNotSkipOnDrop();
         extern public void SetSkipOnDrop(bool skipOnDrop);
+        extern public bool GetSkipOnDrop();
         extern public bool GetTexture(Texture texture, out long outputFrameNum);
 
         public delegate void Callback();
@@ -124,6 +126,7 @@ namespace UnityEngineInternal.Video
             return provider;
         }
 
+        extern static internal bool PlatformSupportsH264();
         extern static internal bool PlatformSupportsH265();
 
         internal static class BindingsMarshaller

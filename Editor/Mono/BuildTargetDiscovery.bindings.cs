@@ -138,6 +138,27 @@ namespace UnityEditor
             return buildTarget != null;
         }
 
+        internal static bool TryGetBuildTarget(NamedBuildTarget named, out IBuildTarget outTarget)
+        {
+            var direct = BuildPipeline.GetBuildTargetByName(named.TargetName);
+            // name.BuildTarget => enum.IBuildTarget
+            if (TryGetBuildTarget(direct, out outTarget))
+                return true;
+
+            // look through every known platform
+            foreach (var info in BuildTargetDiscovery.GetBuildTargetInfoList())
+            {
+                if (Array.IndexOf(info.nameList, named.TargetName) < 0)
+                    continue;
+
+                if (TryGetBuildTarget(info.buildTargetPlatformVal, out outTarget))
+                    return true;
+            }
+
+            outTarget = null;
+            return false;
+        }
+
         public static bool TryGetProperties<T>(BuildTarget platform, out T properties) where T : IPlatformProperties
         {
             if (TryGetBuildTarget(platform, out var buildTarget))
@@ -236,8 +257,16 @@ namespace UnityEditor
             public StandaloneBuildSubtarget subtarget = StandaloneBuildSubtarget.Default;
             public PlatformAttributes flags = PlatformAttributes.None;
 
-            public string[] requiredPackage = new string[] {};
-            public string[] recommendedPackage = new string[] {};
+            /// <summary>
+            /// List of Unity-maintained required and recommended packages for a platform.
+            /// </summary>
+            public PlatformPackageList internalPackages = new PlatformPackageList();
+
+            /// <summary>
+            /// List of Partner-maintained required and recommended packages for a platform.
+            /// </summary>
+            public PlatformPackageList partnerPackages = new PlatformPackageList();
+
             public string description = L10n.Tr("");
             public string instructions = L10n.Tr("*standard install form hub");
             public string iconName = "BuildSettings.Editor";
@@ -253,10 +282,34 @@ namespace UnityEditor
             public bool HasFlag(PlatformAttributes flag) { return (flags & flag) == flag; }
         }
 
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal class PlatformPackageList
+        {
+            public int packageCount => requiredPackages.Length + recommendedPackages.Length;
+            public PlatformPackageInfo[] requiredPackages = Array.Empty<PlatformPackageInfo>();
+            public PlatformPackageInfo[] recommendedPackages = Array.Empty<PlatformPackageInfo>();
+        }
+
+        [VisibleToOtherModules("UnityEditor.BuildProfileModule")]
+        internal class PlatformPackageInfo
+        {
+            public string displayName { get; }
+            public string qualifiedName { get; }
+            public string description { get; }
+            public string publisher { get; }
+
+            public PlatformPackageInfo(string displayName, string qualifiedName, string description, string publisher = "")
+            {
+                this.displayName = displayName;
+                this.qualifiedName = qualifiedName;
+                this.description = description;
+                this.publisher = publisher;
+            }
+        }
 
         static GUID EmptyGuid = new GUID("");
 
-        static Dictionary<BuildTarget, GUID> s_PlatformGUIDDataQuickLookup = new Dictionary<BuildTarget, GUID>();
+        static Dictionary<BuildTarget, GUID> s_BuildTargetToPlatformGUID = new Dictionary<BuildTarget, GUID>();
 
         // This list should not be exposed ouside of BuildTargetDiscovery to avoid NDA spillage, provide a access function for data here instead.
         // Changes here should be synced with the usage of
@@ -317,7 +370,13 @@ namespace UnityEditor
                     buildTarget = BuildTarget.StandaloneWindows64,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -331,7 +390,13 @@ namespace UnityEditor
                     buildTarget = BuildTarget.StandaloneOSX,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                        }
+                    },
                     flags = PlatformAttributes.IsMacServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -345,7 +410,13 @@ namespace UnityEditor
                     buildTarget = BuildTarget.StandaloneLinux64,
                     subtarget = StandaloneBuildSubtarget.Server,
                     iconName = "BuildSettings.DedicatedServer",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.dedicated-server") },
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Dedicated Server"), "com.unity.dedicated-server", L10n.Tr("The Dedicated Server package contains optimizations and workflow improvements for developing Dedicated Server platform.")),
+                        }
+                    },
                     flags = PlatformAttributes.IsLinuxServerBuildTarget | PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget
                 }
             },
@@ -468,10 +539,10 @@ namespace UnityEditor
                new("25a09d2ed10c42f789b61d99b4d9bf83"),
                new PlatformInfo
                {
-                    displayName = "ReservedCFE",
+                    displayName = "Nintendo Switch 2",
                     instructions = L10n.Tr("This platform is not available to download from the Unity website, contact the platform holder directly to learn more."),
                     description =  L10n.Tr("Benefit from Unity’s support for developing games and applications on this platform"),
-                    buildTarget = BuildTarget.ReservedCFE,
+                    buildTarget = BuildTarget.Switch2,
                     flags = PlatformAttributes.ExternalDownloadForBuildTarget | PlatformAttributes.IsHidden | PlatformAttributes.IsNDAPlatform | PlatformAttributes.IsWindowsBuildTarget
                 }
             },
@@ -501,8 +572,18 @@ namespace UnityEditor
                     subtitle = "From <color=\"white\"><b>Meta</b></color>",
                     buildTarget = BuildTarget.WebGL,
                     iconName = "BuildSettings.Facebook",
-                    requiredPackage = new string[]{"com.unity.meta-instant-games-sdk"},
-                    recommendedPackage = new string[]{"com.unity.web.stripping-tool"},
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Facebook Instant Games SDK"), "com.unity.meta-instant-games-sdk",
+                                L10n.Tr("This package provides C# bindings to the Facebook Instant Games SDK, making it easy to integrate Facebook Instant Games with your Unity project. Since the Facebook Instant Games SDK is originally a JavaScript SDK, this package is compatible only with web builds.")),
+                        },
+                        recommendedPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Web Stripping Tool"), "com.unity.web.stripping-tool", L10n.Tr("A package for optimizing the code size of Unity Web builds.")),
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsVisibleInPlatformBrowserOnly | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -518,7 +599,50 @@ namespace UnityEditor
                     ),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Meta",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.openxr") },
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("OpenXR Plugin"), "com.unity.xr.openxr",
+                                L10n.Tr("OpenXR is an open, royalty-free standard developed by Khronos that aims to simplify AR/VR development by allowing developers to target a wide range of AR/VR devices. Use this plug-in to enable OpenXR in XR Plug-in Management.")),
+                        }
+                    },
+                    partnerPackages = new PlatformPackageList
+                    {
+                        recommendedPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Meta XR All-in-one SDK"), "com.meta.xr.sdk.all",
+                                L10n.Tr("Meta XR All-in-One SDK is a wrapper package that depends on the latest version of all Meta XR SDKs, making it easy to get started with VR development."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Core SDK"), "com.meta.xr.sdk.core",
+                                L10n.Tr("Meta XR Core SDK package provides the latest features to create immersive experiences for Meta XR devices."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Audio SDK"), "com.meta.xr.sdk.audio",
+                                L10n.Tr("Comprehensive spatial audio features for immersive applications, including a spatial audio renderer with HRTF, ambisonic audio playback, and room acoustics for creating immersive environments."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Haptics SDK"), "com.meta.xr.sdk.haptics",
+                                L10n.Tr("SDK for playback of haptics created in Meta Haptics Studio on Quest devices."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK Essentials"), "com.meta.xr.sdk.interaction",
+                                L10n.Tr("Provides the core implementations of all the provided interaction models along with necessary shaders, materials, and prefabs."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Interaction SDK"), "com.meta.xr.sdk.interaction.ovr",
+                                L10n.Tr("This package allows Interaction SDK to interface with OVRPlugin. Use this package if you are using OVRPlugin or the Core SDK package."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Platform SDK"), "com.meta.xr.sdk.platform",
+                                L10n.Tr("Use the Platform SDK to create social VR applications. Add Matchmaking, DLC,In-App Purchases, Cloud Storage, and more to your experience using the individual components of the SDK."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Voice SDK"), "com.meta.xr.sdk.voice",
+                                L10n.Tr("Voice SDK enables natural voice interactions for AR/VR apps, powered by Wit.ai."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR Simulator"), "com.meta.xr.simulator",
+                                L10n.Tr("Meta XR Simulator allows developers to preview their VR changes without needing a physical device."),
+                                L10n.Tr("Meta")),
+                            new PlatformPackageInfo(L10n.Tr("Meta XR MR Utility Kit"), "com.meta.xr.mrutilitykit",
+                                L10n.Tr("Helper tools & functions to simplify development with Scene API. Works on Mac & PC, without a device attached."),
+                                L10n.Tr("Meta")),
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -531,7 +655,13 @@ namespace UnityEditor
                     description = L10n.Tr("Android XR provides a strong foundation for high-performance, immersive experiences. OpenXR conformance ensures support for widely used XR extensions, while cross-platform tools provide a familiar development experience. The Android XR build profile offers pre-configured settings tailored for Android XR development, making getting started fast and easy."),
                     buildTarget = BuildTarget.Android,
                     iconName = "BuildSettings.Android",
-                    requiredPackage = new string[]{L10n.Tr("com.unity.xr.androidxr-openxr") },
+                    internalPackages = new PlatformPackageList
+                    {
+                        requiredPackages = new[]
+                        {
+                            new PlatformPackageInfo(L10n.Tr("Unity OpenXR Android XR"), "com.unity.xr.androidxr-openxr", L10n.Tr("Enables you to build mixed reality apps for Android XR devices by implementing support for Android XR extensions.")),
+                        }
+                    },
                     flags = PlatformAttributes.IsWindowsBuildTarget | PlatformAttributes.IsWindowsArm64BuildTarget | PlatformAttributes.IsLinuxBuildTarget | PlatformAttributes.IsMacBuildTarget | PlatformAttributes.IsDerivedBuildTarget
                 }
             },
@@ -662,10 +792,7 @@ namespace UnityEditor
         /// <returns>The platform GUID. Derived platform GUID when the active platform is a derived platform. Base platform GUID otherwise.</returns>
         public static GUID GetGUIDFromBuildTarget(BuildTarget buildTarget)
         {
-            if (buildTarget == BuildTarget.StandaloneWindows) //workaround for win64 and win having the same guid in new Build Target system
-                buildTarget = BuildTarget.StandaloneWindows64;
-
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID value))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID value))
             {
                 var module = ModuleManager.FindPlatformSupportModule(value);
                 if (module != null && module is IDerivedBuildTargetProvider)
@@ -704,7 +831,7 @@ namespace UnityEditor
             if (TryGetServerGUIDFromBuildTarget(namedBuildTarget, buildTarget, out var value))
                 return value;
 
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(buildTarget, out GUID guid))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(buildTarget, out GUID guid))
                 return guid;
 
             return EmptyGuid;
@@ -723,7 +850,7 @@ namespace UnityEditor
             if (!platformInfo.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 return platformGuid;
 
-            if (s_PlatformGUIDDataQuickLookup.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
+            if (s_BuildTargetToPlatformGUID.TryGetValue(platformInfo.buildTarget, out GUID basePlatformGuid))
                 return basePlatformGuid;
 
             return EmptyGuid;
@@ -741,12 +868,15 @@ namespace UnityEditor
         {
             foreach (var platform in allPlatforms)
             {
+                // Capture BuildTarget to GUID mapping for all platforms.
+                // Considers that StandaloneWindows and StandaloneWindows64 are the same platform.
                 if (platform.Value.buildTarget != BuildTarget.StandaloneWindows
                     && platform.Value.subtarget != StandaloneBuildSubtarget.Server
-                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget)
-                    ) //workaround for win64 and win having the same guid in new Build Target system and for derived build targets
+                    && !platform.Value.HasFlag(PlatformAttributes.IsDerivedBuildTarget))
                 {
-                    s_PlatformGUIDDataQuickLookup.Add(platform.Value.buildTarget, platform.Key);
+                    s_BuildTargetToPlatformGUID.Add(platform.Value.buildTarget, platform.Key);
+                    if (platform.Value.buildTarget == BuildTarget.StandaloneWindows64)
+                        s_BuildTargetToPlatformGUID.Add(BuildTarget.StandaloneWindows, platform.Key);
                 }
 
                 var playbackEngineDirectory = BuildPipeline.GetPlaybackEngineDirectory(platform.Value.buildTarget, BuildOptions.None, false);
@@ -869,27 +999,22 @@ namespace UnityEditor
             return false;
         }
 
-        [System.Obsolete("BuildPlatformRecommendeddPackages(BuildTarget) is obsolete. Use BuildPlatformRecommendedPackages(IBuildTarget) instead.", false)]
-        public static string[] BuildPlatformRecommendedPackages(BuildTarget platform) => BuildPlatformRecommendedPackages(GetGUIDFromBuildTarget(platform));
-
-        public static string[] BuildPlatformRecommendedPackages(IBuildTarget platform) => BuildPlatformRecommendedPackages(platform.Guid);
-
-        public static string[] BuildPlatformRecommendedPackages(GUID guid)
+        public static PlatformPackageList BuildPlatformInternalPackages(IBuildTarget platform) => BuildPlatformInternalPackages(platform.Guid);
+        public static PlatformPackageList BuildPlatformInternalPackages(GUID guid)
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
-                    return platformInfo.recommendedPackage;
+                return platformInfo.internalPackages;
 
-            return Array.Empty<string>();
+            return new PlatformPackageList();
         }
 
-        public static string[] BuildPlatformRequiredPackages(IBuildTarget platform) => BuildPlatformRequiredPackages(platform.Guid);
-
-        public static string[] BuildPlatformRequiredPackages(GUID guid)
+        public static PlatformPackageList BuildPlatformPartnerPackages(IBuildTarget platform) => BuildPlatformPartnerPackages(platform.Guid);
+        public static PlatformPackageList BuildPlatformPartnerPackages(GUID guid)
         {
             if (allPlatforms.TryGetValue(guid, out PlatformInfo platformInfo))
-                return platformInfo.requiredPackage;
+                return platformInfo.partnerPackages;
 
-            return Array.Empty<string>();
+            return new PlatformPackageList();
         }
 
         [System.Obsolete("BuildPlatformDescription(BuildTarget) is obsolete. Use BuildPlatformDescription(IBuildTarget) instead.", false)]

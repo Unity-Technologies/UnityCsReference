@@ -28,7 +28,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new(nameof(toggleOnLabelClick), "toggle-on-label-click")
-                });
+                }, false);
             }
 
             #pragma warning disable 649
@@ -180,16 +180,8 @@ namespace UnityEngine.UIElements
         /// <param name="newValue"></param>
         public override void SetValueWithoutNotify(bool newValue)
         {
-            if (newValue)
-            {
-                visualInput.pseudoStates |= PseudoStates.Checked;
-                pseudoStates |= PseudoStates.Checked;
-            }
-            else
-            {
-                visualInput.pseudoStates &= ~PseudoStates.Checked;
-                pseudoStates &= ~PseudoStates.Checked;
-            }
+            visualInput.SetCheckedPseudoState(newValue);
+            SetCheckedPseudoState(newValue);
 
             base.SetValueWithoutNotify(newValue);
         }
@@ -248,8 +240,8 @@ namespace UnityEngine.UIElements
         {
             if (showMixedValue)
             {
-                visualInput.pseudoStates &= ~PseudoStates.Checked;
-                pseudoStates &= ~PseudoStates.Checked;
+                visualInput.SetCheckedPseudoState(false);
+                SetCheckedPseudoState(false);
 
                 m_CheckMark.RemoveFromHierarchy();
                 visualInput.Add(mixedValueLabel);

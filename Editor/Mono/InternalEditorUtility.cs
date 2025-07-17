@@ -188,7 +188,7 @@ namespace UnityEditorInternal
             // The guid is always valid. Assets not yet present will not have an instanceID yet.
             // Could be because it is on-demand imported.
             public string guid;
-            public int instanceID; // instanceID of an object in an asset if the asset is available in imported form. Else 0.
+            public EntityId instanceID; // instanceID of an object in an asset if the asset is available in imported form. Else 0.
 
             public sealed class GuidThenInstanceIDEqualityComparer : IEqualityComparer<AssetReference>
             {
@@ -208,18 +208,23 @@ namespace UnityEditorInternal
                 }
             }
 
-            public static bool IsAssetImported(int instanceID)
+            public static bool IsAssetImported(EntityId instanceID)
             {
                 return instanceID != 0;
             }
         }
 
-        public static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
+        public static List<EntityId> GetNewSelection(EntityId clickedInstanceID, List<EntityId> allInstanceIDs, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
         {
             return GetNewSelection(clickedInstanceID, allInstanceIDs, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, Event.current?.shift ?? false, EditorGUI.actionKey);
         }
 
-        internal static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
+        public static List<int> GetNewSelection(int clickedInstanceID, List<int> allInstanceIDs, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
+        {
+            return GetNewSelection(clickedInstanceID, allInstanceIDs.ToEntityIdList(), selectedInstanceIDs.ToEntityIdList(), lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, Event.current?.shift ?? false, EditorGUI.actionKey).ToIntList();
+        }
+
+        internal static List<EntityId> GetNewSelection(EntityId clickedInstanceID, List<EntityId> allInstanceIDs, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
         {
             List<string> allGuids = null;
             var clicked = new AssetReference() { guid = null, instanceID = clickedInstanceID };
@@ -241,11 +246,11 @@ namespace UnityEditorInternal
                 return false;
 
             string path = AssetDatabase.GUIDToAssetPath(entry.guid);
-            entry.instanceID = AssetDatabase.GetMainAssetInstanceID(path);
+            entry.instanceID = AssetDatabase.GetMainAssetEntityId(path);
             return true;
         }
 
-        internal static List<int> TryGetInstanceIds(List<int> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
+        internal static List<EntityId> TryGetInstanceIds(List<EntityId> entryInstanceIds, List<string> entryInstanceGuids, int from, int to)
         {
             List<GUID> guids = new List<GUID>();
 
@@ -270,33 +275,33 @@ namespace UnityEditorInternal
                 if (System.Array.FindIndex(hashes, a => !a.isValid) != -1)
                     return null;
 
-                var newSelection = new List<int>(to - from + 1);
+                var newSelection = new List<EntityId>(to - from + 1);
 
                 for (int i = from; i <= to; ++i)
                 {
-                    int instanceID = entryInstanceIds[i];
-                    if (instanceID == 0)
+                    EntityId entityId = entryInstanceIds[i];
+                    if (entityId == EntityId.None)
                     {
                         if (EditorUtility.isInSafeMode)
                             continue; // Íf instance id is 0 in safe mode, then don't try to produce it. InstanceIDs are 0 for non script assets in safe mode.
 
                         string path = AssetDatabase.GUIDToAssetPath(entryInstanceGuids[i]);
-                        instanceID = AssetDatabase.GetMainAssetInstanceID(path);
-                        entryInstanceIds[i] = instanceID;
+                        entityId = AssetDatabase.GetMainAssetEntityId(path);
+                        entryInstanceIds[i] = entityId;
                     }
-                    newSelection.Add(instanceID);
+                    newSelection.Add(entityId);
                 }
                 return newSelection;
             }
         }
 
-        internal static List<int> GetNewSelection(ref AssetReference clickedEntry, List<int> allEntryInstanceIDs, List<string> allEntryGuids, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
+        internal static List<EntityId> GetNewSelection(ref AssetReference clickedEntry, List<EntityId> allEntryInstanceIDs, List<string> allEntryGuids, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection)
         {
             return GetNewSelection(ref clickedEntry, allEntryInstanceIDs, allEntryGuids, selectedInstanceIDs, lastClickedInstanceID, keepMultiSelection, useShiftAsActionKey, allowMultiSelection, Event.current.shift, EditorGUI.actionKey);
         }
 
         // Multi selection handling. Returns new list of selected instanceIDs
-        internal static List<int> GetNewSelection(ref AssetReference clickedEntry, List<int> allEntryInstanceIDs, List<string> allEntryGuids, List<int> selectedInstanceIDs, int lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
+        internal static List<EntityId> GetNewSelection(ref AssetReference clickedEntry, List<EntityId> allEntryInstanceIDs, List<string> allEntryGuids, List<EntityId> selectedInstanceIDs, EntityId lastClickedInstanceID, bool keepMultiSelection, bool useShiftAsActionKey, bool allowMultiSelection, bool shiftKeyIsDown, bool actionKeyIsDown)
         {
             bool useShift = shiftKeyIsDown || (actionKeyIsDown && useShiftAsActionKey);
             bool useActionKey = actionKeyIsDown && !useShiftAsActionKey;
@@ -308,7 +313,7 @@ namespace UnityEditorInternal
             // Toggle selected node from selection
             if (useActionKey && !useShift)
             {
-                var newSelection = new List<int>(selectedInstanceIDs);
+                var newSelection = new List<EntityId>(selectedInstanceIDs);
                 if (newSelection.Contains(clickedEntry.instanceID))
                 {
                     if (!keepMultiSelection)
@@ -326,13 +331,13 @@ namespace UnityEditorInternal
             {
                 if (clickedEntry.instanceID == lastClickedInstanceID)
                 {
-                    return new List<int>(selectedInstanceIDs);
+                    return new List<EntityId>(selectedInstanceIDs);
                 }
 
                 if (!GetFirstAndLastSelected(allEntryInstanceIDs, selectedInstanceIDs, out firstIndex, out lastIndex))
                 {
                     // We had no selection
-                    var newSelection = new List<int>(1);
+                    var newSelection = new List<EntityId>(1);
                     if (TrySetInstanceId(ref clickedEntry))
                         newSelection.Add(clickedEntry.instanceID);
 
@@ -345,7 +350,7 @@ namespace UnityEditorInternal
                 // Only valid in case the selection concerns assets
 
                 if (!TrySetInstanceId(ref clickedEntry))
-                    return new List<int>(selectedInstanceIDs);
+                    return new List<EntityId>(selectedInstanceIDs);
 
                 int clickedInstanceID = clickedEntry.instanceID;
 
@@ -461,7 +466,7 @@ namespace UnityEditorInternal
 
                 if (allEntryGuids == null)
                 {
-                    List<int> allSelectedInstanceIDs = new List<int>();
+                    var allSelectedInstanceIDs = new List<EntityId>();
 
                     if (addExisting && !usingArrowKeys)
                     {
@@ -488,7 +493,7 @@ namespace UnityEditorInternal
                     // when selecting downwards don't add the last index from the new selection
                     if (addExisting && !usingArrowKeys)
                     {
-                        List<int> allSelectedInstanceIDs = new List<int>();
+                        var allSelectedInstanceIDs = new List<EntityId>();
                         allSelectedInstanceIDs.AddRange(selectedInstanceIDs.GetRange(0, selectedInstanceIDs.Count));
                         allSelectedInstanceIDs.AddRange(allEntryInstanceIDs.GetRange(from, to - from + 1));
                         if (clickedInTheMiddle)
@@ -500,7 +505,7 @@ namespace UnityEditorInternal
                     return foundInstanceIDs;
                 }
 
-                return new List<int>(selectedInstanceIDs);
+                return new List<EntityId>(selectedInstanceIDs);
             }
             // Just set the selection to the clicked object
             else
@@ -511,24 +516,24 @@ namespace UnityEditorInternal
                     // This is for dragging in case with multiple items selected or right click (mouse down should not unselect the rest).
                     if (selectedInstanceIDs.Contains(clickedEntry.instanceID))
                     {
-                        return new List<int>(selectedInstanceIDs);
+                        return new List<EntityId>(selectedInstanceIDs);
                     }
                 }
 
                 if (TrySetInstanceId(ref clickedEntry))
                 {
-                    var newSelection = new List<int>(1);
+                    var newSelection = new List<EntityId>(1);
                     newSelection.Add(clickedEntry.instanceID);
                     return newSelection;
                 }
                 else
                 {
-                    return new List<int>(selectedInstanceIDs);
+                    return new List<EntityId>(selectedInstanceIDs);
                 }
             }
         }
 
-        static bool GetFirstAndLastSelected(List<int> allEntries, List<int> selectedInstanceIDs, out int firstIndex, out int lastIndex)
+        static bool GetFirstAndLastSelected(List<EntityId> allEntries, List<EntityId> selectedInstanceIDs, out int firstIndex, out int lastIndex)
         {
             firstIndex = -1;
             lastIndex = -1;

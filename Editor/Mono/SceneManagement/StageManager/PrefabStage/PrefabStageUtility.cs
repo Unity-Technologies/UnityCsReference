@@ -588,7 +588,7 @@ namespace UnityEditor.SceneManagement
         internal static PrefabStage.Mode GetPrefabStageModeFromModifierKeys()
         {
             // Update GetPrefabButtonContent if this logic changes
-            var defaultPrefabMode = PreferencesProvider.GetDefaultPrefabModeForHierarchy();
+            var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;
             var alternativePrefabMode = (defaultPrefabMode == PrefabStage.Mode.InContext) ? PrefabStage.Mode.InIsolation : PrefabStage.Mode.InContext;
 
             return Event.current.alt ? alternativePrefabMode : defaultPrefabMode;
@@ -597,7 +597,7 @@ namespace UnityEditor.SceneManagement
         internal static GUIContent GetPrefabButtonContent(int instanceID)
         {
             GUIContent result;
-            var defaultPrefabMode = PreferencesProvider.GetDefaultPrefabModeForHierarchy();
+            var defaultPrefabMode = HierarchyPreferences.DefaultPrefabModeFromHierarchy;
             var modifierKey = Application.platform == RuntimePlatform.OSXEditor ? "Option" : "Alt";
             switch (defaultPrefabMode)
             {

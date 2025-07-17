@@ -157,6 +157,28 @@ namespace UnityEngine.UIElements.UIR
             clippingRectIsInfinite = false;
         }
 
+        public void Reset()
+        {
+            owner = null;
+            renderTree = null;
+            parent = null;
+            nextSibling = null;
+            prevSibling = null;
+            firstChild = null;
+            lastChild = null;
+            groupTransformAncestor = null;
+            boneTransformAncestor = null;
+            prevDirty = null;
+            nextDirty = null;
+            firstHeadCommand = null;
+            lastHeadCommand = null;
+            firstTailCommand = null;
+            lastTailCommand = null;
+            headMesh = null;
+            tailMesh = null;
+            textures = null;
+        }
+
         public bool isGroupTransform
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]

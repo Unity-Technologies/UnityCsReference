@@ -959,6 +959,8 @@ namespace UnityEngine
             Play(stateNameHash, layer, normalizedTime);
         }
 
+        extern public void ResetControllerState([DefaultValue("true")] bool resetParameters = true);
+
         // Sets an AvatarTarget and a targetNormalizedTime for the current state
         extern public void SetTarget(AvatarTarget targetIndex, float targetNormalizedTime);
 

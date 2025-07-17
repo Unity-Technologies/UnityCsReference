@@ -41,14 +41,14 @@ namespace UnityEditor.UIElements
                 {
                     new (nameof(allowSceneObjects), "allow-scene-objects"),
                     new (nameof(objectType), "type", typeof(Object)),
-                });
+                }, true);
             }
 
             #pragma warning disable 649
-            [SerializeField] bool allowSceneObjects;
-            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [UxmlAttribute("type"), UxmlTypeReference(typeof(Object))]
             [SerializeField] string objectType;
+            [SerializeField] bool allowSceneObjects;
+            [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags allowSceneObjects_UxmlAttributeFlags;
             [SerializeField, UxmlIgnore, HideInInspector] UxmlAttributeFlags objectType_UxmlAttributeFlags;
             #pragma warning restore 649
 
@@ -270,12 +270,19 @@ namespace UnityEditor.UIElements
                 if (!enabledInHierarchy)
                     return;
 
+                var objTypes = new List<Type>() { m_ObjectField.objectType };
                 if (evt.eventTypeId == DragUpdatedEvent.TypeId())
-                    OnDragUpdated(evt);
+                    OnDragUpdated(evt, objTypes);
                 else if (evt.eventTypeId == DragPerformEvent.TypeId())
-                    OnDragPerform(evt);
+                    OnDragPerformed(evt, objTypes);
                 else if (evt.eventTypeId == DragLeaveEvent.TypeId())
                     OnDragLeave();
+            }
+
+            public void RegisterDefaultDragAndDrop(List<Type> objTypes)
+            {
+                RegisterCallback<DragPerformEvent>(e => OnDragPerformed(e, objTypes), TrickleDown.TrickleDown);
+                RegisterCallback<DragUpdatedEvent>(e => OnDragUpdated(e, objTypes), TrickleDown.TrickleDown);
             }
 
             [EventInterest(typeof(MouseDownEvent))]
@@ -337,24 +344,32 @@ namespace UnityEditor.UIElements
                 m_ObjectField.value = null;
             }
 
-            private Object DNDValidateObject()
+            private Object DNDValidateObject(List<Type> objTypes)
             {
                 var references = DragAndDrop.objectReferences;
                 var property = m_ObjectField.GetProperty(serializedPropertyKey) as SerializedProperty;
-                var validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, m_ObjectField.objectType, property, EditorGUI.ObjectFieldValidatorOptions.None);
 
-                if (validatedObject != null)
+                foreach (var type in objTypes)
                 {
-                    // If scene objects are not allowed and object is a scene object then clear
-                    if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
-                        validatedObject = null;
+                    var validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, type, property, EditorGUI.ObjectFieldValidatorOptions.None);
+
+                    if (validatedObject != null)
+                    {
+                        // If scene objects are not allowed and object is a scene object then clear
+                        if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
+                            validatedObject = null;
+                    }
+
+                    if (validatedObject)
+                        return validatedObject;
                 }
-                return validatedObject;
+
+                return null;
             }
 
-            private void OnDragUpdated(EventBase evt)
+            private void OnDragUpdated(EventBase evt, List<Type> objTypes)
             {
-                Object validatedObject = DNDValidateObject();
+                Object validatedObject = DNDValidateObject(objTypes);
                 if (validatedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -364,9 +379,9 @@ namespace UnityEditor.UIElements
                 }
             }
 
-            private void OnDragPerform(EventBase evt)
+            private void OnDragPerformed(EventBase evt, List<Type> objTypes)
             {
-                Object validatedObject = DNDValidateObject();
+                Object validatedObject = DNDValidateObject(objTypes);
                 if (validatedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
@@ -405,6 +420,12 @@ namespace UnityEditor.UIElements
         private readonly ObjectFieldDisplay m_ObjectFieldDisplay;
         private readonly Action m_AsyncOnProjectOrHierarchyChangedCallback;
         private readonly Action m_OnProjectOrHierarchyChangedCallback;
+
+        internal ObjectFieldDisplay objectFieldDisplay
+        {
+            [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+            get => m_ObjectFieldDisplay;
+        }
 
         /// <summary>
         /// USS class name of elements of this type.

@@ -379,8 +379,7 @@ namespace UnityEngine.UIElements
             {
                 using (var evt = CustomStyleResolvedEvent.GetPooled())
                 {
-                    evt.elementTarget = element;
-                    EventDispatchUtilities.HandleEventAtTargetAndDefaultPhase(evt, currentPanel, element);
+                    EventDispatchUtilities.SendEventDirectlyToTarget(evt, currentPanel, element);
                 }
             }
 

@@ -47,6 +47,13 @@ namespace UnityEditor
                 {
                     return !m_Updated;
                 }
+
+                // For testing purposes
+                public void SetLocalValue(T value)
+                {
+                    m_LocalValue = value;
+                    m_Updated = true;
+                }
             }
 
             CachedValue<string> m_Name = new CachedValue<string>(GetName);
@@ -266,6 +273,11 @@ namespace UnityEditor
             internal void ClearUpdates()
             {
                 lastUpdates = Updates.NothingChanged;
+            }
+
+            internal void SetUpdateTime(DateTime time)
+            {
+                m_UpdateTime.SetLocalValue(time);
             }
 
             internal static DateTime MSecToDateTime(long msec)

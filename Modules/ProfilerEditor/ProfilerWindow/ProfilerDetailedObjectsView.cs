@@ -11,6 +11,9 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Profiling;
 using UnityEngine.Profiling;
 using UnityEngine;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView<int>;
+using TreeViewItem = UnityEditor.IMGUI.Controls.TreeViewItem<int>;
+using TreeViewState = UnityEditor.IMGUI.Controls.TreeViewState<int>;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -202,7 +205,7 @@ namespace UnityEditorInternal.Profiling
                 // 0 is an invalid instance ID
                 if (selectedInstanceId == 0)
                     return;
-                var obj = EditorUtility.InstanceIDToObject(selectedInstanceId);
+                var obj = EditorUtility.EntityIdToObject(selectedInstanceId);
                 if (obj is Component)
                     obj = ((Component)obj).gameObject;
 

@@ -24,6 +24,7 @@ using JetBrains.Annotations;
 using Unity.Profiling;
 using UnityEditor.UIElements;
 using UnityEngine.Pool;
+using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor
 {
@@ -61,6 +62,7 @@ namespace UnityEditor
         protected const string s_Footer = "footer";
         protected const string s_dragline = "unity-dragline";
         protected const string s_draglineAnchor = "unity-dragline-anchor";
+        protected const string s_DebugInfoClassName = "unity-inspector-debug-info";
 
         protected const float kBottomToolbarHeight = 21f;
         protected const float kAddComponentButtonHeight = 45f;
@@ -73,6 +75,13 @@ namespace UnityEditor
         protected const int k_AutoScrollZoneHeight = 24;
         const float m_PreviewDefaultHeight = 200;
         const float m_PreviewMinHeight = 20;
+
+        static readonly string k_DebugInfoPanelTooltip = L10n.Tr("In Debug mode, the Inspector also displays the item's private properties and doesn't use custom inspector code.");
+        static readonly string k_ExitDebugButtonTooltip = L10n.Tr("Change the Inspector window back to Normal mode.");
+        static readonly string k_DebugModeLabel = L10n.Tr("Inspector mode: Debug");
+        static readonly string k_ExitDebugModeButton = L10n.Tr("Exit Debug");
+        static readonly string k_DebugInternalModeLabel = L10n.Tr("Inspector mode: Debug Internal");
+        static readonly string k_ExitDebugInternalModeButton = L10n.Tr("Exit Debug Internal");
 
         float m_CachedPreviewHeight = m_PreviewDefaultHeight;
 
@@ -136,6 +145,10 @@ namespace UnityEditor
         protected bool m_HasPreview;
         protected HashSet<int> m_DrawnSelection = new HashSet<int>();
         readonly List<Type> m_EditorTargetTypes = new List<Type>();
+
+        VisualElement m_DebugInfoPanel;
+        Label m_DebugInfoLabel;
+        Button m_ExitDebugModeButton;
 
         List<DataMode> m_SupportedDataModes = new(4);
         static readonly List<DataMode> k_DisabledDataModes = new() {DataMode.Disabled};
@@ -306,7 +319,7 @@ namespace UnityEditor
                 res.revert = Provider.RevertIsValid(res.assets, RevertMode.Normal);
                 res.revertUnchanged = Provider.RevertIsValid(res.assets, RevertMode.Unchanged);
 
-                bool checkoutBoth = res.Editor.target == null || AssetDatabase.CanOpenAssetInEditor(res.Editor.target.GetInstanceID());
+                bool checkoutBoth = res.Editor.target == null || AssetDatabase.CanOpenAssetInEditor(res.Editor.target.GetEntityId());
                 res.checkout = isFolder || Provider.CheckoutIsValid(res.assets, checkoutBoth ? CheckoutMode.Both : CheckoutMode.Meta);
                 res.add = Provider.AddIsValid(res.assets);
                 res.submit = Provider.SubmitIsValid(null, res.assets);
@@ -376,6 +389,9 @@ namespace UnityEditor
 
             // Restrict the minimum height of the content area so it can't be collapsed to nothing
             m_ScrollView.style.minHeight = 150;
+
+            // Ensures we are displaying the inspector mode properly
+            UpdateInspectorModeStyle();
         }
 
         /// <summary>
@@ -521,6 +537,7 @@ namespace UnityEditor
             {
                 m_InspectorMode = mode;
                 RefreshTitle();
+                UpdateInspectorModeStyle();
                 // Clear the editors Element so that a real rebuild is done
                 editorsElement.Clear();
                 m_EditorElementUpdater.Clear();
@@ -575,6 +592,12 @@ namespace UnityEditor
             container.AddToClassList(s_MainContainerClassName);
             rootVisualElement.hierarchy.Add(container);
             m_ScrollView = container.Q<ScrollView>();
+
+            m_DebugInfoPanel = container.Q<VisualElement>(className: s_DebugInfoClassName);
+            m_DebugInfoLabel = m_DebugInfoPanel.Q<Label>();
+            m_ExitDebugModeButton = container.Q<Button>();
+            m_ExitDebugModeButton.tooltip = k_ExitDebugButtonTooltip;
+            m_ExitDebugModeButton.clickable.clicked += SetNormal;
 
             // We need to disable view-data persistence on the scrollbars of the ScrollView.
             // There are a bunch of places that assume the Inspector will always refresh
@@ -648,6 +671,40 @@ namespace UnityEditor
         private void SetDebugInternal()
         {
             inspectorMode = InspectorMode.DebugInternal;
+        }
+
+        private void UpdateInspectorModeStyle()
+        {
+            switch (inspectorMode)
+            {
+                case InspectorMode.Normal:
+                {
+                    m_DebugInfoPanel.style.display = DisplayStyle.None;
+                    break;
+                }
+                case InspectorMode.Debug:
+                {
+                    m_DebugInfoPanel.style.display = DisplayStyle.Flex;
+                    m_DebugInfoPanel.tooltip = k_DebugInfoPanelTooltip;
+                    m_DebugInfoLabel.text = k_DebugModeLabel;
+                    m_ExitDebugModeButton.text = k_ExitDebugModeButton;
+
+                    break;
+                }
+                case InspectorMode.DebugInternal:
+                {
+                    m_DebugInfoPanel.style.display = DisplayStyle.Flex;
+                    m_DebugInfoPanel.tooltip = null;
+                    m_DebugInfoLabel.text = k_DebugInternalModeLabel;
+                    m_ExitDebugModeButton.text = k_ExitDebugInternalModeButton;
+
+                    break;
+                }
+                default:
+                {
+                    throw new ArgumentOutOfRangeException(nameof(inspectorMode), inspectorMode, null);
+                }
+            }
         }
 
         public virtual void AddDebugItemsToMenu(GenericMenu menu)
@@ -1798,11 +1855,11 @@ namespace UnityEditor
         private void DrawFooter()
         {
             Object[] assets = GetInspectedAssets();
-            bool hasLabels = assets.Length > 0;
+            if (assets == null || assets.Length == 0)
+                return;
+
             bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
-
             IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
-
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
                 GUILayout.BeginVertical(Styles.footer);
@@ -1811,12 +1868,9 @@ namespace UnityEditor
             }
 
             GUILayout.BeginVertical(Styles.footer);
-            if (hasLabels)
+            using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
             {
-                using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
-                {
-                    m_LabelGUI.OnLabelGUI(assets);
-                }
+                m_LabelGUI.OnLabelGUI(assets);
             }
 
             if (hasBundleName)
@@ -1977,7 +2031,7 @@ namespace UnityEditor
 
             // Since we can't edit multiple asset types in one Inspector it is safe to say
             // that we will have to checkout all assets in the same way as the first one.
-            bool needToCheckoutBoth = AssetDatabase.CanOpenAssetInEditor(targets[0].GetInstanceID());
+            bool needToCheckoutBoth = AssetDatabase.CanOpenAssetInEditor(targets[0].GetEntityId());
 
             foreach (var asset in targets)
             {
@@ -2046,7 +2100,7 @@ namespace UnityEditor
 
             if (presence.checkout)
             {
-                if (VersionControlActionButton(buttonRect, ref buttonX, AssetDatabase.CanOpenAssetInEditor(presence.Editor.target.GetInstanceID()) ? Styles.vcsCheckout : Styles.vcsCheckoutMeta))
+                if (VersionControlActionButton(buttonRect, ref buttonX, AssetDatabase.CanOpenAssetInEditor(presence.Editor.target.GetEntityId()) ? Styles.vcsCheckout : Styles.vcsCheckoutMeta))
                     CheckoutForInspector(presence.Editor.targets);
             }
             if (presence.add)
@@ -2115,7 +2169,7 @@ namespace UnityEditor
 
             Dictionary<int, IEditorElement> mapping = null;
 
-            var selection = new HashSet<int>(Selection.instanceIDs);
+            var selection = new HashSet<int>(Selection.entityIds.ToIntArray());
             if (m_DrawnSelection.SetEquals(selection))
             {
                 if (editorsElement.childCount > 0 && m_DrawnSelection.Any()) // do we already have a hierarchy

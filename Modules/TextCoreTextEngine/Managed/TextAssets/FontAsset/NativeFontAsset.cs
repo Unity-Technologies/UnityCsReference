@@ -30,7 +30,6 @@ namespace UnityEngine.TextCore.Text
             var fallbacks = GetFallbacks();
             var weightFallbacks = GetWeightFallbacks();
 
-            kFontAssetByInstanceId.TryAdd(instanceID, this);
             Font sourceFont_editorRef = null;
             sourceFont_editorRef = SourceFont_EditorRef;
             m_NativeFontAsset = Create(faceInfo, sourceFontFile, sourceFont_editorRef, m_SourceFontFilePath, instanceID, fallbacks, weightFallbacks.Item1, weightFallbacks.Item2);

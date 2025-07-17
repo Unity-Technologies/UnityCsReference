@@ -154,7 +154,7 @@ namespace UnityEngine.UIElements.Experimental
 
             if (owner != null)
             {
-                m_StartTimeMs = Panel.TimeSinceStartupMs();
+                m_StartTimeMs = owner.TimeSinceStartupMs();
                 Register();
                 isRunning = true;
             }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Internal;
 
 namespace UnityEngine
@@ -154,6 +155,12 @@ namespace UnityEngine
 
     partial class Physics2D
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("Physics2D.autoSyncTransforms has been deprecated please use Physics2D.SyncTransforms instead to manually sync physics transforms when required.", false)]
+        [ExcludeFromDocs]
+        [StaticAccessor("GetPhysics2DSettings()")]
+        extern public static bool autoSyncTransforms { get; set; }
+
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Physics2D.raycastsHitTriggers is obsolete. Use Physics2D.queriesHitTriggers instead. (UnityUpgradable) -> queriesHitTriggers", true)]
         public static bool raycastsHitTriggers { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }

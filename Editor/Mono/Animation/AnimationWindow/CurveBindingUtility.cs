@@ -14,16 +14,15 @@ namespace UnityEditorInternal
         {
             if (binding.isPPtrCurve)
             {
-                return state.controlInterface.GetObjectReferenceValue(binding);
+                return state.controller.GetObjectReferenceValue(binding);
             }
             else if (binding.isDiscreteCurve)
             {
-                return state.controlInterface.GetIntValue(binding);
+                return state.controller.GetIntValue(binding);
             }
 
-            return state.controlInterface.GetFloatValue(binding);
+            return state.controller.GetFloatValue(binding);
         }
-
 
         // Retrieve current value.  If bindings are available and value is animated, use bindings to get value.
         // Otherwise, evaluate AnimationWindowCurve at current time.
@@ -32,7 +31,7 @@ namespace UnityEditorInternal
             // UUM-66112 - state.linkedWithSequencer - Padding for issue in Timeline where muscle
             // values are not updated in the editor when previewing in the Animation Window.
             // Fallback to curve values.
-            if (state.previewing && curve.rootGameObject != null && !state.linkedWithSequencer)
+            if (state.previewing && state.activeRootGameObject != null && !state.linkedWithSequencer)
             {
                 return GetCurrentValue(state, curve.binding);
             }

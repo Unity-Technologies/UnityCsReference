@@ -85,13 +85,105 @@ namespace UnityEngine.UIElements
         public bool selectAllOnMouseUp { get; set; }
 
         /// <summary>
-        /// The position of the text cursor inside the element.
+        /// The position of the text cursor inside the element's <see cref="VisualElement.contentRect"/>.
         /// </summary>
         public Vector2 cursorPosition { get; }
         internal float lineHeightAtCursorPosition  { get; }
         internal float cursorWidth { get; set; }
 
+
+        [VisibleToOtherModules("UnityEditor.QuickSearchModule")]
         internal void MoveTextEnd();
+
+        /// <summary>
+        /// The position inside the element's content box where the text cursor would be if it were at the selected index.
+        /// </summary>
+        /// <remarks>
+        /// The position is on the bottom-left corner of the character at the specified logical index. Index `0` corresponds to the position just before the first character, and for a string of length `n`, index `n` is just after the last character.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public Vector2 GetCursorPositionFromStringIndex(int stringIndex);
+
+        /// <summary>
+        /// Moves the cursor forward by one character.
+        /// </summary>
+        /// <remarks>
+        /// The cursor moves according to the logical text indices, which might differ from their visual order on screen, especially with right-to-left text.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveForward();
+
+        /// <summary>
+        /// Moves the cursor backward by one character.
+        /// </summary>
+        /// <remarks>
+        /// The cursor moves according to the logical text indices, which might differ from their visual order on screen, especially with right-to-left text.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveBackward();
+
+        /// <summary>
+        /// Moves the cursor to the end of the current paragraph.
+        /// </summary>
+        /// <remarks>
+        /// This method looks for a line-breaking character and ignores word wrapping when determining the end of the paragraph.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveToParagraphEnd();
+
+        /// <summary>
+        /// Moves the cursor to the start of the current paragraph.
+        /// </summary>
+        /// <remarks>
+        /// This method looks for a line-breaking character and ignores word wrapping when determining the end of the paragraph.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveToParagraphStart();
+
+        /// <summary>
+        /// Moves the cursor to the end of the previous word.
+        /// </summary>
+        /// <remarks>
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveToEndOfPreviousWord();
+
+        /// <summary>
+        /// Moves the cursor to the start of the next word.
+        /// </summary>
+        /// <remarks>
+        /// The cursor moves according to the logical text indices, which might differ from their visual order on screen, especially with right-to-left text.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveToStartOfNextWord();
+
+        /// <summary>
+        /// Moves one word backward.
+        /// </summary>
+        /// <remarks>
+        /// The cursor moves according to the logical text indices, which might differ from their visual order on screen, especially with right-to-left text.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveWordBackward();
+
+        /// <summary>
+        /// Moves one word forward.
+        /// </summary>
+        /// <remarks>
+        /// The cursor moves according to the logical text indices, which might differ from their visual order on screen, especially with right-to-left text.
+        /// This API uses the visualElement's style to compute the result, so calling it before the styles are computed might return an incorrect value.
+        /// </remarks>
+        public void MoveWordForward();
+
+        /// <summary>
+        /// Event that is triggered when the cursor index changes.
+        /// </summary>
+        public event Action OnCursorIndexChange;
+
+        /// <summary>
+        /// Event that is triggered when the selection index changes.
+        /// </summary>
+        public event Action OnSelectIndexChange;
     }
 
     // Text editing and selection management implementation
@@ -116,6 +208,7 @@ namespace UnityEngine.UIElements
         TextSelectingManipulator m_SelectingManipulator;
 
         bool m_IsSelectable;
+
         /// <summary>
         /// Controls whether the element's content is selectable.  Note that selectable TextElement are required to be focusable.
         /// </summary>
@@ -302,7 +395,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                uitkTextHandle.AddTextInfoToPermanentCache();
+                uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
                 return uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(selection.cursorIndex) + contentRect.min;
             }
         }
@@ -314,7 +407,7 @@ namespace UnityEngine.UIElements
         {
             get
             {
-                uitkTextHandle.AddTextInfoToPermanentCache();
+                uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
                 return uitkTextHandle.GetLineHeightFromCharacterIndex(selection.cursorIndex);
             }
         }
@@ -323,6 +416,117 @@ namespace UnityEngine.UIElements
         {
             if (selection.isSelectable)
                 selectingManipulator.m_SelectingUtilities.MoveTextEnd();
+        }
+
+        Vector2 ITextSelection.GetCursorPositionFromStringIndex(int stringIndex)
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            return uitkTextHandle.GetCursorPositionFromStringIndexUsingLineHeight(stringIndex) + contentRect.min;
+        }
+
+        void ITextSelection.MoveForward()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveRight();
+        }
+        void ITextSelection.MoveBackward()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveLeft();
+        }
+
+        void ITextSelection.MoveToParagraphEnd()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveLineEnd();
+        }
+
+        void ITextSelection.MoveToParagraphStart()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveLineStart();
+        }
+
+        void ITextSelection.MoveToEndOfPreviousWord()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveToEndOfPreviousWord();
+        }
+
+        void ITextSelection.MoveToStartOfNextWord()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveToStartOfNextWord();
+        }
+
+        void ITextSelection.MoveWordBackward()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveWordLeft();
+        }
+
+        void ITextSelection.MoveWordForward()
+        {
+            uitkTextHandle.AddToPermanentCacheAndGenerateMesh();
+            if (!TextUtilities.IsAdvancedTextEnabledForElement(this))
+            {
+                uitkTextHandle.ComputeSettingsAndUpdate();
+            }
+            selectingManipulator.m_SelectingUtilities.MoveWordRight();
+        }
+
+        event Action ITextSelection.OnCursorIndexChange
+        {
+            add
+            {
+                selectingManipulator.m_SelectingUtilities.OnCursorIndexChange += value;
+            }
+
+            remove
+            {
+                selectingManipulator.m_SelectingUtilities.OnCursorIndexChange -= value;
+            }
+        }
+
+        event Action ITextSelection.OnSelectIndexChange
+        {
+            add
+            {
+                selectingManipulator.m_SelectingUtilities.OnSelectIndexChange += value;
+            }
+
+            remove
+            {
+                selectingManipulator.m_SelectingUtilities.OnSelectIndexChange -= value;
+            }
         }
 
         Color m_SelectionColor = new Color(0.239f, 0.502f, 0.875f, 0.65f);
@@ -526,5 +730,7 @@ namespace UnityEngine.UIElements
 
             return lastCharacterIndex;
         }
+
+
     }
 }

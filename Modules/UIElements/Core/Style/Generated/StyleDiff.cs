@@ -42,6 +42,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleColor, Color> m_Color;
         private StylePropertyData<StyleCursor, Cursor> m_Cursor;
         private StylePropertyData<StyleEnum<DisplayStyle>, DisplayStyle> m_Display;
+        private StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> m_Filter;
         private StylePropertyData<StyleLength, Length> m_FlexBasis;
         private StylePropertyData<StyleEnum<FlexDirection>, FlexDirection> m_FlexDirection;
         private StylePropertyData<StyleFloat, float> m_FlexGrow;
@@ -93,6 +94,7 @@ namespace UnityEngine.UIElements
         private StylePropertyData<StyleInt, int> m_UnitySliceTop;
         private StylePropertyData<StyleEnum<SliceType>, SliceType> m_UnitySliceType;
         private StylePropertyData<StyleEnum<TextAnchor>, TextAnchor> m_UnityTextAlign;
+        private StylePropertyData<StyleTextAutoSize, TextAutoSize> m_UnityTextAutoSize;
         private StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> m_UnityTextGenerator;
         private StylePropertyData<StyleColor, Color> m_UnityTextOutlineColor;
         private StylePropertyData<StyleFloat, float> m_UnityTextOutlineWidth;
@@ -572,6 +574,25 @@ namespace UnityEngine.UIElements
 
                 m_Display.Dispose();
                 m_Display = value;
+                Notify();
+            }
+        }
+
+        [CreateProperty]
+        public StylePropertyData<StyleList<FilterFunction>, List<FilterFunction>> filter
+        {
+            get => m_Filter;
+            private set
+            {
+                m_Filter.target = value.target;
+                if (m_Filter == value)
+                {
+                    value.Dispose();
+                    return;
+                }
+
+                m_Filter.Dispose();
+                m_Filter = value;
                 Notify();
             }
         }
@@ -1546,6 +1567,25 @@ namespace UnityEngine.UIElements
         }
 
         [CreateProperty]
+        public StylePropertyData<StyleTextAutoSize, TextAutoSize> unityTextAutoSize
+        {
+            get => m_UnityTextAutoSize;
+            private set
+            {
+                m_UnityTextAutoSize.target = value.target;
+                if (m_UnityTextAutoSize == value)
+                {
+                    value.Dispose();
+                    return;
+                }
+
+                m_UnityTextAutoSize.Dispose();
+                m_UnityTextAutoSize = value;
+                Notify();
+            }
+        }
+
+        [CreateProperty]
         public StylePropertyData<StyleEnum<TextGeneratorType>, TextGeneratorType> unityTextGenerator
         {
             get => m_UnityTextGenerator;
@@ -1724,6 +1764,7 @@ namespace UnityEngine.UIElements
             color = ComputeStyleProperty(element, nameof(color), element.style.color, element.computedStyle.color, in context);
             cursor = ComputeStyleProperty(element, nameof(cursor), element.style.cursor, element.computedStyle.cursor, in context);
             display = ComputeStyleProperty(element, nameof(display), element.style.display, element.computedStyle.display, in context);
+            filter = ComputeStyleProperty(element, nameof(filter), element.style.filter, element.computedStyle.filter, in context);
             flexBasis = ComputeStyleProperty(element, nameof(flexBasis), element.style.flexBasis, element.computedStyle.flexBasis, in context);
             flexDirection = ComputeStyleProperty(element, nameof(flexDirection), element.style.flexDirection, element.computedStyle.flexDirection, in context);
             flexGrow = ComputeStyleProperty(element, nameof(flexGrow), element.style.flexGrow, element.computedStyle.flexGrow, in context);
@@ -1775,6 +1816,7 @@ namespace UnityEngine.UIElements
             unitySliceTop = ComputeStyleProperty(element, nameof(unitySliceTop), element.style.unitySliceTop, element.computedStyle.unitySliceTop, in context);
             unitySliceType = ComputeStyleProperty(element, nameof(unitySliceType), element.style.unitySliceType, element.computedStyle.unitySliceType, in context);
             unityTextAlign = ComputeStyleProperty(element, nameof(unityTextAlign), element.style.unityTextAlign, element.computedStyle.unityTextAlign, in context);
+            unityTextAutoSize = ComputeStyleProperty(element, nameof(unityTextAutoSize), element.style.unityTextAutoSize, element.computedStyle.unityTextAutoSize, in context);
             unityTextGenerator = ComputeStyleProperty(element, nameof(unityTextGenerator), element.style.unityTextGenerator, element.computedStyle.unityTextGenerator, in context);
             unityTextOutlineColor = ComputeStyleProperty(element, nameof(unityTextOutlineColor), element.style.unityTextOutlineColor, element.computedStyle.unityTextOutlineColor, in context);
             unityTextOutlineWidth = ComputeStyleProperty(element, nameof(unityTextOutlineWidth), element.style.unityTextOutlineWidth, element.computedStyle.unityTextOutlineWidth, in context);
@@ -1812,6 +1854,7 @@ namespace UnityEngine.UIElements
             m_Color.Dispose();
             m_Cursor.Dispose();
             m_Display.Dispose();
+            m_Filter.Dispose();
             m_FlexBasis.Dispose();
             m_FlexDirection.Dispose();
             m_FlexGrow.Dispose();
@@ -1863,6 +1906,7 @@ namespace UnityEngine.UIElements
             m_UnitySliceTop.Dispose();
             m_UnitySliceType.Dispose();
             m_UnityTextAlign.Dispose();
+            m_UnityTextAutoSize.Dispose();
             m_UnityTextGenerator.Dispose();
             m_UnityTextOutlineColor.Dispose();
             m_UnityTextOutlineWidth.Dispose();

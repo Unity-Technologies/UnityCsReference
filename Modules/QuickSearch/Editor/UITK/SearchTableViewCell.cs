@@ -168,6 +168,7 @@ namespace UnityEditor.Search
             be.RegisterCallback<ChangeEvent<float>>(OnValueChanged); // checked
             be.RegisterCallback<ChangeEvent<double>>(OnValueChanged);
             be.RegisterCallback<ChangeEvent<string>>(OnValueChanged); // checked
+            be.RegisterCallback<ChangeEvent<uint>>(OnValueChanged);
             be.RegisterCallback<ChangeEvent<Color>>(OnValueChanged); // checked
             be.RegisterCallback<ChangeEvent<UnityEngine.Object>>(OnValueChanged); // checked
             be.RegisterCallback<ChangeEvent<Enum>>(OnValueChanged);

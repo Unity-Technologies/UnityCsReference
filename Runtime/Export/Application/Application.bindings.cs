@@ -21,7 +21,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Input/GetInput.h")]
     [NativeHeader("Runtime/Input/InputManager.h")]
     [NativeHeader("Runtime/Input/TargetFrameRate.h")]
-    [NativeHeader("Runtime/Logging/LogSystem.h")]
+    [NativeHeader("NativeKernel/Logging/LogSystem.h")]
     [NativeHeader("Runtime/Misc/BuildSettings.h")]
     [NativeHeader("Runtime/Misc/Player.h")]
     [NativeHeader("Runtime/Misc/PlayerSettings.h")]

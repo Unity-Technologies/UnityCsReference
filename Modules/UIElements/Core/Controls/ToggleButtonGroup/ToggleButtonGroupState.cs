@@ -218,7 +218,7 @@ namespace UnityEngine.UIElements
             where T : Enum
         {
             if (!TypeTraits<T>.IsEnumFlags)
-                throw new ArgumentException($"Enum type {nameof(T)} is not a flag enum type.");
+                throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var underlyingType = Enum.GetUnderlyingType(typeof(T));
 
@@ -255,7 +255,7 @@ namespace UnityEngine.UIElements
             where T : Enum
         {
             if (!TypeTraits<T>.IsEnumFlags)
-                throw new ArgumentException($"Enum type {nameof(T)} is not a flag enum type.");
+                throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var underlyingType = Enum.GetUnderlyingType(typeof(T));
             var enumLength = Type.GetTypeCode(underlyingType) switch
@@ -299,7 +299,7 @@ namespace UnityEngine.UIElements
             where T : Enum
         {
             if (!TypeTraits<T>.IsEnumFlags)
-                throw new ArgumentException($"Enum type {nameof(T)} is not a flag enum type.");
+                throw new ArgumentException($"Enum type {typeof(T).Name} is not a flag enum type.");
 
             var v = (ulong) UnsafeUtility.As<T, int>(ref value);
             return options.m_Data == v;

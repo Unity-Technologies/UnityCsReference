@@ -52,7 +52,7 @@ namespace UnityEditor
 
             public override void Action(int instanceId, string pathName, string resourceFile)
             {
-                var obj = EditorUtility.InstanceIDToObject(instanceId);
+                var obj = EditorUtility.EntityIdToObject(instanceId);
                 AssetDatabase.CreateAsset(obj, AssetDatabase.GenerateUniqueAssetPath(pathName));
                 ProjectWindowUtil.FrameObjectInProjectWindow(instanceId);
                 m_Property.objectReferenceValue = obj;
@@ -108,7 +108,7 @@ namespace UnityEditor
             // Add items from asset database
             foreach (var property in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { typeName } }))
             {
-                gm.AddItem(new GUIContent(property.name), property.instanceID == selectedInstanceID, AssetPopupMenuCallback, new object[] { property.instanceID, serializedProperty });
+                gm.AddItem(new GUIContent(property.name), property.entityId == selectedInstanceID, AssetPopupMenuCallback, new object[] { property.entityId, serializedProperty });
             }
 
             // Add builtin items, except for the already added default item.
@@ -151,7 +151,7 @@ namespace UnityEditor
             var instanceID = (int)data[0];
             var serializedProperty = (SerializedProperty)data[1];
 
-            serializedProperty.objectReferenceValue = EditorUtility.InstanceIDToObject(instanceID);
+            serializedProperty.objectReferenceValue = EditorUtility.EntityIdToObject(instanceID);
             serializedProperty.m_SerializedObject.ApplyModifiedProperties();
         }
     }

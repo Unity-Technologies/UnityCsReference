@@ -23,7 +23,7 @@ namespace UnityEngine.UIElements
                 UxmlDescriptionCache.RegisterType(typeof(UxmlSerializedData), new UxmlAttributeNames[]
                 {
                     new (nameof(bindingPath), "binding-path")
-                });
+                }, false);
             }
 
             #pragma warning disable 649

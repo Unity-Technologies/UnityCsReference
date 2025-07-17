@@ -4,10 +4,19 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.Pool;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.UIElements
 {
+    [Serializable]
+    [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+    struct UxmlProperty
+    {
+        public string name;
+        public string value;
+    }
+
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     struct UxmlNamespaceDefinition : IEquatable<UxmlNamespaceDefinition>
@@ -26,6 +35,9 @@ namespace UnityEngine.UIElements
 
         public static bool operator ==(UxmlNamespaceDefinition lhs, UxmlNamespaceDefinition rhs)
         {
+            if (string.IsNullOrEmpty(lhs.prefix) && string.IsNullOrEmpty(rhs.prefix) &&
+                string.IsNullOrEmpty(lhs.resolvedNamespace) && string.IsNullOrEmpty(rhs.resolvedNamespace))
+                return true;
             return string.Compare(lhs.prefix, rhs.prefix, StringComparison.Ordinal) == 0 &&
                    string.Compare(lhs.resolvedNamespace, rhs.resolvedNamespace, StringComparison.Ordinal) == 0;
         }
@@ -53,7 +65,7 @@ namespace UnityEngine.UIElements
 
     [Serializable]
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
-    internal class UxmlAsset : IUxmlAttributes
+    internal abstract class UxmlAsset : IUxmlAttributes
     {
         public const string NullNodeType = "null";
 
@@ -63,8 +75,7 @@ namespace UnityEngine.UIElements
             m_XmlNamespace = xmlNamespace;
         }
 
-        [SerializeField]
-        private string m_FullTypeName;
+        [SerializeField] private string m_FullTypeName;
 
         public string fullTypeName
         {
@@ -91,45 +102,346 @@ namespace UnityEngine.UIElements
         }
 
         public bool isNull => fullTypeName == NullNodeType;
+        public bool isRoot => fullTypeName.Equals("UXML", StringComparison.Ordinal) || fullTypeName.Equals("UnityEngine.UIElements.UXML", StringComparison.Ordinal) || fullTypeName.EndsWith(".UXML", StringComparison.Ordinal);
 
-        [SerializeField]
-        private int m_OrderInDocument;
+        public UxmlAsset parentAsset => m_Parent;
 
-        public int orderInDocument
-        {
-            get => m_OrderInDocument;
-            set => m_OrderInDocument = value;
-        }
+        [SerializeReference, HideInInspector] private UxmlAsset m_Parent;
+        [SerializeReference] private List<UxmlAsset> m_Children;
+        [SerializeField] private VisualTreeAsset m_VisualTreeAsset;
+        internal VisualTreeAsset visualTreeAsset => m_VisualTreeAsset;
 
-        [SerializeField]
-        private int m_ParentId;
+        public int childCount => m_Children?.Count ?? 0;
 
-        public int parentId
-        {
-            get => m_ParentId;
-            set => m_ParentId = value;
-        }
+        public UxmlAsset this[int index] => m_Children[index];
 
         [SerializeField] private List<UxmlNamespaceDefinition> m_NamespaceDefinitions;
         public List<UxmlNamespaceDefinition> namespaceDefinitions => m_NamespaceDefinitions ??= new ();
 
         [SerializeField]
-        protected List<string> m_Properties;
+        protected List<UxmlProperty> m_Properties;
 
-        public List<string> GetProperties() => m_Properties;
+        public List<UxmlProperty> properties => m_Properties;
 
         int m_DirtyCount;
-        public bool HasParent() => m_ParentId != 0;
+        public void GetChildren(List<UxmlAsset> children)
+        {
+            children.Clear();
+
+            for (var i = 0; i < childCount; i++)
+            {
+                children.Add(this[i]);
+            }
+        }
+
+        public void GetChildrenUxmlObjectAssets(List<UxmlObjectAsset> children)
+        {
+            children.Clear();
+
+            for (var i = 0; i < childCount; i++)
+            {
+                if (this[i] is UxmlObjectAsset uxmlObjectAsset)
+                {
+                    children.Add(uxmlObjectAsset);
+                }
+            }
+        }
+
+        public bool HasAnyUxmlObjectAsset()
+        {
+            for (var i = 0; i < childCount; i++)
+            {
+                if (this[i] is UxmlObjectAsset)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public UxmlObjectAsset GetField(string fieldName)
+        {
+            for (var i = 0; i < childCount; i++)
+            {
+                if (this[i] is not UxmlObjectAsset uxmlObjectAsset)
+                {
+                    continue;
+                }
+
+                if (uxmlObjectAsset.isField && uxmlObjectAsset.fullTypeName == fieldName)
+                    return uxmlObjectAsset;
+            }
+
+            return null;
+        }
+
+        private void RemoveNonFields()
+        {
+            for (var i = childCount - 1; i >= 0; i--)
+            {
+                if (this[i] is not UxmlObjectAsset uxmlObjectAsset)
+                {
+                    continue;
+                }
+
+                if (!uxmlObjectAsset.isField)
+                {
+                    uxmlObjectAsset.RemoveFromHierarchy();
+                }
+            }
+        }
+
+        public void RemoveUxmlObjectAssetChildren()
+        {
+            for (var i = childCount - 1; i >= 0; i--)
+            {
+                if (this[i] is not UxmlObjectAsset uxmlObjectAsset)
+                {
+                    continue;
+                }
+
+                uxmlObjectAsset.RemoveFromHierarchy();
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void SetUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> entries)
+        {
+            if (!string.IsNullOrEmpty(fieldName))
+            {
+                var fieldAsset = GetField(fieldName);
+                fieldAsset?.SetUxmlObjectAssets(null, entries);
+            }
+            else
+            {
+                RemoveNonFields();
+
+                foreach (var entry in entries)
+                {
+                    Add(entry);
+                }
+            }
+        }
+
+        [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
+        internal void CollectUxmlObjectAssets(string fieldName, List<UxmlObjectAsset> foundEntries)
+        {
+            for (var i = 0; i < childCount; i++)
+            {
+                if (this[i] is not UxmlObjectAsset uxmlObjectAsset)
+                {
+                    continue;
+                }
+
+                if (!string.IsNullOrEmpty(fieldName) && uxmlObjectAsset.isField &&
+                    uxmlObjectAsset.fullTypeName == fieldName)
+                {
+                    uxmlObjectAsset.CollectUxmlObjectAssets(null, foundEntries);
+                    return;
+                }
+
+                if (uxmlObjectAsset.isField)
+                {
+                    continue;
+                }
+
+                foundEntries.Add(uxmlObjectAsset);
+            }
+        }
+
+        public virtual void GetExportTypename(out string typename, out UxmlNamespaceDefinition resolvedNamespace)
+        {
+            if (xmlNamespace != UxmlNamespaceDefinition.Empty)
+            {
+                var namespaceDefinition = m_VisualTreeAsset.FindUxmlNamespaceDefinitionFromPrefix(this, xmlNamespace.prefix);
+                if (namespaceDefinition != xmlNamespace)
+                {
+                    xmlNamespace = m_VisualTreeAsset.FindUxmlNamespaceDefinitionForTypeName(this, fullTypeName);
+                }
+            }
+
+            if (string.IsNullOrEmpty(xmlNamespace.prefix))
+            {
+                if (string.IsNullOrEmpty(xmlNamespace.resolvedNamespace))
+                {
+                    typename = fullTypeName;
+                    resolvedNamespace = xmlNamespace;
+                    return;
+                }
+
+                var name = fullTypeName.Substring(xmlNamespace.resolvedNamespace.Length + 1);
+                typename = name;
+                resolvedNamespace = xmlNamespace;
+            }
+            else
+            {
+                var name = fullTypeName.Substring(xmlNamespace.resolvedNamespace.Length + 1);
+                typename = name;
+                resolvedNamespace = xmlNamespace;
+            }
+        }
+
+        internal void SetVisualTreeAssetWithOutNotify(VisualTreeAsset vta)
+        {
+            m_VisualTreeAsset = vta;
+        }
+
+        internal void SetVisualTreeAsset(VisualTreeAsset vta)
+        {
+            var previous = visualTreeAsset;
+            SetVisualTreeAssetWithOutNotify(vta);
+
+            if (previous != visualTreeAsset)
+            {
+                OnVisualTreeAssetChanged(previous, visualTreeAsset);
+            }
+
+            if (m_Children == null)
+                return;
+
+            foreach (var child in m_Children)
+            {
+                child.SetVisualTreeAsset(vta);
+            }
+        }
+
+        public void Add(UxmlAsset asset)
+        {
+            if (null == asset)
+                throw new ArgumentNullException(nameof(asset));
+
+            Insert(childCount, asset);
+        }
+
+        public void Insert(int index, UxmlAsset asset)
+        {
+            if (null == asset)
+                throw new ArgumentNullException(nameof(asset));
+
+            if (index < 0 || index > childCount)
+                throw new ArgumentOutOfRangeException("Index out of range: " + index);
+
+            if (asset == this)
+                throw new ArgumentException("Cannot insert element as its own child.");
+
+            if (asset.IsAncestorOf(this))
+                throw new ArgumentException("Cannot insert element as a child because it is an ancestor.");
+
+            if (!Accepts(asset, out var errorMessage))
+                throw new InvalidOperationException(errorMessage);
+
+            // If it's already a children, simply update internal lists.
+            if (asset.parentAsset == this)
+            {
+                var siblingIndex = m_Children.IndexOf(asset);
+                // Already inserted in the right spot.
+                if (siblingIndex == index)
+                    return;
+
+                var append = index == childCount;
+                m_Children.RemoveAt(siblingIndex);
+                m_Children.Insert(append ? childCount : index, asset);
+                return;
+            }
+
+            InsertInChildren(index, asset);
+            asset.SetParent(this);
+        }
+
+        public bool Remove(UxmlAsset asset)
+        {
+            if (null == asset)
+                throw new ArgumentNullException(nameof(asset));
+
+            if (asset == this)
+                throw new ArgumentException("Cannot remove element from itself.");
+
+            if (asset.m_Parent != this)
+                return false;
+
+            RemoveAt(m_Children.IndexOf(asset));
+            return true;
+        }
+
+        public void RemoveAt(int index)
+        {
+            if (index < 0 || index > childCount)
+                throw new ArgumentOutOfRangeException("Index out of range: " + index);
+
+            var child = m_Children[index];
+            child.SetParent(null);
+        }
+
+        private void InsertInChildren(int index, UxmlAsset asset)
+        {
+            m_Children ??= new List<UxmlAsset>();
+            m_Children.Insert(index, asset);
+        }
+
+        private void RemoveFromChildren(UxmlAsset child)
+        {
+            RemoveFromChildren(IndexOf(child));
+        }
+
+        private void RemoveFromChildren(int index)
+        {
+            m_Children.RemoveAt(index);
+        }
+
+        private void SetParent(UxmlAsset parent)
+        {
+            m_Parent?.RemoveFromChildren(this);
+            m_Parent = parent;
+            SetVisualTreeAsset(parent?.visualTreeAsset);
+        }
+
+        private protected virtual void OnVisualTreeAssetChanged(VisualTreeAsset previousVta, VisualTreeAsset newVta)
+        {
+        }
+
+        public int IndexOf(UxmlAsset asset)
+        {
+            return m_Children.IndexOf(asset);
+        }
+
+        public int SiblingIndex()
+        {
+            return parentAsset?.IndexOf(this) ?? -1;
+        }
+
+        public void RemoveFromHierarchy()
+        {
+            parentAsset?.Remove(this);
+        }
+
+        public bool IsAncestorOf(UxmlAsset other)
+        {
+            using var parentScope = HashSetPool<UxmlAsset>.Get(out var parents);
+            var current = other;
+            while (null != current)
+            {
+                if (!parents.Add(current))
+                    throw new InvalidOperationException("Recursion Detected");
+
+                if (this == current.parentAsset)
+                    return true;
+                current = current.parentAsset;
+            }
+
+            return false;
+        }
+
+        public virtual bool HasParent() => null != m_Parent;
 
         public bool HasAttribute(string attributeName)
         {
-            if (m_Properties == null || m_Properties.Count <= 0)
+            if (m_Properties is not { Count: > 0 })
                 return false;
 
-            for (var i = 0; i < m_Properties.Count; i += 2)
+            for (var i = 0; i < m_Properties.Count; ++i)
             {
-                var name = m_Properties[i];
-                if (name == attributeName)
+                if (string.CompareOrdinal(m_Properties[i].name, attributeName) == 0)
                     return true;
             }
 
@@ -150,11 +462,12 @@ namespace UnityEngine.UIElements
                 return false;
             }
 
-            for (int i = 0; i < m_Properties.Count - 1; i += 2)
+            for (var i = 0; i < m_Properties.Count; ++i)
             {
-                if (m_Properties[i] == propertyName)
+                var property = m_Properties[i];
+                if (string.CompareOrdinal(property.name, propertyName) == 0)
                 {
-                    value = m_Properties[i + 1];
+                    value = property.value;
                     return true;
                 }
             }
@@ -182,42 +495,46 @@ namespace UnityEngine.UIElements
             if (m_Properties == null || m_Properties.Count <= 0)
                 return;
 
-            for (var i = 0; i < m_Properties.Count; i += 2)
+            for (var i = 0; i < m_Properties.Count; ++i)
             {
-                var name = m_Properties[i];
-                if (name != attributeName)
+                var property = m_Properties[i];
+                if (string.CompareOrdinal(property.name, attributeName) != 0)
                     continue;
 
-                m_Properties.RemoveAt(i); // Removing the name at i.
-                m_Properties.RemoveAt(i); // Removing the value at i + 1.
+                m_Properties.RemoveAt(i);
                 return;
             }
         }
 
         void SetOrAddProperty(string propertyName, string propertyValue)
         {
-            if (m_Properties == null)
-                m_Properties = new List<string>();
+            m_Properties ??= new List<UxmlProperty>();
 
             m_DirtyCount++;
 
-            for (var i = 0; i < m_Properties.Count - 1; i += 2)
+            for (var i = 0; i < m_Properties.Count; ++i)
             {
-                if (m_Properties[i] == propertyName)
+                var property = m_Properties[i];
+                if (string.CompareOrdinal(property.name, propertyName) == 0)
                 {
-                    m_Properties[i + 1] = propertyValue;
+                    property.value = propertyValue;
+                    m_Properties[i] = property;
                     return;
                 }
             }
 
-            m_Properties.Add(propertyName);
-            m_Properties.Add(propertyValue);
+            m_Properties.Add(new UxmlProperty
+            {
+                name = propertyName, value = propertyValue
+            });
         }
 
         internal int GetPropertiesDirtyCount()
         {
             return m_DirtyCount;
         }
+
+        internal abstract bool Accepts(UxmlAsset asset, out string errorMessage);
 
         public override string ToString() => $"{fullTypeName}(id:{id})";
     }
@@ -226,8 +543,28 @@ namespace UnityEngine.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal class UxmlObjectAsset : UxmlAsset
     {
-        [SerializeField]
-        bool m_IsField;
+        public override bool HasParent()
+        {
+            return m_ParentId != 0;
+        }
+
+        [SerializeField] private int m_ParentId;
+
+        public int parentId
+        {
+            get => m_ParentId;
+            set => m_ParentId = value;
+        }
+
+        [SerializeField] private int m_OrderInDocument;
+
+        public int orderInDocument
+        {
+            get => m_OrderInDocument;
+            set => m_OrderInDocument = value;
+        }
+
+        [SerializeField] bool m_IsField;
 
         /// <summary>
         /// Returns true if the field is a container for one or more UxmlObject.
@@ -239,6 +576,27 @@ namespace UnityEngine.UIElements
             : base(fullTypeNameOrFieldName, xmlNamespace)
         {
             m_IsField = isField;
+        }
+
+        public override void GetExportTypename(out string typename, out UxmlNamespaceDefinition uxmlNamespaceDefinition)
+        {
+            if (isField)
+            {
+                typename = fullTypeName;
+                uxmlNamespaceDefinition = UxmlNamespaceDefinition.Empty;
+                return;
+            }
+            base.GetExportTypename(out typename, out uxmlNamespaceDefinition);
+        }
+
+        internal override bool Accepts(UxmlAsset asset, out string errorMessage)
+        {
+            var result = asset is UxmlObjectAsset;
+
+            errorMessage = !result
+                ? $"[UI Toolkit] Cannot add a UXML asset of type '{asset.fullTypeName}' to a UXML asset of type '{fullTypeName}': UXML objects can only contain other UXML objects."
+                : null;
+            return result;
         }
 
         public override string ToString() => isField ? $"Reference: {fullTypeName} (id:{id} parent:{parentId})" : base.ToString();

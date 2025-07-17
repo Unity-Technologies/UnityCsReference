@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Properties;
+using UnityEditor;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Pool;
@@ -21,25 +22,28 @@ namespace Unity.UI.Builder
         private const float k_WindowHeight = 460;
         private const float k_Spacing = 10;
 
-        public static UxmlObjectAsset FindUxmlBinding(VisualTreeAsset vta, VisualElementAsset element, string property)
+        public static UxmlObjectAsset FindUxmlBinding(VisualElementAsset element, string property)
         {
-            var entry = vta.GetUxmlObjectEntry(element.id);
+            using var _ = ListPool<UxmlObjectAsset>.Get(out var uxmlObjectAssets);
+            element.GetChildrenUxmlObjectAssets(uxmlObjectAssets);
 
-            if (entry.uxmlObjectAssets == null || entry.uxmlObjectAssets.Count == 0)
+            if (uxmlObjectAssets.Count == 0)
                 return null;
 
             var description = UxmlSerializedDataRegistry.GetDescription(typeof(VisualElement).FullName);
             var attributeDescription = description.FindAttributeWithPropertyName("bindings");
 
-            foreach (var obj in entry.uxmlObjectAssets)
+            foreach (var obj in uxmlObjectAssets)
             {
                 var fullType = obj.fullTypeName;
                 var rootName = (attributeDescription as UxmlSerializedUxmlObjectAttributeDescription)?.rootName ?? attributeDescription.name;
 
                 if (obj.isField && fullType == rootName)
                 {
-                    var bindingEntry = vta.GetUxmlObjectEntry(obj.id);
-                    foreach (var bindingObj in bindingEntry.uxmlObjectAssets)
+                    using var listPool = ListPool<UxmlObjectAsset>.Get(out var bindingsUxmlObjectAssets);
+                    obj.GetChildrenUxmlObjectAssets(bindingsUxmlObjectAssets);
+
+                    foreach (var bindingObj in bindingsUxmlObjectAssets)
                     {
                         if (bindingObj.GetAttributeValue("property") == property)
                             return bindingObj;
@@ -78,7 +82,7 @@ namespace Unity.UI.Builder
             if (DataBindingUtility.TryGetBinding(builder.inspector.currentVisualElement, new PropertyPath(property), out var bindingInfo))
             {
                 binding = bindingInfo.binding;
-                uxmlBindingAsset = FindUxmlBinding(vta, vea, property);
+                uxmlBindingAsset = FindUxmlBinding(vea, property);
             }
 
             return uxmlBindingAsset != null;
@@ -144,16 +148,28 @@ namespace Unity.UI.Builder
         /// <summary>
         /// Deletes the binding instance that binds the specified property of the selected VisualElement.
         /// </summary>
-        /// <param name="fieldElement">The element to unbind.</param>
+        /// <param name="sourceFieldElement">The element to unbind.</param>
         /// <param name="property">The property to unbind.</param>
-        public static void DeleteBinding(VisualElement fieldElement, string property)
+        /// <param name="builder">The UIBuilder window</param>
+        public static void DeleteBinding(VisualElement sourceFieldElement, string property, Builder builder)
+        {
+            DeleteBinding(sourceFieldElement, property, builder, builder.inspector.attributesSection);
+        }
+
+        /// <summary>
+        /// Deletes the binding instance that binds the specified property of the selected VisualElement.
+        /// </summary>
+        /// <param name="sourceFieldElement">The element to unbind.</param>
+        /// <param name="property">The property to unbind.</param>
+        /// <param name="builder">The UIBuilder window</param>
+        /// <param name="attributesView">The attribute view from where the deletion of binding is invoked</param>
+        public static void DeleteBinding(VisualElement sourceFieldElement, string property, Builder builder, BuilderUxmlAttributesView attributesView)
         {
             if (!TryGetBinding(property, out _, out _))
                 return;
 
             // Remove binding from SerializedData.
-            var builder = Builder.ActiveWindow;
-            builder.inspector.attributeSection.RemoveBindingFromSerializedData(fieldElement, property);
+            attributesView.RemoveBindingFromSerializedData(sourceFieldElement, property);
 
             builder.OnEnableAfterAllSerialization();
 

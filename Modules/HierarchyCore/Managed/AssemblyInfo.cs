@@ -10,8 +10,9 @@ using System.Runtime.CompilerServices;
 
 // Tests
 [assembly: InternalsVisibleTo("Unity.Hierarchy.Tests")]
-[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
 [assembly: InternalsVisibleTo("Unity.Hierarchy.PerformanceTests")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.Tests")]
+[assembly: InternalsVisibleTo("Unity.Hierarchy.Editor.PerformanceTests")]
 
 // External
 [assembly: InternalsVisibleTo("Unity.Entities.Editor.Tests")]

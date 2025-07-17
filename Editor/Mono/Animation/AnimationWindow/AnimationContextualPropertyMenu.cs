@@ -74,8 +74,13 @@ namespace UnityEditorInternal
                 modifications.AddRange(MaterialAnimationUtility.MaterialPropertyToPropertyModifications(property, renderer));
             }
 
+            var modificationsArray = modifications.ToArray();
+
+            if (!m_Responder.IsAnimatable(modificationsArray))
+                return;
+
             if (m_Responder.IsEditable(renderers[0]))
-                OnPropertyContextMenu(menu, modifications.ToArray());
+                OnPropertyContextMenu(menu, modificationsArray);
             else
                 OnDisabledPropertyContextMenu(menu);
         }

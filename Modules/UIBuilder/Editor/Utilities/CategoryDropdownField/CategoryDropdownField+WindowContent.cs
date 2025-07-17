@@ -53,7 +53,7 @@ namespace Unity.UI.Builder
                 return value;
             }, null, te =>
             {
-                te.pseudoStates &= ~PseudoStates.Checked;
+                te.SetCheckedPseudoState(false);
                 te.style.display = DisplayStyle.Flex;
                 te.RemoveFromClassList(k_ItemInCategory);
             });
@@ -160,7 +160,7 @@ namespace Unity.UI.Builder
                         continue;
 
                     m_SelectedIndex = i;
-                    element.pseudoStates |= PseudoStates.Checked;
+                    element.SetCheckedPseudoState(true);
                     selectionWasSet = true;
                 }
                 editorWindow.rootVisualElement.RegisterCallback<KeyDownEvent>(evt =>
@@ -206,7 +206,7 @@ namespace Unity.UI.Builder
                     if (m_SelectedIndex >= 0)
                     {
                         var previous = m_ScrollView[m_SelectedIndex];
-                        previous.pseudoStates &= ~PseudoStates.Checked;
+                        previous.SetCheckedPseudoState(false);
                     }
 
                     m_SelectedIndex = -1;
@@ -216,12 +216,12 @@ namespace Unity.UI.Builder
                 if (m_SelectedIndex >= 0)
                 {
                     var previous = m_ScrollView[m_SelectedIndex];
-                    previous.pseudoStates &= ~PseudoStates.Checked;
+                    previous.SetCheckedPseudoState(false);
                 }
 
                 m_SelectedIndex = index;
                 var next = m_ScrollView[m_SelectedIndex];
-                next.pseudoStates |= PseudoStates.Checked;
+                next.SetCheckedPseudoState(true);
                 m_ScrollView.ScrollTo(next);
                 return true;
             }

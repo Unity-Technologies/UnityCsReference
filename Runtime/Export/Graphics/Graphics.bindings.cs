@@ -1015,12 +1015,61 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    [NativeType("Runtime/GI/SceneData.h")]
+    internal unsafe partial struct LightProbeOcclusion
+    {
+        internal fixed int     m_ProbeOcclusionLightIndex[4];
+        internal fixed float   m_Occlusion[4];
+        internal fixed sbyte   m_OcclusionMaskChannel[4];
+    }
+    
+    [NativeType("Runtime/Camera/LightProbeStructs.h")]
+    unsafe internal partial struct Matrix3x4f
+    {
+        internal fixed float m_Data[12];
+    }
+    
+    [NativeType("Runtime/Camera/LightProbeStructs.h")]
+    internal unsafe partial struct Tetrahedron
+    {
+        internal fixed int indices[4];
+        internal fixed int neighbors[4];
+        internal Matrix3x4f matrix;
+        internal bool isValid;
+    }
+
+    [NativeType("Runtime/Camera/ProbeSetIndex.h")]
+    internal partial struct ProbeSetIndex {
+        internal Hash128 m_Hash;
+        internal int m_Offset;
+        internal int m_Size;
+    }
+
+    [NativeType("Runtime/Graphics/ProbeSetTetrahedralization.h")]
+    internal sealed partial class ProbeSetTetrahedralization
+    {
+        internal Vector3[] hullRays { get; set; }
+        
+        internal Tetrahedron[] tetrahedra { get; set; }
+    }
+    
     // Stores light probes for the scene.
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Export/Graphics/Graphics.bindings.h")]
     public sealed partial class LightProbes : Object
     {
-        private LightProbes() {}
+        internal struct Hash128IntPair
+        {
+            internal Hash128 Hash;
+            internal int Value;
+        }
+        
+        internal LightProbes()
+        {
+            Internal_Create(this);
+        }
+
+        extern static void Internal_Create([Writable] LightProbes self);
 
         public static event Action lightProbesUpdated;
         [RequiredByNativeCode]
@@ -1105,6 +1154,9 @@ namespace UnityEngine
         {
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetLightProbePositions")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetLightProbePositions")] internal set;
         }
 
         [FreeFunction(HasExplicitThis = true)]
@@ -1123,6 +1175,9 @@ namespace UnityEngine
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("SetBakedCoefficients")] set;
         }
+
+        [FreeFunction(HasExplicitThis = true)]
+        internal extern void SetBakedCoefficients_Internal(SphericalHarmonicsL2[] coefficients);
 
         // The number of light probes.
         public extern int count
@@ -1149,6 +1204,62 @@ namespace UnityEngine
             [FreeFunction(HasExplicitThis = true)]
             [NativeName("GetTetrahedraSizeSelf")]
             get;
+        }
+        
+        internal extern Hash128IntPair[] nonTetrahedralizedProbeSetIndexMap
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetNonTetrahedralizedProbeSetIndexMap")]
+            get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetNonTetrahedralizedProbeSetIndexMap")]
+            set;
+        }
+
+        internal extern LightProbeOcclusion[] bakedLightOcclusion
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetBakedLightOcclusion")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetBakedLightOcclusion")] set;
+        }
+        
+        internal extern Bounds boundingBox
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetBoundingBox")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetBoundingBox")] set;
+        }
+        
+        internal extern ProbeSetIndex[] probeSets
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetProbeSets")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetProbeSets")] set;
+        }
+        
+        internal extern Tetrahedron[] tetrahedra
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetTetrahedra")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetTetrahedra")] set;
+        }
+        
+        internal extern Vector3[] hullRays
+        {
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("GetHullRays")] get;
+            
+            [FreeFunction(HasExplicitThis = true)]
+            [NativeName("SetHullRays")] set;
         }
 
         [FreeFunction]

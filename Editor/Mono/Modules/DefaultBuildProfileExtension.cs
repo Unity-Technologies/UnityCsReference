@@ -102,6 +102,10 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawExplicitNullCheckbox() => false;
         public virtual bool ShouldDrawExplicitDivideByZeroCheckbox() => false;
         public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() => false;
+        public virtual bool ShouldDrawInstallInBuildFolderCheckbox()
+        {
+            return Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget);
+        }
 
         protected virtual string GetPlatformProfileInfoMessage()
         {
@@ -271,7 +275,7 @@ namespace UnityEditor.Modules
                 }
             }
 
-            if (Unsupported.IsSourceBuild() && PostprocessBuildPlayer.SupportsInstallInBuildFolder(m_BuildTarget))
+            if (ShouldDrawInstallInBuildFolderCheckbox())
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
@@ -538,6 +542,37 @@ namespace UnityEditor.Modules
             if (EditorGUI.EndChangeCheck())
             {
                 currentSetting.intValue = (int)(object)options[newIndex];
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Helper method for rendering an IMGUI popup over an enum.
+        /// </summary>
+        protected bool ShowIMGUIPopupOption<T>
+        (
+            GUIContent label,
+            T[] options,
+            GUIContent[] optionString,
+            T currentSetting,
+            out T returnSettings
+        ) where T : Enum
+        {
+            using var vertical = new EditorGUILayout.VerticalScope();
+            returnSettings = currentSetting;
+
+            // Find the index of the currently set value relative to the GUI layout
+            var selectedIndex = Array.FindIndex(options,
+                match => match.Equals(currentSetting));
+            selectedIndex = selectedIndex < 0 ? 0 : selectedIndex;
+
+            EditorGUI.BeginChangeCheck();
+            var newIndex = EditorGUILayout.Popup(label, selectedIndex, optionString);
+            if (EditorGUI.EndChangeCheck())
+            {
+                returnSettings = options[newIndex];
                 return true;
             }
 

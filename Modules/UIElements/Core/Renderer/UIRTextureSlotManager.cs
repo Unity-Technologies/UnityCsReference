@@ -10,29 +10,33 @@ namespace UnityEngine.UIElements.UIR
     {
         static TextureSlotManager()
         {
-            k_SlotCount = 8;
-            slotIds = new int[k_SlotCount];
-            for (int i = 0; i < k_SlotCount; ++i)
+            k_MaxSlotCount = 8;
+            slotIds = new int[k_MaxSlotCount];
+            for (int i = 0; i < k_MaxSlotCount; ++i)
                 slotIds[i] = Shader.PropertyToID($"_Texture{i}");
         }
 
-        internal static readonly int k_SlotCount;
+        internal static readonly int k_MaxSlotCount;
         internal static readonly int k_SlotSize = 2; // Number of float4 per slot
         internal static int[] slotIds;
         internal static readonly int textureTableId = Shader.PropertyToID("_TextureInfo");
 
         TextureId[] m_Textures;
-        int[] m_Tickets;
-        int m_CurrentTicket;
-        int m_FirstUsedTicket;
+        int[] m_LastUseTime;
+        int m_CurrentTime;
+        int m_BatchTime;
 
         Vector4[] m_GpuTextures; // Contains IDs to be transferred to the GPU.
 
+        int m_SlotCount;
+
         public TextureSlotManager()
         {
-            m_Textures = new TextureId[k_SlotCount];
-            m_Tickets = new int[k_SlotCount];
-            m_GpuTextures = new Vector4[k_SlotCount * k_SlotSize];
+            m_Textures = new TextureId[k_MaxSlotCount];
+            m_LastUseTime = new int[k_MaxSlotCount];
+            m_GpuTextures = new Vector4[k_MaxSlotCount * k_SlotSize];
+            m_SlotCount = k_MaxSlotCount;
+            FreeSlots = k_MaxSlotCount;
 
             Reset();
         }
@@ -40,27 +44,38 @@ namespace UnityEngine.UIElements.UIR
         // This must be called before each frame starts rendering.
         public void Reset()
         {
-            m_CurrentTicket = 0;
-            m_FirstUsedTicket = 0;
-            for (int i = 0; i < k_SlotCount; ++i)
+            m_CurrentTime = 0;
+            m_BatchTime = 0;
+            Unbind(0, k_MaxSlotCount);
+        }
+
+        void Unbind(int first, int count = 1)
+        {
+            for (int i = first; i < first + count; ++i)
             {
                 m_Textures[i] = TextureId.invalid;
-                m_Tickets[i] = -1;
+                m_LastUseTime[i] = -1;
                 SetGpuData(i, TextureId.invalid, 1, 1, 0, 0, false);
             }
         }
 
-        // Mark all textures slots as unused. Does not unbind any texture.
-        public void StartNewBatch()
+        // Mark all textures slots as unused. Does not unbind any texture unless the texture slot count decreases.
+        public void StartNewBatch(int slotCount)
         {
-            m_FirstUsedTicket = ++m_CurrentTicket;
-            FreeSlots = k_SlotCount;
+            Debug.Assert(slotCount >= 0 && slotCount <= k_MaxSlotCount, "Invalid texture slot count");
+
+            if (slotCount < m_SlotCount)
+                Unbind(slotCount, m_SlotCount - slotCount);
+
+            m_BatchTime = ++m_CurrentTime;
+            m_SlotCount = slotCount;
+            FreeSlots = slotCount;
         }
 
         // Returns the slot to which the texture is currently bound to.
         public int IndexOf(TextureId id)
         {
-            for (int i = 0; i < k_SlotCount; ++i)
+            for (int i = 0; i < m_SlotCount; ++i)
                 if (m_Textures[i].index == id.index)
                     return i;
 
@@ -70,24 +85,27 @@ namespace UnityEngine.UIElements.UIR
         [MethodImpl(MethodImplOptionsEx.AggressiveInlining)]
         public void MarkUsed(int slotIndex)
         {
-            int oldTicket = m_Tickets[slotIndex];
-            if (oldTicket < m_FirstUsedTicket)
+            Debug.Assert(slotIndex >= 0 && slotIndex < m_SlotCount, "Invalid texture slot");
+            Debug.Assert(m_Textures[slotIndex] != TextureId.invalid, "Texture slot is not bound to a texture");
+
+            int oldTime = m_LastUseTime[slotIndex];
+            if (oldTime < m_BatchTime)
                 --FreeSlots;
-            m_Tickets[slotIndex] = ++m_CurrentTicket;
+            m_LastUseTime[slotIndex] = ++m_CurrentTime;
         }
 
         // Number of slots that are not required by the current batch.
-        public int FreeSlots { get; private set; } = k_SlotCount;
+        public int FreeSlots { get; private set; }
 
         public int FindOldestSlot()
         {
-            int ticket = m_Tickets[0];
+            int oldestTime = m_LastUseTime[0];
             int slot = 0;
-            for (int i = 1; i < k_SlotCount; ++i)
+            for (int i = 1; i < m_SlotCount; ++i)
             {
-                if (m_Tickets[i] < ticket)
+                if (m_LastUseTime[i] < oldestTime)
                 {
-                    ticket = m_Tickets[i];
+                    oldestTime = m_LastUseTime[i];
                     slot = i;
                 }
             }

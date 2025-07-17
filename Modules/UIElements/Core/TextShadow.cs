@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using UnityEngine;
 
 namespace UnityEngine.UIElements
@@ -10,6 +11,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Script interface for <see cref="VisualElement"/> text-shadow style property <see cref="IStyle.textShadow"/>.
     /// </summary>
+    [Serializable]
     public partial struct TextShadow : IEquatable<TextShadow>
     {
         /// <summary>

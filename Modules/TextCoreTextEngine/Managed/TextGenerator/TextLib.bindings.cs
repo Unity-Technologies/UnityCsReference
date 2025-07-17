@@ -38,16 +38,35 @@ namespace UnityEngine.TextCore.Text
         {
             foreach (ref var meshInfo in textInfo.meshInfos.AsSpan())
             {
-                var fa = FontAsset.GetFontAssetByID(meshInfo.fontAssetId);
-                meshInfo.fontAsset = fa;
-                meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>(fa.atlasTextures.Length);
-                for (int i = 0; i < fa.atlasTextures.Length; i++)
+                var textAsset = TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+                if (textAsset == null)
+                    continue;
+                float inverseAtlasWidth = 0f;
+                float inverseAtlasHeight = 0f;
+                bool isSprite = false;
+
+                if (textAsset is FontAsset fontAsset)
+                {
+                    isSprite = false;
+                    meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>(fontAsset.atlasTextures.Length);
+                    for (int i = 0; i < fontAsset.atlasTextures.Length; i++)
+                        meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+
+                    inverseAtlasWidth = 1.0f / fontAsset.atlasWidth;
+                    inverseAtlasHeight = 1.0f / fontAsset.atlasHeight;
+                }
+                else if (textAsset is SpriteAsset spriteAsset)
+                {
+                    isSprite = true;
+                    meshInfo.textElementInfoIndicesByAtlas = new List<List<int>>();
                     meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
 
-                var padding = settings.vertexPadding / 64.0f;
-                var inverseAtlasWidth = 1.0f / fa.atlasWidth;
-                var inverseAtlasHeight = 1.0f / fa.atlasHeight;
+                    inverseAtlasWidth = 1.0f / spriteAsset.m_SpriteAtlasTexture.width;
+                    inverseAtlasHeight = 1.0f / spriteAsset.m_SpriteAtlasTexture.height;
+                }
 
+                var padding = settings.vertexPadding / 64.0f;
+            
                 bool hasMultipleColors = false;
                 Color? previousColor = null;
 
@@ -56,8 +75,20 @@ namespace UnityEngine.TextCore.Text
                 {
                     ref var textElementInfo = ref meshInfo.textElementInfos[i];
                     var glyphID = textElementInfo.glyphID;
+                    Glyph glyph = null;
+                    bool success = true;
+                    int spriteIndex = 0;
+                    if (isSprite)
+                    {
+                        spriteIndex = glyphID - '\uE000';
+                        padding = 0;
+                        glyph = ((SpriteAsset)textAsset).spriteCharacterTable[spriteIndex].glyph;
+                        if (spriteIndex == -1)
+                            success = false;
+                    }
+                    else
+                        success = ((FontAsset)textAsset).TryAddGlyphInternal((uint)glyphID, out glyph);
 
-                    bool success = fa.TryAddGlyphInternal((uint)glyphID, out var glyph);
                     if (!success)
                         continue;
 
@@ -70,8 +101,11 @@ namespace UnityEngine.TextCore.Text
 
                     var glyphRect = glyph.glyphRect;
 
-                    while (meshInfo.textElementInfoIndicesByAtlas.Count < fa.atlasTextures.Length)
-                        meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+                    if (!isSprite)
+                    {
+                        while (meshInfo.textElementInfoIndicesByAtlas.Count < ((FontAsset)textAsset).atlasTextures.Length)
+                            meshInfo.textElementInfoIndicesByAtlas.Add(new List<int>());
+                    }
 
                     meshInfo.textElementInfoIndicesByAtlas[glyph.atlasIndex].Add(i);
 
@@ -140,5 +174,11 @@ namespace UnityEngine.TextCore.Text
         public static extern IntPtr Create();
 
         public static extern void Destroy(IntPtr ptr);
+
+        [ThreadSafe]
+        public static extern TextRenderingIndices GetTextRenderingIndices(IntPtr ptr, int glyphIndex);
+
+        [ThreadSafe]
+        public static extern int GetGlyphCount(IntPtr ptr);
     }
 }

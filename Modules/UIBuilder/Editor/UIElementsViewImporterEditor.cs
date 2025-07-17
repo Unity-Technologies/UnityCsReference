@@ -22,6 +22,7 @@ namespace UnityEditor.UIElements
         static readonly string k_Warning = L10n.Tr("This action will update asset paths to resolve file references and prevent future warnings.\nApplying the fix will replace the entire UXML file.\n<b>Custom comments and formatting may be lost.</b>");
         static readonly string k_ApplyButtonLabel = L10n.Tr("Apply (Overwrites File)");
         static readonly string k_ApplyButtonLabelMultiple = L10n.Tr("Apply (Overwrites Files)");
+        private readonly VisualTreeAssetExporter m_Exporter = new VisualTreeAssetExporter();
 
         public override VisualElement CreateInspectorGUI()
         {
@@ -55,7 +56,7 @@ namespace UnityEditor.UIElements
                         if (importer == null)
                             continue;
 
-                        var uxml = Unity.UI.Builder.VisualTreeAssetToUXML.GenerateUXML(vta, importer.assetPath, true);
+                        var uxml = m_Exporter.ToUxmlString(vta);
                         File.WriteAllText(importer.assetPath, uxml);
                         AssetDatabase.ImportAsset(importer.assetPath);
                     }

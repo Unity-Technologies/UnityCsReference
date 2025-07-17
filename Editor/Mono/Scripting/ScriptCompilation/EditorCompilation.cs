@@ -873,7 +873,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssemblySettings.ExtraGeneralDefines, scriptAssemblySettings));
 
             var cts = new CancellationTokenSource();
- 
+
             ConsoleWindow.ClearConsoleOnRecompile();
 
             var activeBeeBuild = BeeDriver.BuildAsync(buildRequest, cts.Token);
@@ -897,8 +897,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static RunnableProgram MakeScriptCompilationBuildProgram()
         {
-            var buildProgramAssembly = new NPath($"{EditorApplication.applicationContentsPath}/Tools/BuildPipeline/ScriptCompilationBuildProgram.exe");
-            return new SystemProcessRunnableProgram($"{EditorApplication.applicationContentsPath}/Tools/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", new[] {buildProgramAssembly.InQuotes(SlashMode.Native)}, new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
+            var buildProgramAssembly = new NPath($"{EditorApplication.applicationBuildPipelinePath}/ScriptCompilationBuildProgram.exe");
+            return new SystemProcessRunnableProgram($"{EditorApplication.applicationScriptingPath}/netcorerun/netcorerun{BeeScriptCompilation.ExecutableExtension}", new[] {buildProgramAssembly.InQuotes(SlashMode.Native)}, new () {{ "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT", "1" }}
                );
         }
 
@@ -1228,7 +1228,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var guid = AssetDatabase.GUIDFromAssetPath(logicalFilePath);
 
             // script compilation errors can happen before the asset database is initialized, so we reserve the instance id ahead of time (it is deterministic)
-            instanceId = AssetDatabase.ReserveMonoScriptInstanceID(guid);
+            instanceId = AssetDatabase.ReserveMonoScriptEntityId(guid);
 
             fileInstanceIdCache.Add(filePath, instanceId);
 

@@ -34,7 +34,7 @@ namespace UnityEditor.Build
             "PS5",
             "EmbeddedLinux",
             "QNX",
-            "ReservedCFE",
+            "Nintendo Switch 2",
             "Kepler",
         };
 
@@ -52,6 +52,7 @@ namespace UnityEditor.Build
         public static readonly NamedBuildTarget tvOS = new NamedBuildTarget("tvOS");
         public static readonly NamedBuildTarget VisionOS = new NamedBuildTarget("VisionOS");
         public static readonly NamedBuildTarget NintendoSwitch = new NamedBuildTarget("Nintendo Switch");
+        public static readonly NamedBuildTarget NintendoSwitch2 = new NamedBuildTarget("Nintendo Switch 2");
         [System.Obsolete("Stadia has been removed in 2023.1")]
         public static readonly NamedBuildTarget Stadia = new NamedBuildTarget("Stadia");
         public static readonly NamedBuildTarget LinuxHeadlessSimulation = new NamedBuildTarget("LinuxHeadlessSimulation");
@@ -109,6 +110,8 @@ namespace UnityEditor.Build
                     return NamedBuildTarget.VisionOS;
                 case BuildTargetGroup.Switch:
                     return NamedBuildTarget.NintendoSwitch;
+                case BuildTargetGroup.Switch2:
+                    return NamedBuildTarget.NintendoSwitch2;
                 case BuildTargetGroup.LinuxHeadlessSimulation:
                     return NamedBuildTarget.LinuxHeadlessSimulation;
                 case BuildTargetGroup.EmbeddedLinux:
@@ -123,8 +126,6 @@ namespace UnityEditor.Build
                     return new NamedBuildTarget("GameCoreXboxOne");
                 case BuildTargetGroup.PS5:
                     return new NamedBuildTarget("PS5");
-                case BuildTargetGroup.ReservedCFE:
-                    return new NamedBuildTarget("ReservedCFE");
                 case BuildTargetGroup.Kepler:
                     return new NamedBuildTarget("Kepler");
             }

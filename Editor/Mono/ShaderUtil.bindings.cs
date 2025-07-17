@@ -16,6 +16,8 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEditor.ShaderUtil.Tests")]
 [assembly: InternalsVisibleTo("UniversalEditorTests")]
+[assembly: InternalsVisibleTo("UnityGraphicsKernel")]
+[assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 
 namespace UnityEditor
 {
@@ -150,6 +152,11 @@ namespace UnityEditor
         extern public static int GetCallableShaderCount([NotNull] RayTracingShader s);
         extern public static string GetCallableShaderName([NotNull] RayTracingShader s, int shaderIndex);
         extern public static int GetCallableShaderParamSize([NotNull] RayTracingShader s, int shaderIndex);
+        extern public static string GetClosestHitShaderName([NotNull] RayTracingShader s);
+        extern public static int GetClosestHitShaderRayPayloadSize([NotNull] RayTracingShader s);
+        extern public static string GetAnyHitShaderName([NotNull] RayTracingShader s);
+        extern public static int GetAnyHitShaderRayPayloadSize([NotNull] RayTracingShader s);
+        extern public static string GetIntersectionShaderName([NotNull] RayTracingShader s);
 
         extern static public void ClearCachedData([NotNull] Shader s);
 
@@ -209,7 +216,21 @@ namespace UnityEditor
             UpdateShaderAsset(null, shader, source, compileInitialShaderVariants);
         }
 
-        extern public static ComputeShader CreateComputeShaderAsset(AssetImportContext context, string source);
+        extern internal static ComputeShader CreateComputeShaderAssetInternal(AssetImportContext context, string source);
+
+        public static ComputeShader CreateComputeShaderAsset(AssetImportContext context, string source)
+        {
+            if (context == null)
+                throw new ArgumentNullException("context is null.");
+
+            return CreateComputeShaderAssetInternal(context, source);
+        }
+
+        internal static ComputeShader CreateComputeShaderAsset(string source)
+        {
+            return CreateComputeShaderAssetInternal(null, source);
+        }
+
         extern public static RayTracingShader CreateRayTracingShaderAsset(AssetImportContext context, string source);
 
         [FreeFunction("GetShaderNameRegistry().AddShader")] extern public static void RegisterShader([NotNull] Shader shader);
@@ -246,6 +267,18 @@ namespace UnityEditor
 
         [FreeFunction] public static extern ShaderInfo[] GetAllShaderInfo();
         [FreeFunction] public static extern ShaderInfo GetShaderInfo([NotNull] Shader shader);
+
+        extern private static bool IsGraphicsAPISupportedShader([NotNull] Shader shader, in PassIdentifier passIdentifier, GraphicsDeviceType graphicsAPI);
+        extern private static bool IsGraphicsAPISupportedCompute([NotNull] ComputeShader shader, GraphicsDeviceType graphicsAPI);
+
+        public static bool IsGraphicsAPISupported(Shader shader, in PassIdentifier passIdentifier, GraphicsDeviceType graphicsAPI)
+        {
+            return IsGraphicsAPISupportedShader(shader, passIdentifier, graphicsAPI);
+        }
+        public static bool IsGraphicsAPISupported(ComputeShader shader, GraphicsDeviceType graphicsAPI)
+        {
+            return IsGraphicsAPISupportedCompute(shader, graphicsAPI);
+        }
 
         [FreeFunction] extern internal static string GetShaderPassSourceCode([NotNull] Shader shader, int subShaderIndex, int passId);
         [FreeFunction] extern internal static string GetShaderPassName([NotNull] Shader shader, int subShaderIndex, int passId);
@@ -345,6 +378,17 @@ namespace UnityEditor
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool outputForExternalTool);
         extern internal static ShaderData.PreprocessedVariant PreprocessShaderVariant([NotNull] Shader shader, int subShaderIndex, int passId,
             ShaderType shaderType, BuiltinShaderDefine[] platformKeywords, string[] keywords, ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget, GraphicsTier tier, bool stripLineDirectives);
+
+        extern internal static ShaderData.VariantCompileInfo CompileComputeShaderVariant([NotNull] ComputeShader shader, int kernelIndex, 
+            string[] keywords, GraphicsDeviceType graphicsDeviceType, BuildTarget buildTarget);
+
+        extern private static bool CanBuildShadersWithShaderCompiler(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget);
+        extern private static bool CanBuildShadersForGraphicsDevice(GraphicsDeviceType graphicsDeviceType, BuildTarget buildTarget);
+
+        internal static bool CanBuildShadersFor(ShaderCompilerPlatform shaderCompilerPlatform, BuildTarget buildTarget) =>
+            CanBuildShadersWithShaderCompiler(shaderCompilerPlatform, buildTarget);
+        internal static bool CanBuildShadersFor(GraphicsDeviceType graphicsDeviceType, BuildTarget buildTarget) =>
+            CanBuildShadersForGraphicsDevice(graphicsDeviceType, buildTarget);
 
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassAllStageKeywords(Shader s, in PassIdentifier passIdentifier);
         [FreeFunction("ShaderUtil::GetPassKeywords")] extern private static LocalKeyword[] GetPassStageKeywords(Shader s, in PassIdentifier passIdentifier, ShaderType shaderType);

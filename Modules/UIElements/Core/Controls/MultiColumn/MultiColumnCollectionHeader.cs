@@ -424,30 +424,26 @@ namespace UnityEngine.UIElements.Internal
             if (columnDataMap.ContainsKey(column))
                 return;
 
-            var columnElement = new MultiColumnHeaderColumn(column);
-            var resizeHandle = new MultiColumnHeaderColumnResizeHandle();
-
-            columnElement.RegisterCallback<GeometryChangedEvent>(OnColumnControlGeometryChanged);
-            columnElement.clickable.clickedWithEventInfo += OnColumnClicked;
-            // Prevent cursor change when hovering handles while drag reordering columns
-            columnElement.mover.activeChanged += OnMoveManipulatorActivated;
-
-            resizeHandle.dragArea.AddManipulator(new ColumnResizer(column));
-
-            columnDataMap[column] = new ColumnData()
-            {
-                control = columnElement,
-                resizeHandle = resizeHandle
-            };
-
             if (column.visible)
             {
+                var columnElement = new MultiColumnHeaderColumn(column);
+                var resizeHandle = new MultiColumnHeaderColumnResizeHandle();
+
+                columnElement.RegisterCallback<GeometryChangedEvent>(OnColumnControlGeometryChanged);
+                columnElement.clickable.clickedWithEventInfo += OnColumnClicked;
+                // Prevent cursor change when hovering handles while drag reordering columns
+                columnElement.mover.activeChanged += OnMoveManipulatorActivated;
+
+                resizeHandle.dragArea.AddManipulator(new ColumnResizer(column));
+
+                columnDataMap[column] = new ColumnData()
+                {
+                    control = columnElement,
+                    resizeHandle = resizeHandle
+                };
+
                 columnContainer.Insert(column.visibleIndex, columnElement);
                 resizeHandleContainer.Insert(column.visibleIndex, resizeHandle);
-            }
-            else
-            {
-                OnColumnRemoved(column);
             }
 
             UpdateColumnControls();

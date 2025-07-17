@@ -85,13 +85,25 @@ namespace UnityEditor
         extern internal static void SetSelectionWithActiveObject([Unmarshalled] Object[] newSelection, Object activeObject);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern internal static void SetSelectionWithActiveInstanceID([NotNull] int[] newSelection, int activeObject);
+        extern internal static void SetSelectionWithActiveEntityId([NotNull] EntityId[] newSelection, EntityId activeObject);
+
+        [Obsolete("Use SetSelectionWithActiveEntityId instead.")]
+        internal static void SetSelectionWithActiveInstanceID(int[] newSelection, int activeObject)
+        {
+            SetSelectionWithActiveEntityId(newSelection.ToEntityIdArray(), activeObject);
+        }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void SetFullSelection([Unmarshalled] Object[] newSelection, Object activeObject, Object context, DataMode dataModeHint);
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        internal static extern void SetFullSelectionByID([NotNull]int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint);
+        internal static extern void SetFullSelectionByID([NotNull]EntityId[] newSelection, EntityId activeObjectEntityId, EntityId contextEntityId, DataMode dataModeHint);
+
+        [Obsolete("Use EntityId version of SetFullSelectionByID instead.")]
+        internal static void SetFullSelectionByID(int[] newSelection, int activeObjectInstanceID, int contextInstanceID, DataMode dataModeHint)
+        {
+            SetFullSelectionByID(newSelection.ToEntityIdArray(), activeObjectInstanceID, contextInstanceID, dataModeHint);
+        }
 
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         internal static extern void UpdateSelectionMetaData(Object context, DataMode dataModeHint);
@@ -109,15 +121,31 @@ namespace UnityEditor
             get;
         }
 
-        // Returns the instanceID of the actual object selection. Includes prefabs, non-modifiable objects.
+        // Returns the EntityId of the actual object selection. Includes prefabs, non-modifiable objects.
         [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
         [NativeName("ActiveID")]
-        extern public static int activeInstanceID { get; set; }
+        extern public static EntityId activeEntityId { get; set; }
 
-        // Returns the active context object's instance ID
+        [Obsolete("Use activeEntityId instead.")]
+        public static int activeInstanceID
+        {
+            get
+            {
+                return activeEntityId;
+            }
+            set
+            {
+                activeEntityId = value;
+            }
+        }
+
+        // Returns the active context object's EntityId
         [StaticAccessor("Selection", StaticAccessorType.DoubleColon)]
         [NativeName("ActiveContextID")]
-        extern internal static int activeContextInstanceID { get; }
+        extern internal static EntityId activeContextEntityId { get; }
+
+        [Obsolete("Use activeEntityId instead.")]
+        internal static int activeContextInstanceID { get => activeContextEntityId; }
 
         // The actual unfiltered selection from the Scene.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
@@ -125,17 +153,56 @@ namespace UnityEditor
 
         // The actual unfiltered selection from the Scene returned as instance ids instead of ::ref::objects.
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        public static EntityId[] entityIds { get => GetEntityIds(); set => SetEntityIds(value); }
+
+        [Obsolete("Use entityIds instead.")]
         public static int[] instanceIDs { get => GetInstanceIDs(); set => SetInstanceIDs(value); }
 
+        /// <summary>
+        /// Returns the current selection as a <see cref="ReadOnlySpan{EntityId}"/>.
+        /// </summary>
+        /// <remarks>
+        /// This is unsafe, the values are not copied in the returned <see cref="ReadOnlySpan{EntityId}"/>.
+        /// Changing the selection while keeping a reference to the returned span will leave the span pointing to unknown memory.
+        /// </remarks>
+        /// <returns>Current selection as a <see cref="ReadOnlySpan{EntityId}"/></returns>
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        [NativeName("GetEntityIds")]
+        internal extern static ReadOnlySpan<EntityId> GetEntityIdsUnsafe();
+
+        [Obsolete("Use GetEntityIds() instead.")]
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
         extern static int[] GetInstanceIDs();
 
+        /// <summary>
+        /// Sets the current selection to the provided <see cref="ReadOnlySpan{EntityId}"/>.
+        /// </summary>
+        /// <param name="entityIds">The entity Ids.</param>
         [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
-        extern static void SetInstanceIDs([NotNull] int[] instanceIDs);
+        [NativeName("SetEntityIds")]
+        internal extern static void SetEntityIdsUnsafe(ReadOnlySpan<EntityId> entityIds);
+
+        [Obsolete("Use SetEntityIds() instead.")]
+        static void SetInstanceIDs(int[] instanceIDs)
+        {
+            SetEntityIds(instanceIDs.ToEntityIdArray());
+        }
+
+
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        extern static EntityId[] GetEntityIds();
+        [StaticAccessor("SelectionBindings", StaticAccessorType.DoubleColon)]
+        extern static void SetEntityIds([NotNull] EntityId[] entityIds);
 
         [StaticAccessor("GetSceneTracker()", StaticAccessorType.Dot)]
         [NativeMethod("IsSelected")]
-        extern public static bool Contains(int instanceID);
+        extern public static bool Contains(EntityId entityId);
+
+        [Obsolete("Use Contains() with EntityId instead.")]
+        public static bool Contains(int instanceID)
+        {
+            return Contains((EntityId)instanceID);
+        }
 
         [NativeMethod("SetActiveObjectWithContextInternal", true)]
         extern public static void SetActiveObjectWithContext(Object obj, Object context);

@@ -31,7 +31,7 @@ namespace UnityEditor.UIElements.ProjectSettings
                     new (nameof(customShader), "custom-shader"),
                     new (nameof(shaderModeLabel), "shader-mode-label"),
                     new (nameof(customShaderLabel), "custom-shader-label"),
-                });
+                }, true);
             }
 
             #pragma warning disable 649

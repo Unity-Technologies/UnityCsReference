@@ -96,14 +96,11 @@ namespace UnityEditorInternal
             }
         }
 
-        public static SceneViewEditMode editMode
+        public static SceneViewEditMode editMode => s_EditMode;
+        private static void SetEditMode(SceneViewEditMode editMode)
         {
-            get { return s_EditMode; }
-            private set
-            {
-                s_EditMode = value;
-                SessionState.SetInt(kEditModeStringKey, (int)s_EditMode);
-            }
+            s_EditMode = editMode;
+            SessionState.SetInt(kEditModeStringKey, (int)s_EditMode);
         }
 
         static void OnActiveToolWillChange()
@@ -220,6 +217,13 @@ namespace UnityEditorInternal
             ChangeEditMode(mode, bounds, (IToolModeOwner)caller);
         }
 
+        public static void ChangeEditMode(SceneViewEditMode mode, Bounds bounds)
+        {
+            SetEditMode(mode);
+
+            FocusEditModeToolTarget(bounds);
+        }
+
         internal static void ChangeEditMode(SceneViewEditMode mode, IToolModeOwner owner)
         {
             ChangeEditMode(mode, owner.GetWorldBoundsOfTargets(), owner);
@@ -249,13 +253,14 @@ namespace UnityEditorInternal
             // created. The EditMode tools do not expect an editModeStarted callback on reloads.
             if (owner == null && mode != SceneViewEditMode.None)
             {
-                editMode = mode;
+                SetEditMode(mode);
+
                 return;
             }
 
             IToolModeOwner oldOwner = InternalEditorUtility.GetObjectFromInstanceID(ownerID) as IToolModeOwner;
 
-            editMode = mode;
+            SetEditMode(mode);
 
             if (oldOwner != null)
             {

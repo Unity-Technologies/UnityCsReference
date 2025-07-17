@@ -49,6 +49,9 @@ namespace UnityEditor.Networking.PlayerConnection
 
     public static class PlayerConnectionGUI
     {
+        // Allows other modules to extend the menu options
+        internal static event Action<ConnectionTreeViewWindow, Rect> showingConnectionMenu;
+
         public static void ConnectionTargetSelectionDropdown(Rect rect, IConnectionState state, GUIStyle style = null)
         {
             var internalState = state as IConnectionStateInternal;
@@ -66,6 +69,7 @@ namespace UnityEditor.Networking.PlayerConnection
             if (internalState != null)
             {
                 ConnectionTreeViewWindow ctvw = new ConnectionTreeViewWindow(internalState, rect);
+                showingConnectionMenu?.Invoke(ctvw, GUIUtility.GUIToScreenRect(rect));
                 PopupWindow.Show(rect, ctvw);
             }
         }
@@ -90,7 +94,7 @@ namespace UnityEditor.Networking.PlayerConnection
 
     internal class GeneralConnectionState : IConnectionStateInternal
     {
-        static class Content
+        internal static class Content
         {
             public static readonly GUIContent Playmode = UnityEditor.EditorGUIUtility.TrTextContent("Play Mode");
             public static readonly GUIContent Editmode = UnityEditor.EditorGUIUtility.TrTextContent("Edit Mode");
@@ -108,10 +112,19 @@ namespace UnityEditor.Networking.PlayerConnection
 
         public GUIContent notificationMessage => s_NotificationMessage;
 
+        // For easy maintainability/searchability, the following variables are named exactly the way they are in the C++ code
+#pragma warning disable IDE1006
         // keep this constant in sync with PLAYER_DIRECT_IP_CONNECT_GUID in GeneralConnection.h
         const int PLAYER_DIRECT_IP_CONNECT_GUID = 0xFEED;
         // keep this constant in sync with PLAYER_DIRECT_URL_CONNECT_GUID in GeneralConnection.h
         const int PLAYER_DIRECT_URL_CONNECT_GUID = 0xFEEE;
+
+        // keep these constants in sync with their values in ProfilerConnection.cpp
+        internal const int kInvalidGuid = -2; // UInt32 0xFFFFFFFE
+        internal const int kEditorGuid = -1; // UInt32 0xFFFFFFFF
+        internal const int kLoadingGuid = -3; // UInt32 0xFFFFFFFD
+#pragma warning restore IDE1006
+
         const string k_EditorConnectionName = "Editor";
 
         public EditorWindow parentWindow { get; private set; }
@@ -365,7 +378,7 @@ namespace UnityEditor.Networking.PlayerConnection
         void AddConnectionViaEnterIPWindow(ConnectionTreeViewWindow menuOptions, Rect buttonScreenRect,
             Func<bool> disabler = null)
         {
-            menuOptions.AddItem(new ConnectionDropDownItem(Content.EnterIPText.text, -2, Content.DirectConnection, ConnectionDropDownItem.ConnectionMajorGroup.Direct, () => false, () =>
+            menuOptions.AddItem(new ConnectionDropDownItem(Content.EnterIPText.text, kInvalidGuid, Content.DirectConnection, ConnectionDropDownItem.ConnectionMajorGroup.Direct, () => false, () =>
             {
                 AttachToPlayerPlayerIPWindow.Show(buttonScreenRect);
                 GUIUtility.ExitGUI(); // clear the gui state to prevent hot control issues

@@ -88,13 +88,24 @@ namespace Unity.UI.Builder
             m_HandleElements.Add(handleName, handle);
             if (absolute)
                 m_AbsoluteOnlyHandleElements.Add(handle);
-            handle.AddManipulator(new Manipulator(startDrag, endDrag, dragAction));
+
+            var action = (Vector2 drag) =>
+            {
+                if (isTargetScaledOrRotated)
+                    return;
+                dragAction(drag);
+            };
+
+            handle.AddManipulator(new Manipulator(startDrag, endDrag, action));
             handle.SetProperty(s_TrackedStylesProperty, trackedStyles);
         }
 
         void OnStartResizeDrag(VisualElement element)
         {
             OnStartDrag(element);
+
+            if (isTargetScaledOrRotated)
+                return;
 
             // We can not use geometry changed events when the element is using flex-grow. (UUM-72096)
             if (m_Target.resolvedStyle.flexGrow != 0 && m_Target.resolvedStyle.position == Position.Relative)
@@ -120,6 +131,9 @@ namespace Unity.UI.Builder
         void OnEndResizeDrag()
         {
             OnEndDrag();
+
+            if (isTargetScaledOrRotated)
+                return;
 
             if (m_TargetGeometryChangedCallback != null)
             {

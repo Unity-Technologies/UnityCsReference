@@ -24,20 +24,23 @@ namespace UnityEngine.UIElements
         public ListViewDraggerAnimated(BaseVerticalCollectionView listView)
             : base(listView) {}
 
-        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition)
+        protected internal override StartDragArgs StartDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             if (!enabled)
-                return base.StartDrag(pointerPosition);
+                return base.StartDrag(pointerPosition, modifiers);
 
             targetView.ClearSelection();
 
             var recycledItem = GetRecycledItem(pointerPosition);
             if (recycledItem == null)
             {
-                return new StartDragArgs(string.Empty, DragVisualMode.Rejected);
+                return new StartDragArgs(string.Empty, DragVisualMode.Rejected, modifiers);
             }
 
-            targetView.SetSelection(recycledItem.index);
+            if (targetView.selectionType != SelectionType.None)
+            {
+                targetView.SetSelection(recycledItem.index);
+            }
 
             isDragging = true;
             m_Item = recycledItem;
@@ -70,14 +73,17 @@ namespace UnityEngine.UIElements
                     m_OffsetItem.rootElement.style.height = targetView.fixedItemHeight + m_SelectionHeight;
             }
 
-            return dragAndDropController.SetupDragAndDrop(new[] { m_Item.index }, true);
+            var startDragArgs = dragAndDropController.SetupDragAndDrop(new[] { m_Item.index }, true);
+            startDragArgs.modifiers = modifiers;
+
+            return startDragArgs;
         }
 
-        protected internal override void UpdateDrag(Vector3 pointerPosition)
+        protected internal override void UpdateDrag(Vector3 pointerPosition, EventModifiers modifiers)
         {
             if (!enabled)
             {
-                base.UpdateDrag(pointerPosition);
+                base.UpdateDrag(pointerPosition, modifiers);
                 return;
             }
 
@@ -97,12 +103,16 @@ namespace UnityEngine.UIElements
             m_CurrentIndex = -1;
             foreach (var item in targetView.activeItems)
             {
-                if (item.id < 0 || item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
+                if (item.index < 0 || (item.rootElement.style.display == DisplayStyle.None && !item.isDragGhost))
                     continue;
 
                 if (item.index == m_Item.index && item.index < targetView.itemsSource.Count - 1)
                 {
                     var nextExpectedHeight = targetView.virtualizationController.GetExpectedItemHeight(item.index + 1);
+                    // If the drop position is at the end, we will let the conditional check that is outside the loop to handle the animating.
+                    if (Mathf.Approximately(itemLayout.y + nextExpectedHeight, contentHeight))
+                        continue;
+
                     if (itemLayout.y <= y + nextExpectedHeight * 0.5f)
                     {
                         m_CurrentIndex = item.index;
@@ -159,11 +169,11 @@ namespace UnityEngine.UIElements
             element.animator.KeepAlive();
         }
 
-        protected internal override void OnDrop(Vector3 pointerPosition)
+        protected internal override void OnDrop(Vector3 pointerPosition, EventModifiers modifiers)
         {
             if (!enabled)
             {
-                base.OnDrop(pointerPosition);
+                base.OnDrop(pointerPosition, modifiers);
                 return;
             }
 
@@ -194,7 +204,7 @@ namespace UnityEngine.UIElements
                 dropPosition = DragAndDropPosition.BetweenItems
             };
 
-            var args = MakeDragAndDropArgs(dragPosition);
+            var args = MakeDragAndDropArgs(dragPosition, modifiers);
             dragAndDropController.OnDrop(args);
             dragAndDrop.AcceptDrag();
 

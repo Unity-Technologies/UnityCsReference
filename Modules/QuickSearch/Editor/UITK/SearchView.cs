@@ -85,8 +85,9 @@ namespace UnityEditor.Search
                     tempSelectedItems.Add(m_FilteredItems[m_Selection[i]]);
                 }
 
-                viewState.group = value;
                 m_FilteredItems.currentGroup = value;
+                viewState.group = m_FilteredItems.currentGroup;
+
                 resultView?.OnGroupChanged(prevGroup, value);
 
                 if (m_SyncSearch && value != null)
@@ -240,6 +241,7 @@ namespace UnityEditor.Search
             {
                 AssetPreview.DeletePreviewTextureManagerByID(m_ViewId);
                 m_ViewState.context?.Dispose();
+                m_ResultView?.Dispose();
             }
 
             m_Disposed = true;
@@ -255,17 +257,22 @@ namespace UnityEditor.Search
             UpdatePreviewManagerCacheSize();
         }
 
+        internal void UpdateViewAndEmitDisplayModeChange()
+        {
+            if (!UpdateView())
+            {
+                // Still report item size changes even if the view didn't change
+                EmitDisplayModeChanged();
+            }
+        }
+
         private void SetItemSize(float value)
         {
             if (viewState.itemSize == value)
                 return;
 
             viewState.itemSize = value;
-            if (!UpdateView())
-            {
-                // Still report item size changes even if the view didn't change
-                EmitDisplayModeChanged();
-            }
+            UpdateViewAndEmitDisplayModeChange();
         }
 
         private void EmitDisplayModeChanged()
@@ -631,7 +638,7 @@ namespace UnityEditor.Search
             }
 
             var searchWindow = this.GetHostWindow() as SearchWindow;
-            if (searchWindow != null && endSearch && (action?.closeWindowAfterExecution ?? true) && !searchWindow.docked)
+            if (searchWindow != null && endSearch && (action?.closeWindowAfterExecution ?? true) && !searchWindow.context.options.HasFlag(SearchFlags.Dockable))
                 searchWindow.CloseSearchWindow();
         }
 

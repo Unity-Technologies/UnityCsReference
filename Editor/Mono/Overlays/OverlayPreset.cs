@@ -15,6 +15,9 @@ namespace UnityEditor.Overlays
         [SerializeField, HideInInspector]
         SaveData[] m_SaveData;
 
+        [SerializeField, HideInInspector]
+        DynamicPanelContainerData[] m_DynamicPanelContainerData;
+
         Type m_TargetType;
 
         public Type targetWindowType
@@ -27,6 +30,12 @@ namespace UnityEditor.Overlays
         {
             get => m_SaveData;
             set => m_SaveData = value;
+        }
+
+        public DynamicPanelContainerData[] dynamicPanelContainerData
+        {
+            get => m_DynamicPanelContainerData;
+            set => m_DynamicPanelContainerData = value;
         }
 
         void OnEnable()

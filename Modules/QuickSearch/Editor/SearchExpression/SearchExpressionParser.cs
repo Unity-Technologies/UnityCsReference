@@ -22,6 +22,7 @@ namespace UnityEditor.Search
         ImplicitLiterals = 1 << 0,
         CanContainAliases = 1 << 1,
         ValidateSignature = 1 << 2,
+        KeepStringQuotes = 1 << 3,
 
         Default = CanContainAliases | ValidateSignature
     }

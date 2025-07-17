@@ -26,7 +26,7 @@ namespace Unity.UI.Builder
 
         public VisualElement CreateField(object attributeOwner, UxmlAsset attributeUxmlOwner, UxmlAttributeDescription attribute, Action<VisualElement, UxmlAttributeDescription, object, string> onValueChange)
         {
-            var fieldLabel = BuilderNameUtilities.ConvertDashToHuman(attribute.name);
+            var fieldLabel = StyleSheetUtility.ConvertDashToHuman(attribute.name);
 
             if (attribute.name.Equals("value") && attributeOwner is EnumField enumField)
             {

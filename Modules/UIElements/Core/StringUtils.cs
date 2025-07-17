@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using UnityEngine.Bindings;
+using UnityEngine.Pool;
 
 namespace UnityEngine.UIElements
 {
@@ -47,6 +48,22 @@ namespace UnityEngine.UIElements
                 }
             }
             return d[ySize * n + m];
+        }
+
+        public static bool StartsWith(string originalString, string pattern)
+        {
+            var originalLength = originalString.Length;
+            var patternLength = pattern.Length;
+            var originalPos = 0;
+            var patternPos = 0;
+
+            while (originalPos < originalLength && patternPos < patternLength && originalString[originalPos] == pattern[patternPos])
+            {
+                originalPos++;
+                patternPos++;
+            }
+
+            return (patternPos == patternLength && originalLength >= patternLength) || (originalPos == originalLength && patternLength >= originalLength);
         }
     }
 
@@ -92,7 +109,7 @@ namespace UnityEngine.UIElements
                 throw new ArgumentNullException(nameof(text));
             }
 
-            var builder = new StringBuilder();
+            var builder = GenericPool<StringBuilder>.Get();
 
             bool startOfString = true;
             bool startOfWord = true;
@@ -143,7 +160,10 @@ namespace UnityEngine.UIElements
                 }
             }
 
-            return builder.ToString();
+            var result = builder.ToString();
+            GenericPool<StringBuilder>.Release(builder.Clear());
+
+            return result;
         }
 
         // https://docs.unity3d.com/Manual/BestPracticeUnderstandingPerformanceInUnity5.html

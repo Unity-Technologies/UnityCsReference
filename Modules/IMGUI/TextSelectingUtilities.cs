@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.TextCore.Text;
+using static UnityEngine.TextEditingUtilities;
 using static UnityEngine.TextEditor;
 
 namespace UnityEngine
@@ -129,20 +130,20 @@ namespace UnityEngine
             this.textHandle = textHandle;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal bool HandleKeyEvent(Event e)
         {
-            InitKeyActions();
-            EventModifiers m = e.modifiers;
-            e.modifiers &= ~EventModifiers.CapsLock;
-            if (s_KeySelectOps.ContainsKey(e))
+            return HandleKeyEvent(e.keyCode, e.modifiers);
+        }
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal bool HandleKeyEvent(KeyCode key, EventModifiers modifiers)
+        {
+            var op = TextSelectOpFromEnum(key, modifiers, (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX));
+            if (op.HasValue)
             {
-                var op = (TextSelectOp)s_KeySelectOps[e];
-                PerformOperation(op);
-                e.modifiers = m;
+                PerformOperation(op.Value);
                 return true;
             }
-            e.modifiers = m;
             return false;
         }
 
@@ -177,66 +178,76 @@ namespace UnityEngine
             return false;
         }
 
-        static Dictionary<Event, TextSelectOp> s_KeySelectOps;
-        static void MapKey(string key, TextSelectOp action)
+        //Used for tests
+        internal static readonly List<(KeyEvent keyEvent, TextSelectOp operation)> s_GlobalKeyMappings = new()
         {
-            s_KeySelectOps[Event.KeyboardEvent(key)] = action;
-        }
+            (new KeyEvent(KeyCode.LeftArrow, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectLeft),
+            (new KeyEvent(KeyCode.RightArrow, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectRight),
+            (new KeyEvent(KeyCode.UpArrow, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectUp),
+            (new KeyEvent(KeyCode.DownArrow, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectDown),
+        };
 
-        void InitKeyActions()
+        //Used for tests
+        internal static readonly List<(KeyEvent keyEvent, TextSelectOp operation)> s_MacKeyMappings = new()
         {
-            if (s_KeySelectOps != null)
-                return;
-            s_KeySelectOps = new Dictionary<Event, TextSelectOp>();
+            (new (KeyCode.Home, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectTextStart),
+            (new (KeyCode.End, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectTextEnd),
 
-            // key mappings shared by the platforms
-            MapKey("#left", TextSelectOp.SelectLeft);
-            MapKey("#right", TextSelectOp.SelectRight);
-            MapKey("#up", TextSelectOp.SelectUp);
-            MapKey("#down", TextSelectOp.SelectDown);
+            (new (KeyCode.LeftArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.ExpandSelectGraphicalLineStart),
+            (new (KeyCode.RightArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.ExpandSelectGraphicalLineEnd),
+            (new (KeyCode.UpArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphBackward),
+            (new (KeyCode.DownArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphForward),
 
-            // OSX is the special case for input shortcuts
-            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
+            (new (KeyCode.LeftArrow, EventModifiers.Shift | EventModifiers.Alt | EventModifiers.FunctionKey), TextSelectOp.SelectWordLeft),
+            (new (KeyCode.RightArrow, EventModifiers.Shift | EventModifiers.Alt | EventModifiers.FunctionKey), TextSelectOp.SelectWordRight),
+            (new (KeyCode.UpArrow, EventModifiers.Shift | EventModifiers.Alt | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphBackward),
+            (new (KeyCode.DownArrow, EventModifiers.Shift | EventModifiers.Alt | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphForward),
+
+            (new (KeyCode.LeftArrow, EventModifiers.Command | EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.ExpandSelectGraphicalLineStart),
+            (new (KeyCode.RightArrow, EventModifiers.Command | EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.ExpandSelectGraphicalLineEnd),
+            (new (KeyCode.UpArrow, EventModifiers.Command | EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectTextStart),
+            (new (KeyCode.DownArrow, EventModifiers.Command | EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectTextEnd),
+
+            (new (KeyCode.A, EventModifiers.Command), TextSelectOp.SelectAll),
+            (new (KeyCode.C, EventModifiers.Command), TextSelectOp.Copy),
+        };
+
+        //Used for tests
+        internal static readonly List<(KeyEvent keyEvent, TextSelectOp operation)> s_WindowsLinuxKeyMappings = new()
+        {
+            (new(KeyCode.LeftArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectToEndOfPreviousWord),
+            (new(KeyCode.RightArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectToStartOfNextWord),
+            (new(KeyCode.UpArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphBackward),
+            (new(KeyCode.DownArrow, EventModifiers.Shift | EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.SelectParagraphForward),
+
+            (new(KeyCode.Home, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectGraphicalLineStart),
+            (new(KeyCode.End, EventModifiers.Shift | EventModifiers.FunctionKey), TextSelectOp.SelectGraphicalLineEnd),
+
+            (new(KeyCode.A, EventModifiers.Control), TextSelectOp.SelectAll),
+            (new(KeyCode.C, EventModifiers.Control), TextSelectOp.Copy),
+            (new(KeyCode.Insert, EventModifiers.Control | EventModifiers.FunctionKey), TextSelectOp.Copy),
+        };
+
+        internal static TextSelectOp? TextSelectOpFromEnum(KeyCode key, EventModifiers modifiers, bool IsMacOsFamily)
+        {
+            //Capslock is always ignored for actions
+            modifiers &= ~EventModifiers.CapsLock;
+
+            var keyEvent = new KeyEvent(key, modifiers);
+            foreach (var mapping in s_GlobalKeyMappings)
             {
-                // Keyboard mappings for mac
-                MapKey("#home", TextSelectOp.SelectTextStart);
-                MapKey("#end", TextSelectOp.SelectTextEnd);
-
-                MapKey("#^left", TextSelectOp.ExpandSelectGraphicalLineStart);
-                MapKey("#^right", TextSelectOp.ExpandSelectGraphicalLineEnd);
-                MapKey("#^up", TextSelectOp.SelectParagraphBackward);
-                MapKey("#^down", TextSelectOp.SelectParagraphForward);
-
-                MapKey("#&left", TextSelectOp.SelectWordLeft);
-                MapKey("#&right", TextSelectOp.SelectWordRight);
-                MapKey("#&up", TextSelectOp.SelectParagraphBackward);
-                MapKey("#&down", TextSelectOp.SelectParagraphForward);
-
-                MapKey("#%left", TextSelectOp.ExpandSelectGraphicalLineStart);
-                MapKey("#%right", TextSelectOp.ExpandSelectGraphicalLineEnd);
-                MapKey("#%up", TextSelectOp.SelectTextStart);
-                MapKey("#%down", TextSelectOp.SelectTextEnd);
-
-                MapKey("%a", TextSelectOp.SelectAll);
-                MapKey("%c", TextSelectOp.Copy);
+                if (mapping.keyEvent == keyEvent)
+                    return mapping.operation;
             }
-            else
+
+            foreach (var mapping in IsMacOsFamily ? s_MacKeyMappings : s_WindowsLinuxKeyMappings)
             {
-                // Windows/Linux keymappings
-                MapKey("#^left", TextSelectOp.SelectToEndOfPreviousWord);
-                MapKey("#^right", TextSelectOp.SelectToStartOfNextWord);
-                MapKey("#^up", TextSelectOp.SelectParagraphBackward);
-                MapKey("#^down", TextSelectOp.SelectParagraphForward);
-
-                MapKey("#home", TextSelectOp.SelectGraphicalLineStart);
-                MapKey("#end", TextSelectOp.SelectGraphicalLineEnd);
-
-                MapKey("^a", TextSelectOp.SelectAll);
-                MapKey("^c", TextSelectOp.Copy);
-                MapKey("^insert", TextSelectOp.Copy);
+                if (mapping.keyEvent == keyEvent)
+                    return mapping.operation;
             }
+
+            return null;
         }
-
 
         public void ClearCursorPos()
         {
@@ -552,6 +563,14 @@ namespace UnityEngine
         /// Moves the cursor to the start of the current line.
         public void MoveLineStart()
         {
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToPreviousParagraph(ref cursorTempIndex);
+                cursorIndex = selectIndex = cursorTempIndex;
+                return;
+            }
+
             // we start from the left-most selected character
             int p = selectIndex < cursorIndex ? selectIndex : cursorIndex;
             // then we scan back to find the first newline
@@ -568,6 +587,15 @@ namespace UnityEngine
         /// Moves the selection to the end of the current line
         public void MoveLineEnd()
         {
+            if (textHandle.useAdvancedText)
+            {
+                int cursorTempIndex = cursorIndex;
+                textHandle.SelectToNextParagraph(ref cursorTempIndex);
+                cursorIndex = selectIndex = cursorTempIndex;
+                return;
+            }
+
+
             // we start from the right-most selected character
             int p = selectIndex > cursorIndex ? selectIndex : cursorIndex;
             // then we scan forward to find the first newline

@@ -554,6 +554,8 @@ namespace UnityEditorInternal
         {
             GenericMenu menu = new GenericMenu();
 
+            var isEditable = !state.selection.isReadOnly;
+
             // Collect hovering keys.
             List<AnimationWindowKeyframe> hoveringKeys = new List<AnimationWindowKeyframe>();
             foreach (var key in dopeline.keys)
@@ -567,19 +569,19 @@ namespace UnityEditorInternal
             AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToFrame), state.frameRate);
 
             string str = L10n.Tr("Add Key");
-            if (dopeline.isEditable && hoveringKeys.Count == 0)
+            if (isEditable && hoveringKeys.Count == 0)
                 menu.AddItem(new GUIContent(str), false, AddKeyToDopeline, new AddKeyToDopelineContext {dopeline = dopeline, time = mouseKeyTime});
             else
                 menu.AddDisabledItem(new GUIContent(str));
 
             str = state.selectedKeys.Count > 1 ? L10n.Tr("Delete Keys") : L10n.Tr("Delete Key");
-            if (dopeline.isEditable && (state.selectedKeys.Count > 0 || hoveringKeys.Count > 0))
+            if (isEditable && (state.selectedKeys.Count > 0 || hoveringKeys.Count > 0))
                 menu.AddItem(new GUIContent(str), false, DeleteKeys, state.selectedKeys.Count > 0 ? state.selectedKeys : hoveringKeys);
             else
                 menu.AddDisabledItem(new GUIContent(str));
 
             // Float curve tangents
-            if (dopeline.isEditable && AnimationWindowUtility.ContainsFloatKeyframes(state.selectedKeys))
+            if (isEditable && AnimationWindowUtility.ContainsFloatKeyframes(state.selectedKeys))
             {
                 menu.AddSeparator(string.Empty);
 
@@ -599,10 +601,7 @@ namespace UnityEditorInternal
                     AnimationCurve curve = (AnimationCurve)editorCurves[id];
                     if (curve == null)
                     {
-                        curve = AnimationUtility.GetEditorCurve(key.curve.clip, key.curve.binding);
-                        if (curve == null)
-                            curve = new AnimationCurve();
-
+                        curve = key.curve.ToAnimationCurve();
                         editorCurves.Add(id, curve);
                     }
 
@@ -692,12 +691,12 @@ namespace UnityEditorInternal
             {
                 switch (Event.current.commandName)
                 {
-                    case EventCommandNames.SelectAll:
+                    case "SelectAll":
                         if (Event.current.type == EventType.ExecuteCommand)
                             HandleSelectAll();
                         Event.current.Use();
                         break;
-                    case EventCommandNames.FrameSelected:
+                    case "FrameSelected":
                         if (Event.current.type == EventType.ExecuteCommand)
                             FrameSelected();
                         Event.current.Use();
@@ -727,7 +726,7 @@ namespace UnityEditorInternal
             {
                 case EventType.ValidateCommand:
                 case EventType.ExecuteCommand:
-                    if ((Event.current.commandName == EventCommandNames.SoftDelete || Event.current.commandName == EventCommandNames.Delete))
+                    if ((Event.current.commandName == "SoftDelete" || Event.current.commandName == "Delete"))
                     {
                         if (Event.current.type == EventType.ExecuteCommand)
                             state.DeleteSelectedKeys();
@@ -768,7 +767,7 @@ namespace UnityEditorInternal
             // TODO: handle multidropping of other types than sprites/textures
             if (DragAndDrop.objectReferences[0].GetType() == typeof(Sprite) || DragAndDrop.objectReferences[0].GetType() == typeof(Texture2D))
             {
-                if (state.selection.clipIsEditable && state.selection.canAddCurves)
+                if (state.selection.canAddCurves)
                 {
                     if (!DopelineForValueTypeExists(typeof(Sprite)))
                     {
@@ -776,7 +775,7 @@ namespace UnityEditorInternal
                         {
                             EditorCurveBinding? spriteBinding = CreateNewPptrDopeline(state.selection, typeof(Sprite));
                             if (spriteBinding != null)
-                                DoSpriteDropAfterGeneratingNewDopeline(state.activeAnimationClip, spriteBinding);
+                                DoSpriteDropAfterGeneratingNewDopeline(state.selection.clip, spriteBinding);
                         }
 
                         DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
@@ -788,10 +787,10 @@ namespace UnityEditorInternal
             DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;
         }
 
-        private void DoSpriteDropAfterGeneratingNewDopeline(AnimationClip animationClip, EditorCurveBinding? spriteBinding)
+        private void DoSpriteDropAfterGeneratingNewDopeline(IAnimationWindowClip clip, EditorCurveBinding? spriteBinding)
         {
             // Create the new curve for our sprites
-            AnimationWindowCurve newCurve = new AnimationWindowCurve(animationClip, (EditorCurveBinding)spriteBinding, typeof(Sprite));
+            AnimationWindowCurve newCurve = new AnimationWindowCurve(clip, (EditorCurveBinding)spriteBinding, typeof(Sprite));
 
             // Perform the drop onto the curve
             PerformDragAndDrop(newCurve, 0f);
@@ -834,24 +833,20 @@ namespace UnityEditorInternal
             return state.filteredCurves.Exists(curve => curve.valueType == valueType);
         }
 
-        public EditorCurveBinding[] GetAnimatableProperties(AnimationWindowSelectionItem selection, Type valueType)
+        public EditorCurveBinding[] GetAnimatableProperties(IAnimationWindowSelectionItem selection, Type valueType)
         {
             EditorCurveBinding[] allBindings = null;
             if (selection.gameObject != null)
             {
-                allBindings = state.controlInterface.GetAnimatableBindings(selection.gameObject);
-            }
-            else if (selection.scriptableObject != null)
-            {
-                allBindings = state.controlInterface.GetAnimatableBindings();
+                allBindings = state.selection.GetAnimatableBindings(selection.gameObject);
             }
 
             return allBindings
-                .Where(binding => state.controlInterface.GetValueType(binding) == valueType)
+                .Where(binding => state.selection.GetValueType(binding) == valueType)
                 .ToArray();
         }
 
-        private EditorCurveBinding? CreateNewPptrDopeline(AnimationWindowSelectionItem selectedItem, Type valueType)
+        private EditorCurveBinding? CreateNewPptrDopeline(IAnimationWindowSelectionItem selectedItem, Type valueType)
         {
             EditorCurveBinding[] potentialBindings = null;
             if (selectedItem.rootGameObject != null)
@@ -861,10 +856,6 @@ namespace UnityEditorInternal
                 {
                     return CreateNewSpriteRendererDopeline(selectedItem.rootGameObject, selectedItem.rootGameObject);
                 }
-            }
-            else if (selectedItem.scriptableObject != null)
-            {
-                potentialBindings = GetAnimatableProperties(selectedItem, valueType);
             }
 
             if (potentialBindings == null || potentialBindings.Length == 0)
@@ -881,7 +872,7 @@ namespace UnityEditorInternal
                     menuItems.Add(binding.type.Name);
 
                 List<object> userDataList = new List<object>();
-                userDataList.Add(selectedItem.animationClip);
+                userDataList.Add(selectedItem.clip);
                 userDataList.Add(potentialBindings);
 
                 Rect r = new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 1, 1);
@@ -893,11 +884,11 @@ namespace UnityEditorInternal
         private void SelectTypeForCreatingNewPptrDopeline(object userData, string[] options, int selected)
         {
             List<object> userDataList = userData as List<object>;
-            AnimationClip animationClip = userDataList[0] as AnimationClip;
+            var clip = userDataList[0] as IAnimationWindowClip;
             List<EditorCurveBinding> bindings = userDataList[1] as List<EditorCurveBinding>;
 
             if (bindings.Count > selected)
-                DoSpriteDropAfterGeneratingNewDopeline(animationClip, bindings[selected]);
+                DoSpriteDropAfterGeneratingNewDopeline(clip, bindings[selected]);
         }
 
         private EditorCurveBinding CreateNewSpriteRendererDopeline(GameObject targetGameObject, GameObject rootGameObject)
@@ -1029,7 +1020,7 @@ namespace UnityEditorInternal
                 HandleDopelineDoubleclick(dopeline);
 
             // Move playhead when clicked with right mouse button
-            if (evt.button == 1 && !state.controlInterface.playing)
+            if (evt.button == 1 && !state.controller.playing)
             {
                 // Clear keyframe selection if right clicked empty space
                 if (!clickedOnKeyframe)
@@ -1195,10 +1186,10 @@ namespace UnityEditorInternal
                 }
             }
 
-            if (curve == null)
+            if (state.selection.isReadOnly)
                 return false;
 
-            if (!curve.clipIsEditable)
+            if (curve == null)
                 return false;
 
             if (perform)
@@ -1250,12 +1241,11 @@ namespace UnityEditorInternal
 
         private void CreateNewPPtrKeyframe(float time, Object value, AnimationWindowCurve targetCurve)
         {
-            ObjectReferenceKeyframe referenceKeyframe = new ObjectReferenceKeyframe();
+            AnimationWindowKeyframe keyframe = new AnimationWindowKeyframe();
+            keyframe.time = time;
+            keyframe.value = value;
+            keyframe.curve = targetCurve;
 
-            referenceKeyframe.time = time;
-            referenceKeyframe.value = value;
-
-            AnimationWindowKeyframe keyframe = new AnimationWindowKeyframe(targetCurve, referenceKeyframe);
             AnimationKeyTime newTime = AnimationKeyTime.Time(keyframe.time, state.frameRate);
             targetCurve.AddKeyframe(keyframe, newTime);
             state.SelectKey(keyframe);
@@ -1483,20 +1473,17 @@ namespace UnityEditorInternal
 
         public void UpdateCurves(List<ChangedCurve> changedCurves, string undoText)
         {
-            Undo.RegisterCompleteObjectUndo(state.activeAnimationClip, undoText);
-
+            var curves = new List<AnimationWindowCurve>(changedCurves.Count);
             foreach (ChangedCurve changedCurve in changedCurves)
             {
                 AnimationWindowCurve curve = state.filteredCurves.Find(c => changedCurve.curveId == c.GetHashCode());
                 if (curve != null)
-                {
-                    AnimationUtility.SetEditorCurve(curve.clip, changedCurve.binding, changedCurve.curve);
-                }
+                    curves.Add(curve);
                 else
-                {
                     Debug.LogError("Could not match ChangedCurve data to destination curves.");
-                }
             }
+
+            state.selection.clip.SaveCurves(curves, undoText);
         }
     }
 }

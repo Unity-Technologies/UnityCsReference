@@ -10,9 +10,7 @@ using UnityEditor.Modules;
 using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
-using UnityEngine.Networking;
 using Application = UnityEngine.Device.Application;
-using UnityEditorInternal;
 using Button = UnityEngine.UIElements.Button;
 
 namespace UnityEditor.Build.Profile
@@ -42,10 +40,12 @@ namespace UnityEditor.Build.Profile
         Button m_AddBuildProfileButton;
         BuildProfilePlatformBrowserClosed m_CloseEvent;
 
-        ListView m_PackagesListView;
-        Foldout m_PackagesFoldout;
-
         VisualElement m_PackageContainer;
+        ListView m_InternalPackageListView;
+        ListView m_PartnerPackageListView;
+        Button m_PackageSelectAll;
+        Button m_PackageDeselectAll;
+
         VisualElement m_PlatformConfigs;
         VisualElement m_NameLinks;
 
@@ -115,7 +115,7 @@ namespace UnityEditor.Build.Profile
             EditorAnalytics.SendAnalytic(new BuildProfileCreatedEvent(new BuildProfileCreatedEvent.Payload
             {
                 creationType = BuildProfileCreatedEvent.CreationType.PlatformBrowser,
-                platformId = card.platformId,
+                platformId = card.platformId.ToString(),
                 platformDisplayName = card.displayName,
             }));
         }
@@ -128,8 +128,8 @@ namespace UnityEditor.Build.Profile
                 if (!BuildProfileModuleUtil.IsPlatformAvailableOnHostPlatform(platformId, SystemInfo.operatingSystemFamily))
                     continue;
 
-                var requiredPackageNames = BuildProfileModuleUtil.BuildPlatformRequiredPackages(platformId);
-                var recommendedPackageNames = BuildProfileModuleUtil.BuildPlatformRecommendedPackages(platformId);
+                var internalPackages = BuildProfileModuleUtil.BuildPlatformInternalPackages(platformId);
+                var partnerPackages = BuildProfileModuleUtil.BuildPlatformPartnerPackages(platformId);
 
                 var buildProfileExtension = BuildProfileModuleUtil.GetBuildProfileExtension(platformId);
                 var preconfiguredSettingsVariants = Array.Empty<PreconfiguredSettingsVariant>();
@@ -147,8 +147,8 @@ namespace UnityEditor.Build.Profile
                     displayName = BuildProfileModuleUtil.GetClassicPlatformDisplayName(platformId),
                     platformId = platformId,
                     description = BuildProfileModuleUtil.BuildPlatformDescription(platformId),
-                    recommendedPackages = recommendedPackageNames,
-                    requiredPackages = requiredPackageNames,
+                    internalPackages = internalPackages,
+                    partnerPackages = partnerPackages,
                     preconfiguredSettingsVariants = preconfiguredSettingsVariants
                 });
             }
@@ -176,14 +176,13 @@ namespace UnityEditor.Build.Profile
             m_SelectedDescriptionFoldout = rootVisualElement.Q<Foldout>("platform-description-foldout");
             m_SelectedDescriptionLabel = rootVisualElement.Q<Label>("platform-description-label");
             m_HelpBoxWrapper = rootVisualElement.Q<VisualElement>("helpbox-wrapper");
-            m_PackagesListView = rootVisualElement.Q<ListView>("packages-root-listview");
+            m_PackageContainer = rootVisualElement.Q<VisualElement>("package-container");
+            m_InternalPackageListView = rootVisualElement.Q<ListView>("internal-package-list");
+            m_PartnerPackageListView = rootVisualElement.Q<ListView>("partner-package-list");
             m_ConfigLabel = rootVisualElement.Q<Label>("config-text");
             m_AddtionalInfoLabel = rootVisualElement.Q<Label>("additional-info");
             m_AddtionalInfoLabel.text = "";
 
-            m_PackageContainer = rootVisualElement.Q<VisualElement>("package-container");
-            m_PackagesFoldout = rootVisualElement.Q<Foldout>("packages-foldout");
-            m_PackagesFoldout.text = TrText.packagesHeader;
             m_NameLinks = rootVisualElement.Q<VisualElement>("name-link-btn-container");
 
             m_PlatformConfigs = rootVisualElement.Q<VisualElement>("platform-configs");
@@ -206,69 +205,25 @@ namespace UnityEditor.Build.Profile
                 m_RenameOverlay.OnRenameEnd();
             });
             m_BuildProfileNameTextField.maxLength = k_MaxBuildProfileNameLength;
-            m_PackagesListView.itemsSource = Array.Empty<object>();
-            m_PackagesListView.makeItem = PlatformPackageItem.Make;
-            m_PackagesListView.bindItem = (VisualElement element, int index) =>
+
+            var packageContainerTitle = m_PackageContainer.Q<Label>("package-container-title");
+            packageContainerTitle.text = TrText.packageContainerTitle;
+
+            SetUpPackageListView(m_InternalPackageListView, null);
+            SetUpPackageListView(m_PartnerPackageListView, () =>
             {
-                if (element is not PlatformPackageItem packageItem)
-                {
-                    Debug.LogWarning("Unexpected element type in PlatformDiscoveryWindow. element=" + element);
-                    return;
-                }
+                var header = new Label();
+                header.text = TrText.partnerPackageListTitle;
+                header.AddToClassList("partner-package-list-header");
+                return header;
+            });
 
-                var packageEntry = m_PackagesListView.itemsSource[index] as PlatformPackageEntry;
-                packageItem.Set(packageEntry);
-            };
-            var packageSelectAll = m_PackageContainer.Q<Button>("package-select-all");
-            packageSelectAll.text = TrText.selectAll;
-            packageSelectAll.clicked += () =>
-            {
-                for (int i = 0; i < m_PackagesListView.itemsSource.Count; ++i)
-                {
-                    var item = m_PackagesListView.GetRootElementForIndex(i);
-                    if (item is not PlatformPackageItem packageItemVisualElement)
-                        continue;
-
-                    packageItemVisualElement.SetShouldInstallToggle(true);
-
-                }
-            };
-            var packageDeselectAll = m_PackageContainer.Q<Button>("package-deselect-all");
-            packageDeselectAll.text = TrText.deselectAll;
-            packageDeselectAll.clicked += () =>
-            {
-                for (int i = 0; i < m_PackagesListView.itemsSource.Count; ++i)
-                {
-                    var item = m_PackagesListView.GetRootElementForIndex(i);
-                    if (item is not PlatformPackageItem packageItemVisualElement)
-                        continue;
-
-                    packageItemVisualElement.SetShouldInstallToggle(false);
-                }
-            };
-
-            m_PackagesListView.itemsSourceChanged += () =>
-            {
-                var packageList = m_PackagesListView.itemsSource as PlatformPackageEntry[];
-                if (packageList == null)
-                {
-                    Debug.LogWarning("Could not parse list of packages in PlatformDiscoveryWindow");
-                    return;
-                }
-
-                bool allPackagesAreInstalledOrRequired = true;
-                foreach (var package in packageList)
-                {
-                    if (!package.isInstalled && !package.required)
-                    {
-                        allPackagesAreInstalledOrRequired = false;
-                        break;
-                    }
-                }
-
-                packageDeselectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
-                packageSelectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
-            };
+            m_PackageSelectAll = m_PackageContainer.Q<Button>("package-select-all");
+            m_PackageSelectAll.text = TrText.selectAll;
+            m_PackageSelectAll.clicked += () => SetAllPackagesShouldInstallToggle(true);
+            m_PackageDeselectAll = m_PackageContainer.Q<Button>("package-deselect-all");
+            m_PackageDeselectAll.text = TrText.deselectAll;
+            m_PackageDeselectAll.clicked += () => SetAllPackagesShouldInstallToggle(false);
 
             // Apply localized text to static elements.
             rootVisualElement.Q<ToolbarButton>("toolbar-filter-all").text = TrText.all;
@@ -287,7 +242,7 @@ namespace UnityEditor.Build.Profile
                 m_CloseEvent = new BuildProfilePlatformBrowserClosed(new BuildProfilePlatformBrowserClosed.Payload()
                 {
                     wasProfileCreated = true,
-                    platformId = m_SelectedCard.platformId,
+                    platformId = m_SelectedCard.platformId.ToString(),
                     platformDisplayName = m_SelectedCard.displayName,
                 });
                 Close();
@@ -295,6 +250,83 @@ namespace UnityEditor.Build.Profile
 
             // First element should match standalone platform.
             cards.SetSelection(0);
+        }
+
+        void SetUpPackageListView(ListView listView, Func<VisualElement> customHeader)
+        {
+            listView.itemsSource = Array.Empty<PlatformPackageEntry>();
+            listView.makeItem = PlatformPackageItem.Make;
+            listView.virtualizationMethod = CollectionVirtualizationMethod.DynamicHeight;
+            listView.selectionType = SelectionType.None;
+            listView.bindItem = (element, index) =>
+            {
+                if (element is not PlatformPackageItem packageItem)
+                {
+                    Debug.LogWarning("Unexpected element type in Platform Browser. element=" + element);
+                    return;
+                }
+
+                if (index == 0)
+                    element.Q<VisualElement>("package-list-item").ToggleInClassList("border-top-1-color-10");
+
+                var packageEntry = listView.itemsSource[index] as PlatformPackageEntry;
+                packageItem.Set(packageEntry);
+            };
+
+            if (customHeader != null)
+                listView.makeHeader = customHeader.Invoke;
+        }
+
+        /// <summary>
+        /// Set the state of the install toggle for all packages in the internal and partner package lists.
+        /// </summary>
+        void SetAllPackagesShouldInstallToggle(bool selection)
+        {
+            SetShouldInstallToggle(m_InternalPackageListView);
+            SetShouldInstallToggle(m_PartnerPackageListView);
+
+            void SetShouldInstallToggle(ListView packageListView)
+            {
+                for (int i = 0; i < packageListView.itemsSource.Count; ++i)
+                {
+                    var item = packageListView.GetRootElementForIndex(i);
+                    if (item is not PlatformPackageItem packageItem)
+                        continue;
+
+                    packageItem.SetShouldInstallToggle(selection);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Sets the enabled state of the Select All and Deselect All buttons
+        /// based on the current state of the package lists.
+        /// </summary>
+        void SetEnabledPackageSelectionButtons()
+        {
+            var internalPackageList = m_InternalPackageListView.itemsSource as PlatformPackageEntry[];
+            var partnerPackageList = m_PartnerPackageListView.itemsSource as PlatformPackageEntry[];
+            if (internalPackageList == null || partnerPackageList == null)
+            {
+                Debug.LogWarning("Could not parse lists of packages in Platform Browser");
+                return;
+            }
+
+            var allPackagesAreInstalledOrRequired = AreAllPackagesInstalledOrRequired(internalPackageList) &&
+                AreAllPackagesInstalledOrRequired(partnerPackageList);
+
+            m_PackageDeselectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
+            m_PackageSelectAll.SetEnabled(!allPackagesAreInstalledOrRequired);
+
+            bool AreAllPackagesInstalledOrRequired(PlatformPackageEntry[] platformPackageEntries)
+            {
+                foreach (var package in platformPackageEntries)
+                {
+                    if (!package.isInstalled && !package.required)
+                        return false;
+                }
+                return true;
+            }
         }
 
         void SelectPlatform(GUID platformGuid)
@@ -311,16 +343,24 @@ namespace UnityEditor.Build.Profile
             }
         }
 
+        void ClearWindowData()
+        {
+            m_PlatformConfigs.Clear();
+            m_NameLinks.Clear();
+            m_AddtionalInfoLabel.Clear();
+            m_InternalPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+            m_PartnerPackageListView.itemsSource = Array.Empty<PlatformPackageEntry>();
+        }
+
         /// <summary>
         /// Verify editor can create build profiles for the currently selected card. Otherwise
         /// display relevant documentation to the user.
         /// </summary>
         void OnCardSelected(BuildProfileCard card)
         {
-            m_PlatformConfigs.Clear();
-            m_NameLinks.Clear();
-            m_AddtionalInfoLabel.Clear();
-            m_BuildProfileNameTextField.value = BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId);
+            ClearWindowData();
+            m_BuildProfileNameTextField.value = BuildProfileDataSource.SanitizeFileName(
+                BuildProfileModuleUtil.GetClassicPlatformDisplayName(card.platformId));
             m_SelectedCard = card;
             m_SelectedDisplayNameLabel.text = card.displayName;
             m_SelectedCardImage.image = BuildProfileModuleUtil.GetPlatformIcon(card.platformId);
@@ -331,17 +371,27 @@ namespace UnityEditor.Build.Profile
             else
                 m_HelpBoxWrapper.Hide();
 
-            if (card.requiredPackages.Length > 0 || card.recommendedPackages.Length > 0)
+            if (card.internalPackages.packageCount > 0 || card.partnerPackages.packageCount > 0)
             {
-                m_PackagesListView.itemsSource = PlatformPackageItem
-                    .CreateItemSource(card.requiredPackages, card.recommendedPackages);
-                m_PackagesListView.Rebuild();
                 m_PackageContainer.Show();
+                RebuildPackageListView(card.internalPackages, m_InternalPackageListView);
+                RebuildPackageListView(card.partnerPackages, m_PartnerPackageListView);
+                SetEnabledPackageSelectionButtons();
+
+                void RebuildPackageListView(BuildTargetDiscovery.PlatformPackageList packageList, ListView listView)
+                {
+                    if (packageList.packageCount > 0)
+                    {
+                        listView.itemsSource = PlatformPackageItem.CreateItemSource(packageList);
+                        listView.Show();
+                        listView.Rebuild();
+                    }
+                    else
+                        listView.Hide();
+                }
             }
             else
-            {
                 m_PackageContainer.Hide();
-            }
 
             if (card.description.Length > 0)
             {
@@ -354,7 +404,7 @@ namespace UnityEditor.Build.Profile
             if (card.preconfiguredSettingsVariants.Length > 0)
             {
                 // Display preconfig items with tooltip.
-                for(int i = 0 ; i < card.preconfiguredSettingsVariants.Length; i++)
+                for (int i = 0; i < card.preconfiguredSettingsVariants.Length; i++)
                 {
                     var preconfigItem = new PreconfiguredSettingsItem();
                     preconfigItem.Set(card.preconfiguredSettingsVariants[i], UpdateAddBuildProfileButton, card.preconfiguredSettingsVariants[i].Tooltip);
@@ -409,7 +459,7 @@ namespace UnityEditor.Build.Profile
             {
                 if (element is not BuildProfileListLabel card)
                 {
-                    Debug.LogWarning("Unexpected element type in PlatformDiscoveryWindow. element=" + element);
+                    Debug.LogWarning("Unexpected element type in Platform Browser. element=" + element);
                     return;
                 }
 
@@ -456,14 +506,19 @@ namespace UnityEditor.Build.Profile
         string[] DeterminePackagesToAdd()
         {
             List<string> packagesToAdd = new();
-            foreach (PlatformPackageEntry item in m_PackagesListView.itemsSource)
+            SetPackagesToAdd(m_InternalPackageListView);
+            SetPackagesToAdd(m_PartnerPackageListView);
+
+            return packagesToAdd.ToArray();
+
+            void SetPackagesToAdd(ListView listView)
             {
-                if (!item.isInstalled && item.shouldInstalled)
+                foreach (PlatformPackageEntry item in listView.itemsSource)
                 {
-                    packagesToAdd.Add(item.packageName);
+                    if (!item.isInstalled && item.shouldInstalled)
+                        packagesToAdd.Add(item.qualifiedName);
                 }
             }
-            return packagesToAdd.ToArray();
         }
     }
 }

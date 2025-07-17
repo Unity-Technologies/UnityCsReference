@@ -14,12 +14,6 @@ namespace Unity.UI.Builder
     [UsedImplicitly]
     class TranslateStyleField : BaseField<Translate>
     {
-        public class BuilderTranslateConverter : UxmlAttributeConverter<Translate>
-        {
-            public override Translate FromString(string value) => throw new NotImplementedException();
-            public override string ToString(Translate value) => throw new NotImplementedException();
-        }
-
         [Serializable]
         public new class UxmlSerializedData : BaseField<Translate>.UxmlSerializedData
         {

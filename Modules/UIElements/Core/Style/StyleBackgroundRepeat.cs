@@ -9,6 +9,7 @@ namespace UnityEngine.UIElements
     /// <summary>
     /// Represents a style value that can be either a <see cref="BackgroundRepeat"/> or a <see cref="StyleKeyword"/>.
     /// </summary>
+    [Serializable]
     public struct StyleBackgroundRepeat : IStyleValue<BackgroundRepeat>, IEquatable<StyleBackgroundRepeat>
     {
         /// <summary>
@@ -53,7 +54,9 @@ namespace UnityEngine.UIElements
             m_Value = v;
         }
 
+        [SerializeField]
         private BackgroundRepeat m_Value;
+        [SerializeField]
         private StyleKeyword m_Keyword;
 
         /// <undoc/>

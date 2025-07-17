@@ -30,7 +30,7 @@ static class UIToolkitUtilities
         var childElement = parentElement.Query<VisualElement>(childName).First();
         Assert.IsNotNull(childElement, $"Could not find child element '{childName}' in visual tree of element '{parentElement.name}'.");
         var childElementCast = childElement as T;
-        Assert.IsNotNull(childElementCast, $"Child element '{childName}' of '{parentElement.name}' is not of type {nameof(T)}");
+        Assert.IsNotNull(childElementCast, $"Child element '{childName}' of '{parentElement.name}' is not of type {typeof(T).Name}");
         return childElementCast;
     }
 
@@ -39,7 +39,7 @@ static class UIToolkitUtilities
         var childElement = parentElement.Query<VisualElement>(className: childClassName).First();
         Assert.IsNotNull(childElement, $"Could not find child element '{childClassName}' in visual tree of element '{parentElement.name}'.");
         var childElementCast = childElement as T;
-        Assert.IsNotNull(childElementCast, $"Child element '{childClassName}' of '{parentElement.name}' is not of type {nameof(T)}");
+        Assert.IsNotNull(childElementCast, $"Child element '{childClassName}' of '{parentElement.name}' is not of type {typeof(T).Name}");
         return childElementCast;
     }
 
@@ -48,7 +48,7 @@ static class UIToolkitUtilities
         var childElement = parentElement.ElementAt(index);
         Assert.IsNotNull(childElement, $"{parentElement.name} has no child element at '{index}.");
         var childElementCast = childElement as T;
-        Assert.IsNotNull(childElementCast, $"Child element of '{parentElement.name}' at index {index} is not of type {nameof(T)}");
+        Assert.IsNotNull(childElementCast, $"Child element of '{parentElement.name}' at index {index} is not of type {typeof(T).Name}");
         return childElementCast;
     }
 }

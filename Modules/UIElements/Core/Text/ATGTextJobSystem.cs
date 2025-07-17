@@ -77,9 +77,12 @@ internal class ATGTextJobSystem
             k_GenerateTextMarker.Begin();
             var managedJobDatas = (List<ManagedJobData>)managedJobDataHandle.Target;
             ManagedJobData managedJobData = managedJobDatas[index];
-            var ve = managedJobData.textElement;
-            var shouldGenerateNativeTextSettings = ve.computedStyle.unityFontDefinition.fontAsset != null;
-            (managedJobData.textInfo, managedJobData.success) = ve.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
+            var te = managedJobData.textElement;
+            var shouldGenerateNativeTextSettings = te.computedStyle.unityFontDefinition.fontAsset != null;
+            if (te.PostProcessTextVertices != null)
+                te.uitkTextHandle.CacheTextGenerationInfo();
+
+            (managedJobData.textInfo, managedJobData.success) = te.uitkTextHandle.UpdateNative(shouldGenerateNativeTextSettings);
             k_GenerateTextMarker.End();
         }
     }
@@ -114,12 +117,15 @@ internal class ATGTextJobSystem
         {
             var jobHandle = textJob.Schedule(textJobDatas.Count, 1);
             mgc.AddMeshGenerationJob(jobHandle);
+            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         }
         else
+        {
             for (int i = 0; i < textJobDatas.Count; i++)
                 textJob.Execute(i);
+            mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, false);
+        }
 
-        mgc.AddMeshGenerationCallback(m_AddDrawEntriesCallback, null, MeshGenerationCallbackType.Work, true);
         k_ATGTextJobMarker.End();
     }
 
@@ -136,8 +142,9 @@ internal class ATGTextJobSystem
             if (managedJobData.success)
             {
                 var textInfo = managedJobData.textInfo;
-                managedJobData.textElement.uitkTextHandle.ProcessMeshInfos(textInfo);
-                managedJobData.textElement.uitkTextHandle.UpdateATGTextEventHandler();
+                var te = managedJobData.textElement;
+                te.uitkTextHandle.ProcessMeshInfos(textInfo);
+                te.uitkTextHandle.UpdateATGTextEventHandler();
 
                 // Call Texture.Apply for all texture still dirty
                 // There are no other place where we are calling this to export the texture to the gpu
@@ -152,12 +159,14 @@ internal class ATGTextJobSystem
                 FontAsset.UpdateFontAssetsInUpdateQueue();
 
                 mgc.GetTempMeshAllocator(out var alloc);
-                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, managedJobData.textElement, ref atlases, ref verticesArray, ref indicesArray, ref renderModes, ref sdfScalesArray);
+                ConvertMeshInfoToUIRVertex(textInfo.meshInfos, alloc, te, atlases, verticesArray, indicesArray, renderModes, sdfScalesArray);
 
-                mgc.Begin(managedJobData.node.GetParentEntry(), managedJobData.textElement, managedJobData.textElement.renderData);
+                te.PostProcessTextVertices?.Invoke(new TextElement.GlyphsEnumerable(te, verticesArray, textInfo.meshInfos));
+
+                mgc.Begin(managedJobData.node.GetParentEntry(), te, te.renderData);
 
                 mgc.meshGenerator.DrawText(verticesArray, indicesArray, atlases, renderModes, sdfScalesArray);
-                managedJobData.textElement.OnGenerateTextOverNative(mgc);
+                te.OnGenerateTextOverNative(mgc);
 
                 atlases.Clear();
                 verticesArray.Clear();
@@ -176,13 +185,29 @@ internal class ATGTextJobSystem
         textJobDatasHandle.Free();
     }
 
-    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, ref List<Texture2D> atlases, ref List<NativeSlice<Vertex>> verticesArray, ref List<NativeSlice<ushort>> indicesArray, ref List<GlyphRenderMode> renderModes, ref List<float> sdfScales)
+    static void ConvertMeshInfoToUIRVertex(ATGMeshInfo[] meshInfos, TempMeshAllocator alloc, TextElement visualElement, List<Texture2D> atlases, List<NativeSlice<Vertex>> verticesArray, List<NativeSlice<ushort>> indicesArray, List<GlyphRenderMode> renderModes, List<float> sdfScales)
     {
         float inverseScale = 1.0f / visualElement.scaledPixelsPerPoint;
 
         for (int i = 0; i < meshInfos.Length; i++)
         {
             var meshInfo = meshInfos[i];
+            FontAsset fa = null;
+            SpriteAsset sa = null;
+            var textAsset = TextCore.Text.TextAsset.GetTextAssetByID(meshInfo.textAssetId);
+            if (textAsset == null)
+                continue;
+            bool isSprite = false;
+            if (textAsset is FontAsset)
+            {
+                fa = textAsset as FontAsset;
+            }
+            else
+            {
+                isSprite = true;
+                sa = textAsset as SpriteAsset;
+            }
+
             //Debug.Assert((meshInfo.textElementInfos.Length & 0b11) == 0); // Quads only
             int verticesPerAlloc = (int)(UIRenderDevice.maxVerticesPerPage & ~3); // Round down to multiple of 4
 
@@ -204,16 +229,24 @@ internal class ATGTextJobSystem
                     int quadCount = vertexCount >> 2;
                     int indexCount = quadCount * 6;
 
-                    var fa = meshInfo.fontAsset;
-                    atlases.Add(fa.atlasTextures[j]);
-                    renderModes.Add(fa.atlasRenderMode);
+                    if (isSprite)
+                    {
+                        atlases.Add((Texture2D)sa.material.mainTexture);
+                        renderModes.Add(GlyphRenderMode.COLOR);
+                    }
+                    else
+                    {
+                        atlases.Add(fa.atlasTextures[j]);
+                        renderModes.Add(fa.atlasRenderMode);
+                    }
+
 
                     float sdfScale = 0;
-                    if (!TextGeneratorUtilities.IsBitmapRendering(renderModes[^1]) && atlases[^1].format == TextureFormat.Alpha8)
+                    if (!isSprite && !TextGeneratorUtilities.IsBitmapRendering(renderModes[^1]) && atlases[^1].format == TextureFormat.Alpha8)
                         sdfScale = fa.atlasPadding + 1;
                     sdfScales.Add(sdfScale);
 
-                    bool hasGradientScale = fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
+                    bool hasGradientScale = !isSprite && fa.atlasRenderMode != GlyphRenderMode.SMOOTH && fa.atlasRenderMode != GlyphRenderMode.COLOR;
                     // TODO, update once ATG supports SpriteAssets
                     bool isDynamicColor = /*meshInfo.applySDF &&*/ !hasMultipleColors && (RenderEvents.NeedsColorID(visualElement) || (hasGradientScale && RenderEvents.NeedsTextCoreSettings(visualElement)));
 
@@ -222,7 +255,7 @@ internal class ATGTextJobSystem
                     var pos = (visualElement).contentRect.min;
                     for (int vDst = 0,vSrc = 0, k = 0; vDst < vertexCount; vDst += 4, vSrc += 1, k += 6)
                     {
-                        var isColorFont = fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED;
+                        var isColorFont = !isSprite && (fa.atlasRenderMode == GlyphRenderMode.COLOR || fa.atlasRenderMode == GlyphRenderMode.COLOR_HINTED);
                         var tei = meshInfo.textElementInfos[textElementInfoInAtlas[vSrc]];
                         vertices[vDst + 0] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.bottomLeft, pos, inverseScale, isDynamicColor, isColorFont);
                         vertices[vDst + 1] = MeshGenerator.ConvertTextVertexToUIRVertex(ref tei.topLeft, pos, inverseScale, isDynamicColor, isColorFont);

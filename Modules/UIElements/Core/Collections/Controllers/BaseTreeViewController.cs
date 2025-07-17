@@ -305,6 +305,7 @@ namespace UnityEngine.UIElements
         {
             if (reusableItem is ReusableTreeViewItem treeItem)
             {
+                treeItem.customIndentWidth = baseTreeView.customIdent;
                 treeItem.Indent(GetIndentationDepthByIndex(index));
                 treeItem.SetExpandedWithoutNotify(IsExpandedByIndex(index));
                 treeItem.SetToggleVisibility(HasChildrenByIndex(index));
@@ -370,9 +371,9 @@ namespace UnityEngine.UIElements
             }
 
             if (wasExpanded)
-                m_HierarchyViewModel.ClearFlags(GetHierarchyNodeByIndex(index), HierarchyNodeFlags.Expanded, true);
+                m_HierarchyViewModel.ClearFlagsRecursive(GetHierarchyNodeByIndex(index), HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
             else
-                m_HierarchyViewModel.SetFlags(GetHierarchyNodeByIndex(index), HierarchyNodeFlags.Expanded, true);
+                m_HierarchyViewModel.SetFlagsRecursive(GetHierarchyNodeByIndex(index), HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
 
             UpdateHierarchy();
             baseTreeView.RefreshItems();
@@ -693,7 +694,10 @@ namespace UnityEngine.UIElements
             if (!CanChangeExpandedState(id))
                 return;
 
-            m_HierarchyViewModel.SetFlags(node, HierarchyNodeFlags.Expanded, expandAllChildren);
+            if (expandAllChildren)
+                m_HierarchyViewModel.SetFlagsRecursive(node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+            else
+                m_HierarchyViewModel.SetFlags(node, HierarchyNodeFlags.Expanded);
             m_HierarchyHasPendingChanged = true;
 
             // Required to update the expandedItemIds, can get rid of once we find a way to handle the serialized
@@ -746,7 +750,10 @@ namespace UnityEngine.UIElements
                 baseTreeView.SaveViewData();
             }
 
-            m_HierarchyViewModel.ClearFlags(node, HierarchyNodeFlags.Expanded, collapseAllChildren);
+            if (collapseAllChildren)
+                m_HierarchyViewModel.ClearFlagsRecursive(node, HierarchyNodeFlags.Expanded, HierarchyTraversalDirection.Children);
+            else
+                m_HierarchyViewModel.ClearFlags(node, HierarchyNodeFlags.Expanded);
             m_HierarchyHasPendingChanged = true;
 
             if (refresh)

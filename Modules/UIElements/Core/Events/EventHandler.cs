@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using UnityEngine.Bindings;
 using UnityEngine.UIElements.Experimental;
 
 namespace UnityEngine.UIElements
@@ -230,6 +231,7 @@ namespace UnityEngine.UIElements
         /// <param name="e">The event to send.</param>
         public abstract void SendEvent(EventBase e);
 
+        [VisibleToOtherModules("UnityEngine.HierarchyModule")]
         internal abstract void SendEvent(EventBase e, DispatchMode dispatchMode);
 
         internal abstract void HandleEvent(EventBase e);

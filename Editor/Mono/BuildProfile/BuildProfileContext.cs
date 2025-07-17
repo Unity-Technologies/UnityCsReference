@@ -12,6 +12,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEditor.EngineDiagnostics;
 
 namespace UnityEditor.Build.Profile
 {
@@ -153,7 +154,7 @@ namespace UnityEditor.Build.Profile
             }
         }
 
-        string GetProfileGUID(BuildProfile profile)
+        static string GetProfileGUID(BuildProfile profile)
         {
             var profilePath = AssetDatabase.GetAssetPath(profile);
             var profileGuid = AssetDatabase.AssetPathToGUID(profilePath);
@@ -837,6 +838,13 @@ namespace UnityEditor.Build.Profile
             profile.SerializePlayerSettings();
         }
 
+        [RequiredByNativeCode]
+        [VisibleToOtherModules]
+        internal static BuildProfileEngineDiagnosticsState GetActiveBuildProfileEngineDiagnosticsState()
+        {
+            var profile = activeProfile ?? instance.GetForClassicPlatform(EditorUserBuildSettings.activePlatformGuid);
+            return profile?.platformBuildProfile?.insightsSettingsContainer.buildProfileEngineDiagnosticsState ?? BuildProfileEngineDiagnosticsState.ProjectSettings;
+        }
 
         static bool ShouldReturnActiveProfile(GUID platformGuid, string sharedSetting = null)
         {

@@ -20,6 +20,8 @@ namespace UnityEngine.Rendering
         Matrix4x4            m_LocalToWorldMatrix;
         float                m_Range;
         float                m_SpotAngle;
+        float                m_InnerSpotAngle;
+        Vector2              m_AreaSize;
 #pragma warning disable 649
         int                 m_InstanceId;
 #pragma warning restore 649
@@ -63,6 +65,18 @@ namespace UnityEngine.Rendering
             set { m_SpotAngle = value; }
         }
 
+        public float innerSpotAngle
+        {
+            get { return m_InnerSpotAngle; }
+            set { m_InnerSpotAngle = value; }
+        }
+
+        public Vector2 areaSize
+        {
+            get { return m_AreaSize; }
+            set { m_AreaSize = value; }
+        }
+
         public bool intersectsNearPlane
         {
             get { return (m_Flags & VisibleLightFlags.IntersectsNearPlane) > 0; }
@@ -94,7 +108,17 @@ namespace UnityEngine.Rendering
 
         public bool Equals(VisibleLight other)
         {
-            return m_LightType == other.m_LightType && m_FinalColor.Equals(other.m_FinalColor) && m_ScreenRect.Equals(other.m_ScreenRect) && m_LocalToWorldMatrix.Equals(other.m_LocalToWorldMatrix) && m_Range.Equals(other.m_Range) && m_SpotAngle.Equals(other.m_SpotAngle) && m_InstanceId == other.m_InstanceId && m_Flags == other.m_Flags;
+            return m_LightType ==
+                other.m_LightType &&
+                m_FinalColor.Equals(other.m_FinalColor) &&
+                m_ScreenRect.Equals(other.m_ScreenRect) &&
+                m_LocalToWorldMatrix.Equals(other.m_LocalToWorldMatrix) &&
+                m_Range.Equals(other.m_Range) &&
+                m_SpotAngle.Equals(other.m_SpotAngle) &&
+                m_InnerSpotAngle.Equals(other.m_InnerSpotAngle) &&
+                m_AreaSize.Equals(other.m_AreaSize) &&
+                m_InstanceId == other.m_InstanceId &&
+                m_Flags == other.m_Flags;
         }
 
         public override bool Equals(object obj)
@@ -113,6 +137,8 @@ namespace UnityEngine.Rendering
                 hashCode = (hashCode * 397) ^ m_LocalToWorldMatrix.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_Range.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_SpotAngle.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_InnerSpotAngle.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_AreaSize.GetHashCode();
                 hashCode = (hashCode * 397) ^ m_InstanceId;
                 hashCode = (hashCode * 397) ^ (int)m_Flags;
                 return hashCode;

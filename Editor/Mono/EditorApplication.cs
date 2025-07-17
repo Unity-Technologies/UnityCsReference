@@ -256,6 +256,14 @@ namespace UnityEditor
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static CallbackFunction fileMenuSaved;
 
+        internal static event Action frameAndRenameNewGameObject;
+
+        [RequiredByNativeCode]
+        internal static void Internal_FrameAndRenameNewGameObject()
+        {
+            frameAndRenameNewGameObject?.Invoke();
+        }
+
         // Delegate for changed keyboard modifier keys.
         public static CallbackFunction modifierKeysChanged;
 
@@ -424,14 +432,6 @@ namespace UnityEditor
             }
         }
 
-        internal static void UpdateEditorTextRenderingMode(EditorTextRenderingMode mode)
-        {
-            foreach (GUIView view in Resources.FindObjectsOfTypeAll(typeof(GUIView)))
-            {
-                view.UpdateEditorTextRenderingMode(mode);
-            }
-        }
-
         [RequiredByNativeCode]
         static void Internal_CallHierarchyHasChanged()
         {
@@ -475,10 +475,9 @@ namespace UnityEditor
             #pragma warning disable 618
             playmodeStateChanged?.Invoke();
             #pragma warning restore 618
-            using var scope = new ProgressScope($"PauseStateChanged Callback", "" , forceUpdate: true);
+            using var scope = new ProgressScope("Running managed callbacks..." , "Executing PauseStateChanged Callbacks", forceUpdate: true);
             foreach (var evt in m_PauseStateChangedEvent)
             {
-                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt(state);
             }
         }
@@ -505,10 +504,9 @@ namespace UnityEditor
                 }
                 return;
             }
-            using var scope = new ProgressScope($"PlayModeStateChanged Callback ({stateName})", "", forceUpdate: true);
+            using var scope = new ProgressScope("Running managed callbacks", $"Executing PlayModeStateChanged Callback ({stateName})", forceUpdate: true);
             foreach (var evt in m_PlayModeStateChangedEvent)
             {
-                scope.SetText($"{evt.Method?.DeclaringType?.FullName}.{evt.Method?.Name}", true);
                 evt(state);
             }
         }

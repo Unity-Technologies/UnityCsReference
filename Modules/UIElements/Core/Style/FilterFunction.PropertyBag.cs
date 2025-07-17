@@ -8,7 +8,7 @@ using static UnityEngine.UIElements.StyleSheets.Dimension;
 
 namespace UnityEngine.UIElements
 {
-    internal partial struct FilterFunction
+    public partial struct FilterFunction
     {
         internal class PropertyBag : ContainerPropertyBag<FilterFunction>
         {

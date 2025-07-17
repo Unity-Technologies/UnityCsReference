@@ -28,6 +28,7 @@ namespace UnityEditor.PackageManager.UI.Internal
         private IAssetStoreDownloadManager m_AssetStoreDownloadManager;
         private IProjectSettingsProxy m_SettingsProxy;
         private IIOProxy m_IOProxy;
+        private ICustomDisplayDialog m_CustomDisplayDialog;
 
         private void ResolveDependencies()
         {
@@ -42,6 +43,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             m_AssetStoreDownloadManager = container.Resolve<IAssetStoreDownloadManager>();
             m_SettingsProxy = container.Resolve<IProjectSettingsProxy>();
             m_IOProxy = container.Resolve<IIOProxy>();
+            m_CustomDisplayDialog = container.Resolve<ICustomDisplayDialog>();
         }
 
         public PackageManagerToolbar()
@@ -350,7 +352,7 @@ namespace UnityEditor.PackageManager.UI.Internal
             dropdownItem.action = () =>
             {
                 var position = EditorMenuExtensions.GUIToScreenRect(addMenu, addMenu.worldBound);
-                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_Application, PackageManagerWindow.instance) { position = position};
+                var dropdown = new AddPackageByNameDropdown(m_ResourceLoader, m_UpmClient, m_PackageDatabase, m_PageManager, m_OperationDispatcher, m_CustomDisplayDialog, PackageManagerWindow.instance) { position = position };
                 DropdownContainer.ShowDropdown(dropdown);
             };
         }
@@ -383,13 +385,13 @@ namespace UnityEditor.PackageManager.UI.Internal
                 if (page == null || !PackageManagerFiltersWindow.ShowAtPosition(EditorMenuExtensions.GUIToScreenRect(filtersMenu, filtersMenu.worldBound), page))
                     return;
 
-                filtersMenu.pseudoStates |= PseudoStates.Active;
+                filtersMenu.SetActivePseudoState(true);
                 PackageManagerFiltersWindow.instance.OnFiltersChanged += filters =>
                 {
                     if (page.UpdateFilters(filters))
                         PackageManagerFiltersAnalytics.SendEvent(filters);
                 };
-                PackageManagerFiltersWindow.instance.OnClose += () => filtersMenu.pseudoStates &= ~PseudoStates.Active;
+                PackageManagerFiltersWindow.instance.OnClose += () => filtersMenu.SetActivePseudoState(false);
             };
 
             clearFiltersButton.clicked += () => m_PageManager.activePage.ClearFilters();

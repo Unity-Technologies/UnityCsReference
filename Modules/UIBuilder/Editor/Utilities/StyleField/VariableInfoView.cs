@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.IO;
 using UnityEditor;
+using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.UIElements;
 using UnityEngine.UIElements.StyleSheets;
@@ -123,8 +125,10 @@ namespace Unity.UI.Builder
                         displayPath = Path.GetFileName(fullPath);
                 }
 
-                var valueText = StyleSheetToUss.ValueHandleToUssString(info.sheet, new UssExportOptions(), "",
-                    info.styleVariable.handles[0].valueType != StyleValueType.Function ? info.styleVariable.handles[0] : info.styleVariable.handles[2]);
+                var valueText = BuilderStyleSheetExporter.GetStylePropertyHandleString(
+                    info.sheet,
+                    info.styleVariable.handles.AsSpan(),
+                    info.styleVariable.handles[0].valueType != StyleValueType.Function ? 0 : 2);
 
                 variableValue = valueText;
                 sourceStyleSheet = displayPath;

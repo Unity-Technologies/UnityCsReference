@@ -61,8 +61,8 @@ namespace UnityEditor.Search
             {
                 var allTabs = parent.Children();
                 foreach (var tab in allTabs)
-                    tab.pseudoStates &= ~PseudoStates.Checked;
-                pseudoStates |= PseudoStates.Checked;
+                    tab.SetCheckedPseudoState(false);
+                SetCheckedPseudoState(true);
 
                 m_Group.Sort();
                 m_GroupBar.ViewModel.currentGroup = id;
@@ -281,10 +281,10 @@ namespace UnityEditor.Search
                 {
                     if (tabIndex >= fitTabCount)
                         hiddenSelectedGroup = tab;
-                    tab.pseudoStates |= PseudoStates.Checked;
+                    tab.SetCheckedPseudoState(true);
                 }
                 else
-                    tab.pseudoStates &= ~PseudoStates.Checked;
+                    tab.SetCheckedPseudoState(false);
 
                 ++tabIndex;
             }
@@ -315,7 +315,7 @@ namespace UnityEditor.Search
                 m_TabMoreButton.style.maxWidth = m_TabMoreButtonWidth;
 
                 if (moreSelectedGroup == hiddenSelectedGroup)
-                    expandedTab.pseudoStates |= PseudoStates.Checked;
+                    expandedTab.SetCheckedPseudoState(true);
 
                 m_HiddenGroups.Remove(moreSelectedGroup);
                 m_ShowMoreGroup.Add(expandedTab);
@@ -336,10 +336,7 @@ namespace UnityEditor.Search
                 else
                     m_SyncButton.style.display = DisplayStyle.None;
 
-                if (m_ViewModel.syncSearch)
-                    m_SyncButton.pseudoStates |= PseudoStates.Active;
-                else
-                    m_SyncButton.pseudoStates &= PseudoStates.Active;
+                m_SyncButton.SetActivePseudoState(m_ViewModel.syncSearch);
             }
         }
 
@@ -424,10 +421,7 @@ namespace UnityEditor.Search
             if (!supportsSync)
                 return;
 
-            if (sync)
-                m_SyncButton.pseudoStates |= PseudoStates.Active;
-            else
-                m_SyncButton.pseudoStates &= PseudoStates.Active;
+            m_SyncButton.SetActivePseudoState(sync);
 
             m_ViewModel.syncSearch = sync;
             if (m_ViewModel.syncSearch)
@@ -448,10 +442,7 @@ namespace UnityEditor.Search
                 m_ViewModel.syncSearch ? m_SyncSearchOnButtonTooltip : m_SyncSearchButtonTooltip;
 
             m_SyncButton = CreateButton("SyncSearchButton", syncButtonTooltip, () => SetSyncSearchView(!m_ViewModel.syncSearch), groupBarButtonClassName, syncSearchButtonClassName);
-            if (m_ViewModel.syncSearch)
-                m_SyncButton.pseudoStates |= PseudoStates.Active;
-            else
-                m_SyncButton.pseudoStates &= PseudoStates.Active;
+            m_SyncButton.SetActivePseudoState(m_ViewModel.syncSearch);
 
             Add(m_SyncButton);
         }

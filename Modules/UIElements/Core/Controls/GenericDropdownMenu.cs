@@ -104,9 +104,24 @@ namespace UnityEngine.UIElements
 
         /// <summary>
         /// Returns the content container for the <see cref="GenericDropdownMenu"/>. Allows users to create their own
-        /// dropdown menu if they don't want to use the default implementation.
+        /// dropdown menu if they don't want to use the default implementation. It contains a reference to the menu in its <see cref="VisualElement.userData"/>.
         /// </summary>
         public VisualElement contentContainer => m_ScrollView.contentContainer;
+
+        /// <summary>
+        /// Returns the element that determines which root to use as the menu's parent.
+        /// </summary>
+        public VisualElement targetElement => m_TargetElement;
+
+        /// <summary>
+        /// An action that is invoked before the menu is opened.
+        /// </summary>
+        public event Action onOpen;
+
+        /// <summary>
+        /// An action that is invoked after the menu is closed.
+        /// </summary>
+        public event Action onClose;
 
         /// <summary>
         ///  Initializes and returns an instance of GenericDropdownMenu.
@@ -178,6 +193,9 @@ namespace UnityEngine.UIElements
                     m_TargetElement.Focus();
             }
 
+            onClose?.Invoke();
+
+            contentContainer.userData = null;
             m_TargetElement = null;
         }
 
@@ -471,7 +489,7 @@ namespace UnityEngine.UIElements
 
             if (isChecked)
             {
-                rowElement.pseudoStates |= PseudoStates.Checked;
+                rowElement.SetCheckedPseudoState(true);
             }
 
             var label = new Label(itemName);
@@ -501,14 +519,7 @@ namespace UnityEngine.UIElements
                 return;
             }
 
-            if (isChecked)
-            {
-                item.element.pseudoStates |= PseudoStates.Checked;
-            }
-            else
-            {
-                item.element.pseudoStates &= ~PseudoStates.Checked;
-            }
+            item.element.SetCheckedPseudoState(isChecked);
         }
 
         [Obsolete("This version of Dropdown is deprecated. To ensure the dropdown is positioned correctly, please provide a reference to the targetElement.", false)]
@@ -538,6 +549,8 @@ namespace UnityEngine.UIElements
 
             m_TargetElement = targetElement;
             m_TargetElement.RegisterCallback<DetachFromPanelEvent>(OnTargetElementDetachFromPanel);
+
+            onOpen?.Invoke();
 
             if (m_TargetElement.panel != null && m_TargetElement.panel.contextType == ContextType.Player)
             {
@@ -591,8 +604,9 @@ namespace UnityEngine.UIElements
 
             EnsureVisibilityInParent();
 
-            if (targetElement != null)
-                targetElement.pseudoStates |= PseudoStates.Active;
+            targetElement.SetActivePseudoState(true);
+
+            contentContainer.userData = this;
         }
 
         /// <summary>
@@ -677,15 +691,14 @@ namespace UnityEngine.UIElements
 
                 // Ensure height is visible
                 var targetElement = m_MenuContainer.WorldToLocal(m_TargetElement.worldBound);
-                var itemHeight = m_Items[0].element.layout.height + k_MenuItemPadding;
+                var itemHeight = m_Items.Count == 0 ? k_MenuItemPadding : m_Items[0].element.layout.height + k_MenuItemPadding;
 
                 var dropdownHeight = m_OuterContainer.layout.height;
                 var targetElementTop = targetElement.y;
 
+                var topLeft = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
 
-                var TL = m_PanelRootVisualContainer.WorldToLocal(new Vector2(m_OuterContainer.worldBound.x, m_OuterContainer.worldBound.y));
-
-                var actualTop = TL.y;
+                var actualTop = topLeft.y;
                 var spaceBelow = m_ShownAboveTarget ? targetElementTop - actualTop : m_PanelRootVisualContainer.layout.height - actualTop;
                 var spaceAbove = m_ShownAboveTarget ? m_PanelRootVisualContainer.layout.height - actualTop : targetElementTop;
 

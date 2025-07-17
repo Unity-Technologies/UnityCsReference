@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Globalization;
+using UnityEditor.StyleSheets;
 using UnityEngine;
 using UnityEditor.UIElements.StyleSheets;
 
@@ -52,7 +53,7 @@ namespace Unity.UI.Builder
 
         public string Convert(Color value)
         {
-            return "#" + ColorUtility.ToHtmlStringRGBA(value);
+            return StyleSheetToUss.ToUssString(value);
         }
 
         public string Convert(string value)
