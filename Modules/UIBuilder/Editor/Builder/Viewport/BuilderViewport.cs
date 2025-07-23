@@ -441,6 +441,10 @@ namespace Unity.UI.Builder
             if (evt.button == 2 || (evt.actionKey && evt.altKey || (evt.button == (int)MouseButton.RightMouse && evt.altKey)) || evt.button == 0 && evt.ctrlKey)
                 return;
 
+            // UUM-107380 - Don't pick elements under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
+                return;
+
             m_PickedElements.Clear();
             var pickedElement = PickElement(evt.mousePosition, m_PickedElements);
 
@@ -493,6 +497,10 @@ namespace Unity.UI.Builder
 
         void OnHover(MouseMoveEvent evt)
         {
+            // UUM-107380 - Don't pick elements under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
+                return;
+
             var pickedElement = PickElement(evt.mousePosition);
 
             if (pickedElement != null)
@@ -553,6 +561,10 @@ namespace Unity.UI.Builder
 
         void OnMissPick(MouseDownEvent evt)
         {
+            // UUM-107380 - Block picking under the selection header.
+            if (selectionIndicator.header.worldBound.Contains(evt.mousePosition))
+                return;
+
             ClearInnerSelection();
             m_Selection.ClearSelection(this);
         }

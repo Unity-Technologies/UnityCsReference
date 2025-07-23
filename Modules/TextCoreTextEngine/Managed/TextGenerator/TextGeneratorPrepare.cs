@@ -102,27 +102,6 @@ namespace UnityEngine.TextCore.Text
 
             m_TextElementType = TextElementType.Character;
 
-            // Handling for Underline special character
-            #region Setup Underline Special Character
-            /*
-            GetUnderlineSpecialCharacter(m_CurrentFontAsset);
-            if (m_Underline.character != null)
-            {
-                if (m_Underline.fontAsset.GetInstanceID() != m_CurrentFontAsset.GetInstanceID())
-                {
-                    if (generationSettings.textSettings.matchMaterialPreset && m_CurrentMaterial.GetInstanceID() != m_Underline.fontAsset.material.GetInstanceID())
-                        m_Underline.material = TMP_MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material);
-                    else
-                        m_Underline.material = m_Underline.fontAsset.material;
-
-                    m_Underline.materialIndex = MaterialReference.AddMaterialReference(m_Underline.material, m_Underline.fontAsset, m_MaterialReferences, m_MaterialReferenceIndexLookup);
-                    m_MaterialReferences[m_Underline.materialIndex].referenceCount = 0;
-                }
-            }
-            */
-            #endregion
-
-
             // Handling for Ellipsis special character
             #region Setup Ellipsis Special Character
             if (generationSettings.overflowMode == TextOverflowMode.Ellipsis)
@@ -572,7 +551,10 @@ namespace UnityEngine.TextCore.Text
             if (character != null)
             {
                 // Add character to font asset lookup cache
-                fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                if (isUsingAlternativeTypeface)
+                    fontAsset.AddCharacterToLookupCache(unicode, character, fontStyle, fontWeight);
+                else
+                    fontAsset.AddCharacterToLookupCache(unicode, character, FontStyles.Normal, TextFontWeight.Regular);
 
                 return character;
             }
@@ -1337,9 +1319,11 @@ namespace UnityEngine.TextCore.Text
             if (!GetEllipsisSpecialCharacter(generationSettings))
                 return false;
 
-            return GetUnderlineSpecialCharacter(generationSettings);
-        }
+            if (!GetUnderlineSpecialCharacter(generationSettings) || m_Underline.character == null)
+                return false;
 
+            return true;
+        }
         protected bool GetEllipsisSpecialCharacter(TextGenerationSettings generationSettings)
         {
             bool canWriteOnAsset = !IsExecutingJob;
@@ -1386,17 +1370,33 @@ namespace UnityEngine.TextCore.Text
             bool isUsingAlternativeTypeface;
 
             FontAsset fontAsset = m_CurrentFontAsset ?? generationSettings.fontAsset;
-            TextSettings textSettings = generationSettings.textSettings;
             bool populateLigature = TextGenerationSettings.fontFeatures.Contains(OTL_FeatureTag.liga);
 
             // Search base font asset
             Character character = FontAssetUtilities.GetCharacterFromFontAsset(0x5F, fontAsset, false, m_FontStyleInternal, m_FontWeightInternal, out isUsingAlternativeTypeface, populateLigature);
 
-            if (character == null && !canWriteOnAsset)
+            if (character == null)
                 return false;
 
-            if (character != null)
-                m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
+            m_Underline = new SpecialCharacter(character, m_CurrentMaterialIndex);
+
+            // If underline font differs from current font, set up proper material references
+            if (m_Underline.fontAsset.GetHashCode() != m_CurrentFontAsset.GetHashCode())
+            {
+                // Determine which material to use based on settings
+                m_Underline.material = generationSettings.textSettings.matchMaterialPreset &&
+                    m_CurrentMaterial.GetHashCode() != m_Underline.fontAsset.material.GetHashCode()
+                        ? MaterialManager.GetFallbackMaterial(m_CurrentMaterial, m_Underline.fontAsset.material)
+                        : m_Underline.fontAsset.material;
+
+                // Add material reference and reset reference count
+                m_Underline.materialIndex = MaterialReference.AddMaterialReference(
+                    m_Underline.material,
+                    m_Underline.fontAsset,
+                    ref m_MaterialReferences,
+                    m_MaterialReferenceIndexLookup);
+                m_MaterialReferences[m_Underline.materialIndex].referenceCount = 0;
+            }
 
             return true;
         }

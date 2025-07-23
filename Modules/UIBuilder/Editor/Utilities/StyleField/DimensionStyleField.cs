@@ -168,7 +168,8 @@ namespace Unity.UI.Builder
             m_DraggerIntegerField = new IntegerField(" ");
             m_DraggerIntegerField.name = "dragger-integer-field";
             m_DraggerIntegerField.AddToClassList(k_DraggerFieldUssClassName);
-            m_DraggerIntegerField.focusable = false;
+            m_DraggerIntegerField.visualInput.focusable = false;
+            m_DraggerIntegerField.tabIndex = -1;
             m_DraggerIntegerField.RegisterValueChangedCallback(OnDraggerFieldUpdate);
             m_DraggerIntegerField.labelElement.RegisterCallback<PointerUpEvent>(OnDraggerPointerUp);
             Insert(0, m_DraggerIntegerField);

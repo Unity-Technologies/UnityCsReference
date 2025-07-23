@@ -70,6 +70,7 @@ namespace UnityEngine
         public Transform parent;
         public Scene scene;
         public bool worldSpace;
+        public bool originalImmutable;
     }
 
     [StructLayout(LayoutKind.Sequential)]

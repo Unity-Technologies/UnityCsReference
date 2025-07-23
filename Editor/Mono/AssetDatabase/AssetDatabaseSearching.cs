@@ -19,7 +19,11 @@ namespace UnityEditor
             return FindAssets(filter, null);
         }
 
-        public static string[] FindAssets(string filter, string[] searchInFolders)
+        public static GUID[] FindAssetGUIDs(string filter)
+        {
+            return FindAssetGUIDs(filter, null);
+        }
+        private static SearchFilter CreateSearchFilter(string filter, string[] searchInFolders)
         {
             var searchFilter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
             SearchUtility.ParseSearchString(filter, searchFilter);
@@ -28,15 +32,26 @@ namespace UnityEditor
                 searchFilter.folders = searchInFolders;
                 searchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
             }
-
+            return searchFilter;
+        }
+        public static string[] FindAssets(string filter, string[] searchInFolders)
+        {
+            var searchFilter = CreateSearchFilter(filter, searchInFolders);
             return FindAssets(searchFilter);
         }
-
+        public static GUID[] FindAssetGUIDs(string filter, string[] searchInFolders)
+        {
+            var searchFilter = CreateSearchFilter(filter, searchInFolders);
+            return FindAssetGUIDs(searchFilter);
+        }
         internal static string[] FindAssets(SearchFilter searchFilter)
         {
             return FindAllAssets(searchFilter).Select(property => property.guid).Distinct().ToArray();
         }
-
+        internal static GUID[] FindAssetGUIDs(SearchFilter searchFilter)
+        {
+            return FindAllAssets(searchFilter).Select(property => property.assetGUID).Distinct().ToArray();
+        }
         [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
         internal static IEnumerable<HierarchyProperty> FindAllAssets(SearchFilter searchFilter)
         {

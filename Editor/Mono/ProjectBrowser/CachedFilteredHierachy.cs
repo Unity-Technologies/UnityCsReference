@@ -47,7 +47,7 @@ namespace UnityEditor
                                 // itself to work correctly and universally. for e.g. uxml files from within GetCachedIcon without relying on FindIconForFile.
                                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
 
-                            path = string.IsNullOrEmpty(m_Guid) ? null : AssetDatabase.GUIDToAssetPath(m_Guid);
+                            path = assetGUID.Empty() ? null : AssetDatabase.GUIDToAssetPath(assetGUID);
                             if (path != null)
                                 return UnityEditorInternal.InternalEditorUtility.FindIconForFile(path);
                         }
@@ -71,25 +71,8 @@ namespace UnityEditor
             }
             private Texture2D m_Icon;
 
-            internal string m_Guid;
-
-            public string guid
-            {
-                get
-                {
-                    if (type == HierarchyType.Assets)
-                    {
-                        if (instanceID != 0 && string.IsNullOrEmpty(m_Guid))
-                        {
-                            string path = AssetDatabase.GetAssetPath(instanceID);
-                            if (path != null)
-                                m_Guid = AssetDatabase.AssetPathToGUID(path);
-                        }
-                        return m_Guid;
-                    }
-                    return null;
-                }
-            }
+            public GUID assetGUID;
+            public string guid{ get { return assetGUID.ToString(); } }
         }
 
         SearchFilter m_SearchFilter = new SearchFilter();
@@ -256,7 +239,7 @@ namespace UnityEditor
                 result.icon = null;
 
             if (m_HierarchyType == HierarchyType.Assets)
-                result.m_Guid = property.guid;
+                result.assetGUID = property.assetGUID;
         }
 
         void SearchAllAssets(SearchFilter.SearchArea area)
@@ -656,7 +639,12 @@ namespace UnityEditor
 
         public string guid
         {
-            get { return m_Hierarchy.results[m_Position].guid; }
+            get { return assetGUID.ToString(); }
+        }
+
+        public GUID assetGUID
+        {
+            get { return m_Hierarchy.results[m_Position].assetGUID; }
         }
 
         public bool isValid

@@ -542,7 +542,9 @@ sealed class SceneOrientationGizmo : IMGUIOverlay
 
         Event evt = Event.current;
 
-        if (evt.type == EventType.MouseDown && evt.button == 1
+        // Here we use an if/endif instead of ContextClick to be able to support MacOS two-finger trackpad click.
+    if (evt.type == EventType.MouseDown
+            && evt.button == 1
             && !view.in2DMode
             && !view.isRotationLocked
             && gizmoRect.Contains(evt.mousePosition))

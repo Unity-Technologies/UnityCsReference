@@ -14,6 +14,15 @@ namespace UnityEditor.UIElements
     [VisibleToOtherModules("UnityEditor.UIBuilderModule")]
     internal static class BindingsStyleHelpers
     {
+        enum DrivenPropertyState
+        {
+            NotDriven,
+            CustomDriven,
+            AnimationAnimated,
+            AnimationCandidate,
+            AnimationRecording
+        }
+
         internal static event Action<VisualElement, SerializedProperty> updateBindingStateStyle;
 
         static EventCallback<PointerUpEvent> s_RightClickMenuCallback;
@@ -126,13 +135,28 @@ namespace UnityEditor.UIElements
                 return;
             }
 
-            bool animated = AnimationMode.IsPropertyAnimated(prop.serializedObject.targetObject, prop.propertyPath);
-            bool candidate = AnimationMode.IsPropertyCandidate(prop.serializedObject.targetObject, prop.propertyPath);
-            bool recording = AnimationMode.InAnimationRecording();
+            var drivenState = DrivenPropertyState.NotDriven;
+            if (DrivenPropertyManagerInternal.IsDriven(prop.serializedObject.targetObject, prop.propertyPath))
+            {
+                if (prop.isAnimated)
+                {
+                    if (AnimationMode.InAnimationRecording())
+                        drivenState = DrivenPropertyState.AnimationRecording;
+                    else if (AnimationMode.IsPropertyCandidate(prop.serializedObject.targetObject, prop.propertyPath))
+                        drivenState = DrivenPropertyState.AnimationCandidate;
+                    else
+                        drivenState = DrivenPropertyState.AnimationAnimated;
+                }
+                else
+                {
+                    drivenState = DrivenPropertyState.CustomDriven;
+                }
+            }
 
-            inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, animated && recording);
-            inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, animated && !recording && candidate);
-            inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, animated && !recording && !candidate);
+            inputElement.EnableInClassList(BindingExtensions.drivenUssClassName, drivenState == DrivenPropertyState.CustomDriven);
+            inputElement.EnableInClassList(BindingExtensions.animationAnimatedUssClassName, drivenState == DrivenPropertyState.AnimationAnimated);
+            inputElement.EnableInClassList(BindingExtensions.animationRecordedUssClassName, drivenState == DrivenPropertyState.AnimationRecording);
+            inputElement.EnableInClassList(BindingExtensions.animationCandidateUssClassName, drivenState == DrivenPropertyState.AnimationCandidate);
         }
 
         internal static void UpdateLivePropertyStyleFromProperty(VisualElement element, SerializedProperty prop)

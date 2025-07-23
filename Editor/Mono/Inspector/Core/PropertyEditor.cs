@@ -1798,11 +1798,11 @@ namespace UnityEditor
         private void DrawFooter()
         {
             Object[] assets = GetInspectedAssets();
-            bool hasLabels = assets.Length > 0;
+            if (assets == null || assets.Length == 0)
+                return;
+
             bool hasBundleName = assets.Any(a => !(a is MonoScript) && AssetDatabase.IsMainAsset(a));
-
             IPreviewable previewEditor = GetEditorThatControlsPreview(tracker.activeEditors);
-
             if (previewEditor == null || !previewEditor.HasPreviewGUI())
             {
                 GUILayout.BeginVertical(Styles.footer);
@@ -1811,12 +1811,9 @@ namespace UnityEditor
             }
 
             GUILayout.BeginVertical(Styles.footer);
-            if (hasLabels)
+            using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
             {
-                using (new EditorGUI.DisabledScope(assets.Any(a => !IsOpenForEdit(a) || !Editor.IsAppropriateFileOpenForEdit(a))))
-                {
-                    m_LabelGUI.OnLabelGUI(assets);
-                }
+                m_LabelGUI.OnLabelGUI(assets);
             }
 
             if (hasBundleName)

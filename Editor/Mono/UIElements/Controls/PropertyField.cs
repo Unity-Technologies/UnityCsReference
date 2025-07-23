@@ -902,6 +902,7 @@ namespace UnityEditor.UIElements
             listView.viewDataKey = listViewName;
             listView.name = listViewName;
             listView.SetProperty(listViewBoundFieldProperty, this);
+            listView.SetProperty(BaseField<string>.serializedPropertyCopyName, propertyCopy);
 
             if (property.serializedObject.inspectorMode is InspectorMode.Debug or InspectorMode.DebugInternal)
             {

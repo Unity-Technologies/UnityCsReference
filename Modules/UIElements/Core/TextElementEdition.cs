@@ -547,7 +547,7 @@ namespace UnityEngine.UIElements
                     return TextUtilities.IsAdvancedTextEnabledForElement(this) ? new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0) : new RenderedText(effectiveMaskChar, m_RenderedText?.Length ?? 0, ZeroWidthSpace);
                 }
 
-                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && !isReadOnly) // TextField
+                if (!TextUtilities.IsAdvancedTextEnabledForElement(this) && (!isReadOnly || ((pseudoStates & PseudoStates.Disabled) != 0 && isSelectable))) // TextField
                 {
                     return new RenderedText(m_RenderedText, ZeroWidthSpace);
                 }
