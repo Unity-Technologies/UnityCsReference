@@ -147,7 +147,6 @@ namespace UnityEditor
 
                 if (!currentSceneView.orthographic)
                     targetSize = currentSceneView.size * Vector3.Dot(hit.point - currentPosition, currentSceneView.rotation * Vector3.forward) / currentSceneView.cameraDistance;
-
                 currentSceneView.LookAt(hit.point, currentSceneView.rotation, targetSize);
             }
 
@@ -481,6 +480,36 @@ namespace UnityEditor
                         {
                             hit = localHit;
                             minT = hit.distance;
+                        }
+                    }
+                }
+            }
+
+            if (minT == Mathf.Infinity)
+            {
+                // If we didn't find any surface based on meshes or colliders, try checking if we hit a canvas
+                var canvases = picked.GetComponentsInChildren<Canvas>();
+                foreach (var canvas in canvases)
+                {
+                    if (canvas.transform is RectTransform rectTransform)
+                    {
+                        var mouseScreenPos = HandleUtility.GUIPointToScreenPixelCoordinate(position);
+                        
+                        // Convert mouse screen pos to world point on RectTransform's plane 
+                        var onRectPlane = RectTransformUtility.ScreenPointToWorldPointInRectangle(rectTransform, mouseScreenPos,
+                                 Camera.current, out var worldPoint);
+                
+                        // Check if the world point is actually within the RectTransform's rectangle
+                        if (onRectPlane)
+                        {
+                            RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, mouseScreenPos,
+                                Camera.current, out var localPoint);
+                
+                            if (rectTransform.rect.Contains(localPoint))
+                            {
+                                hit.point = worldPoint;
+                                return true;
+                            }
                         }
                     }
                 }

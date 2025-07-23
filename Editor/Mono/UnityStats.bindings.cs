@@ -29,6 +29,7 @@ namespace UnityEditor
     {
         public int batches;
         public int calls;
+        public int indirectCalls;
         public UInt64 tris, trisSent;
         public UInt64 verts;
         public int dynamicBatches;
@@ -80,6 +81,9 @@ namespace UnityEditor
 
         // The number of draw calls made this frame.
         public static int drawCalls => drawStats.calls;
+        
+        // The number of indirect draw calls made this frame.
+        public static int indirectDrawCalls => drawStats.indirectCalls;
 
         // The number of draw calls that got dynamically batched this frame.
         public static int dynamicBatchedDrawCalls => drawStats.dynamicBatchedCalls;

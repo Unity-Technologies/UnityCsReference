@@ -306,7 +306,6 @@ namespace UnityEngine.UIElements
             using var _ = ListPool<RadioButton>.Get(out var radioButtons);
             GetAllRadioButtons(radioButtons);
 
-            m_SelectedRadioButton = null;
             if (value >= 0 && value < radioButtons.Count)
             {
                 m_SelectedRadioButton = radioButtons[value];
@@ -379,7 +378,7 @@ namespace UnityEngine.UIElements
                 return;
             m_RegisteredRadioButtons.Remove(radioButton);
             radioButton.UnregisterValueChangedCallback(m_RadioButtonValueChangedCallback);
-            ScheduleRadioButtons();
+            UpdateRadioButtons(false);
         }
 
         void IGroupBox.OnOptionAdded(IGroupBoxOption option)

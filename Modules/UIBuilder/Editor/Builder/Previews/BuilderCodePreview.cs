@@ -50,6 +50,8 @@ namespace Unity.UI.Builder
             m_ScrollView.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             m_ScrollView.horizontalScroller.lowButton.focusable = true; // UUM-105775 - Prevents scroller clicks from focusing the code area.
             m_ScrollView.horizontalScroller.highButton.focusable = true;
+            m_ScrollView.verticalScroller.lowButton.focusable = true;
+            m_ScrollView.verticalScroller.highButton.focusable = true;
             Add(m_ScrollView);
 
             AddToClassList(s_UssClassName);

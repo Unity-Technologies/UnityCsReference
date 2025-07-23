@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using System;
-using System.Text;
-using UnityEngine.Scripting;
 using System.Globalization;
+using System.Text;
+using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -29,6 +29,7 @@ namespace UnityEditor
         private static float m_RenderFrameTime = 0.0f;
         private static float m_MaxFrameTime = 0.0f;
         private static GUIContent s_GraphicsText = EditorGUIUtility.TextContent("Graphics:");
+        private static readonly string k_IndirectDrawCallWarningText = L10n.Tr("Triangle and vertex counts might not reflect the actual values due to indirect draw calls.");
 
         // Create label style from scene skin; add rich text support
         private static GUIStyle s_LabelStyle;
@@ -95,6 +96,12 @@ namespace UnityEditor
                 return;
 
             float w = 300, h = 229;
+            if (UnityStats.indirectDrawCalls > 0)
+            {
+                // If there are indirect draw calls, we need more space for the warning message.
+                var width = w - GUI.skin.window.padding.horizontal;
+                h += EditorStyles.helpBox.CalcHeight(EditorGUIUtility.TempContent(k_IndirectDrawCallWarningText, EditorGUIUtility.GetHelpIcon(MessageType.Info)), width);
+            }
 
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);
 
@@ -149,6 +156,9 @@ namespace UnityEditor
             gfxStats.Append(UnityString.Format("  Animation components playing: {0} \n", UnityStats.animationComponentsPlaying));
             gfxStats.Append(UnityString.Format("  Animator components playing: {0}", UnityStats.animatorComponentsPlaying));
             GUILayout.Label(gfxStats.ToString(), labelStyle);
+
+            if (UnityStats.indirectDrawCalls > 0)
+                EditorGUILayout.HelpBox(k_IndirectDrawCallWarningText, MessageType.Info, true);
 
             GUILayout.EndArea();
         }

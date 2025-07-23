@@ -728,6 +728,7 @@ namespace UnityEngine.UIElements.UIR
 
         internal void FreeCommand(RenderChainCommand cmd)
         {
+            cmd.Reset();
             m_CommandPool.Return(cmd);
         }
 
